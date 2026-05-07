@@ -305,6 +305,14 @@
         sequence="50"
         web_icon="hr_administration,static/src/img/icon.png"
     />
+    <!-- ═══════════════════════════════════════════════════════════════
+         URL Actions
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_dashboard" model="ir.actions.act_url">
+        <field name="name">HR Administration Dashboard</field>
+        <field name="url">/hr_administration</field>
+        <field name="target">self</field>
+    </record>
 
     <menuitem
         id="hr_administration_dashboard"
@@ -342,13 +350,6 @@
         sequence="5"
     />
 
-    <!-- ═══════════════════════════════════════════════════════════════
-         URL Actions
-    ═══════════════════════════════════════════════════════════════ -->
-    <record id="action_dashboard" model="ir.actions.act_url">
-        <field name="name">HR Administration Dashboard</field>
-        <field name="url">/hr_administration</field>
-        <field name="target">self</field>
-    </record>
+    
 
 </odoo>

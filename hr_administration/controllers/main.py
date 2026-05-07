@@ -168,7 +168,7 @@ class HRAdministrationController(http.Controller):
                 env['hr.leave.allocation'].search([
                     ('employee_id', 'in', employees.ids),
                     ('state', '=', 'validate'),
-                    ('holiday_status_id.leave_type', '=', 'allocation'),
+                    # ('holiday_status_id.leave_type', '=', 'allocation'),
                 ]).mapped('number_of_days') or [0]
             )
             total_taken = sum(
