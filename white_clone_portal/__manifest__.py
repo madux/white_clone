@@ -11,7 +11,7 @@
     'depends': ['base', 'portal', 'website'],
     'data': [
         'views/menu_views.xml',
-        'data/data.xml',
+        # 'data/data.xml',
     ],
     'assets': {
         
