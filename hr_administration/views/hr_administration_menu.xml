@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Dashboard QWeb Template
+    ═══════════════════════════════════════════════════════════════ -->
+    <template id="dashboard_template" name="HR Administration Dashboard">
+        <t t-call="web.layout">
+            <t t-set="head_dashboard">
+                <!-- Google Fonts -->
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+                <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet"/>
+                <!-- Highcharts -->
+                <script src="https://code.highcharts.com/highcharts.js"></script>
+                <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+                <link rel="stylesheet" href="/hr_administration/static/src/css/dashboard.css"/>
+            </t>
+            <t t-set="head" t-value="head_dashboard"/>
+
+            <div id="hr-admin-root" class="hr-admin-app">
+
+                <!-- ── Sidebar ─────────────────────────────────────── -->
+                <aside class="sidebar" id="sidebar">
+                    <div class="sidebar-logo">
+                        <div class="logo-icon">
+                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                <rect width="28" height="28" rx="8" fill="#FF2D78"/>
+                                <path d="M7 20 Q14 8 21 20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+                                <circle cx="14" cy="9" r="2.5" fill="white"/>
+                            </svg>
+                        </div>
+                        <span class="logo-text">HR Admin</span>
+                    </div>
+
+                    <nav class="sidebar-nav">
+                        <div class="nav-section-label">Main</div>
+                        <a href="/hr_administration" class="nav-item active" data-page="dashboard">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/>
+                                <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".5"/>
+                                <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".5"/>
+                                <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".5"/>
+                            </svg>
+                            Dashboard
+                        </a>
+                        <a href="/odoo/employees" class="nav-item" data-page="employees">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M3 17c0-3.314 2.239-6 5-6s5 2.686 5 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M13 8c1.657 0 3 1.343 3 3v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Employees
+                        </a>
+                        <a href="/odoo/time-off" class="nav-item" data-page="leave">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M7 2v4M13 2v4M3 9h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Leave Management
+                        </a>
+                        <a href="/odoo/employees" class="nav-item" data-page="contracts">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M5 3h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Contracts
+                        </a>
+                        <a href="/odoo/payslips" class="nav-item" data-page="payroll">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M10 6v8M8 8h3a1 1 0 0 1 0 2H8M8 10h4a1 1 0 0 1 0 2H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Payroll
+                        </a>
+
+                        <div class="nav-section-label" style="margin-top:16px">Analytics</div>
+                        <a href="/odoo/reporting/hr" class="nav-item" data-page="reports">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <path d="M3 15 L7 9 L11 12 L15 6 L17 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Reports
+                        </a>
+                        <a href="/odoo/maintenance" class="nav-item" data-page="assets">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <rect x="3" y="11" width="14" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M7 11V7a3 3 0 0 1 6 0v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Asset Management
+                        </a>
+
+                        <div class="nav-section-label" style="margin-top:16px">System</div>
+                        <a href="/odoo/settings" class="nav-item" data-page="settings">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M10 3v2M10 15v2M3 10h2M15 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Settings
+                        </a>
+                    </nav>
+
+                    <div class="sidebar-user">
+                        <div class="user-avatar" id="userInitials">OA</div>
+                        <div class="user-info">
+                            <div class="user-name" id="userName">Olamide</div>
+                            <div class="user-role">HR Administrator</div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- ── Main Content ─────────────────────────────────── -->
+                <main class="main-content" id="mainContent">
+
+                    <!-- Header -->
+                    <header class="topbar">
+                        <div class="topbar-left">
+                            <button class="sidebar-toggle" id="sidebarToggle">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                            <div class="page-title-area">
+                                <div class="date-badge">
+                                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                        <rect x="1" y="2" width="11" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+                                        <path d="M4 1v2M9 1v2M1 5h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                    </svg>
+                                    <span id="currentDate">Thursday, May 7, 2026</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="topbar-right">
+                            <button class="topbar-btn" id="refreshBtn" title="Refresh data">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M14 8A6 6 0 1 1 8 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    <path d="M8 2l2-2M8 2l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+                            <button class="topbar-btn notif-btn" id="notifBtn">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                    <path d="M8 1a5 5 0 0 1 5 5v3l1.5 2H1.5L3 9V6a5 5 0 0 1 5-5z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M6.5 13a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                                <span class="notif-badge" id="notifBadge">2</span>
+                            </button>
+                        </div>
+                    </header>
+
+                    <!-- Hero Greeting -->
+                    <div class="hero-greeting">
+                        <div class="hero-text">
+                            <h1 class="greeting-headline">
+                                Good Morning, <span class="accent-name" id="greetingName">Olamide</span>! 👋
+                            </h1>
+                            <p class="greeting-sub">Your personalized HR workspace is ready. Manage your team, track attendance, and access all your HR tools in one place.</p>
+                        </div>
+                        <div class="hero-actions">
+                            <a href="/odoo/payslips" class="hero-btn secondary">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+                                    <path d="M7 4v4l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                </svg>
+                                Payroll Info
+                            </a>
+                            <a href="/odoo/settings" class="hero-btn primary">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                    <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/>
+                                    <path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                </svg>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Key Metrics -->
+                    <section class="section">
+                        <div class="section-header">
+                            <h2 class="section-title">Key Metrics</h2>
+                            <div class="section-actions">
+                                <button class="action-btn" id="filterMetrics">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M1 3h12M3 7h8M5 11h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                    </svg>
+                                    Filter
+                                </button>
+                                <button class="action-btn" id="exportMetrics">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                        <path d="M7 1v8M4 6l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2 10v2h10v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                    </svg>
+                                    Export
+                                </button>
+                            </div>
+                        </div>
+                        <div class="metrics-grid" id="metricsGrid">
+                            <!-- Filled by JS -->
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                            <div class="metric-skeleton"></div>
+                        </div>
+                    </section>
+
+                    <!-- Analytics + Attention 2-col -->
+                    <div class="two-col-layout">
+
+                        <!-- Left: Analytics -->
+                        <div class="analytics-col">
+                            <section class="section">
+                                <h2 class="section-title">Workforce Analytics</h2>
+
+                                <div class="analytics-grid">
+                                    <!-- Headcount Trend -->
+                                    <div class="chart-card" id="headcountCard">
+                                        <div class="chart-card-header">
+                                            <span class="chart-title">Headcount Trend</span>
+                                            <div class="chart-period-selector">
+                                                <select id="headcountPeriod" class="period-select">
+                                                    <option value="6">Last 6 Months</option>
+                                                    <option value="12">Last 12 Months</option>
+                                                    <option value="3">Last 3 Months</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div id="headcountChart" style="height:220px"></div>
+                                    </div>
+
+                                    <!-- Department Distribution -->
+                                    <div class="chart-card" id="deptCard">
+                                        <div class="chart-card-header">
+                                            <span class="chart-title">Department Distribution</span>
+                                            <a href="/odoo/employees" class="view-all-link">View All</a>
+                                        </div>
+                                        <div id="deptChart" style="height:220px"></div>
+                                        <div id="deptLegend" class="dept-legend"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Leave Utilization -->
+                                <div class="chart-card full-width" style="margin-top:20px">
+                                    <div class="chart-card-header">
+                                        <span class="chart-title">Leave Utilization by Department</span>
+                                        <button class="action-btn" id="exportLeave">
+                                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                                                <path d="M6.5 1v7M4 6l2.5 2.5L9 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+                                                <path d="M1 10v2h11v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                                            </svg>
+                                            Export
+                                        </button>
+                                    </div>
+                                    <div id="leaveUtilization" class="leave-bars"></div>
+                                    <div class="leave-legend">
+                                        <span class="legend-dot pink"></span> Leave Utilized (%)
+                                        <span class="legend-dot gray" style="margin-left:16px"></span> Remaining Allocation
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- Right: Requires Attention -->
+                        <div class="attention-col">
+                            <section class="section">
+                                <div class="section-header">
+                                    <h2 class="section-title">Requires Attention</h2>
+                                    <a href="/odoo/employees" class="view-all-link">View All</a>
+                                </div>
+                                <div id="attentionList" class="attention-list">
+                                    <div class="attention-skeleton"></div>
+                                    <div class="attention-skeleton"></div>
+                                    <div class="attention-skeleton"></div>
+                                    <div class="attention-skeleton"></div>
+                                </div>
+                            </section>
+
+                            <section class="section" style="margin-top:20px">
+                                <div class="section-header">
+                                    <h2 class="section-title">Upcoming Events</h2>
+                                </div>
+                                <div id="upcomingEvents" class="events-list">
+                                    <div class="attention-skeleton"></div>
+                                    <div class="attention-skeleton"></div>
+                                </div>
+                            </section>
+                        </div>
+
+                    </div>
+
+                </main>
+            </div>
+
+            <script src="/hr_administration/static/src/js/dashboard.js"></script>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Menu Items
+    ═══════════════════════════════════════════════════════════════ -->
+    <menuitem
+        id="hr_administration_root"
+        name="HR Administration"
+        sequence="50"
+        web_icon="hr_administration,static/src/img/icon.png"
+    />
+
+    <menuitem
+        id="hr_administration_dashboard"
+        name="Dashboard"
+        parent="hr_administration_root"
+        action="hr_administration.action_dashboard"
+        sequence="1"
+    />
+
+    <menuitem
+        id="hr_administration_employees_menu"
+        name="Employees"
+        parent="hr_administration_root"
+        sequence="2"
+    />
+
+    <menuitem
+        id="hr_administration_leave_menu"
+        name="Leave Management"
+        parent="hr_administration_root"
+        sequence="3"
+    />
+
+    <menuitem
+        id="hr_administration_payroll_menu"
+        name="Payroll"
+        parent="hr_administration_root"
+        sequence="4"
+    />
+
+    <menuitem
+        id="hr_administration_reports_menu"
+        name="Reports &amp; Analytics"
+        parent="hr_administration_root"
+        sequence="5"
+    />
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         URL Actions
+    ═══════════════════════════════════════════════════════════════ -->
+    <record id="action_dashboard" model="ir.actions.act_url">
+        <field name="name">HR Administration Dashboard</field>
+        <field name="url">/hr_administration</field>
+        <field name="target">self</field>
+    </record>
+
+</odoo>
