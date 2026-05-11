@@ -129,11 +129,38 @@
     });
   }
 
+  /* ─── Safe Highcharts render helper ──────────────────────── */
+  /**
+   * Highcharts error #13 = container not found or has no dimensions.
+   * In Odoo 17 the JS bundle runs before QWeb renders the DOM, so we
+   * must wait until the element exists AND has a non-zero offsetWidth.
+   */
+  function safeChart(containerId, options, retries) {
+    retries = retries === undefined ? 20 : retries;
+    const el = document.getElementById(containerId);
+    if (!el || el.offsetWidth === 0) {
+      if (retries > 0) {
+        setTimeout(function () { safeChart(containerId, options, retries - 1); }, 100);
+      }
+      return;
+    }
+    try {
+      // Destroy existing chart on the element to avoid double-render on refresh
+      var existing = Highcharts.charts.find(function (c) {
+        return c && c.renderTo && c.renderTo.id === containerId;
+      });
+      if (existing) existing.destroy();
+      Highcharts.chart(containerId, options);
+    } catch (e) {
+      console.warn('Highcharts render failed for #' + containerId, e);
+    }
+  }
+
   /* ─── Headcount Trend Chart ───────────────────────────────── */
   function renderHeadcountChart(data) {
     if (!window.Highcharts) return;
     const max = Math.max(...data.data);
-    Highcharts.chart('headcountChart', {
+    safeChart('headcountChart', {
       chart: {
         type: 'areaspline',
         backgroundColor: 'transparent',
@@ -204,7 +231,7 @@
       color: DEPT_COLORS[i % DEPT_COLORS.length],
     }));
 
-    Highcharts.chart('deptChart', {
+    safeChart('deptChart', {
       chart: {
         type: 'pie',
         backgroundColor: 'transparent',
@@ -388,35 +415,37 @@
   function initSidebar() {
     const btn = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
-    if (btn && sidebar) {
-      btn.addEventListener('click', () => sidebar.classList.toggle('open'));
-      document.addEventListener('click', (e) => {
-        if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
-          sidebar.classList.remove('open');
-        }
-      });
-    }
+    if (!btn || !sidebar) return;
+    btn.addEventListener('click', () => sidebar.classList.toggle('open'));
+    document.addEventListener('click', (e) => {
+      if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    });
   }
 
   /* ─── Headcount Period Selector ───────────────────────────── */
   function initPeriodSelector() {
-    const sel = document.getElementById('headcountPeriod');
-    if (!sel) return;
-    sel.addEventListener('change', () => {
-      rpc('/hr_administration/api/headcount_trend', { months: parseInt(sel.value) })
-        .then(renderHeadcountChart)
-        .catch(err => console.warn('Headcount reload failed:', err));
+    // Bind lazily — element may not exist until QWeb renders
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'headcountPeriod') {
+        const months = parseInt(e.target.value) || 6;
+        rpc('/hr_administration/api/headcount_trend', { months })
+          .then(renderHeadcountChart)
+          .catch(() => renderHeadcountChart(getDemoHeadcount()));
+      }
     });
   }
 
   /* ─── Refresh Button ──────────────────────────────────────── */
   function initRefresh() {
-    const btn = document.getElementById('refreshBtn');
-    if (!btn) return;
-    btn.addEventListener('click', () => {
-      btn.querySelector('svg').classList.add('spin');
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest('#refreshBtn');
+      if (!btn) return;
+      const icon = btn.querySelector('svg');
+      if (icon) icon.classList.add('spin');
       loadAll().finally(() => {
-        setTimeout(() => btn.querySelector('svg').classList.remove('spin'), 600);
+        setTimeout(() => { if (icon) icon.classList.remove('spin'); }, 600);
       });
     });
   }
@@ -516,6 +545,50 @@
     ];
   }
 
+  /* ─── Wait for a DOM element to appear ───────────────────── */
+  function waitForElement(selector, callback, timeout) {
+    timeout = timeout === undefined ? 10000 : timeout;
+    const start = Date.now();
+    const el = document.querySelector(selector);
+    if (el) { callback(el); return; }
+    const observer = new MutationObserver(function () {
+      const found = document.querySelector(selector);
+      if (found) {
+        observer.disconnect();
+        callback(found);
+      } else if (Date.now() - start > timeout) {
+        observer.disconnect();
+        console.warn('hr_administration: timed out waiting for', selector);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  /* ─── Ensure Highcharts is loaded, then run callback ─────── */
+  function withHighcharts(callback) {
+    if (window.Highcharts) {
+      callback();
+      return;
+    }
+    // Check if a <script> for Highcharts is already in the page (from template)
+    const existing = document.querySelector('script[src*="highcharts"]');
+    if (existing) {
+      existing.addEventListener('load', callback);
+      // Already loaded but window.Highcharts not set yet — poll briefly
+      let tries = 0;
+      const poll = setInterval(function () {
+        tries++;
+        if (window.Highcharts) { clearInterval(poll); callback(); }
+        else if (tries > 50) { clearInterval(poll); }
+      }, 100);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://code.highcharts.com/highcharts.js';
+    script.onload = callback;
+    document.head.appendChild(script);
+  }
+
   /* ─── Init ────────────────────────────────────────────────── */
   function init() {
     initDate();
@@ -524,15 +597,11 @@
     initPeriodSelector();
     initRefresh();
 
-    // Load Highcharts if not present, then load data
-    if (typeof window.Highcharts === 'undefined') {
-      const script = document.createElement('script');
-      script.src = 'https://code.highcharts.com/highcharts.js';
-      script.onload = loadAll;
-      document.head.appendChild(script);
-    } else {
-      loadAll();
-    }
+    // Wait for the dashboard root to be in the DOM (QWeb may render it late),
+    // then load Highcharts, then fetch all data.
+    waitForElement('#hr-admin-root', function () {
+      withHighcharts(loadAll);
+    });
   }
 
   if (document.readyState === 'loading') {

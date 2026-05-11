@@ -1,0 +1,694 @@
+/* ═══════════════════════════════════════════════
+   LAYOUT WRAPPER
+═══════════════════════════════════════════════ */
+.o_hr_dashboard_layout {
+    display: flex;
+    min-height: 100vh;
+    background: #f1f4f9;
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════ */
+.hd-sidebar {
+    width: 220px;
+    background: #0f172a;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 12px;
+    flex-shrink: 0;
+}
+
+.hd-sb-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.hd-sb-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #ec4899;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 16px;
+}
+
+.hd-brand-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.hd-brand-sub {
+    font-size: 11px;
+    opacity: .5;
+    color: #fff;
+}
+
+.hd-sb-nav {
+    flex: 1;
+}
+
+.hd-nav-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    opacity: .4;
+    color: #fff;
+    margin: 0 8px 8px;
+}
+
+.hd-nl {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background .15s, color .15s;
+}
+
+.hd-nl:hover {
+    background: rgba(255, 255, 255, .07);
+    color: #fff;
+}
+
+.hd-nl.active {
+    background: #ec4899;
+    color: #fff;
+}
+
+.hd-nl i {
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.hd-nl-badge {
+    margin-left: auto;
+    background: rgba(255, 255, 255, .12);
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-size: 10px;
+}
+
+/* SIDEBAR FOOTER */
+.hd-sb-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, .07);
+}
+
+.hd-user-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hd-user-av {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ec4899;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.hd-user-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.hd-user-role {
+    font-size: 11px;
+    opacity: .5;
+    color: #fff;
+}
+
+/* ═══════════════════════════════════════════════
+   MAIN AREA
+═══════════════════════════════════════════════ */
+.hd-main {
+    flex: 1;
+    overflow-y: auto;
+    min-width: 0;
+}
+
+.hd-main .o_form_sheet_bg,
+.hd-main .o_form_view,
+.hd-main > sheet {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+}
+
+.hd-inner {
+    padding: 24px;
+}
+
+/* PAGE HEADER */
+.hd-pg-header {
+    margin-bottom: 20px;
+}
+
+.hd-pg-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hd-pg-header p {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* TWO-COLUMN LAYOUT */
+.hd-two-col {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+}
+
+/* ═══════════════════════════════════════════════
+   WELCOME BANNER
+═══════════════════════════════════════════════ */
+.hd-welcome {
+    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    border-radius: 16px;
+    padding: 24px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 24px rgba(236, 72, 153, .25);
+}
+
+.hd-welcome-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.hd-welcome h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: #fff;
+}
+
+.hd-welcome p {
+    font-size: 13px;
+    line-height: 1.6;
+    opacity: .95;
+    margin-bottom: 16px;
+    max-width: 340px;
+}
+
+.hd-prog-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: #fff;
+}
+
+.hd-prog-bar {
+    height: 8px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .25);
+    overflow: hidden;
+}
+
+.hd-prog-fill {
+    height: 100%;
+    border-radius: 20px;
+    background: #fff;
+    width: 25%; /* overridden inline via t-attf-style */
+    transition: width .4s ease;
+}
+
+.hd-prog-box {
+    width: 100px;
+    height: 100px;
+    border: 1px solid rgba(255, 255, 255, .25);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, .1);
+    flex-shrink: 0;
+    margin-left: 16px;
+    text-align: center;
+}
+
+.hd-prog-box h3 {
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    line-height: 1;
+}
+
+.hd-prog-box span {
+    font-size: 12px;
+    color: #fff;
+    opacity: .85;
+    margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════
+   CHECKLIST CARD
+═══════════════════════════════════════════════ */
+.hd-checklist-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.hd-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.hd-card-head h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hd-card-head p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.hd-req-pill {
+    background: #fff7ed;
+    color: #c2410c;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Kanban override — remove default kanban chrome */
+.hd-checklist-card .o_kanban_renderer,
+.hd-checklist-card .o_kanban_group,
+.hd-checklist-card .o_view_controller {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.hd-checklist-card .o_kanban_record {
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* CHECKLIST ITEM */
+.hd-ci {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.hd-ci:last-child {
+    border-bottom: none;
+}
+
+.hd-ci.hd-ci-done {
+    background: #f0fdf4;
+}
+
+.hd-ci-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #64748b;
+    flex-shrink: 0;
+}
+
+.hd-ci-circle.hd-ci-done-c {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: #fff;
+}
+
+.hd-ci-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.hd-ci-body h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hd-ci-body p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 3px;
+    line-height: 1.5;
+}
+
+.hd-pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    white-space: nowrap;
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.hd-pill-done {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.hd-pill-req {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+/* CARD FOOTER */
+.hd-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+}
+
+.hd-card-footer h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hd-card-footer p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 3px;
+}
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════ */
+.hd-btn-primary {
+    background: #ec4899;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background .15s;
+}
+
+.hd-btn-primary:hover {
+    background: #db2777;
+}
+
+.hd-btn-light {
+    background: #fff;
+    color: #111827;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+
+.hd-btn-light:hover {
+    opacity: .85;
+}
+
+/* ═══════════════════════════════════════════════
+   RIGHT SIDEBAR CARDS
+═══════════════════════════════════════════════ */
+.hd-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hd-sc-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.hd-sc-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px;
+}
+
+.hd-sc-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 16px;
+}
+
+/* BENEFIT ITEMS */
+.hd-ben-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.hd-ben-last {
+    margin-bottom: 0;
+}
+
+.hd-ben-ico {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #fce7f3;
+    color: #ec4899;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.hd-ben-item h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.hd-ben-item p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+    line-height: 1.5;
+}
+
+/* STAT ROWS */
+.hd-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.hd-stat-row:last-child {
+    margin-bottom: 0;
+}
+
+.hd-stat-row h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.hd-stat-row p {
+    font-size: 11px;
+    margin-top: 2px;
+    opacity: .7;
+}
+
+.hd-stat-row span {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.hd-st-blue {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.hd-st-green {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.hd-st-purple {
+    background: #faf5ff;
+    color: #7e22ce;
+}
+
+/* HELP CARD */
+.hd-help-card {
+    background: #0f172a;
+    color: #fff;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.hd-help-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: #fff;
+}
+
+.hd-help-card p {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+/* ═══════════════════════════════════════════════
+   ODOO FORM OVERRIDES
+   Strip default sheet padding/shadow so our
+   custom layout takes full control
+═══════════════════════════════════════════════ */
+.hr_dashboard_form .o_form_sheet {
+    padding: 0 !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+}
+
+.hr_dashboard_form .o_FormRenderer_chatterContainer,
+.hr_dashboard_form .o_form_statusbar {
+    display: none !important;
+}
+
+.o_progressbar {
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255,255,255,.2);
+}
+
+.o_progress {
+    background: white !important;
+}
+
+/* .oe_kanban_card {
+
+    border: 1px solid rgba(249, 58, 153, 0.826) !important;;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.95),
+            rgba(252,231,243,.92)
+        )  !important;;
+
+    backdrop-filter: blur(10px);
+
+    border-radius: 32px !important;;
+
+    box-shadow:
+        0 10px 40px rgba(236,72,153,.12);
+} */
+
+/* .o_hmo_marketplace_kanban { */
+
+    .custom_hmo_card {
+
+        border: 1px solid #ec4899 !important;
+
+        border-radius: 15px !important;
+
+        background: white;
+
+        padding: 28px;
+
+        overflow: hidden;
+
+        transition: all .3s ease;
+
+        box-shadow:
+            0 4px 12px rgba(236,72,153,.08);
+
+        min-height: 20px;
+        width: 100%;
+
+    }
+
+    .custom_hmo_card:hover {
+
+        transform: translateY(-4px);
+
+        box-shadow:
+            0 14px 32px rgba(236,72,153,.18);
+
+        border-color: #db2777 !important;
+    }
+
+.o_field_many2many_tags .o_tag_badge_text {
+    color: white !important;
+    font-size: 11px !important;
+}
+
+/* } */

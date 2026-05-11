@@ -1,3 +1,14 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_insurance_user,hr_insurance.line.user,model_hr_insurance,,1,1,1,1
-
+hmo_checklist_user,HMO CHECKLIST USER,model_hmo_checklist,,1,1,1,1
+hmo_hospital_user,HMO HOSPITAL USER,model_hmo_hospital,,1,1,1,0
+hmo_hospital_manager,HMO HOSPITAL MANAGER,model_hmo_hospital,base.group_system,1,1,1,1
+hmo_marketplace_user,HMO MARKET PLACE USER,model_hmo_marketplace,,1,1,1,1
+hmo_marketplace_manager,HMO MARKET PLACE MANAGER,model_hmo_marketplace,base.group_system,1,1,1,0
+access_hmo_tags_user,hmo_tags.line.user,model_hmo_tags,,1,1,1,1
+access_hmo_plan_user,hmo_plan.line.user,model_hmo_plan,,1,1,1,1
+hmo_enrollment_user,HMO ENROLLMENT ROLE USER,model_hmo_enrollment,base.group_user,1,1,1,0
+hmo_enrollment_manager,HMO ENROLLMENT ROLE MANAGER,model_hmo_enrollment,base.group_system,1,1,1,1
+access_hmo_plan_value_user,hmo_plan_value.line.user,model_hmo_plan_value,,1,1,1,1
+access_hmo_setting_user,hmosetting.user,model_hmo_setting,,1,1,1,1
+hr_insurance.access_hr_grade,access_hr_grade,hr_insurance.model_hr_grade,base.group_user,1,0,0,0

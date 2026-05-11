@@ -29,12 +29,12 @@
         'security/ir.model.access.csv',
         'views/hr_administration_menu.xml',
     ],
-    'assets': {
-        'web.assets_backend': [
-            'hr_administration/static/src/css/dashboard.css',
-            'hr_administration/static/src/js/dashboard.js',
-        ],
-    },
+    # 'assets': {
+    #     'web.assets_backend': [
+    #         'hr_administration/static/src/css/dashboard.css',
+    #         # 'hr_administration/static/src/js/dashboard.js',
+    #     ],
+    # },
     'installable': True,
     'auto_install': False,
     'application': True,

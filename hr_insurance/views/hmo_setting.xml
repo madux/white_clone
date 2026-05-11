@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_setting_tree" model="ir.ui.view">
+        <field name="name">hmo.setting.tree</field>
+        <field name="model">hmo.setting</field>
+        <field name="arch" type="xml">
+            <tree
+                string="Setting"
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name" optional="show"/>
+                <field name="sequence" optional="show"/>
+                <!-- <button name="set_done"
+                                type="object"
+                                string="Mark as done"
+                                class="btn-sm btn-success"/> -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_setting_search" model="ir.ui.view">
+        <field name="name">hmo.setting.search</field>
+        <field name="model">hmo.setting</field>
+        <field name="arch" type="xml">
+            <search string="Setting search">
+                <field name="name" string="Setting "/>
+                <field name="sequence"/>
+                <separator/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_setting_form" model="ir.ui.view">
+        <field name="name">hmo.setting.form</field>
+        <field name="model">hmo.setting</field>
+        <field name="arch" type="xml">
+            <form string="HMO Setting" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Setting Details</span>
+                    </div>
+                    <div class="ash-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" readonly="0"/> 
+                            </group>
+
+                            <group>
+                                <field name="sequence" required="1"/>
+                                <field name="active" widget="boolean_toggle"/>
+                                <field name="eligibilty_ids" widget="many2many_tags"/>
+                                <field name="hmo_ids" widget="many2many_tags"/>
+                            </group>
+                        </group>
+                    </div>
+                    <!-- <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Eligibility</span>
+                        <notebook> 
+                            <page string="📋 Eligibility" name="eligibilty_ids">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Eligibility</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="eligibilty_ids"
+                                            widget="many2many">
+                                            <tree editable="bottom">
+                                                <field name="name" readonly="0"/> 
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                            </page>
+                        </notebook>
+                    </div>
+
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">HMO  Providers</span>
+                        <notebook> 
+                            <page string="📝 HMO Providers details" name="hmo_prov">
+                                <field name="hmo_ids"
+                                        widget="many2many" readonly="0">
+                                    <tree>
+                                        <field name="name"/>
+                                        <field name="email" string="Email" optional="show" readonly="0"/>
+                                        <field name="phone" string="Phone" optional="show" readonly="0"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </div> -->
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_setting" model="ir.actions.act_window">
+        <field name="name">HMO Setting</field>
+        <field name="res_model">hmo.setting</field>
+        <field name="view_mode">form</field>
+        <field name="search_view_id" ref="view_hmo_setting_search"/>
+        <field name="context">{}</field>
+        <field name="target">new</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new Setting
+            </p>
+        </field>
+    </record> 
+
+    <record id="action_hmo_tree_Setting" model="ir.actions.act_window">
+        <field name="name">HMO Setting</field>
+        <field name="res_model">hmo.setting</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_hmo_setting_tree"/>
+        <field name="context">{}</field>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new Setting
+            </p>
+        </field>
+    </record> 
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_hmo_setting"
+        name="HMO Setting"
+        action="action_hmo_tree_Setting"
+        sequence="50"
+        parent="hr_insurance.menu_hmo_configuration"
+        />
+
+</odoo>

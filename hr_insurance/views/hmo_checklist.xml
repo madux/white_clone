@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_checklist_tree" model="ir.ui.view">
+        <field name="name">hmo.checklist.tree</field>
+        <field name="model">hmo.checklist</field>
+        <field name="arch" type="xml">
+            <tree
+                string="checklist"
+                decoration-muted="state == 'required'"
+                decoration-success="state == 'done'"
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name" optional="show"/>
+                <field name="sequence" optional="show"/> 
+                <field name="state" optional="hide"/>
+
+                <!-- <button name="set_done"
+                                type="object"
+                                string="Mark as done"
+                                class="btn-sm btn-success"/> -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_checklist_search" model="ir.ui.view">
+        <field name="name">hmo.checklist.search</field>
+        <field name="model">hmo.checklist</field>
+        <field name="arch" type="xml">
+            <search string="checklist search">
+                <field name="name" string="checklist ID"/>
+                <field name="sequence"/>
+                <separator/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_checklist_form" model="ir.ui.view">
+        <field name="name">hmo.checklist.form</field>
+        <field name="model">hmo.checklist</field>
+        <field name="arch" type="xml">
+            <form string="HMO checklist" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Checklist Details</span>
+                    </div>
+                    <div class="ash-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" readonly="0"/> 
+                                <field name="model_id" string="App" required="1" 
+                                domain="[('name', 'ilike', 'CLEONHR')]"/>
+                                <field name="view_type"/>
+                                <field name="state" widget="badge"
+                                        decoration-warning="state == 'required'"
+                                        decoration-success="state == 'done'"/>
+                            </group>
+
+                            <group>
+                                <field name="sequence" required="1"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_tree_checklist" model="ir.actions.act_window">
+        <field name="name">HMO checklist</field>
+        <field name="res_model">hmo.checklist</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_hmo_checklist_tree"/>
+        <field name="context">{}</field>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new checklist
+            </p>
+        </field>
+    </record> 
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_hmo_checklist"
+        name="Checklist"
+        action="action_hmo_tree_checklist"
+        sequence="10"
+        parent="hr_insurance.menu_hmo_configuration"
+        />
+
+</odoo>

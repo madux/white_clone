@@ -1,0 +1,255 @@
+// ============================================================
+//  Company Calendar — Custom UI Styles
+// ============================================================
+
+$cc-pink:       #e91e8c;
+$cc-pink-light: #fce4f3;
+$cc-pink-mid:   #f8c8e8;
+$cc-pink-dark:  #c0156f;
+$cc-gray-100:   #f3f4f6;
+$cc-gray-200:   #e5e7eb;
+$cc-gray-500:   #6b7280;
+$cc-gray-700:   #374151;
+$cc-gray-900:   #111827;
+$cc-sidebar-w:  220px;
+$cc-radius:     8px;
+
+// ── LAYOUT ───────────────────────────────────────────────────
+//
+//  o_calendar_container has these direct children (in DOM order):
+//    1. o_calendar_header          (Odoo)
+//    2. o_cc_admin_sidebar         (ours, injected via position="inside")
+//    3. o_calendar_renderer        (Odoo)
+//    4. o_calendar_sidebar_container (Odoo)
+//
+//  We use flex-wrap so the header takes the full first row,
+//  and the remaining three share the second row side by side.
+
+.o_calendar_container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-content: flex-start;
+    align-items: stretch;
+    height: 100%;
+    overflow: hidden;
+
+    // ── Row 1: header spans full width ──
+    > .o_calendar_header {
+        flex: 0 0 100% !important;
+        width: 100% !important;
+        order: 0;
+        flex-wrap: nowrap !important;   // items inside header stay on one line
+    }
+
+    // ── Row 2: our sidebar (left) ──
+    > .o_cc_admin_sidebar {
+        flex: 0 0 #{$cc-sidebar-w} !important;
+        width: #{$cc-sidebar-w} !important;
+        order: 1;
+        overflow-y: auto;
+        border-right: 1px solid $cc-gray-200;
+        background: #fff;
+        display: flex !important;
+        flex-direction: column;
+    }
+
+    // ── Row 2: calendar renderer (centre, fills remaining space) ──
+    > .o_calendar_renderer {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        order: 2;
+        overflow: hidden;
+        display: block !important;
+    }
+
+    // ── Row 2: Odoo's right sidebar (attendees / date-picker) ──
+    > .o_calendar_sidebar_container {
+        flex: 0 0 auto !important;
+        order: 3;
+        overflow-y: auto;
+        display: block !important;
+    }
+}
+
+// ── ADMIN SIDEBAR INTERNALS ───────────────────────────────────
+
+.o_cc_sidebar_header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid $cc-gray-100;
+    flex-shrink: 0;
+}
+
+.o_cc_header_dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: $cc-pink;
+    flex-shrink: 0;
+}
+
+.o_cc_header_title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+    color: $cc-gray-700;
+    text-transform: uppercase;
+    flex: 1;
+}
+
+.o_cc_collapse_btn {
+    background: none;
+    border: 1px solid $cc-gray-200;
+    border-radius: 5px;
+    color: $cc-gray-500;
+    padding: 2px 6px;
+    font-size: 11px;
+    line-height: 1;
+    &:hover { background: $cc-gray-100; }
+}
+
+.o_cc_nav {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow-y: auto;
+}
+
+.o_cc_nav_item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: $cc-radius;
+    cursor: pointer;
+    text-decoration: none !important;
+    color: $cc-gray-700;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover {
+        background: $cc-gray-100;
+        color: $cc-gray-900;
+        .o_cc_nav_arrow { opacity: 1; }
+    }
+}
+
+.o_cc_nav_active {
+    background: $cc-pink-light !important;
+    color: $cc-pink !important;
+    .o_cc_nav_icon { background: $cc-pink-mid; color: $cc-pink; }
+    .o_cc_nav_badge { background: $cc-pink-mid; color: $cc-pink-dark; }
+    .o_cc_nav_arrow { opacity: 1; }
+}
+
+.o_cc_nav_icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: $cc-gray-100;
+    color: $cc-gray-500;
+    flex-shrink: 0;
+}
+
+.o_cc_nav_label {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.o_cc_nav_badge {
+    background: $cc-gray-200;
+    color: $cc-gray-700;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 1px 6px;
+}
+
+.o_cc_nav_arrow {
+    font-size: 9px;
+    color: $cc-gray-500;
+    opacity: 0;
+    transition: opacity 0.12s;
+}
+
+.o_cc_sidebar_footer {
+    padding: 10px 16px;
+    border-top: 1px solid $cc-gray-100;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.o_cc_footer_label {
+    font-size: 10px;
+    font-weight: 600;
+    color: $cc-gray-700;
+}
+
+.o_cc_footer_status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: $cc-gray-500;
+}
+
+.o_cc_status_dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+.o_cc_status_green { background: #22c55e; }
+
+// ── TOP BAR BUTTONS ───────────────────────────────────────────
+
+.o_cc_btn_pink {
+    background: $cc-pink;
+    color: #fff !important;
+    border: none;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    white-space: nowrap;
+    &:hover, &:focus { background: $cc-pink-dark; color: #fff; }
+}
+
+.o_cc_btn_pink_outline {
+    background: $cc-pink-light;
+    color: $cc-pink;
+    border: 1px solid $cc-pink-mid;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 11px;
+    white-space: nowrap;
+    &:hover, &:focus { background: $cc-pink-mid; color: $cc-pink-dark; }
+}
+
+.o_cc_btn_light {
+    background: #fff;
+    color: $cc-gray-700;
+    border: 1px solid $cc-gray-200;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 11px;
+    white-space: nowrap;
+    &:hover, &:focus { background: $cc-gray-100; color: $cc-gray-900; }
+}

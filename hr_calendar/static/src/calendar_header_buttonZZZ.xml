@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<templates xml:space="preserve">
+
+    <t t-inherit="web.CalendarController" t-inherit-mode="extension" owl="1">
+
+       <xpath expr="//button[contains(@class, 'o_calendar_button_today')]" position="after">
+
+            <button
+                class="btn btn-warning ms-2"
+                t-on-click="onCustomAction"
+            >
+                Sync
+            </button>
+
+        </xpath>
+
+        <!-- <xpath expr="//div[contains(@class, 'o_calendar_navigation_buttons')]"
+               position="after">
+
+            <div class="d-flex align-items-center gap-2 ms-2">
+
+                <button class="btn btn-primary btn-sm"
+                        t-on-click="openLeaveView">
+
+                    <i class="fa fa-plus me-1"/>
+
+                    New Leave
+
+                </button>
+
+                <button class="btn btn-secondary btn-sm"
+                        t-on-click="openAllocationView">
+
+                    <i class="fa fa-list me-1"/>
+
+                    Allocations
+
+                </button>
+
+            </div>
+
+        </xpath> -->
+
+
+
+    </t>
+
+</templates>

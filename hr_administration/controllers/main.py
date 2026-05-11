@@ -3,14 +3,72 @@ import json
 from datetime import date, datetime, timedelta
 from odoo import http
 from odoo.http import request
-
+import logging
+from odoo import fields
+from odoo.tools import file_path
+from odoo.modules.module import get_resource_path
 
 class HRAdministrationController(http.Controller):
 
-    @http.route('/hr_administration', type='http', auth='user', website=False)
-    def dashboard_index(self, **kwargs):
-        """Render the HR Administration dashboard page."""
-        return request.render('hr_administration.dashboard_template', {})
+
+    # @http.route('/hr_administration', type='http', auth='user', website=False)
+    # def dashboard_index(self, **kwargs):
+    #     """Render the HR Administration dashboard page."""
+    #     return request.render('hr_administration.dashboard_template', {})
+
+    @http.route('/hr-employee-admin', type='http', auth='user', website=False)
+    def dashboard_index(self, **kw):
+        # Get actual file path inside the module
+        file_path = get_resource_path(
+            'hr_administration',  # your module name
+            'static/src/html',          # folder path inside module
+            'employee_admin_view.html'          # file name
+        )
+        if not file_path:
+            return "HTML file not found."
+
+        # Read HTML file content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        user = request.env.user
+        data = {
+            'user_id':   user.id,
+            'user_name': user.name,
+            'user_email': user.email or '',
+        }
+        # Return raw HTML content
+        return request.make_response(
+            html,
+            headers=[('Content-Type', 'text/html'),('defaultData', json.dumps(data))],
+            
+        )
+
+    @http.route('/hr-employee-admin', type='http', auth='user')
+    def dashboard(self, **kw):
+        file_path = get_resource_path(
+            'hr_administration',  # your module name
+            'static/src/html',          # folder path inside module
+            'employee_admin_view.html'          # file name
+        )
+        with open(file_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+    
+        user = request.env.user
+        data_script = (
+            '<script>window.__HR_DATA__ = ' +
+            json.dumps({
+                'user_id':    user.id,
+                'user_name':  user.name,
+                'user_email': user.email or '',
+            }) +
+            ';</script>'
+        )
+        # Inject before </head>
+        html = html.replace('</head>', data_script + '</head>', 1)
+        return request.make_response(
+            html,
+            headers=[('Content-Type', 'text/html; charset=utf-8')]
+        )
 
     # ─── Key Metrics ──────────────────────────────────────────────────────────
 
@@ -68,7 +126,7 @@ class HRAdministrationController(http.Controller):
         except Exception:
             hmo_enrollments = env['hr.employee'].search_count([
                 ('active', '=', True),
-                ('private_medical_examination', '!=', False),
+                #TODO ('private_medical_examination', '!=', False),
             ])
 
         # Assets overdue — use maintenance.equipment or fallback

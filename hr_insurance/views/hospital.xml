@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_hospital_tree" model="ir.ui.view">
+        <field name="name">hmo.hmo_hospital.tree</field>
+        <field name="model">hmo.hospital</field>
+        <field name="arch" type="xml">
+            <tree
+                string="Hospital"
+                decoration-muted="is_registered == False"
+                decoration-success="is_registered"
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="hospital_name" string="Name" optional="show"/>
+                <field name="is_registered" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_hospital_search" model="ir.ui.view">
+        <field name="name">hmo.hospital.search</field>
+        <field name="model">hmo.hospital</field>
+        <field name="arch" type="xml">
+            <search string="hospital search">
+                <field name="hospital_name" string="Name"/>
+                <field name="is_registered"/>
+                <field name="hospital_no"/>
+                <filter string="Registered" name="is_registered" domain="[('is_registered','=', True)]"/>
+                <filter string="Not Registered" name="is_registered" domain="[('is_registered','=', False)]"/>
+                <separator/>
+                <!-- <filter string="My Requests" name="my_requests"
+                        domain="[('responsible_id','=',uid)]"/> -->
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_hospital_form" model="ir.ui.view">
+        <field name="name">hmo.hospital.form</field>
+        <field name="model">hmo.hospital</field>
+        <field name="arch" type="xml">
+            <form string="HMO Market Place" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                 
+                <sheet>
+                     
+                    <!-- ══ HERO HEADER BANNER ══ -->
+                    <div class="qms-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="qms-hero-ref">
+                                    <field name="hospital_name" readonly="1" class="d-inline"/>
+                                </div>
+                                <div class="qms-hero-sub">HMO hospital</div>
+                                <div class="qms-badge-row">
+                                    <field name="is_registered" widget="boolean_toggle"/>
+                                </div>
+                            </div>
+                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                <div style="margin-top:4px;">
+                                    Responsible: <field name="create_uid" readonly="1"
+                                                        style="color:#FFC940; font-weight:600;"/></div>
+                                                    
+                                 
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══ KPI STRIP ══ -->
+                    <div class="qms-kpi-strip">
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">Code</div>
+                            <div class="qms-kpi-value">
+                                <field name="code" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">Hospital #</div>
+                            <div class="qms-kpi-value">
+                                <field name="hospital_no" readonly="1"/>
+                            </div>
+                        </div>
+                         
+                    </div>
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="qms-card-title">Details</span>
+                        </div>
+                        <div class="qms-card-body">
+                            <group>
+                                <group col="4">
+                                    <field name="hospital_name" placeholder="HMEDIC" readonly="0"/>
+                                    <field name="hospital_no" placeholder="HP0919" readonly="0"/>
+                                    <field name="email" placeholder="Madukachris@gmail.com" readonly="0"/>
+                                    <field name="phone" size="14" placeholder="=234-706795392" readonly="0" widget="phone"/>
+                                    <field name="street" placeholder="No 92 Godwin Maduka Street" readonly="0"/>
+                                    <field name="country_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                    <field name="state_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                </group>
+
+                                <!-- <div class="qms-divider"/> -->
+                                <group>
+                                    <field name="is_registered" widget="boolean_toggle"/>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </group>
+                            </group>
+                        </div>
+                    </div> 
+
+                </sheet>
+                <!-- ── Chatter ── -->
+                <!-- <chatter/> -->
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_hospital" model="ir.actions.act_window">
+        <field name="name">HMO hospital</field>
+        <field name="res_model">hmo.hospital</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_hmo_hospital_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new hospital
+            </p>
+        </field>
+    </record> 
+
+    <record id="view_hmo_hospital_kanban" model="ir.ui.view">
+    <field name="name">hmo.hospital.kanban</field>
+    <field name="model">hmo.hospital</field>
+
+    <field name="arch" type="xml">
+
+        <kanban class="o_hmo_marketplace_kanban"
+                create="1"
+                records_draggable="0">
+
+            <field name="hospital_name"/>
+            <field name="hospital_no"/>
+            <field name="street"/>
+            <field name="phone"/>
+            <field name="email"/>
+            <field name="state_id"/>
+            <!-- CARD TEMPLATE -->
+            <templates>
+
+                <t t-name="kanban-box">
+
+                    <div class="oe_kanban_card provider-card">
+
+                        <div class="provider-top">
+
+                            <div class="provider-brand pink">
+                                <field name="code" readonly="1"/>
+                            </div>
+
+                            <div class="provider-info">
+
+                                <h3>
+                                    <field name="hospital_name" readonly="1"/>
+                                </h3>
+
+                                <p>
+                                    📍
+                                    <field name="street" readonly="1"/>,
+                                    <field name="state_id" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    📞
+                                    <field name="phone" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    ✉
+                                    <field name="email" readonly="1"/>
+                                </p>
+
+                            </div>
+
+                            <div class="verified">
+                                🛡
+                            </div>
+
+                        </div>
+
+                        <div class="card-footer">
+                            <button name="open_record"
+                                    type="object"
+                                    class="btn btn-primary-hmo">
+                                View Details
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </t>
+
+            </templates>
+
+        </kanban>
+
+    </field>
+</record> 
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_hmo_hospital"
+        name="Hospital"
+        action="action_hmo_hospital"
+        sequence="41"
+        parent="menu_hr_insurance_hmo"
+        />
+
+    
+
+</odoo>

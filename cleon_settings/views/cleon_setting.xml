@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_cleon_setting_tree" model="ir.ui.view">
+        <field name="name">cleon.setting.tree</field>
+        <field name="model">cleon.setting</field>
+        <field name="arch" type="xml">
+            <tree
+                string="Cleon Setup" 
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name" optional="show"/>
+                <field name="sequence" optional="show"/> 
+                <!-- <button name="set_done"
+                                type="object"
+                                string="Mark as done"
+                                class="btn-sm btn-success"/> -->
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_cleon_setting_search" model="ir.ui.view">
+        <field name="name">cleon.setting.search</field>
+        <field name="model">cleon.setting</field>
+        <field name="arch" type="xml">
+            <search string="Cleon Setup search">
+                <field name="name" string="Cleon Setup ID"/>
+                <field name="sequence"/>
+                <separator/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_cleon_setting_form" model="ir.ui.view">
+        <field name="name">cleon.setting.form</field>
+        <field name="model">cleon.setting</field>
+        <field name="arch" type="xml">
+            <form string="Cleon Role Setup" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Cleon Setup Details</span>
+                    </div>
+                    <div class="ash-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" readonly="0"/> 
+                                <field name="description" required="1" widget="text"/>
+                            </group>
+
+                            <group>
+                                <field name="sequence" required="1"/>
+                                <field name="model_id" required="1"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                        <notebook> 
+                            <page string="📋 Roles" name="access_right_ids">
+                                <div class="qms-card" style="margin-bottom:0;">
+                                    <div class="qms-card-header">
+                                        <div class="qms-card-icon" style="background:#DC3545;">
+                                            <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                        </div>
+                                        <span class="qms-card-title">Roles</span>
+                                    </div>
+                                    <div class="qms-card-body" style="padding:0;">
+                                        <field name="access_right_ids"
+                                            widget="one2many_list" readonly="0">
+                                            <tree editable="bottom">
+                                                <field name="id" optional="hide" readonly="0"/>
+                                                <field name="name" readonly="0"/>
+                                                <field name="model_id" readonly="1"/>
+                                                <field name="group_id" readonly="0"/>
+                                                <field name="perm_read" readonly="0"/>
+                                                <field name="perm_write" readonly="0"/>
+                                                <field name="perm_create" readonly="0"/>
+                                                <field name="perm_unlink" readonly="0"/>
+                                            </tree>
+                                        </field>
+                                    </div>
+                                </div>
+                                
+                            </page>
+
+                        </notebook>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_tree_Cleon_setup" model="ir.actions.act_window">
+        <field name="name">HMO Cleon Role Setup</field>
+        <field name="res_model">cleon.setting</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_cleon_setting_tree"/>
+        <field name="context">{}</field>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new Cleon Setup
+            </p>
+        </field>
+    </record> 
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_cleon_setting"
+        name="Cleon (Role) Setup"
+        action="action_hmo_tree_Cleon_setup"
+        sequence="10"
+        />
+        <!-- parent="hr_insurance.menu_hmo_configuration" -->
+
+
+</odoo>

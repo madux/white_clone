@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_marketplace_tree" model="ir.ui.view">
+        <field name="name">hmo.marketplace.tree</field>
+        <field name="model">hmo.marketplace</field>
+        <field name="arch" type="xml">
+            <tree
+                string="Marketplace"
+                decoration-muted="is_registered == False"
+                decoration-success="is_registered"
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name" optional="show"/>
+                <field name="is_registered" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_marketplace_search" model="ir.ui.view">
+        <field name="name">hmo.marketplace.search</field>
+        <field name="model">hmo.marketplace</field>
+        <field name="arch" type="xml">
+            <search string="Marketplace search">
+                <field name="name" string="Reference"/>
+                <field name="is_registered"/>
+                <field name="total_hospital"/>
+                <filter string="Registered" name="is_registered" domain="[('is_registered','=', True)]"/>
+                <filter string="Not Registered" name="is_registered" domain="[('is_registered','=', False)]"/>
+                <separator/>
+                <!-- <filter string="My Requests" name="my_requests"
+                        domain="[('responsible_id','=',uid)]"/> -->
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_marketplace_form" model="ir.ui.view">
+        <field name="name">hmo.marketplace.form</field>
+        <field name="model">hmo.marketplace</field>
+        <field name="arch" type="xml">
+            <form string="HMO Market Place" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                 
+                <sheet>
+                     
+                    <!-- ══ HERO HEADER BANNER ══ -->
+                    <div class="qms-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="qms-hero-ref">
+                                    <field name="name" readonly="1" class="d-inline"/>
+                                </div>
+                                <div class="qms-hero-sub">HMO MarketPlace</div>
+                                <div class="qms-badge-row">
+                                    <field name="is_registered" widget="boolean_toggle"/>
+                                </div>
+                            </div>
+                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                <div style="margin-top:4px;">
+                                    Responsible: <field name="create_uid" readonly="1"
+                                                        style="color:#FFC940; font-weight:600;"/></div>
+                                                    
+                                 
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══ KPI STRIP ══ -->
+                    <div class="qms-kpi-strip">
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">Hospitals</div>
+                            <div class="qms-kpi-value">
+                                <field name="total_hospital" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">Employees</div>
+                            <div class="qms-kpi-value">
+                                <field name="total_employee"/>
+                            </div>
+                        </div>
+                        <div class="qms-kpi-box kpi-info">
+                            <div class="qms-kpi-label">Expiry date</div>
+                            <div class="qms-kpi-value">
+                                <field name="date_expiry" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="qms-card-title">Details</span>
+                        </div>
+                        <div class="qms-card-body">
+                            <group col="4">
+                                <field name="name" placeholder="Add description" readonly="0"/>
+                                <field name="email" placeholder="Madukachris@gmail.com" readonly="0"/>
+                                <field name="phone" placeholder="+234902929999" readonly="0" size="14" widget="phone"/>
+                                <field name="street" placeholder="No 92 Godwin Maduka Street" readonly="0"/>
+                                <field name="country_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                                <field name="state_id" readonly="0" options="{'no_create': True, 'no_quick_create': True, 'no_open': True}"/>
+                            </group>
+                            <div class="qms-divider"/>
+                            <group col="4">
+                                <field name="hmo_tag_ids" widget="many2many_tags"/>
+                                <field name="date_expiry"/>
+                            </group>
+                        </div>
+                    </div> 
+
+                    <!-- ══ NOTEBOOKS / TABS ══ -->
+                    <notebook> 
+                        <page string="📋 Hospitals" name="hospital_line">
+                            <div class="qms-card" style="margin-bottom:0;">
+                                <div class="qms-card-header">
+                                    <div class="qms-card-icon" style="background:#DC3545;">
+                                        <svg viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <span class="qms-card-title">Section line</span>
+                                </div>
+                                <div class="qms-card-body" style="padding:0;">
+                                    <field name="hmo_hospital_ids"
+                                           widget="many2many">
+                                        <tree editable="bottom">
+                                            <field name="hospital_name" readonly="0"/>
+                                            <field name="hospital_no" optional="hide" readonly="1"/>
+                                            <field name="phone" readonly="0"/>
+                                            <field name="email" readonly="0"/>
+                                            <field name="street" readonly="0" optional="show"/>
+                                        </tree>
+                                    </field>
+                                </div>
+                            </div>
+                             
+                        </page>
+
+                        <page string="📝 Employee details" name="employees">
+                            <field name="hmo_employee_ids"
+                                    widget="many2many" readonly="0">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="work_email" string="Email" optional="show" readonly="0"/>
+                                    <field name="work_phone" string="Phone" optional="show" readonly="0"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <!-- ── Chatter ── -->
+                <!-- <chatter/> -->
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_marketplace" model="ir.actions.act_window">
+        <field name="name">HMO Market place</field>
+        <field name="res_model">hmo.marketplace</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_hmo_marketplace_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No HMO found
+            </p>
+            <p>
+                Create a new HMO
+            </p>
+        </field>
+    </record> 
+
+    <record id="view_hmo_marketplace_kanban" model="ir.ui.view">
+    <field name="name">hmo.marketplace.kanban</field>
+    <field name="model">hmo.marketplace</field>
+
+    <field name="arch" type="xml">
+
+        <kanban class="o_hmo_marketplace_kanban"
+                create="1"
+                records_draggable="0">
+
+            <field name="name"/>
+            <field name="street"/>
+            <field name="phone"/>
+            <field name="email"/>
+            <field name="state_id"/>
+            <field name="total_hospital"/>
+            <field name="hmo_tag_ids"/>
+
+            <!-- STATIC HEADER -->
+            <header>
+                <div class="marketplace-header">
+
+                    <div class="topbar">
+
+                        <div>
+                            <h1>HMO Marketplace</h1>
+
+                            <p>
+                                Browse and compare health insurance providers
+                            </p>
+                        </div>
+
+                        <div class="top-actions">
+                            <button type="object" name="not_open_button"
+                                    class="btn-hmo btn-primary-hmo">
+                                ＋ Onboard Your HMO
+                            </button>
+
+                            <button type="object" name="not_open_button"
+                                    class="btn-hmo btn-outline-hmo">
+                                ⤴ Bulk Upload
+                            </button>
+
+                            <button name="not_open_button" type="object"
+                                    class="btn-hmo btn-light-hmo">
+                                🛡 Take Tour
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <div class="toolbar">
+
+                        <div class="search-box">
+                            🔍
+                            <!-- <input type="text" placeholder="Search HMO providers..."/> -->
+                        </div>
+
+                        <div class="toolbar-actions">
+                            <button name="not_open_button" type="object" class="icon-btn active">▦</button>
+                            <button name="not_open_button" type="object" class="icon-btn">☰</button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </header>
+
+            <!-- CARD TEMPLATE -->
+            <templates>
+
+                <t t-name="kanban-box">
+
+                    <div class="oe_kanban_card provider-card">
+
+                        <div class="provider-top">
+
+                            <div class="provider-brand pink">
+                                <field name="code" readonly="1"/>
+                            </div>
+
+                            <div class="provider-info">
+
+                                <h3>
+                                    <field name="name" readonly="1"/>
+                                </h3>
+
+                                <p>
+                                    📍
+                                    <field name="street" readonly="1"/>,
+                                    <field name="state_id" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    📞
+                                    <field name="phone" readonly="1"/>
+                                </p>
+
+                                <p>
+                                    ✉
+                                    <field name="email" readonly="1"/>
+                                </p>
+
+                            </div>
+
+                            <div class="verified">
+                                🛡
+                            </div>
+
+                        </div>
+
+                        <div class="tags">
+                            <field name="hmo_tag_ids"
+                                   widget="many2many_tags" readonly="1"/>
+                            <field name="hmo_plan_ids"
+                                   widget="one2many_list" readonly="1"/>
+                        </div>
+
+                        <div class="card-footer">
+
+                            <span>
+                                🏥
+                                <field name="total_hospital" readonly="1"/>
+                                hospitals
+                            </span>
+
+                            <button name="open_action_hmo_marketplace"
+                                    type="object"
+                                    class="btn btn-primary-hmo">
+                                View Details
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </t>
+
+            </templates>
+
+        </kanban>
+
+    </field>
+</record>
+    
+
+    <!-- <record id="action_hmo_marketplace_server" model="ir.actions.server">
+        <field name="name">Open HMO</field>
+        <field name="model_id" ref="model_hmo_marketplace"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['hr.insurance'].get_dashboard()
+        </field>
+    </record> -->
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_market_place"
+        name="HMO Market Place"
+        action="action_hmo_marketplace"
+        sequence="40"
+        groups="base.group_system"
+        />
+    
+
+</odoo>

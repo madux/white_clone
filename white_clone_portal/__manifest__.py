@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'White Clone Portal ',
+    'name': 'CLEONHR Portal ',
     'version': '17.0.1.0.0',
     'category': 'CRM',
     'summary': 'White Clone Portal with Dashboard',
     'description': """
-        White Clone Portal for Odoo 17 
+        White Cleon Portal for Odoo 17 
     """,
     'author': 'Custom',
     'depends': ['base', 'portal', 'website'],

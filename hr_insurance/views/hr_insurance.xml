@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hr_insurance_form" model="ir.ui.view">
+        <field name="name">hr.insurance.form</field>
+        <field name="model">hr.insurance</field>
+        <field name="arch" type="xml">
+            <form string="HR Dashboard" class="hr_dashboard_form">
+                <div class="o_hr_dashboard_layout">
+
+                    <!-- SIDEBAR -->
+                    <aside class="hd-sidebar">
+
+                        <div class="hd-sb-brand">
+                            <div class="hd-sb-mark">
+                                <i class="fa fa-user"/>
+                            </div>
+                            <div>
+                                <div class="hd-brand-name">HR Admin</div>
+                                <div class="hd-brand-sub">Workforce Management</div>
+                            </div>
+                        </div>
+
+                        <nav class="hd-sb-nav">
+                            <div class="hd-nav-label">Main</div>
+
+                            <a href="#" class="hd-nl active">
+                                <i class="fa fa-th-large"/>
+                                Dashboard
+                            </a>
+
+                            <a type="action" name="hr.open_view_employee_list_my" class="hd-nl">
+                                <i class="fa fa-users"/>
+                                Employees
+                                <span class="hd-nl-badge">24</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-shopping-cart"/>
+                                HMO Marketplace
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-building"/>
+                                Company HMO
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_hospital" class="hd-nl">
+                                <i class="fa fa-h-square"/>
+                                Hospital Listing
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_enrollment" class="hd-nl">
+                                <i class="fa fa-check-circle"/>
+                                Approvals
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-map-marker"/>
+                                Check-in
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-bar-chart"/>
+                                Reports
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-cog"/>
+                                Settings
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+
+                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                                <i class="fa fa-list-alt"/>
+                                Audit Logs
+                                <span class="hd-nl-badge">-</span>
+                            </a>
+                        </nav>
+
+                        <div class="hd-sb-footer">
+                            <div class="hd-user-card">
+                                <div class="hd-user-av">HR</div>
+                                <div>
+                                    <div class="hd-user-name">Administrator</div>
+                                    <div class="hd-user-role">HR Administrator</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </aside>
+
+                    <!-- MAIN CONTENT -->
+                    <div class="hd-main">
+                        <sheet>
+                            <div class="hd-inner">
+
+                                <!-- PAGE HEADER -->
+                                <div class="hd-pg-header">
+                                    <h1>Get Started</h1>
+                                    <p>Set up your health insurance program in minutes</p>
+                                </div>
+
+                                <div class="hd-two-col">
+
+                                    <!-- LEFT -->
+                                    <div class="hd-left">
+
+                                        <!-- WELCOME BANNER -->
+                                        <div class="hd-welcome">
+                                            <div class="hd-welcome-left">
+                                                <h2>Welcome, <field name="user_name" readonly="1"/>! 👋</h2>
+                                                <p>
+                                                    Let's set up your health insurance program.
+                                                    Follow the checklist below to ensure a smooth
+                                                    onboarding experience for your organization.
+                                                </p>
+                                                <div class="hd-prog-row">
+                                                    <span>Overall Progress</span>
+                                                    <span><field name="setup_progress" nolabel="1" readonly="1"/>%</span>
+                                                </div>
+                                                <!-- <div class="progress-bar">
+                                                    <div class="progress-fill"></div>
+                                                </div> -->
+                                                <div class="hd-prog-bar">
+                                                    <div class="hd-prog-fill"/>
+                                                </div>
+                                                <!-- <div class="hd-progress">
+                                                    <div class="hd-prog-fill">
+                                                        <div class="hd-progress-wrapper">
+                                                            <field name="setup_progress"
+                                                                widget="progressbar"
+                                                                options="{'max_value': 100}"/>
+                                                        </div>
+                                                    </div>
+                                                </div> -->
+                                            </div>
+                                            <div class="hd-prog-box">
+                                                <h3><field name="setup_range" readonly="1" nolabel="1"/></h3>
+                                                <span>Completed</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- CHECKLIST CARD -->
+                                        <div class="hd-checklist-card">
+
+                                            <div class="hd-card-head">
+                                                <div>
+                                                    <h3>Setup Checklist</h3>
+                                                    <p>Complete these steps to activate your health insurance program</p>
+                                                </div>
+                                                <span class="hd-req-pill">
+                                                    <strong><field name="setup_required" readonly="1"/></strong>
+                                                </span>
+                                            </div>
+
+                                            <field name="hmo_checklist_ids" readonly="1">
+                                                <kanban create="0">
+                                                    <field name="id"/>
+                                                    <field name="name"/>
+                                                    <field name="state"/>
+                                                    <field name="sequence"/>
+                                                    <field name="description"/>
+                                                    <templates>
+                                                        <!-- <t t-name="kanban-box"> -->
+                                                        <t t-name="kanban-box">
+                                                            <div class="oe_kanban_card custom_hmo_card">
+                                                                <div t-attf-class="hd-ci #{state == 'done' ? 'hd-ci-done' : ''}">
+
+                                                                    <t t-if="state == 'done'">
+                                                                        <div class="hd-ci-circle hd-ci-done-c">
+                                                                            <i class="fa fa-check"/>
+                                                                        </div>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <div class="hd-ci-circle">
+                                                                            <field name="sequence" readonly="1"/>
+                                                                        </div>
+                                                                    </t>
+
+                                                                    <div class="hd-ci-body">
+                                                                        <h4><field name="name" nolabel="1"/></h4>
+                                                                        <p><field name="description" nolabel="1"/></p>
+                                                                        <p><button name="action_open_setup"
+                                                                            type="object"
+                                                                            string="Setup"
+                                                                            class="btn-sm btn-info"/></p>
+                                                                        <!-- <p><button name="set_done"
+                                                                            type="object"
+                                                                            string="Mark Done"
+                                                                            invisible="state != 'required'"
+                                                                            class="btn-sm btn-success"/></p> -->
+
+                                                                    </div>
+
+                                                                    <!-- <t t-if="state == 'done'">
+                                                                        <span class="hd-pill hd-pill-done">✓ Done</span>
+                                                                    </t>
+                                                                    <t t-else="state == 'required'">
+                                                                        <span class="hd-pill hd-pill-req">x</span>
+                                                                    </t> -->
+                                                                    <field name="state" class="hd-pill hd-pill-done" widget="badge"
+                                                                    decoration-warning="state == 'required'"
+                                                                    decoration-success="state == 'done'"/>
+
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </templates>
+                                                </kanban>
+                                            </field>
+
+                                            <div class="hd-card-footer">
+                                                <div>
+                                                    <h4>Ready to begin?</h4>
+                                                    <p>Click the button to start the guided setup process</p>
+                                                </div>
+                                                <button class="hd-btn-primary">
+                                                    <i class="fa fa-plus"/> Get Started
+                                                </button>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                    <!-- RIGHT SIDEBAR -->
+                                    <div class="hd-right">
+
+                                        <!-- KEY BENEFITS -->
+                                        <div class="hd-sc-card">
+                                            <h3>Key Benefits</h3>
+                                            <p class="hd-sc-sub">Why setup health insurance?</p>
+
+                                            <div class="hd-ben-item">
+                                                <div class="hd-ben-ico">
+                                                    <i class="fa fa-line-chart"/>
+                                                </div>
+                                                <div>
+                                                    <h4>Streamlined Management</h4>
+                                                    <p>Centralized control over all health insurance operations</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="hd-ben-item">
+                                                <div class="hd-ben-ico">
+                                                    <i class="fa fa-shield"/>
+                                                </div>
+                                                <div>
+                                                    <h4>Enhanced Compliance</h4>
+                                                    <p>Stay compliant with health insurance regulations</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="hd-ben-item hd-ben-last">
+                                                <div class="hd-ben-ico">
+                                                    <i class="fa fa-pie-chart"/>
+                                                </div>
+                                                <div>
+                                                    <h4>Comprehensive Reporting</h4>
+                                                    <p>Detailed insights and analytics on coverage and utilization</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- QUICK STATS -->
+                                        <div class="hd-sc-card">
+                                            <h3>Quick Stats</h3>
+
+                                            <div class="hd-stat-row hd-st-blue">
+                                                <div>
+                                                    <h4>HMO Providers</h4>
+                                                    <p>Available in marketplace</p>
+                                                </div>
+                                                <span>
+                                                    <h6><field name="hmo_ids" widget="many2many_tags" nolabel="1" readonly="1"/></h6>
+                                                </span>
+                                            </div>
+
+                                            <div class="hd-stat-row hd-st-green">
+                                                <div>
+                                                    <h4>Registered HMOs</h4>
+                                                    <p>Your active registrations</p>
+                                                </div>
+                                                <span>
+                                                    <field name="registered_hmo" nolabel="1" readonly="1"/>
+                                                </span>
+                                            </div>
+
+                                            <div class="hd-stat-row hd-st-purple">
+                                                <div>
+                                                    <h4>Setup Time</h4>
+                                                    <p>Average completion</p>
+                                                </div>
+                                                <span>10m</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- HELP -->
+                                        <div class="hd-help-card">
+                                            <h3>Need Help?</h3>
+                                            <p>Our support team is here to assist you with the setup process.</p>
+                                            <button class="hd-btn-light">Contact Support</button>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                        </sheet>
+                    </div>
+
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SERVER ACTION + MENU
+    ══════════════════════════════════════════════════ -->
+    <record id="action_dashboard_server" model="ir.actions.server">
+        <field name="name">Open HMO</field>
+        <field name="model_id" ref="model_hr_insurance"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['hr.insurance'].get_dashboard()
+        </field>
+    </record>
+
+    <menuitem
+        id="menu_hr_insurance_hmo"
+        name="HMO"
+        action="action_dashboard_server"
+        sequence="1"
+        />
+
+    <menuitem
+        id="hr_insurance.menu_hmo_market_place"
+        parent="menu_hr_insurance_hmo"
+        name="HMO Market Place"
+        action="hr_insurance.action_hmo_marketplace"
+        sequence="40"
+        />
+    <menuitem
+        id="menu_hmo_configuration"
+        parent="menu_hr_insurance_hmo"
+        name="Configuration"
+        sequence="500"
+        />
+
+    <menuitem
+        id="cleon_settings.menu_hmo_cleon_setting"
+        name="Cleon (Role) Setup"
+        action="cleon_settings.action_hmo_tree_Cleon_setup"
+        sequence="20"
+        parent="menu_hmo_configuration"
+
+        />
+</odoo>

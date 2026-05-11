@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_enrollment_tree" model="ir.ui.view">
+        <field name="name">hmo.hmo_enrollment.tree</field>
+        <field name="model">hmo.enrollment</field>
+        <field name="arch" type="xml">
+            <tree
+                string="enrollment"
+                decoration-muted="state == 'draft'"
+                decoration-success="state == 'approved'"
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name" optional="show"/>
+                <field name="employee_id" optional="show"/>
+                <field name="hmo_id" optional="show"/>
+                <field name="plan_id" optional="show"/>
+                <field name="submit_date" optional="show"/>
+                <field name="reviewed_by" optional="show"/>
+                <field name="state" optional="show"/>
+                <button name="open_record"
+                                type="object"
+                                string="Review"
+                                class="btn-sm btn-success"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_enrollment_search" model="ir.ui.view">
+        <field name="name">hmo.enrollment.search</field>
+        <field name="model">hmo.enrollment</field>
+        <field name="arch" type="xml">
+            <search string="Enrollment search">
+                <field name="name" string="Enrollment ID"/>
+                <field name="employee_id"/>
+                <field name="hmo_id"/>
+                <field name="plan_id"/>
+                <field name="submit_date"/>
+                <field name="reviewed_by"/>
+                <field name="state"/>
+                <field name="email"/>
+                <field name="company_id"/>
+                <field name="gender"/>
+                <separator/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_enrollment_form" model="ir.ui.view">
+        <field name="name">hmo.enrollment.form</field>
+        <field name="model">hmo.enrollment</field>
+        <field name="arch" type="xml">
+            <form string="HMO enrollment" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ -->
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        </div>
+                        <span class="qms-card-title">Enrollment Details</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" placeholder="ENRO-0001" readonly="1"/>
+                                <field name="state" widget="badge"
+                                        decoration-danger="state == 'draft'"
+                                        decoration-info="state == 'review'"
+                                        decoration-warning="state == 'pending'"
+                                        decoration-success="state == 'approved'"/>
+                            </group>
+
+                            <group>
+                                <field name="reviewed_by" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="approved_by" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="active" widget="boolean_toggle"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Employee Information </span>
+                        <group>
+                            <group>
+                                <field name="employee_id" string="Full Name" placeholder="Maduka Sopulu" 
+                                readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="email" widget="badge" readonly="state != 'draft'"/>
+                                <field name="birthday" readonly="state != 'draft'"/>
+                            </group>
+
+                            <group>
+                                <field name="employee_number" string="Employee ID" placeholder="ENRO-0001" readonly="1"/>
+                                <field name="phone" force_save="1" readonly="state != 'draft'"/>
+                                <field name="gender" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body">
+                        <span class="qms-card-title">HMO Information </span>
+                        <group>
+                            <group>
+                                <field name="hmo_id" string="HMO Provider" placeholder="HMEDIC" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="company_id" string="Company" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                            </group>
+
+                            <!-- <div class="qms-divider"/> -->
+                            <group>
+                                <field name="plan_id" string="Plan" options="{'no_open': true, 'no_create': true}" readonly="state != 'draft'"/>
+                                <field name="hmo_tag_id" string="Coverage Class" options="{'no_open': true, 'no_create': true}" readonly="state != 'draft'"/>
+                            </group>
+                        </group>
+                    </div>
+                    <header>
+                        <button class="btn btn-success"
+                                name="action_review"
+                                type="object" invisible="state == 'review'">
+                            Review
+                        </button>
+                        
+                        <button class="btn btn-warning"
+                                name="action_pending"
+                                type="object" invisible="state != 'draft'">
+                            Send to Pending
+                        </button>
+                        <button class="btn btn-success"
+                                name="action_approved"
+                                type="object" invisible="state not in ['review', 'pending']">
+                            Approve
+                        </button>
+                        <button class="btn btn-danger"
+                                name="action_draft"
+                                type="object" invisible="state not in ['review', 'approved', 'pending']">
+                            Cancel
+                        </button>
+                    </header>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_enrollment" model="ir.actions.act_window">
+        <field name="name">HMO enrollment</field>
+        <field name="res_model">hmo.enrollment</field>
+        <field name="view_mode">form</field>
+        <field name="search_view_id" ref="view_hmo_enrollment_search"/>
+        <field name="context">{}</field>
+        <field name="target">new</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new enrollment
+            </p>
+        </field>
+    </record> 
+
+    <record id="action_hmo_tree_enrollment" model="ir.actions.act_window">
+        <field name="name">HMO enrollment</field>
+        <field name="res_model">hmo.enrollment</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_hmo_enrollment_tree"/>
+        <field name="context">{}</field>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new enrollment
+            </p>
+        </field>
+    </record> 
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_hmo_enrollment"
+        name="Enrollment"
+        action="action_hmo_tree_enrollment"
+        sequence="50"
+        parent="menu_hr_insurance_hmo"
+        />
+
+</odoo>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Extend Calendar Controller -->
+    <t t-inherit="web.CalendarController" t-inherit-mode="extension">
+
+        <!-- Insert buttons inside calendar header -->
+        <xpath expr="//button[contains(@class, 'o_calendar_button_today')]" position="replace">
+
+            <button
+                class="btn btn-warning ms-2"
+                t-on-click="onCustomAction"
+            >
+                Sync
+            </button>
+
+        </xpath>
+
+    </t>
+
+</templates>
