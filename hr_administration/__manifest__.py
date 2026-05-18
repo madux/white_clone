@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'HR Administration Dashboard',
+    'name': 'CLEONHR Administration Dashboard',
     'version': '17.0.1.0.0',
     'category': 'Human Resources',
     'summary': 'Comprehensive HR Administration Dashboard with analytics and workforce management',

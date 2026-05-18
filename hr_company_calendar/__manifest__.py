@@ -14,7 +14,7 @@ Manage time off requests and allocations
 This application controls 
 A synchronization with an internal agenda (Meetings of the CRM module) is also possible in order to automatically create a meeting when a time off request is accepted by setting up a type of meeting in time off Type.
 """,
-    'depends': ['hr', 'calendar', 'resource'],
+    'depends': ['hr', 'calendar', 'resource', 'hr_administration'],
     'data': [
     ],
      

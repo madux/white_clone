@@ -1,0 +1,52 @@
+.o_status_stepper {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    padding: 16px 0;
+}
+
+.o_step_wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.o_step_circle {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #d1d5db;
+    color: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 600;
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+.o_step_circle.done {
+    background: #16a34a;
+}
+
+.o_step_circle.active {
+    background: #ec4899;
+}
+
+.o_step_label {
+    margin: 0 14px 0 10px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.o_step_line {
+    width: 70px;
+    height: 2px;
+    background: #d1d5db;
+    margin-right: 14px;
+}
+
+.o_step_line.done {
+    background: #16a34a;
+}

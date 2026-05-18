@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Attendance & Time Violations -->
+
+    <record id="hr_warning_policy_absenteeism" model="hr.warning.policy">
+        <field name="name">Absenteeism</field>
+        <field name="sequence">1</field>
+        <field name="code">ABSENT</field>
+        <field name="categories">attendance</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <record id="hr_warning_policy_lateness" model="hr.warning.policy">
+        <field name="name">Repeated Lateness</field>
+        <field name="sequence">2</field>
+        <field name="code">LATE</field>
+        <field name="categories">attendance</field>
+        <field name="severity_level">Minor</field>
+    </record>
+
+    <record id="hr_warning_policy_unauthorized_leave" model="hr.warning.policy">
+        <field name="name">Unauthorized Leave</field>
+        <field name="sequence">3</field>
+        <field name="code">UNAUTH_LEAVE</field>
+        <field name="categories">attendance</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <record id="hr_warning_policy_time_theft" model="hr.warning.policy">
+        <field name="name">Time Theft</field>
+        <field name="sequence">4</field>
+        <field name="code">TIME_THEFT</field>
+        <field name="categories">attendance</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <!-- Conduct & Behavior Violations -->
+
+    <record id="hr_warning_policy_insubordination" model="hr.warning.policy">
+        <field name="name">Insubordination</field>
+        <field name="sequence">10</field>
+        <field name="code">INSUB</field>
+        <field name="categories">conduct</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <record id="hr_warning_policy_bullying" model="hr.warning.policy">
+        <field name="name">Workplace Bullying</field>
+        <field name="sequence">11</field>
+        <field name="code">BULLY</field>
+        <field name="categories">conduct</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <record id="hr_warning_policy_harassment" model="hr.warning.policy">
+        <field name="name">Harassment</field>
+        <field name="sequence">12</field>
+        <field name="code">HARASS</field>
+        <field name="categories">conduct</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <record id="hr_warning_policy_sexual_harassment" model="hr.warning.policy">
+        <field name="name">Sexual Harassment</field>
+        <field name="sequence">13</field>
+        <field name="code">SEX_HARASS</field>
+        <field name="categories">conduct</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <record id="hr_warning_policy_fighting" model="hr.warning.policy">
+        <field name="name">Fighting at Work</field>
+        <field name="sequence">14</field>
+        <field name="code">FIGHT</field>
+        <field name="categories">conduct</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <!-- Performance Violations -->
+
+    <record id="hr_warning_policy_negligence" model="hr.warning.policy">
+        <field name="name">Negligence of Duty</field>
+        <field name="sequence">20</field>
+        <field name="code">NEGLIG</field>
+        <field name="categories">performance</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <record id="hr_warning_policy_poor_performance" model="hr.warning.policy">
+        <field name="name">Poor Performance</field>
+        <field name="sequence">21</field>
+        <field name="code">POOR_PERF</field>
+        <field name="categories">performance</field>
+        <field name="severity_level">Minor</field>
+    </record>
+
+    <record id="hr_warning_policy_sleeping" model="hr.warning.policy">
+        <field name="name">Sleeping During Work Hours</field>
+        <field name="sequence">22</field>
+        <field name="code">SLEEP</field>
+        <field name="categories">performance</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <!-- Company Property & Asset Violations -->
+
+    <record id="hr_warning_policy_theft" model="hr.warning.policy">
+        <field name="name">Theft</field>
+        <field name="sequence">30</field>
+        <field name="code">THEFT</field>
+        <field name="categories">assets</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <record id="hr_warning_policy_property_damage" model="hr.warning.policy">
+        <field name="name">Damage to Company Property</field>
+        <field name="sequence">31</field>
+        <field name="code">PROP_DAMAGE</field>
+        <field name="categories">assets</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <record id="hr_warning_policy_data_theft" model="hr.warning.policy">
+        <field name="name">Data Theft</field>
+        <field name="sequence">32</field>
+        <field name="code">DATA_THEFT</field>
+        <field name="categories">assets</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <!-- Security & IT Violations -->
+
+    <record id="hr_warning_policy_password_sharing" model="hr.warning.policy">
+        <field name="name">Sharing Passwords</field>
+        <field name="sequence">40</field>
+        <field name="code">PWD_SHARE</field>
+        <field name="categories">it_security</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <record id="hr_warning_policy_unauthorized_access" model="hr.warning.policy">
+        <field name="name">Unauthorized System Access</field>
+        <field name="sequence">41</field>
+        <field name="code">UNAUTH_ACCESS</field>
+        <field name="categories">it_security</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <record id="hr_warning_policy_data_breach" model="hr.warning.policy">
+        <field name="name">Data Privacy Breach</field>
+        <field name="sequence">42</field>
+        <field name="code">DATA_BREACH</field>
+        <field name="categories">it_security</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <!-- Ethics & Compliance Violations -->
+
+    <record id="hr_warning_policy_fraud" model="hr.warning.policy">
+        <field name="name">Fraud</field>
+        <field name="sequence">50</field>
+        <field name="code">FRAUD</field>
+        <field name="categories">ethics</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <record id="hr_warning_policy_bribery" model="hr.warning.policy">
+        <field name="name">Bribery</field>
+        <field name="sequence">51</field>
+        <field name="code">BRIBERY</field>
+        <field name="categories">ethics</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <record id="hr_warning_policy_confidentiality" model="hr.warning.policy">
+        <field name="name">Confidentiality Breach</field>
+        <field name="sequence">52</field>
+        <field name="code">CONF_BREACH</field>
+        <field name="categories">ethics</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <!-- Health & Safety Violations -->
+
+    <record id="hr_warning_policy_safety_violation" model="hr.warning.policy">
+        <field name="name">Ignoring Safety Procedures</field>
+        <field name="sequence">60</field>
+        <field name="code">SAFETY</field>
+        <field name="categories">safety</field>
+        <field name="severity_level">Severe</field>
+    </record>
+
+    <record id="hr_warning_policy_substance_abuse" model="hr.warning.policy">
+        <field name="name">Workplace Substance Abuse</field>
+        <field name="sequence">61</field>
+        <field name="code">SUBSTANCE</field>
+        <field name="categories">safety</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <!-- Dress Code & Professionalism -->
+
+    <record id="hr_warning_policy_dress_code" model="hr.warning.policy">
+        <field name="name">Dress Code Violation</field>
+        <field name="sequence">70</field>
+        <field name="code">DRESS</field>
+        <field name="categories">professionalism</field>
+        <field name="severity_level">Minor</field>
+    </record>
+
+    <record id="hr_warning_policy_unprofessional_language" model="hr.warning.policy">
+        <field name="name">Improper Language</field>
+        <field name="sequence">71</field>
+        <field name="code">LANGUAGE</field>
+        <field name="categories">professionalism</field>
+        <field name="severity_level">Major</field>
+    </record>
+
+    <!-- Financial Violations -->
+
+    <record id="hr_warning_policy_expense_fraud" model="hr.warning.policy">
+        <field name="name">Expense Fraud</field>
+        <field name="sequence">80</field>
+        <field name="code">EXP_FRAUD</field>
+        <field name="categories">financial</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+    <record id="hr_warning_policy_misuse_funds" model="hr.warning.policy">
+        <field name="name">Misuse of Company Funds</field>
+        <field name="sequence">81</field>
+        <field name="code">MISUSE_FUNDS</field>
+        <field name="categories">financial</field>
+        <field name="severity_level">Gross Misconduct</field>
+    </record>
+
+</odoo>

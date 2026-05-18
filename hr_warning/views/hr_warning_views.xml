@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_warning_investigation_form_view" model="ir.ui.view">
+        <field name="name">hr.warning.investigation.form</field>
+        <field name="model">hr.warning.investigator</field>
+        <field name="arch" type="xml">
+            <form string="Incident investigation" class="o_warning_form">
+                <group>
+                    <field name="investigator_id" required="1" options="{'no_open': true, 'no_create': true}"/>
+                    <field name="warning_id" readonly="1" required="1" invisible="0" options="{'no_open': true, 'no_create': true}"/>
+                    <field name="model_id_char" readonly="1" required="0" invisible="1" options="{'no_open': true, 'no_create': true}"/>
+                </group>
+                <footer class="text-end">
+                <!-- <div class="text-end"> -->
+                    <div>
+                        <button name="action_assign_investigator"
+                                string="Assign"
+                                type="object"
+                                class="oe_highlight"/>
+                    </div>
+                <!-- </div> -->
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="hr_warning_form_view" model="ir.ui.view">
+        <field name="name">hr.warning.form</field>
+        <field name="model">hr.warning</field>
+        <field name="arch" type="xml">
+            <form string="Incident" class="o_warning_form">
+                 
+                <!-- <sheet> -->
+                    <!-- Smart buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_email_employee"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-envelope"
+                                string="Email Employee"/>
+                        <button name="action_hr_warning_evidence"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-paperclip">
+                            <field name="evidence_count" widget="statinfo" string="Evidence"/>
+                        </button>
+                    </div>
+
+                    <!-- Title row -->
+                    <!-- <div class="oe_title o_warning_title_row">
+                        <h1>
+                            <field name="name" readonly="1" class="o_warning_ref"/>
+                        </h1>
+                        <field name="state"
+                               widget="badge"
+                               decoration-warning="state == 'draft'"
+                               decoration-info="state == 'under_investigation'"
+                               decoration-primary="state == 'pending_approval'"
+                               decoration-success="state == 'closed'"
+                               decoration-danger="state == 'cancelled'"
+                               class="o_warning_state_badge"/>
+                        <field name="priority" widget="priority"/>
+                    </div> -->
+                    <div class="warning-qms-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="warning-qms-hero-ref">
+                                    <field name="name" readonly="1" class="d-inline"/>
+                                </div>
+                                <div class="warning-qms-hero-sub">Inppropriate behaviour</div>
+
+                                <div class="qms-badge-row">
+                                    <field name="state"
+                                        widget="badge"
+                                        decoration-warning="state == 'draft'"
+                                        decoration-info="state == 'under_investigation'"
+                                        decoration-primary="state == 'pending_approval'"
+                                        decoration-success="state == 'closed'"
+                                        decoration-danger="state == 'cancelled'"
+                                        class="o_warning_state_badge"/>
+
+                                     
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div>
+                                    <button name="action_report_disciplinary"
+                                            string="Report Incident"
+                                            type="object"
+                                            class="btn-sm oe_highlight" 
+                                            invisible="state != 'draft'"/>
+                                    <button name="action_start_investigation"
+                                            string="Start Investigation"
+                                            type="object"
+                                            class="btn-sm oe_highlight" 
+                                            invisible="state != 'pending_approval'"/>
+                                    <button name="action_move_next_stage"
+                                            string="Move to Next Stage"
+                                            type="object"
+                                            class="btn-sm oe_highlight"
+                                            invisible="state in ['draft', 'closed', 'cancelled']"/>
+                                    <button name="action_close_case"
+                                            string="Close Case"
+                                            type="object"
+                                            class="btn-sm btn-close-case"
+                                            invisible="state in ['closed', 'cancelled']"/>
+                                    <button name="action_cancel"
+                                            string="Cancel"
+                                            type="object"
+                                            class="btn-sm btn-close-case"
+                                            invisible ="state in ['closed', 'cancelled']"/>
+                                    <button name="action_reopen"
+                                            string="Reopen"
+                                            type="object"
+                                            class="btn-sm btn-close-case"
+                                            invisible="state != 'cancelled'"/>
+                                    <button name="action_generate_document"
+                                            string="Generate Action Document"
+                                            type="object"
+                                            class="btn-sm btn-generate-doc oe_highlight"/>
+                                </div>
+                                <div style="margin-top:4px;">
+                                    <field name="priority" widget="priority"/>
+                                </div>
+                                <div style="margin-top:4px;">
+                                    <field name="stage_id"
+                                        widget="badge"/>
+                                </div>
+                                
+                                                    
+                            </div>
+                        </div>
+                    </div>
+ 
+                    <!-- Two-column layout: main + sidebar -->
+                    <div class="o_warning_layout">
+
+                        <!-- ── LEFT: main content ── -->
+                        <div class="o_warning_main">
+                            <!-- <div class="button-row">
+
+                                <button class="btn btn-primary">
+                                    Save
+                                </button>
+
+                                <button class="btn btn-secondary">
+                                    Cancel
+                                </button>
+
+                                <button class="btn btn-danger">
+                                    Delete
+                                </button>
+
+                            </div> -->
+                            <notebook>
+                                <page string="Overview" name="overview">
+                                    
+                                    <group class="o_warning_section">
+                                        <group class="o_warning_section">
+                                            <field name="subject" required="1"/>
+                                            <field name="employee_id" required="1" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                            <p><strong>Description</strong></p>
+                                            <field name="description"
+                                               nolabel="1"
+                                               widget="text"
+                                               colspan="2"
+                                               readonly="state != 'draft'"
+                                               class="o_warning_desc_field"
+                                               placeholder="Describe the incident in detail..."/>
+                                            
+                                        </group>
+                                        <group>
+                                            <field name="incident_type" required="1" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                            <field name="case_type_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}" />
+                                            <field name="policy_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}" />
+                                            <field name="severity_level" readonly="state != 'draft'"/>
+                                            <field name="require_investigation" readonly="state != 'draft'" widget="boolean_toggle"/>
+                                            <field name="company_id" groups="base.group_multi_company" options="{'no_open': true, 'no_create': true}"/>
+                                        </group>
+                                    </group> 
+                                    <!-- Investigation -->
+                                    
+                                    <group class="o_warning_section">
+                                        <group>
+                                            <field name="date_incident" readonly="state != 'draft'" widget="date"/>
+                                            <field name="location" readonly="state != 'draft'"/>
+                                            <field name="reporter_id" required="1" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                           
+                                        </group>
+                                        <group>
+                                            <field name="date_closed" readonly="1"
+                                                   invisible ="state != 'closed'"/>
+                                            <field name="investigator_id" readonly="state != 'draft'" options="{'no_open': true, 'no_create': true}"/>
+                                            <field name="date_assigned" readonly="state != 'draft'"/>
+                                        </group>
+                                        <!-- <field name="investigation_note"
+                                               nolabel="1"
+                                               widget="text"
+                                               placeholder="Investigation is in progress. Check notes for updates."
+                                               colspan="2" readonly="state != 'draft'"/> -->
+                                    </group>
+
+                                    <!-- Status alert banner -->
+                                    <div class="o_warning_status_main-white">
+                                        <i class="fa fa-exclamation-triangle o_warning_status_icon"/>
+                                        <div>
+                                            <div class="o_warning_status_main">
+                                                Assigned to
+                                                <field name="investigator_id"
+                                                       nolabel="1"
+                                                       class="o_inline_field" options="{'no_open': true, 'no_create': true}"/>
+                                            </div>
+
+                                            <div class="o_warning_status_main">
+                                                DC members
+                                                <field name="disciplinary_committee_ids"
+                                                       readonly="state not in ['draft', 'closed']"
+                                                       nolabel="1" 
+                                                       class="o_inline_field" widget="many2many_tags" options="{'no_open': true, 'no_create': true}"/>
+                                            </div> 
+                                        </div>
+                                    </div>
+
+                                    <div class="o_warning_status_main-white">
+                                        <strong>Interim Measures</strong>
+                                        <field name="interim_measure_ids"
+                                                readonly="state not in ['draft', 'closed']"
+                                                nolabel="1"
+                                                class="o_inline_field" context="{'default_employee_id': employee_id, 'default_warning_id': id}"/>
+                                    </div>
+
+                                    <div class="o_warning_status_card">
+                                        <i class="fa fa-exclamation-triangle o_warning_status_icon"/>
+                                        <div>
+                                              
+                                            <div class="o_warning_status_sub">
+                                            
+                                                <field name="investigation_note"
+                                                        readonly="state not in ['draft', 'closed']"
+                                                       nolabel="1"
+                                                       class="o_inline_field" placeholder="Enter Investigation Report"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+
+                                </page>
+
+                                <page string="Evidence" name="evidence">
+                                    <field name="evidence_ids"
+                                           widget="many2many_binary"
+                                           nolabel="1"
+                                           string="Evidence / Attachments"/>
+                                    <field name="witness_ids"
+                                           widget="many2many_tags" 
+                                           string="witness"/>
+                                </page>
+
+                                <page string="Audit" name="audit">
+                                    <group>
+                                        <field name="date_assigned" readonly="1"/>
+                                        <field name="date_closed" readonly="1"/>
+                                    </group>
+                                    <!-- Status alert banner -->
+                                    <div class="o_warning_status_card">
+                                        <i class="fa fa-exclamation-triangle o_warning_status_icon"/>
+                                        <div>
+                                            <div class="o_warning_status_main">
+                                                Audit trail
+                                            </div>
+                                            <div class="o_warning_status_sub">
+                                                <field name="audit_trail_desc"
+                                                       readonly="1"
+                                                       nolabel="1"
+                                                       class="o_inline_field"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </page>
+                            </notebook>
+                        </div>
+
+                        <!-- ── RIGHT: sidebar ── -->
+                        <div class="o_warning_sidebar">
+
+                            <!-- Employee Details -->
+                            <div class="o_warning_sidebar_card">
+                                <div class="o_warning_card_title">Employee Details</div>
+                                <div class="o_warning_emp_row">
+                                    <field name="employee_id"
+                                           widget="many2one_avatar_employee"
+                                           nolabel="1"
+                                           readonly="1"
+                                           class="o_warning_avatar_field"/>
+                                    <div class="o_warning_emp_info">
+                                        <div class="o_warning_emp_name">
+                                            <field name="employee_id"
+                                                   nolabel="1"
+                                                   readonly="1"
+                                                   class="o_warning_emp_name_field" options="{'no_open': true, 'no_create': true}"/>
+                                        </div>
+                                        <div class="o_warning_emp_id">
+                                            <field name="employee_code" readonly="1" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="o_warning_emp_fields">
+                                    <div class="o_warning_emp_field_row">
+                                        <span class="o_warning_ef_label">Department</span>
+                                        <field name="department_id" readonly="1" nolabel="1" class="o_warning_ef_val" options="{'no_open': true, 'no_create': true}"/>
+                                    </div>
+                                    <div class="o_warning_emp_field_row">
+                                        <span class="o_warning_ef_label">Branch</span>
+                                        <field name="branch_id" readonly="1" nolabel="1" class="o_warning_ef_val" options="{'no_open': true, 'no_create': true}"/>
+                                    </div>
+                                    <div class="o_warning_emp_field_row">
+                                        <span class="o_warning_ef_label">Tenure</span>
+                                        <field name="tenure" readonly="1" nolabel="1" class="o_warning_ef_val"/>
+                                    </div>
+                                </div>
+                                <button name="action_view_employee_profile"
+                                        string="View Profile"
+                                        type="object"
+                                        class="btn o_warning_view_profile_btn"/>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="o_warning_sidebar_card o_warning_quick_actions">
+                                <div class="o_warning_card_title">Quick Actions</div>
+                                <div class="o_warning_qa_list">
+                                    <button name="action_assign_investigator"
+                                            type="object"
+                                            class="o_warning_qa_item">
+                                        <span class="o_warning_qa_label">Assign Investigator</span>
+                                        <i class="fa fa-user-plus o_warning_qa_icon"/>
+                                    </button>
+                                    <button name="action_email_employee"
+                                            type="object"
+                                            class="o_warning_qa_item">
+                                        <span class="o_warning_qa_label">Email Employee</span>
+                                        <i class="fa fa-envelope o_warning_qa_icon"/>
+                                    </button>
+                                    <button name="action_email_employee"
+                                            type="object"
+                                            class="o_warning_qa_item">
+                                        <span class="o_warning_qa_label">View related Policy</span>
+                                        <i class="fa fa-file o_warning_qa_icon"/>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                        <!-- end sidebar -->
+                    </div>
+                <!-- </sheet> -->
+
+                <!-- <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div> -->
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         TREE VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_warning_tree_view" model="ir.ui.view">
+        <field name="name">hr.warning.tree</field>
+        <field name="model">hr.warning</field>
+        <field name="arch" type="xml">
+            <tree string="Incidents" js_class="warning_dashboard_list"
+                  decoration-info="state == 'under_investigation'"
+                  decoration-warning="state == 'pending_approval'"
+                  decoration-muted="state == 'closed' or state == 'cancelled'"
+                  editable="top" create="true" delete="true">
+                <field name="name" string="Reference" readonly="1"/>
+                <field name="employee_id" string="Employee" widget="many2one_avatar_employee" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="department_id" optional="show" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="incident_type" string="Incident Type" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="case_type_id" optional="show" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="date_incident" string="Date" readonly="1"/>
+                <field name="investigator_id" string="Investigator" optional="show" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="location" optional="hide" readonly="1"/>
+                <field name="stage_id" string="Stage" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                <field name="priority" widget="priority" optional="show" readonly="1"/>
+                <field name="state" string="Status"
+                       widget="badge"
+                       decoration-warning="state == 'draft'"
+                       decoration-info="state == 'under_investigation'"
+                       decoration-primary="state == 'pending_approval'"
+                       decoration-success="state == 'closed'"
+                       decoration-danger="state == 'cancelled'" readonly="1"/>
+                <field name="action_menu"
+                    widget="list_dropdown_actions"
+                    string="Actions"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         KANBAN VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_warning_kanban_view" model="ir.ui.view">
+        <field name="name">hr.warning.kanban</field>
+        <field name="model">hr.warning</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="stage_id"
+                    group_create="false"
+                    quick_create="false">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="stage_id"/>
+                <field name="state"/>
+                <field name="priority"/>
+                <field name="incident_type"/>
+                <field name="date_incident"/>
+                <field name="investigator_id"/>
+                <field name="kanban_state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_top">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <span class="o_kanban_record_subtitle">
+                                            <field name="employee_id"/>
+                                        </span>
+                                    </div>
+                                    <field name="priority" widget="priority"/>
+                                </div>
+                                <div class="o_kanban_record_body">
+                                    <field name="incident_type" widget="badge"/>
+                                    <span class="float-end">
+                                        <field name="date_incident"/>
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_bottom">
+                                    <div class="oe_kanban_bottom_left">
+                                        <!-- <field name="kanban_state" widget="kanban_state_selection"/> -->
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <img t-att-src="kanban_image('res.users', 'image_128', record.investigator_id.raw_value)"
+                                             t-att-title="record.investigator_id.value"
+                                             class="oe_kanban_avatar o_image_24_cover"
+                                             t-if="record.investigator_id.raw_value"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         SEARCH VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_warning_search_view" model="ir.ui.view">
+        <field name="name">hr.warning.search</field>
+        <field name="model">hr.warning</field>
+        <field name="arch" type="xml">
+            <search string="Search Incidents">
+                <field name="name" string="Reference"/>
+                <field name="employee_id"/>
+                <field name="investigator_id"/>
+                <field name="case_type_id"/>
+                <separator/>
+                <filter string="Under Investigation" name="under_investigation"
+                        domain="[('state','=','under_investigation')]"/>
+                <filter string="Pending Approval" name="pending_approval"
+                        domain="[('state','=','pending_approval')]"/>
+                <filter string="Closed" name="closed"
+                        domain="[('state','=','closed')]"/>
+                <filter string="Cancelled" name="cancelled"
+                        domain="[('state','=','cancelled')]"/>
+                <separator/>
+                <filter string="My Cases" name="my_cases"
+                        domain="[('investigator_id','=',uid)]"/>
+                <filter string="High Priority" name="high_priority"
+                        domain="[('priority','=','3')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Stage" name="group_stage"
+                            context="{'group_by': 'stage_id'}"/>
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                    <filter string="Incident Type" name="group_type"
+                            context="{'group_by': 'incident_type'}"/>
+                    <filter string="Case Type" name="group_case_type"
+                            context="{'group_by': 'case_type_id'}"/>
+                    <filter string="Employee" name="group_employee"
+                            context="{'group_by': 'employee_id'}"/>
+                    <filter string="Department" name="group_department"
+                            context="{'group_by': 'department_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         ACTION
+    ════════════════════════════════════════════ -->
+    <record id="action_hr_warning_investigations" model="ir.actions.act_window">
+        <field name="name">Investigations</field>
+        <field name="res_model">hr.warning</field>
+        <field name="view_mode">tree,form</field>
+        <!-- <field name="context">{'search_default_under_investigation': 1}</field> -->
+        <field name="domain">[('state', '=', 'under_investigation')]</field>
+        <field name="search_view_id" ref="hr_warning_search_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No incidents recorded yet.
+            </p>
+            <p>Create a new incident to begin tracking employee conduct cases.</p>
+        </field>
+    </record>
+
+    <record id="action_hr_warning_hearing" model="ir.actions.act_window">
+        <field name="name">Hearing</field>
+        <field name="res_model">hr.warning</field>
+        <field name="view_mode">tree,form</field> 
+        <field name="domain">[('state', '=', 'hearing')]</field>
+        <field name="search_view_id" ref="hr_warning_search_view"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No incidents recorded yet.
+            </p>
+            <p>Create a new incident to begin tracking employee conduct cases.</p>
+        </field>
+    </record>
+
+    <record id="action_hr_warning" model="ir.actions.act_window">
+        <field name="name">Incidents</field>
+        <field name="res_model">hr.warning</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <!-- <field name="search_view_id" ref="hr_warning_search_view"/> -->
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No incidents recorded yet.
+            </p>
+            <p>Create a new incident to begin tracking employee conduct cases.</p>
+        </field>
+    </record>
+
+    <record id="action_hr_paystatus" model="ir.actions.act_window">
+        <field name="name">Pay Status</field>
+        <field name="res_model">pay.status</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No pay status defined yet.
+            </p>
+            <p>Create pay status.</p>
+        </field>
+    </record>
+
+</odoo>

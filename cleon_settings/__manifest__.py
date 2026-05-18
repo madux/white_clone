@@ -21,6 +21,9 @@
     'assets': {
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
+            'cleon_settings/static/src/xml/status_widget.xml',
+            'cleon_settings/static/src/css/status_widget.scss',
+            'cleon_settings/static/src/js/status_widget.js',
             # 'hr_insurance/static/src/css/hr_insurance.css',
             # 'hr_insurance/static/src/css/hmo_market_place.css',
             # 'hr_insurance/static/src/css/qms_css.css',

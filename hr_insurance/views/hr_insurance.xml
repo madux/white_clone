@@ -62,9 +62,9 @@
                                 <span class="hd-nl-badge">-</span>
                             </a>
 
-                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
                                 <i class="fa fa-map-marker"/>
-                                Check-in
+                                Checklist
                                 <span class="hd-nl-badge">-</span>
                             </a>
 
@@ -74,7 +74,7 @@
                                 <span class="hd-nl-badge">-</span>
                             </a>
 
-                            <a type="action" name="hr_insurance.action_hmo_marketplace" class="hd-nl">
+                            <a type="action" name="hr_insurance.action_hmo_tree_checklist" class="hd-nl">
                                 <i class="fa fa-cog"/>
                                 Settings
                                 <span class="hd-nl-badge">-</span>
@@ -338,9 +338,9 @@
 
     <menuitem
         id="menu_hr_insurance_hmo"
-        name="HMO"
+        name="HMO-"
         action="action_dashboard_server"
-        sequence="1"
+        sequence="2"
         />
 
     <menuitem

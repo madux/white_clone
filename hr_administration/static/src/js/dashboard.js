@@ -89,15 +89,15 @@
 
   /* ─── Metrics Grid ────────────────────────────────────────── */
   const METRIC_DEFS = [
-    { key: 'total_employees',   label: 'Total Employees',    sublabel: 'vs last month', icon: '👥', color: C.blue,   changeKey: 'total_employees_change', route: '/odoo/employees' },
-    { key: 'active_employees',  label: 'Active Employees',   sublabel: 'vs last month', icon: '✅', color: C.green,  route: '/odoo/employees' },
-    { key: 'on_leave_today',    label: 'On Leave Today',     sublabel: 'employees',     icon: '🌴', color: C.orange, route: '/odoo/time-off' },
-    { key: 'pending_requests',  label: 'Pending Requests',   sublabel: 'awaiting approval', icon: '📋', color: C.pink, route: '/odoo/time-off' },
-    { key: 'disciplinary_cases',label: 'Disciplinary Cases', sublabel: 'open cases',    icon: '⚠️', color: C.red,    route: '/odoo/employees' },
-    { key: 'expiring_contracts',label: 'Expiring Soon',      sublabel: 'in 30 days',    icon: '📄', color: C.yellow, route: '/odoo/employees' },
-    { key: 'pending_approvals', label: 'Pending Approvals',  sublabel: 'across modules',icon: '🔔', color: C.purple, route: '/odoo/time-off' },
-    { key: 'hmo_enrollments',   label: 'HMO Enrollments',   sublabel: 'active plans',  icon: '🏥', color: C.teal,   route: '/odoo/employees' },
-    { key: 'assets_overdue',    label: 'Assets Overdue',     sublabel: 'unreturned',    icon: '💻', color: '#FF8C42', route: '/odoo/maintenance' },
+    { key: 'total_employees',   label: 'Total Employees',    sublabel: 'vs last month', icon: '👥', color: C.blue,   changeKey: 'total_employees_change', route: '/app/employees' },
+    { key: 'active_employees',  label: 'Active Employees',   sublabel: 'vs last month', icon: '✅', color: C.green,  route: '/app/employees' },
+    { key: 'on_leave_today',    label: 'On Leave Today',     sublabel: 'employees',     icon: '🌴', color: C.orange, route: '/app/leave' },
+    { key: 'pending_requests',  label: 'Pending Requests',   sublabel: 'awaiting approval', icon: '📋', color: C.pink, route: '/app/leave' },
+    { key: 'disciplinary_cases',label: 'Disciplinary Cases', sublabel: 'open cases',    icon: '⚠️', color: C.red,    route: '/app/employees' },
+    { key: 'expiring_contracts',label: 'Expiring Soon',      sublabel: 'in 30 days',    icon: '📄', color: C.yellow, route: '/app/employees' },
+    { key: 'pending_approvals', label: 'Pending Approvals',  sublabel: 'across modules',icon: '🔔', color: C.purple, route: '/app/leave' },
+    { key: 'hmo_enrollments',   label: 'HMO Enrollments',   sublabel: 'active plans',  icon: '🏥', color: C.teal,   route: '/app/employees' },
+    { key: 'assets_overdue',    label: 'Assets Overdue',     sublabel: 'unreturned',    icon: '💻', color: '#FF8C42', route: '/app/maintenance' },
   ];
 
   function renderMetrics(data) {
@@ -527,12 +527,12 @@
 
   function getDemoAttention() {
     return [
-      { priority: 'high',   title: 'Leave Requests Pending Approval',  description: '12 urgent requests require immediate attention', module: 'Leave Management',      count: 38, route: '/odoo/time-off' },
-      { priority: 'high',   title: 'Contracts Expiring in 30 Days',    description: '5 contracts expire within the next 7 days',     module: 'Workforce Lifecycle',   count: 15, route: '/odoo/employees' },
-      { priority: 'medium', title: 'Disciplinary Cases Pending Action', description: '3 cases require immediate review',               module: 'Disciplinary Mgmt',     count: 7,  route: '/odoo/employees' },
-      { priority: 'low',    title: 'Assets Overdue for Return',         description: '8 laptops overdue by more than 7 days',          module: 'Asset Management',      count: 18, route: '/odoo/maintenance' },
-      { priority: 'medium', title: 'HMO Enrollment Approvals',          description: 'Pending enrollment approvals',                   module: 'Health Insurance',      count: 25, route: '/odoo/time-off' },
-      { priority: 'low',    title: 'Performance Reviews Pending',        description: 'Q1 2026 performance reviews',                    module: 'Workforce Lifecycle',   count: 45, route: '/odoo/employees' },
+      { priority: 'high',   title: 'Leave Requests Pending Approval',  description: '12 urgent requests require immediate attention', module: 'Leave Management',      count: 38, route: '/app/leave' },
+      { priority: 'high',   title: 'Contracts Expiring in 30 Days',    description: '5 contracts expire within the next 7 days',     module: 'Workforce Lifecycle',   count: 15, route: '/app/employees' },
+      { priority: 'medium', title: 'Disciplinary Cases Pending Action', description: '3 cases require immediate review',               module: 'Disciplinary Mgmt',     count: 7,  route: '/app/disciplinary' },
+      { priority: 'low',    title: 'Assets Overdue for Return',         description: '8 laptops overdue by more than 7 days',          module: 'Asset Management',      count: 18, route: '/app/maintenance' },
+      { priority: 'medium', title: 'HMO Enrollment Approvals',          description: 'Pending enrollment approvals',                   module: 'Health Insurance',      count: 25, route: '/app/insurance' },
+      { priority: 'low',    title: 'Performance Reviews Pending',        description: 'Q1 2026 performance reviews',                    module: 'Workforce Lifecycle',   count: 45, route: '/app/employees' },
     ];
   }
 

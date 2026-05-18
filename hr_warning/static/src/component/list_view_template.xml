@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_warning.CustomListRenderer" t-inherit="web.ListRenderer" t-inherit-mode="primary">
+
+        <!-- <xpath expr="//div[@t-ref='root']" position="before">
+            <h1 style="color:red;">
+                WORKING TEMPLATE
+            </h1>
+
+        </xpath> -->
+        <xpath expr="//table[@t-ref='table']" position="before">
+            <!-- <div class="custom_tree_header">  -->
+                <div class="flex-grow-1 d-none d-md-block"/>
+                <button class="btn o_cc_btn_pink btn-sm m-4" t-on-click="openCustomWarningForm" type="button">
+                    <i class="fa fa-book"/> New Incident
+                </button>
+                <button class="btn o_cc_btn_pink_outline btn-sm" t-on-click="openGuidedTour" type="button">
+                    <i class="fa fa-magic"/> Guided Tour
+                </button>
+                <div class="btn-group m-2">
+                    <button class="btn o_cc_btn_light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
+                        <i class="fa fa-user-circle-o"/> View as: <strong>Admin View</strong>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#">Admin View</a></li>
+                        <li><a class="dropdown-item" href="#">Employee View</a></li>
+                        <li><a class="dropdown-item" href="#">Manager View</a></li>
+                    </ul>
+                </div>
+                <button class="btn o_cc_btn_light btn-sm m-4" t-on-click="exportCalendar" type="button">
+                    <i class="fa fa-upload"/> Export
+                </button> 
+                <!-- </div> -->
+
+        </xpath>
+        <xpath expr="//div[@t-ref='root']" position="before">
+            <div class="o_cc_admin_sidebar">
+ 
+                <div class="o_cc_sidebar_header">
+                    <span class="o_cc_header_dot"/>
+                    <span class="o_cc_header_title">Disciplinary<br/>Management</span>
+                    <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                        <i class="fa fa-th-large"/>
+                    </button>
+                </div>
+ 
+                <nav class="o_cc_nav">
+                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openRecord">
+                        <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
+                        <span class="o_cc_nav_label">All Incidents</span>
+                        <span class="o_cc_nav_badge">2</span>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openHearings">
+                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                        <span class="o_cc_nav_label">Hearings &amp; Decisions</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openMeasures">
+                        <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
+                        <span class="o_cc_nav_label">Interim Measures</span>
+                        <span class="o_cc_nav_badge">2</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openMeasures">
+                        <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
+                        <span class="o_cc_nav_label">Actions &amp; Documents</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                        <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                        <span class="o_cc_nav_label">Investigations</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openCaseType">
+                        <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                        <span class="o_cc_nav_label">Case Types &amp; Categories</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openHearings">
+                        <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                        <span class="o_cc_nav_label">Appeals</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" href="/incident-reporting">
+                        <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
+                        <span class="o_cc_nav_label">Reports &amp; Analytics</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openRecord">
+                    <!-- <a class="o_cc_nav_item" href="/incident-reporting"> -->
+                        <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
+                        <span class="o_cc_nav_label">Audit Logs</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+
+                </nav>
+ 
+                <div class="o_cc_sidebar_footer">
+                    <span class="o_cc_footer_label">Solution By MaachSoft</span>
+                    <div class="o_cc_footer_status">
+                        <span class="o_cc_status_dot o_cc_status_green"/>
+                        All integrations active
+                    </div>
+                </div>
+ 
+            </div>
+        </xpath>
+    </t> 
+</templates>

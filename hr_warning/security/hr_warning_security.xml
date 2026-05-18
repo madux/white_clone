@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="module_hr_warning" model="ir.module.category">
+            <field name="name">HR Warning</field>
+            <field name="description">Manage employee incidents and warnings</field>
+            <field name="sequence">100</field>
+        </record>
+
+        <!-- HR Warning User: can create and view own incidents -->
+        <record id="group_hr_warning_user" model="res.groups">
+            <field name="name">User</field>
+            <field name="category_id" ref="module_hr_warning"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+        <!-- HR Warning Officer: can process incidents and move stages -->
+        <record id="group_hr_warning_officer" model="res.groups">
+            <field name="name">Officer</field>
+            <field name="category_id" ref="module_hr_warning"/>
+            <field name="implied_ids" eval="[(4, ref('group_hr_warning_user'))]"/>
+        </record>
+
+        <!-- HR Warning Manager: full access including configuration -->
+        <record id="group_hr_warning_manager" model="res.groups">
+            <field name="name">Manager</field>
+            <field name="category_id" ref="module_hr_warning"/>
+            <field name="implied_ids" eval="[(4, ref('group_hr_warning_officer'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+
+        <record id="hr_warning_admin_user_see_all" model="ir.rule">
+            <field name="name">Admin See all Warnings</field>
+            <field name="model_id" ref="hr_warning.model_hr_warning"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('base.group_system')), (4, ref('hr_warning.group_hr_warning_manager')), (4, ref('base.user_root'))]"/>
+        </record>
+
+        <record id="hr_warning_user_see_related_record" model="ir.rule">
+            <field name="name">user see related hr warning records</field>
+            <field name="model_id" ref="hr_warning.model_hr_warning"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|','|','|', '|', '|',
+            ('employee_id.user_id.id', '=', user.id),
+            ('employee_id.parent_id.user_id.id', '=', user.id),
+            ('department_id.manager_id.user_id.id', '=', user.id),
+            ('reporter_id.id', '=', user.id), 
+            ('investigator_id.id', '=', user.id),
+            ('stage_id.approver_ids.id', 'in', [user.id])
+            ]</field>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        </record>
+
+    </data>
+</odoo>

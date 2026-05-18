@@ -44,21 +44,72 @@
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" fill="currentColor"/><rect x="11" y="1" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="1" y="11" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/><rect x="11" y="11" width="6" height="6" rx="1.5" fill="currentColor" opacity=".5"/></svg>
           Dashboard
         </a>
-        <a href="/odoo/employees" class="nav-link">
+        <a href="/app/employees" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 15c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 7c1.381 0 2.5 1.119 2.5 2.5V15" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Employees
           <span class="nav-badge" id="navEmpCount">—</span>
         </a>
-        <a href="/odoo/time-off" class="nav-link">
-          <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 1v3M12 1v3M2 8h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <a href="/app/leave" class="nav-link">
+          <!-- <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 1v3M12 1v3M2 8h14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> -->
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none">
+              <path d="M21 16L13.5 13L10 20L8 19L9.5 12L4 9.5V7.5L10.5 9L14 4H16L15 10L21 14V16Z"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linejoin="round"/>
+          </svg>
           Leave Management
           <span class="nav-badge" id="navLeaveCount">—</span>
         </a>
-        <a href="/odoo/employees" class="nav-link">
+        <a href="/app/calendar" class="nav-link">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="5" width="18" height="16" rx="2"
+                stroke="currentColor" stroke-width="1.6"/>
+            <path d="M3 9H21" stroke="currentColor"
+                stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M8 3V7M16 3V7"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"/>
+            <path d="M8 13H8.01M12 13H12.01M16 13H16.01M8 17H8.01M12 17H12.01"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"/>
+          </svg>
+          Company Calendar
+        </a>
+        <a href="/app/contracts" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><path d="M4 2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.4"/><path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Contracts
         </a>
-        <a href="/odoo/payslips" class="nav-link">
+
+        <a href="/app/insurance" class="nav-link">
+          <svg class="nav-ico" viewBox="0 0 24 24" fill="none">
+            <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14"
+                stroke="currentColor"
+                stroke-width="1.6"/>
+            <path d="M9 21V17h6v4"
+                stroke="currentColor"
+                stroke-width="1.6"/>
+            <path d="M12 8V12M10 10H14"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"/>
+            <path d="M8 14H8.01M16 14H16.01"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"/>
+        </svg>
+          Health Insurance
+        </a>
+        <a href="/app/disciplinary" class="nav-link">
+          <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><path d="M4 2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.4"/><path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Disciplinary
+        </a>
+        <a href="/hr-employee-admin" class="nav-link">
+          <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><path d="M4 2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" stroke="currentColor" stroke-width="1.4"/><path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Contracts
+        </a>
+        <a href="/hr-employee-admin" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6.5" stroke="currentColor" stroke-width="1.4"/><path d="M9 5.5v7M7.5 7.5h2.5a1 1 0 0 1 0 2H7.5M7.5 9.5H11a1 1 0 0 1 0 2H7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Payroll
         </a>
@@ -66,11 +117,11 @@
 
       <div class="nav-group">
         <div class="nav-group-label">Analytics</div>
-        <a href="/odoo/reporting/hr" class="nav-link">
+        <a href="/hr-employee-admin" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><path d="M2 13.5 L6 8 L10 11 L14 5.5 L16 7.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Reports
         </a>
-        <a href="/odoo/maintenance" class="nav-link">
+        <a href="/hr-employee-admin" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><rect x="2" y="10" width="14" height="6" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M6 10V6.5a3 3 0 0 1 6 0V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Assets
         </a>
@@ -78,7 +129,7 @@
 
       <div class="nav-group">
         <div class="nav-group-label">System</div>
-        <a href="/odoo/settings" class="nav-link">
+        <a href="/app/settings" class="nav-link">
           <svg class="nav-ico" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M9 2v2M9 14v2M2 9h2M14 9h2M3.93 3.93l1.41 1.41M12.66 12.66l1.41 1.41M3.93 14.07l1.41-1.41M12.66 5.34l1.41-1.41" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Settings
         </a>
@@ -152,11 +203,11 @@
           <p class="hero-sub">Your personalized HR workspace is ready. Manage your team, track attendance, and access all your HR tools in one place.</p>
         </div>
         <div class="hero-btns">
-          <a href="/odoo/payslips" class="btn btn-ghost">
+          <a href="/app/payslips" class="btn btn-ghost">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.3"/><path d="M7 3.5v4l2 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Payroll Info
           </a>
-          <a href="/odoo/settings" class="btn btn-primary">
+          <a href="/app/insurance" class="btn btn-primary">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             Settings
           </a>
@@ -214,7 +265,7 @@
             <div class="card">
               <div class="card-hd">
                 <span class="card-title">Department Distribution</span>
-                <a href="/odoo/employees" class="view-all">View All →</a>
+                <a href="/app/employees" class="view-all">View All →</a>
               </div>
               <div id="deptChart" style="height:220px;min-width:0;position:relative"></div>
               <div id="deptLegend" class="dept-legend"></div>
@@ -256,7 +307,7 @@
         <div>
           <div class="section-hd">
             <span class="section-title">Requires Attention</span>
-            <a href="/odoo/employees" class="view-all">View All →</a>
+            <a href="/app/employees" class="view-all">View All →</a>
           </div>
           <div class="attn-list" id="attnList">
             <div class="skeleton attn-skel"></div>

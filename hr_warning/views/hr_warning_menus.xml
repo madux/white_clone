@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_hr_warning_root"
+              name="Incidents"
+              sequence="3"
+              web_icon="hr_warning,static/description/icon.png"
+              groups="hr_warning.group_hr_warning_user"/>
+
+    <!-- Incidents -->
+    <menuitem id="menu_hr_warning_all"
+              name="Incidents"
+              parent="menu_hr_warning_root"
+              sequence="10"
+              action="action_hr_warning"
+              groups="hr_warning.group_hr_warning_user,base.group_system"/>
+
+    <menuitem id="menu_hr_warning_investigation"
+              name="Investigations"
+              parent="menu_hr_warning_root"
+              sequence="15"
+              action="action_hr_warning_investigations"
+              groups="hr_warning.group_hr_warning_user,base.group_system,hr_warning.group_hr_warning_manager,hr_warning.group_hr_warning_officer"/>
+    
+    <menuitem id="menu_hr_displinary_measure"
+              name="Measure"
+              parent="menu_hr_warning_root"
+              action="action_hr_warning_interim_measure"
+              sequence="17"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+
+    <menuitem id="menu_hr_warning_case_types1"
+              name="Case Types &amp; Categories"
+              parent="menu_hr_warning_root"
+              action="action_hr_warning_case_type"
+              sequence="20"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+
+    <record id="action_hr_warning_report_dashboard" model="ir.actions.act_url">
+        <field name="name">HR Disciplinary Analytics</field>
+        <field name="url">/incident-reporting</field>
+        <field name="target">new</field>
+    </record>
+    <menuitem id="menu_hr_warning_report"
+              name="Reporting &amp; Analytics"
+              parent="menu_hr_warning_root"
+              action="action_hr_warning_report_dashboard"
+              sequence="30"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+    <!-- <menuitem id="menu_hr_warning_list"
+              name="All Incidents"
+              parent="menu_hr_warning_all"
+              action="action_hr_warning"
+              sequence="10"
+              groups="hr_warning.group_hr_warning_user"/> -->
+
+    <!-- Configuration -->
+    <menuitem id="menu_hr_warning_config"
+              name="System"
+              parent="menu_hr_warning_root"
+              sequence="90"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+
+    <menuitem id="menu_hr_warning_stages"
+              name="Incident Stages"
+              parent="menu_hr_warning_config"
+              action="action_hr_warning_stage"
+              sequence="10"
+              groups="hr_warning.group_hr_warning_manager"/>
+
+    
+
+    <menuitem id="menu_hr_warning_case_types"
+              name="Case Types"
+              parent="menu_hr_warning_config"
+              action="action_hr_warning_case_type"
+              sequence="20"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+    <menuitem id="menu_hr_warning_policy"
+              name="Policy"
+              parent="menu_hr_warning_config"
+              action="action_hr_warning_policy"
+              sequence="30"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+     <menuitem id="menu_hr_warning_paystatus"
+              name="Pay Status"
+              parent="menu_hr_warning_config"
+              action="action_hr_paystatus"
+              sequence="40"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+
+    <!-- FRONTEND DASHBOARD -->
+    <!-- <menuitem id="menu_hr_warning_case_types1"
+              name="Case Types &amp; Categories"
+              parent="menu_hr_warning_root"
+              action="action_hr_warning_case_type"
+              sequence="20"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/> -->
+    
+    <!-- FRONTEND DASHBOARD -->
+    <!-- <menuitem id="menu_hr_warning_reports"
+              name="Reports"
+              parent="menu_hr_warning_config"
+              action="action_hr_warning_case_type"
+              sequence="30"
+              groups="hr_warning.group_hr_warning_manager"/> -->
+
+</odoo>

@@ -8,7 +8,7 @@
         White Cleon Portal for Odoo 17 
     """,
     'author': 'Custom',
-    'depends': ['base', 'portal', 'website'],
+    'depends': ['base', 'portal', 'website', 'hr_administration'],
     'data': [
         'views/menu_views.xml',
         # 'data/data.xml',

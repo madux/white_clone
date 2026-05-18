@@ -9,13 +9,7 @@ from odoo.tools import file_path
 from odoo.modules.module import get_resource_path
 
 class HRAdministrationController(http.Controller):
-
-
-    # @http.route('/hr_administration', type='http', auth='user', website=False)
-    # def dashboard_index(self, **kwargs):
-    #     """Render the HR Administration dashboard page."""
-    #     return request.render('hr_administration.dashboard_template', {})
-
+ 
     @http.route('/hr-employee-admin', type='http', auth='user', website=False)
     def dashboard_index(self, **kw):
         # Get actual file path inside the module
@@ -41,33 +35,6 @@ class HRAdministrationController(http.Controller):
             html,
             headers=[('Content-Type', 'text/html'),('defaultData', json.dumps(data))],
             
-        )
-
-    @http.route('/hr-employee-admin', type='http', auth='user')
-    def dashboard(self, **kw):
-        file_path = get_resource_path(
-            'hr_administration',  # your module name
-            'static/src/html',          # folder path inside module
-            'employee_admin_view.html'          # file name
-        )
-        with open(file_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-    
-        user = request.env.user
-        data_script = (
-            '<script>window.__HR_DATA__ = ' +
-            json.dumps({
-                'user_id':    user.id,
-                'user_name':  user.name,
-                'user_email': user.email or '',
-            }) +
-            ';</script>'
-        )
-        # Inject before </head>
-        html = html.replace('</head>', data_script + '</head>', 1)
-        return request.make_response(
-            html,
-            headers=[('Content-Type', 'text/html; charset=utf-8')]
         )
 
     # ─── Key Metrics ──────────────────────────────────────────────────────────
@@ -263,7 +230,7 @@ class HRAdministrationController(http.Controller):
         items = []
 
         # 1. Leave requests pending approval
-        pending_leaves = env['hr.leave'].search_count([('state', '=', 'confirm')])
+        pending_leaves = env['hr.leave'].search_count([('state', 'in', ['confirm', 'draft'])])
         if pending_leaves:
             items.append({
                 'priority': 'high',
@@ -271,7 +238,7 @@ class HRAdministrationController(http.Controller):
                 'description': f'{pending_leaves} urgent requests require immediate attention',
                 'module': 'Leave Management',
                 'count': pending_leaves,
-                'route': '/odoo/time-off',
+                'route': '/app/leave',
             })
 
         # 2. Contracts expiring soon
@@ -287,7 +254,7 @@ class HRAdministrationController(http.Controller):
                 'description': f'{expiring} contracts expire within the next 7 days',
                 'module': 'Workforce Lifecycle',
                 'count': expiring,
-                'route': '/odoo/employees',
+                'route': '/app/employees',
             })
 
         # 3. Disciplinary cases
@@ -300,7 +267,7 @@ class HRAdministrationController(http.Controller):
                     'description': f'{disc_cases} cases require immediate review',
                     'module': 'Disciplinary Management',
                     'count': disc_cases,
-                    'route': '/odoo/employees',
+                    'route': '/app/employees',
                 })
         except Exception:
             pass
@@ -318,7 +285,7 @@ class HRAdministrationController(http.Controller):
                     'description': f'{overdue_assets} laptops overdue by more than 7 days',
                     'module': 'Asset Management',
                     'count': overdue_assets,
-                    'route': '/odoo/maintenance',
+                    'route': '/app/maintenance',
                 })
         except Exception:
             pass
@@ -334,7 +301,7 @@ class HRAdministrationController(http.Controller):
                 'description': 'Pending enrollment approvals',
                 'module': 'Health Insurance',
                 'count': pending_alloc,
-                'route': '/odoo/time-off',
+                'route': '/app/leave',
             })
 
         return items

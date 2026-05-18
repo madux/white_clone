@@ -1,0 +1,54 @@
+<odoo>
+  <data>
+
+
+    <record id="view_warehouse_form_extended" model="ir.ui.view">
+        <field name="name">view.warehouse.form.extended</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse"/>
+        <field name="arch" type="xml">
+            <field name="code" position="after">
+                <field name="branch_id" options="{'no_create': True}" />
+                <field name="city" />
+                <field name="state_ids" />
+            </field>
+        </field>
+    </record>
+
+    <record id="view_warehouse_tree_extended" model="ir.ui.view">
+        <field name="name">view.warehouse.tree.extended</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="branch_id" />
+            </field>
+        </field>
+    </record>
+
+    <record id="view_picking_form_extended" model="ir.ui.view">
+        <field name="name">stock.picking.form.extended</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="branch_id" />
+                <field name="warehouse_id" />
+            </field>
+        </field>
+    </record>
+
+    <record id="view_branch_location_form" model="ir.ui.view">
+        <field name="name">stock.location.form</field>
+        <field name="model">stock.location</field>
+        <field name="inherit_id" ref="stock.view_location_form" />
+        <field name="arch" type="xml">
+            <field name="usage" position="after">
+                 <field name="company_id" readonly="0"/>
+                  <field name="warehouse_id" readonly="0"/>
+                <field name="branch_id" string="Branch"/>
+            </field>
+        </field>
+    </record>
+  </data>
+</odoo>

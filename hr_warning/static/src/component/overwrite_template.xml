@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- =========================================
+         LIST VIEW - CREATE BUTTON
+    ========================================== -->
+    <t t-inherit="web.ListView" t-inherit-mode="extension">
+
+        <!-- Add text-end wrapper class -->
+        <xpath expr="//t[@t-set-slot='control-panel-create-button']/t/button[contains(@class, 'o_list_button_add')]" position="attributes">
+            <attribute name="class">
+                btn btn-primary o_list_button_add text-end ms-auto
+            </attribute>
+        </xpath>
+
+        <!-- Change button label -->
+        <xpath expr="//button[contains(@class, 'o_list_button_add')]" position="replace">
+            <button
+                type="button"
+                class="btn btn-primary o_list_button_add text-end ms-auto"
+                data-hotkey="c"
+                t-on-click="onClickCreate"
+                data-bounce-button=""
+            >
+                New Record
+            </button>
+        </xpath>
+
+    </t>
+
+
+    <!-- =========================================
+         SAVE / DISCARD BUTTONS
+    ========================================== -->
+    <t t-inherit="web.ListView.Buttons" t-inherit-mode="extension">
+
+        <!-- Replace SAVE button -->
+        <xpath expr="//button[contains(@class, 'o_list_button_save')]" position="replace">
+            <button
+                type="button"
+                class="btn o_list_button_save border-0 bg-transparent shadow-none"
+                data-hotkey="s"
+                t-on-click.stop="onClickSave"
+                title="Save"
+            >
+                <i class="fa fa-floppy-o"/>
+            </button>
+        </xpath>
+
+        <!-- Replace DISCARD button -->
+        <xpath expr="//button[contains(@class, 'o_list_button_discard')]" position="replace">
+            <button
+                type="button"
+                class="btn o_list_button_discard border-0 bg-transparent shadow-none"
+                data-hotkey="j"
+                t-on-click.stop="onClickDiscard"
+                t-on-mousedown="onMouseDownDiscard"
+                title="Discard"
+            >
+                <i class="fa fa-undo"/>
+            </button>
+        </xpath>
+
+    </t>
+
+</templates>

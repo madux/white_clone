@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="stage_new" model="hr.warning.stage">
+            <field name="name">New</field>
+            <field name="sequence">10</field>
+            <field name="is_initial">True</field>
+            <field name="description">Incident has been filed and is awaiting triage.</field>
+        </record>
+        <record id="stage_pending_approval" model="hr.warning.stage">
+            <field name="name">Pending Approval</field>
+            <field name="sequence">15</field>
+            <field name="description">Investigation is complete; awaiting management approval.</field>
+        </record>
+        <record id="stage_under_investigation" model="hr.warning.stage">
+            <field name="name">Under Investigation</field>
+            <field name="sequence">20</field>
+            <field name="description">An investigator has been assigned and is gathering facts.</field>
+        </record>
+        <record id="stage_hearing_decision" model="hr.warning.stage">
+            <field name="name">Hearing &amp; decision</field>
+            <field name="sequence">30</field>
+            <field name="description">An investigator has been assigned and is gathering facts.</field>
+        </record>
+
+        <record id="stage_closed" model="hr.warning.stage">
+            <field name="name">Closed</field>
+            <field name="sequence">100</field>
+            <field name="is_closed">True</field>
+            <field name="fold">True</field>
+            <field name="description">Case has been resolved and closed.</field>
+        </record>
+
+    </data>
+</odoo>

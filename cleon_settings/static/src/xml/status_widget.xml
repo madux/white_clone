@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_warning.StatusWidget">
+
+        <div class="o_status_stepper">
+
+            <t t-foreach="stages" t-as="stage" t-key="stage[0]">
+
+                <div class="o_step_wrapper">
+
+                    <!-- Circle -->
+                    <div
+                        t-att-class="
+                            'o_step_circle ' +
+                            (isDone(stage[0]) ? 'done' : '') +
+                            (isActive(stage[0]) ? ' active' : '')
+                        "
+                    >
+
+                        <t t-if="isDone(stage[0])">
+                            <i class="fa fa-check"/>
+                        </t>
+
+                        <t t-else="">
+                            <t t-esc="stages.indexOf(stage) + 1"/>
+                        </t>
+
+                    </div>
+
+                    <!-- Label -->
+                    <div class="o_step_label">
+                        <t t-esc="stage[1]"/>
+                    </div>
+
+                    <!-- Line -->
+                    <div
+                        t-if="stages.indexOf(stage) !== stages.length - 1"
+                        t-att-class="
+                            'o_step_line ' +
+                            (isDone(stage[0]) ? 'done' : '')
+                        "
+                    />
+
+                </div>
+
+            </t>
+
+        </div>
+
+    </t>
+
+</templates>
