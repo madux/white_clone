@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 {
-    'name': "Multi Branch - OdooERP",
+    'name': "Multi Branch - App*ERP",
 
     'summary': """Multi Branch""",
 

@@ -271,9 +271,9 @@ body {
 
         display: grid !important;
 
-        grid-template-columns: repeat(2, minmax(650px, 1fr));
+        grid-template-columns: repeat(4, minmax(650px, 1fr));
 
-        gap: 28px;
+        gap: 5px;
 
         padding: 24px;
 

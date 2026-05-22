@@ -1,0 +1,98 @@
+.o_custom_layout {
+    display: flex;
+    gap: 18px;
+    padding: 16px;
+    background: #f5f7fb;
+}
+.custom_tree_header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+.o_custom_sidebar {
+    width: 240px;
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.o_list_view >.o_content {
+    display: flex;
+    flex-direction: row;
+}
+
+.sidebar_logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #2563eb;
+}
+
+.sidebar_menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sidebar_item {
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.sidebar_item:hover {
+    background: #eff6ff;
+}
+
+.sidebar_item.active {
+    background: #2563eb;
+    color: white;
+}
+
+.o_custom_main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.o_dashboard_cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+.dashboard_card {
+    padding: 22px;
+    border-radius: 18px;
+    color: white;
+}
+
+.dashboard_card.blue {
+    background: #2563eb;
+}
+
+.dashboard_card.orange {
+    background: #f59e0b;
+}
+
+.dashboard_card.green {
+    background: #10b981;
+}
+
+.card_title {
+    font-size: 14px;
+}
+
+.card_value {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.o_list_container {
+    background: white;
+    border-radius: 18px;
+    padding: 14px;
+}

@@ -19,8 +19,9 @@ class OpenActionController(http.Controller):
 
     @http.route('/app/employees', type='http', auth='user')
     def open_employees(self, **kwargs):
-
-        action = request.env.ref('hr.open_view_employee_list_my').sudo().read()[0]
+        main_action = request.env.ref('hr.open_view_employee_list_my').sudo().read()[0]
+        new_action = request.env.ref('hr_employee.action_view_employee_kanban_custom').sudo().read()[0]
+        action = new_action or main_action
         return self.redirect_to_page(action, 'kanban', 'kanban')
 
     @http.route('/app/leave', type='http', auth='user')
@@ -47,7 +48,7 @@ class OpenActionController(http.Controller):
     @http.route('/app/disciplinary', type='http', auth='user')
     def open_disciplinary_dashboard(self, **kwargs):
         action = request.env.ref('hr_warning.action_hr_warning').sudo().read()[0]
-        return self.redirect_to_page(action,'kanban', 'kanban')
+        return self.redirect_to_page(action,'tree', 'tree')
 
     @http.route('/app/maintenance', type='http', auth='user')
     def open_maintenance(self, **kwargs):

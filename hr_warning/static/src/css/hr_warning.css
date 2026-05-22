@@ -52,9 +52,12 @@
     padding: 10px;
     margin: 15px;
     color: #171717;
-    font-weight: 700px;
+    font-weight: 700;
     font-size: 15px;
+    width: 100%;
 }
+
+
 .o_warning_form .o_warning_section { 
     border-bottom: 1.5px solid #edf1fa !important;
 }
@@ -94,6 +97,8 @@
     resize: vertical;
     width: 100%;
 }
+
+
 
 /* ── Status card ────────────────────────────── */
 .o_warning_form .o_warning_status_card {
@@ -145,7 +150,10 @@
 }
 .o_warning_form .o_warning_emp_field_row { display: flex; justify-content: space-between; }
 .o_warning_form .o_warning_ef_label { font-size: 12px; color: #9ca3af; }
-.o_warning_form .o_warning_ef_val { font-size: 12px; font-weight: 500; text-align: right; }
+.o_warning_form .o_warning_ef_val {
+    font-size: 12px; font-weight: 500; text-align: right; 
+    color:#9ca3af
+}
 .o_warning_form .o_warning_view_profile_btn {
     width: 100%; border: 0.5px solid #d1d5db; background: linear-gradient(45deg, #e83e8c, #ff6fa5);
     border-radius: 6px; padding: 6px; font-size: 12px; text-align: center;
@@ -170,6 +178,7 @@
 .o_warning_form .o_notebook .nav-link.active {
     color: #e0245e;
     border-bottom-color: #e0245e;
+
 }
 
 .measure-type-section {

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Organisation Chart</title>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <!-- jsPDF + AutoTable for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap"
+    rel="stylesheet" />
+    <link href="hr_employee/static/src/css/hr_employee_chart.css" rel="stylesheet" crossorigin="anonymous">
+</head>
+
+<body>
+
+  <!-- Tooltip -->
+  <div class="org-tooltip" id="orgTooltip">
+    <div class="org-tooltip-header">
+      <div class="org-tooltip-avatar" id="orgTipAvatar"></div>
+      <div>
+        <div class="org-tooltip-name" id="orgTipName"></div>
+        <div class="org-tooltip-job" id="orgTipJob"></div>
+      </div>
+    </div>
+    <div class="org-tooltip-row"><i class="fa fa-id-badge"></i><span class="org-tooltip-val" id="orgTipNum"></span>
+    </div>
+    <div class="org-tooltip-row"><i class="fa fa-envelope"></i><span class="org-tooltip-val" id="orgTipEmail"></span>
+    </div>
+    <div class="org-tooltip-row"><i class="fa fa-phone"></i><span class="org-tooltip-val" id="orgTipPhone"></span></div>
+    <div class="org-tooltip-row"><i class="fa fa-building"></i><span class="org-tooltip-val" id="orgTipDept"></span>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="org-toast" id="orgToast">
+    <i class="fa fa-check-circle"></i>
+    <span id="orgToastMsg">Done!</span>
+  </div>
+
+  <div class="org-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="org-sidebar">
+      <div class="org-sidebar-logo">
+        <div class="org-sidebar-logo-icon"><i class="fa fa-users"></i></div>
+        <div class="org-sidebar-logo-text">
+          CleonHR
+          <span>Management Suite</span>
+        </div>
+      </div>
+
+      <div class="org-nav-label">Main Menu</div>
+
+      <a class="org-nav-item" href="#">
+        <div class="org-nav-icon"><i class="fa fa-calendar-days"></i></div><span
+          class="org-nav-text">Dashboard</span><span class="org-nav-badge">2</span>
+      </a>
+      <a class="org-nav-item" href="#">
+        <div class="org-nav-icon"><i class="fa fa-users"></i></div><span class="org-nav-text">Employee Profiles</span>
+      </a>
+      <a class="org-nav-item org-nav-active" href="#">
+        <div class="org-nav-icon"><i class="fa fa-sitemap"></i></div><span class="org-nav-text">Organisation</span><span
+          class="org-nav-badge">2</span>
+      </a>
+      <a class="org-nav-item org-nav-green" href="#">
+        <div class="org-nav-icon"><i class="fa fa-comments"></i></div><span class="org-nav-text">Messages</span>
+      </a>
+      <a class="org-nav-item" href="#">
+        <div class="org-nav-icon"><i class="fa fa-calendar-check"></i></div><span class="org-nav-text">Meeting</span>
+      </a>
+      <a class="org-nav-item org-nav-green" href="#">
+        <div class="org-nav-icon"><i class="fa fa-plane"></i></div><span class="org-nav-text">Vacations</span>
+      </a>
+
+      <div class="org-nav-label" style="margin-top:8px;">Organisation</div>
+
+      <a class="org-nav-item" href="#">
+        <div class="org-nav-icon"><i class="fa fa-building"></i></div><span class="org-nav-text">Departments</span>
+      </a>
+      <a class="org-nav-item org-nav-amber" href="#">
+        <div class="org-nav-icon"><i class="fa fa-face-frown"></i></div><span class="org-nav-text">Disciplinary</span>
+      </a>
+      <a class="org-nav-item org-nav-red" href="#">
+        <div class="org-nav-icon"><i class="fa fa-id-card"></i></div><span class="org-nav-text">Positions</span>
+      </a>
+      <a class="org-nav-item org-nav-amber" href="#">
+        <div class="org-nav-icon"><i class="fa fa-thumbtack"></i></div><span class="org-nav-text">Task &amp;
+          Assignments</span>
+      </a>
+
+      <div class="org-sidebar-footer">
+        <div class="org-user-card">
+          <div class="org-user-avatar" id="orgSidebarAvatar">U</div>
+          <div class="org-user-info">
+            <div class="org-user-name" id="orgSidebarName">Loading…</div>
+            <div class="org-user-role" id="orgSidebarEmail"></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <div class="org-main">
+
+      <!-- Header -->
+      <div class="org-header">
+        <div class="org-header-title">Org <span>Chart</span></div>
+        <div class="org-header-divider"></div>
+
+        <div class="org-search-wrap">
+          <i class="fa fa-search"></i>
+          <input type="text" class="org-search-input" id="orgSearchInput" placeholder="Search employee…" />
+        </div>
+
+        <select class="org-filter-select" id="orgFilterDept" title="Filter by Department">
+          <option value="">All Departments</option>
+        </select>
+
+        <select class="org-filter-select" id="orgFilterCompany" title="Filter by Company">
+          <option value="">All Companies</option>
+        </select>
+
+        <select class="org-filter-select" id="orgFilterJob" title="Filter by Job Role">
+          <option value="">All Job Roles</option>
+        </select>
+
+        <div class="org-header-spacer"></div>
+
+        <button class="org-view-btn org-view-active" id="orgBtnTree" title="Tree View"><i
+            class="fa fa-sitemap"></i></button>
+        <button class="org-view-btn" id="orgBtnList" title="List View"><i class="fa fa-list"></i></button>
+
+        <button class="org-export-btn" id="orgExportBtn">
+          <i class="fa fa-file-pdf"></i> Export PDF
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="org-content">
+
+        <!-- Loading -->
+        <div class="org-loading" id="orgLoading">
+          <div class="org-spinner"></div>
+          <div class="org-loading-text">Loading organisation chart…</div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="org-stats-bar" id="orgStatsBar" style="display:none;">
+          <div class="org-stat-card">
+            <div class="org-stat-icon org-si-pink"><i class="fa fa-users"></i></div>
+            <div>
+              <div class="org-stat-num" id="orgStatTotal">0</div>
+              <div class="org-stat-lbl">Total Employees</div>
+            </div>
+          </div>
+          <div class="org-stat-card">
+            <div class="org-stat-icon org-si-blue"><i class="fa fa-building"></i></div>
+            <div>
+              <div class="org-stat-num" id="orgStatDepts">0</div>
+              <div class="org-stat-lbl">Departments</div>
+            </div>
+          </div>
+          <div class="org-stat-card">
+            <div class="org-stat-icon org-si-green"><i class="fa fa-briefcase"></i></div>
+            <div>
+              <div class="org-stat-num" id="orgStatJobs">0</div>
+              <div class="org-stat-lbl">Job Roles</div>
+            </div>
+          </div>
+          <div class="org-stat-card">
+            <div class="org-stat-icon org-si-amber"><i class="fa fa-user-tie"></i></div>
+            <div>
+              <div class="org-stat-num" id="orgStatManagers">0</div>
+              <div class="org-stat-lbl">Managers</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tree View -->
+        <div class="org-chart-scroll org-view-show" id="orgTreeView">
+          <div class="org-chart-wrap" id="orgChartWrap"></div>
+        </div>
+
+        <!-- List View -->
+        <div class="org-list-view" id="orgListView">
+          <table class="org-list-table" id="orgListTable">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Staff Number</th>
+                <th>Position / Job Role</th>
+                <th>Department</th>
+                <th>Work Email</th>
+                <th>Phone</th>
+              </tr>
+            </thead>
+            <tbody id="orgListBody"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /org-content -->
+    </div><!-- /org-main -->
+  </div><!-- /org-layout -->
+
+    <script src="hr_employee/static/src/js/employee_chart_view.js?v=23"></script>
+</body>
+
+</html>

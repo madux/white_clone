@@ -329,6 +329,7 @@ class HrWarning(models.Model):
             ('under_investigation', 'Under Investigation'),
             ('hearing', 'Hearing & Decisions'),
             ('closed', 'Closed'),
+            ('appeal', 'Appealled'), 
             ('cancelled', 'Cancelled'),
         ],
         string='Status',
@@ -336,6 +337,13 @@ class HrWarning(models.Model):
         tracking=True,
         copy=False,
     )
+
+    def action_move_to_resolution(self):
+        self.state = 'resolution'
+
+    def action_move_to_action_issued(self):
+        self.state = 'action_issued'
+        
     workflow_status = fields.Selection(
         selection=[
             ('1', 'Incident Details'),
@@ -375,6 +383,19 @@ class HrWarning(models.Model):
 
         return [False, False]
 
+    @api.model
+    def get_all_hearing_records(self):
+        records = self.search(
+            [
+                ('stage_id.is_hearing', '=', True),
+            ],
+            order='id desc',
+        )
+
+        if records:
+            return records.ids
+        return []
+
     def create_new_record(self):
         form_view_id = self.env.ref(
                 'hr_warning.hr_warning_dialog_form_view'
@@ -398,7 +419,7 @@ class HrWarning(models.Model):
             self.workflow_status = '5'
             self.action_report_disciplinary()
             # open the submitted record 
-            return open_record('new')
+            return self.open_record('new')
         else:
             if self.workflow_status == '1':
                 self.workflow_status = '2'
@@ -490,6 +511,11 @@ class HrWarning(models.Model):
         readonly=True,
         copy=False,
     )
+    confirm_option = fields.Boolean(
+        string='Confirm',
+        readonly=False,
+        copy=False,
+    )
 
     # ── Attachments (evidence) ────────────────────────────────────────────────
     evidence_ids = fields.Many2many(
@@ -512,24 +538,112 @@ class HrWarning(models.Model):
         default=lambda self: self.env.company,
     )
 
+    resolution_description = fields.Text(
+        string="Resolution Note",
+    )
+    resolution_date = fields.Date(
+        string="Resolution Date",
+    )
+
+    appeal_description = fields.Text(
+        string="Appeal Note",
+    )
+    appeal_date = fields.Date(
+        string="Appeal Date",
+    )
+    appeal_state = fields.Selection(
+        selection=[
+            ('appealled', 'Appealled'),
+            ('review', 'Under Review'),
+            ('action_issued', 'action_issued'),
+            ('resolution', 'Resolution'),
+            ('cancelled', 'Cancelled'),
+        ],
+        string='Appeal Status',
+        default='appealled',
+        tracking=True,
+        copy=False,
+    )
+    appeal_officer_ids = fields.Many2many(
+        'hr.employee',
+        'hr_warning_appeal_employee_rel',
+        'hr_warning_appeal_employee_id',
+        'warning_appeal_id',
+        string='Appeal Officers',
+    )
+
     def action_hr_warning_evidence(self):
         pass 
 
     def open_record(self, target='new'):
         return {
             'type': 'ir.actions.act_window',
-            'res_model': 'your.model',
+            'res_model': self._name,
             'view_mode': 'form',
             'res_id': self.id,
             'target': target,
+            'view_id': self.env.ref('hr_warning.hr_warning_form_view').id,
         }
 
     def action_approve(self):
-
         self.write({
             'state': 'pending_approval'
         })
 
+    def action_move_review(self):
+        self.write({
+            'appeal_state': 'review'
+        })
+ 
+    def action_approve_resolution(self):
+        self.write({
+            'appeal_state': 'resolution'
+        })
+    
+    def action_undo_resolution(self):
+        self.write({
+            'appeal_state': 'review'
+        })
+
+    def action_resolve(self):
+        rec_ids = self.env.context.get('active_ids', [])
+
+        tree_view_id = self.env.ref(
+                'hr_warning.hr_warning_appeal_tree_view'
+            ).id
+        for rec in rec_ids:
+            record = self.env['hr.warning'].browse([rec])
+            if record.state != 'closed':
+                raise UserError(f"{rec.case_type_id.name} status is not set to closed.. Kindly ensure the case number is closed before appealling ")
+            record.write({
+                'state': 'resolution'
+            })
+
+    def action_appeal_case(self):
+        rec_ids = self.env.context.get('active_ids', [])
+        tree_view_id = self.env.ref(
+                'hr_warning.hr_warning_appeal_tree_view'
+            ).id
+        for rec in rec_ids:
+            record = self.env['hr.warning'].browse([rec])
+            record.state = 'appeal'
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Appeal Case'),
+            'res_model': self._name,
+            'view_mode': 'tree',
+            'views': [
+                    (tree_view_id, 'tree')
+                ],
+            'context': {
+                'default_appeal_state': 'appealled', 
+                'default_state': 'appeal',
+                },
+            'target': 'new',
+            'domain': [('id', 'in', rec_ids)]
+        }
+
+            
     # ─────────────────────────────────────────────────────────────────────────
     # Defaults & group expand
     # ─────────────────────────────────────────────────────────────────────────
@@ -599,7 +713,7 @@ class HrWarning(models.Model):
         if stage_changing:
             for rec in self:
                 rec._sync_state_from_stage()
-                rec._notify_stage_approvers()
+                # rec._notify_stage_approvers()
                 # Track investigator assignment date
                 if rec.investigator_id and not rec.date_assigned:
                     rec.date_assigned = fields.Date.today()
@@ -696,36 +810,100 @@ class HrWarning(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
     # Button actions
     # ─────────────────────────────────────────────────────────────────────────
-    def validate_approvers(self, next_stage_obj):
-        if next_stage_obj.is_initial:
+    def validate_approvers(self, stage_obj):
+        if stage_obj.is_initial:
+            # raise ValidationError("B1")
+
             pass 
-        elif next_stage_obj.is_closed:
+        elif stage_obj.is_closed:
+            # raise ValidationError("B2")
+
             if self.env.uid not in self.stage_id.approver_ids.ids or []:
-                return {
-                    'warning': {
-                        'title': 'User right',
-                        'message': 'You are not allowed to close on this incident',
-                    }
-                }
+                raise UserError("You are not allowed to close on this incident ")
+                # return self.return_display_notice(
+                #     title="User right",
+                #     message="You are not allowed to close on this incident",
+                #     typeof="danger",
+                #     sticky=False
+                # )
+                 
         else:
-            if self.env.uid not in next_stage_obj.approver_ids.ids or []:
-                return {
-                    'warning': {
-                        'title': 'User right',
-                        'message': 'You are not allowed to start investigation on this record',
+
+            if self.env.uid not in stage_obj.approver_ids.ids or []:
+                raise UserError("You are not allowed to approve this record because you are not an approver ")
+
+            #     return self.return_display_notice(
+            #         title="User right",
+            #         message="You are not allowed to approve this record because you are not an approver ",
+            #         typeof="danger",
+            #         sticky=False
+            #     )
+            # else:
+            #     raise ValidationError("B4")
+ 
+
+    def action_submit_incident(self):
+        if self.create_uid.id != self.env.user.id:
+            return self.return_display_notice(
+                title="Validation",
+                message="You are not allowed to Submit record not created by you",
+                typeof="danger",
+                sticky=False
+            )
+        self.submit_feature()
+        return {'type': 'ir.actions.client', 'tag': 'reload',}
+
+    def return_display_notice(self, title="Notification", message="-", typeof='success', sticky=False):
+        return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                    'params': {
+                        'title': _(title),
+                        'message':  _(message),
+                        'type': typeof,
+                        'sticky': sticky
                     }
-                }
-
-
+            }
     def action_report_disciplinary(self):
         self.ensure_one()
-        next_stage = self.env['hr.warning.stage'].search(
+
+        if not self.confirm_option:
+            return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                        'params': {
+                            'title': _('Confirm'),
+                            'message': _(f'Please check the consent box before proceeding'),
+                            'type': 'success',
+                            'sticky': False
+                        }
+                }
+        if self.create_uid.id != self.env.user.id:
+            return self.return_display_notice(
+                title="Validation",
+                message="You are not allowed to Submit record not created by you",
+                typeof="danger",
+                sticky=False
+            )
+        self.submit_feature()
+
+    def submit_feature(self):
+        if self.stage_id.is_closed:
+            next_stage = self.env['hr.warning.stage'].search(
+            [('is_initial', '=', True)],
+            order='sequence',
+            limit=1,
+            )
+
+        else:
+            next_stage = self.env['hr.warning.stage'].search(
             [('sequence', '>', self.stage_id.sequence)],
             order='sequence',
             limit=1,
-        )
+            )
+        
         if not next_stage:
-            raise UserError(_(f'No next stage defined. Please contact admin to configure {next_stage.name} stages.'))
+            raise UserError(_(f'No next stage defined. Please contact admin to configure stages.'))
         self.stage_id = next_stage
         self.state = 'pending_approval'
         self.update_audit_trail(f'This record was submitted ')
@@ -733,15 +911,16 @@ class HrWarning(models.Model):
     def action_start_investigation(self):
         """Move to the next stage after the initial one."""
         self.ensure_one()
+
         next_stage = self.env['hr.warning.stage'].search(
             [('sequence', '>', self.stage_id.sequence)],
             order='sequence',
             limit=1,
         )
+        self.validate_approvers(self.stage_id)
+
         if not next_stage:
             raise UserError(_(f'No next stage defined. Please contact admin to configure {next_stage.name} stages.'))
-        self.validate_approvers(next_stage)
-        
         self.stage_id = next_stage
         self.state = 'under_investigation'
         self.update_audit_trail(f'This record was updated to under investigation')
@@ -750,17 +929,27 @@ class HrWarning(models.Model):
     def action_move_next_stage(self):
         """Advance the incident to the immediately next stage."""
         self.ensure_one()
-        next_stage = self.env['hr.warning.stage'].search(
-            [('sequence', '>', self.stage_id.sequence)],
+        if self.stage_id.is_closed:
+            next_stage = self.env['hr.warning.stage'].search(
+            [('is_initial', '=', True)],
             order='sequence',
             limit=1,
-        )
+            )
+
+        else:
+            next_stage = self.env['hr.warning.stage'].search(
+                [('sequence', '>', self.stage_id.sequence)],
+                order='sequence',
+                limit=1,
+            )
         if not next_stage:
             raise UserError(_('This incident is already at the final stage.'))
-        self.validate_approvers(next_stage)
+        self.validate_approvers(self.stage_id)
+        if next_stage.is_closed:
+            if not self.interim_measure_ids.ids:
+                raise ValidationError("Please Endevour to provide interim Measure")
         self.stage_id = next_stage
         self.update_audit_trail(f'This record was updated to {self.stage_id.name}')
-        
 
     def action_close_case(self):
         """Close the incident: jump to the configured closed stage."""
@@ -775,14 +964,13 @@ class HrWarning(models.Model):
                     'Please mark a stage as "Closed Stage" in the stage configuration.'
                 )
             )
-        self.validate_approvers(next_stage)
         self.stage_id = closed_stage
         self.state = 'closed'
         self.date_closed = fields.Date.today()
-        self.message_post(
-            body=_('Case has been <b>closed</b>.'),
-            subtype_xmlid='mail.mt_note',
-        )
+        # self.message_post(
+        #     body=_('Case has been <b>closed</b>.'),
+        #     subtype_xmlid='mail.mt_note',
+        # )
 
     def action_cancel(self):
         self.ensure_one()
@@ -805,10 +993,10 @@ class HrWarning(models.Model):
         )
         self.state = 'draft'
         self.date_closed = False
-        self.message_post(
-            body=_('Case has been <b>reopened</b>.'),
-            subtype_xmlid='mail.mt_note',
-        )
+        # self.message_post(
+        #     body=_('Case has been <b>reopened</b>.'),
+        #     subtype_xmlid='mail.mt_note',
+        # )
 
     def action_assign_investigator(self):
         """Open a wizard-like dialog to assign an investigator (quick action)."""

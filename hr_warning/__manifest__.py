@@ -27,6 +27,7 @@
         'views/hr_warning_stage_views.xml',
         'views/hr_warning_views.xml',
         'views/hr_warning_dialog_views.xml',
+        'views/hr_warning_appeal_tree.xml',
         'views/hr_interim_measure.xml',
         'views/hr_policy.xml',
         'views/hr_warning_menus.xml',

@@ -28,7 +28,7 @@ function setFavicon(url) {
 const originalDescriptor = Object.getOwnPropertyDescriptor(Document.prototype, "title");
 Object.defineProperty(document, "title", {
     set(value) {
-        // Replace "Odoo" or "WhiteClone" with your app name
+        // Replace   "WhiteClone" with your app name
         const cleaned = value
             .replace(/Odoo/gi, APP_NAME)
             .replace(/WhiteClone/gi, APP_NAME)

@@ -17,7 +17,7 @@
                 </header>
                 <div class='alert alert-info' role="alert" invisible="display_unfinished_message == False">
                     <field name="display_unfinished_message" nolabel="1" readonly="1" class="d-inline"/>
-                    <button name="create_new_record"
+                    <button name="action_resolve"
                                 type="object"
                                 class="oe_highlight fa fa-plus"/>
                 </div>
@@ -55,6 +55,7 @@
                                 <div class="o_warning_section" invisible="workflow_status not in ['1', '4']">
                                     <group>
                                         <group class="o_warning_section">
+                                            <field name="state" invisible="1"/>
                                             <field name="subject" required="1"/>
                                             <field name="employee_id" required="1" readonly="workflow_status in ['4']" options="{'no_open': true, 'no_create': true}"/>
                                             <field name="case_type_id" required="1" readonly="workflow_status in ['4']" options="{'no_open': true, 'no_create': true}" />
@@ -132,13 +133,14 @@
                                     </group>
                                 </div>
                                 <div class="o_warning_section" invisible="workflow_status not in ['3', '4']">
-                                    <group>
-                                        <field name="evidence_ids"
+                                    <field name="evidence_ids"
                                             widget="many2many_binary"
                                             nolabel="1"
                                             string="Evidence / Attachments"
                                             required="workflow_status in ['3']"/>
-                                    </group>
+                                </div>
+                                <div class='alert alert-info' role="alert" invisible="workflow_status != '4'">
+                                    <field name="confirm_option" widget="boolean_toggle" nolabel="1" readonly="state != 'draft'" class="d-inline m-2"/> I confirm this information is accurate and complete to the best of my knowledge.
                                 </div>
                             </page>
                         </notebook>
@@ -147,13 +149,19 @@
                 <footer class="text-end">
                     <div class="text-end">
                         <button name="button_previous_step"
-                                string="Previous"
+                                string="Back"
                                 type="object"
                                 class="fa fa-chevron-left m-2"/>
                         <button name="button_next_step"
                                 string="Next"
                                 type="object"
-                                class="oe_highlight fa fa-chevron-right"/>
+                                class="oe_highlight fa fa-chevron-right" invisible="workflow_status in ['4', '5']"/>
+
+
+                        <button name="action_submit_incident"
+                                string="Submit incident"
+                                type="object"
+                                class="oe_highlight fa fa-chevron-right" invisible="workflow_status not in ['4']"/>
                     </div>
                 </footer>
             </form>

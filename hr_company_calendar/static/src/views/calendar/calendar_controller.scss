@@ -17,10 +17,10 @@ $cc-radius:     8px;
 // ── LAYOUT ───────────────────────────────────────────────────
 //
 //  o_calendar_container has these direct children (in DOM order):
-//    1. o_calendar_header          (Odoo)
+//    1. o_calendar_header          (App*)
 //    2. o_cc_admin_sidebar         (ours, injected via position="inside")
-//    3. o_calendar_renderer        (Odoo)
-//    4. o_calendar_sidebar_container (Odoo)
+//    3. o_calendar_renderer        (App*)
+//    4. o_calendar_sidebar_container (App*)
 //
 //  We use flex-wrap so the header takes the full first row,
 //  and the remaining three share the second row side by side.
@@ -63,7 +63,7 @@ $cc-radius:     8px;
         display: block !important;
     }
 
-    // ── Row 2: Odoo's right sidebar (attendees / date-picker) ──
+    // ── Row 2: App*'s right sidebar (attendees / date-picker) ──
     > .o_calendar_sidebar_container {
         flex: 0 0 auto !important;
         order: 3;

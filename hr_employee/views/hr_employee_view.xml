@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_employee_kanban_custom" model="ir.ui.view">
+        <field name="name">employee.kanban.custom</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+
+            <kanban js_class="app_dashboard_kanban" class="o_employee_directory_kanban">
+
+                <field name="name"/>
+                <field name="job_title"/>
+                <field name="department_id"/>
+                <field name="image_1920"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="employee_card">
+                                <div class="employee_avatar_wrapper">
+                                    <img t-if="record.image_1920.raw_value"
+                                        t-att-src="kanban_image('hr.employee', 'image_1920', record.id.raw_value)"
+                                        class="employee_avatar"/>
+                                </div>
+
+                                <div class="employee_name">
+                                    <li t-if="record.name.raw_value" class="o_text_overflow">
+                                        <i class="fa fa-fw me-2 fa-user text-primary" title="Name"/>
+                                        <field name="name"/>
+                                    </li>
+                                    <li t-else=""
+                                        class="text-muted">
+
+                                        <i class="fa fa-fw me-2 fa-user"/>
+                                        No Name
+
+                                    </li>
+                                </div>
+
+                                <div class="employee_job">
+                                    <li t-if="record.job_title.raw_value" class="o_text_overflow">
+                                        <i class="fa fa-fw me-2 fa-fire" title="Title"/>
+                                        <field name="job_title"/>
+                                    </li>
+                                    <li t-else="" class="o_text_overflow">
+                                         N/A
+                                    </li>
+                                </div>
+
+                                <div class="employee_department">
+                                    <li t-if="record.department_id.raw_value" class="o_text_overflow">
+                                        <i class="fa fa-fw me-2 fa-building-o" title="department"/>
+                                        <field name="department_id"/>
+                                    </li>
+                                    <li t-else="" class="o_text_overflow">
+                                         N/A
+                                    </li>
+                                </div>
+
+                                <div class="employee_status"/>
+                                <button name="action_view_profile"
+                                        type="object"
+                                        class="btn employee_message_btn btn-sm">
+                                    View Details
+                                </button>
+                                <!-- <button class="btn btn-primary">
+                                    <i class="fa fa-envelope me-1"/>
+                                    Message
+                                </button> -->
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="view_employee_search_custom" model="ir.ui.view">
+        <field name="name">employee.search.custom</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <search string="Employees">
+                <field name="name" string="Employee" filter_domain="['|', ('work_email', 'ilike', self), ('name', 'ilike', self)]"/>
+                <searchpanel>
+                    <field name="company_id" groups="base.group_multi_company" icon="fa-building" enable_counters="1"/>
+                    <field name="department_id" icon="fa-users" enable_counters="1"/>
+                            <field name="department_id" icon="fa-users" enable_counters="1"/>
+                </searchpanel>
+                <field name="parent_id" string="Manager"/>
+                <field name="job_id"/>
+                <field name="coach_id"/>
+                <field name="category_ids" groups="hr.group_hr_user"/>
+                <field name="private_car_plate"/>
+                <field name="message_needaction" invisible="1"/>
+                <separator/>
+                <filter string="Unread Messages" name="message_needaction" domain="[('message_needaction', '=', True)]" groups="mail.group_mail_notification_type_inbox"/>
+                <separator/>
+                <filter invisible="1" string="Late Activities" name="activities_overdue" domain="[('my_activity_date_deadline', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter invisible="1" string="Today Activities" name="activities_today" domain="[('my_activity_date_deadline', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter invisible="1" string="Future Activities" name="activities_upcoming_all" domain="[('my_activity_date_deadline', '&gt;', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="my_team" string="My Team" domain="[('parent_id.user_id', '=', uid)]"/>
+                <filter name="my_department" string="My Department" domain="[('member_of_department', '=', True)]"/>
+                <separator/>
+                <filter name="newly_hired" string="Newly Hired" domain="[('newly_hired', '=', True)]"/>
+                <separator/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_manager" string="Manager" domain="[]" context="{'group_by': 'parent_id'}"/>
+                    <filter name="group_department" string="Department" domain="[]" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_job" string="Job" domain="[]" context="{'group_by': 'job_id'}"/>
+                    <filter name="group_start" string="Start Date" domain="[]" context="{'group_by': 'create_date'}"/>
+                    <filter name="group_category_ids" string="Tags" domain="[]" context="{'group_by': 'category_ids'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <record id="action_view_employee_kanban_custom" model="ir.actions.act_window">
+        <field name="name">Employee</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">kanban,tree,form</field>
+
+        <!-- IMPORTANT -->
+        <field name="view_id" ref="view_employee_kanban_custom"/>
+        <field name="search_view_id" ref="view_employee_search_custom"/>
+
+        <!-- OPEN AS DIALOG -->
+        <field name="target">current</field>
+    </record>
+</odoo>

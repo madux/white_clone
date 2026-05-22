@@ -5,7 +5,7 @@
     'category': 'Human Resources',
     'summary': 'Comprehensive HR Administration Dashboard with analytics and workforce management',
     'description': """
-        HR Administration Dashboard for Odoo 17
+        HR Administration Dashboard for App 17
         =========================================
         - Real-time HR Key Metrics
         - Workforce Analytics with Highcharts
@@ -13,7 +13,7 @@
         - Leave Utilization by Department
         - Requires Attention Panel
         - Upcoming Events
-        - Full integration with Odoo HR models
+        - Full integration with App HR models
     """,
     'author': 'HR Administration',
     'website': '',

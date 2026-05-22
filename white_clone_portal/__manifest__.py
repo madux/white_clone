@@ -5,7 +5,7 @@
     'category': 'CRM',
     'summary': 'White Clone Portal with Dashboard',
     'description': """
-        White Cleon Portal for Odoo 17 
+        White Cleon Portal for App* 17 
     """,
     'author': 'Custom',
     'depends': ['base', 'portal', 'website', 'hr_administration'],

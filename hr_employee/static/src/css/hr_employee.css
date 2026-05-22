@@ -1,0 +1,188 @@
+.staff_directory_layout {
+    min-height: 100vh;
+    background: #f5f6fa;
+}
+
+/* SIDEBAR */
+
+.staff_sidebar {
+    width: 250px;
+    background: white;
+    border-right: 1px solid #ddd;
+    padding: 30px 20px;
+}
+
+.sidebar_title {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.sidebar_menu {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar_menu li {
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.sidebar_menu li.active {
+    background: #ffe5f2;
+    color: #e6007e;
+}
+
+/* CONTENT */
+
+
+.staff_content {
+    padding: 30px;
+}
+
+.staff_header h1 {
+    font-size: 25px;
+    font-weight: 700;
+    font-family: 'Segoe UI', sans-serif; 
+}
+
+.assign_btn {
+    background: #e6007e;
+    border: none;
+}
+
+.staff_toolbar {
+    margin-top: 25px;
+}
+
+.search_box {
+    height: 50px;
+}
+
+.filter_select {
+    width: 200px;
+}
+
+/* GRID */
+
+.staff_grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+}
+
+/* CARD */
+
+.o_employee_directory_kanban {
+
+    .o_kanban_renderer {
+
+        display: grid !important;
+
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        padding: 24px;
+        align-items: start;
+    }
+
+    .o_kanban_record {
+        width: 100% !important;
+
+        max-width: 100% !important;
+
+        margin: 0 !important;
+    }
+
+    .employee_card {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 14px;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .employee_card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+
+}
+
+ 
+
+.employee_avatar {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.employee_name {
+    font-weight: 700;
+    margin-top: 18px;
+    color: #3D4263;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 18px;
+}
+
+.employee_job {
+    color: #666;
+    margin-top: 5px;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 14px;
+}
+
+.employee_department {
+    color: #999;
+    margin-top: 12px;
+    font-family: 'Outfit', system-ui, sans-serif;
+    font-size: 12px;
+}
+
+.employee_status {
+    width: 10px;
+    height: 10px;
+    background: #097414;
+    border-radius: 50%;
+    margin: 16px auto;
+}
+
+.green_badge_status {
+    width: 10px;
+    height: 10px;
+    color: #00af11;
+    border-radius: 50%;
+    margin: 16px auto;
+}
+
+.red_badge_status {
+    width: 10px;
+    height: 10px;
+    color: #b6013a;
+    border-radius: 50%;
+    margin: 16px auto;
+}
+.yellow_badge_status {
+    width: 10px;
+    height: 10px;
+    color: #e6e60a;
+    border-radius: 50%;
+    margin: 16px auto;
+}
+
+.employee_message_btn
+ {
+    height: 50%;
+    width: 100%;
+    background: #e91e8c;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    /* margin-top: 20px; */
+    /* padding: 10px; */
+    font-size: 14px;
+    font-family: 'Outfit', system-ui, sans-serif;
+}

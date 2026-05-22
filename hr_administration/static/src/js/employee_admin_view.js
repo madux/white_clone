@@ -13,10 +13,10 @@ $(function () {
   /* ── Read defaultData from response header ───────────── */
   var DEFAULT_DATA = {};
   try {
-    // Odoo passes user info in the 'defaultData' header via make_response()
+    // App passes user info in the 'defaultData' header via make_response()
     // jQuery doesn't expose custom response headers easily from the page context,
     // so we embed them as a meta tag in the controller (see instructions below),
-    // OR we read from a global injected by Odoo session.
+    // OR we read from a global injected by App session.
     // Fallback: try window.__HR_DATA__ (set by controller via <script> injection)
     if (window.__HR_DATA__) DEFAULT_DATA = window.__HR_DATA__;
   } catch(e) {}
@@ -51,7 +51,7 @@ $(function () {
 
   /* ── User info ───────────────────────────────────────── */
   function initUser() {
-    // Try Odoo session globals first
+    // Try App session globals first
     var name = '';
     try {
       if (window.odoo && odoo.session_info) name = odoo.session_info.name || '';

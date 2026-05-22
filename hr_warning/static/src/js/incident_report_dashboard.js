@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-       CONFIG — change BASE_URL to your Odoo instance
+       CONFIG — change BASE_URL to your App* instance
     ═══════════════════════════════════════════════ */
     const BASE_URL = window.location.origin; // e.g. 'https://your-odoo.com'
 
@@ -365,7 +365,7 @@
        EXPORT
     ═══════════════════════════════════════════════ */
     function exportReport() {
-      alert('Export triggered — wire to /hr_warning/report/export in your Odoo controller.');
+      alert('Export triggered — wire to /hr_warning/report/export in your App* controller.');
     }
 
     /* ═══════════════════════════════════════════════

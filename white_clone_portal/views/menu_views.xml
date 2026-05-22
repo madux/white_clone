@@ -4,14 +4,14 @@
 
         <!-- Dashboard Action -->
         <record id="action_white_clone_portal_dashboard" model="ir.actions.act_url">
-            <field name="name">White Clone</field>
+            <field name="name">White Cleon</field>
             <field name="url">/landing</field>
             <field name="target">self</field>
         </record>
         <!-- CloneHR Top Menu -->
         <menuitem
             id="menu_white_clone_portal_root"
-            name="CloneHR"
+            name="CleonHR"
             sequence="50"
             web_icon="white_clone_portal,static/description/icon.png"
             action="white_clone_portal.action_white_clone_portal_dashboard"/>

@@ -1,6 +1,6 @@
 /**
  * HR Administration Dashboard — dashboard.js
- * Odoo 17 Module: hr_administration
+ * App 17 Module: hr_administration
  *
  * Fetches live data from /hr_administration/api/* endpoints
  * and renders all charts & widgets using Highcharts.
@@ -66,7 +66,7 @@
 
   /* ─── User Info ───────────────────────────────────────────── */
   function initUser() {
-    // Read from Odoo session if available
+    // Read from App session if available
     try {
       const session = window.odoo && odoo.session_info;
       if (session) {
@@ -132,7 +132,7 @@
   /* ─── Safe Highcharts render helper ──────────────────────── */
   /**
    * Highcharts error #13 = container not found or has no dimensions.
-   * In Odoo 17 the JS bundle runs before QWeb renders the DOM, so we
+   * In App 17 the JS bundle runs before QWeb renders the DOM, so we
    * must wait until the element exists AND has a non-zero offsetWidth.
    */
   function safeChart(containerId, options, retries) {
