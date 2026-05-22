@@ -153,7 +153,7 @@
             </field>
         </record>
 
-        <record id="sale_analysis_report_tree" model="ir.ui.view">
+        <!-- <record id="sale_analysis_report_tree" model="ir.ui.view">
             <field name="name">sale_analysis_report.list.select</field>
             <field name="model">sale.order.line</field>
             <field name="inherit_id" ref="sale_analysis_report.sale_analysis_report_tree"/>
@@ -162,7 +162,7 @@
                     <field name="branch_id" string="Section / Branch"/>
                 </field>
             </field>
-        </record>
+        </record> -->
 
         <record id="crm_team_view_tree_extended" model="ir.ui.view">
             <field name="name">crm.team.tree.extended</field>
