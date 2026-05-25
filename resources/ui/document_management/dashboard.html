@@ -378,8 +378,154 @@
       </div>
 
       <div class="ee-tab-content" id="ee-tab-templates" style="display:none;">
-        <div class="page-header"><div class="page-header-text"><h1>Templates &amp; Forms</h1><p>Browse available document templates</p></div></div>
-        <div class="pd-empty"><h4>No templates available</h4></div>
+        <div class="tm-title-row">
+          <div>
+            <h2>Templates &amp; Forms Library</h2>
+            <p>Download official company templates and forms</p>
+          </div>
+          <button class="btn-primary" onclick="openTemplateModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Request New Template
+          </button>
+        </div>
+
+        <div class="tm-toolbar">
+          <div class="tm-search-wrap">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search templates...">
+          </div>
+          <div class="tm-select-wrap">
+            <select>
+              <option>All Categories</option>
+              <option>Leave &amp; Time Off</option>
+              <option>Finance &amp; Expenses</option>
+              <option>Learning &amp; Development</option>
+              <option>Work Arrangements</option>
+              <option>Career Development</option>
+            </select>
+            <svg class="tm-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="tm-view-toggle">
+            <button class="tm-view-btn active" id="grid-btn" onclick="setView('grid')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </button>
+            <button class="tm-view-btn" id="list-btn" onclick="setView('list')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="tm-template-grid" id="template-grid">
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge pdf">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="file-type-label">PDF</span>
+              </div>
+              <div class="card-info"><h3>Leave Request Form</h3><p>Standard template for requesting time off including annual leave, sick leave, and personal days</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Leave &amp; Time Off</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">125 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v3.2</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 3/15/2026</div>
+          </div>
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge docx">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <span class="file-type-label">DOCX</span>
+              </div>
+              <div class="card-info"><h3>Expense Reimbursement</h3><p>Submit business expenses for reimbursement including travel, meals, and office supplies</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Finance &amp; Expenses</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">98 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v2.5</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 2/20/2026</div>
+          </div>
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge pdf"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="file-type-label">PDF</span></div>
+              <div class="card-info"><h3>Training Request</h3><p>Request approval for training programs, workshops, conferences, and professional development</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Learning &amp; Development</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">87 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v1.8</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 1/10/2026</div>
+          </div>
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge pdf"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="file-type-label">PDF</span></div>
+              <div class="card-info"><h3>Work From Home Request</h3><p>Remote work arrangement request form for permanent or temporary WFH arrangements</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Work Arrangements</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">76 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v4.1</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 4/1/2026</div>
+          </div>
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge pdf"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="file-type-label">PDF</span></div>
+              <div class="card-info"><h3>Internal Transfer Request</h3><p>Apply for internal job postings and department transfers</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Career Development</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">110 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v1.9</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 1/22/2026</div>
+          </div>
+          <div class="t-card">
+            <div class="card-top">
+              <div class="file-badge pdf"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="file-type-label">PDF</span></div>
+              <div class="card-info"><h3>Flexible Work Schedule Request</h3><p>Request flexible working hours or compressed work week arrangements</p></div>
+            </div>
+            <div class="card-meta">
+              <span class="meta-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Work Arrangements</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">82 KB</span>
+              <span class="meta-sep"></span>
+              <span class="meta-plain">v2.7</span>
+            </div>
+            <button class="download-btn" onclick="downloadTemplate(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Template</button>
+            <div class="card-footer">Last updated: 4/5/2026</div>
+          </div>
+        </div>
+
+        <div class="guidelines-box">
+          <div class="guidelines-header">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Template Usage Guidelines
+          </div>
+          <ul class="guidelines-list">
+            <li>All templates are pre-approved and comply with company policies</li>
+            <li>Fill out templates completely and submit to your manager for approval</li>
+            <li>Some templates require HR or Finance approval before processing</li>
+            <li>Need a template that's not listed? Use "Request New Template" button above</li>
+          </ul>
+        </div>
       </div>
 
       <div class="ee-tab-content" id="ee-tab-policies" style="display:none;">
@@ -616,6 +762,48 @@
     </div>
 
   </div><!-- /content -->
+
+  <!-- Templates Modal -->
+  <div class="template-modal-overlay" id="templateModal" onclick="if(event.target===this)closeTemplateModal()">
+    <div class="template-modal-container">
+      <div class="template-modal-header">
+        <h2>Request New Template</h2>
+        <p>Can't find the template you need? Submit a request to HR</p>
+        <button class="template-modal-close" onclick="closeTemplateModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="template-modal-body">
+        <div class="form-group">
+          <label>Template Name <span class="required">*</span></label>
+          <input type="text" id="tmplName" placeholder="e.g., Equipment Request Form, Parking Pass Application">
+        </div>
+        <div class="form-group">
+          <label>Reason for Request <span class="required">*</span></label>
+          <textarea id="tmplReason" placeholder="Explain why you need this template and how it will be used..."></textarea>
+        </div>
+        <div class="tm-info-card">
+          <div class="tm-info-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </div>
+          <div class="tm-info-card-content">
+            <h4>What happens next?</h4>
+            <ul>
+              <li>Your request will be reviewed by the HR Documentation team</li>
+              <li>You'll receive a response within 2-3 business days</li>
+              <li>If approved, the template will be created and added to the library</li>
+              <li>You'll be notified once the template is available for download</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="template-modal-footer">
+        <button class="btn-cancel" onclick="closeTemplateModal()">Cancel</button>
+        <button class="btn-submit" onclick="submitTemplateRequest()">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /main-area -->
 
 <script src="js/sidebar.js"></script>

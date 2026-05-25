@@ -104,5 +104,58 @@ document.querySelectorAll('.role-btn').forEach(btn => {
   });
 });
 
+function setView(mode) {
+  const grid = document.getElementById('template-grid');
+  if (!grid) return;
+  const gridBtn = document.getElementById('grid-btn');
+  const listBtn = document.getElementById('list-btn');
+  if (mode === 'grid') {
+    grid.classList.remove('list');
+    if (gridBtn) gridBtn.classList.add('active');
+    if (listBtn) listBtn.classList.remove('active');
+  } else {
+    grid.classList.add('list');
+    if (listBtn) listBtn.classList.add('active');
+    if (gridBtn) gridBtn.classList.remove('active');
+  }
+}
+
+function openTemplateModal() {
+  const el = document.getElementById('templateModal');
+  if (el) el.classList.add('open');
+}
+
+function closeTemplateModal() {
+  const el = document.getElementById('templateModal');
+  if (el) el.classList.remove('open');
+}
+
+function downloadTemplate(btn) {
+  const card = btn.closest('.t-card');
+  const name = card ? card.querySelector('.card-info h3').textContent.trim() : 'template';
+  const ext = card ? (card.querySelector('.file-badge.docx') ? 'docx' : 'pdf') : 'pdf';
+  const content = `This is a placeholder for the "${name}" template.\n\nDownload the actual file from the CleonHR document library.`;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${name.replace(/\s+/g, '-')}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+
+function submitTemplateRequest() {
+  const name = document.getElementById('tmplName');
+  const reason = document.getElementById('tmplReason');
+  if (!name || !reason) return;
+  if (!name.value.trim()) { alert('Please enter a template name.'); return; }
+  if (!reason.value.trim()) { alert('Please describe why you need this template.'); return; }
+  alert('Your request has been submitted. You\'ll receive a response within 2-3 business days.');
+  closeTemplateModal();
+  name.value = '';
+  reason.value = '';
+}
+
 renderSidebar('home');
 renderProfileList();
