@@ -1,0 +1,130 @@
+.dm-hero-icon {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9c27b0 0%, #e91e8c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.dm-hero-icon i { font-size: 30px; color: #fff; }
+
+.dm-welcome-title {
+  font-size: 23px;
+  font-weight: 800;
+  color: #111827;
+  text-align: center;
+  line-height: 1.3;
+  margin-bottom: 10px;
+  max-width: 600px;
+}
+
+.dm-welcome-greeting {
+  font-size: 13.5px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.dm-welcome-greeting strong { color: var(--brand); font-weight: 600; }
+
+.dm-welcome-desc {
+  font-size: 13.5px;
+  color: #6b7280;
+  text-align: center;
+  max-width: 500px;
+  line-height: 1.65;
+  margin-bottom: 30px;
+}
+
+.dm-feature-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: 660px;
+  margin-bottom: 30px;
+}
+
+.dm-feature-card {
+  border-radius: 12px;
+  padding: 22px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.dm-feature-card.pink-card   { background: #fff0f7; }
+.dm-feature-card.purple-card { background: #f5f0fe; }
+.dm-feature-card.blue-card   { background: #eff6ff; }
+
+.dm-card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.dm-card-icon i { font-size: 24px; }
+
+.pink-card   .dm-card-icon i { color: var(--brand); }
+.purple-card .dm-card-icon i { color: #7c3aed; }
+.blue-card   .dm-card-icon i { color: #2563eb; }
+
+.dm-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dm-card-desc {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.dm-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.dm-skip-btn {
+  font-size: 13.5px;
+  color: #6b7280;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 4px 0;
+  transition: color 0.15s;
+}
+
+.dm-skip-btn:hover { color: #111827; }
+
+.dm-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.dm-start-btn:hover { background: var(--brand-hover); }
+
+.dm-start-btn i { font-size: 15px; }

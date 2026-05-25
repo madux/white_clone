@@ -1,0 +1,62 @@
+.dm-stepper-wrap {
+  background: #fff;
+  border-bottom: 1px solid #efefef;
+  padding: 22px 32px 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.dm-stepper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.dm-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.dm-step-connector {
+  width: 96px;
+  height: 2px;
+  background: #e5e7eb;
+  margin-top: 18px;
+  flex-shrink: 0;
+}
+
+.dm-step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+  background: #fff;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.dm-step.active .dm-step-circle {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.dm-step-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.dm-step.active .dm-step-label {
+  color: var(--brand);
+  font-weight: 700;
+}
