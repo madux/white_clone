@@ -1,0 +1,38 @@
+.footer {
+  margin-top: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #aaa;
+  font-size: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #eeeef5;
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-links a {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+}
+
+.footer-links a:hover {
+  color: #E91E8C;
+}
+
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: #16a34a;
+  border-radius: 50%;
+}

@@ -712,45 +712,6 @@
   position: relative;
 }
 
-#view-staff-directory .footer {
-  margin-top: 50px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #aaa;
-  font-size: 12px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border);
-}
-
-#view-staff-directory .footer-links {
-  display: flex;
-  gap: 20px;
-}
-
-#view-staff-directory .footer-links a {
-  text-decoration: none;
-  color: inherit;
-  font-weight: 600;
-}
-
-#view-staff-directory .footer-links a:hover {
-  color: var(--pink);
-}
-
-#view-staff-directory .system-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-#view-staff-directory .status-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-}
-
 #view-staff-directory .modal-overlay {
   position: fixed;
   inset: 0;

@@ -476,31 +476,6 @@
 .dept-budget-lbl { font-size:10px; color:#8888aa; margin-top:2px; }
 
 /* ============================================================
-   FOOTER
-   ============================================================ */
-.page-footer {
-  display:flex; align-items:center; justify-content:space-between;
-  padding:14px 0; border-top:1px solid #eeeef5; margin-top:4px;
-}
-.footer-left { display:flex; align-items:center; gap:18px; }
-.footer-copy { font-size:11px; color:#8888aa; }
-.footer-links {
-  display:flex; gap:18px; font-size:11px; color:#8888aa;
-}
-.footer-links span {
-  cursor:pointer; transition:color .15s;
-  text-transform:uppercase; letter-spacing:.5px; font-weight:600;
-}
-.footer-links span:hover { color:#E91E8C; }
-.footer-status {
-  display:flex; align-items:center; gap:5px;
-  font-size:11px; color:#16a34a; font-weight:600;
-}
-.footer-status::before {
-  content:''; width:6px; height:6px; border-radius:50%; background:#16a34a;
-}
-
-/* ============================================================
    GOVERNANCE BADGE (secondary sidebar bottom)
    ============================================================ */
 .governance-badge {

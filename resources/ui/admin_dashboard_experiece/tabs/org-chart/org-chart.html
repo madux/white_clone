@@ -8,960 +8,359 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        :root {
-            /* Color Palette */
-            --bg-main: #F8FAFC;
-            --white: #FFFFFF;
-            --text-dark: #1E293B;
-            --text-muted: #64748B;
-            --text-light: #94A3B8;
-            --border-color: #E2E8F0;
-            
-            /* Department Tag Colors & Accents */
-            --ceo-color: #D946EF;
-            --engineering: #8B5CF6;
-            --finance: #3B82F6;
-            --marketing: #EC4899;
-            --hr: #F59E0B;
-            --design: #10B981;
-            --operations: #06B6D4;
-            --executive: #475569;
-            
-            /* Banner Gradient */
-            --banner-grad: linear-gradient(135deg, #1E1B4B 0%, #311042 50%, #4C1D95 100%);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-dark);
-            padding: 24px;
-            min-height: 100vh;
-        }
-
-        .org-chart-container {
-            max-width: 1280px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        /* Top Header Navigation */
-        .org-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-
-        .org-nav-tabs {
-            display: flex;
-            gap: 24px;
-        }
-
-        .nav-tab {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding-bottom: 12px;
-            margin-bottom: -13px;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
-        }
-
-        .nav-tab.active {
-            color: var(--ceo-color);
-            border-bottom-color: var(--ceo-color);
-        }
-
-        .tab-count {
-            background-color: #F1F5F9;
-            color: var(--text-muted);
-            font-size: 11px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: 500;
-        }
-
-        /* Hero Banner */
-        .hero-banner {
-            background: var(--banner-grad);
-            border-radius: 16px;
-            padding: 24px;
-            color: var(--white);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        }
-
-        .banner-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            z-index: 2;
-        }
-
-        .banner-icon-box {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 12px;
-            border-radius: 12px;
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .banner-icon-box i {
-            color: #F472B6;
-        }
-
-        .banner-title h1 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 4px;
-            letter-spacing: -0.5px;
-        }
-
-        .banner-title p {
-            font-size: 13px;
-            color: #CBD5E1;
-            font-weight: 400;
-        }
-
-        /* Banner Quick Metrics Pill Container */
-        .banner-metrics {
-            display: flex;
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .b-pill {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #E2E8F0;
-        }
-
-        .b-pill strong {
-            color: var(--white);
-            font-weight: 700;
-        }
-
-        .b-pill.vacant i { color: #F59E0B; }
-        .b-pill.frozen i { color: #38BDF8; }
-
-        .banner-right img {
-            width: 140px;
-            height: auto;
-            opacity: 0.85;
-            z-index: 2;
-            position: relative;
-        }
-
-        /* Controls Panel Toolbar */
-        .controls-panel {
-            background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        }
-
-        .controls-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .search-wrapper {
-            position: relative;
-            flex: 1;
-            max-width: 320px;
-        }
-
-        .search-wrapper i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-light);
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 8px 12px 8px 36px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 13px;
-            background: #F8FAFC;
-            outline: none;
-        }
-
-        .filter-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .select-dropdown {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: var(--white);
-            font-size: 13px;
-            color: var(--text-dark);
-            font-weight: 500;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            border: 1px solid var(--border-color);
-            background: var(--white);
-            color: var(--text-dark);
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: #F8FAFC;
-        }
-
-        .btn-toggle-vacancies {
-            background: #FFF1F2;
-            border-color: #FFE4E6;
-            color: #E11D48;
-            font-weight: 600;
-        }
-
-        .btn-toggle-vacancies:hover {
-            background: #FFE4E6;
-        }
-
-        /* Department Labels Legend */
-        .dept-legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            align-items: center;
-            font-size: 12px;
-            font-weight: 600;
-            padding-top: 4px;
-            border-top: 1px solid #F1F5F9;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .legend-count {
-            color: var(--text-muted);
-            font-weight: 400;
-            margin-left: 2px;
-        }
-
-        .total-badge {
-            background-color: #FCE7F3;
-            color: #DB2777;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 11px;
-        }
-
-        /* Interactive Org Chart Canvas Workspace */
-        .chart-canvas {
-            background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.01);
-            overflow-x: auto;
-        }
-
-        /* Dynamic Tree Structure Layout */
-        .tree-level {
-            display: flex;
-            justify-content: center;
-            gap: 24px;
-            position: relative;
-            width: 100%;
-            margin-bottom: 48px;
-        }
-
-        /* Pseudo-connections Rendering logic built structurally */
-        .tree-level::after {
-            content: '';
-            position: absolute;
-            bottom: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 24px;
-            background: var(--border-color);
-            z-index: 1;
-        }
-
-        .tree-level.leaf-level::after, .tree-level.vacuum-level::after {
-            display: none;
-        }
-
-        /* Custom Node Styling */
-        .node-card {
-            background: var(--white);
-            border: 2px solid var(--border-color);
-            border-radius: 14px;
-            width: 200px;
-            padding: 16px 12px;
-            text-align: center;
-            position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .node-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.04);
-        }
-
-        .node-avatar-container {
-            position: relative;
-            width: 52px;
-            height: 52px;
-            margin: 0 auto 10px auto;
-        }
-
-        .node-avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            background: #E2E8F0;
-        }
-
-        .node-name {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .node-role {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 500;
-            margin-bottom: 10px;
-        }
-
-        .node-dept-tag {
-            display: inline-block;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 10px;
-            border-radius: 12px;
-            text-transform: capitalize;
-            margin-bottom: 8px;
-        }
-
-        .node-meta {
-            font-size: 10px;
-            color: var(--text-light);
-            font-weight: 500;
-        }
-
-        /* Collapse / Expand Indicator handle */
-        .node-toggle-btn {
-            position: absolute;
-            bottom: -11px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 22px;
-            height: 22px;
-            background: var(--white);
-            border: 2px solid var(--border-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        .node-toggle-btn::before {
-            content: '-';
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        /* Specific Node Colors matching Design Rules */
-        .node-card.ceo-node { border-color: var(--ceo-color); }
-        .node-card.ceo-node .node-dept-tag { background: #FDF2F8; color: var(--ceo-color); }
-
-        .node-card.hr-node { border-color: #FDE68A; }
-        .node-card.hr-node .node-dept-tag { background: #FEF3C7; color: var(--hr); }
-
-        .node-card.finance-node { border-color: #BFDBFE; }
-        .node-card.finance-node .node-dept-tag { background: #EFF6FF; color: var(--finance); }
-
-        .node-card.engineering-node { border-color: #C7D2FE; }
-        .node-card.engineering-node .node-dept-tag { background: #EEF2FF; color: var(--engineering); }
-
-        .node-card.design-node { border-color: #A7F3D0; }
-        .node-card.design-node .node-dept-tag { background: #ECFDF5; color: var(--design); }
-
-        .node-card.marketing-node { border-color: #FBCFE8; }
-        .node-card.marketing-node .node-dept-tag { background: #FDF2F8; color: var(--marketing); }
-
-        /* Section: Vacant & Frozen Positions Section Grid */
-        .vacant-section-container {
-            width: 100%;
-            margin-top: 24px;
-            border-top: 1px dashed var(--border-color);
-            padding-top: 32px;
-        }
-
-        .section-header-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 20px;
-        }
-
-        .section-header-title i {
-            color: #F59E0B;
-        }
-
-        .vacant-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-            gap: 16px;
-            width: 100%;
-        }
-
-        /* Vacant Node Card UI Design Blueprint */
-        .vacant-card {
-            background: var(--white);
-            border: 1px dashed #CBD5E1;
-            border-radius: 12px;
-            padding: 20px 14px;
-            text-align: center;
-            position: relative;
-            background-image: radial-gradient(#F1F5F9 1.5px, transparent 1.5px);
-            background-size: 12px 12px;
-        }
-
-        .vacant-card.frozen-status {
-            border-color: #93C5FD;
-        }
-
-        .status-badge-absolute {
-            position: absolute;
-            top: -10px;
-            right: 12px;
-            font-size: 9px;
-            font-weight: 700;
-            padding: 2px 8px;
-            border-radius: 8px;
-            background: #3B82F6;
-            color: var(--white);
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .vacant-avatar-placeholder {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 1px dashed var(--text-light);
-            background: var(--white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px auto;
-            color: var(--text-light);
-        }
-
-        .vacant-title {
-            font-size: 12px;
-            font-weight: 700;
-            color: #475569;
-            margin-bottom: 4px;
-        }
-
-        .vacant-dept {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 8px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-bottom: 6px;
-        }
-
-        .vacant-grade {
-            font-size: 10px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-        }
-
-        .btn-recruit {
-            font-size: 11px;
-            font-weight: 700;
-            color: #DB2777;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        /* Canvas Footer Navigation controls block */
-        .canvas-footer-controls {
-            width: 100%;
-            margin-top: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 24px;
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: 500;
-            border-top: 1px solid #F1F5F9;
-            padding-top: 16px;
-        }
-
-        .footer-action-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .footer-action-item:hover {
-            color: var(--text-dark);
-        }
-
-        /* Global Structural KPI Metrics Widgets bar at bottom */
-        .bottom-kpi-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-            margin-top: 8px;
-        }
-
-        .kpi-card {
-            background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.01);
-        }
-
-        .kpi-icon-box {
-            padding: 12px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .kpi-icon-box.pink-bg { background: #FCE7F3; color: #DB2777; }
-        .kpi-icon-box.blue-bg { background: #EFF6FF; color: #1D4ED8; }
-        .kpi-icon-box.orange-bg { background: #FEF3C7; color: #D97706; }
-        .kpi-icon-box.purple-bg { background: #F3E8FF; color: #7C3AED; }
-
-        .kpi-data-block .kpi-num {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--text-dark);
-            line-height: 1.2;
-        }
-
-        .kpi-data-block .kpi-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-    </style>
+    <link rel="stylesheet"
+          href="css/style.css">
+    <link rel="stylesheet"
+          href="../../css/footer.css">
 </head>
 <body>
 
-    <div class="org-chart-container">
+    <div id="view-org-chart">
+
+        <div id="orgChartPage" class="view-section active-view">
         
-        <header class="org-header">
-            <div class="org-nav-tabs">
-                <div class="nav-tab active">
-                    <i data-lucide="git-merge" style="transform: rotate(90deg); width:16px; height:16px;"></i>
-                    Org Chart
-                </div>
-                <div class="nav-tab">
-                    <i data-lucide="users" style="width:16px; height:16px;"></i>
-                    Staff Directory
-                    <span class="tab-count">247</span>
-                </div>
-            </div>
-        </header>
-
-        <section class="hero-banner">
-            <div class="banner-left">
-                <div class="banner-icon-box">
-                    <i data-lucide="network" style="width: 28px; height: 28px;"></i>
-                </div>
-                <div class="banner-title">
-                    <h1>Organizational Chart</h1>
-                    <p>Position-based governance engine with vacancy tracking and reporting structure</p>
-                    
-                    <div class="banner-metrics">
-                        <div class="b-pill">
-                            <i data-lucide="briefcase" style="width:13px; height:13px;"></i>
-                            <span><strong>18</strong> Positions</span>
-                        </div>
-                        <div class="b-pill">
-                            <i data-lucide="user-check" style="width:13px; height:13px; color:#10B981;"></i>
-                            <span><strong>12</strong> Filled</span>
-                        </div>
-                        <div class="b-pill vacant">
-                            <i data-lucide="alert-circle" style="width:13px; height:13px;"></i>
-                            <span><strong>5</strong> Vacant</span>
-                        </div>
-                        <div class="b-pill frozen">
-                            <i data-lucide="snowflake" style="width:13px; height:13px;"></i>
-                            <span><strong>1</strong> Frozen</span>
+            <section class="hero-banner">
+                <div class="banner-left">
+                    <div class="banner-icon-box">
+                        <i data-lucide="network" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <div class="banner-title">
+                        <h1>Organizational Chart</h1>
+                        <p>Position-based governance engine with vacancy tracking and reporting structure</p>
+                        
+                        <div class="banner-metrics">
+                            <div class="b-pill">
+                                <i data-lucide="briefcase" style="width:13px; height:13px;"></i>
+                                <span><strong>18</strong> Positions</span>
+                            </div>
+                            <div class="b-pill">
+                                <i data-lucide="user-check" style="width:13px; height:13px; color:#10B981;"></i>
+                                <span><strong>12</strong> Filled</span>
+                            </div>
+                            <div class="b-pill vacant">
+                                <i data-lucide="alert-circle" style="width:13px; height:13px;"></i>
+                                <span><strong>5</strong> Vacant</span>
+                            </div>
+                            <div class="b-pill frozen">
+                                <i data-lucide="snowflake" style="width:13px; height:13px;"></i>
+                                <span><strong>1</strong> Frozen</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="banner-right">
-                <svg width="120" height="70" viewBox="0 0 120 70" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.2;">
-                    <rect width="120" height="70" rx="6" fill="white"/>
-                    <rect x="8" y="10" width="30" height="8" rx="2" fill="#E2E8F0"/>
-                    <rect x="8" y="24" width="104" height="4" rx="2" fill="#E2E8F0"/>
-                    <rect x="8" y="34" width="48" height="4" rx="2" fill="#E2E8F0"/>
-                    <circle cx="102" cy="52" r="10" fill="#E2E8F0"/>
-                </svg>
-            </div>
-        </section>
-
-        <section class="controls-panel">
-            <div class="controls-top">
-                <div class="search-wrapper">
-                    <i data-lucide="search" style="width:16px; height:16px;"></i>
-                    <input type="text" class="search-input" placeholder="Search employee in chart...">
+                <div class="banner-right">
+                    <svg width="120" height="70" viewBox="0 0 120 70" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.2;">
+                        <rect width="120" height="70" rx="6" fill="white"/>
+                        <rect x="8" y="10" width="30" height="8" rx="2" fill="#E2E8F0"/>
+                        <rect x="8" y="24" width="104" height="4" rx="2" fill="#E2E8F0"/>
+                        <rect x="8" y="34" width="48" height="4" rx="2" fill="#E2E8F0"/>
+                        <circle cx="102" cy="52" r="10" fill="#E2E8F0"/>
+                    </svg>
                 </div>
+            </section>
 
-                <div class="filter-actions">
-                    <select class="select-dropdown">
-                        <option>All Departments</option>
-                    </select>
-                    <button class="btn btn-toggle-vacancies">
-                        <i data-lucide="eye" style="width:15px; height:15px;"></i>
-                        Vacancies ON
-                    </button>
-                    <button class="btn">Expand All</button>
-                    <button class="btn">
-                        <i data-lucide="download" style="width:15px; height:15px;"></i>
-                        Export
-                    </button>
-                    <button class="btn">
-                        <i data-lucide="printer" style="width:15px; height:15px;"></i>
-                        Print
-                    </button>
+            <section class="controls-panel">
+                <div class="controls-top">
+                    <div class="search-wrapper">
+                        <i data-lucide="search" style="width:16px; height:16px;"></i>
+                        <input type="text" class="search-input" placeholder="Search employee in chart...">
+                    </div>
+                    <div class="filter-actions">
+                        <select class="select-dropdown">
+                            <option>All Departments</option>
+                        </select>
+                        <button class="btn btn-toggle-vacancies">
+                            <i data-lucide="eye" style="width:15px; height:15px;"></i>
+                            Vacancies ON
+                        </button>
+                        <button class="btn">Expand All</button>
+                        <button class="btn"><i data-lucide="download" style="width:15px; height:15px;"></i> Export</button>
+                        <button class="btn"><i data-lucide="printer" style="width:15px; height:15px;"></i> Print</button>
+                    </div>
                 </div>
-            </div>
+                <div class="dept-legend">
+                    <span class="total-badge">Total: 247 employees</span>
+                    <div class="legend-item"><span class="dot" style="background: var(--engineering);"></span>Engineering <span class="legend-count">48</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--finance);"></span>Finance <span class="legend-count">22</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--marketing);"></span>Marketing <span class="legend-count">18</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--hr);"></span>HR <span class="legend-count">14</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--design);"></span>Design <span class="legend-count">11</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--operations);"></span>Operations <span class="legend-count">31</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--executive);"></span>Executive <span class="legend-count">4</span></div>
+                </div>
+            </section>
 
-            <div class="dept-legend">
-                <span class="total-badge">Total: 247 employees</span>
-                <div class="legend-item"><span class="dot" style="background: var(--engineering);"></span>Engineering <span class="legend-count">48</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--finance);"></span>Finance <span class="legend-count">22</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--marketing);"></span>Marketing <span class="legend-count">18</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--hr);"></span>HR <span class="legend-count">14</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--design);"></span>Design <span class="legend-count">11</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--operations);"></span>Operations <span class="legend-count">31</span></div>
-                <div class="legend-item"><span class="dot" style="background: var(--executive);"></span>Executive <span class="legend-count">4</span></div>
-            </div>
-        </section>
+            <main class="chart-canvas">
+                <div class="tree-level">
+                    <div class="node-card ceo-node" onclick="navigateToProfile('Robert Hayes', 'CEO', 'Executive', 'RH', 'robert.hayes@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80" alt="Robert Hayes" class="node-avatar">
+                        </div>
+                        <div class="node-name">Robert Hayes</div>
+                        <div class="node-role">CEO</div>
+                        <div class="node-dept-tag">Executive</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                </div>
+                <div class="tree-level">
+                    <div class="node-card hr-node" onclick="navigateToProfile('Grace Adams', 'HR Manager', 'Human Resources', 'GA', 'grace.adams@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80" alt="Grace Adams" class="node-avatar">
+                        </div>
+                        <div class="node-name">Grace Adams</div>
+                        <div class="node-role">HR Manager</div>
+                        <div class="node-dept-tag">Human Resources</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                    <div class="node-card finance-node" onclick="navigateToProfile('James Carter', 'CFO', 'Finance', 'JC', 'james.carter@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=256&q=80" alt="James Carter" class="node-avatar">
+                        </div>
+                        <div class="node-name">James Carter</div>
+                        <div class="node-role">CFO</div>
+                        <div class="node-dept-tag">Finance</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                    <div class="node-card marketing-node" onclick="navigateToProfile('Lisa Park', 'Marketing Director', 'Marketing', 'LP', 'lisa.park@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&q=80" alt="Lisa Park" class="node-avatar">
+                        </div>
+                        <div class="node-name">Lisa Park</div>
+                        <div class="node-role">Marketing Director</div>
+                        <div class="node-dept-tag">Marketing</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                </div>
+                <div class="tree-level leaf-level">
+                    <div class="node-card engineering-node" onclick="navigateToProfile('Anna Chen', 'Frontend Developer', 'Engineering', 'AC', 'anna.chen@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" alt="Anna Chen" class="node-avatar">
+                        </div>
+                        <div class="node-name">Anna Chen</div>
+                        <div class="node-role">Frontend Developer</div>
+                        <div class="node-dept-tag">Engineering</div>
+                        <div class="node-meta">1/4 filled</div>
+                    </div>
+                    <div class="node-card hr-node" onclick="navigateToProfile('Priya Sharma', 'HR Business Partner', 'Human Resources', 'PS', 'priya.sharma@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=256&q=80" alt="Priya Sharma" class="node-avatar">
+                        </div>
+                        <div class="node-name">Priya Sharma</div>
+                        <div class="node-role">HR Business Partner</div>
+                        <div class="node-dept-tag">Human Resources</div>
+                        <div class="node-meta">1/2 filled</div>
+                    </div>
+                    <div class="node-card finance-node" onclick="navigateToProfile('Michael Brown', 'Financial Analyst', 'Finance', 'MB', 'michael.brown@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80" alt="Michael Brown" class="node-avatar">
+                        </div>
+                        <div class="node-name">Michael Brown</div>
+                        <div class="node-role">Financial Analyst</div>
+                        <div class="node-dept-tag">Finance</div>
+                        <div class="node-meta">1/3 filled</div>
+                    </div>
+                    <div class="node-card design-node" onclick="navigateToProfile('Alex Rivera', 'UX Lead', 'Product Design', 'AR', 'alex.rivera@cleon.com')">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80" alt="Alex Rivera" class="node-avatar">
+                        </div>
+                        <div class="node-name">Alex Rivera</div>
+                        <div class="node-role">UX Lead</div>
+                        <div class="node-dept-tag">Product Design</div>
+                        <div class="node-meta">1/1 filled</div>
+                    </div>
+                </div>
+                <div class="vacant-section-container">
+                    <div class="section-header-title">
+                        <i data-lucide="alert-circle" style="width:16px; height:16px;"></i>
+                        Vacant & Frozen Positions (6)
+                    </div>
+                    <div class="vacant-grid">
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">DevOps Engineer</div>
+                            <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
+                            <div class="vacant-grade">Grade 4 • 0/2</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Backend Developer</div>
+                            <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
+                            <div class="vacant-grade">Grade 3 • 0/5</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Content Strategist</div>
+                            <div class="vacant-dept" style="background:#FDF2F8; color:var(--marketing);">Marketing</div>
+                            <div class="vacant-grade">Grade 3 • 0/1</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card frozen-status">
+                            <div class="status-badge-absolute"><i data-lucide="snowflake" style="width:9px; height:9px;"></i> Frozen</div>
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-minus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Logistics Coordinator</div>
+                            <div class="vacant-dept" style="background:#ECFDF5; color:var(--operations);">Operations</div>
+                            <div class="vacant-grade">Grade 2 • 0/2</div>
+                            <button class="btn-recruit" style="color: var(--text-light); cursor: not-allowed;">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">UI Designer</div>
+                            <div class="vacant-dept" style="background:#ECFDF5; color:var(--design);">Product Design</div>
+                            <div class="vacant-grade">Grade 3 • 0/3</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Senior Accountant</div>
+                            <div class="vacant-dept" style="background:#EFF6FF; color:var(--finance);">Finance</div>
+                            <div class="vacant-grade">Grade 4 • 0/2</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
 
-        <main class="chart-canvas">
+            <section class="bottom-kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-icon-box pink-bg"><i data-lucide="users" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">247</div><div class="kpi-label">Total Employees</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box blue-bg"><i data-lucide="layers" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">7</div><div class="kpi-label">Departments</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box orange-bg"><i data-lucide="alert-triangle" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">5</div><div class="kpi-label">Open Positions</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box purple-bg"><i data-lucide="git-commit" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">1:12</div><div class="kpi-label">Management Ratio</div></div>
+                </div>
+            </section>
+
+        </div>
+
+        <div id="profilePage" class="view-section">
             
-            <div class="tree-level">
-                <div class="node-card ceo-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80" alt="Robert Hayes" class="node-avatar">
+            <div class="profile-layout">
+                <aside>
+                    <div class="profile-side-card">
+                        <div class="profile-initial-badge" id="pCardInitials">GA</div>
+                        <h2 id="pCardName">Grace Adams</h2>
+                        <div class="p-role" id="pCardRole">HR Manager</div>
+                        <div class="p-meta" id="pCardMetaDept">Human Resources • EMP004</div>
+                        <span class="status-pill">Active</span>
+                        <div class="profile-contact-list">
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="mail" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Email</div><div class="contact-val" id="pCardEmail">grace.adams@cleon.com</div></div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="phone" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Phone</div><div class="contact-val">+1 555-0104</div></div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="map-pin" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Location</div><div class="contact-val">HQ New York</div></div>
+                            </div>
+                        </div>
+                        <div class="profile-action-btns">
+                            <button class="btn-side-action suspend"><i data-lucide="user-x" style="width:14px; height:14px;"></i> Suspend Employee</button>
+                            <button class="btn-side-action offboard"><i data-lucide="log-out" style="width:14px; height:14px;"></i> Initiate Offboarding</button>
+                        </div>
                     </div>
-                    <div class="node-name">Robert Hayes</div>
-                    <div class="node-role">CEO</div>
-                    <div class="node-dept-tag">Executive</div>
-                    <div class="node-meta">1 / 1 Filled</div>
-                    <div class="node-toggle-btn"></div>
-                </div>
+                    <div class="profile-navigation-box">
+                        <div class="profile-nav-item active-tab" onclick="switchProfileTab('Overview', this)">
+                            <div><i data-lucide="user" style="width:16px; height:16px;"></i> Overview</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Body Composition', this)">
+                            <div><i data-lucide="activity" style="width:16px; height:16px;"></i> Body Composition</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Compensation', this)">
+                            <div><i data-lucide="credit-card" style="width:16px; height:16px;"></i> Compensation</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Time & Leave', this)">
+                            <div><i data-lucide="calendar" style="width:16px; height:16px;"></i> Time & Leave</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Documents', this)">
+                            <div><i data-lucide="file-text" style="width:16px; height:16px;"></i> Documents</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Assets', this)">
+                            <div><i data-lucide="laptop" style="width:16px; height:16px;"></i> Assets</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Performance', this)">
+                            <div><i data-lucide="award" style="width:16px; height:16px;"></i> Performance</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item" onclick="switchProfileTab('Exit Details', this)">
+                            <div><i data-lucide="door-open" style="width:16px; height:16px;"></i> Exit Details</div><span class="active-dot"></span>
+                        </div>
+                    </div>
+                </aside>
+                <main class="profile-main-content">
+                    <div class="profile-top-bar">
+                        <div class="profile-title-area">
+                            <h1 id="dynamicTabTitle">Overview</h1>
+                            <p id="dynamicTabSubtitle">Detailed employee data management.</p>
+                        </div>
+                        <div class="top-action-cluster">
+                            <button class="btn-back" onclick="navigateToOrgChart()"><i data-lucide="arrow-left" style="width:14px; height:14px;"></i> Back</button>
+                            <button class="btn-deep-view"><i data-lucide="maximize-2" style="width:14px; height:14px;"></i> Deep View</button>
+                            <button class="btn-edit-profile">Edit Profile</button>
+                        </div>
+                    </div>
+                    <div id="subView-Overview" class="profile-subview-content" style="display: block;">
+                        <div class="info-cards-grid">
+                            <div class="info-card">
+                                <div class="info-card-title"><i data-lucide="shield-check" style="width:16px; height:16px;"></i> Employment Details</div>
+                                <div class="details-data-matrix">
+                                    <div class="matrix-cell"><div class="cell-label">Department</div><div class="cell-value" id="mDept">Human Resources</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Job Role</div><div class="cell-value" id="mRole">HR Manager</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Employment Status</div><div class="cell-value">Active</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Employment Type</div><div class="cell-value">Permanent</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Work Mode</div><div class="cell-value">Office</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Grade Level</div><div class="cell-value">Grade 5B</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Joining Date</div><div class="cell-value">Jun 12, 2021</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Tenure</div><div class="cell-value">5 Years</div></div>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-card-title"><i data-lucide="user" style="width:16px; height:16px;"></i> Personal Information</div>
+                                <div class="details-data-matrix">
+                                    <div class="matrix-cell"><div class="cell-label">Full Name</div><div class="cell-value" id="mFullName">Grace Adams</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Gender</div><div class="cell-value">Female</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Date of Birth</div><div class="cell-value">Apr 19, 1987</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Nationality</div><div class="cell-value">American</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Reporting Manager</div><div class="cell-value">Robert Hayes</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Direct Reports</div><div class="cell-value">3 Employees</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Emergency Contact</div><div class="cell-value">+1 555-9999</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Blood Group</div><div class="cell-value">O+</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-GenericFallback" class="profile-subview-content" style="display: none;">
+                        <div class="details-fallback-panel">
+                            <div class="fallback-icon-box"><i id="fallbackIcon" data-lucide="layers" style="width:32px; height:32px;"></i></div>
+                            <h3 id="fallbackTitle">Section Details Matrix</h3>
+                            <p>This metrics dashboard workspace area details contextual parameters regarding the employee tracking engine.</p>
+                        </div>
+                    </div>
+                </main>
             </div>
+        </div>
 
-            <div class="tree-level">
-                <div class="node-card hr-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80" alt="Grace Adams" class="node-avatar">
-                    </div>
-                    <div class="node-name">Grace Adams</div>
-                    <div class="node-role">HR Manager</div>
-                    <div class="node-dept-tag">Human Resources</div>
-                    <div class="node-meta">1 / 1 Filled</div>
-                    <div class="node-toggle-btn"></div>
-                </div>
-
-                <div class="node-card finance-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=256&q=80" alt="James Carter" class="node-avatar">
-                    </div>
-                    <div class="node-name">James Carter</div>
-                    <div class="node-role">CFO</div>
-                    <div class="node-dept-tag">Finance</div>
-                    <div class="node-meta">1 / 1 Filled</div>
-                    <div class="node-toggle-btn"></div>
-                </div>
-
-                <div class="node-card marketing-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&q=80" alt="Lisa Park" class="node-avatar">
-                    </div>
-                    <div class="node-name">Lisa Park</div>
-                    <div class="node-role">Marketing Director</div>
-                    <div class="node-dept-tag">Marketing</div>
-                    <div class="node-meta">1 / 1 Filled</div>
-                    <div class="node-toggle-btn"></div>
-                </div>
-            </div>
-
-            <div class="tree-level leaf-level">
-                <div class="node-card engineering-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" alt="Anna Chen" class="node-avatar">
-                    </div>
-                    <div class="node-name">Anna Chen</div>
-                    <div class="node-role">Frontend Developer</div>
-                    <div class="node-dept-tag">Engineering</div>
-                    <div class="node-meta">1/4 filled</div>
-                </div>
-
-                <div class="node-card hr-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=256&q=80" alt="Priya Sharma" class="node-avatar">
-                    </div>
-                    <div class="node-name">Priya Sharma</div>
-                    <div class="node-role">HR Business Partner</div>
-                    <div class="node-dept-tag">Human Resources</div>
-                    <div class="node-meta">1/2 filled</div>
-                </div>
-
-                <div class="node-card finance-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80" alt="Michael Brown" class="node-avatar">
-                    </div>
-                    <div class="node-name">Michael Brown</div>
-                    <div class="node-role">Financial Analyst</div>
-                    <div class="node-dept-tag">Finance</div>
-                    <div class="node-meta">1/3 filled</div>
-                </div>
-
-                <div class="node-card design-node">
-                    <div class="node-avatar-container">
-                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80" alt="Alex Rivera" class="node-avatar">
-                    </div>
-                    <div class="node-name">Alex Rivera</div>
-                    <div class="node-role">UX Lead</div>
-                    <div class="node-dept-tag">Product Design</div>
-                    <div class="node-meta">1/1 filled</div>
-                </div>
-            </div>
-
-            <div class="vacant-section-container">
-                <div class="section-header-title">
-                    <i data-lucide="alert-circle" style="width:16px; height:16px;"></i>
-                    Vacant & Frozen Positions (6)
-                </div>
-
-                <div class="vacant-grid">
-                    <div class="vacant-card">
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">DevOps Engineer</div>
-                        <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
-                        <div class="vacant-grade">Grade 4 • 0/2</div>
-                        <button class="btn-recruit">Recruit</button>
-                    </div>
-                    <div class="vacant-card">
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">Backend Developer</div>
-                        <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
-                        <div class="vacant-grade">Grade 3 • 0/5</div>
-                        <button class="btn-recruit">Recruit</button>
-                    </div>
-                    <div class="vacant-card">
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">Content Strategist</div>
-                        <div class="vacant-dept" style="background:#FDF2F8; color:var(--marketing);">Marketing</div>
-                        <div class="vacant-grade">Grade 3 • 0/1</div>
-                        <button class="btn-recruit">Recruit</button>
-                    </div>
-                    <div class="vacant-card frozen-status">
-                        <div class="status-badge-absolute"><i data-lucide="snowflake" style="width:9px; height:9px;"></i> Frozen</div>
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-minus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">Logistics Coordinator</div>
-                        <div class="vacant-dept" style="background:#ECFDF5; color:var(--operations);">Operations</div>
-                        <div class="vacant-grade">Grade 2 • 0/2</div>
-                        <button class="btn-recruit" style="color: var(--text-light); cursor: not-allowed;">Recruit</button>
-                    </div>
-                    <div class="vacant-card">
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">UI Designer</div>
-                        <div class="vacant-dept" style="background:#ECFDF5; color:var(--design);">Product Design</div>
-                        <div class="vacant-grade">Grade 3 • 0/3</div>
-                        <button class="btn-recruit">Recruit</button>
-                    </div>
-                    <div class="vacant-card">
-                        <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
-                        <div class="vacant-title">Senior Accountant</div>
-                        <div class="vacant-dept" style="background:#EFF6FF; color:var(--finance);">Finance</div>
-                        <div class="vacant-grade">Grade 4 • 0/2</div>
-                        <button class="btn-recruit">Recruit</button>
-                    </div>
-                </div>
-            </div>
-
-            <footer class="canvas-footer-controls">
-                <div>Showing key hierarchy (12 nodes) with 6 vacant positions · Click any node to view profile</div>
-                <div style="display:flex; gap:16px; align-items:center;">
-                    <div class="footer-action-item"><i data-lucide="users" style="width:14px; height:14px;"></i> Show All 247 Employees</div>
-                    <div class="footer-action-item"><i data-lucide="zoom-in" style="width:14px; height:14px;"></i> Zoom In</div>
-                    <div class="footer-action-item"><i data-lucide="zoom-out" style="width:14px; height:14px;"></i> Zoom Out</div>
-                    <div class="footer-action-item"><i data-lucide="shield" style="width:14px; height:14px;"></i> Access Scope</div>
-                </div>
-            </footer>
-        </main>
-
-        <section class="bottom-kpi-row">
-            <div class="kpi-card">
-                <div class="kpi-icon-box pink-bg">
-                    <i data-lucide="users" style="width:20px; height:20px;"></i>
-                </div>
-                <div class="kpi-data-block">
-                    <div class="kpi-num">247</div>
-                    <div class="kpi-label">Total Employees</div>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-box blue-bg">
-                    <i data-lucide="layers" style="width:20px; height:20px;"></i>
-                </div>
-                <div class="kpi-data-block">
-                    <div class="kpi-num">7</div>
-                    <div class="kpi-label">Departments</div>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-box orange-bg">
-                    <i data-lucide="alert-triangle" style="width:20px; height:20px;"></i>
-                </div>
-                <div class="kpi-data-block">
-                    <div class="kpi-num">5</div>
-                    <div class="kpi-label">Open Positions</div>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-box purple-bg">
-                    <i data-lucide="git-commit" style="width:20px; height:20px;"></i>
-                </div>
-                <div class="kpi-data-block">
-                    <div class="kpi-num">1:12</div>
-                    <div class="kpi-label">Management Ratio</div>
-                </div>
-            </div>
-        </section>
-
+        <div class="footer-root"></div>
     </div>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            // Initialize vector structural visual elements icons via Lucide engine reference mapping
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-
-            // Simple interface interactivity logic handlers
-            const vacanciesToggleBtn = document.querySelector('.btn-toggle-vacancies');
-            const vacantSection = document.querySelector('.vacant-section-container');
-
-            vacanciesToggleBtn.addEventListener('click', function() {
-                if(vacantSection.style.display === "none") {
-                    vacantSection.style.display = "block";
-                    vacanciesToggleBtn.innerHTML = '<i data-lucide="eye" style="width:15px; height:15px;"></i> Vacancies ON';
-                    vacanciesToggleBtn.style.background = "#FFF1F2";
-                    vacanciesToggleBtn.style.color = "#E11D48";
-                } else {
-                    vacantSection.style.display = "none";
-                    vacanciesToggleBtn.innerHTML = '<i data-lucide="eye-off" style="width:15px; height:15px;"></i> Vacancies OFF';
-                    vacanciesToggleBtn.style.background = "#F1F5F9";
-                    vacanciesToggleBtn.style.color = "#64748B";
-                }
-                lucide.createIcons();
-            });
-        });
-    </script>
+    <script src="js/script.js"></script>
+    <script src="../../js/footer.js"></script>
+    <script>renderFooter();</script>
 </body>
 </html>

@@ -416,16 +416,30 @@ function buildPageTabs(tabs, activeIndex) {
 
   container.style.display = 'flex';
   container.innerHTML = tabs.map((tab, i) => {
-    const label = tab === 'Staff Directory'
-      ? `Staff Directory <span class="tab-count">${TOTAL_EMPLOYEES}</span>`
-      : tab;
-    return `<div class="page-tab ${i === (activeIndex ?? 0) ? 'active' : ''}" data-tab="${i}">${label}</div>`;
+    var iconHtml = '';
+    var label = tab;
+    if (tab === 'Org Chart') {
+      iconHtml = '<i data-lucide="git-branch" style="width:14px;height:14px;"></i> ';
+    } else if (tab === 'Staff Directory') {
+      iconHtml = '<i data-lucide="users" style="width:14px;height:14px;"></i> ';
+      label = 'Staff Directory <span class="tab-count">' + TOTAL_EMPLOYEES + '</span>';
+    }
+    return '<div class="page-tab ' + (i === (activeIndex ?? 0) ? 'active' : '') + '" data-tab="' + i + '">' + iconHtml + label + '</div>';
   }).join('');
 
   container.querySelectorAll('.page-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       container.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
+
+      var data = SIDEBAR_DATA[currentPrimaryItem];
+      if (data) {
+        var tabText = (tab.textContent || '').trim();
+        var match = data.navItems.find(function(n) { return tabText.startsWith(n.label); });
+        if (match && match.id !== currentNavItem) {
+          activateSecondaryNav(match.id, data);
+        }
+      }
     });
   });
 }
@@ -446,6 +460,13 @@ function showPageContent(primaryId, navId) {
   // Staff Directory → show dedicated view
   if (navId === 'staff-directory') {
     const el = document.getElementById('view-staff-directory');
+    if (el) el.classList.add('active');
+    return;
+  }
+
+  // Org Chart → show dedicated view
+  if (navId === 'org-chart') {
+    const el = document.getElementById('view-org-chart');
     if (el) el.classList.add('active');
     return;
   }
