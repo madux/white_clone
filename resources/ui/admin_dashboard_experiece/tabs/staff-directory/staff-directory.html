@@ -1,0 +1,190 @@
+<div class="modal-overlay" id="employeeModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>➕ Add New Employee</h2>
+      <p>Step 1 of 5 · All data saved to Employees table</p>
+    </div>
+    <div class="steps">
+      <div class="step active"><div class="step-num">1</div>Personal Info</div>
+      <div class="step"><div class="step-num">2</div>Employment</div>
+      <div class="step"><div class="step-num">3</div>Compensation</div>
+      <div class="step"><div class="step-num">4</div>Documents</div>
+      <div class="step"><div class="step-num">5</div>Access & Onboarding</div>
+    </div>
+    <div class="info">
+      ℹ️ Duplicate check runs on Email + National ID against all existing records including Terminated. Duplicates will be blocked.
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>First Name*</label><input type="text" placeholder="John"></div>
+      <div class="field"><label>Last Name*</label><input type="text" placeholder="Doe"></div>
+      <div class="field"><label>Work Email*</label><input type="email" placeholder="john.doe@cleon.com"></div>
+      <div class="field"><label>Phone Number*</label><input type="text" placeholder="+1 (555) 000-0000"></div>
+      <div class="field"><label>Date of Birth</label><input type="date"></div>
+      <div class="field">
+        <label>Gender</label>
+        <select>
+          <option>Select...</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>Non-binary</option>
+          <option>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="field"><label>Nationality</label><input type="text" placeholder="United States"></div>
+      <div class="field"><label>National ID Number*</label><input type="text" placeholder="SSN / Passport Code"></div>
+      <div class="field full"><label>Home Address*</label><textarea placeholder="123 Corporate Way, New York, NY"></textarea></div>
+      <div class="field"><label>Emergency Contact Name*</label><input type="text" placeholder="Jane Doe"></div>
+      <div class="field">
+        <label>Relationship</label>
+        <select>
+          <option>Select...</option>
+          <option>Spouse</option>
+          <option>Parent</option>
+          <option>Sibling</option>
+          <option>Friend</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field"><label>Phone</label><input type="text" placeholder="Emergency contact phone"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="action-btn" onclick="document.getElementById('employeeModal').classList.remove('open')">Save Draft</button>
+      <button class="action-btn pink-btn">Next Step →</button>
+    </div>
+  </div>
+</div>
+
+<section class="hero">
+  <div>
+    <h2>👥 Staff Directory</h2>
+    <p>Enterprise structural node browser with governance-aware employee records, reporting hierarchy, and lifecycle management.</p>
+    <div class="hero-tags">
+      <div class="hero-tag green">10 Healthy</div>
+      <div class="hero-tag yellow">1 Warnings</div>
+      <div class="hero-tag red">1 Critical</div>
+    </div>
+  </div>
+  <div class="hero-right-preview">
+    <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=11" alt="preview"></div>
+    <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=32" alt="preview"></div>
+    <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=45" alt="preview"></div>
+    <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=20" alt="preview"></div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat-card dark">
+    <div class="stat-card-top"><i data-lucide="users" size="16"></i><h3 id="stat-total">12</h3></div>
+    <p class="stat-label">TOTAL EMPLOYEES</p>
+  </div>
+  <div class="stat-card" style="background:#e6fbef; border-color:#c3f3da;">
+    <div class="stat-card-top"><i data-lucide="check" size="16" style="color:#0ca86c"></i><h3 style="color:#0ca86c" id="stat-active">9</h3></div>
+    <p class="stat-label" style="color:#0ca86c">ACTIVE</p>
+  </div>
+  <div class="stat-card" style="background:#eef4ff; border-color:#d2e2ff;">
+    <div class="stat-card-top"><i data-lucide="clock" size="16" style="color:#3468ff"></i><h3 style="color:#3468ff" id="stat-pre">1</h3></div>
+    <p class="stat-label" style="color:#3468ff">PRE-ONBOARDING</p>
+  </div>
+  <div class="stat-card" style="background:#fff7df; border-color:#ffe8af;">
+    <div class="stat-card-top"><i data-lucide="calendar" size="16" style="color:#f59d0d"></i><h3 style="color:#f59d0d" id="stat-leave">1</h3></div>
+    <p class="stat-label" style="color:#f59d0d">ON LEAVE</p>
+  </div>
+  <div class="stat-card" style="background:#fff0f2; border-color:#ffd1d7;">
+    <div class="stat-card-top"><i data-lucide="log-out" size="16" style="color:#ff4f6d"></i><h3 style="color:#ff4f6d" id="stat-off">1</h3></div>
+    <p class="stat-label" style="color:#ff4f6d">OFFBOARDING</p>
+  </div>
+</section>
+
+<section class="toolbar">
+  <div class="toolbar-top">
+    <div class="toolbar-tabs" id="statusToolbarTabs">
+      <button class="active" onclick="filterByStatus('All')">All <span class="toolbar-count">12</span></button>
+      <button onclick="filterByStatus('Active')">Active <span class="toolbar-count">9</span></button>
+      <button onclick="filterByStatus('Pre-Onboarding')">Pre-Onboarding <span class="toolbar-count">1</span></button>
+      <button onclick="filterByStatus('On Leave')">On Leave <span class="toolbar-count">1</span></button>
+      <button onclick="filterByStatus('Offboarding')">Offboarding <span class="toolbar-count">1</span></button>
+      <button onclick="filterByStatus('Suspended')">Suspended <span class="toolbar-count">0</span></button>
+      <button onclick="filterByStatus('Terminated')">Terminated <span class="toolbar-count">0</span></button>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <div class="search">
+      <i data-lucide="search"></i>
+      <input id="searchInput" placeholder="Search name, ID, role, branch, cost center" oninput="handleSearch()">
+    </div>
+    <button class="action-btn" id="filterBtn"><i data-lucide="filter"></i>Filters</button>
+    <div class="view-switch">
+      <button class="view-btn active" id="view-cards" onclick="switchViewType('cards')"><i data-lucide="layout-grid"></i></button>
+      <button class="view-btn" id="view-table" onclick="switchViewType('table')"><i data-lucide="list"></i></button>
+      <button class="view-btn" id="view-structure" onclick="switchViewType('structure')"><i data-lucide="git-branch"></i></button>
+    </div>
+    <button class="action-btn"><i data-lucide="download"></i>Export</button>
+    <button class="action-btn pink-btn" id="addEmployeeBtn"><i data-lucide="user-plus"></i>Add Employee</button>
+  </div>
+
+  <div class="filters-panel" id="filtersPanel">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <span style="font-size: 13px; font-weight: 700; color: #555;">Advanced Query Filters</span>
+      <button onclick="resetAllFilters()" style="background: none; border: none; color: var(--pink); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+        <i data-lucide="x" size="14"></i> Reset all filters
+      </button>
+    </div>
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label>Department</label>
+        <select id="deptFilter" onchange="handleDropdownFilters()">
+          <option value="All">All Departments</option>
+          <option value="ENGINEERING">Engineering</option>
+          <option value="FINANCE">Finance</option>
+          <option value="MARKETING">Marketing</option>
+          <option value="HUMAN RESOURCES">Human Resources</option>
+          <option value="PRODUCT DESIGN">Product Design</option>
+          <option value="OPERATIONS">Operations</option>
+          <option value="EXECUTIVE">Executive</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <select id="statusFilter" onchange="handleDropdownFilters()">
+          <option value="All">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Pre-Onboarding">Pre-Onboarding</option>
+          <option value="On Leave">On Leave</option>
+          <option value="Suspended">Suspended</option>
+          <option value="Offboarding">Offboarding</option>
+          <option value="Terminated">Terminated</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Location / Mode</label>
+        <select id="modeFilter" onchange="handleDropdownFilters()">
+          <option value="All">All Locations</option>
+          <option value="Office">Office</option>
+          <option value="Hybrid">Hybrid</option>
+          <option value="Remote">Remote</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Alpha Filter</label>
+        <div class="alphabet" id="alphabet"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div style="font-size: 12px; color: #888; margin-bottom: 12px;" id="recordCountLabel">Showing <strong>12</strong> of 12 employees</div>
+
+<div id="viewContainer">
+  <section class="employees-grid" id="employeesGrid"></section>
+</div>
+
+<footer class="footer">
+  <div>© 2026 CLEON HR Management System</div>
+  <div class="footer-links">
+    <a href="https://brown-whale-86074201.figma.site/#">PRIVACY POLICY</a>
+    <a href="https://brown-whale-86074201.figma.site/#">TERMS OF SERVICE</a>
+    <a href="https://brown-whale-86074201.figma.site/#">SECURITY</a>
+  </div>
+  <div class="system-status"><span class="status-dot"></span>SYSTEM ONLINE · CLUSTER NY-1</div>
+</footer>

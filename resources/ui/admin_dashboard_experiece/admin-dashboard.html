@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CleonHR — Admin Dashboard</title>
+  <meta name="description" content="CleonHR Admin Dashboard — manage your team, track attendance and access all your HR tools in one place." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/sidebar.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <link rel="stylesheet" href="tabs/staff-directory/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ===================== PRIMARY SIDEBAR ===================== -->
+  <aside class="primary-sidebar" id="primarySidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">C</div>
+      <span class="logo-text">CleonHR</span>
+    </div>
+    <nav class="sidebar-nav" id="primaryNav"></nav>
+    <div class="sidebar-bottom">
+      <div class="avatar-sm">OA</div>
+      <div class="user-info">
+        <div class="user-name">Olamide A.</div>
+        <div class="user-role">HR Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===================== SECONDARY SIDEBAR ===================== -->
+  <aside class="secondary-sidebar" id="secondarySidebar">
+    <div class="sec-header">
+      <div class="sec-header-icon" id="secHeaderIcon"><i data-lucide="layout-dashboard"></i></div>
+      <span class="sec-header-label" id="secHeaderLabel">Dashboard</span>
+    </div>
+    <nav class="sec-nav" id="secondaryNav"></nav>
+    <!-- Governance badge -->
+    <div class="governance-badge">
+      <div class="governance-badge-title">Governance Active</div>
+      <div class="governance-badge-text">Enterprise compliance and security standards are enforced across all modules.</div>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN AREA ===================== -->
+  <div class="main-area">
+
+    <!-- ---- GLOBAL HEADER ---- -->
+    <header class="global-header">
+      <div class="header-left">
+        <div>
+          <div class="header-page-title" id="headerPageTitle">Overview</div>
+          <div class="header-edition" style="font-size:10px;color:#f278ba;">CLEON HR · ENTERPRISE EDITION</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="header-search">
+          <i data-lucide="search"></i>
+          <input type="text" placeholder="Search everything…" />
+        </div>
+        <div class="header-clock" id="headerClock">
+          <i data-lucide="clock"></i><span id="clockTime">00:00:00</span>
+        </div>
+        <button class="header-icon-btn" id="notifBtn" title="Notifications">
+          <i data-lucide="bell"></i>
+          <span class="header-badge">4</span>
+        </button>
+        <button class="header-icon-btn" title="Help"><i data-lucide="help-circle"></i></button>
+        <div class="header-user-pill">
+          <div class="header-avatar">OA</div>
+          <div>
+            <div class="header-user-name">Admin User</div>
+            <div class="header-user-role">SUPER ADMIN</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ---- PAGE TABS (decoupled, built by sidebar.js) ---- -->
+    <div class="page-tabs" id="pageTabs" style="display:none;"></div>
+
+    <!-- ===================== PAGE CONTENT ===================== -->
+    <div class="content-scroll">
+
+      <!-- ============ DASHBOARD VIEW ============ -->
+      <div class="page-view active" id="view-dashboard">
+
+        <!-- ---- JUMBOTRON ---- -->
+        <div class="jumbotron">
+          <div class="jumbotron-left">
+            <div class="jumbotron-badge">Live · Get Active Employees</div>
+            <h1>Good morning, <span class="name" id="greetingName">Admin</span> 👋</h1>
+            <div class="jumbotron-sub">
+              <span>CLEOnHR Enterprise</span>
+              <span class="sep"></span>
+              <span id="jumbotronDate">Friday, February 27, 2026</span>
+              <span class="sep"></span>
+              <span class="online-pill">Cluster N°1 Online</span>
+            </div>
+          </div>
+          <div class="jumbotron-right">
+            <div class="jstat">
+              <div class="jstat-lbl">Headcount</div>
+              <div class="jstat-val">247</div>
+              <span class="jstat-trend up">+3</span>
+            </div>
+            <div class="jstat">
+              <div class="jstat-lbl">Open Roles</div>
+              <div class="jstat-val">18</div>
+              <span class="jstat-trend up">+41</span>
+            </div>
+            <div class="jstat">
+              <div class="jstat-lbl">Pending Actions</div>
+              <div class="jstat-val">17</div>
+              <span class="jstat-trend down">−4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ---- ACTION REQUIRED BANNER ---- -->
+        <div class="action-banner">
+          <div class="action-banner-label">
+            <i data-lucide="alert-circle"></i> Action Required
+          </div>
+          <div class="action-divider"></div>
+          <div class="action-alert"><span class="ai">📄</span> 5 contracts expiring <span style="opacity:.6;font-size:11px;">›</span></div>
+          <div class="action-sep">·</div>
+          <div class="action-alert"><span class="ai">🔍</span> 4 verifications pending <span style="opacity:.6;font-size:11px;">›</span></div>
+          <div class="action-sep">·</div>
+          <div class="action-alert"><span class="ai">🌴</span> 5 leave requests awaiting approval <span style="opacity:.6;font-size:11px;">›</span></div>
+        </div>
+
+        <!-- ============================================================
+             KPI CARDS — Row 1 (5 cards, no section label)
+             ============================================================ -->
+        <div class="kpi-row" style="margin-bottom:10px;">
+
+          <!-- Total Employees -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">👥</span>
+            </div>
+            <div class="kpi-val" data-count="247">0</div>
+            <div class="kpi-lbl">Total Employees</div>
+            <div class="kpi-sub pos">+3 this month</div>
+          </div>
+
+          <!-- In Onboarding -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🚀</span>
+              <span class="kpi-badge new">New</span>
+            </div>
+            <div class="kpi-val" data-count="12">0</div>
+            <div class="kpi-lbl">In Onboarding</div>
+            <div class="kpi-sub pos">+4 new hires</div>
+          </div>
+
+          <!-- On Leave Today -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🌴</span>
+            </div>
+            <div class="kpi-val" data-count="8">0</div>
+            <div class="kpi-lbl">On Leave Today</div>
+            <div class="kpi-sub">3 approved today</div>
+          </div>
+
+          <!-- Offboarding -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🔚</span>
+            </div>
+            <div class="kpi-val" data-count="3">0</div>
+            <div class="kpi-lbl">Offboarding</div>
+            <div class="kpi-sub warn">2 nearing end</div>
+          </div>
+
+          <!-- Active Applicants -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🎯</span>
+            </div>
+            <div class="kpi-val" data-count="24">0</div>
+            <div class="kpi-lbl">Active Applicants</div>
+            <div class="kpi-sub blue">Pipeline open</div>
+          </div>
+
+        </div>
+
+        <!-- KPI Row 2 -->
+        <div class="kpi-row" style="margin-bottom:16px;">
+
+          <!-- Contracts Expiring -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">📄</span>
+              <span class="kpi-badge warn">⚠️</span>
+            </div>
+            <div class="kpi-val" data-count="5">0</div>
+            <div class="kpi-lbl">Contracts Expiring</div>
+            <div class="kpi-sub warn">Within 30 days</div>
+          </div>
+
+          <!-- Advances Outstanding -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">💳</span>
+            </div>
+            <div class="kpi-val" style="font-size:24px;">$24K</div>
+            <div class="kpi-lbl">Advances Outstanding</div>
+            <div class="kpi-sub">8 active</div>
+          </div>
+
+          <!-- Suspended Staff -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🔴</span>
+              <span class="kpi-badge warn">⚠️</span>
+            </div>
+            <div class="kpi-val" data-count="2">0</div>
+            <div class="kpi-lbl">Suspended Staff</div>
+            <div class="kpi-sub neg">Under review</div>
+          </div>
+
+          <!-- Pending Verifications -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🔍</span>
+            </div>
+            <div class="kpi-val" data-count="4">0</div>
+            <div class="kpi-lbl">Pending Verifications</div>
+            <div class="kpi-sub warn">Awaiting action</div>
+          </div>
+
+          <!-- Org Chart Ready -->
+          <div class="kpi-card">
+            <div class="kpi-top">
+              <span class="kpi-emoji">🏢</span>
+              <span class="kpi-badge ok">✓</span>
+            </div>
+            <div class="kpi-val" data-count="247">0</div>
+            <div class="kpi-lbl">Org Chart Ready</div>
+            <div class="kpi-sub pos">Hierarchy live</div>
+          </div>
+
+        </div>
+
+        <!-- ============================================================
+             EMPLOYEE LIFECYCLE PIPELINE — dim only on hover
+             ============================================================ -->
+        <div class="pipeline-wrap">
+          <div class="pipeline-head">
+            <div>
+              <div class="pipeline-title">
+                <i data-lucide="git-branch"></i>
+                Employee Lifecycle Pipeline
+              </div>
+              <div class="pipeline-title-sub">Real-time snapshot across all HR stages</div>
+            </div>
+            <span class="section-link">View All →</span>
+          </div>
+          <div class="pipeline-stages">
+            <div class="stage-card talent" onclick="openOrgStaffDirectory()" style="cursor:pointer;">
+              <div class="stage-icon-label">
+                <div class="stage-icon"><i data-lucide="target"></i></div>
+                <div class="stage-tag">Talent Pipeline</div>
+              </div>
+              <div class="stage-num">24</div>
+              <div class="stage-sub">employees</div>
+            </div>
+            <i data-lucide="chevron-right" class="pipeline-chevron"></i>
+            <div class="stage-card pre-ob">
+              <div class="stage-icon-label">
+                <div class="stage-icon"><i data-lucide="clock"></i></div>
+                <div class="stage-tag">Pre-Onboarding</div>
+              </div>
+              <div class="stage-num">3</div>
+              <div class="stage-sub">employees</div>
+            </div>
+            <i data-lucide="chevron-right" class="pipeline-chevron"></i>
+            <div class="stage-card onboard">
+              <div class="stage-icon-label">
+                <div class="stage-icon"><i data-lucide="user-check"></i></div>
+                <div class="stage-tag">Onboarding</div>
+              </div>
+              <div class="stage-num">12</div>
+              <div class="stage-sub">employees</div>
+            </div>
+            <i data-lucide="chevron-right" class="pipeline-chevron"></i>
+            <div class="stage-card active-s">
+              <div class="stage-icon-label">
+                <div class="stage-icon"><i data-lucide="circle-check"></i></div>
+                <div class="stage-tag">Active</div>
+              </div>
+              <div class="stage-num">212</div>
+              <div class="stage-sub">employees</div>
+            </div>
+            <i data-lucide="chevron-right" class="pipeline-chevron"></i>
+            <div class="stage-card offboard">
+              <div class="stage-icon-label">
+                <div class="stage-icon"><i data-lucide="user-minus"></i></div>
+                <div class="stage-tag">Offboarding</div>
+              </div>
+              <div class="stage-num">3</div>
+              <div class="stage-sub">employees</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             ANALYTICS 3-COLUMN ROW
+             ============================================================ -->
+        <div class="analytics-3col">
+
+          <!-- Headcount Trend -->
+          <div class="chart-card">
+            <div class="chart-head">
+              <div>
+                <div class="chart-title" style="display:flex;align-items:center;gap:6px;">
+                  <i data-lucide="trending-up" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+                  Headcount Trend
+                </div>
+                <div class="chart-sub">Aug 2024 – Feb 2025</div>
+              </div>
+              <div style="text-align:right;">
+                <div class="chart-trend-badge">247</div>
+                <div style="font-size:10px;color:#16a34a;font-weight:600;margin-top:2px;">↑ +13.2%</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap" style="height:180px;">
+              <canvas id="headcountChart"></canvas>
+            </div>
+          </div>
+
+          <!-- By Department -->
+          <div class="chart-card">
+            <div class="chart-head">
+              <div>
+                <div class="chart-title" style="display:flex;align-items:center;gap:6px;">
+                  <i data-lucide="bar-chart-2" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+                  By Department
+                </div>
+              </div>
+              <span class="section-link" style="font-size:11.5px;">Manage →</span>
+            </div>
+            <div class="chart-canvas-wrap" style="height:200px;">
+              <canvas id="deptBarChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Pending Actions -->
+          <div class="pending-panel">
+            <div class="pending-head">
+              <div class="pending-title">
+                <i data-lucide="zap"></i>
+                Pending Actions
+              </div>
+              <span class="pending-total">17 total</span>
+            </div>
+
+            <div class="pending-row">
+              <div class="pending-icon card-icon-teal"><i data-lucide="calendar-off"></i></div>
+              <span class="pending-lbl">Leave Requests</span>
+              <span class="pending-count">6</span>
+            </div>
+            <div class="pending-row">
+              <div class="pending-icon card-icon-orange"><i data-lucide="file-text"></i></div>
+              <span class="pending-lbl">Expiring Contracts</span>
+              <span class="pending-count">6</span>
+            </div>
+            <div class="pending-row">
+              <div class="pending-icon card-icon-blue"><i data-lucide="shield-check"></i></div>
+              <span class="pending-lbl">Pending Verifications</span>
+              <span class="pending-count">4</span>
+            </div>
+            <div class="pending-row">
+              <div class="pending-icon card-icon-green"><i data-lucide="credit-card"></i></div>
+              <span class="pending-lbl">Cash Advances</span>
+              <span class="pending-count">2</span>
+            </div>
+            <div class="pending-row">
+              <div class="pending-icon card-icon-pink"><i data-lucide="dollar-sign"></i></div>
+              <span class="pending-lbl">Salary Revisions</span>
+              <span class="pending-count">1</span>
+            </div>
+          </div>
+
+        </div><!-- /analytics-3col -->
+
+        <!-- ============================================================
+             LOWER ROW — Recent Activity | Workforce Health + Quick Actions
+             ============================================================ -->
+        <div class="lower-row">
+
+          <!-- Recent Activity -->
+          <div class="activity-card">
+            <div class="activity-card-head">
+              <div>
+                <div class="activity-card-title" style="display:flex;align-items:center;gap:7px;">
+                  <i data-lucide="activity" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+                  Recent Activity
+                </div>
+              </div>
+              <span class="audit-link">Audit Trail <i data-lucide="arrow-right"></i></span>
+            </div>
+            <div class="activity-card-sub">Real-time employee activities across all modules</div>
+
+            <div class="timeline">
+
+              <div class="tl-date-group">Today 02:19</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#E91E8C;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text">Annual leave approved for <strong>Tom Noah</strong> (9 days)</div>
+                  <div class="tl-time">02:19 AM</div>
+                </div>
+              </div>
+
+              <div class="tl-date-group">Today 00:05</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#3b82f6;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text"><strong>Anna Chen</strong> title updated → <span class="tag">Senior Frontend Developer</span></div>
+                  <div class="tl-time">12:05 AM</div>
+                </div>
+              </div>
+
+              <div class="tl-date-group">Wednesday 13:02</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#10b981;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text">Onboarding checklist created for <strong>Michael Brown</strong> [EMP063]</div>
+                  <div class="tl-time">1:02 PM</div>
+                </div>
+              </div>
+
+              <div class="tl-date-group">Tuesday 09:11</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#f59e0b;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text">Salary revision approved for <strong>John Dee</strong> — +8% effective Mar 1</div>
+                  <div class="tl-time">9:11 AM</div>
+                </div>
+              </div>
+
+              <div class="tl-date-group">Feb 19</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#8b5cf6;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text">Background check initiated for <strong>Michael Brown</strong> — Standard tier</div>
+                  <div class="tl-time">3:44 PM</div>
+                </div>
+              </div>
+
+              <div class="tl-date-group">Feb 17</div>
+              <div class="tl-item">
+                <div class="tl-dot-col"><div class="tl-dot" style="background:#06b6d4;"></div></div>
+                <div class="tl-body">
+                  <div class="tl-text">Annual review submitted for <strong>Alex Rivera</strong> — Rating: <span class="tag">4.7/5</span></div>
+                  <div class="tl-time">11:22 AM</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right stack: Workforce Health + Quick Actions -->
+          <div style="display:flex;flex-direction:column;gap:10px;">
+
+            <!-- Workforce Health -->
+            <div class="health-card">
+              <div class="health-head">
+                <div class="health-title" style="display:flex;align-items:center;gap:7px;">
+                  <i data-lucide="heart-pulse" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+                  Workforce Health
+                </div>
+                <span class="health-detail">Details →</span>
+              </div>
+              <div class="health-metrics">
+                <div class="hm-row">
+                  <span class="hm-lbl">Onboarding Rate</span>
+                  <div class="hm-track"><div class="hm-fill green" style="width:92%;"></div></div>
+                  <span class="hm-pct">92%</span>
+                </div>
+                <div class="hm-row">
+                  <span class="hm-lbl">Retention</span>
+                  <div class="hm-track"><div class="hm-fill blue" style="width:91.5%;"></div></div>
+                  <span class="hm-pct">91.5%</span>
+                </div>
+                <div class="hm-row">
+                  <span class="hm-lbl">Training Completion</span>
+                  <div class="hm-track"><div class="hm-fill orange" style="width:74%;"></div></div>
+                  <span class="hm-pct">74%</span>
+                </div>
+                <div class="hm-row">
+                  <span class="hm-lbl">Engagement Score</span>
+                  <div class="hm-track"><div class="hm-fill pink" style="width:78%;"></div></div>
+                  <span class="hm-pct">−78%</span>
+                </div>
+                <div class="hm-row">
+                  <span class="hm-lbl">Verification Cleared</span>
+                  <div class="hm-track"><div class="hm-fill teal" style="width:98%;"></div></div>
+                  <span class="hm-pct">98%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="qa-card">
+              <div class="qa-title" style="display:flex;align-items:center;gap:7px;">
+                <i data-lucide="zap" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+                Quick Actions
+              </div>
+              <div class="qa-grid">
+                <button class="qa-btn pink"><i data-lucide="user-plus"></i> + Employee</button>
+                <button class="qa-btn outline"><i data-lucide="building-2"></i> + Department</button>
+                <button class="qa-btn outline"><i data-lucide="briefcase"></i> + Job Role</button>
+                <button class="qa-btn outline"><i data-lucide="file-text"></i> + Contract</button>
+                <button class="qa-btn outline"><i data-lucide="calendar-off"></i> Leave Req.</button>
+                <button class="qa-btn outline"><i data-lucide="clipboard-check"></i> BG Check</button>
+                <button class="qa-btn-full"><i data-lucide="download"></i> Export Daily Report</button>
+              </div>
+            </div>
+
+          </div><!-- /right-stack -->
+
+        </div><!-- /lower-row -->
+
+        <!-- ============================================================
+             UPCOMING BIRTHDAYS & ANNIVERSARIES
+             ============================================================ -->
+        <div class="birthdays-wrap">
+          <div class="birthdays-head">
+            <div class="birthdays-title">
+              <span>🎂</span> Upcoming Birthdays &amp; Anniversaries
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;">
+              <span class="section-link" style="font-size:11.5px;">Send All</span>
+              <span class="section-link" style="font-size:11.5px;">View All →</span>
+            </div>
+          </div>
+          <div class="birthdays-scroll">
+
+            <div class="bday-card">
+              <div class="bday-avatar" style="background:linear-gradient(135deg,#E91E8C,#FF6BA8);">LP</div>
+              <div>
+                <div class="bday-name">Lisa Park</div>
+                <div class="bday-role">Marketing Director</div>
+                <div class="bday-date">🎂 Feb 22</div>
+                <span class="bday-yrs">🎉 3 yr</span>
+              </div>
+            </div>
+
+            <div class="bday-card">
+              <div class="bday-avatar" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">JC</div>
+              <div>
+                <div class="bday-name">James Carter</div>
+                <div class="bday-role">CTO</div>
+                <div class="bday-date">🎂 Feb 24</div>
+                <span class="bday-yrs">🏆 6 Years · Today!</span>
+              </div>
+            </div>
+
+            <div class="bday-card">
+              <div class="bday-avatar" style="background:linear-gradient(135deg,#10b981,#34d399);">TN</div>
+              <div>
+                <div class="bday-name">Tom Nash</div>
+                <div class="bday-role">Operations Manager</div>
+                <div class="bday-date">🎂 Feb 28</div>
+                <span class="bday-yrs">🏆 8 Years · Today!</span>
+              </div>
+            </div>
+
+            <div class="bday-card">
+              <div class="bday-avatar" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">SA</div>
+              <div>
+                <div class="bday-name">Sara Adams</div>
+                <div class="bday-role">HR Specialist</div>
+                <div class="bday-date">🎂 Mar 2</div>
+                <span class="bday-yrs">🎉 2 yr</span>
+              </div>
+            </div>
+
+            <div class="bday-card">
+              <div class="bday-avatar" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">DM</div>
+              <div>
+                <div class="bday-name">David Mills</div>
+                <div class="bday-role">Sales Lead</div>
+                <div class="bday-date">🎂 Mar 5</div>
+                <span class="bday-yrs">🎉 1 yr</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================================
+             DEPARTMENT SNAPSHOT
+             ============================================================ -->
+        <div class="dept-snap-wrap">
+          <div class="dept-snap-head">
+            <div class="dept-snap-title" style="display:flex;align-items:center;gap:7px;">
+              <span>🏢</span> Department Snapshot
+            </div>
+            <span class="section-link" style="font-size:11.5px;">Manage Depts →</span>
+          </div>
+          <div class="dept-snap-grid">
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">💻</div>
+              <div class="dept-card-count">48</div>
+              <div class="dept-card-name">Engineering</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:78%;background:linear-gradient(90deg,#E91E8C,#FF6BA8);"></div></div>
+              <div class="dept-budget-lbl">78% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">💰</div>
+              <div class="dept-card-count">22</div>
+              <div class="dept-card-name">Finance</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:89%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+              <div class="dept-budget-lbl">89% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">📣</div>
+              <div class="dept-card-count">18</div>
+              <div class="dept-card-name">Marketing</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:102%;background:linear-gradient(90deg,#ef4444,#f87171);"></div></div>
+              <div class="dept-budget-lbl">102% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">👥</div>
+              <div class="dept-card-count">14</div>
+              <div class="dept-card-name">HR</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:77%;background:linear-gradient(90deg,#3b82f6,#60a5fa);"></div></div>
+              <div class="dept-budget-lbl">77% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">🎨</div>
+              <div class="dept-card-count">11</div>
+              <div class="dept-card-name">Design</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:99%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div></div>
+              <div class="dept-budget-lbl">99% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">⚙️</div>
+              <div class="dept-card-count">31</div>
+              <div class="dept-card-name">Operations</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:97%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+              <div class="dept-budget-lbl">97% budget</div>
+            </div>
+
+            <div class="dept-card">
+              <div class="dept-card-emoji">👑</div>
+              <div class="dept-card-count">4</div>
+              <div class="dept-card-name">Executive</div>
+              <div class="dept-budget-bar"><div class="dept-budget-fill" style="width:86%;background:linear-gradient(90deg,#f97316,#fb923c);"></div></div>
+              <div class="dept-budget-lbl">86% budget</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============================================================
+             FOOTER
+             ============================================================ -->
+        <div class="page-footer">
+          <div class="footer-left">
+            <div class="footer-copy">© 2025 CleonHR Management System</div>
+            <div class="footer-links">
+              <span>Privacy Policy</span>
+              <span>Terms of Service</span>
+              <span>Security</span>
+            </div>
+          </div>
+          <div class="footer-status">System Online · Cluster N°1</div>
+        </div>
+
+      </div><!-- /view-dashboard -->
+
+      <!-- ============ STAFF DIRECTORY VIEW ============ -->
+      <div class="page-view" id="view-staff-directory">
+
+        <div class="modal-overlay" id="employeeModal">
+          <div class="modal">
+            <div class="modal-header">
+              <h2>➕ Add New Employee</h2>
+              <p>Step 1 of 5 · All data saved to Employees table</p>
+            </div>
+            <div class="steps">
+              <div class="step active"><div class="step-num">1</div>Personal Info</div>
+              <div class="step"><div class="step-num">2</div>Employment</div>
+              <div class="step"><div class="step-num">3</div>Compensation</div>
+              <div class="step"><div class="step-num">4</div>Documents</div>
+              <div class="step"><div class="step-num">5</div>Access & Onboarding</div>
+            </div>
+            <div class="info">
+              ℹ️ Duplicate check runs on Email + National ID against all existing records including Terminated. Duplicates will be blocked.
+            </div>
+            <div class="form-grid">
+              <div class="field"><label>First Name*</label><input type="text" placeholder="John"></div>
+              <div class="field"><label>Last Name*</label><input type="text" placeholder="Doe"></div>
+              <div class="field"><label>Work Email*</label><input type="email" placeholder="john.doe@cleon.com"></div>
+              <div class="field"><label>Phone Number*</label><input type="text" placeholder="+1 (555) 000-0000"></div>
+              <div class="field"><label>Date of Birth</label><input type="date"></div>
+              <div class="field">
+                <label>Gender</label>
+                <select>
+                  <option>Select...</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                  <option>Non-binary</option>
+                  <option>Prefer not to say</option>
+                </select>
+              </div>
+              <div class="field"><label>Nationality</label><input type="text" placeholder="United States"></div>
+              <div class="field"><label>National ID Number*</label><input type="text" placeholder="SSN / Passport Code"></div>
+              <div class="field full"><label>Home Address*</label><textarea placeholder="123 Corporate Way, New York, NY"></textarea></div>
+              <div class="field"><label>Emergency Contact Name*</label><input type="text" placeholder="Jane Doe"></div>
+              <div class="field">
+                <label>Relationship</label>
+                <select>
+                  <option>Select...</option>
+                  <option>Spouse</option>
+                  <option>Parent</option>
+                  <option>Sibling</option>
+                  <option>Friend</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="field"><label>Phone</label><input type="text" placeholder="Emergency contact phone"></div>
+            </div>
+            <div class="modal-footer">
+              <button class="action-btn" onclick="document.getElementById('employeeModal').classList.remove('open')">Save Draft</button>
+              <button class="action-btn pink-btn">Next Step →</button>
+            </div>
+          </div>
+        </div>
+
+        <section class="hero">
+          <div>
+            <h2>👥 Staff Directory</h2>
+            <p>Enterprise structural node browser with governance-aware employee records, reporting hierarchy, and lifecycle management.</p>
+            <div class="hero-tags">
+              <div class="hero-tag green">10 Healthy</div>
+              <div class="hero-tag yellow">1 Warnings</div>
+              <div class="hero-tag red">1 Critical</div>
+            </div>
+          </div>
+          <div class="hero-right-preview">
+            <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=11" alt="preview"></div>
+            <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=32" alt="preview"></div>
+            <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=45" alt="preview"></div>
+            <div class="hero-img-card"><img src="https://i.pravatar.cc/100?img=20" alt="preview"></div>
+          </div>
+        </section>
+
+        <section class="stats">
+          <div class="stat-card dark">
+            <div class="stat-card-top"><i data-lucide="users" size="16"></i><h3 id="stat-total">12</h3></div>
+            <p class="stat-label">TOTAL EMPLOYEES</p>
+          </div>
+          <div class="stat-card" style="background:#e6fbef; border-color:#c3f3da;">
+            <div class="stat-card-top"><i data-lucide="check" size="16" style="color:#0ca86c"></i><h3 style="color:#0ca86c" id="stat-active">9</h3></div>
+            <p class="stat-label" style="color:#0ca86c">ACTIVE</p>
+          </div>
+          <div class="stat-card" style="background:#eef4ff; border-color:#d2e2ff;">
+            <div class="stat-card-top"><i data-lucide="clock" size="16" style="color:#3468ff"></i><h3 style="color:#3468ff" id="stat-pre">1</h3></div>
+            <p class="stat-label" style="color:#3468ff">PRE-ONBOARDING</p>
+          </div>
+          <div class="stat-card" style="background:#fff7df; border-color:#ffe8af;">
+            <div class="stat-card-top"><i data-lucide="calendar" size="16" style="color:#f59d0d"></i><h3 style="color:#f59d0d" id="stat-leave">1</h3></div>
+            <p class="stat-label" style="color:#f59d0d">ON LEAVE</p>
+          </div>
+          <div class="stat-card" style="background:#fff0f2; border-color:#ffd1d7;">
+            <div class="stat-card-top"><i data-lucide="log-out" size="16" style="color:#ff4f6d"></i><h3 style="color:#ff4f6d" id="stat-off">1</h3></div>
+            <p class="stat-label" style="color:#ff4f6d">OFFBOARDING</p>
+          </div>
+        </section>
+
+        <section class="toolbar">
+          <div class="toolbar-top">
+            <div class="toolbar-tabs" id="statusToolbarTabs">
+              <button class="active" onclick="filterByStatus('All')">All <span class="toolbar-count">12</span></button>
+              <button onclick="filterByStatus('Active')">Active <span class="toolbar-count">9</span></button>
+              <button onclick="filterByStatus('Pre-Onboarding')">Pre-Onboarding <span class="toolbar-count">1</span></button>
+              <button onclick="filterByStatus('On Leave')">On Leave <span class="toolbar-count">1</span></button>
+              <button onclick="filterByStatus('Offboarding')">Offboarding <span class="toolbar-count">1</span></button>
+              <button onclick="filterByStatus('Suspended')">Suspended <span class="toolbar-count">0</span></button>
+              <button onclick="filterByStatus('Terminated')">Terminated <span class="toolbar-count">0</span></button>
+            </div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+            <div class="search">
+              <i data-lucide="search"></i>
+              <input id="searchInput" placeholder="Search name, ID, role, branch, cost center" oninput="handleSearch()">
+            </div>
+            <button class="action-btn" id="filterBtn"><i data-lucide="filter"></i>Filters</button>
+            <div class="view-switch">
+              <button class="view-btn active" id="view-cards" onclick="switchViewType('cards')"><i data-lucide="layout-grid"></i></button>
+              <button class="view-btn" id="view-table" onclick="switchViewType('table')"><i data-lucide="list"></i></button>
+              <button class="view-btn" id="view-structure" onclick="switchViewType('structure')"><i data-lucide="git-branch"></i></button>
+            </div>
+            <button class="action-btn"><i data-lucide="download"></i>Export</button>
+            <button class="action-btn pink-btn" id="addEmployeeBtn"><i data-lucide="user-plus"></i>Add Employee</button>
+          </div>
+
+          <div class="filters-panel" id="filtersPanel">
+            <div style="font-size: 13px; font-weight: 700; color: #555; margin-bottom: 12px;">Advanced Query Filters</div>
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label>Department</label>
+                <select id="deptFilter" onchange="handleDropdownFilters()">
+                  <option value="All">All Departments</option>
+                  <option value="ENGINEERING">Engineering</option>
+                  <option value="FINANCE">Finance</option>
+                  <option value="MARKETING">Marketing</option>
+                  <option value="HUMAN RESOURCES">Human Resources</option>
+                  <option value="PRODUCT DESIGN">Product Design</option>
+                  <option value="OPERATIONS">Operations</option>
+                  <option value="EXECUTIVE">Executive</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Status</label>
+                <select id="statusFilter" onchange="handleDropdownFilters()">
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Pre-Onboarding">Pre-Onboarding</option>
+                  <option value="On Leave">On Leave</option>
+                  <option value="Suspended">Suspended</option>
+                  <option value="Offboarding">Offboarding</option>
+                  <option value="Terminated">Terminated</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Location / Mode</label>
+                <select id="modeFilter" onchange="handleDropdownFilters()">
+                  <option value="All">All Locations</option>
+                  <option value="Office">Office</option>
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Remote">Remote</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Alpha Filter</label>
+                <div class="alphabet" id="alphabet"></div>
+                <button onclick="resetAllFilters()" style="background: none; border: none; color: var(--pink); font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; margin-top: 10px;">
+                  <i data-lucide="x" size="14"></i> Reset all filters
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div style="font-size: 12px; color: #888; margin-bottom: 12px;" id="recordCountLabel">Showing <strong>12</strong> of 12 employees</div>
+
+        <div id="viewContainer">
+          <section class="employees-grid" id="employeesGrid"></section>
+        </div>
+
+        <footer class="footer">
+          <div>© 2026 CLEON HR Management System</div>
+          <div class="footer-links">
+            <a href="https://brown-whale-86074201.figma.site/#">PRIVACY POLICY</a>
+            <a href="https://brown-whale-86074201.figma.site/#">TERMS OF SERVICE</a>
+            <a href="https://brown-whale-86074201.figma.site/#">SECURITY</a>
+          </div>
+          <div class="system-status"><span class="status-dot"></span>SYSTEM ONLINE · CLUSTER NY-1</div>
+        </footer>
+
+      </div>
+
+      <!-- ============ GENERIC PLACEHOLDER VIEW ============ -->
+      <div class="page-view" id="view-generic">
+        <div style="text-align:center;padding:80px 40px;">
+          <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#fce4f3,rgba(233,30,140,.12));display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+            <i data-lucide="construction" style="width:28px;height:28px;color:#E91E8C;stroke-width:1.8;"></i>
+          </div>
+          <h2 style="font-size:20px;font-weight:800;color:#1a1a2e;margin-bottom:8px;" id="generic-title">Page</h2>
+          <p style="color:#8888aa;font-size:13.5px;line-height:1.6;max-width:360px;margin:0 auto;">
+            The <strong id="generic-module"></strong> module is coming soon. This section will be fully interactive in the production build.
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /content-scroll -->
+  </div><!-- /main-area -->
+</div><!-- /app-shell -->
+
+<div class="action-bar" id="selectionPanel">
+  <div class="counter-section">
+    <div class="counter-text"><span id="selectedCount">0</span> employees selected</div>
+  </div>
+  <div class="controls-section">
+    <button class="text-action-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="22" height="22">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25H4.5A2.25 2.25 0 0 1 2.25 17.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5H4.5a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+      </svg>
+      Email
+    </button>
+    <button class="text-action-btn" style="text-align: left; line-height: 1.2;">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="22" height="22">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+      </svg>
+      Generate<br>Docs
+    </button>
+  </div>
+  <div class="button-group">
+    <button class="action-btn" id="btnSuspend">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+      </svg>
+      Suspend
+    </button>
+    <button class="action-btn" id="btnOffboard">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+      </svg>
+      Offboard
+    </button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalSuspend">
+  <div class="modal-container modal-container--wide">
+    <button class="modal-close" onclick="closeModal('modalSuspend')">&times;</button>
+    <div class="modal-header">
+      <div class="modal-header-icon warn">⚠️</div>
+      <div>
+        <div class="modal-header-title">Suspend Employee</div>
+        <div class="modal-header-sub">State Management · This action is logged immutably</div>
+      </div>
+    </div>
+
+    <div class="modal-alert">
+      <span class="modal-alert-icon">🚫</span>
+      <span>Suspension is logged as an immutable audit entry. IT is notified immediately if access revocation is selected.</span>
+    </div>
+
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">Employee <span class="required">*</span></label>
+        <select class="form-select"><option>Select employee...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason for Suspension <span class="required">*</span></label>
+        <select class="form-select"><option>Select reason...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Effective Date <span class="required">*</span></label>
+        <input type="text" class="form-input" placeholder="mm/dd/yyyy">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Investigation Reference (if applicable)</label>
+        <input type="text" class="form-input" placeholder="e.g. INV-2026-003">
+      </div>
+
+      <div class="form-section-label">Access Revocation</div>
+      <label class="form-checkbox">
+        <input type="checkbox">
+        <span>Revoke System Access (email, VPN, applications) — IT notified immediately</span>
+      </label>
+      <label class="form-checkbox">
+        <input type="checkbox">
+        <span>Revoke Building Access (key cards, parking) — Security notified</span>
+      </label>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('modalSuspend')">Cancel</button>
+      <button class="modal-btn confirm" onclick="handleAction('Suspended')">Confirm Suspension</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOffboard">
+   <div class="modal-container modal-container--wide">
+    <button class="modal-close" onclick="closeModal('modalOffboard')">&times;</button>
+    <div class="modal-header">
+      <div class="modal-header-icon end">🔚</div>
+      <div>
+        <div class="modal-header-title">Initiate Offboarding</div>
+        <div class="modal-header-sub">Employee Lifecycle · Final Stage · 8-step clearance checklist will be created</div>
+      </div>
+    </div>
+
+    <div class="modal-alert">
+      <span class="modal-alert-icon">⚠️</span>
+      <span>This creates an 8-step clearance checklist and sets the employee status to Offboarding. All stakeholders are notified automatically.</span>
+    </div>
+
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">Employee <span class="required">*</span></label>
+        <select class="form-select"><option>Select employee...</option></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Offboarding Type <span class="required">*</span></label>
+        <select class="form-select"><option>Resignation</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Last Working Day <span class="required">*</span></label>
+          <input type="text" class="form-input" placeholder="mm/dd/yyyy">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Exit Interview Date</label>
+          <input type="text" class="form-input" placeholder="mm/dd/yyyy">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Final Pay Override ($)</label>
+        <input type="text" class="form-input" placeholder="Leave blank to use standard calculation">
+        <div class="form-hint">Standard calculation used if blank</div>
+      </div>
+
+      <div class="checklist-banner">
+        Auto-created checklist: IT Clearance → Asset Return → Finance Review → Exit Interview → Knowledge Transfer → Access Revocation → Final Pay → Record Archive
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeModal('modalOffboard')">Cancel</button>
+      <button class="modal-btn confirm" onclick="handleAction('Offboarded')">Confirm Offboarding</button>
+    </div>
+  </div>
+</div>
+
+<div class="photo-preview-overlay" id="photoPreviewOverlay" onclick="closePhotoPreview(event)">
+  <div class="photo-preview-container">
+    <button class="photo-preview-close" onclick="closePhotoPreview()">&times;</button>
+    <div class="photo-preview-controls">
+      <button class="photo-ctrl-btn" onclick="zoomPhoto(-0.3)"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg></button>
+      <span class="photo-zoom-level" id="photoZoomLevel">100%</span>
+      <button class="photo-ctrl-btn" onclick="zoomPhoto(0.3)"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" /></svg></button>
+      <button class="photo-ctrl-btn" onclick="resetPhotoZoom()"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" /></svg></button>
+    </div>
+    <div class="photo-preview-img-wrap">
+      <img id="photoPreviewImg" src="" alt="Preview" />
+    </div>
+    <div class="photo-preview-name" id="photoPreviewName"></div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="js/sidebar.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="tabs/staff-directory/js/script.js"></script>
+</body>
+</html>
