@@ -1,0 +1,188 @@
+/* ============================================================
+   MAIN – Global Layout, Header, Typography, Utilities
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root {
+  --pink:       #E91E8C;
+  --pink-light: #FF6BA8;
+  --pink-bg:    #fce4f3;
+  --dark:       #1a1a2e;
+  --text-1:     #1a1a2e;
+  --text-2:     #4a4a6a;
+  --text-3:     #8888aa;
+  --border:     #eeeef5;
+  --bg:         #f6f7fb;
+  --white:      #ffffff;
+  --primary-w:  56px;
+  --secondary-w:200px;
+  --header-h:   56px;
+}
+
+html, body {
+  font-family:'DM Sans',sans-serif; font-size:14px;
+  background:var(--bg); color:var(--text-1);
+  height:100%; min-height:100vh; overflow-x:hidden;
+}
+
+a { text-decoration:none; color:inherit; }
+button { font-family:inherit; cursor:pointer; border:none; outline:none; background:none; }
+ul,ol { list-style:none; }
+
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:#ddd; border-radius:10px; }
+
+/* ============================================================
+   LAYOUT SHELL
+   ============================================================ */
+.app-shell { display:flex; height:100vh; overflow:hidden; }
+
+/*
+ * Main area: offset by primary-sidebar (56px) + secondary-sidebar (200px)
+ * Does NOT shift when primary expands — primary overlays secondary.
+ */
+.main-area {
+  flex:1;
+  margin-left:calc(var(--primary-w) + var(--secondary-w));
+  display:flex; flex-direction:column;
+  height:100vh; overflow:hidden;
+  position:relative; z-index:50;
+}
+
+.content-scroll {
+  flex:1; overflow-y:auto; padding:20px 22px;
+}
+
+/* ============================================================
+   GLOBAL HEADER
+   ============================================================ */
+.global-header {
+  height:var(--header-h); background:var(--white);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; padding:0 20px; gap:14px;
+  flex-shrink:0; z-index:60; position:relative;
+}
+
+.header-left  { display:flex; align-items:center; flex:1; gap:10px; }
+.header-right { display:flex; align-items:center; gap:8px; }
+
+.header-page-title {
+  font-size:16px; font-weight:800; color:var(--text-1);
+}
+.header-edition {
+  font-size:11px; font-weight:500; color:var(--text-3);
+}
+
+.header-clock {
+  font-size:12px; font-weight:600; color:var(--text-2);
+  background:var(--bg); border:1px solid var(--border);
+  padding:4px 10px; border-radius:8px;
+  display:flex; align-items:center; gap:4px;
+}
+.header-clock svg { width:13px; height:13px; stroke-width:2; }
+
+.header-search {
+  display:flex; align-items:center; gap:8px; padding:7px 12px;
+  border-radius:9px; background:var(--bg); border:1px solid var(--border);
+  width:200px; transition:border-color .18s,box-shadow .18s;
+}
+.header-search:focus-within {
+  border-color:var(--pink); box-shadow:0 0 0 3px rgba(233,30,140,.08);
+}
+.header-search svg { width:13px; height:13px; color:var(--text-3); flex-shrink:0; }
+.header-search input {
+  border:none; background:none; outline:none;
+  font-size:12.5px; color:var(--text-1); width:100%; font-family:inherit;
+}
+.header-search input::placeholder { color:var(--text-3); }
+
+.header-icon-btn {
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  border-radius:9px; background:var(--bg); border:1px solid var(--border);
+  color:var(--text-2); cursor:pointer; transition:all .18s; position:relative;
+}
+.header-icon-btn:hover { border-color:var(--pink); color:var(--pink); background:var(--pink-bg); }
+.header-icon-btn svg { width:16px; height:16px; stroke-width:2; }
+
+.header-badge {
+  position:absolute; top:-3px; right:-3px;
+  background:var(--pink); color:#fff; font-size:9px; font-weight:700;
+  min-width:16px; height:16px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  padding:0 3px; border:2px solid #fff;
+}
+
+.header-avatar {
+  width:34px; height:34px; border-radius:50%;
+  background:linear-gradient(135deg,var(--pink),var(--pink-light));
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:12px; font-weight:700; cursor:pointer;
+  border:2px solid var(--white);
+  box-shadow:0 2px 8px rgba(233,30,140,.25); flex-shrink:0;
+}
+
+.header-user-pill {
+  display:flex; align-items:center; gap:8px;
+  padding:4px 12px 4px 4px; border-radius:20px;
+  border:1px solid var(--border); background:var(--bg); cursor:pointer;
+  transition:border-color .18s;
+}
+.header-user-pill:hover { border-color:var(--pink); }
+.header-user-name { font-size:12px; font-weight:600; color:var(--text-1); }
+.header-user-role {
+  font-size:10px; font-weight:700; color:var(--pink);
+  background:var(--pink-bg); padding:1px 6px; border-radius:20px;
+}
+
+/* ============================================================
+   PAGE TABS (decoupled per sidebar item)
+   ============================================================ */
+.page-tabs {
+  display:flex; align-items:center; gap:2px;
+  border-bottom:2px solid var(--border);
+  padding:0 22px; background:var(--white); flex-shrink:0;
+}
+.page-tab {
+  padding:10px 16px; font-size:13px; font-weight:500;
+  color:var(--text-3); cursor:pointer;
+  border-bottom:2px solid transparent; margin-bottom:-2px;
+  transition:color .18s,border-color .18s; white-space:nowrap;
+}
+.page-tab:hover { color:var(--text-1); }
+.page-tab.active { color:var(--pink); border-bottom-color:var(--pink); font-weight:600; }
+
+.page-tab .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #f0f0f4;
+  color: #666;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+.page-tab.active .tab-count {
+  background: rgba(233, 30, 140, 0.1);
+  color: #E91E8C;
+}
+
+/* ============================================================
+   SECONDARY SIDEBAR HIDE (Employee Profile mode)
+   ============================================================ */
+.app-shell.secondary-hidden .secondary-sidebar {
+  display: none;
+}
+
+.app-shell.secondary-hidden .main-area {
+  margin-left: var(--primary-w);
+}
