@@ -9,7 +9,7 @@
   top: 0;
   height: 100vh;
   width: 56px;
-  background: #1a1a2e;
+  background: #d21787;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -42,7 +42,7 @@
   width: 30px;
   min-width: 30px;
   height: 30px;
-  background: linear-gradient(135deg, #E91E8C, #FF6BA8);
+  background: linear-gradient(135deg, #ffffff, #f0a0d0);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -100,13 +100,13 @@
 }
 
 .primary-sidebar .nav-item:hover {
-  background: rgba(233, 30, 140, 0.14);
-  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
 }
 
 .primary-sidebar .nav-item.active {
-  background: rgba(233, 30, 140, 0.2);
-  color: #E91E8C;
+  background: rgba(255,255,255,0.18);
+  color: #ffffff;
 }
 
 .primary-sidebar .nav-item.active::after {
@@ -116,7 +116,7 @@
   top: 6px;
   bottom: 6px;
   width: 3px;
-  background: #E91E8C;
+  background: #ffffff;
   border-radius: 3px 0 0 3px;
 }
 
@@ -174,7 +174,7 @@
 }
 
 .primary-sidebar .sidebar-bottom:hover {
-  background: rgba(255,255,255,0.04);
+  background: rgba(255,255,255,0.1);
 }
 
 .primary-sidebar .sidebar-bottom .avatar-sm {
@@ -182,7 +182,7 @@
   min-width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #E91E8C, #c2186e);
+  background: linear-gradient(135deg, #ffffff, #e889c0);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -262,8 +262,8 @@
 .sec-header .sec-header-icon svg {
   width: 14px;
   height: 14px;
-  color: #E91E8C;
-  stroke: #E91E8C;
+  color: #d21787;
+  stroke: #d21787;
   stroke-width: 2;
 }
 
@@ -317,7 +317,7 @@
   opacity: 0;
   transition: opacity 0.16s;
   font-size: 16px;
-  color: #E91E8C;
+  color: #d21787;
   flex-shrink: 0;
   line-height: 1;
 }
@@ -327,12 +327,12 @@
 
 .secondary-sidebar .sec-nav-item:hover {
   background: #fdf0f8;
-  color: #E91E8C;
+  color: #d21787;
 }
 
 .secondary-sidebar .sec-nav-item.active {
   background: linear-gradient(90deg, #fce4f3, #fdf5fc);
-  color: #E91E8C;
+  color: #d21787;
   font-weight: 600;
 }
 
@@ -366,7 +366,7 @@
   min-width: 18px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #E91E8C;
+  background: #d21787;
   color: #fff;
   font-size: 10px;
   font-weight: 700;

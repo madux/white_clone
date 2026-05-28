@@ -42,7 +42,7 @@ const SIDEBAR_DATA = {
   },
   organization: {
     label: 'Organization',
-    icon: 'sitemap',
+    icon: 'users',
     navItems: [
       { id: 'org-chart',       icon: 'git-branch',  label: 'Org Chart' },
       { id: 'staff-directory', icon: 'users',        label: 'Staff Directory' }
@@ -279,7 +279,7 @@ function buildPrimaryNav() {
   const items = [
     { id: 'overview',           icon: 'layout-dashboard', label: 'Overview' },
     { id: 'org-setup',          icon: 'building-2',        label: 'Org Setup' },
-    { id: 'organization',       icon: 'sitemap',           label: 'Organization' },
+    { id: 'organization',       icon: 'users',           label: 'Organization' },
     { id: 'talent-acquisition', icon: 'user-search',       label: 'Talent Acquisition' },
     { id: 'onboarding',         icon: 'user-plus',         label: 'Onboarding' },
     { id: 'offboarding',        icon: 'user-minus',        label: 'Offboarding' },

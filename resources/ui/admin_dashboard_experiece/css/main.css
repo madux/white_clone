@@ -175,3 +175,14 @@ ul,ol { list-style:none; }
   background: rgba(233, 30, 140, 0.1);
   color: #E91E8C;
 }
+
+/* ============================================================
+   SECONDARY SIDEBAR HIDE (Employee Profile mode)
+   ============================================================ */
+.app-shell.secondary-hidden .secondary-sidebar {
+  display: none;
+}
+
+.app-shell.secondary-hidden .main-area {
+  margin-left: var(--primary-w);
+}
