@@ -74,6 +74,9 @@
                 <button name="action_undo_resolution"
                     type="object" string="Undo"
                     class="oe_highlight fa fa-file" invisible="appeal_state != 'resolution'"/>
+                <field name="action_menu"
+                    widget="list_dropdown_actions"
+                    string="Actions"/>
             </tree>
         </field>
     </record> 

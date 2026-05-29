@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root menu -->
+    <menuitem id="menu_hr_core_root"
+              name="HR Core"
+              sequence="5"
+              action="action_view_employee_kanban_custom"
+              web_icon="hr_employee,static/description/icon.png"/>
+
+        <!-- org chart -->
+        <menuitem id="menu_hr_core_organisation_setup"
+              name="Organisation Setup"
+              parent="menu_hr_core_root"
+              sequence="10"
+              action="action_hr_core_organisation_setup"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_branch"
+                    name="Branch &amp; Location"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="10"
+                    action="action_hr_core_organisation_setup_branch"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_departments"
+                    name="Departments"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="20"
+                    action="action_hr_core_organisation_setup_departments"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_units"
+                    name="Units"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="30"
+                    action="action_hr_core_organisation_setup_units"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_units"
+                    name="Job Roles"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="40"
+                    action="action_hr_core_organisation_setup_units"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_grade_levels"
+                    name="Grade"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="50"
+                    action="action_hr_core_organisation_setup_grade_levels"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_levels"
+                    name="Level"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="51"
+                    action="action_hr_core_organisation_setup_levels"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_employment_type"
+                    name="Employment type"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="50"
+                    action="action_hr_core_organisation_setup_employment_type"
+                    groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_setup_reporting_setup"
+                    name="Reporting Setup"
+                    parent="menu_hr_core_organisation_setup"
+                    sequence="50"
+                    action="action_hr_core_organisation_setup_reporting_setup"
+                    groups="base.group_system"/>
+        
+        <!-- organisation -->
+        <menuitem id="menu_hr_core_organisation"
+              name="Organisation"
+              parent="menu_hr_core_root"
+              sequence="20"
+              action="action_hr_core_organisation"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_chart"
+              name="Organisation Chart"
+              parent="menu_hr_core_organisation"
+              sequence="20"
+              action="action_hr_core_organisation_chart"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_organisation_directory"
+              name="Staff Directory"
+              parent="menu_hr_core_organisation"
+              sequence="50"
+              action="action_hr_core_staff_directory"
+              groups="base.group_system"/>
+
+        <!-- TALENT AND ACQUISITION -->
+        <menuitem id="menu_hr_core_talent_acquisition"
+              name="Talent"
+              parent="menu_hr_core_root"
+              sequence="50"
+              action="action_hr_core_talent_acquisition"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_talent_acquisition2"
+              name="Talent &amp; Acquisition"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="20"
+              action="action_hr_core_talent_acquisition"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_talent_acquisition_workforce_planning"
+              name="Workforce Planning"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="30"
+              action="action_hr_core_talent_acquisition_workforce_planning"
+              groups="base.group_system"/>
+              
+             <menuitem id="menu_hr_core_talent_acquisition_job_mgt"
+              name="Job management"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="40"
+              action="action_hr_core_talent_acquisition_job_mgt"
+              groups="base.group_system"/>
+            
+            <menuitem id="menu_hr_core_talent_acquisition_candidate_pipeline"
+              name="Candidate Pipeline"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="50"
+              action="action_hr_core_candidate_pipeline"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_talent_acquisition_interview_mgt"
+              name="Candidate Pipeline"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="60"
+              action="action_hr_core_talent_acquisition_interview_mgt"
+              groups="base.group_system"/>
+            
+            <menuitem id="menu_hr_core_talent_acquisition_offer_mgt"
+              name="Offer management"
+              parent="menu_hr_core_talent_acquisition"
+              sequence="70"
+              action="action_hr_core_talent_acquisition_offer_mgt"
+              groups="base.group_system"/>
+              
+        <menuitem id="menu_hr_core_onboarding"
+              name="Onboarding"
+              parent="menu_hr_core_root"
+              sequence="50"
+              action="action_hr_core_onboarding"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_onboarding"
+                name="Pre-Onboarding"
+                parent="menu_hr_core_onboarding"
+                sequence="10"
+                action="action_hr_core_onboarding"
+                groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_onboarding_taskboard"
+                name="Task Board"
+                parent="menu_hr_core_onboarding"
+                sequence="20"
+                action="action_hr_core_onboarding_taskboard"
+                groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_onboarding_trainingcomp"
+                name="Training &amp; Compliance"
+                parent="menu_hr_core_onboarding"
+                sequence="30"
+                action="action_hr_core_onboarding_trainingcomp"
+                groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_onboarding_probation"
+                name="Probation"
+                parent="menu_hr_core_onboarding"
+                sequence="40"
+                action="action_hr_core_onboarding_probation"
+                groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_onboarding_progress_dashboard"
+                name="Progress Dashboard"
+                parent="menu_hr_core_onboarding"
+                sequence="50"
+                action="action_hr_core_onboarding_progress_dashboard"
+                groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_offboarding"
+              name="Offboarding"
+              parent="menu_hr_core_root"
+              sequence="60"
+              action="action_hr_core_offboarding_resignations"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_dashboard"
+              name="Dashboard"
+              parent="menu_hr_core_offboarding"
+              sequence="10"
+              action="action_hr_core_offboarding_resignations"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_resignations"
+              name="Resignations"
+              parent="menu_hr_core_offboarding"
+              sequence="20"
+              action="action_hr_core_offboarding_resignations"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_terminations"
+              name="Terminations"
+              parent="menu_hr_core_offboarding"
+              sequence="30"
+              action="action_hr_core_offboarding_terminations"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_clearance"
+              name="Clearance"
+              parent="menu_hr_core_offboarding"
+              sequence="40"
+              action="action_hr_core_offboarding_clearance"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_exist_process"
+              name="Exit process"
+              parent="menu_hr_core_offboarding"
+              sequence="50"
+              action="action_hr_core_offboarding_exist_process"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_offboarding_final_settlement"
+              name="Final Settlement"
+              parent="menu_hr_core_offboarding"
+              sequence="60"
+              action="action_hr_core_offboarding_final_settlement"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_documentation"
+              name="Documentation"
+              parent="menu_hr_core_root"
+              sequence="70"
+              action="action_hr_core_documentation"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_employee_documentation"
+              name="Employee Documents"
+              parent="menu_hr_core_documentation"
+              sequence="10"
+              action="action_hr_core_documentation"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_contract_mgt"
+              name="Contracts &amp; Management"
+              parent="menu_hr_core_documentation"
+              sequence="20"
+              action="action_hr_core_contract_mgt"
+              groups="base.group_system"/>
+
+
+            <menuitem id="menu_hr_core_guarantor_mgt"
+              name="Guarantor Management"
+              parent="menu_hr_core_documentation"
+              sequence="30"
+              action="action_hr_core_guarantor_mgt"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_complaince_mgt"
+              name="Complaince Records"
+              parent="menu_hr_core_documentation"
+              sequence="40"
+              action="action_hr_core_compliance_records"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_verification"
+              name="Verification"
+              parent="menu_hr_core_root"
+              sequence="80"
+              action="action_hr_core_verification"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_verification_hub"
+              name="Verification Hub"
+              parent="menu_hr_core_verification"
+              sequence="10"
+              action="action_hr_core_verification_hub"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_background"
+              name="Background Checks"
+              parent="menu_hr_core_verification"
+              sequence="20"
+              action="action_hr_core_background"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_reference"
+              name="Reference Checks"
+              parent="menu_hr_core_verification"
+              sequence="30"
+              action="action_hr_core_reference"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_workforce"
+              name="Workforce"
+              parent="menu_hr_core_root"
+              sequence="90"
+              action="action_hr_core_time_attendance"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_leave_mgt"
+              name="Time &amp; Attendance"
+              parent="menu_hr_core_workforce"
+              sequence="10"
+              action="action_hr_core_leave_mgt"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_leave_mgt"
+              name="Leave Management"
+              parent="menu_hr_core_workforce"
+              sequence="20"
+              action="action_hr_core_leave_mgt"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_compensation"
+              name="Compensation"
+              parent="menu_hr_core_root"
+              sequence="100"
+              action="action_hr_core_salary_mgt"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_salary_mgt"
+              name="Salary Management"
+              parent="menu_hr_core_compensation"
+              sequence="10"
+              action="action_hr_core_salary_mgt"
+              groups="base.group_system"/>
+            
+            <menuitem id="menu_hr_core_cash_advance_mgt"
+              name="Cash Advance"
+              parent="menu_hr_core_compensation"
+              sequence="20"
+              action="action_hr_core_salary_mgt"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_transfer_promotion"
+              name="Transfers"
+              parent="menu_hr_core_compensation"
+              sequence="30"
+              action="action_hr_core_transfer_promotion"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_promotion"
+              name="Promotions"
+              parent="menu_hr_core_compensation"
+              sequence="35"
+              action="action_hr_core_promotion"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_state_mgt"
+              name="State Management"
+              parent="menu_hr_core_compensation"
+              sequence="40"
+              action="action_hr_core_state_mgt"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_performance_dev"
+              name="Performance Dev"
+              parent="menu_hr_core_root"
+              sequence="110"
+              action="action_hr_core_performance_dev"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_performance_reviews"
+              name="Performance Reviews"
+              parent="menu_hr_performance_dev"
+              sequence="10"
+              action="action_hr_core_performance_dev"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_performance_reviews"
+              name="Training &amp; Development"
+              parent="menu_hr_performance_dev"
+              sequence="20"
+              action="action_hr_core_training_development"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_disciplinary"
+              name="Disciplinary"
+              parent="menu_hr_performance_dev"
+              sequence="30"
+              action="action_hr_core_disciplinary"
+              groups="base.group_system"/>
+
+        <menuitem id="menu_hr_core_engagement"
+              name="Engagement"
+              parent="menu_hr_core_root"
+              sequence="120"
+              action="action_hr_core_staff_engagement"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_staff_engagement"
+              name="Birthday &amp; Milestones"
+              parent="menu_hr_core_engagement"
+              sequence="10"
+              action="action_hr_core_staff_engagement_birthday"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_engagement_recognition"
+              name="Recognition"
+              parent="menu_hr_core_engagement"
+              sequence="20"
+              action="action_hr_core_engagement_recognition"
+              groups="base.group_system"/>
+
+            <menuitem id="menu_hr_core_surveys"
+              name="Surveys"
+              parent="menu_hr_core_engagement"
+              sequence="30"
+              action="action_hr_core_surveys"
+              groups="base.group_system"/>
+
+            
+</odoo>

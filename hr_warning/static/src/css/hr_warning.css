@@ -193,6 +193,32 @@
     background: #fff;
     transition: border-color 0.2s, background 0.2s;
 }
+
+.measure-green {
+    background: #8cfa7d;
+    color: #151212;
+    border-color: #f5f3ea;
+    border: 1.5px solid #f5f3ea;
+}
+
+.measure-yellow {
+    background: #f3e15c;
+    color: #ffffff;
+    border-color: #bdac2d;
+    border: 1.5px solid #bdac2d;
+}
+.measure-option-title-yellow {
+    font-weight: 700;
+    font-size: 14px;
+    color: #f1f1f1;
+}
+
+.measure-option-title-green {
+    font-weight: 700;
+    font-size: 14px;
+    color: #8cfa7d;
+}
+
 .measure-option.selected,
 .measure-option-selected {
     border-color: #e91e8c;

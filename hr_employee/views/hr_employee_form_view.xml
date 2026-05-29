@@ -1,0 +1,738 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+
+    <record id="view_employee_calendar_ids_calendar" model="ir.ui.view">
+                            <field name="name">hr.employee.calendar_ids.calendar</field>
+                            <field name="model">calendar.event</field>
+                            <field name="arch" type="xml">
+                                <calendar
+                                    string="My Events"
+                                    date_start="start"
+                                    date_stop="stop"
+                                    quick_create="0">
+                                    <field name="name"/>
+                                    <field name="start"/>
+                                    <field name="stop"/>
+                                    <field name="location"/>
+                                </calendar>
+                            </field>
+                        </record>
+     
+    <record id="hr_employee_profile_form_view" model="ir.ui.view">
+        <field name="name">hr.employee.profile.form</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <form string="Incident" class="profile-body" create="0">
+                <notebook>
+                    <page string="Dashboard">
+                        <div class="profile-layout">
+                            <!-- ══════════════════════════════════════════════
+                                LEFT SIDEBAR – User Card
+                            ══════════════════════════════════════════════ -->
+                            <div class="profile-sidebar">
+                                <!-- Avatar -->
+                                <!-- <div class="profile-avatar-wrap"> -->
+                                <div class="employee_avatar_wrapper">
+                                    <field name="image_1920" readonly="1" widget="image" class="employee_avatar m-0" options="{&quot;zoom&quot;: true, &quot;preview_image&quot;:&quot;avatar_128&quot;}"/>
+                                </div>
+
+                                <div>
+                                    <div class="profile-user-name"><field name="name" readonly="1" nolabel="1"/></div>
+                                    <div class="profile-user-role"><field name="employee_number" readonly="1" nolabel="1"/></div>
+                                </div>
+
+                                <span class="profile-badge-checkin"><field name="is_present_text" readonly="1" nolabel="1"/></span>
+
+                                <!-- Location + date row -->
+                                <div class="profile-meta-row">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                                    <!-- <span>Tue, May 26</span> -->
+                                    <span><field name="todays_date" invisible="1" nolabel="1"/>
+                                    <field name="formatted_today_date" readonly="1" nolabel="1"/></span>
+
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 3"/></svg>
+                                    <span><field name="work_start_datetime" invisible="1" nolabel="1"/>
+                                    <field name="total_work_duration" readonly="1" nolabel="1"/></span>
+                                    <span class="profile-meta-dot"></span>
+                                </div>
+
+                                <!-- Clock -->
+                                <div class="profile-clock-display">00 : 00 : 00</div>
+                                    <div class="profile-clock-labels">
+                                    <span class="profile-clock-label-item">HRS</span>
+                                    <span class="profile-clock-label-item"></span>
+                                    <span class="profile-clock-label-item">MINS</span>
+                                    <span class="profile-clock-label-item"></span>
+                                    <span class="profile-clock-label-item">SECS</span>
+                                </div>
+
+                                <div class="profile-session-label">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                                    SESSION TIME
+                                </div>
+                                <div class="profile-session-time"><field name="total_work_duration" readonly="1" nolabel="1"/></div>
+        <field name="is_present" invisible="1" nolabel="1"/>
+                                <div class="profile-today-label">Today's Time</div>
+                                <div class="profile-today-time">5:58 PM</div>
+
+                                <div class="profile-shift-row">
+                                    Morning Shift · 09:00 – 17:00<br/>
+                                    <span class="profile-shift-online">● Online</span>
+                                </div>
+
+                                <!-- Stats -->
+                                <div class="profile-stats-row">
+                                    <div class="profile-stat-card">
+                                        <div class="profile-stat-value">0h 0m</div>
+                                        <div class="profile-stat-label">TODAY</div>
+                                    </div>
+                                    <div class="profile-stat-card" style="text-align:center;">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7a8494" stroke-width="2" style="display:block;margin:0 auto 2px"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                                        <div class="profile-stat-label">OVERTIME</div>
+                                    </div>
+                                    <div class="profile-stat-card">
+                                        <div class="profile-stat-value">32h 15m</div>
+                                        <div class="profile-stat-label">THIS WEEK</div>
+                                    </div>
+                                </div>
+
+                                <!-- Clock-in button -->
+                                <button class="profile-btn-clockin" type="object" name="action_clock_in" invisible="is_present == True">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                                    Clock In
+                                </button>
+
+                                <button class="profile-btn-clockin" type="object" name="action_clock_in" invisible="is_present == False">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                                    Clock out
+                                </button>
+                            </div>
+
+                            <!-- ══════════════════════════════════════════════
+                                MAIN CONTENT
+                            ══════════════════════════════════════════════ -->
+                            <div class="profile-main">
+
+                                <!-- Greeting -->
+                                <div>
+                                    <div class="profile-greeting">Good day, <field name="name" readonly="1" nolabel="1"/> 👋</div>
+                                    <div class="profile-date"><field name="formatted_today_date" readonly="1" nolabel="1"/></div>
+                                    <div class="profile-summary">You have <strong>12 pending approvals</strong> and <strong>3 urgent items</strong> today.</div>
+                                </div>
+
+                                <!-- Alert Banner -->
+                                <div class="profile-alert-banner">
+                                    <span class="profile-alert-text"><strong><field name="number_of_incidents" readonly="1" nolabel="1"/></strong> require immediate review and action.</span>
+                                    <button class="profile-btn-review" type="object" name="action_review_incident">
+                                        Review →
+                                    </button>
+                                </div>
+
+                                <!-- KPI Cards -->
+                                <div class="profile-stat-cards">
+                                    <div class="profile-kpi-card">
+                                        <div class="profile-kpi-top">
+                                            <div class="profile-kpi-icon profile-bg-pink">📅</div>
+                                            <span class="profile-kpi-tag profile-green">+5 this week</span>
+                                        </div>
+                                        <div class="profile-kpi-number"><field name="emp_remaining_leave_days" class="profile-kpi-number" readonly="1" nolabel="1"/></div>
+                                        <div class="profile-kpi-label">Pending Approvals</div>
+                                        <div class="profile-kpi-label"><field name="action_type" invisible="1"/></div>
+                                    </div>
+                                    <div class="profile-kpi-card">
+                                        <div class="profile-kpi-top">
+                                        <div class="profile-kpi-icon profile-bg-blue">📆</div>
+                                        <span class="profile-kpi-tag profile-blue">2 new requests</span>
+                                        </div>
+                                        <div class="profile-kpi-number"><field name="emp_remaining_leave_days" class="profile-kpi-number" readonly="1" nolabel="1"/></div>
+                                        <div class="profile-kpi-label">Leave Requests</div>
+                                    </div>
+                                    <div class="profile-kpi-card">
+                                        <div class="profile-kpi-top">
+                                        <div class="profile-kpi-icon profile-bg-orange">📄</div>
+                                        <span class="profile-kpi-tag profile-orange">4 expiring this month</span>
+                                        </div>
+                                        <div class="profile-kpi-number">2</div>
+                                        <div class="profile-kpi-label">Expiring Documents</div>
+                                    </div>
+                                </div>
+
+                                <!-- Priority Work -->
+                                <div>
+                                    <div class="profile-section-title">Priority Work</div>
+                                </div>
+
+                                <div class="profile-priority-grid">
+
+                                    <!-- Incidents Panel -->
+                                    <div class="profile-panel">
+                                        <div class="profile-panel-header">
+                                            <div class="profile-panel-title">
+                                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                                Open Incidents
+                                                <span class="profile-count-badge"><field name="number_open_incident" class="profile-count-badge" style="color:#ffffff;" readonly="1" nolabel="1"/></span>
+                                            </div>
+                                        
+                                            <button class="profile-btn-outline" type="object" name="action_review_open_incident">
+                                                Review Incidents→
+                                            </button>
+                                        </div>  
+
+                                        <div class="profile-tabs">
+                                            <button class="profile-tab" type="object" name="action_open_emp_incident">Incidents</button>
+                                            <button class="profile-tab" type="object" name="action_open_emp_leave">Leave</button>
+                                            <button class="profile-tab" type="object" name="action_open_emp_document">Document</button>
+                                            <button class="profile-tab profile-tab-active">Open Incidents <span class="profile-tab-badge"><field name="number_open_incident" readonly="1" nolabel="1"/></span></button>
+                                        </div>
+                                        <div class="profile-incident-table" invisible="action_type != 'incident'">
+                                            <field name="hr_warning_ids"
+                                                readonly="1"
+                                                nolabel="1"
+                                                class="o_inline_field" context="{'default_employee_id': id}">
+                                                <tree string="">
+                                                    <field name="name" string="Reference" readonly="1"/>
+                                                    <field name="incident_type" string="Incident Type" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                                                    <field name="date_incident" string="Date" readonly="1"/>
+                                                    <field name="investigator_id" string="Investigator" optional="show" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                                                    <field name="state" string="Status"
+                                                        widget="badge"
+                                                        decoration-warning="state == 'draft'"
+                                                        decoration-info="state == 'under_investigation'"
+                                                        decoration-primary="state == 'pending_approval'"
+                                                        decoration-success="state == 'closed'"
+                                                        decoration-danger="state == 'cancelled'" readonly="1"/>
+                                                </tree>
+                                            </field>
+                                        </div>
+
+                                        <div class="profile-incident-table" invisible="action_type != 'leave'">
+                                
+                                            <field name="employee_leave_ids"
+                                                readonly="1"
+                                                nolabel="1"
+                                                class="o_inline_field" context="{'default_employee_id': id}">
+                                                <tree string="">
+                                                    <field name="name" string="Reference" readonly="1"/>
+                                                    <field name="holiday_status_id" string="Leave Type" readonly="1" options="{'no_open': true, 'no_create': true}"/>
+                                                    <field name="date_from" string="Start Date" readonly="1"/>
+                                                    <field name="date_to" string="End Date" readonly="1"/>
+                                                    <field name="number_of_days" readonly="1"/>
+                                                    <field name="state" string="Status"
+                                                        widget="badge"
+                                                        decoration-warning="state == 'draft'" />
+                                                </tree>
+                                            </field>
+                                        </div>
+
+                                        <div class="profile-incident-table" invisible="action_type != 'document'">
+                                
+                                            <field name="employee_document_ids"
+                                                readonly="1"
+                                                nolabel="1"
+                                                class="o_inline_field" context="{'default_employee_id': id}">
+                                                <tree string="">
+                                                    <field name="name" string="Reference" readonly="1"/>
+                                                    <field name="type" string="Type" readonly="1"/>
+                                                    <!-- <field name="res_model" string="Resource" readonly="1"/> -->
+                                                    <!-- <field name="store_fname" string="Filename" readonly="1"/> -->
+                                                    <field name="datas" string="File" readonly="1"/>
+                                                </tree>
+                                            </field>
+                                        </div>
+                                    </div>
+                                    
+                                    
+
+                                    <!-- Suggested Actions -->
+                                    <div class="profile-suggestions">
+                                        <div class="profile-suggestions-title">Suggested Actions</div>
+
+                                        <div class="profile-suggest-group-label profile-dot-urgent">
+                                            <span class="profile-suggest-dot profile-dot-red"></span> URGENT
+                                        </div>
+
+                                        <div class="profile-suggest-item">
+                                            <div class="profile-suggest-item-left">
+                                                <span class="profile-suggest-radio"></span>
+                                                <field name="number_of_incidents" readonly="1" nolabel="1"/> Disciplinary cases require review
+                                            </div>
+                                            <span>›</span>
+                                        </div>
+
+                                        <div style="height:14px"></div>
+
+                                        <div class="profile-suggest-group-label profile-dot-warn">
+                                            <span class="profile-suggest-dot profile-dot-orange"></span> NEEDS ATTENTION
+                                        </div>
+
+                                        <div class="profile-suggest-item">
+                                            <div class="profile-suggest-item-left">
+                                                <span class="profile-suggest-radio"></span>
+                                                Assets are overdue for return
+                                            </div>
+                                            <span>›</span>
+                                        </div>
+
+                                        <div class="profile-suggest-item">
+                                            <div class="profile-suggest-item-left">
+                                                <span class="profile-suggest-radio"></span>
+                                                2 Employee files need updates
+                                            </div>
+                                            <span>›</span>
+                                        </div>
+
+                                        <div class="profile-suggest-item">
+                                            <div class="profile-suggest-item-left">
+                                                <span class="profile-suggest-radio"></span>
+                                                3 New hire onboarding pending
+                                            </div>
+                                            <span>›</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ─── PAGE 2: Early Bird Leaderboard + People & Milestones ─── -->
+
+                                <!-- Leaderboard + Milestones row -->
+                                <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;">
+                                    <!-- Leaderboard card -->
+                                    <div class="profile-panel" style="padding:0;">
+                                        <div style="padding:18px 18px 10px;">
+                                            <div class="profile-leaderboard-header">
+                                                <div class="profile-leaderboard-title">Early Bird<br/>Leaderboard 🏆</div>
+                                                <span class="profile-leaderboard-badge">Updated weekly</span>
+                                            </div>
+                                        </div>
+
+                                        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 18px 18px;background: #fffafa">
+                                            <div class="profile-winner-label">LAST WEEK WINNER</div>
+
+                                            <div style="position:relative;margin-top:14px;">
+                                                <div class="profile-winner-avatar">
+                                                    <span class="profile-winner-crown">👑</span>
+                                                    A
+                                                </div>
+                                            </div>
+
+                                            <div class="profile-winner-name"><field name="awardee_id" readonly="1" nolabel="1"/>
+                                            <!-- <br><field name="firstname" readonly="1" nolabel="1"/> -->
+                                        </div>
+                                        <div class="profile-winner-role"><field name="awardee_job_id" readonly="1" nolabel="1"/></div>
+                                        <div class="profile-winner-pts">10 pts</div>
+                                        <!-- <div class="profile-winner-clockin">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                                            Clocked in at 6:42 AM
+                                        </div> -->
+
+                                        <div class="profile-leaderboard-nav">
+                                            <button class="profile-leaderboard-arrow">‹</button>
+                                            <div class="profile-leaderboard-dots">
+                                                <div class="profile-leaderboard-dot profile-active"></div>
+                                                <div class="profile-leaderboard-dot"></div>
+                                            </div>
+                                            <button class="profile-leaderboard-arrow">›</button>
+                                        </div>
+                                        <div class="profile-winner-flag">🏆 Winner <br/>;•<br/> 1 / 2</div>
+                                    </div>
+                                </div>
+
+                                <!-- People & Milestones -->
+                                <div>
+                                    <div class="profile-section-title" style="margin-bottom:14px;">People &amp; Milestones</div>
+                                    <div class="profile-milestones-grid">
+
+                                        <!-- Birthdays -->
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-milestone-header">
+                                                <div class="profile-milestone-title-row">
+                                                    <div class="profile-milestone-icon profile-bg-pink">🎁</div>
+                                                    <span class="profile-milestone-title">Birthday</span>
+                                                    <span class="profile-milestone-count"><field name="birthday_count"/> today</span>
+                                                </div>
+                                                <span class="profile-milestone-dots">⋯</span>
+                                            </div>
+
+                                            <div class="profile-mini-tabs">
+                                                <span class="profile-mini-tab profile-mini-tab-active">Organization</span>
+                                                <span class="profile-mini-tab">Department</span>
+                                            </div>
+
+                                            <field name="anniversary_celebrant_ids" readonly="1">
+                                                <kanban create="0">
+                                                    <field name="id"/>
+                                                    <field name="name"/> 
+                                                    <templates>
+                                                        <!-- <t t-name="kanban-box"> -->
+                                                        <t t-name="kanban-box">
+                                                            <div class="oe_kanban_card custom_hmo_card">
+                                                                <div class="profile-birthday-list">
+                                                                    <div class="profile-birthday-item">
+                                                                        <div class="profile-birthday-info">
+                                                                            <!-- Avatar -->
+                                                                            <div class="profile-emp-avatar"
+                                                                                style="width:32px;height:32px;font-size:12px;">
+                                                                                <t t-esc="record.name[:1]"/>
+                                                                            </div>
+
+                                                                            <div>
+                                                                                <div class="profile-bday-name">
+                                                                                    <t t-esc="record.name"/>
+                                                                                </div>
+
+                                                                                <!-- Job Title + Department -->
+                                                                                <div class="profile-bday-role">
+
+                                                                                    <t t-if="record.job_title">
+                                                                                        <t t-esc="record.job_title"/>
+                                                                                    </t>
+
+                                                                                    <t t-if="record.department_id">
+                                                                                        ·
+                                                                                        <t t-esc="record.department_id.name"/>
+                                                                                    </t>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button class="profile-btn-wish" name="action_wish_anniversary_celebrant" type="object">
+                                                                            🎂 Wish
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Footer -->
+                                                                <div class="profile-card-footer">
+                                                                    <span>
+                                                                        <t t-esc="record.birthday_count.value"/>
+                                                                        birthdays today
+                                                                    </span>
+
+                                                                    <a class="profile-view-all"
+                                                                        type="object"
+                                                                        name="action_view_all_birthdays">
+                                                                        View All →
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </templates>
+                                                </kanban>
+                                            </field>
+
+                                            
+
+                                                <!-- <div class="profile-birthday-list">
+                                                    <div class="profile-birthday-item">
+                                                        <div class="profile-birthday-info">
+                                                        <div class="profile-emp-avatar profile-color-t" style="width:32px;height:32px;font-size:12px;">T</div>
+                                                        <div>
+                                                            <div class="profile-bday-name">Tunde Adeyemi</div>
+                                                            <div class="profile-bday-role">Software Engineer · Engineering</div>
+                                                        </div>
+                                                        </div>
+                                                        <button class="profile-btn-wish">🎂 Wish</button>
+                                                    </div>
+                                                    <div class="profile-birthday-item">
+                                                        <div class="profile-birthday-info">
+                                                        <div class="profile-emp-avatar profile-color-n" style="width:32px;height:32px;font-size:12px;">N</div>
+                                                        <div>
+                                                            <div class="profile-bday-name">Ngozi Eze</div>
+                                                            <div class="profile-bday-role">Product Designer · Design</div>
+                                                        </div>
+                                                        </div>
+                                                        <button class="profile-btn-wish">🎂 Wish</button>
+                                                    </div>
+                                                    <div class="profile-birthday-item">
+                                                        <div class="profile-birthday-info">
+                                                        <div class="profile-emp-avatar profile-color-s" style="width:32px;height:32px;font-size:12px;">S</div>
+                                                        <div>
+                                                            <div class="profile-bday-name">Samuel Okafor</div>
+                                                            <div class="profile-bday-role">Finance Analyst · Finance</div>
+                                                        </div>
+                                                        </div>
+                                                        <button class="profile-btn-wish">🎂 Wish</button>
+                                                    </div>
+                                                </div>
+
+                                            <div class="profile-card-footer">
+                                            <span>3 birthdays today</span>
+                                            <a class="profile-view-all" href="#">View All →</a>
+                                            </div> -->
+                                        </div>
+
+                                        <!-- Work Anniversary -->
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-milestone-header">
+                                                <div class="profile-milestone-title-row">
+                                                    <div class="profile-milestone-icon profile-bg-yellow">🏅</div>
+                                                    <span class="profile-milestone-title">Work Anniversary</span>
+                                                </div>
+                                                <span class="profile-milestone-dots">⋯</span>
+                                            </div>
+                                            <field name="anniversary_celebrant_ids" readonly="1">
+                                                <kanban create="0">
+                                                    <field name="id"/>
+                                                    <field name="name"/> 
+                                                    <templates>
+                                                        <!-- <t t-name="kanban-box"> -->
+                                                        <t t-name="kanban-box">
+                                                            <div class="oe_kanban_card custom_hmo_card">
+                                                                <div class="profile-anniversary-body">
+                                                                    <div class="profile-anniv-person">
+                                                                        <div class="profile-anniv-avatar profile-color-m">M</div>
+                                                                        <div>
+                                                                            <div class="profile-anniv-name"><field name="name" nolabel="1"/></div>
+                                                                            <div class="profile-anniv-role"><field name="job_id" nolabel="1"/></div>
+                                                                            <div class="profile-anniv-phone">
+                                                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                                                <field name="work_phone" nolabel="1"/>
+                                                                            </div>
+                                                                            <div class="profile-anniv-tag">🎉 <field name="employment_years_count" nolabel="1"/> years today</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </t>
+                                                    </templates>
+                                                </kanban>
+                                            </field>
+                                        </div>
+
+                                        <!-- New Hires -->
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-milestone-header">
+                                                <div class="profile-milestone-title-row">
+                                                    <div class="profile-milestone-icon profile-bg-green">👥</div>
+                                                    <span class="profile-milestone-title">New Hires</span>
+                                                    <span class="profile-milestone-count">2 this week</span>
+                                                </div>
+                                                <span class="profile-milestone-dots">⋯</span>
+                                            </div>
+
+                                            <div class="profile-new-hires-body">
+                                                <div class="profile-hire-item">
+                                                    <div class="profile-hire-info">
+                                                        <div class="profile-emp-avatar profile-color-s" style="width:36px;height:36px;font-size:14px;">S</div>
+                                                        <div>
+                                                            <div class="profile-hire-name">Si Chukem Mike</div>
+                                                            <div class="profile-hire-role">Finance Analyst</div>
+                                                            <div class="profile-hire-phone">
+                                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                                +234 803 891 4411
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="profile-hire-date">Mar 20, 2026</div>
+                                                </div>
+                                                <div class="profile-hire-item">
+                                                    <div class="profile-hire-info">
+                                                        <div class="profile-emp-avatar profile-color-f" style="width:36px;height:36px;font-size:14px;">F</div>
+                                                            <div>
+                                                                <div class="profile-hire-name">Fatima Okafor</div>
+                                                                <div class="profile-hire-role">Finance Analyst</div>
+                                                                <div class="profile-hire-phone">
+                                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                                                                    +234 706 541 2233
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="profile-hire-date">Mar 18, 2026</div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="profile-card-footer">
+                                                    <span>2 new hires this week</span>
+                                                    <a class="profile-view-all" href="#">View All →</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- </div> -->
+
+                                <!-- Productivity & Attendance -->
+                                <div>
+                                    <div class="profile-section-title" style="margin-bottom:14px;">Productivity &amp; Attendance</div>
+                                    <div class="profile-productivity-grid">
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-tasks-header">
+                                                <div class="profile-tasks-title-row">
+                                                    <div class="profile-milestone-icon profile-bg-pink">✅</div>
+                                                    <span class="profile-milestone-title">My Tasks</span>
+                                                    <span class="profile-tasks-done">0/3 done</span>
+                                                </div>
+                                                <button class="profile-btn-add">+ Add</button>
+                                            </div>
+                                            <div class="profile-task-list">
+                                                <div class="profile-task-item">
+                                                    <div class="profile-task-checkbox"></div>
+                                                    <span class="profile-task-text">Review onboarding documents for new hires</span>
+                                                    <span class="profile-priority-tag profile-priority-high">HIGH</span>
+                                                </div>
+                                                <div class="profile-task-item">
+                                                    <div class="profile-task-checkbox"></div>
+                                                    <span class="profile-task-text">Update leave policy for Q2</span>
+                                                </div>
+                                                <div class="profile-task-item">
+                                                    <div class="profile-task-checkbox"></div>
+                                                    <span class="profile-task-text">Schedule performance review meetings</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Files -->
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-milestone-header">
+                                                <div class="profile-milestone-title-row">
+                                                <div class="profile-milestone-icon profile-bg-yellow">📁</div>
+                                                <span class="profile-milestone-title">Files</span>
+                                                </div>
+                                                <button class="profile-btn-add">↑ Upload</button>
+                                            </div>
+                                            <div class="profile-files-body">
+                                                <div class="profile-file-tabs">
+                                                    <span class="profile-file-tab profile-file-tab-active">Leave</span>
+                                                    <span class="profile-file-tab">Documents</span>
+                                                </div>
+                                                <div class="profile-file-item">
+                                                    <div class="profile-file-left">
+                                                        <div class="profile-file-icon">📄</div>
+                                                        <div>
+                                                            <div class="profile-file-name">Annual_Leave_Policy_2026.pdf</div>
+                                                            <div class="profile-file-meta">234 KB · Mar 12</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="profile-file-arrow">›</span>
+                                                </div>
+                                                <div class="profile-file-item">
+                                                    <div class="profile-file-left">
+                                                        <div class="profile-file-icon">📝</div>
+                                                        <div>
+                                                        <div class="profile-file-name">Leave_Application_Form.docx</div>
+                                                        <div class="profile-file-meta">48 KB · Mar 8</div>
+                                                        </div>
+                                                    </div>
+                                                    <span class="profile-file-arrow">›</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- On Leave Today -->
+                                    <div class="profile-milestone-card">
+                                        <div class="profile-leave-header-row">
+                                            <div class="profile-leave-title-row">
+                                                <div class="profile-milestone-icon profile-bg-blue">✈️</div>
+                                                <span class="profile-milestone-title">On Leave Today</span>
+                                                <span class="profile-milestone-count">2</span>
+                                            </div>
+                                            <a class="profile-view-all" href="#">View All →</a>
+                                        </div>
+                                        <div class="profile-leave-body">
+                                            <div class="profile-leave-item">
+                                                <div class="profile-emp-avatar profile-color-a" style="width:36px;height:36px;font-size:14px;">A</div>
+                                                <div>
+                                                    <div class="profile-leave-name">Amaka Osei</div>
+                                                    <div class="profile-leave-role">HR Analyst</div>
+                                                    <span class="profile-leave-type-tag profile-leave-annual">Annual Leave</span>
+                                                    <div class="profile-leave-until">Until Mar 25</div>
+                                                </div>
+                                            </div>
+                                            <div class="profile-leave-item">
+                                                <div class="profile-emp-avatar profile-color-u" style="width:36px;height:36px;font-size:14px;">U</div>
+                                                <div>
+                                                    <div class="profile-leave-name">Uche Ndibe</div>
+                                                    <div class="profile-leave-role">Labor Relations</div>
+                                                    <span class="profile-leave-type-tag profile-leave-sick">Sick Leave</span>
+                                                    <div class="profile-leave-until">Until Mar 24</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="profile-leave-footer">2 employees absent today</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </page>
+                    <page string="Calendar">
+                        <group>
+                            <field name="calendar_date"
+                                widget="calendar_field_widget" nolabel="1"/>
+                        </group>
+                    </page>
+                    <page string="Quick Actions">
+                        <field name="announcement_ids" readonly="1" context="{'kanban_view_ref': 'hr_employee.hr_core_announcemen_kanban_view'}"/>
+                    </page>
+                    <page string="Announcements">
+                        <field name="announcement_ids" readonly="1" domain="[('is_published', '=', True)]">
+                            <kanban create="0">
+                                <field name="id"/>
+                                <field name="announcement_title"/> 
+                                <templates>
+                                    <!-- <t t-name="kanban-box"> -->
+                                    <t t-name="kanban-box">
+                                        <div class="oe_kanban_card">
+                                            <div class="profile-milestone-card">
+                                                <div class="profile-milestone-title p3"><field name="announcement_title" readonly="1"/></div>
+                                                <div class="profile-leave-header-row">
+                                                    <div class="profile-leave-title-row">
+                                                        <div class="profile-milestone-icon profile-bg-blue">🔔</div>
+                                                        <span class="profile-milestone-title">views</span>
+                                                        <span class="profile-milestone-count"><field name="number_of_views"/></span>
+                                                    </div>
+                                                    <a class="profile-view-all" name="action_view_announcement" type="object">View →</a>
+                                                </div>
+                                                <div class="profile-leave-body">
+                                                    <div class="profile-leave-item">
+                                                        <div class="profile-emp-avatar profile-color-a" style="width:36px;height:36px;font-size:14px;">A</div>
+                                                        <div>
+                                                            <div class="profile-leave-name"><i class="fa fa-users p-2"/><field name="number_of_views"/></div>
+                                                            <!-- <div class="profile-leave-role"><field name="number_of_views"/></div> -->
+                                                            <span class="profile-leave-type-tag profile-leave-annual"><field name="announcement_type"/></span>
+                                                            <span class="profile-leave-type-tag profile-leave-annual"><field name="priority_level"/></span>
+                                                            <div class="profile-leave-until"><field name="expiry_date"/></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="profile-leave-footer"><field name="is_published" nolabel="1" widget="boolean_toggle"/></div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
+                        <!-- context="{'kanban_view_ref': 'hr_employee.hr_core_announcemen_kanban_view'}"/> -->
+                    </page>
+                    <page string="Team Status">
+                    </page>
+                </notebook>
+
+            </form>
+        </field>
+    </record>
+
+     
+     
+    <record id="action_view_employee_profile_kanban_custom"
+        model="ir.actions.act_window">
+        <field name="name">Employee Profile</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">kanban,form</field>
+        <!-- <field name="search_view_id"
+            ref="view_employee_search_custom"/> -->
+        <field name="view_id"
+            ref="hr_employee.view_employee_kanban_custom"/>
+            <!-- <field name="view_ids" eval="[
+                (ref('hr_employee.hr_employee_profile_form_view'), 'form'),
+            ]"/> -->
+                <!-- (ref('hr_employee.hr_employee_profile_form_view'), 'form') -->
+
+
+        <field name="target">current</field>
+
+    </record>
+
+</odoo>

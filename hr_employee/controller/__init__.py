@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
-from . import hr_employee_chart
+from . import hr_employee_chart, routing
 

@@ -1,68 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 
-    <t t-name="hr_employee.CustomKanbanRenderer" t-inherit="web.KanbanRenderer" t-inherit-mode="primary">
-
-        <!-- <xpath expr="//div[@t-ref='root']" position="before">
-            <h1 style="color:red;">
-                WORKING TEMPLATE
-            </h1>
-
-        </xpath> -->
-        <!-- <xpath expr="//t[@t-foreach='getGroupsOrRecords()']"
+    <t t-name="hr_employee.DiscussSidebar" t-inherit="mail.DiscussSidebar" t-inherit-mode="extension">
+        <!-- <xpath expr="//div[@t-ref='root']" position="before"> -->
+        <xpath expr="//div[hasclass('o-mail-DiscussSidebar')]"
                position="before">
-
-            <div class="staff_header d-flex justify-content-between align-items-center mb-4 w-100">
-
-                <h2>Staff Directory</h2>
-
-                <button class="btn assign_btn">
-                    <i class="fa fa-calendar me-2"/>
-                    Assign Task
-                </button>
-
-            </div>
-            <div class="staff_toolbar d-flex gap-3 mb-4 w-100">
-
-                <input type="text"
-                       class="form-control search_input"
-                       placeholder="Search employees..." />
-
-                <select class="form-select filter_select">
-                    <option>All</option>
-                    <option>Engineering</option>
-                    <option>Finance</option>
-                    <option>HR</option>
-                </select>
-
-            </div>
-
-        </xpath> -->
-        <!-- <xpath expr="//t[@t-foreach='getGroupsOrRecords()']"
-               position="before">
-                <div class="flex-grow-1 d-none d-md-block"/>
-                <button class="btn o_cc_btn_pink btn-sm m-4" t-on-click="openCustomWarningForm" type="button">
-                    <i class="fa fa-book"/> New Incident
-                </button>
-                <button class="btn o_cc_btn_pink_outline btn-sm" t-on-click="openGuidedTour" type="button">
-                    <i class="fa fa-magic"/> Guided Tour
-                </button>
-                <div class="btn-group m-2">
-                    <button class="btn o_cc_btn_light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
-                        <i class="fa fa-user-circle-o"/> View as: <strong>Admin View</strong>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#">Admin View</a></li>
-                        <li><a class="dropdown-item" href="#">Employee View</a></li>
-                        <li><a class="dropdown-item" href="#">Manager View</a></li>
-                    </ul>
-                </div>
-                <button class="btn o_cc_btn_light btn-sm m-4" t-on-click="exportCalendar" type="button">
-                    <i class="fa fa-upload"/> Export
-                </button> 
-
-        </xpath> -->
-        <xpath expr="//div[@t-ref='root']" position="before">
             <div class="o_cc_admin_sidebar">
  
                 <div class="o_cc_sidebar_header">
@@ -95,7 +37,7 @@
                         <span class="o_cc_nav_label">Messages</span>
                         <i class="fa fa-comments o_cc_nav_arrow"/>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openCalendar">
+                    <a class="o_cc_nav_item" t-on-click="openMeasures">
                         <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                         <span class="o_cc_nav_label">Meeting</span>
                         <i class="fa fa-calendar o_cc_nav_arrow"/>
@@ -107,10 +49,10 @@
                         <i class="fa fa-plane o_cc_nav_arrow"/>
                     </a>
                     
-                    <a class="o_cc_nav_item" t-on-click="openAnnouncement">
-                        <span class="o_cc_nav_icon"><i class="fa fa-bell me-1"/></span>
-                        <span class="o_cc_nav_label">Announcement</span>
-                        <i class="fa fa-bell me-1 o_cc_nav_arrow"/>
+                    <a class="o_cc_nav_item" t-on-click="openCaseType">
+                        <span class="o_cc_nav_icon"><i class="fa fa-building-o"/></span>
+                        <span class="o_cc_nav_label">Departments</span>
+                        <i class="fa fa-building-o o_cc_nav_arrow"/>
                     </a>
                     <a class="o_cc_nav_item" t-on-click="openCustomAppeal">
                         <span class="o_cc_nav_icon"><i class="fa fa-frown-o yellow_badge_status"/></span>

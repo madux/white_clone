@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+  <t t-name="calendar_field_widget.CalendarFieldWidget">
+
+    <div class="o_cfw_root">
+
+      <!-- ── Top toolbar ──────────────────────────────────────────── -->
+      <div class="o_cfw_toolbar">
+
+        <div class="o_cfw_nav">
+          <button class="o_cfw_btn o_cfw_btn_nav"
+                  title="Previous month"
+                  t-on-click="prevMonth">
+            <i class="fa fa-chevron-left"/>
+          </button>
+
+          <span class="o_cfw_month_label" t-esc="monthLabel"/>
+
+          <button class="o_cfw_btn o_cfw_btn_nav"
+                  title="Next month"
+                  t-on-click="nextMonth">
+            <i class="fa fa-chevron-right"/>
+          </button>
+        </div>
+
+        <div class="o_cfw_actions">
+          <button class="o_cfw_btn o_cfw_btn_today"
+                  title="Go to today"
+                  t-on-click="goToToday">
+            Today
+          </button>
+          <button class="o_cfw_btn o_cfw_btn_open"
+                  title="Open Odoo Calendar"
+                  t-on-click="openOdooCalendar">
+            <i class="fa fa-calendar"/> Calendar
+          </button>
+        </div>
+
+      </div>
+
+      <!-- ── Loading indicator ────────────────────────────────────── -->
+      <div t-if="state.loading" class="o_cfw_loading">
+        <i class="fa fa-spinner fa-spin"/> Loading events…
+      </div>
+
+      <!-- ── Weekday headers ──────────────────────────────────────── -->
+      <div class="o_cfw_weekdays">
+        <t t-foreach="WEEKDAYS" t-as="wd" t-key="wd">
+          <div class="o_cfw_weekday" t-esc="wd"/>
+        </t>
+      </div>
+
+      <!-- ── Day grid ────────────────────────────────────────────── -->
+      <div class="o_cfw_grid">
+        <t t-foreach="calendarGrid" t-as="slot" t-key="slot.key">
+
+          <!-- Empty padding slot -->
+          <div t-if="!slot.inMonth" class="o_cfw_cell o_cfw_cell_empty"/>
+
+          <!-- Real day cell -->
+          <div t-else=""
+               class="o_cfw_cell"
+               t-att-class="{
+                   o_cfw_cell_today:    slot.isToday,
+                   o_cfw_cell_selected: slot.dateStr === selectedDateStr,
+                   o_cfw_cell_readonly: props.readonly,
+               }"
+               t-att-title="'Double-click to create event on ' + slot.dateStr"
+               t-on-click="() => this.onDayClick(slot)"
+               t-on-dblclick="() => this.onDayDblClick(slot)">
+
+            <!-- Day number -->
+            <span class="o_cfw_day_num" t-esc="slot.day"/>
+
+            <!-- Event dots (max 3 visible + overflow count) -->
+            <div t-if="slot.events.length" class="o_cfw_dots">
+              <t t-foreach="slot.events.slice(0, 3)" t-as="evt" t-key="evt.id">
+                <span class="o_cfw_dot"
+                      t-att-style="'background:' + evt.color"
+                      t-att-title="evt.name"
+                      t-on-click="(ev) => this.onEventClick(ev, evt)"/>
+              </t>
+              <span t-if="slot.events.length > 3"
+                    class="o_cfw_overflow"
+                    t-esc="'+' + (slot.events.length - 3)"/>
+            </div>
+
+          </div>
+        </t>
+      </div>
+
+      <!-- ── Footer: selected date + hint ────────────────────────── -->
+      <div class="o_cfw_footer">
+        <span t-if="selectedDateStr" class="o_cfw_selected_label">
+          <i class="fa fa-check-circle"/> Selected:
+          <strong t-esc="props.value and props.value.toFormat('MMMM d, yyyy')"/>
+        </span>
+        <span t-else="" class="o_cfw_hint">
+          Click a day to select · Double-click to add event
+        </span>
+      </div>
+
+    </div>
+  </t>
+
+</templates>

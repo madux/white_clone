@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <odoo>
+
+        <!-- ===================================================== -->
+        <!-- ORGANISATION SETUP -->
+        <!-- ===================================================== -->
+
+        <record id="action_hr_core_organisation_setup" model="ir.actions.act_window">
+            <field name="name">Organisation Setup</field>
+            <field name="res_model">res.company</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_branch" model="ir.actions.act_window">
+            <field name="name">Branch &amp; Location</field>
+            <field name="res_model">multi.branch</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_departments" model="ir.actions.act_window">
+            <field name="name">Departments</field>
+            <field name="res_model">hr.department</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_units" model="ir.actions.act_window">
+            <field name="name">Units</field>
+            <field name="res_model">hr.unit</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_grade_levels" model="ir.actions.act_window">
+            <field name="name">Grade &amp; Level</field>
+            <field name="res_model">hr.grade</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_levels" model="ir.actions.act_window">
+            <field name="name">Level</field>
+            <field name="res_model">hr.level</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_employment_type" model="ir.actions.act_window">
+            <field name="name">Employment Type</field>
+            <field name="res_model">hr.core_employment_type</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_setup_reporting_setup" model="ir.actions.act_window">
+            <field name="name">Reporting Setup</field>
+            <field name="res_model">hr.core_reportline</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- ===================================================== -->
+        <!-- ORGANISATION -->
+        <!-- ===================================================== -->
+
+        <record id="action_hr_core_organisation" model="ir.actions.act_window">
+            <field name="name">Organisation</field>
+            <field name="res_model">res.company</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_organisation_chart" model="ir.actions.act_window">
+            <field name="name">Organisation Chart</field>
+            <field name="res_model">hr.employee</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_staff_directory" model="ir.actions.act_window">
+            <field name="name">Staff Directory</field>
+            <field name="res_model">hr.employee</field>
+            <field name="view_mode">kanban,tree,form</field>
+        </record>
+
+        <!-- ===================================================== -->
+        <!-- TALENT -->
+        <!-- ===================================================== -->
+
+        <record id="action_hr_core_talent_acquisition" model="ir.actions.act_window">
+            <field name="name">Talent &amp; Acquisition</field>
+            <field name="res_model">hr.core_talent</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_talent_acquisition_workforce_planning" model="ir.actions.act_window">
+            <field name="name">Workforce Planning</field>
+            <field name="res_model">hr.core_workforce_planning</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_talent_acquisition_job_mgt" model="ir.actions.act_window">
+            <field name="name">Job Management</field>
+            <field name="res_model">hr.job</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_candidate_pipeline" model="ir.actions.act_window">
+            <field name="name">Candidate Pipeline</field>
+            <field name="res_model">hr.applicant</field>
+            <field name="view_mode">kanban,tree,form</field>
+        </record>
+
+        <record id="action_hr_core_talent_acquisition_interview_mgt" model="ir.actions.act_window">
+            <field name="name">Interview Management</field>
+            <field name="res_model">hr.core_interview_mgt</field>
+            <field name="view_mode">calendar,tree,form</field>
+        </record>
+
+        <record id="action_hr_core_talent_acquisition_offer_mgt" model="ir.actions.act_window">
+            <field name="name">Offer Management</field>
+            <field name="res_model">hr.core_offer_mgt</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- ===================================================== -->
+        <!-- ONBOARDING -->
+        <!-- ===================================================== -->
+
+        <record id="action_hr_core_onboarding" model="ir.actions.act_window">
+            <field name="name">Pre-Onboarding</field>
+            <field name="res_model">hr.core_onboarding</field>
+            <field name="view_mode">kanban,tree,form</field>
+        </record>
+
+        <record id="action_hr_core_onboarding_taskboard" model="ir.actions.act_window">
+            <field name="name">Task Board</field>
+            <field name="res_model">hr.core_task</field>
+            <field name="view_mode">kanban,tree,form</field>
+        </record>
+
+        <record id="action_hr_core_onboarding_trainingcomp" model="ir.actions.act_window">
+            <field name="name">Training &amp; Compliance</field>
+            <field name="res_model">hr.core_training_compliance</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_onboarding_probation" model="ir.actions.act_window">
+            <field name="name">Probation</field>
+            <field name="res_model">hr.core_onboarding_probation</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_onboarding_progress_dashboard" model="ir.actions.act_window">
+            <field name="name">Progress Dashboard</field>
+            <field name="res_model">hr.core_onboarding_process</field>
+            <field name="view_mode">dashboard,tree,form</field>
+        </record>
+
+        <!-- ===================================================== -->
+        <!-- OFFBOARDING -->
+        <!-- ===================================================== -->
+
+        <record id="action_hr_core_offboarding_resignations" model="ir.actions.act_window">
+            <field name="name">Resignations</field>
+            <field name="res_model">hr.core_resignation</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_offboarding_terminations" model="ir.actions.act_window">
+            <field name="name">Terminations</field>
+            <field name="res_model">hr.core_termination</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_offboarding_clearance" model="ir.actions.act_window">
+            <field name="name">Clearance</field>
+            <field name="res_model">hr.core_clearance</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_offboarding_exist_process" model="ir.actions.act_window">
+            <field name="name">Exit Process</field>
+            <field name="res_model">hr.core_exit_process</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_hr_core_offboarding_final_settlement" model="ir.actions.act_window">
+            <field name="name">Final Settlement</field>
+            <field name="res_model">hr.core_settlement</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- Documentation -->
+        <record id="action_hr_core_documentation" model="ir.actions.act_window">
+            <field name="name">Documentation</field>
+            <field name="res_model">hr.core_documentation</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_contract_mgt" model="ir.actions.act_window">
+            <field name="name">Contracts &amp; Management</field>
+            <field name="res_model">hr.contract</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_guarantor_mgt" model="ir.actions.act_window">
+            <field name="name">Guarantor Management</field>
+            <field name="res_model">hr.core_guarantor_management</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_compliance_records" model="ir.actions.act_window">
+            <field name="name">Compliance Records</field>
+            <field name="res_model">hr.core_compliance</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Verification -->
+        <record id="action_hr_core_verification" model="ir.actions.act_window">
+            <field name="name">Verification</field>
+            <field name="res_model">hr.organisation_setup</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_verification_hub" model="ir.actions.act_window">
+            <field name="name">Verification Hub</field>
+            <field name="res_model">hr.core_verification</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_background" model="ir.actions.act_window">
+            <field name="name">Background Checks</field>
+            <field name="res_model">hr.core_background_check</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_reference" model="ir.actions.act_window">
+            <field name="name">Reference Checks</field>
+            <field name="res_model">hr.core_reference_check</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Workforce -->
+        <record id="action_hr_core_time_attendance" model="ir.actions.act_window">
+            <field name="name">Time &amp; Attendance</field>
+            <field name="res_model">hr.attendance</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_leave_mgt" model="ir.actions.act_window">
+            <field name="name">Leave Management</field>
+            <field name="res_model">hr.leave</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Compensation -->
+        <record id="action_hr_core_salary_mgt" model="ir.actions.act_window">
+            <field name="name">Salary Management</field>
+            <field name="res_model">hr.salary_management</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_transfer_promotion" model="ir.actions.act_window">
+            <field name="name">Transfers</field>
+            <field name="res_model">hr.core_transfer</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_promotion" model="ir.actions.act_window">
+            <field name="name">Promotions</field>
+            <field name="res_model">hr.core_promotion</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_state_mgt" model="ir.actions.act_window">
+            <field name="name">State Management</field>
+            <field name="res_model">hr.state_management</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Performance -->
+        <record id="action_hr_core_performance_dev" model="ir.actions.act_window">
+            <field name="name">Performance Development</field>
+            <field name="res_model">hr.core_performance</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_training_development" model="ir.actions.act_window">
+            <field name="name">Training &amp; Development</field>
+            <field name="res_model">hr.core_training</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_disciplinary" model="ir.actions.act_window">
+            <field name="name">Disciplinary</field>
+            <field name="res_model">hr.warning</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <!-- Engagement -->
+        <record id="action_hr_core_staff_engagement" model="ir.actions.act_window">
+            <field name="name">Staff Engagement</field>
+            <field name="res_model">hr.staff_engagement</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_staff_engagement_birthday" model="ir.actions.act_window">
+            <field name="name">Birthday &amp; Milestones</field>
+            <field name="res_model">hr.core_birthday</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_engagement_recognition" model="ir.actions.act_window">
+            <field name="name">Recognition</field>
+            <field name="res_model">hr.core_recognition</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+
+        <record id="action_hr_core_surveys" model="ir.actions.act_window">
+            <field name="name">Surveys</field>
+            <field name="res_model">hr.core_survey</field>
+            <field name="view_mode">tree,form</field>
+            <field name="target">current</field>
+        </record>
+    </odoo>
+

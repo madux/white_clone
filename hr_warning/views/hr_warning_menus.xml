@@ -48,6 +48,13 @@
               action="action_hr_warning_report_dashboard"
               sequence="30"
               groups="hr_warning.group_hr_warning_manager,base.group_system"/>
+
+    <!-- <menuitem id="menu_hr_form_view"
+              name="Employee Profile"
+              parent="menu_hr_warning_root"
+              action="hr_employee.action_view_employee_profile_kanban_custom"
+              sequence="33"
+              groups="hr_warning.group_hr_warning_manager,base.group_system"/> -->
     <!-- <menuitem id="menu_hr_warning_list"
               name="All Incidents"
               parent="menu_hr_warning_all"

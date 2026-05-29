@@ -24,8 +24,9 @@ class PurchaseOrder(models.Model):
             if picking_type:
                 self.picking_type_id = picking_type.id
             else:
-                raise ValidationError(
-                    'The Logged in User branch does not have any assigned Receipt Warehouse')
+                pass 
+                # raise ValidationError(
+                #     'The Logged in User branch does not have any assigned Receipt Warehouse')
 
 
 class PurchaseOrderLine(models.Model):

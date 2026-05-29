@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_core_announcement_form_view" model="ir.ui.view">
+        <field name="name">hr.core_announcement.form</field>
+        <field name="model">hr.core_announcement</field>
+        <field name="arch" type="xml">
+            <form string="Announcement">
+                <sheet>
+                    <group string="Announcement" class="measure-type-section">
+                        <div class="measure-option-title-default" colspan="2">
+                            Announcement title
+                            <field name="announcement_title" required="1" nolabel="1" readonly="is_published == True" placeholder="Public Holiday Notice"/>
+
+                        </div>
+                        <div class="measure-option-title-default" colspan="2">
+                            Announcement type
+                            <field name="announcement_type" nolabel="1" required="1" readonly="is_published == True" widget="radio" options="{'horizontal': true}"/>
+                        </div> 
+                    </group>
+
+                        
+                    <group string="Message Body (1/300)">
+                        <div class="pay-status-box" colspan="2">
+                            <field name="announcement_body" nolabel="1" widget="html" required="1" readonly="is_published == True" colspan="2" placeholder="Please start typing ...."/>
+                        </div>
+                    </group>
+
+                    <!-- <div class="button-row" colspan="2">
+                        <span style="padding: 2px;">Priority Level
+                            <field name="priority_level" nolabel="1" readonly="is_published == True"/>
+                        </span>
+                        <span style="padding: 2px;">Target Audience.
+                            <field name="target_audience" nolabel="1" required="1" readonly="is_published == True"/>
+                        </span>
+                        <span style="padding: 2px;">is Published
+                            <field name="is_published" widget ="boolean_toogle" nolabel="1" readonly="1"/>
+                        </span>
+                    </div> -->
+                    <group>
+                        <group>
+                            <field name="priority_level" nolabel="0" readonly="is_published == True"/>
+                            <field name="target_audience" nolabel="0" required="1" readonly="is_published == True"/>
+                        </group>
+                        <group>
+                            <field name="is_published" widget ="boolean_toogle" nolabel="0" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <div class="button-row" colspan="2" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <span style="padding: 2px;">Mail template
+                            <field name="mail_template_id" nolabel="1" required="send_email_notification == True" />
+                        </span>
+                        <span style="padding: 2px;">Expiry date
+                            <field name="expiry_date" nolabel="1" required="1"/>
+                        </span>
+                    </div>  
+                    <group string=" *" invisible="target_audience != 'specific_department'" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="target_department_ids" widget="many2many_tags" nolabel="1" required="target_audience == 'specific_department'" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string=" *" invisible="target_audience != 'specific_role'" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="target_specific_role_ids" widget="many2many_tags" required="target_audience == 'specific_role'" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="Targeted Employees" invisible="target_audience != 'custom'" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="target_employee_ids" widget="many2many_tags" nolabel="1" required="target_audience == 'custom'" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+                    <group string="Acknowledged Users *" invisible="require_acknowledgement == False" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon"></span>
+                                <field name="acknowledged_user_ids" widget="many2many_tags" nolabel="0" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="Receipients" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon"></span>
+                                <field name="receipient_ids" widget="many2many_tags" nolabel="0" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="Attachment">
+                        <field name="announcement_attachment_ids"
+                        widget="many2many_binary"
+                        nolabel="1" readonly="is_published == True"
+                        string="Attachments" colspan="2"/>
+                    </group>
+                    <!-- <group string="Attachment" invisible="is_published == False">
+                        <field name="announcement_attachment_ids"
+                        widget="many2many_binary"
+                        nolabel="1" readonly="1"
+                        string="Attachments" colspan="2"/>
+                    </group> -->
+                     <group string="" class="measure-type-section" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="measure-option measure-option-selected" colspan="2">
+                        <!-- <span class="pay-status-warning-icon">⚠</span> -->
+                            ✉️<div class="measure-option-title">Send Email Notification</div>
+                            <div class="measure-option-subtitle">Notify reciepients via mail when this is published</div>
+                            <field name="send_email_notification" invisible="0" nolabel="1" readonly="is_published == True"/>
+                        </div>
+                    </group>
+
+                    <group string="" class="measure-type-section" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="measure-option measure-green" colspan="2">
+                            🔔<div class="measure-option-title">Send Push Notification</div>
+                            <div class="measure-option-subtitle">Push an alert to Mobile App</div>
+                            <field name="send_push_notification" invisible="0" nolabel="1" readonly="is_published == True"/>
+                        </div>
+                    </group>
+                    <group string="" class="measure-type-section" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <div class="measure-option measure-yellow" colspan="2">
+                            📁<div class="measure-option-title-yellow">Require acknowledgement</div>
+                            <div class="measure-option-subtitle">Track who has read and confirmed this announcement</div>
+                            <field name="require_acknowledgement" invisible="0" nolabel="1" readonly="is_published == True"/>
+                        </div>
+                    </group>
+                    
+                    <div class="button-row" groups="hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_manager,base.group_system">
+                        <button name="action_publish_announcement"
+                            string="Publish Announcement"
+                            type="object" 
+                            class="oe_highlight btn-primary" invisible="is_published != False"/>
+                        <button name="action_unpublish_announcement"
+                            string="UnPublish Announcement"
+                            type="object"
+                            class="oe_highlight btn-primary" invisible="is_published != True"/>
+                        <!-- <button name="action_view_announcement"
+                            string="View"
+                            type="object"
+                            class="oe_highlight btn-success"/> -->
+                    </div>
+
+                    <!-- <footer class="text-end">
+                        <div>
+                            <button name="action_assign_investigator"
+                                    string="Assign"
+                                    type="object"
+                                    class="oe_highlight"/>
+                        </div>
+                    </footer> -->
+                </sheet>
+            </form>
+        </field>
+        
+    </record>
+    <record id="hr_core_announcement_tree_view" model="ir.ui.view">
+        <field name="name">hr_core_announcement .tree</field>
+        <field name="model">hr.core_announcement</field>
+        <field name="arch" type="xml">
+            <tree string="Announcement" create="1" edit="1">
+                <field name="announcement_title"/>
+                <field name="announcement_type"/>
+                <field name="priority_level"/>
+                <field name="target_audience"/>
+                <field name="expiry_date"/>
+                <field name="number_of_views"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- <record id="hr_core_announcement_public_tree_view" model="ir.ui.view">
+        <field name="name">hr_core_announcement .tree</field>
+        <field name="model">hr.core_announcement</field>
+        <field name="arch" type="xml">
+            <tree string="Announcement" create="0" edit="0">
+                <field name="announcement_title"/>
+                <field name="announcement_type"/>
+                <field name="priority_level"/>
+                <field name="target_audience"/>
+                <field name="expiry_date"/>
+                <field name="number_of_views"/>
+            </tree>
+        </field>
+    </record> -->
+
+    <record id="hr_core_announcemen_kanban_view" model="ir.ui.view">
+        <field name="name">hr.core_announcemen.kanban</field>
+        <field name="model">hr.core_announcement</field>
+        <field name="arch" type="xml">
+            <kanban create="0">
+                <field name="id"/>
+                <field name="announcement_title"/> 
+                <templates>
+                    <!-- <t t-name="kanban-box"> -->
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card">
+                            <div class="profile-milestone-card">
+                                <div class="profile-milestone-title p3"><field name="announcement_title" readonly="1"/></div>
+                                <div class="profile-leave-header-row">
+                                    <div class="profile-leave-title-row">
+                                        <div class="profile-milestone-icon profile-bg-blue">🔔</div>
+                                        <span class="profile-milestone-title">views</span>
+                                        <span class="profile-milestone-count"><field name="number_of_views"/></span>
+                                    </div>
+                                    <a class="profile-view-all" name="action_view_announcement" type="object">View →</a>
+                                </div>
+                                <div class="profile-leave-body">
+                                    <div class="profile-leave-item">
+                                        <div class="profile-emp-avatar profile-color-a" style="width:36px;height:36px;font-size:14px;">A</div>
+                                        <div>
+                                            <div class="profile-leave-name"><i class="fa fa-users p-2"/><field name="number_of_views"/></div>
+                                            <!-- <div class="profile-leave-role"><field name="number_of_views"/></div> -->
+                                            <span class="profile-leave-type-tag profile-leave-annual"><field name="announcement_type"/></span>
+                                            <span class="profile-leave-type-tag profile-leave-annual"><field name="priority_level"/></span>
+                                            <div class="profile-leave-until"><field name="expiry_date"/></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="profile-leave-footer"><field name="is_published" nolabel="1" widget="boolean_toggle"/></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+    <record id="action_hr_core_announcement" model="ir.actions.act_window">
+        <field name="name">hr_core_announcement</field>
+        <field name="res_model">hr.core_announcement</field>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found recorded yet.
+            </p>
+            <p>Create a new record.</p>
+        </field>
+    </record>
+    <menuitem id="menu_hr_core_announcement"
+        name="Announcement"
+        parent="calendar.mail_menu_calendar"
+        sequence="5"
+        action="action_hr_core_announcement"
+        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+</odoo>

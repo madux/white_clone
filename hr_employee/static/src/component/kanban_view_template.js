@@ -15,6 +15,28 @@ export class CustomKanbanRenderer extends KanbanRenderer {
         this.action = useService("action");
         this.userService = useService("user");
     }
+
+    async openMessage(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "mail.action_discuss",
+            {
+                target: "current",
+            }
+        );
+    }
+
+    async openAnnouncement(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "hr_employee.action_hr_core_announcement",
+            {
+                target: "new",
+            }
+        );
+    }
 }
 
 CustomKanbanRenderer.template = "hr_employee.CustomKanbanRenderer";

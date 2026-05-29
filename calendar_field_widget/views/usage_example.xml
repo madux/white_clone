@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    ══════════════════════════════════════════════════════════════════════════
+      HOW TO USE  calendar_field_widget  on any model
+      Just add  widget="calendar_field_widget"  to any date / datetime field.
+    ══════════════════════════════════════════════════════════════════════════
+
+    EXAMPLE 1 – Override the default Partner (res.partner) form view
+    to show the full calendar widget on the "Date" or any custom date field.
+    -->
+
+    <record id="view_partner_form_calendar_widget" model="ir.ui.view">
+        <field name="name">res.partner.form.calendar.widget</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <!--
+            Replace any existing date field, or add a new one.
+            Here we inject the calendar widget below the "job_position" field
+            as a demonstration.
+            -->
+            <xpath expr="//field[@name='function']" position="after">
+                <field name="date"
+                       widget="calendar_field_widget"
+                       string="Pick a Date"/>
+            </xpath>
+        </field>
+    </record>
+
+
+    <!--
+    EXAMPLE 2 – Standalone form view that uses the widget on a custom model.
+    Assume your model has a date field called "scheduled_date".
+    -->
+    <!--
+    <record id="view_my_model_form" model="ir.ui.view">
+        <field name="name">my.model.form</field>
+        <field name="model">my.model</field>
+        <field name="arch" type="xml">
+            <form string="My Model">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="scheduled_date"
+                               widget="calendar_field_widget"
+                               string="Scheduled Date"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    -->
+
+</odoo>
