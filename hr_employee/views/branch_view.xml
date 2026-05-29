@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_multi_branch_tree" model="ir.ui.view">
+        <field name="name">multi.branch.employee.tree</field>
+        <field name="model">multi.branch</field>
+        <field name="arch" type="xml">
+            <tree string="Branch" js_class="organisation_list">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="city"/>
+                <field name="company_id"/>
+            </tree>
+        </field>
+    </record>
+    <record id="action_core_multi_branch" model="ir.actions.act_window">
+        <field name="name">Multi branch</field>
+        <field name="res_model">multi.branch</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_multi_branch_tree"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record>
+    
+</odoo>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_core_department_tree" model="ir.ui.view">
+        <field name="name">hr.core_department.tree</field>
+        <field name="model">hr.department</field>
+        <field name="arch" type="xml">
+            <tree string="Department" js_class="organisation_list">
+                <field name="name"/>
+                <!-- <field name="code"/> -->
+                <field name="manager_id"/>
+                <!-- <field name="company_id"/> -->
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_core_department" model="ir.actions.act_window">
+        <field name="name">Department</field>
+        <field name="res_model">hr.department</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_core_department_tree"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record>
+</odoo>
