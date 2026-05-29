@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CleonHR Documents</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="../../css/sidebar.css" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar-root"></aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div class="search-global">
+            <i data-lucide="search"></i>
+            <input
+              type="text"
+              placeholder="Search documents, employees, ..."
+            />
+          </div>
+
+          <div class="top-actions">
+            <div class="pill-switch">
+              <div class="active">Admin</div>
+              <div>Employee</div>
+            </div>
+
+            <i
+              class="top-icon"
+              data-lucide="bell"
+            ></i>
+
+            <i
+              class="top-icon"
+              data-lucide="mail"
+            ></i>
+
+            <i
+              class="top-icon"
+              data-lucide="settings-2"
+            ></i>
+
+            <div class="avatar">AD</div>
+          </div>
+        </header>
+
+        <section class="content">
+          <div class="hero">
+            <div>
+              <h1>Welcome, Chukwuemeka</h1>
+              <p>HR Manager • Human Resources</p>
+            </div>
+
+            <button class="profile-btn">
+              <i data-lucide="user"></i>
+              Switch Profile
+              <i data-lucide="chevron-down"></i>
+            </button>
+          </div>
+
+          <div class="tabs">
+            <div class="tab">
+              <i data-lucide="house"></i>
+              Home
+            </div>
+
+            <div class="tab active">
+              <i data-lucide="file-text"></i>
+              Personal Documents
+            </div>
+
+            <div class="tab">
+              <i data-lucide="pen-line"></i>
+              Pending Signatures
+            </div>
+
+            <div class="tab">
+              <i data-lucide="folder-open"></i>
+              Templates & Forms
+            </div>
+
+            <div class="tab">
+              <i data-lucide="book-open"></i>
+              Policies
+            </div>
+
+            <div class="tab">
+              <i data-lucide="activity"></i>
+              Activity Log
+            </div>
+
+            <div class="tab">
+              <i data-lucide="circle-help"></i>
+              Help
+            </div>
+          </div>
+
+          <div class="cards">
+            <div class="card">
+              <div>
+                <p>Total Documents</p>
+                <h2>0</h2>
+              </div>
+
+              <div class="mini-icon blue">
+                <i data-lucide="file-text"></i>
+              </div>
+            </div>
+
+            <div class="card">
+              <div>
+                <p>Pending Review</p>
+                <h2>0</h2>
+              </div>
+
+              <div class="mini-icon yellow">
+                <i data-lucide="clock-3"></i>
+              </div>
+            </div>
+
+            <div class="card">
+              <div>
+                <p>Approved</p>
+                <h2>0</h2>
+              </div>
+
+              <div class="mini-icon green">
+                <i data-lucide="check-circle-2"></i>
+              </div>
+            </div>
+
+            <div class="card">
+              <div>
+                <p>Rejected</p>
+                <h2>0</h2>
+              </div>
+
+              <div class="mini-icon red">
+                <i data-lucide="x-circle"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="upload-card">
+            <h3>Upload Document</h3>
+
+            <div class="upload-box">
+              <i
+                class="upload-icon"
+                data-lucide="upload"
+                width="54"
+                height="54"
+              ></i>
+
+              <p>Click to upload or drag and drop</p>
+
+              <span>PDF, DOC, DOCX, JPG, PNG (max 10MB)</span>
+
+              <button>Choose File</button>
+            </div>
+          </div>
+
+          <div class="documents">
+            <div class="documents-top">
+              <div class="search-docs">
+                <i data-lucide="search"></i>
+
+                <input
+                  type="text"
+                  placeholder="Search my documents..."
+                />
+              </div>
+
+              <button class="filter-btn">
+                <i data-lucide="funnel"></i>
+                Filter
+              </button>
+            </div>
+
+            <div class="empty">
+              <i
+                data-lucide="file-text"
+                width="88"
+                height="88"
+              ></i>
+
+              <h4>No documents uploaded</h4>
+
+              <p>Upload your first document above</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div class="floating-chat">
+        <span class="status-dot"></span>
+
+        <i data-lucide="message-circle"></i>
+      </div>
+    </div>
+
+    <script src="../../js/sidebar.js"></script>
+    <script>renderSidebar('personal-documents');</script>
+    <script src="js/script.js"></script>
+  </body>
+</html>

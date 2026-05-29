@@ -1,0 +1,99 @@
+<section class="tab-navigation-bar">
+  <div class="tabs-scroll-container">
+    <button class="tab-btn" onclick="activateSecondaryNav('branches-locations', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="building"></i> Branches & Locations
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('departments-units', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="network"></i> Departments & Units
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('job-roles', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="briefcase"></i> Job Roles
+    </button>
+    <button class="tab-btn active" onclick="activateSecondaryNav('grade-levels', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="bar-chart-big"></i> Grade Levels
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('employment-types', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="clipboard-list"></i> Employment Types
+    </button>
+    <button class="tab-btn icon-only" onclick="activateSecondaryNav('reporting-structure', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="link"></i>
+    </button>
+  </div>
+  <button class="tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+</section>
+
+<section class="content-body">
+  <div class="table-title-panel">
+    <div class="panel-left">
+      <h2>Grade Levels</h2>
+      <p>Establish grade structure, pay bands, and benefit mapping</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-secondary"><i data-lucide="download"></i> Export</button>
+      <button class="btn btn-primary"><i data-lucide="plus"></i> Add Grade</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>GRADE</th>
+          <th>MIN SALARY</th>
+          <th>MIDPOINT</th>
+          <th>MAX SALARY</th>
+          <th>EMPLOYEES</th>
+          <th>STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="font-semibold text-dark">Grade 8</td>
+          <td>$240,000</td>
+          <td>$352,000</td>
+          <td>$464,000</td>
+          <td class="count-highlight font-bold">2</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Grade 7</td>
+          <td>$160,000</td>
+          <td>$220,000</td>
+          <td>$280,000</td>
+          <td class="count-highlight font-bold">5</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Grade 6</td>
+          <td>$110,000</td>
+          <td>$145,000</td>
+          <td>$180,000</td>
+          <td class="count-highlight font-bold">8</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Grade 5</td>
+          <td>$75,000</td>
+          <td>$97,500</td>
+          <td>$120,000</td>
+          <td class="count-highlight font-bold">15</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Grade 4</td>
+          <td>$50,000</td>
+          <td>$65,000</td>
+          <td>$80,000</td>
+          <td class="count-highlight font-bold">22</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -1,0 +1,378 @@
+/* ============================================================
+   SIDEBAR STYLES
+   ============================================================ */
+
+/* ---- Primary Sidebar ---- */
+.primary-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 56px;
+  background: #d21787;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 200;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  /* Primary overlays secondary when expanded */
+}
+
+.primary-sidebar:hover {
+  width: 200px;
+}
+
+/* ---- Logo area ---- */
+.primary-sidebar .sidebar-logo {
+  width: 100%;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  height: 56px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sidebar-logo .logo-icon {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #ffffff, #f0a0d0);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+}
+
+.sidebar-logo .logo-text {
+  margin-left: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.2s 0.06s, transform 0.2s 0.06s;
+  letter-spacing: -0.3px;
+}
+
+.primary-sidebar:hover .logo-text {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- Nav scroll area ---- */
+.primary-sidebar .sidebar-nav {
+  flex: 1;
+  width: 100%;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.primary-sidebar .sidebar-nav::-webkit-scrollbar { width: 0; }
+
+/* ---- Nav item ---- */
+.primary-sidebar .nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+  position: relative;
+  white-space: nowrap;
+  height: 42px;
+  color: rgba(255,255,255,0.45);
+  flex-shrink: 0;
+}
+
+.primary-sidebar .nav-item:hover {
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+}
+
+.primary-sidebar .nav-item.active {
+  background: rgba(255,255,255,0.18);
+  color: #ffffff;
+}
+
+.primary-sidebar .nav-item.active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  background: #ffffff;
+  border-radius: 3px 0 0 3px;
+}
+
+.primary-sidebar .nav-item .nav-icon {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.primary-sidebar .nav-item .nav-icon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.8;
+}
+
+.primary-sidebar .nav-item .nav-label {
+  margin-left: 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s 0.05s, transform 0.18s 0.05s;
+  white-space: nowrap;
+}
+
+.primary-sidebar:hover .nav-item .nav-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---- Divider ---- */
+.primary-sidebar .nav-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 6px 14px;
+  flex-shrink: 0;
+}
+
+/* ---- Bottom user area ---- */
+.primary-sidebar .sidebar-bottom {
+  width: 100%;
+  padding: 0 14px;
+  height: 56px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.primary-sidebar .sidebar-bottom:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.primary-sidebar .sidebar-bottom .avatar-sm {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, #e889c0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.primary-sidebar .sidebar-bottom .user-info {
+  margin-left: 10px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.18s 0.05s, transform 0.18s 0.05s;
+  overflow: hidden;
+}
+
+.primary-sidebar:hover .sidebar-bottom .user-info {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sidebar-bottom .user-info .user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.sidebar-bottom .user-info .user-role {
+  font-size: 10px;
+  color: rgba(255,255,255,0.38);
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   SECONDARY SIDEBAR
+   Secondary stays fixed at left:56px always.
+   Primary overlays it when expanded (higher z-index).
+   ============================================================ */
+.secondary-sidebar {
+  position: fixed;
+  left: 56px;
+  top: 0;
+  height: 100vh;
+  width: 200px;
+  background: #ffffff;
+  border-right: 1px solid #eeeef5;
+  z-index: 100;            /* lower than primary (200) */
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Secondary header ---- */
+.secondary-sidebar .sec-header {
+  height: 56px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eeeef5;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.sec-header .sec-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #fce4f3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sec-header .sec-header-icon svg {
+  width: 14px;
+  height: 14px;
+  color: #d21787;
+  stroke: #d21787;
+  stroke-width: 2;
+}
+
+.sec-header .sec-header-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Secondary nav ---- */
+.secondary-sidebar .sec-nav {
+  flex: 1;
+  padding: 10px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.secondary-sidebar .sec-nav::-webkit-scrollbar { width: 3px; }
+.secondary-sidebar .sec-nav::-webkit-scrollbar-track { background: transparent; }
+.secondary-sidebar .sec-nav::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
+
+.secondary-sidebar .sec-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #666;
+  transition: background 0.16s, color 0.16s, transform 0.16s;
+}
+.secondary-sidebar .sec-nav-item:hover {
+  transform: translateX(3px);
+}
+.secondary-sidebar .sec-nav-item .sec-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.secondary-sidebar .sec-nav-item .sec-nav-chevron {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.16s;
+  font-size: 16px;
+  color: #d21787;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.secondary-sidebar .sec-nav-item:hover .sec-nav-chevron {
+  opacity: 1;
+}
+
+.secondary-sidebar .sec-nav-item:hover {
+  background: #fdf0f8;
+  color: #d21787;
+}
+
+.secondary-sidebar .sec-nav-item.active {
+  background: linear-gradient(90deg, #fce4f3, #fdf5fc);
+  color: #d21787;
+  font-weight: 600;
+}
+
+.secondary-sidebar .sec-nav-item svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.secondary-sidebar .sec-nav-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #bbb;
+  padding: 10px 10px 4px;
+}
+
+.secondary-sidebar .sec-nav-divider {
+  height: 1px;
+  background: #f0f0f5;
+  margin: 5px 4px;
+}
+
+/* ---- Count pill on secondary nav items ---- */
+.secondary-sidebar .sec-nav-count {
+  margin-left: auto;
+  margin-right: 4px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d21787;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}

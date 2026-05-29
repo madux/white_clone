@@ -1,0 +1,90 @@
+<section class="tab-navigation-bar">
+  <div class="tabs-scroll-container">
+    <button class="tab-btn" onclick="activateSecondaryNav('branches-locations', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="building"></i> Branches & Locations
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('departments-units', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="network"></i> Departments & Units
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('job-roles', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="briefcase"></i> Job Roles
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('grade-levels', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="bar-chart-big"></i> Grade Levels
+    </button>
+    <button class="tab-btn active" onclick="activateSecondaryNav('employment-types', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="clipboard-list"></i> Employment Types
+    </button>
+    <button class="tab-btn icon-only" onclick="activateSecondaryNav('reporting-structure', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="link"></i>
+    </button>
+  </div>
+  <button class="tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+</section>
+
+<section class="content-body">
+  <div class="table-title-panel">
+    <div class="panel-left">
+      <h2>Employment Types</h2>
+      <p>Define contract types and employment classifications</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-secondary"><i data-lucide="download"></i> Export</button>
+      <button class="btn btn-primary"><i data-lucide="plus"></i> Add Type</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>TYPE</th>
+          <th>CODE</th>
+          <th>DURATION</th>
+          <th>BENEFITS ELIGIBLE</th>
+          <th>EMPLOYEES</th>
+          <th>STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="font-semibold text-dark">Full-Time</td>
+          <td class="text-muted text-xs">FT</td>
+          <td>Permanent</td>
+          <td>Yes</td>
+          <td class="count-highlight font-bold">187</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Part-Time</td>
+          <td class="text-muted text-xs">PT</td>
+          <td>Permanent</td>
+          <td>Pro-rated</td>
+          <td class="count-highlight font-bold">23</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Contract</td>
+          <td class="text-muted text-xs">CTR</td>
+          <td>6-24 months</td>
+          <td>No</td>
+          <td class="count-highlight font-bold">31</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Internship</td>
+          <td class="text-muted text-xs">INT</td>
+          <td>3-6 months</td>
+          <td>No</td>
+          <td class="count-highlight font-bold">6</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

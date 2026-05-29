@@ -1,0 +1,217 @@
+<section class="tab-navigation-bar">
+  <div class="tabs-scroll-container">
+    <button class="tab-btn active" onclick="activateSecondaryNav('branches-locations', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="building"></i> Branches & Locations
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('departments-units', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="network"></i> Departments & Units
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('job-roles', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="briefcase"></i> Job Roles
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('grade-levels', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="bar-chart-big"></i> Grade Levels
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('employment-types', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="clipboard-list"></i> Employment Types
+    </button>
+    <button class="tab-btn icon-only" onclick="activateSecondaryNav('reporting-structure', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="link"></i>
+    </button>
+  </div>
+  <button class="tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+</section>
+
+<section class="content-body">
+  <div class="table-title-panel">
+    <div class="panel-left">
+      <h2>Branches & Locations</h2>
+      <p>Foundational — Define before creating departments or employees</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-secondary"><i data-lucide="download"></i> Export</button>
+      <button class="btn btn-primary"><i data-lucide="plus"></i> Create Branch</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table" id="branchesTable">
+      <thead>
+        <tr>
+          <th>BRANCH NAME</th>
+          <th>CODE</th>
+          <th>COUNTRY</th>
+          <th>ADDRESS</th>
+          <th>EMPLOYEES</th>
+          <th>STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="font-semibold text-dark">HQ New York</td>
+          <td class="text-muted text-xs">NYC-HQ</td>
+          <td>USA</td>
+          <td class="text-muted text-sm">245 Park Ave, New York, NY 1...</td>
+          <td class="count-highlight font-bold">148</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Branch Chicago</td>
+          <td class="text-muted text-xs">CHI-01</td>
+          <td>USA</td>
+          <td class="text-muted text-sm">233 S Wacker Dr, Chicago, IL ...</td>
+          <td class="count-highlight font-bold">42</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Branch London</td>
+          <td class="text-muted text-xs">LDN-01</td>
+          <td>UK</td>
+          <td class="text-muted text-sm">30 St Mary Axe, London EC3A...</td>
+          <td class="count-highlight font-bold">31</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Remote Hub</td>
+          <td class="text-muted text-xs">REMOTE</td>
+          <td class="text-muted">Global</td>
+          <td class="text-muted text-sm">Virtual/Remote</td>
+          <td class="count-highlight font-bold">26</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Branch Toronto</td>
+          <td class="text-muted text-xs">TOR-01</td>
+          <td>Canada</td>
+          <td class="text-muted text-sm">TBD</td>
+          <td class="count-highlight font-bold text-gray">0</td>
+          <td><span class="badge status-planned">Planned</span></td>
+          <td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="os-modal-overlay" id="branchCreateModal">
+  <div class="os-modal">
+    <div class="os-modal-header">
+      <div class="os-modal-header-left">
+        <div class="os-modal-icon"><i data-lucide="building-2"></i></div>
+        <div>
+          <h3>Create Branch / Location</h3>
+          <p class="os-modal-subtitle">Org Setup &middot; Foundational &mdash; Required before departments</p>
+        </div>
+      </div>
+      <button class="os-modal-close" onclick="closeCreateBranch()">&times;</button>
+    </div>
+    <div class="os-modal-body">
+      <div class="os-form-group">
+        <label>Branch Name <span class="text-red">*</span></label>
+        <input type="text" id="newBranchName" class="os-input" placeholder="e.g. Branch Atlanta" />
+      </div>
+      <div class="os-form-row">
+        <div class="os-form-group">
+          <label>Branch Code</label>
+          <input type="text" id="newBranchCode" class="os-input" placeholder="e.g. ATL-01" />
+          <span class="os-form-hint">Auto-generated if blank</span>
+        </div>
+        <div class="os-form-group">
+          <label>Country</label>
+          <select id="newBranchCountry" class="os-input">
+            <option>USA</option><option>UK</option><option>Canada</option><option>Global</option>
+          </select>
+        </div>
+      </div>
+      <div class="os-form-group">
+        <label>Full Address</label>
+        <textarea id="newBranchAddress" class="os-input os-textarea" rows="2" placeholder="Street address..."></textarea>
+      </div>
+      <div class="os-form-row">
+        <div class="os-form-group">
+          <label>City</label>
+          <input type="text" id="newBranchCity" class="os-input" placeholder="City" />
+        </div>
+        <div class="os-form-group">
+          <label>Postal Code</label>
+          <input type="text" id="newBranchPostal" class="os-input" placeholder="ZIP / Postcode" />
+        </div>
+      </div>
+      <div class="os-form-group">
+        <label>Branch Manager</label>
+        <select id="newBranchManager" class="os-input">
+          <option value="">Select manager...</option>
+          <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+          <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+          <option value="James Carter">James Carter &mdash; CFO</option>
+          <option value="Lisa Park">Lisa Park &mdash; Head of Engineering</option>
+          <option value="Anna Chen">Anna Chen &mdash; Marketing Director</option>
+          <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+          <option value="Michael Brown">Michael Brown &mdash; Operations Manager</option>
+          <option value="Alex Rivera">Alex Rivera &mdash; IT Manager</option>
+        </select>
+        <span class="os-form-hint">Assign from employee list</span>
+      </div>
+      <div class="os-form-group">
+        <label>Currency</label>
+        <select id="newBranchCurrency" class="os-input">
+          <option value="">Select...</option>
+          <option value="USD">USD &mdash; US Dollar</option>
+          <option value="GBP">GBP &mdash; British Pound</option>
+          <option value="CAD">CAD &mdash; Canadian Dollar</option>
+          <option value="EUR">EUR &mdash; Euro</option>
+        </select>
+      </div>
+    </div>
+    <div class="os-modal-footer">
+      <button class="btn btn-secondary" onclick="closeCreateBranch()">Cancel</button>
+      <button class="btn btn-primary" onclick="createBranch()">Create Branch</button>
+    </div>
+  </div>
+</div>
+
+<div class="os-modal-overlay" id="branchEditModal">
+  <div class="os-modal">
+    <div class="os-modal-header">
+      <h3>Edit Branch</h3>
+      <button class="os-modal-close" onclick="document.getElementById('branchEditModal').classList.remove('open')">&times;</button>
+    </div>
+    <div class="os-modal-body">
+      <div class="os-form-group">
+        <label>Branch Name</label>
+        <input type="text" id="editBranchName" class="os-input" />
+      </div>
+      <div class="os-form-row">
+        <div class="os-form-group">
+          <label>Code</label>
+          <input type="text" id="editBranchCode" class="os-input" />
+        </div>
+        <div class="os-form-group">
+          <label>Country</label>
+          <input type="text" id="editBranchCountry" class="os-input" />
+        </div>
+      </div>
+      <div class="os-form-group">
+        <label>Address</label>
+        <textarea id="editBranchAddress" class="os-input os-textarea" rows="2"></textarea>
+      </div>
+      <div class="os-form-group">
+        <label>Status</label>
+        <select id="editBranchStatus" class="os-input">
+          <option value="Active">Active</option>
+          <option value="Planned">Planned</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="os-modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('branchEditModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBranchEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
