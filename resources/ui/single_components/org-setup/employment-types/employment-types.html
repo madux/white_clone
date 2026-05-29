@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employment Types</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="employment-types.css">
+</head>
+<body>
+<div class="et-wrapper">
+
+  <section class="et-tab-navigation-bar">
+    <div class="et-tabs-scroll-container">
+      <button class="et-tab-btn">
+        <i data-lucide="building"></i> Branches & Locations
+      </button>
+      <button class="et-tab-btn">
+        <i data-lucide="network"></i> Departments & Units
+      </button>
+      <button class="et-tab-btn">
+        <i data-lucide="briefcase"></i> Job Roles
+      </button>
+      <button class="et-tab-btn">
+        <i data-lucide="bar-chart-big"></i> Grade Levels
+      </button>
+      <button class="et-tab-btn et-active">
+        <i data-lucide="clipboard-list"></i> Employment Types
+      </button>
+      <button class="et-tab-btn et-icon-only">
+        <i data-lucide="link"></i>
+      </button>
+    </div>
+    <button class="et-tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+  </section>
+
+  <section class="et-content-body">
+    <div class="et-table-title-panel">
+      <div class="et-panel-left">
+        <h2>Employment Types</h2>
+        <p>Define contract types and employment classifications</p>
+      </div>
+      <div class="et-panel-actions">
+        <button class="et-btn et-btn-secondary"><i data-lucide="download"></i> Export</button>
+        <button class="et-btn et-btn-primary"><i data-lucide="plus"></i> Add Type</button>
+      </div>
+    </div>
+
+    <div class="et-table-container">
+      <table class="et-data-table">
+        <thead>
+          <tr>
+            <th>TYPE</th>
+            <th>CODE</th>
+            <th>DURATION</th>
+            <th>BENEFITS ELIGIBLE</th>
+            <th>EMPLOYEES</th>
+            <th>STATUS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="et-font-semibold et-text-dark">Full-Time</td>
+            <td class="et-text-muted et-text-xs">FT</td>
+            <td>Permanent</td>
+            <td>Yes</td>
+            <td class="et-count-highlight et-font-bold">187</td>
+            <td><span class="et-badge et-status-active">Active</span></td>
+            <td class="et-actions-cell"><a href="#" class="et-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="et-font-semibold et-text-dark">Part-Time</td>
+            <td class="et-text-muted et-text-xs">PT</td>
+            <td>Permanent</td>
+            <td>Pro-rated</td>
+            <td class="et-count-highlight et-font-bold">23</td>
+            <td><span class="et-badge et-status-active">Active</span></td>
+            <td class="et-actions-cell"><a href="#" class="et-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="et-font-semibold et-text-dark">Contract</td>
+            <td class="et-text-muted et-text-xs">CTR</td>
+            <td>6-24 months</td>
+            <td>No</td>
+            <td class="et-count-highlight et-font-bold">31</td>
+            <td><span class="et-badge et-status-active">Active</span></td>
+            <td class="et-actions-cell"><a href="#" class="et-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="et-font-semibold et-text-dark">Internship</td>
+            <td class="et-text-muted et-text-xs">INT</td>
+            <td>3-6 months</td>
+            <td>No</td>
+            <td class="et-count-highlight et-font-bold">6</td>
+            <td><span class="et-badge et-status-active">Active</span></td>
+            <td class="et-actions-cell"><a href="#" class="et-action-link">Edit</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Department Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="department-modal.css">
+</head>
+<body>
+  <div class="df-wrapper">
+    <div class="df-modal-overlay">
+      <div class="df-modal">
+        <div class="df-modal-header">
+          <div class="df-modal-header-left">
+            <div class="df-modal-icon"><i data-lucide="building-2"></i></div>
+            <div>
+              <h3>Create New Department</h3>
+              <p class="df-modal-subtitle">Phase 0 &middot; Saved to Departments table &middot; Required before adding employees</p>
+            </div>
+          </div>
+          <span class="df-modal-close">&times;</span>
+        </div>
+        <div class="df-modal-body">
+          <div class="df-info-banner">
+            <i data-lucide="info"></i>
+            <span>Department Head is selected from the Employees table. Headcount is auto-counted via foreign key.</span>
+          </div>
+          <div class="df-form-group">
+            <label>Department Name <span class="df-text-red">*</span></label>
+            <input type="text" class="df-input" placeholder="e.g. Engineering" />
+          </div>
+          <div class="df-form-row">
+            <div class="df-form-group">
+              <label>Department Code</label>
+              <input type="text" class="df-input" placeholder="e.g. ENG" />
+              <span class="df-form-hint">Auto-generated if left blank</span>
+            </div>
+            <div class="df-form-group">
+              <label>Location</label>
+              <select class="df-input df-select">
+                <option>HQ New York</option>
+                <option>Branch Chicago</option>
+                <option>Branch London</option>
+                <option>Remote Hub</option>
+                <option>Branch Toronto</option>
+                <option>Hybrid</option>
+                <option>Remote</option>
+              </select>
+            </div>
+          </div>
+          <div class="df-form-group">
+            <label>Department Head</label>
+            <select class="df-input df-select">
+              <option value="">Select employee...</option>
+              <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+              <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+              <option value="James Carter">James Carter &mdash; CFO</option>
+              <option value="Lisa Park">Lisa Park &mdash; Marketing Director</option>
+              <option value="Sarah Wilson">Sarah Wilson &mdash; Engineering Lead</option>
+              <option value="Tom Nash">Tom Nash &mdash; Operations Manager</option>
+              <option value="Alex Rivera">Alex Rivera &mdash; Design Lead</option>
+              <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+            </select>
+            <span class="df-form-hint">Populated from Employees table</span>
+          </div>
+          <div class="df-form-row">
+            <div class="df-form-group">
+              <label>Annual Budget ($) <span class="df-text-red">*</span></label>
+              <input type="text" class="df-input" placeholder="e.g. 500000" />
+            </div>
+            <div class="df-form-group">
+              <label>Target Headcount</label>
+              <input type="text" class="df-input" placeholder="e.g. 20" />
+            </div>
+          </div>
+           <div class="df-info-banner df-info-banner-amber">
+            <i data-lucide="info"></i>
+            <span><strong>On Create:</strong> Inserts into Departments table &rarr; generates dept_code &rarr; immediately available in Employee dropdowns &rarr; appears in Org Chart.</span>
+          </div>
+        </div>
+        <div class="df-modal-footer">
+          <button class="df-btn df-btn-secondary">Cancel</button>
+          <button class="df-btn df-btn-secondary">Save Draft</button>
+          <button class="df-btn df-btn-primary">Create Department</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

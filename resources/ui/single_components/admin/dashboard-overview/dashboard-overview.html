@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dashboard-overview.css">
+</head>
+<body>
+<div class="do-wrapper">
+
+  <!-- JUMBOTRON -->
+  <div class="do-jumbotron">
+    <div class="do-jumbotron-left">
+      <div class="do-jumbotron-badge">Live · Get Active Employees</div>
+      <h1>Good morning, <span class="do-name">Admin</span> 👋</h1>
+      <div class="do-jumbotron-sub">
+        <span>CLEOnHR Enterprise</span>
+        <span class="do-sep"></span>
+        <span>Friday, February 27, 2026</span>
+        <span class="do-sep"></span>
+        <span class="do-online-pill">Cluster N°1 Online</span>
+      </div>
+    </div>
+    <div class="do-jumbotron-right">
+      <div class="do-jstat">
+        <div class="do-jstat-lbl">Headcount</div>
+        <div class="do-jstat-val">247</div>
+        <span class="do-jstat-trend do-up">+3</span>
+      </div>
+      <div class="do-jstat">
+        <div class="do-jstat-lbl">Open Roles</div>
+        <div class="do-jstat-val">18</div>
+        <span class="do-jstat-trend do-up">+41</span>
+      </div>
+      <div class="do-jstat">
+        <div class="do-jstat-lbl">Pending Actions</div>
+        <div class="do-jstat-val">17</div>
+        <span class="do-jstat-trend do-down">−4</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION REQUIRED BANNER -->
+  <div class="do-action-banner">
+    <div class="do-action-banner-label">
+      <i data-lucide="alert-circle"></i> Action Required
+    </div>
+    <div class="do-action-divider"></div>
+    <div class="do-action-alert"><span class="do-ai">📄</span> 5 contracts expiring <span style="opacity:.6;font-size:11px;">›</span></div>
+    <div class="do-action-sep">·</div>
+    <div class="do-action-alert"><span class="do-ai">🔍</span> 4 verifications pending <span style="opacity:.6;font-size:11px;">›</span></div>
+    <div class="do-action-sep">·</div>
+    <div class="do-action-alert"><span class="do-ai">🌴</span> 5 leave requests awaiting approval <span style="opacity:.6;font-size:11px;">›</span></div>
+  </div>
+
+  <!-- KPI ROW 1 -->
+  <div class="do-kpi-row">
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">👥</span>
+      </div>
+      <div class="do-kpi-val">247</div>
+      <div class="do-kpi-lbl">Total Employees</div>
+      <div class="do-kpi-sub do-pos">+3 this month</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🚀</span>
+        <span class="do-kpi-badge do-new">New</span>
+      </div>
+      <div class="do-kpi-val">12</div>
+      <div class="do-kpi-lbl">In Onboarding</div>
+      <div class="do-kpi-sub do-pos">+4 new hires</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🌴</span>
+      </div>
+      <div class="do-kpi-val">8</div>
+      <div class="do-kpi-lbl">On Leave Today</div>
+      <div class="do-kpi-sub">3 approved today</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🔚</span>
+      </div>
+      <div class="do-kpi-val">3</div>
+      <div class="do-kpi-lbl">Offboarding</div>
+      <div class="do-kpi-sub do-warn">2 nearing end</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🎯</span>
+      </div>
+      <div class="do-kpi-val">24</div>
+      <div class="do-kpi-lbl">Active Applicants</div>
+      <div class="do-kpi-sub do-blue">Pipeline open</div>
+    </div>
+
+  </div>
+
+  <!-- KPI ROW 2 -->
+  <div class="do-kpi-row">
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">📄</span>
+        <span class="do-kpi-badge do-warn">⚠️</span>
+      </div>
+      <div class="do-kpi-val">5</div>
+      <div class="do-kpi-lbl">Contracts Expiring</div>
+      <div class="do-kpi-sub do-warn">Within 30 days</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">💳</span>
+      </div>
+      <div class="do-kpi-val" style="font-size:24px;">$24K</div>
+      <div class="do-kpi-lbl">Advances Outstanding</div>
+      <div class="do-kpi-sub">8 active</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🔴</span>
+        <span class="do-kpi-badge do-warn">⚠️</span>
+      </div>
+      <div class="do-kpi-val">2</div>
+      <div class="do-kpi-lbl">Suspended Staff</div>
+      <div class="do-kpi-sub do-neg">Under review</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🔍</span>
+      </div>
+      <div class="do-kpi-val">4</div>
+      <div class="do-kpi-lbl">Pending Verifications</div>
+      <div class="do-kpi-sub do-warn">Awaiting action</div>
+    </div>
+
+    <div class="do-kpi-card">
+      <div class="do-kpi-top">
+        <span class="do-kpi-emoji">🏢</span>
+        <span class="do-kpi-badge do-ok">✓</span>
+      </div>
+      <div class="do-kpi-val">247</div>
+      <div class="do-kpi-lbl">Org Chart Ready</div>
+      <div class="do-kpi-sub do-pos">Hierarchy live</div>
+    </div>
+
+  </div>
+
+  <!-- EMPLOYEE LIFECYCLE PIPELINE -->
+  <div class="do-pipeline-wrap">
+    <div class="do-pipeline-head">
+      <div>
+        <div class="do-pipeline-title">
+          <i data-lucide="git-branch"></i>
+          Employee Lifecycle Pipeline
+        </div>
+        <div class="do-pipeline-title-sub">Real-time snapshot across all HR stages</div>
+      </div>
+      <span class="do-section-link">View All →</span>
+    </div>
+    <div class="do-pipeline-stages">
+      <div class="do-stage-card do-talent">
+        <div class="do-stage-icon-label">
+          <div class="do-stage-icon"><i data-lucide="target"></i></div>
+          <div class="do-stage-tag">Talent Pipeline</div>
+        </div>
+        <div class="do-stage-num">24</div>
+        <div class="do-stage-sub">employees</div>
+      </div>
+      <i data-lucide="chevron-right" class="do-pipeline-chevron"></i>
+      <div class="do-stage-card do-pre-ob">
+        <div class="do-stage-icon-label">
+          <div class="do-stage-icon"><i data-lucide="clock"></i></div>
+          <div class="do-stage-tag">Pre-Onboarding</div>
+        </div>
+        <div class="do-stage-num">3</div>
+        <div class="do-stage-sub">employees</div>
+      </div>
+      <i data-lucide="chevron-right" class="do-pipeline-chevron"></i>
+      <div class="do-stage-card do-onboard">
+        <div class="do-stage-icon-label">
+          <div class="do-stage-icon"><i data-lucide="user-check"></i></div>
+          <div class="do-stage-tag">Onboarding</div>
+        </div>
+        <div class="do-stage-num">12</div>
+        <div class="do-stage-sub">employees</div>
+      </div>
+      <i data-lucide="chevron-right" class="do-pipeline-chevron"></i>
+      <div class="do-stage-card do-active-s">
+        <div class="do-stage-icon-label">
+          <div class="do-stage-icon"><i data-lucide="circle-check"></i></div>
+          <div class="do-stage-tag">Active</div>
+        </div>
+        <div class="do-stage-num">212</div>
+        <div class="do-stage-sub">employees</div>
+      </div>
+      <i data-lucide="chevron-right" class="do-pipeline-chevron"></i>
+      <div class="do-stage-card do-offboard">
+        <div class="do-stage-icon-label">
+          <div class="do-stage-icon"><i data-lucide="user-minus"></i></div>
+          <div class="do-stage-tag">Offboarding</div>
+        </div>
+        <div class="do-stage-num">3</div>
+        <div class="do-stage-sub">employees</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS 3-COLUMN ROW -->
+  <div class="do-analytics-3col">
+
+    <!-- Headcount Trend (static) -->
+    <div class="do-chart-card">
+      <div class="do-chart-head">
+        <div>
+          <div class="do-chart-title">
+            <i data-lucide="trending-up" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+            Headcount Trend
+          </div>
+          <div class="do-chart-sub">Aug 2024 – Feb 2025</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="do-chart-trend-badge">247</div>
+          <div style="font-size:10px;color:#16a34a;font-weight:600;margin-top:2px;">↑ +13.2%</div>
+        </div>
+      </div>
+      <div class="do-chart-canvas-wrap" style="height:180px;">
+        <div class="do-chart-static">
+          <div class="do-chart-stat-row">
+            <span class="do-chart-stat-period">Aug 2024</span>
+            <span class="do-chart-stat-value">218</span>
+          </div>
+          <div class="do-chart-stat-row">
+            <span class="do-chart-stat-period">Nov 2024</span>
+            <span class="do-chart-stat-value">232</span>
+          </div>
+          <div class="do-chart-stat-row">
+            <span class="do-chart-stat-period">Feb 2025</span>
+            <span class="do-chart-stat-value">247</span>
+            <span class="do-chart-stat-change">↑ +13.2%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- By Department (static bars) -->
+    <div class="do-chart-card">
+      <div class="do-chart-head">
+        <div>
+          <div class="do-chart-title">
+            <i data-lucide="bar-chart-2" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+            By Department
+          </div>
+        </div>
+        <span class="do-section-link" style="font-size:11.5px;">Manage →</span>
+      </div>
+      <div class="do-chart-canvas-wrap" style="height:200px;">
+        <div class="do-dept-bar-list">
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Engineering</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:78%;background:linear-gradient(90deg,#E91E8C,#FF6BA8);"></div></div>
+            <span class="do-dept-bar-pct">48</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Finance</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:50%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+            <span class="do-dept-bar-pct">22</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Marketing</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:36%;background:linear-gradient(90deg,#ef4444,#f87171);"></div></div>
+            <span class="do-dept-bar-pct">18</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">HR</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:30%;background:linear-gradient(90deg,#3b82f6,#60a5fa);"></div></div>
+            <span class="do-dept-bar-pct">14</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Design</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:24%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div></div>
+            <span class="do-dept-bar-pct">11</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Operations</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:65%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+            <span class="do-dept-bar-pct">31</span>
+          </div>
+          <div class="do-dept-bar-row">
+            <span class="do-dept-bar-name">Executive</span>
+            <div class="do-dept-bar-track"><div class="do-dept-bar-fill" style="width:12%;background:linear-gradient(90deg,#f97316,#fb923c);"></div></div>
+            <span class="do-dept-bar-pct">4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Actions -->
+    <div class="do-pending-panel">
+      <div class="do-pending-head">
+        <div class="do-pending-title">
+          <i data-lucide="zap"></i>
+          Pending Actions
+        </div>
+        <span class="do-pending-total">17 total</span>
+      </div>
+
+      <div class="do-pending-row">
+        <div class="do-pending-icon do-card-icon-teal"><i data-lucide="calendar-off"></i></div>
+        <span class="do-pending-lbl">Leave Requests</span>
+        <span class="do-pending-count">6</span>
+      </div>
+      <div class="do-pending-row">
+        <div class="do-pending-icon do-card-icon-orange"><i data-lucide="file-text"></i></div>
+        <span class="do-pending-lbl">Expiring Contracts</span>
+        <span class="do-pending-count">6</span>
+      </div>
+      <div class="do-pending-row">
+        <div class="do-pending-icon do-card-icon-blue"><i data-lucide="shield-check"></i></div>
+        <span class="do-pending-lbl">Pending Verifications</span>
+        <span class="do-pending-count">4</span>
+      </div>
+      <div class="do-pending-row">
+        <div class="do-pending-icon do-card-icon-green"><i data-lucide="credit-card"></i></div>
+        <span class="do-pending-lbl">Cash Advances</span>
+        <span class="do-pending-count">2</span>
+      </div>
+      <div class="do-pending-row">
+        <div class="do-pending-icon do-card-icon-pink"><i data-lucide="dollar-sign"></i></div>
+        <span class="do-pending-lbl">Salary Revisions</span>
+        <span class="do-pending-count">1</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- LOWER ROW -->
+  <div class="do-lower-row">
+
+    <!-- Recent Activity -->
+    <div class="do-activity-card">
+      <div class="do-activity-card-head">
+        <div>
+          <div class="do-activity-card-title">
+            <i data-lucide="activity" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+            Recent Activity
+          </div>
+        </div>
+        <span class="do-audit-link">Audit Trail <i data-lucide="arrow-right"></i></span>
+      </div>
+      <div class="do-activity-card-sub">Real-time employee activities across all modules</div>
+
+      <div class="do-timeline">
+
+        <div class="do-tl-date-group">Today 02:19</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#E91E8C;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text">Annual leave approved for <strong>Tom Noah</strong> (9 days)</div>
+            <div class="do-tl-time">02:19 AM</div>
+          </div>
+        </div>
+
+        <div class="do-tl-date-group">Today 00:05</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#3b82f6;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text"><strong>Anna Chen</strong> title updated → <span class="do-tag">Senior Frontend Developer</span></div>
+            <div class="do-tl-time">12:05 AM</div>
+          </div>
+        </div>
+
+        <div class="do-tl-date-group">Wednesday 13:02</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#10b981;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text">Onboarding checklist created for <strong>Michael Brown</strong> [EMP063]</div>
+            <div class="do-tl-time">1:02 PM</div>
+          </div>
+        </div>
+
+        <div class="do-tl-date-group">Tuesday 09:11</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#f59e0b;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text">Salary revision approved for <strong>John Dee</strong> — +8% effective Mar 1</div>
+            <div class="do-tl-time">9:11 AM</div>
+          </div>
+        </div>
+
+        <div class="do-tl-date-group">Feb 19</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#8b5cf6;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text">Background check initiated for <strong>Michael Brown</strong> — Standard tier</div>
+            <div class="do-tl-time">3:44 PM</div>
+          </div>
+        </div>
+
+        <div class="do-tl-date-group">Feb 17</div>
+        <div class="do-tl-item">
+          <div class="do-tl-dot-col"><div class="do-tl-dot" style="background:#06b6d4;"></div></div>
+          <div class="do-tl-body">
+            <div class="do-tl-text">Annual review submitted for <strong>Alex Rivera</strong> — Rating: <span class="do-tag">4.7/5</span></div>
+            <div class="do-tl-time">11:22 AM</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right stack: Workforce Health + Quick Actions -->
+    <div class="do-right-stack">
+
+      <!-- Workforce Health -->
+      <div class="do-health-card">
+        <div class="do-health-head">
+          <div class="do-health-title">
+            <i data-lucide="heart-pulse" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+            Workforce Health
+          </div>
+          <span class="do-health-detail">Details →</span>
+        </div>
+        <div class="do-health-metrics">
+          <div class="do-hm-row">
+            <span class="do-hm-lbl">Onboarding Rate</span>
+            <div class="do-hm-track"><div class="do-hm-fill do-green" style="width:92%;"></div></div>
+            <span class="do-hm-pct">92%</span>
+          </div>
+          <div class="do-hm-row">
+            <span class="do-hm-lbl">Retention</span>
+            <div class="do-hm-track"><div class="do-hm-fill do-blue" style="width:91.5%;"></div></div>
+            <span class="do-hm-pct">91.5%</span>
+          </div>
+          <div class="do-hm-row">
+            <span class="do-hm-lbl">Training Completion</span>
+            <div class="do-hm-track"><div class="do-hm-fill do-orange" style="width:74%;"></div></div>
+            <span class="do-hm-pct">74%</span>
+          </div>
+          <div class="do-hm-row">
+            <span class="do-hm-lbl">Engagement Score</span>
+            <div class="do-hm-track"><div class="do-hm-fill do-pink" style="width:78%;"></div></div>
+            <span class="do-hm-pct">78%</span>
+          </div>
+          <div class="do-hm-row">
+            <span class="do-hm-lbl">Verification Cleared</span>
+            <div class="do-hm-track"><div class="do-hm-fill do-teal" style="width:98%;"></div></div>
+            <span class="do-hm-pct">98%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="do-qa-card">
+        <div class="do-qa-title">
+          <i data-lucide="zap" style="width:14px;height:14px;color:#E91E8C;stroke-width:2.2;"></i>
+          Quick Actions
+        </div>
+        <div class="do-qa-grid">
+          <button class="do-qa-btn do-pink"><i data-lucide="user-plus"></i> + Employee</button>
+          <button class="do-qa-btn do-outline"><i data-lucide="building-2"></i> + Department</button>
+          <button class="do-qa-btn do-outline"><i data-lucide="briefcase"></i> + Job Role</button>
+          <button class="do-qa-btn do-outline"><i data-lucide="file-text"></i> + Contract</button>
+          <button class="do-qa-btn do-outline"><i data-lucide="calendar-off"></i> Leave Req.</button>
+          <button class="do-qa-btn do-outline"><i data-lucide="clipboard-check"></i> BG Check</button>
+          <button class="do-qa-btn-full"><i data-lucide="download"></i> Export Daily Report</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- UPCOMING BIRTHDAYS & ANNIVERSARIES -->
+  <div class="do-birthdays-wrap">
+    <div class="do-birthdays-head">
+      <div class="do-birthdays-title">
+        <span>🎂</span> Upcoming Birthdays &amp; Anniversaries
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <span class="do-section-link" style="font-size:11.5px;">Send All</span>
+        <span class="do-section-link" style="font-size:11.5px;">View All →</span>
+      </div>
+    </div>
+    <div class="do-birthdays-scroll">
+
+      <div class="do-bday-card">
+        <div class="do-bday-avatar" style="background:linear-gradient(135deg,#E91E8C,#FF6BA8);">LP</div>
+        <div>
+          <div class="do-bday-name">Lisa Park</div>
+          <div class="do-bday-role">Marketing Director</div>
+          <div class="do-bday-date">🎂 Feb 22</div>
+          <span class="do-bday-yrs">🎉 3 yr</span>
+        </div>
+      </div>
+
+      <div class="do-bday-card">
+        <div class="do-bday-avatar" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">JC</div>
+        <div>
+          <div class="do-bday-name">James Carter</div>
+          <div class="do-bday-role">CTO</div>
+          <div class="do-bday-date">🎂 Feb 24</div>
+          <span class="do-bday-yrs">🏆 6 Years · Today!</span>
+        </div>
+      </div>
+
+      <div class="do-bday-card">
+        <div class="do-bday-avatar" style="background:linear-gradient(135deg,#10b981,#34d399);">TN</div>
+        <div>
+          <div class="do-bday-name">Tom Nash</div>
+          <div class="do-bday-role">Operations Manager</div>
+          <div class="do-bday-date">🎂 Feb 28</div>
+          <span class="do-bday-yrs">🏆 8 Years · Today!</span>
+        </div>
+      </div>
+
+      <div class="do-bday-card">
+        <div class="do-bday-avatar" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">SA</div>
+        <div>
+          <div class="do-bday-name">Sara Adams</div>
+          <div class="do-bday-role">HR Specialist</div>
+          <div class="do-bday-date">🎂 Mar 2</div>
+          <span class="do-bday-yrs">🎉 2 yr</span>
+        </div>
+      </div>
+
+      <div class="do-bday-card">
+        <div class="do-bday-avatar" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">DM</div>
+        <div>
+          <div class="do-bday-name">David Mills</div>
+          <div class="do-bday-role">Sales Lead</div>
+          <div class="do-bday-date">🎂 Mar 5</div>
+          <span class="do-bday-yrs">🎉 1 yr</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DEPARTMENT SNAPSHOT -->
+  <div class="do-dept-snap-wrap">
+    <div class="do-dept-snap-head">
+      <div class="do-dept-snap-title">
+        <span>🏢</span> Department Snapshot
+      </div>
+      <span class="do-section-link" style="font-size:11.5px;">Manage Depts →</span>
+    </div>
+    <div class="do-dept-snap-grid">
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">💻</div>
+        <div class="do-dept-card-count">48</div>
+        <div class="do-dept-card-name">Engineering</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:78%;background:linear-gradient(90deg,#E91E8C,#FF6BA8);"></div></div>
+        <div class="do-dept-budget-lbl">78% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">💰</div>
+        <div class="do-dept-card-count">22</div>
+        <div class="do-dept-card-name">Finance</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:89%;background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div></div>
+        <div class="do-dept-budget-lbl">89% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">📣</div>
+        <div class="do-dept-card-count">18</div>
+        <div class="do-dept-card-name">Marketing</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:102%;background:linear-gradient(90deg,#ef4444,#f87171);"></div></div>
+        <div class="do-dept-budget-lbl">102% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">👥</div>
+        <div class="do-dept-card-count">14</div>
+        <div class="do-dept-card-name">HR</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:77%;background:linear-gradient(90deg,#3b82f6,#60a5fa);"></div></div>
+        <div class="do-dept-budget-lbl">77% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">🎨</div>
+        <div class="do-dept-card-count">11</div>
+        <div class="do-dept-card-name">Design</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:99%;background:linear-gradient(90deg,#8b5cf6,#a78bfa);"></div></div>
+        <div class="do-dept-budget-lbl">99% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">⚙️</div>
+        <div class="do-dept-card-count">31</div>
+        <div class="do-dept-card-name">Operations</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:97%;background:linear-gradient(90deg,#10b981,#34d399);"></div></div>
+        <div class="do-dept-budget-lbl">97% budget</div>
+      </div>
+
+      <div class="do-dept-card">
+        <div class="do-dept-card-emoji">👑</div>
+        <div class="do-dept-card-count">4</div>
+        <div class="do-dept-card-name">Executive</div>
+        <div class="do-dept-budget-bar"><div class="do-dept-budget-fill" style="width:86%;background:linear-gradient(90deg,#f97316,#fb923c);"></div></div>
+        <div class="do-dept-budget-lbl">86% budget</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

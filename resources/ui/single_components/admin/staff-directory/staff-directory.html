@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Directory — CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="staff-directory.css">
+</head>
+<body>
+
+<div class="sd-wrapper">
+
+  <!-- ============ ADD EMPLOYEE MODAL ============ -->
+  <div class="sd-modal-overlay">
+    <div class="sd-modal">
+      <div class="sd-modal-header">
+        <h2>➕ Add New Employee</h2>
+        <p>Step 1 of 5 · All data saved to Employees table</p>
+      </div>
+      <div class="sd-steps">
+        <div class="sd-step sd-step-active"><div class="sd-step-num">1</div>Personal Info</div>
+        <div class="sd-step"><div class="sd-step-num">2</div>Employment</div>
+        <div class="sd-step"><div class="sd-step-num">3</div>Compensation</div>
+        <div class="sd-step"><div class="sd-step-num">4</div>Documents</div>
+        <div class="sd-step"><div class="sd-step-num">5</div>Access &amp; Onboarding</div>
+      </div>
+      <div class="sd-info">
+        ℹ️ Duplicate check runs on Email + National ID against all existing records including Terminated. Duplicates will be blocked.
+      </div>
+      <div class="sd-form-grid">
+        <div class="sd-field"><label>First Name*</label><input type="text" placeholder="John"></div>
+        <div class="sd-field"><label>Last Name*</label><input type="text" placeholder="Doe"></div>
+        <div class="sd-field"><label>Work Email*</label><input type="email" placeholder="john.doe@cleon.com"></div>
+        <div class="sd-field"><label>Phone Number*</label><input type="text" placeholder="+1 (555) 000-0000"></div>
+        <div class="sd-field"><label>Date of Birth</label><input type="date"></div>
+        <div class="sd-field">
+          <label>Gender</label>
+          <select>
+            <option>Select...</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
+        </div>
+        <div class="sd-field"><label>Nationality</label><input type="text" placeholder="United States"></div>
+        <div class="sd-field"><label>National ID Number*</label><input type="text" placeholder="SSN / Passport Code"></div>
+        <div class="sd-field sd-field-full"><label>Home Address*</label><textarea placeholder="123 Corporate Way, New York, NY"></textarea></div>
+        <div class="sd-field"><label>Emergency Contact Name*</label><input type="text" placeholder="Jane Doe"></div>
+        <div class="sd-field">
+          <label>Relationship</label>
+          <select>
+            <option>Select...</option>
+            <option>Spouse</option>
+            <option>Parent</option>
+            <option>Sibling</option>
+            <option>Friend</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="sd-field"><label>Phone</label><input type="text" placeholder="Emergency contact phone"></div>
+      </div>
+      <div class="sd-modal-footer">
+        <button class="sd-action-btn">Save Draft</button>
+        <button class="sd-action-btn sd-pink-btn">Next Step →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ HERO ============ -->
+  <section class="sd-hero">
+    <div>
+      <h2>👥 Staff Directory</h2>
+      <p>Enterprise structural node browser with governance-aware employee records, reporting hierarchy, and lifecycle management.</p>
+      <div class="sd-hero-tags">
+        <div class="sd-hero-tag sd-hero-tag-green">10 Healthy</div>
+        <div class="sd-hero-tag sd-hero-tag-yellow">1 Warnings</div>
+        <div class="sd-hero-tag sd-hero-tag-red">1 Critical</div>
+      </div>
+    </div>
+    <div class="sd-hero-right-preview">
+      <div class="sd-hero-img-card"><img src="https://i.pravatar.cc/100?img=11" alt="preview"></div>
+      <div class="sd-hero-img-card"><img src="https://i.pravatar.cc/100?img=32" alt="preview"></div>
+      <div class="sd-hero-img-card"><img src="https://i.pravatar.cc/100?img=45" alt="preview"></div>
+      <div class="sd-hero-img-card"><img src="https://i.pravatar.cc/100?img=20" alt="preview"></div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="sd-stats">
+    <div class="sd-stat-card sd-stat-card-dark">
+      <div class="sd-stat-card-top"><i data-lucide="users" size="16"></i><h3>12</h3></div>
+      <p class="sd-stat-label">TOTAL EMPLOYEES</p>
+    </div>
+    <div class="sd-stat-card" style="background:#e6fbef; border-color:#c3f3da;">
+      <div class="sd-stat-card-top"><i data-lucide="check" size="16" style="color:#0ca86c"></i><h3 style="color:#0ca86c">9</h3></div>
+      <p class="sd-stat-label" style="color:#0ca86c">ACTIVE</p>
+    </div>
+    <div class="sd-stat-card" style="background:#eef4ff; border-color:#d2e2ff;">
+      <div class="sd-stat-card-top"><i data-lucide="clock" size="16" style="color:#3468ff"></i><h3 style="color:#3468ff">1</h3></div>
+      <p class="sd-stat-label" style="color:#3468ff">PRE-ONBOARDING</p>
+    </div>
+    <div class="sd-stat-card" style="background:#fff7df; border-color:#ffe8af;">
+      <div class="sd-stat-card-top"><i data-lucide="calendar" size="16" style="color:#f59d0d"></i><h3 style="color:#f59d0d">1</h3></div>
+      <p class="sd-stat-label" style="color:#f59d0d">ON LEAVE</p>
+    </div>
+    <div class="sd-stat-card" style="background:#fff0f2; border-color:#ffd1d7;">
+      <div class="sd-stat-card-top"><i data-lucide="log-out" size="16" style="color:#ff4f6d"></i><h3 style="color:#ff4f6d">1</h3></div>
+      <p class="sd-stat-label" style="color:#ff4f6d">OFFBOARDING</p>
+    </div>
+  </section>
+
+  <!-- ============ TOOLBAR ============ -->
+  <section class="sd-toolbar">
+    <div class="sd-toolbar-top">
+      <div class="sd-toolbar-tabs">
+        <button class="sd-toolbar-tab sd-toolbar-tab-active">All <span class="sd-toolbar-count">12</span></button>
+        <button class="sd-toolbar-tab">Active <span class="sd-toolbar-count">9</span></button>
+        <button class="sd-toolbar-tab">Pre-Onboarding <span class="sd-toolbar-count">1</span></button>
+        <button class="sd-toolbar-tab">On Leave <span class="sd-toolbar-count">1</span></button>
+        <button class="sd-toolbar-tab">Offboarding <span class="sd-toolbar-count">1</span></button>
+        <button class="sd-toolbar-tab">Suspended <span class="sd-toolbar-count">0</span></button>
+        <button class="sd-toolbar-tab">Terminated <span class="sd-toolbar-count">0</span></button>
+      </div>
+    </div>
+
+    <div class="sd-toolbar-actions">
+      <div class="sd-search-bar">
+        <i data-lucide="search"></i>
+        <input placeholder="Search name, ID, role, branch, cost center">
+      </div>
+      <button class="sd-action-btn"><i data-lucide="filter"></i>Filters</button>
+      <div class="sd-view-switch">
+        <button class="sd-view-btn sd-view-btn-active"><i data-lucide="layout-grid"></i></button>
+        <button class="sd-view-btn"><i data-lucide="list"></i></button>
+        <button class="sd-view-btn"><i data-lucide="git-branch"></i></button>
+      </div>
+      <button class="sd-action-btn"><i data-lucide="download"></i>Export</button>
+      <button class="sd-action-btn sd-pink-btn"><i data-lucide="user-plus"></i>Add Employee</button>
+    </div>
+
+    <div class="sd-filters-panel">
+      <div class="sd-filters-title">Advanced Query Filters</div>
+      <div class="sd-filters-grid">
+        <div class="sd-filter-group">
+          <label>Department</label>
+          <select>
+            <option value="All">All Departments</option>
+            <option value="ENGINEERING">Engineering</option>
+            <option value="FINANCE">Finance</option>
+            <option value="MARKETING">Marketing</option>
+            <option value="HUMAN RESOURCES">Human Resources</option>
+            <option value="PRODUCT DESIGN">Product Design</option>
+            <option value="OPERATIONS">Operations</option>
+            <option value="EXECUTIVE">Executive</option>
+          </select>
+        </div>
+        <div class="sd-filter-group">
+          <label>Status</label>
+          <select>
+            <option value="All">All Statuses</option>
+            <option value="Active">Active</option>
+            <option value="Pre-Onboarding">Pre-Onboarding</option>
+            <option value="On Leave">On Leave</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Offboarding">Offboarding</option>
+            <option value="Terminated">Terminated</option>
+          </select>
+        </div>
+        <div class="sd-filter-group">
+          <label>Location / Mode</label>
+          <select>
+            <option value="All">All Locations</option>
+            <option value="Office">Office</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="Remote">Remote</option>
+          </select>
+        </div>
+        <div class="sd-filter-group">
+          <label>Alpha Filter</label>
+          <div class="sd-alphabet"></div>
+          <button class="sd-reset-filters">
+            <i data-lucide="x" size="14"></i> Reset all filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RECORD COUNT ============ -->
+  <div class="sd-record-count">Showing <strong>12</strong> of 12 employees</div>
+
+  <!-- ============ EMPLOYEE GRID ============ -->
+  <div class="sd-view-container">
+    <section class="sd-employees-grid">
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#d21787;">RH</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Robert Hayes</div>
+          <div class="sd-emp-role">CEO</div>
+          <div class="sd-emp-dept">Executive</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#2563eb;">GA</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Grace Adams</div>
+          <div class="sd-emp-role">HR Manager</div>
+          <div class="sd-emp-dept">Human Resources</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#16a34a;">JC</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">James Carter</div>
+          <div class="sd-emp-role">CFO</div>
+          <div class="sd-emp-dept">Finance</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#d97706;">LP</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Lisa Park</div>
+          <div class="sd-emp-role">Marketing Director</div>
+          <div class="sd-emp-dept">Marketing</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#7c3aed;">AC</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Anna Chen</div>
+          <div class="sd-emp-role">Frontend Developer</div>
+          <div class="sd-emp-dept">Engineering</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#0891b2;">PS</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Priya Sharma</div>
+          <div class="sd-emp-role">HR Business Partner</div>
+          <div class="sd-emp-dept">Human Resources</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#dc2626;">MB</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Michael Brown</div>
+          <div class="sd-emp-role">Financial Analyst</div>
+          <div class="sd-emp-dept">Finance</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#9333ea;">AR</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Alex Rivera</div>
+          <div class="sd-emp-role">UX Lead</div>
+          <div class="sd-emp-dept">Product Design</div>
+          <span class="sd-emp-status sd-emp-status-active">Active</span>
+        </div>
+      </div>
+
+      <div class="sd-employee-card">
+        <div class="sd-emp-avatar" style="background:#0ea5e9;">TN</div>
+        <div class="sd-emp-info">
+          <div class="sd-emp-name">Tom Noah</div>
+          <div class="sd-emp-role">Software Engineer</div>
+          <div class="sd-emp-dept">Engineering</div>
+          <span class="sd-emp-status sd-emp-status-preonboarding">Pre-Onboarding</span>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

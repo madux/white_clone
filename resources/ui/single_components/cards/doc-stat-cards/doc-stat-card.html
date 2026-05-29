@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Stat Cards</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="doc-stat-card.css">
+</head>
+<body>
+  <div class="ds-wrapper">
+    <div class="ds-card">
+      <div class="ds-icon-wrap" style="background:#ede9fe;">
+        <i data-lucide="file-text" class="ds-icon" style="color:#7c3aed;"></i>
+      </div>
+      <div>
+        <div class="ds-value">1,247</div>
+        <div class="ds-label">Total Documents</div>
+        <div class="ds-sub pos">+23 this month</div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-icon-wrap" style="background:#fef3c7;">
+        <i data-lucide="file-signature" class="ds-icon" style="color:#d97706;"></i>
+      </div>
+      <div>
+        <div class="ds-value">18</div>
+        <div class="ds-label">Pending Signatures</div>
+        <div class="ds-sub warn">Needs attention</div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-icon-wrap" style="background:#fef2f2;">
+        <i data-lucide="clock" class="ds-icon" style="color:#dc2626;"></i>
+      </div>
+      <div>
+        <div class="ds-value">5</div>
+        <div class="ds-label">Expiring Contracts</div>
+        <div class="ds-sub neg">Within 30 days</div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <div class="ds-icon-wrap" style="background:#dbeafe;">
+        <i data-lucide="layout" class="ds-icon" style="color:#3b82f6;"></i>
+      </div>
+      <div>
+        <div class="ds-value">32</div>
+        <div class="ds-label">Active Templates</div>
+        <div class="ds-sub blue">Ready to use</div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

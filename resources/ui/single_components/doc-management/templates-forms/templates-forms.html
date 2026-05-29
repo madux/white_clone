@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleonHR – Templates & Forms</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="templates-forms.css">
+</head>
+<body>
+<div class="tf-wrapper">
+
+  <header class="tf-topbar">
+    <div class="tf-topbar-brand">
+      <div class="tf-logo-grid">
+        <span style="background:#EF4444"></span>
+        <span style="background:#10B981"></span>
+        <span style="background:#3B82F6"></span>
+        <span style="background:#F59E0B"></span>
+        <span style="background:#EC4899"></span>
+        <span style="background:#8B5CF6"></span>
+        <span style="background:#06B6D4"></span>
+        <span style="background:#F97316"></span>
+        <span style="background:#6366F1"></span>
+      </div>
+      <span class="tf-topbar-brand-text">CleonHR</span>
+    </div>
+    <div class="tf-topbar-search">
+      <i data-lucide="search"></i>
+      <input type="text" placeholder="Search documents, employees, benefits...">
+    </div>
+    <div class="tf-topbar-right">
+      <div class="tf-role-toggle">
+        <button class="tf-role-btn active">Admin</button>
+        <button class="tf-role-btn">Employee</button>
+      </div>
+      <button class="tf-icon-btn"><i data-lucide="bell"></i></button>
+      <button class="tf-icon-btn"><i data-lucide="mail"></i></button>
+      <button class="tf-icon-btn"><i data-lucide="settings"></i></button>
+      <div class="tf-avatar">AD</div>
+    </div>
+  </header>
+
+  <div class="tf-body">
+    <main class="tf-main">
+      <div class="tf-content-header">
+        <div class="tf-profile-row">
+          <div class="tf-greeting">
+            <h1>Welcome, Chukwuemeka</h1>
+            <p>HR Manager &bull; Human Resources</p>
+          </div>
+          <button class="tf-switch-profile-btn">
+            <i data-lucide="user"></i>
+            Switch Profile
+            <i data-lucide="chevron-down"></i>
+          </button>
+        </div>
+        <div class="tf-tabs">
+          <button class="tf-tab"><i data-lucide="home"></i> Home</button>
+          <button class="tf-tab"><i data-lucide="file-text"></i> Personal Documents</button>
+          <button class="tf-tab"><i data-lucide="pen-line"></i> Pending Signatures</button>
+          <button class="tf-tab active"><i data-lucide="files"></i> Templates &amp; Forms</button>
+          <button class="tf-tab"><i data-lucide="shield"></i> Policies <span class="tf-tab-badge">3</span></button>
+          <button class="tf-tab"><i data-lucide="activity"></i> Activity Log</button>
+          <button class="tf-tab"><i data-lucide="help-circle"></i> Help</button>
+        </div>
+      </div>
+
+      <div class="tf-page-content">
+        <div class="tf-page-title-row">
+          <div>
+            <h2>Templates &amp; Forms Library</h2>
+            <p>Download official company templates and forms</p>
+          </div>
+          <button class="tf-btn-primary">
+            <i data-lucide="plus"></i>
+            Request New Template
+          </button>
+        </div>
+
+        <div class="tf-toolbar">
+          <div class="tf-search-wrap">
+            <i data-lucide="search"></i>
+            <input type="text" placeholder="Search templates...">
+          </div>
+          <div class="tf-select-wrap">
+            <select>
+              <option>All Categories</option>
+              <option>Leave &amp; Time Off</option>
+              <option>Finance &amp; Expenses</option>
+              <option>Learning &amp; Development</option>
+              <option>Work Arrangements</option>
+              <option>Career Development</option>
+            </select>
+            <i data-lucide="chevron-down"></i>
+          </div>
+          <div class="tf-view-toggle">
+            <button class="tf-view-btn active" id="grid-btn"><i data-lucide="layout-grid"></i></button>
+            <button class="tf-view-btn" id="list-btn"><i data-lucide="list"></i></button>
+          </div>
+        </div>
+
+        <div class="tf-template-grid" id="template-grid">
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge pdf"><i data-lucide="file"></i><span class="tf-file-type-label">PDF</span></div>
+              <div class="tf-card-info"><h3>Leave Request Form</h3><p>Standard template for requesting time off including annual leave, sick leave, and personal days</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Leave &amp; Time Off</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">125 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v3.2</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 3/15/2026</div>
+          </div>
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge docx"><i data-lucide="file-text"></i><span class="tf-file-type-label">DOCX</span></div>
+              <div class="tf-card-info"><h3>Expense Reimbursement</h3><p>Submit business expenses for reimbursement including travel, meals, and office supplies</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Finance &amp; Expenses</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">98 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v2.5</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 2/20/2026</div>
+          </div>
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge pdf"><i data-lucide="file"></i><span class="tf-file-type-label">PDF</span></div>
+              <div class="tf-card-info"><h3>Training Request</h3><p>Request approval for training programs, workshops, conferences, and professional development</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Learning &amp; Development</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">87 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v1.8</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 1/10/2026</div>
+          </div>
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge pdf"><i data-lucide="file"></i><span class="tf-file-type-label">PDF</span></div>
+              <div class="tf-card-info"><h3>Work From Home Request</h3><p>Remote work arrangement request form for permanent or temporary WFH arrangements</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Work Arrangements</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">76 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v4.1</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 4/1/2026</div>
+          </div>
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge pdf"><i data-lucide="file"></i><span class="tf-file-type-label">PDF</span></div>
+              <div class="tf-card-info"><h3>Internal Transfer Request</h3><p>Apply for internal job postings and department transfers</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Career Development</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">110 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v1.9</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 1/22/2026</div>
+          </div>
+          <div class="tf-t-card">
+            <div class="tf-card-top">
+              <div class="tf-file-badge pdf"><i data-lucide="file"></i><span class="tf-file-type-label">PDF</span></div>
+              <div class="tf-card-info"><h3>Flexible Work Schedule Request</h3><p>Request flexible working hours or compressed work week arrangements</p></div>
+            </div>
+            <div class="tf-card-meta">
+              <span class="tf-meta-tag"><i data-lucide="clock"></i> Work Arrangements</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">82 KB</span>
+              <span class="tf-meta-sep"></span>
+              <span class="tf-meta-plain">v2.7</span>
+            </div>
+            <button class="tf-download-btn"><i data-lucide="download"></i> Download Template</button>
+            <div class="tf-card-footer">Last updated: 4/5/2026</div>
+          </div>
+        </div>
+
+        <div class="tf-guidelines-box">
+          <div class="tf-guidelines-header"><i data-lucide="info"></i> Template Usage Guidelines</div>
+          <ul class="tf-guidelines-list">
+            <li>All templates are pre-approved and comply with company policies</li>
+            <li>Fill out templates completely and submit to your manager for approval</li>
+            <li>Some templates require HR or Finance approval before processing</li>
+            <li>Need a template that's not listed? Use "Request New Template" button above</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="tf-modal-overlay" id="templateModal">
+    <div class="tf-modal-container">
+      <div class="tf-modal-header">
+        <h2>Request New Template</h2>
+        <p>Can't find the template you need? Submit a request to HR</p>
+        <button class="tf-modal-close"><i data-lucide="x"></i></button>
+      </div>
+      <div class="tf-modal-body">
+        <div class="tf-form-group">
+          <label>Template Name <span class="tf-required">*</span></label>
+          <input type="text" id="tmplName" placeholder="e.g., Equipment Request Form, Parking Pass Application">
+        </div>
+        <div class="tf-form-group">
+          <label>Reason for Request <span class="tf-required">*</span></label>
+          <textarea id="tmplReason" placeholder="Explain why you need this template and how it will be used..."></textarea>
+        </div>
+        <div class="tf-info-card">
+          <div class="tf-info-card-icon"><i data-lucide="info"></i></div>
+          <div class="tf-info-card-content">
+            <h4>What happens next?</h4>
+            <ul>
+              <li>Your request will be reviewed by the HR Documentation team</li>
+              <li>You'll receive a response within 2-3 business days</li>
+              <li>If approved, the template will be created and added to the library</li>
+              <li>You'll be notified once the template is available for download</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="tf-modal-footer">
+        <button class="tf-btn-cancel">Cancel</button>
+        <button class="tf-btn-submit">Submit Request</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tf-chat-fab"><i data-lucide="message-circle"></i></div>
+  <div class="tf-ai-widget"><i data-lucide="sparkles"></i></div>
+</div>
+<script>lucide.createIcons()</script>
+</body>
+</html>
