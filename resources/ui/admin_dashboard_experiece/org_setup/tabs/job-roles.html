@@ -1,0 +1,85 @@
+<section class="tab-navigation-bar">
+  <div class="tabs-scroll-container">
+    <button class="tab-btn" onclick="activateSecondaryNav('branches-locations', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="building"></i> Branches & Locations
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('departments-units', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="network"></i> Departments & Units
+    </button>
+    <button class="tab-btn active" onclick="activateSecondaryNav('job-roles', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="briefcase"></i> Job Roles
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('grade-levels', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="bar-chart-big"></i> Grade Levels
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('employment-types', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="clipboard-list"></i> Employment Types
+    </button>
+    <button class="tab-btn icon-only" onclick="activateSecondaryNav('reporting-structure', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="link"></i>
+    </button>
+  </div>
+  <button class="tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+</section>
+
+<section class="content-body">
+  <div class="table-title-panel">
+    <div class="panel-left">
+      <h2>Job Roles</h2>
+      <p>Define job titles, descriptions, and role requirements</p>
+    </div>
+    <div class="panel-actions">
+      <button class="btn btn-secondary"><i data-lucide="download"></i> Export</button>
+      <button class="btn btn-primary"><i data-lucide="plus"></i> Create Role</button>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>JOB TITLE</th>
+          <th>DEPARTMENT</th>
+          <th>GRADE</th>
+          <th>EMPLOYEES</th>
+          <th>STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="font-semibold text-dark">Chief Executive Officer</td>
+          <td>Executive</td>
+          <td>Grade 8</td>
+          <td class="count-highlight font-bold">1</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">HR Manager</td>
+          <td>Human Resources</td>
+          <td>Grade 6</td>
+          <td class="count-highlight font-bold">1</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Software Engineer</td>
+          <td>Engineering</td>
+          <td>Grade 4</td>
+          <td class="count-highlight font-bold">12</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+        <tr>
+          <td class="font-semibold text-dark">Senior Accountant</td>
+          <td>Finance</td>
+          <td>Grade 5</td>
+          <td class="count-highlight font-bold">3</td>
+          <td><span class="badge status-active">Active</span></td>
+          <td class="actions-cell"><a href="#" class="action-link">Edit</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>

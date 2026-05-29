@@ -23,22 +23,15 @@ const SIDEBAR_DATA = {
     label: 'Org Setup',
     icon: 'building-2',
     navItems: [
-      { id: 'company-profile', icon: 'building-2',  label: 'Company Profile' },
-      { id: 'departments',     icon: 'network',      label: 'Departments' },
-      { id: 'job-titles',      icon: 'briefcase',    label: 'Job Titles' },
-      { id: 'grade-levels',    icon: 'layers',       label: 'Grade Levels' },
-      { id: 'work-locations',  icon: 'map-pin',      label: 'Work Locations' },
-      { id: 'policies',        icon: 'scroll-text',  label: 'Policies' }
+      { id: 'branches-locations', icon: 'building',        label: 'Branches & Locations' },
+      { id: 'departments-units',  icon: 'network',         label: 'Departments & Units' },
+      { id: 'job-roles',          icon: 'briefcase',       label: 'Job Roles' },
+      { id: 'grade-levels',       icon: 'bar-chart-big',   label: 'Grade Levels' },
+      { id: 'employment-types',   icon: 'clipboard-list',  label: 'Employment Types' },
+      { id: 'reporting-structure',icon: 'link',            label: 'Reporting Structure' }
     ],
-    defaultNav: 'company-profile',
-    pageTabs: {
-      'company-profile': ['General Info', 'Branding', 'Legal'],
-      'departments':     ['All Departments', 'Structure', 'Assignments'],
-      'job-titles':      ['Job Titles', 'Descriptions', 'Requirements'],
-      'grade-levels':    ['Grade Structure', 'Pay Bands', 'Benefits Map'],
-      'work-locations':  ['Locations', 'Remote Policy', 'Zones'],
-      'policies':        ['HR Policies', 'Leave Policies', 'Code of Conduct']
-    }
+    defaultNav: 'branches-locations',
+    pageTabs: {}
   },
   organization: {
     label: 'Organization',
@@ -244,6 +237,7 @@ const SIDEBAR_DATA = {
    ============================================================ */
 let currentPrimaryItem = 'overview';
 let currentNavItem     = 'dashboard';
+const ORG_SETUP_CACHE  = {};
 
 /* ============================================================
    APP DATA — populated by the active module script
@@ -402,6 +396,224 @@ function activateSecondaryNav(navId, data) {
 }
 
 /* ============================================================
+   ORG SETUP — Tab nav arrow scroll (delegated)
+   ============================================================ */
+document.addEventListener('click', function (e) {
+  var arrow = e.target.closest('.tab-nav-arrow');
+  if (arrow) {
+    var bar = arrow.closest('.tab-navigation-bar');
+    if (bar) {
+      var container = bar.querySelector('.tabs-scroll-container');
+      if (container) container.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  }
+  // Branch edit action
+  var editLink = e.target.closest('#view-org-setup .action-link[data-action="edit"]');
+  if (editLink) {
+    e.preventDefault();
+    var row = editLink.closest('tr');
+    if (row) {
+      var cells = row.querySelectorAll('td');
+      document.getElementById('editBranchName').value    = cells[0].textContent.trim();
+      document.getElementById('editBranchCode').value    = cells[1].textContent.trim();
+      document.getElementById('editBranchCountry').value = cells[2].textContent.trim();
+      document.getElementById('editBranchAddress').value = cells[3].textContent.trim();
+      var statusSpan = cells[5].querySelector('.badge');
+      document.getElementById('editBranchStatus').value  = statusSpan ? statusSpan.textContent.trim() : 'Active';
+      var modal = document.getElementById('branchEditModal');
+      modal._editingRow = row;
+      modal.classList.add('open');
+    }
+  }
+  // Create Branch button
+  var createBtn = e.target.closest('#view-org-setup .btn-primary');
+  if (createBtn && createBtn.textContent.indexOf('Create Branch') !== -1) {
+    e.preventDefault();
+    document.getElementById('branchCreateModal').classList.add('open');
+  }
+  // Department edit action (card Edit button)
+  var editDept = e.target.closest('#view-org-setup .action-btn[data-action="edit-dept"]');
+  if (editDept) {
+    e.preventDefault();
+    var card = editDept.closest('.dept-card');
+    if (card) {
+      document.getElementById('deptModalTitle').textContent = 'Edit Department';
+      document.getElementById('deptModalActionBtn').textContent = 'Save Changes';
+      document.getElementById('deptName').value = card.querySelector('.dept-title').textContent.trim();
+      document.getElementById('deptCode').value = card.getAttribute('data-code') || '';
+      var locIcon = card.querySelector('.dept-location i');
+      if (locIcon && locIcon.nextSibling) {
+        document.getElementById('deptLocation').value = locIcon.nextSibling.textContent.trim();
+      }
+      document.getElementById('deptHead').value = card.querySelector('.meta-highlight').textContent.trim();
+      document.getElementById('deptBudget').value = card.getAttribute('data-budget') || '';
+      document.getElementById('deptHeadcount').value = card.getAttribute('data-target') || '';
+      var modal = document.getElementById('deptModal');
+      modal._editingCard = card;
+      modal.classList.add('open');
+      lucide.createIcons();
+    }
+  }
+  // Create Department button
+  var createDeptBtn = e.target.closest('#view-org-setup .btn-create-dept');
+  if (createDeptBtn) {
+    e.preventDefault();
+    resetDeptModal();
+    document.getElementById('deptModalTitle').textContent = 'Create New Department';
+    document.getElementById('deptModalActionBtn').textContent = 'Create Department';
+    document.getElementById('deptModal').classList.add('open');
+  }
+});
+
+function saveBranchEdit() {
+  var modal = document.getElementById('branchEditModal');
+  var name    = document.getElementById('editBranchName').value.trim();
+  var code    = document.getElementById('editBranchCode').value.trim();
+  var country = document.getElementById('editBranchCountry').value.trim();
+  var address = document.getElementById('editBranchAddress').value.trim();
+  var status  = document.getElementById('editBranchStatus').value;
+
+  if (!name) return;
+
+  var row = modal._editingRow;
+  if (!row) return;
+
+  var cells = row.querySelectorAll('td');
+  cells[0].innerHTML = '<span class="font-semibold text-dark">' + name + '</span>';
+  cells[1].innerHTML = '<span class="text-muted text-xs">' + code + '</span>';
+  cells[2].textContent = country;
+  cells[3].innerHTML = '<span class="text-muted text-sm">' + address + '</span>';
+  cells[5].innerHTML = '<span class="badge status-' + status.toLowerCase() + '">' + status + '</span>';
+
+  modal.classList.remove('open');
+}
+
+function closeCreateBranch() {
+  var modal = document.getElementById('branchCreateModal');
+  modal.classList.remove('open');
+  document.getElementById('newBranchName').value = '';
+  document.getElementById('newBranchCode').value = '';
+  document.getElementById('newBranchAddress').value = '';
+  document.getElementById('newBranchCity').value = '';
+  document.getElementById('newBranchPostal').value = '';
+  document.getElementById('newBranchManager').value = '';
+  document.getElementById('newBranchCurrency').value = '';
+}
+
+function createBranch() {
+  var name = document.getElementById('newBranchName').value.trim();
+  if (!name) { document.getElementById('newBranchName').focus(); return; }
+  var code    = document.getElementById('newBranchCode').value.trim();
+  var country = document.getElementById('newBranchCountry').value;
+  var address = document.getElementById('newBranchAddress').value.trim();
+  var city    = document.getElementById('newBranchCity').value.trim();
+  var postal  = document.getElementById('newBranchPostal').value.trim();
+  var manager = document.getElementById('newBranchManager').value;
+  var currency = document.getElementById('newBranchCurrency').value;
+
+  if (!code) {
+    var rows = document.querySelectorAll('#branchesTable tbody tr');
+    code = 'BR-' + String(rows.length + 1).padStart(3, '0');
+  }
+  var fullAddress = address;
+  if (city) fullAddress += (fullAddress ? ', ' : '') + city;
+  if (postal) fullAddress += (fullAddress ? ' ' : '') + postal;
+
+  var tbody = document.querySelector('#branchesTable tbody');
+  var row = document.createElement('tr');
+  row.innerHTML =
+    '<td class="font-semibold text-dark">' + name + '</td>' +
+    '<td class="text-muted text-xs">' + code + '</td>' +
+    '<td>' + country + '</td>' +
+    '<td class="text-muted text-sm">' + (fullAddress || 'TBD') + '</td>' +
+    '<td class="count-highlight font-bold">0</td>' +
+    '<td><span class="badge status-active">Active</span></td>' +
+    '<td class="actions-cell"><a href="#" class="action-link" data-action="edit">Edit</a><a href="#" class="action-link" data-action="depts">Depts</a></td>';
+  tbody.appendChild(row);
+  closeCreateBranch();
+}
+
+function closeDeptModal() {
+  document.getElementById('deptModal').classList.remove('open');
+}
+
+function resetDeptModal() {
+  document.getElementById('deptName').value = '';
+  document.getElementById('deptCode').value = '';
+  document.getElementById('deptLocation').value = 'HQ New York';
+  document.getElementById('deptHead').value = '';
+  document.getElementById('deptBudget').value = '';
+  document.getElementById('deptHeadcount').value = '';
+  var modal = document.getElementById('deptModal');
+  modal._editingCard = null;
+}
+
+function saveDeptDraft() {
+  closeDeptModal();
+}
+
+function createDept() {
+  var name = document.getElementById('deptName').value.trim();
+  if (!name) { document.getElementById('deptName').focus(); return; }
+  var code     = document.getElementById('deptCode').value.trim();
+  var location = document.getElementById('deptLocation').value;
+  var head     = document.getElementById('deptHead').value;
+  var budget   = document.getElementById('deptBudget').value.trim();
+  var target   = document.getElementById('deptHeadcount').value.trim();
+
+  if (!code) {
+    var cards = document.querySelectorAll('#view-org-setup .dept-card');
+    code = 'DEPT-' + String(cards.length + 1).padStart(3, '0');
+  }
+
+  var card = document.getElementById('deptModal')._editingCard;
+  if (card) {
+    card.querySelector('.dept-title').textContent = name;
+    card.setAttribute('data-code', code);
+    card.querySelector('.meta-highlight').textContent = head;
+    var locIcon = card.querySelector('.dept-location i');
+    if (locIcon) locIcon.nextSibling.textContent = ' ' + location;
+    card.setAttribute('data-budget', budget);
+    card.setAttribute('data-target', target);
+    closeDeptModal();
+    return;
+  }
+
+  var grid = document.querySelector('#view-org-setup .departments-grid');
+  var newCard = document.createElement('div');
+  newCard.className = 'dept-card';
+  newCard.setAttribute('data-code', code);
+  newCard.setAttribute('data-budget', budget);
+  newCard.setAttribute('data-target', target);
+  newCard.innerHTML =
+    '<div class="card-header-row">' +
+      '<span class="emoji-icon">📁</span>' +
+      '<span class="staff-badge">0 staff</span>' +
+    '</div>' +
+    '<h3 class="dept-title">' + name + '</h3>' +
+    '<p class="dept-meta">Head: <span class="meta-highlight">' + (head || '—') + '</span></p>' +
+    '<p class="dept-location"><i data-lucide="map-pin"></i> ' + location + '</p>' +
+    '<div class="metric-row">' +
+      '<div class="metric-block"><span class="metric-val text-pink">' + (budget ? '$' + Number(budget).toLocaleString() : '$0') + '</span><span class="metric-lbl">Budget</span></div>' +
+      '<div class="metric-block"><span class="metric-val text-pink">0</span><span class="metric-lbl">Open Roles</span></div>' +
+      '<div class="metric-block"><span class="metric-val text-muted">0</span><span class="metric-lbl">Headcount</span></div>' +
+    '</div>' +
+    '<div class="progress-container">' +
+      '<div class="progress-labels"><span>Budget used</span><span>0%</span></div>' +
+      '<div class="progress-bar-bg"><div class="progress-bar-fill fill-green" style="width:0%;"></div></div>' +
+    '</div>' +
+    '<div class="card-actions-row">' +
+      '<button class="action-btn text-dark">View Detail</button>' +
+      '<button class="action-btn text-muted" data-action="edit-dept">Edit</button>' +
+      '<button class="action-btn text-red">Delete</button>' +
+    '</div>';
+  grid.insertBefore(newCard, grid.querySelector('.add-dept-card'));
+
+  if (window.lucide) lucide.createIcons();
+  closeDeptModal();
+}
+
+/* ============================================================
    BUILD PAGE TABS (decoupled per nav item)
    ============================================================ */
 function buildPageTabs(tabs, activeIndex) {
@@ -468,6 +680,27 @@ function showPageContent(primaryId, navId) {
   if (navId === 'org-chart') {
     const el = document.getElementById('view-org-chart');
     if (el) el.classList.add('active');
+    return;
+  }
+
+  // Org Setup → dynamic fetch + inject
+  if (primaryId === 'org-setup') {
+    const el = document.getElementById('view-org-setup');
+    if (el) {
+      el.classList.add('active');
+      if (ORG_SETUP_CACHE[navId]) {
+        el.innerHTML = ORG_SETUP_CACHE[navId];
+        if (window.lucide) lucide.createIcons();
+      } else {
+        fetch('org_setup/tabs/' + navId + '.html')
+          .then(function(r) { return r.text(); })
+          .then(function(html) {
+            ORG_SETUP_CACHE[navId] = html;
+            el.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+          });
+      }
+    }
     return;
   }
 

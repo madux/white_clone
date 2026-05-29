@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Org Setup - Standalone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div id="view-org-setup" style="display:flex;flex-direction:column;height:100vh;">
+    <link rel="stylesheet" href="../css/style.css" />
+  </div>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../../js/sidebar.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch('../tabs/branches-locations.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+          document.getElementById('view-org-setup').innerHTML = html;
+          if (window.lucide) lucide.createIcons();
+        });
+    });
+  </script>
+</body>
+</html>
