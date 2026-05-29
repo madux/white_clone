@@ -1,0 +1,411 @@
+<section class="tab-navigation-bar">
+  <div class="tabs-scroll-container">
+    <button class="tab-btn" onclick="activateSecondaryNav('branches-locations', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="building"></i> Branches & Locations
+    </button>
+    <button class="tab-btn active" onclick="activateSecondaryNav('departments-units', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="network"></i> Departments & Units
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('job-roles', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="briefcase"></i> Job Roles
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('grade-levels', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="bar-chart-big"></i> Grade Levels
+    </button>
+    <button class="tab-btn" onclick="activateSecondaryNav('employment-types', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="clipboard-list"></i> Employment Types
+    </button>
+    <button class="tab-btn icon-only" onclick="activateSecondaryNav('reporting-structure', SIDEBAR_DATA['org-setup'])">
+      <i data-lucide="link"></i>
+    </button>
+  </div>
+  <button class="tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+</section>
+
+<section class="content-body">
+  <div class="data-flow-banner">
+    <div class="banner-icon">
+      <i data-lucide="pin"></i>
+    </div>
+    <p class="banner-text">
+      <strong>DATA FLOW:</strong> Departments &rarr; feeds Employee "Department" dropdown &rarr; feeds Manager assignment &rarr; feeds Budget reporting. Department Head is pulled from Employees table. Headcount is a live COUNT.
+    </p>
+  </div>
+
+  <div class="departments-grid">
+    
+    <div class="dept-card" data-code="ENG" data-budget="2400000" data-target="48">
+      <div class="card-header-row">
+        <span class="emoji-icon">💻</span>
+        <span class="staff-badge">48 staff</span>
+      </div>
+      <h3 class="dept-title">Engineering</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Sarah Wilson</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$2.4M</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">5</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">48</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>78%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-orange" style="width: 78%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="FIN" data-budget="980000" data-target="22">
+      <div class="card-header-row">
+        <span class="emoji-icon">💰</span>
+        <span class="staff-badge">22 staff</span>
+      </div>
+      <h3 class="dept-title">Finance</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">James Carter</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$980K</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">2</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">22</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>65%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-green" style="width: 65%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="MKT" data-budget="750000" data-target="18">
+      <div class="card-header-row">
+        <span class="emoji-icon">📣</span>
+        <span class="staff-badge">18 staff</span>
+      </div>
+      <h3 class="dept-title">Marketing</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Lisa Park</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> Hybrid</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$750K</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">1</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">18</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>52%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-green" style="width: 52%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="HR" data-budget="620000" data-target="14">
+      <div class="card-header-row">
+        <span class="emoji-icon">🤝</span>
+        <span class="staff-badge">14 staff</span>
+      </div>
+      <h3 class="dept-title">Human Resources</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Grace Adams</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$620K</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">0</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">14</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>71%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-orange" style="width: 71%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="DES" data-budget="480000" data-target="11">
+      <div class="card-header-row">
+        <span class="emoji-icon">🎨</span>
+        <span class="staff-badge">11 staff</span>
+      </div>
+      <h3 class="dept-title">Product Design</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Alex Rivera</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> Remote</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$480K</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">3</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">11</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>45%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-green" style="width: 45%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="OPS" data-budget="1100000" data-target="31">
+      <div class="card-header-row">
+        <span class="emoji-icon">⚙️</span>
+        <span class="staff-badge">31 staff</span>
+      </div>
+      <h3 class="dept-title">Operations</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Tom Nash</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> Branch Chicago</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$1.1M</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">2</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">31</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>83%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-orange" style="width: 83%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="dept-card" data-code="EXEC" data-budget="1800000" data-target="4">
+      <div class="card-header-row">
+        <span class="emoji-icon">👑</span>
+        <span class="staff-badge">4 staff</span>
+      </div>
+      <h3 class="dept-title">Executive</h3>
+      <p class="dept-meta">Head: <span class="meta-highlight">Robert Hayes</span></p>
+      <p class="dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+      
+      <div class="metric-row">
+        <div class="metric-block">
+          <span class="metric-val text-pink">$1.8M</span>
+          <span class="metric-lbl">Budget</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-pink">0</span>
+          <span class="metric-lbl">Open Roles</span>
+        </div>
+        <div class="metric-block">
+          <span class="metric-val text-muted">4</span>
+          <span class="metric-lbl">Headcount</span>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-labels">
+          <span>Budget used</span>
+          <span>90%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill fill-red" style="width: 90%;"></div>
+        </div>
+      </div>
+
+      <div class="card-actions-row">
+        <button class="action-btn text-dark">View Detail</button>
+        <button class="action-btn text-muted" data-action="edit-dept">Edit</button>
+        <button class="action-btn text-red">Delete</button>
+      </div>
+    </div>
+
+    <div class="add-dept-card">
+      <div class="add-icon-wrapper">
+        <i data-lucide="plus"></i>
+      </div>
+      <span class="add-title">Add New Department</span>
+      <button class="btn-create-dept">+ Create Department</button>
+    </div>
+
+  </div>
+</section>
+
+<div class="os-modal-overlay" id="deptModal">
+  <div class="os-modal">
+    <div class="os-modal-header">
+      <div class="os-modal-header-left">
+        <div class="os-modal-icon"><i data-lucide="building-2"></i></div>
+        <div>
+          <h3 id="deptModalTitle">Create New Department</h3>
+          <p class="os-modal-subtitle">Phase 0 &middot; Saved to Departments table &middot; Required before adding employees</p>
+        </div>
+      </div>
+      <button class="os-modal-close" onclick="closeDeptModal()">&times;</button>
+    </div>
+    <div class="os-modal-body">
+      <div class="os-info-banner">
+        <i data-lucide="info"></i>
+        <span>Department Head is selected from the Employees table. Headcount is auto-counted via foreign key.</span>
+      </div>
+      <div class="os-form-group">
+        <label>Department Name <span class="text-red">*</span></label>
+        <input type="text" id="deptName" class="os-input" placeholder="e.g. Engineering" />
+      </div>
+      <div class="os-form-row">
+        <div class="os-form-group">
+          <label>Department Code</label>
+          <input type="text" id="deptCode" class="os-input" placeholder="e.g. ENG" />
+          <span class="os-form-hint">Auto-generated if left blank</span>
+        </div>
+        <div class="os-form-group">
+          <label>Location</label>
+          <select id="deptLocation" class="os-input">
+            <option>HQ New York</option>
+            <option>Branch Chicago</option>
+            <option>Branch London</option>
+            <option>Remote Hub</option>
+            <option>Branch Toronto</option>
+            <option>Hybrid</option>
+            <option>Remote</option>
+          </select>
+        </div>
+      </div>
+      <div class="os-form-group">
+        <label>Department Head</label>
+        <select id="deptHead" class="os-input">
+          <option value="">Select employee...</option>
+          <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+          <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+          <option value="James Carter">James Carter &mdash; CFO</option>
+          <option value="Lisa Park">Lisa Park &mdash; Marketing Director</option>
+          <option value="Sarah Wilson">Sarah Wilson &mdash; Engineering Lead</option>
+          <option value="Tom Nash">Tom Nash &mdash; Operations Manager</option>
+          <option value="Alex Rivera">Alex Rivera &mdash; Design Lead</option>
+          <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+        </select>
+        <span class="os-form-hint">Populated from Employees table</span>
+      </div>
+      <div class="os-form-row">
+        <div class="os-form-group">
+          <label>Annual Budget ($) <span class="text-red">*</span></label>
+          <input type="text" id="deptBudget" class="os-input" placeholder="e.g. 500000" />
+        </div>
+        <div class="os-form-group">
+          <label>Target Headcount</label>
+          <input type="text" id="deptHeadcount" class="os-input" placeholder="e.g. 20" />
+        </div>
+      </div>
+      <div class="os-info-banner os-info-banner-sm">
+        <i data-lucide="info"></i>
+        <span><strong>On Create:</strong> Inserts into Departments table &rarr; generates dept_code &rarr; immediately available in Employee dropdowns &rarr; appears in Org Chart.</span>
+      </div>
+    </div>
+    <div class="os-modal-footer">
+      <button class="btn btn-secondary" onclick="closeDeptModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="saveDeptDraft()">Save Draft</button>
+      <button class="btn btn-primary" id="deptModalActionBtn" onclick="createDept()">Create Department</button>
+    </div>
+  </div>
+</div>
