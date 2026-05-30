@@ -3,22 +3,22 @@
     <menuitem id="menu_hr_core_employee_menu"
                     name="Employee Core"
                     sequence="6"
-                    action="hr.open_view_employee_list_my"
+                    action="hr_employee.action_view_employee_kanban_custom"
                     />
         <menuitem id="menu_hr_employee_branch"
-                        name="Branch &amp; Locations >"
+                        name="🏛️ Branch &amp; Locations"
                         parent="menu_hr_core_employee_menu"
                         sequence="10"
                         action="hr_employee.action_core_multi_branch"/>
 
         <menuitem id="menu_hr_employee_department"
-                        name="Departments"
+                        name="🏢 Departments"
                         parent="menu_hr_core_employee_menu"
                         sequence="20"
                         action="hr_employee.action_core_department"/>
 
         <menuitem id="menu_hr_core_employee_announcement"
-            name="Announcement"
+            name="🔔 Announcement"
             parent="menu_hr_core_employee_menu"
             sequence="25"
             action="hr_employee.action_hr_core_announcement"

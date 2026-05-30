@@ -35,6 +35,40 @@ class EhaBranch(models.Model):
     def _branch_default_get(self):
         return self.env['res.users']._get_default_branch()
 
+    employee_count = fields.Integer(
+        string='Employees',
+        compute='_compute_employee_count'
+    )
+
+    def _compute_employee_count(self):
+        employee_data = self.env['hr.employee'].read_group(
+            [('branch_id', 'in', self.ids)],
+            ['branch_id'],
+            ['branch_id']
+        )
+
+        mapped_data = {
+            data['branch_id'][0]: data['branch_id_count']
+            for data in employee_data
+        }
+
+        for branch in self:
+            branch.employee_count = mapped_data.get(branch.id, 0)
+
+    def action_view_employees(self):
+        self.ensure_one()
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Employees',
+            'res_model': 'hr.employee',
+            'view_mode': 'tree,form',
+            'domain': [('branch_id', '=', self.id)],
+            'context': {
+                'default_branch_id': self.id,
+            },
+        }
+
     @api.model
     def create(self,vals):
         res = super(EhaBranch, self).create(vals)

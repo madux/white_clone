@@ -4,12 +4,17 @@ from datetime import datetime, timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
- 
+
+# class EhaBranch(models.Model):
+#     _inherit = "multi.branch"
+
+
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
     first_name = fields.Char(string="First name", required=True, copy=False)
     middle_name = fields.Char(string="Middle name", copy=False)
+    branch_id = fields.Many2one('multi.branch', string='Branch')
     
     last_name = fields.Char("Surname", required=True, copy=False)
     birthday = fields.Date(string="Birthday", copy=False)
