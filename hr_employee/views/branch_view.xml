@@ -101,7 +101,7 @@
         <field name="res_model">multi.branch</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_multi_branch_tree"/>
-         <field name="view_ids" eval="[
+        <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {
                 'view_mode': 'tree',

@@ -13,11 +13,105 @@
         </field>
     </record>
 
+    <record id="hr_department_form_view" model="ir.ui.view">
+        <field name="name">hr.department.form</field>
+        <field name="model">hr.department</field>
+        <field name="arch" type="xml">
+            <form string="Department">
+                <sheet>
+                    <group string="Department" class="measure-type-section">
+                        <div class="measure-option-title-default" colspan="2">
+                            Department Name
+                            <field name="name" required="1" nolabel="1" placeholder="Technology"/>
+                        </div>
+                        <div class="measure-option-title-default" colspan="2">
+                            Manager
+                            <field name="manager_id" nolabel="1" required="1"/>
+                        </div> 
+                    </group> 
+                     
+                    <group>
+                        <group>
+                            <field name="company_id" nolabel="0"/>
+                            <field name="contact_person" nolabel="0"/>
+                            <field name="contact_person_phone" nolabel="0"/>
+                            <field name="contact_person_mail" nolabel="0"/>
+                        </group>
+                        <group>
+                            <field name="total_employee" nolabel="0"/>
+                            <field name="expected_employee" nolabel="0"/>
+                            <field name="new_hired_employee" nolabel="0" readonly="1"/>
+                            <field name="absence_of_today" nolabel="0"/>
+                            <field name="active" widget ="boolean_toogle" nolabel="0"/>
+                        </group>
+                    </group>
+                    <!-- <group string="Position/Designations">
+                        <div class="pay-status-box" colspan="2">
+                            <field name="job_ids" nolabel="1" widget="many2many_tags" readonly="1" colspan="2" placeholder="Please start typing ...."/>
+                        </div>
+                    </group> -->
+                    <group string="Members">
+                        <div class="pay-status-box" colspan="2">
+                            <field name="member_ids" nolabel="1" readonly="1" colspan="2"/>
+                        </div>
+                    </group>
+                    <group string="Description">
+                        <div class="pay-status-box" colspan="2">
+                            <field name="note" nolabel="1" widget="text" readonly="0" colspan="2" placeholder="Please start typing ...."/>
+                        </div>
+                    </group>
+
+                       
+                    <group string=" *">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="child_ids" widget="many2many_tags" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="Plannings">
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="plan_ids" widget="many2many_tags" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                        </div>
+                    </group>
+                     
+
+                    <group string="Attachment">
+                        <field name="department_attachment_ids"
+                        widget="many2many_binary"
+                        nolabel="1"
+                        string="Attachments" colspan="2"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
     <record id="action_core_department" model="ir.actions.act_window">
         <field name="name">Department</field>
         <field name="res_model">hr.department</field>
         <field name="view_mode">tree,form</field>
         <field name="view_id" ref="view_core_department_tree"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('view_core_department_tree'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_employee.hr_department_form_view'),
+            }),
+        ]"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No recorded yet.
