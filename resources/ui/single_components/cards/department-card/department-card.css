@@ -1,0 +1,71 @@
+.dc-wrapper {
+  --dc-primary: #d21787;
+  --dc-bg: #ffffff;
+  --dc-border: #e5e7eb;
+  --dc-text: #111827;
+  --dc-text-muted: #6b7280;
+  --dc-radius: 12px;
+  --dc-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-family: 'DM Sans', sans-serif;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 20px;
+}
+
+.dc-wrapper * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dc-card {
+  background: var(--dc-bg);
+  border: 1px solid var(--dc-border);
+  border-radius: var(--dc-radius);
+  box-shadow: var(--dc-shadow);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+}
+
+.dc-card-emoji {
+  font-size: 28px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.dc-card-count {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--dc-text);
+  line-height: 1.2;
+}
+
+.dc-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dc-text-muted);
+}
+
+.dc-budget-bar {
+  width: 100%;
+  height: 6px;
+  background: #f3f4f6;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.dc-budget-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.dc-budget-lbl {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dc-text-muted);
+  margin-top: 2px;
+}
+
+body { margin: 0; background: #f5f5f7; font-family: 'DM Sans', sans-serif; }

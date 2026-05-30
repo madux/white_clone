@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleonHR – Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="doc-management-home.css">
+</head>
+<body>
+<div class="dm-wrapper">
+
+  <!-- TOPBAR -->
+  <div class="dm-topbar">
+    <div class="dm-topbar-logo-area">
+      <span class="dm-topbar-brand">CleonHR</span>
+    </div>
+
+    <div class="dm-search-wrap">
+      <svg class="dm-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="Search documents, employees, t...">
+    </div>
+
+    <div class="dm-topbar-actions">
+      <div class="dm-role-toggle">
+        <button class="dm-role-btn active">Admin</button>
+        <button class="dm-role-btn">Employee</button>
+      </div>
+
+      <button class="dm-icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </button>
+
+      <button class="dm-icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </button>
+
+      <button class="dm-icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+
+      <div class="dm-avatar">AD</div>
+    </div>
+  </div>
+
+  <div class="dm-content">
+
+    <div class="dm-page-header">
+      <div class="dm-page-header-text">
+        <h1>Dashboard</h1>
+        <p>Welcome back to CleonHR</p>
+      </div>
+    </div>
+
+    <div class="dm-stats-grid">
+      <div class="dm-stat-card"><p>Total Employees</p><h2>0</h2></div>
+      <div class="dm-stat-card"><p>Active Documents</p><h2>0</h2></div>
+      <div class="dm-stat-card"><p>Pending Approvals</p><h2>0</h2></div>
+      <div class="dm-stat-card"><p>Upcoming Events</p><h2>0</h2></div>
+    </div>
+
+    <div class="dm-alert-banner">
+      <svg class="dm-bell-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <div class="dm-alert-text">
+        <div class="dm-alert-title">You have 8 pending actions</div>
+        <div class="dm-alert-sub">5 documents awaiting review &bull; 3 policies to acknowledge</div>
+      </div>
+      <button class="dm-btn-view">View</button>
+    </div>
+
+    <div>
+      <div class="dm-section-title">Quick Actions</div>
+      <div class="dm-quick-actions-grid">
+        <div class="dm-qa-card">
+          <div class="dm-qa-icon-wrap blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            </svg>
+          </div>
+          <div class="dm-qa-title">Upload Document</div>
+          <div class="dm-qa-sub">Submit a new document</div>
+        </div>
+        <div class="dm-qa-card">
+          <div class="dm-qa-icon-wrap green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/>
+            </svg>
+          </div>
+          <div class="dm-qa-title">Download Template</div>
+          <div class="dm-qa-sub">Get forms &amp; templates</div>
+        </div>
+        <div class="dm-qa-card">
+          <div class="dm-qa-badge">3</div>
+          <div class="dm-qa-icon-wrap purple">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <div class="dm-qa-title">Review Policies</div>
+          <div class="dm-qa-sub">Acknowledge policies</div>
+        </div>
+        <div class="dm-qa-card">
+          <div class="dm-qa-icon-wrap pink">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div class="dm-qa-title">Get Help</div>
+          <div class="dm-qa-sub">Contact support</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dm-bottom-grid">
+      <div class="dm-card">
+        <div class="dm-card-header">
+          <div class="dm-section-title" style="margin-bottom:0;">Recent Documents</div>
+          <div class="dm-view-all-link" style="cursor:pointer;">View All &nbsp;&rsaquo;</div>
+        </div>
+        <div class="dm-doc-row">
+          <div class="dm-doc-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dm-doc-info">
+            <div class="dm-doc-name">Leave Approval Letter &ndash; Chukwuemeka Eze &ndash; 2026-05-21</div>
+            <div class="dm-doc-meta">5/21/2026 &middot; Leave Management</div>
+          </div>
+          <span class="dm-status-badge approved">Approved</span>
+        </div>
+        <div class="dm-doc-row">
+          <div class="dm-doc-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dm-doc-info">
+            <div class="dm-doc-name">Payroll Report &ndash; Chukwuemeka Eze &ndash; 2026-05-03</div>
+            <div class="dm-doc-meta">5/3/2026 &middot; Payroll</div>
+          </div>
+          <span class="dm-status-badge approved">Approved</span>
+        </div>
+        <div class="dm-doc-row">
+          <div class="dm-doc-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dm-doc-info">
+            <div class="dm-doc-name">Medical Certificate &ndash; Chukwuemeka Eze &ndash; 2026-05-01</div>
+            <div class="dm-doc-meta">5/1/2026 &middot; Medical Records</div>
+          </div>
+          <span class="dm-status-badge pending">Pending</span>
+        </div>
+        <div class="dm-doc-row">
+          <div class="dm-doc-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dm-doc-info">
+            <div class="dm-doc-name">Medical Certificate &ndash; Chukwuemeka Eze &ndash; 2026-04-29</div>
+            <div class="dm-doc-meta">4/29/2026 &middot; Medical Records</div>
+          </div>
+          <span class="dm-status-badge pending">Pending</span>
+        </div>
+        <div class="dm-doc-row">
+          <div class="dm-doc-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dm-doc-info">
+            <div class="dm-doc-name">Leave Request Form &ndash; Chukwuemeka Eze &ndash; 2026-04-27</div>
+            <div class="dm-doc-meta">4/27/2026 &middot; Leave Management</div>
+          </div>
+          <span class="dm-status-badge approved">Approved</span>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="dm-card">
+          <div class="dm-section-title">My Documents</div>
+          <div class="dm-my-docs-stats">
+            <div class="dm-stat-row"><span class="dm-stat-label">Total</span><span class="dm-stat-val">0</span></div>
+            <div class="dm-stat-row"><span class="dm-stat-label">Approved</span><span class="dm-stat-val">0</span></div>
+            <div class="dm-stat-row"><span class="dm-stat-label">Pending</span><span class="dm-stat-val">0</span></div>
+            <div class="dm-stat-row"><span class="dm-stat-label">Rejected</span><span class="dm-stat-val">0</span></div>
+          </div>
+        </div>
+        <div class="dm-card dm-hr-modules-card-pink">
+          <h3>Need Access to HR Modules?</h3>
+          <p>Contact your HR Manager to request access to additional modules like Time Management, Leave, or Compensation.</p>
+          <a href="mailto:hr@cleonhr.com" class="dm-btn-contact-hr">Contact HR</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="dm-pending-review-section">
+      <div class="dm-pr-wrap-card">
+        <div class="dm-pr-header">
+          <div class="dm-section-title" style="margin-bottom:0;">Pending Review</div>
+          <span class="dm-pr-badge">6 pending</span>
+        </div>
+        <div class="dm-pr-grid">
+          <div class="dm-pr-card">
+            <svg class="dm-pr-clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div><div class="dm-pr-name">Leave Request Form &ndash; Chukwuemeka Eze &ndash; 2026-04-23</div><div class="dm-pr-sub">Submitted 4/23/2026</div><div class="dm-pr-status">Awaiting HR review</div></div>
+          </div>
+          <div class="dm-pr-card">
+            <svg class="dm-pr-clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div><div class="dm-pr-name">Leave Approval Letter &ndash; Chukwuemeka Eze &ndash; 2026-03-17</div><div class="dm-pr-sub">Submitted 3/17/2026</div><div class="dm-pr-status">Awaiting HR review</div></div>
+          </div>
+          <div class="dm-pr-card">
+            <svg class="dm-pr-clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div><div class="dm-pr-name">Leave Request Form &ndash; Chukwuemeka Eze &ndash; 2026-03-22</div><div class="dm-pr-sub">Submitted 3/22/2026</div><div class="dm-pr-status">Awaiting HR review</div></div>
+          </div>
+          <div class="dm-pr-card">
+            <svg class="dm-pr-clock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div><div class="dm-pr-name">Leave Request Form &ndash; Chukwuemeka Eze &ndash; 2026-03-06</div><div class="dm-pr-sub">Submitted 3/6/2026</div><div class="dm-pr-status">Awaiting HR review</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+<script>lucide.createIcons()</script>
+</body>
+</html>

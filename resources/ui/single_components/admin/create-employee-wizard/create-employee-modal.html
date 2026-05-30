@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Employee Wizard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="create-employee-modal.css">
+</head>
+<body>
+  <div class="cew-wrapper">
+    <div class="cew-backdrop">
+      <div class="cew-modal">
+        <div class="cew-modal-header">
+          <h2 class="cew-modal-title">➕ Add New Employee</h2>
+          <p class="cew-modal-subtitle">Step 1 of 5 · All data saved to Employees table</p>
+        </div>
+        <div class="cew-steps">
+          <div class="cew-step cew-step-active"><div class="cew-step-num">1</div>Personal Info</div>
+          <div class="cew-step"><div class="cew-step-num">2</div>Employment</div>
+          <div class="cew-step"><div class="cew-step-num">3</div>Compensation</div>
+          <div class="cew-step"><div class="cew-step-num">4</div>Documents</div>
+          <div class="cew-step"><div class="cew-step-num">5</div>Access & Onboarding</div>
+        </div>
+        <div class="cew-info-banner">ℹ️ Duplicate check runs on Email + National ID against all existing records including Terminated. Duplicates will be blocked.</div>
+        <div class="cew-form-grid">
+          <div class="cew-field"><label class="cew-label">First Name*</label><input type="text" class="cew-input" placeholder="John"></div>
+          <div class="cew-field"><label class="cew-label">Last Name*</label><input type="text" class="cew-input" placeholder="Doe"></div>
+          <div class="cew-field"><label class="cew-label">Work Email*</label><input type="email" class="cew-input" placeholder="john.doe@cleon.com"></div>
+          <div class="cew-field"><label class="cew-label">Phone Number*</label><input type="text" class="cew-input" placeholder="+1 (555) 000-0000"></div>
+          <div class="cew-field"><label class="cew-label">Date of Birth</label><input type="date" class="cew-input"></div>
+          <div class="cew-field">
+            <label class="cew-label">Gender</label>
+            <select class="cew-input cew-select">
+              <option>Select...</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Non-binary</option>
+              <option>Prefer not to say</option>
+            </select>
+          </div>
+          <div class="cew-field"><label class="cew-label">Nationality</label><input type="text" class="cew-input" placeholder="United States"></div>
+          <div class="cew-field"><label class="cew-label">National ID Number*</label><input type="text" class="cew-input" placeholder="SSN / Passport Code"></div>
+          <div class="cew-field cew-field-full"><label class="cew-label">Home Address*</label><textarea class="cew-input cew-textarea" placeholder="123 Corporate Way, New York, NY"></textarea></div>
+          <div class="cew-field"><label class="cew-label">Emergency Contact Name*</label><input type="text" class="cew-input" placeholder="Jane Doe"></div>
+          <div class="cew-field">
+            <label class="cew-label">Relationship</label>
+            <select class="cew-input cew-select">
+              <option>Select...</option>
+              <option>Spouse</option>
+              <option>Parent</option>
+              <option>Sibling</option>
+              <option>Friend</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="cew-field"><label class="cew-label">Phone</label><input type="text" class="cew-input" placeholder="Emergency contact phone"></div>
+        </div>
+        <div class="cew-modal-footer">
+          <button class="cew-btn cew-btn-draft">Save Draft</button>
+          <button class="cew-btn cew-btn-next">Next Step →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

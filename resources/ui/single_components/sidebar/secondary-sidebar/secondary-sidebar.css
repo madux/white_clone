@@ -1,0 +1,183 @@
+.ssb-sidebar {
+  position: fixed;
+  left: 56px;
+  top: 0;
+  height: 100vh;
+  width: 200px;
+  background: #ffffff;
+  border-right: 1px solid #eeeef5;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  font-family: "DM Sans", sans-serif;
+  --ssb-font: "DM Sans", sans-serif;
+  --ssb-pink: #d21787;
+  --ssb-pink-light: #fce4f3;
+  --ssb-pink-hover-bg: #fdf0f8;
+  --ssb-pink-gradient: linear-gradient(90deg, #fce4f3, #fdf5fc);
+}
+
+.ssb-sidebar * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ---- Header ---- */
+.ssb-header {
+  height: 56px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #eeeef5;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.ssb-header-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--ssb-pink-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ssb-header-icon svg {
+  width: 14px;
+  height: 14px;
+  color: var(--ssb-pink);
+  stroke: var(--ssb-pink);
+  stroke-width: 2;
+}
+
+.ssb-header-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Nav ---- */
+.ssb-nav {
+  flex: 1;
+  padding: 10px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ssb-nav::-webkit-scrollbar { width: 3px; }
+.ssb-nav::-webkit-scrollbar-track { background: transparent; }
+.ssb-nav::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 3px; }
+
+/* ---- Nav items ---- */
+.ssb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #666;
+  transition: background 0.16s, color 0.16s, transform 0.16s;
+}
+
+.ssb-nav-item:hover {
+  background: var(--ssb-pink-hover-bg);
+  color: var(--ssb-pink);
+  transform: translateX(3px);
+}
+
+.ssb-nav-item.ssb-active {
+  background: var(--ssb-pink-gradient);
+  color: var(--ssb-pink);
+  font-weight: 600;
+}
+
+.ssb-nav-item svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.ssb-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.ssb-nav-chevron {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.16s;
+  font-size: 16px;
+  color: var(--ssb-pink);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ssb-nav-item:hover .ssb-nav-chevron { opacity: 1; }
+
+.ssb-nav-item.ssb-active .ssb-nav-chevron { opacity: 1; }
+
+/* ---- Count pill ---- */
+.ssb-nav-count {
+  margin-left: auto;
+  margin-right: 4px;
+  height: 18px;
+  min-width: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ssb-pink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ---- Group label ---- */
+.ssb-nav-group-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #bbb;
+  padding: 10px 10px 4px;
+}
+
+/* ---- Divider ---- */
+.ssb-nav-divider {
+  height: 1px;
+  background: #f0f0f5;
+  margin: 5px 4px;
+}
+
+/* ---- Governance badge ---- */
+.ssb-badge {
+  padding: 12px 14px;
+  border-top: 1px solid #eeeef5;
+  flex-shrink: 0;
+}
+
+.ssb-badge-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ssb-pink);
+  margin-bottom: 4px;
+}
+
+.ssb-badge-text {
+  font-size: 11px;
+  color: #999;
+  line-height: 1.4;
+}

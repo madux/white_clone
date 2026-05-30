@@ -1,0 +1,220 @@
+body {
+  margin: 0;
+  background: #f5f5f7;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.df-wrapper {
+  --df-primary: #d21787;
+  --df-primary-hover: #b81275;
+  --df-secondary: #f3f4f6;
+  --df-secondary-hover: #e5e7eb;
+  --df-bg: #ffffff;
+  --df-border: #e5e7eb;
+  --df-text: #111827;
+  --df-text-muted: #6b7280;
+  --df-text-red: #ef4444;
+  --df-radius: 12px;
+  --df-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  --df-font: 'DM Sans', sans-serif;
+  --df-info-bg: #eff6ff;
+  --df-info-color: #1e40af;
+  --df-info-icon: #3b82f6;
+  --df-info-strong: #903f0e;
+  --df-info-amber-bg: #fcf5e8;
+  --df-info-amber-color: #b5814a;
+  --df-info-amber-icon: #b5814a;
+}
+
+.df-wrapper * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.df-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.df-modal {
+  background: var(--df-bg);
+  border-radius: var(--df-radius);
+  box-shadow: var(--df-shadow);
+  width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.df-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--df-border);
+}
+
+.df-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.df-modal-icon {
+  width: 42px;
+  height: 42px;
+  background: #fdf2f8;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.df-modal-icon i {
+  width: 20px;
+  height: 20px;
+  color: var(--df-primary);
+}
+
+.df-modal-header h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--df-text);
+  font-family: var(--df-font);
+}
+
+.df-modal-subtitle {
+  font-size: 13px;
+  color: var(--df-text-muted);
+  margin-top: 2px;
+  font-family: var(--df-font);
+}
+
+.df-modal-close {
+  font-size: 24px;
+  color: var(--df-text-muted);
+  cursor: default;
+  line-height: 1;
+  user-select: none;
+}
+
+.df-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.df-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.df-form-group label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--df-text);
+  font-family: var(--df-font);
+}
+
+.df-text-red {
+  color: var(--df-text-red);
+}
+
+.df-input {
+  padding: 9px 12px;
+  border: 1px solid var(--df-border);
+  border-radius: 6px;
+  font-family: var(--df-font);
+  font-size: 14px;
+  outline: none;
+  background: var(--df-bg);
+  color: var(--df-text);
+  width: 100%;
+}
+
+.df-input:focus {
+  border-color: var(--df-primary);
+  box-shadow: 0 0 0 2px rgba(210, 23, 135, 0.1);
+}
+
+.df-select { appearance: auto; }
+
+.df-form-hint {
+  font-size: 12px;
+  color: var(--df-text-muted);
+  font-family: var(--df-font);
+}
+
+.df-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.df-form-row .df-form-group { flex: 1; }
+
+.df-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--df-info-bg);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--df-info-color);
+  line-height: 1.5;
+  font-family: var(--df-font);
+}
+
+.df-info-banner i {
+  width: 16px;
+  height: 16px;
+  color: var(--df-info-icon);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.df-info-banner strong { color: var(--df-info-strong); font-weight: 700; }
+
+.df-info-banner-amber {
+  --df-info-bg: var(--df-info-amber-bg);
+  --df-info-color: var(--df-info-amber-color);
+  --df-info-icon: var(--df-info-amber-icon);
+}
+
+.df-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--df-border);
+}
+
+.df-btn {
+  padding: 9px 20px;
+  border-radius: 6px;
+  font-family: var(--df-font);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: default;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.df-btn-secondary {
+  background: var(--df-secondary);
+  color: var(--df-text);
+  border-color: var(--df-border);
+}
+
+.df-btn-primary {
+  background: var(--df-primary);
+  color: #fff;
+  border-color: var(--df-primary);
+}

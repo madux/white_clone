@@ -1,0 +1,529 @@
+body {
+  margin: 0;
+  background: #f5f5f7;
+}
+
+.du-wrapper {
+  font-family: "DM Sans", sans-serif;
+  --du-font: "DM Sans", sans-serif;
+  --du-primary: #d21787;
+  --du-primary-hover: #b81275;
+  --du-primary-light: #fdf2f8;
+  --du-border: #f1f2f4;
+  --du-text-dark: #121826;
+  --du-text-medium: #4b5565;
+  --du-text-muted: #8896aa;
+  --du-text-red: #ef4444;
+  color: var(--du-text-dark);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.du-wrapper * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Tab Navigation Bar */
+.du-tab-navigation-bar {
+  height: 50px;
+  background-color: #fff;
+  border-bottom: 1px solid var(--du-border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.du-tabs-scroll-container {
+  display: flex;
+  gap: 8px;
+  height: 100%;
+  align-items: flex-end;
+  overflow-x: auto;
+  white-space: nowrap;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.du-tabs-scroll-container::-webkit-scrollbar { display: none; }
+
+.du-tab-btn {
+  background: none;
+  border: none;
+  padding: 0 16px 12px 16px;
+  font-family: var(--du-font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--du-text-medium);
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 3px solid transparent;
+}
+
+.du-tab-btn i {
+  width: 16px;
+  height: 16px;
+  color: var(--du-text-muted);
+}
+
+.du-tab-btn.du-active {
+  color: var(--du-primary);
+  font-weight: 600;
+  border-bottom-color: var(--du-primary);
+}
+
+.du-tab-btn.du-active i { color: var(--du-primary); }
+
+.du-tab-btn.du-icon-only { padding-bottom: 14px; }
+
+.du-tab-nav-arrow {
+  background: none;
+  border: 1px solid var(--du-border);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  color: var(--du-text-medium);
+  flex-shrink: 0;
+}
+
+.du-tab-nav-arrow i { width: 14px; height: 14px; }
+
+/* Content Body */
+.du-content-body {
+  padding: 32px 28px;
+}
+
+/* Data Flow Banner */
+.du-data-flow-banner {
+  background-color: #fdf0f8;
+  border: 1px solid #fce7f3;
+  border-left: 4px solid var(--du-primary);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.du-banner-icon {
+  color: var(--du-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.du-banner-icon i { width: 16px; height: 16px; stroke-width: 2.5px; }
+
+.du-banner-text {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #374151;
+  margin: 0;
+}
+
+.du-banner-text strong { color: #111827; font-weight: 700; letter-spacing: 0.3px; }
+
+/* Departments Grid */
+.du-departments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+}
+
+/* Department Card */
+.du-dept-card {
+  background: #fff;
+  border: 1px solid var(--du-border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.du-card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.du-emoji-icon { font-size: 22px; }
+
+.du-staff-badge {
+  background-color: #ecfdf5;
+  color: #059669;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.du-dept-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--du-text-dark);
+  margin: 0 0 6px;
+}
+
+.du-dept-meta {
+  font-size: 12.5px;
+  color: var(--du-text-muted);
+  margin: 0 0 6px;
+}
+
+.du-meta-highlight {
+  color: var(--du-text-medium);
+  font-weight: 600;
+}
+
+.du-dept-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--du-text-muted);
+  margin: 0 0 20px;
+  font-weight: 500;
+}
+
+.du-dept-location i { width: 13px; height: 13px; color: var(--du-primary); }
+
+/* Metric Row */
+.du-metric-row {
+  display: flex;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  padding: 12px 6px;
+  margin-bottom: 20px;
+  justify-content: space-around;
+}
+
+.du-metric-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+}
+
+.du-metric-val {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.du-metric-val.du-text-pink { color: var(--du-primary); }
+
+.du-metric-val.du-text-muted { color: var(--du-text-dark); }
+
+.du-metric-lbl {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--du-text-muted);
+}
+
+.du-text-pink { color: var(--du-primary); }
+.du-text-muted { color: var(--du-text-muted); }
+.du-text-dark { color: var(--du-text-dark); }
+.du-text-red { color: var(--du-text-red); }
+
+/* Progress Bar */
+.du-progress-container {
+  margin-bottom: 24px;
+}
+
+.du-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--du-text-muted);
+  margin-bottom: 6px;
+}
+
+.du-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background-color: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.du-progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.du-fill-orange { background-color: #f59e0b; }
+.du-fill-green { background-color: #10b981; }
+.du-fill-red { background-color: #ef4444; }
+
+/* Card Action Buttons */
+.du-card-actions-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+  border-top: 1px solid #f8fafc;
+  padding-top: 14px;
+}
+
+.du-action-btn {
+  background: none;
+  border: none;
+  font-family: var(--du-font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: default;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.du-action-btn.du-text-dark { color: #374151; }
+.du-action-btn.du-text-muted { color: var(--du-text-muted); }
+.du-action-btn.du-text-red { color: #ef4444; }
+
+/* Add Department Card */
+.du-add-dept-card {
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  min-height: 340px;
+  box-sizing: border-box;
+}
+
+.du-add-icon-wrapper { color: #94a3b8; margin-bottom: 12px; }
+
+.du-add-icon-wrapper i { width: 28px; height: 28px; stroke-width: 1.5px; }
+
+.du-add-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 16px;
+}
+
+.du-btn-create-dept {
+  background-color: var(--du-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--du-font);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 10px 18px;
+  cursor: default;
+}
+
+/* Modal Overlay */
+.du-os-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.du-os-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 80vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.du-os-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0;
+}
+
+.du-os-modal-header h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--du-text-dark);
+}
+
+.du-os-modal-header-left {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.du-os-modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--du-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.du-os-modal-icon i { width: 20px; height: 20px; color: var(--du-primary); }
+
+.du-os-modal-subtitle {
+  font-size: 12px;
+  color: var(--du-text-muted);
+  margin-top: 2px;
+  font-weight: 400;
+}
+
+.du-os-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--du-text-muted);
+  cursor: default;
+  line-height: 1;
+}
+
+.du-os-modal-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Info Banner */
+.du-os-info-banner {
+  background-color: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1e40af;
+}
+
+.du-os-info-banner i {
+  width: 16px;
+  height: 16px;
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.du-os-info-banner-sm {
+  font-size: 11px;
+  background-color: #fdf6ea;
+  border-color: #f5e6c8;
+  color: #b5814a;
+}
+
+.du-os-info-banner-sm i { color: #b5814a; }
+.du-os-info-banner-sm strong { color: #903f0e; font-weight: 700; }
+
+/* Form Groups */
+.du-os-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.du-os-form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--du-text-medium);
+  letter-spacing: 0.3px;
+}
+
+.du-os-form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.du-os-input {
+  font-family: var(--du-font);
+  font-size: 13px;
+  padding: 10px 14px;
+  border: 1px solid var(--du-border);
+  border-radius: 8px;
+  color: var(--du-text-dark);
+  background: #fff;
+  outline: none;
+}
+
+.du-os-input:focus { border-color: var(--du-primary); }
+
+.du-os-textarea { resize: vertical; min-height: 60px; }
+
+.du-os-form-hint {
+  font-size: 11px;
+  color: var(--du-text-muted);
+  margin-top: 2px;
+}
+
+.du-text-red { color: #ef4444; }
+
+/* Modal Footer */
+.du-os-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--du-border);
+}
+
+.du-btn {
+  font-family: var(--du-font);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.du-btn i { width: 16px; height: 16px; }
+
+.du-btn-secondary {
+  background-color: #fff;
+  border: 1px solid var(--du-border);
+  color: var(--du-text-medium);
+}
+
+.du-btn-primary {
+  background-color: var(--du-primary);
+  border: none;
+  color: #fff;
+}

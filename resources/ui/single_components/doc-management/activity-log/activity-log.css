@@ -1,0 +1,7 @@
+:root { --al-primary: #d21787; --al-bg: #f5f5f7; --al-text: #1a1a2e; --al-text-muted: #8e8ea0; }
+body { margin: 0; background: var(--al-bg); font-family: 'DM Sans', sans-serif; color: var(--al-text); }
+.al-wrapper { max-width: 800px; margin: 0 auto; padding: 80px 24px; }
+.al-empty { text-align: center; padding: 60px 20px; background: #fff; border-radius: 16px; border: 1px solid #e8e8ee; }
+.al-empty i { color: #d0d5dd; margin-bottom: 16px; }
+.al-empty h2 { margin: 0 0 8px; font-weight: 600; font-size: 20px; }
+.al-empty p { margin: 0; color: var(--al-text-muted); font-size: 14px; }

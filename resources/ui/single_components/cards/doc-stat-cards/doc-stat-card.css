@@ -1,0 +1,71 @@
+.ds-wrapper {
+  --ds-primary: #d21787;
+  --ds-bg: #ffffff;
+  --ds-border: #e5e7eb;
+  --ds-text: #111827;
+  --ds-text-muted: #6b7280;
+  --ds-radius: 12px;
+  --ds-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-family: 'DM Sans', sans-serif;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 20px;
+}
+
+.ds-wrapper * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.ds-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius);
+  box-shadow: var(--ds-shadow);
+  padding: 20px;
+}
+
+.ds-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ds-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.ds-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ds-text);
+  line-height: 1.2;
+}
+
+.ds-label {
+  font-size: 13px;
+  color: var(--ds-text-muted);
+  margin-top: 2px;
+}
+
+.ds-sub {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.ds-sub.pos { color: #16a34a; }
+.ds-sub.warn { color: #d97706; }
+.ds-sub.neg { color: #dc2626; }
+.ds-sub.blue { color: #3b82f6; }
+
+@media (max-width: 1024px) {
+  .ds-wrapper { grid-template-columns: repeat(2, 1fr); }
+}
+
+body { margin: 0; background: #f5f5f7; font-family: 'DM Sans', sans-serif; }

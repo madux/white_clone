@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CleonHR Documents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="personal-documents.css" />
+</head>
+<body>
+<div class="pd-wrapper">
+  <header class="pd-topbar">
+    <div class="pd-search-global">
+      <i data-lucide="search"></i>
+      <input type="text" placeholder="Search documents, employees, ..." />
+    </div>
+    <div class="pd-top-actions">
+      <div class="pd-pill-switch">
+        <div class="active">Admin</div>
+        <div>Employee</div>
+      </div>
+      <i class="pd-top-icon" data-lucide="bell"></i>
+      <i class="pd-top-icon" data-lucide="mail"></i>
+      <i class="pd-top-icon" data-lucide="settings-2"></i>
+      <div class="pd-avatar">AD</div>
+    </div>
+  </header>
+
+  <section class="pd-content">
+    <div class="pd-hero">
+      <div>
+        <h1>Welcome, Chukwuemeka</h1>
+        <p>HR Manager &bull; Human Resources</p>
+      </div>
+      <button class="pd-profile-btn">
+        <i data-lucide="user"></i>
+        Switch Profile
+        <i data-lucide="chevron-down"></i>
+      </button>
+    </div>
+
+    <div class="pd-tabs">
+      <div class="pd-tab">
+        <i data-lucide="house"></i>
+        Home
+      </div>
+      <div class="pd-tab active">
+        <i data-lucide="file-text"></i>
+        Personal Documents
+      </div>
+      <div class="pd-tab">
+        <i data-lucide="pen-line"></i>
+        Pending Signatures
+      </div>
+      <div class="pd-tab">
+        <i data-lucide="folder-open"></i>
+        Templates &amp; Forms
+      </div>
+      <div class="pd-tab">
+        <i data-lucide="book-open"></i>
+        Policies
+      </div>
+      <div class="pd-tab">
+        <i data-lucide="activity"></i>
+        Activity Log
+      </div>
+      <div class="pd-tab">
+        <i data-lucide="circle-help"></i>
+        Help
+      </div>
+    </div>
+
+    <div class="pd-cards">
+      <div class="pd-card">
+        <div>
+          <p>Total Documents</p>
+          <h2>0</h2>
+        </div>
+        <div class="pd-mini-icon blue">
+          <i data-lucide="file-text"></i>
+        </div>
+      </div>
+      <div class="pd-card">
+        <div>
+          <p>Pending Review</p>
+          <h2>0</h2>
+        </div>
+        <div class="pd-mini-icon yellow">
+          <i data-lucide="clock-3"></i>
+        </div>
+      </div>
+      <div class="pd-card">
+        <div>
+          <p>Approved</p>
+          <h2>0</h2>
+        </div>
+        <div class="pd-mini-icon green">
+          <i data-lucide="check-circle-2"></i>
+        </div>
+      </div>
+      <div class="pd-card">
+        <div>
+          <p>Rejected</p>
+          <h2>0</h2>
+        </div>
+        <div class="pd-mini-icon red">
+          <i data-lucide="x-circle"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="pd-upload-card">
+      <h3>Upload Document</h3>
+      <div class="pd-upload-box">
+        <i class="pd-upload-icon" data-lucide="upload" width="54" height="54"></i>
+        <p>Click to upload or drag and drop</p>
+        <span>PDF, DOC, DOCX, JPG, PNG (max 10MB)</span>
+        <button class="pd-choose-file">Choose File</button>
+      </div>
+    </div>
+
+    <div class="pd-documents">
+      <div class="pd-documents-top">
+        <div class="pd-search-docs">
+          <i data-lucide="search"></i>
+          <input type="text" placeholder="Search my documents..." />
+        </div>
+        <button class="pd-filter-btn">
+          <i data-lucide="funnel"></i>
+          Filter
+        </button>
+      </div>
+      <div class="pd-empty">
+        <i data-lucide="file-text" width="88" height="88"></i>
+        <h4>No documents uploaded</h4>
+        <p>Upload your first document above</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="pd-floating-chat">
+    <span class="pd-status-dot"></span>
+    <i data-lucide="message-circle"></i>
+  </div>
+</div>
+<script>lucide.createIcons()</script>
+</body>
+</html>
