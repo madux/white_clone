@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Branch Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="create-branch-modal.css">
+</head>
+<body>
+  <div class="cbf-wrapper">
+    <div class="cbf-modal-overlay">
+      <div class="cbf-modal">
+        <div class="cbf-modal-header">
+          <div class="cbf-modal-header-left">
+            <div class="cbf-modal-icon"><i data-lucide="building-2"></i></div>
+            <div>
+              <h3>Create Branch / Location</h3>
+              <p class="cbf-modal-subtitle">Org Setup &middot; Foundational &mdash; Required before departments</p>
+            </div>
+          </div>
+          <span class="cbf-modal-close">&times;</span>
+        </div>
+        <div class="cbf-modal-body">
+          <div class="cbf-form-group">
+            <label>Branch Name <span class="cbf-text-red">*</span></label>
+            <input type="text" class="cbf-input" placeholder="e.g. Branch Atlanta" />
+          </div>
+          <div class="cbf-form-row">
+            <div class="cbf-form-group">
+              <label>Branch Code</label>
+              <input type="text" class="cbf-input" placeholder="e.g. ATL-01" />
+              <span class="cbf-form-hint">Auto-generated if blank</span>
+            </div>
+            <div class="cbf-form-group">
+              <label>Country</label>
+              <select class="cbf-input cbf-select">
+                <option>USA</option>
+                <option>UK</option>
+                <option>Canada</option>
+                <option>Global</option>
+              </select>
+            </div>
+          </div>
+          <div class="cbf-form-group">
+            <label>Full Address</label>
+            <textarea class="cbf-input cbf-textarea" rows="2" placeholder="Street address..."></textarea>
+          </div>
+          <div class="cbf-form-row">
+            <div class="cbf-form-group">
+              <label>City</label>
+              <input type="text" class="cbf-input" placeholder="City" />
+            </div>
+            <div class="cbf-form-group">
+              <label>Postal Code</label>
+              <input type="text" class="cbf-input" placeholder="ZIP / Postcode" />
+            </div>
+          </div>
+          <div class="cbf-form-group">
+            <label>Branch Manager</label>
+            <select class="cbf-input cbf-select">
+              <option value="">Select manager...</option>
+              <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+              <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+              <option value="James Carter">James Carter &mdash; CFO</option>
+              <option value="Lisa Park">Lisa Park &mdash; Head of Engineering</option>
+              <option value="Anna Chen">Anna Chen &mdash; Marketing Director</option>
+              <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+              <option value="Michael Brown">Michael Brown &mdash; Operations Manager</option>
+              <option value="Alex Rivera">Alex Rivera &mdash; IT Manager</option>
+            </select>
+            <span class="cbf-form-hint">Assign from employee list</span>
+          </div>
+          <div class="cbf-form-group">
+            <label>Currency</label>
+            <select class="cbf-input cbf-select">
+              <option value="">Select...</option>
+              <option value="USD">USD &mdash; US Dollar</option>
+              <option value="GBP">GBP &mdash; British Pound</option>
+              <option value="CAD">CAD &mdash; Canadian Dollar</option>
+              <option value="EUR">EUR &mdash; Euro</option>
+            </select>
+          </div>
+        </div>
+        <div class="cbf-modal-footer">
+          <button class="cbf-btn cbf-btn-secondary">Cancel</button>
+          <button class="cbf-btn cbf-btn-primary">Create Branch</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

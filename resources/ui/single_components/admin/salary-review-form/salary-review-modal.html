@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salary Review Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="salary-review-modal.css">
+</head>
+<body>
+  <div class="sr-wrapper">
+    <div class="sr-backdrop">
+      <div class="sr-modal">
+        <div class="sr-modal-header">
+          <h2 class="sr-modal-title">Salary Revision</h2>
+          <div class="sr-modal-subtitle">Employee Lifecycle - Multi-level approval chain based on percentage</div>
+          <button class="sr-close-btn">&times;</button>
+        </div>
+        <div class="sr-modal-body">
+          <div class="sr-info-box">
+            <div class="sr-info-icon">i</div>
+            <div class="sr-info-text">Approval chain: &lt;5% = Line Manager only, 5-15% = Manager + HR Lead, &gt;15% = Manager + HR + Finance/CFO. No change takes effect until all approvers confirm.</div>
+          </div>
+          <div class="sr-form-group">
+            <label class="sr-label" for="employeeSelect">Employee<span class="sr-required">*</span></label>
+            <select id="employeeSelect" class="sr-form-control">
+              <option value="Robert Hayes">Robert Hayes</option>
+              <option value="Grace Adams">Grace Adams</option>
+              <option value="James Carter">James Carter</option>
+              <option value="Lisa Park">Lisa Park</option>
+              <option value="Anna Chen">Anna Chen</option>
+              <option value="Priya Sharma">Priya Sharma</option>
+              <option value="Michael Brown">Michael Brown</option>
+              <option value="Alex Rivera">Alex Rivera</option>
+            </select>
+          </div>
+          <div class="sr-employee-card">
+            <div class="sr-employee-info">
+              <div class="sr-avatar">RH</div>
+              <div class="sr-employee-details">
+                <h4 class="sr-emp-name">Robert Hayes</h4>
+                <p class="sr-emp-role">Grade 8 - CEO - Executive</p>
+              </div>
+            </div>
+            <div class="sr-band-container">
+              <div class="sr-band-label-row">
+                <span>Grade Band:</span>
+                <span class="sr-band-range-text">$240K - $464K</span>
+              </div>
+              <div class="sr-track-wrapper">
+                <div class="sr-slider-track">
+                  <div class="sr-slider-fill" style="width:60%;"></div>
+                  <input type="range" class="sr-salary-range-input" min="0" max="100" step="0.1" value="60">
+                </div>
+                <div class="sr-track-labels">
+                  <span>Min</span>
+                  <span>Max</span>
+                </div>
+              </div>
+              <div class="sr-current-band-status">Current: $380,000 (63% of band)</div>
+            </div>
+          </div>
+          <div class="sr-form-row">
+            <div class="sr-form-group">
+              <label class="sr-label" for="changePercentage">Change (%)<span class="sr-required">*</span></label>
+              <input type="number" id="changePercentage" class="sr-form-control" placeholder="e.g. 8" step="0.1">
+              <div class="sr-hint-text">Positive for increase, negative for decrease</div>
+            </div>
+            <div class="sr-form-group">
+              <label class="sr-label" for="effectiveDate">Effective Date<span class="sr-required">*</span></label>
+              <input type="date" id="effectiveDate" class="sr-form-control">
+            </div>
+          </div>
+          <div class="sr-form-group">
+            <label class="sr-label" for="reason">Reason<span class="sr-required">*</span></label>
+            <select id="reason" class="sr-form-control">
+              <option value="">Select reason...</option>
+              <option value="Role Change" selected>Role Change</option>
+              <option value="Annual Review">Annual Review</option>
+              <option value="Promotion">Promotion</option>
+              <option value="Market Adjustment">Market Adjustment</option>
+              <option value="Cost of Living">Cost of Living</option>
+              <option value="Performance Based">Performance Based</option>
+              <option value="Retention">Retention</option>
+              <option value="Equity Adjustment">Equity Adjustment</option>
+              <option value="Contract Renewal">Contract Renewal</option>
+              <option value="Counter Offer">Counter Offer</option>
+              <option value="Merit Increase">Merit Increase</option>
+              <option value="Restructuring">Restructuring</option>
+            </select>
+          </div>
+          <div class="sr-form-group">
+            <label class="sr-label" for="justification">Justification</label>
+            <div class="sr-textarea-wrapper">
+              <textarea id="justification" class="sr-form-control sr-textarea" placeholder="Business case for this revision..."></textarea>
+            </div>
+            <div class="sr-hint-text">Required for changes &gt; 10%</div>
+          </div>
+        </div>
+        <div class="sr-modal-footer">
+          <button class="sr-btn sr-btn-submit">Submit for Approval</button>
+          <button class="sr-btn sr-btn-cancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

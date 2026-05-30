@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Primary Sidebar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="primary-sidebar.css">
+  <style>
+    body { margin: 0; background: #f5f5f7; min-height: 100vh; }
+    .psb-layout { display: flex; }
+    .psb-demo-content { flex: 1; padding: 40px 48px; font-family: "DM Sans", sans-serif; color: #333; margin-left: 56px; }
+    .psb-demo-content h1 { font-size: 24px; margin-bottom: 8px; }
+    .psb-demo-content p { font-size: 14px; color: #666; max-width: 500px; }
+  </style>
+</head>
+<body>
+  <div class="psb-layout">
+    <aside class="psb-sidebar">
+      <div class="psb-logo">
+        <div class="psb-logo-icon">C</div>
+        <span class="psb-logo-text">CleonHR</span>
+      </div>
+      <nav class="psb-nav">
+        <div class="psb-nav-item psb-active" data-item="overview">
+          <span class="psb-nav-icon"><i data-lucide="layout-dashboard"></i></span>
+          <span class="psb-nav-label">Overview</span>
+        </div>
+        <div class="psb-nav-item" data-item="org-setup">
+          <span class="psb-nav-icon"><i data-lucide="building-2"></i></span>
+          <span class="psb-nav-label">Org Setup</span>
+        </div>
+        <div class="psb-nav-item" data-item="organization">
+          <span class="psb-nav-icon"><i data-lucide="users"></i></span>
+          <span class="psb-nav-label">Organization</span>
+        </div>
+        <div class="psb-nav-item" data-item="talent-acquisition">
+          <span class="psb-nav-icon"><i data-lucide="user-search"></i></span>
+          <span class="psb-nav-label">Talent Acquisition</span>
+        </div>
+        <div class="psb-nav-item" data-item="onboarding">
+          <span class="psb-nav-icon"><i data-lucide="user-plus"></i></span>
+          <span class="psb-nav-label">Onboarding</span>
+        </div>
+        <div class="psb-nav-item" data-item="offboarding">
+          <span class="psb-nav-icon"><i data-lucide="user-minus"></i></span>
+          <span class="psb-nav-label">Offboarding</span>
+        </div>
+        <div class="psb-nav-item" data-item="documentation">
+          <span class="psb-nav-icon"><i data-lucide="file-stack"></i></span>
+          <span class="psb-nav-label">Documentation</span>
+        </div>
+        <div class="psb-nav-item" data-item="verification">
+          <span class="psb-nav-icon"><i data-lucide="shield-check"></i></span>
+          <span class="psb-nav-label">Verification</span>
+        </div>
+        <div class="psb-nav-item" data-item="workforce">
+          <span class="psb-nav-icon"><i data-lucide="users"></i></span>
+          <span class="psb-nav-label">Workforce</span>
+        </div>
+        <div class="psb-nav-item" data-item="compensation">
+          <span class="psb-nav-icon"><i data-lucide="dollar-sign"></i></span>
+          <span class="psb-nav-label">Compensation</span>
+        </div>
+        <div class="psb-nav-item" data-item="performance-dev">
+          <span class="psb-nav-icon"><i data-lucide="trending-up"></i></span>
+          <span class="psb-nav-label">Performance & Dev</span>
+        </div>
+        <div class="psb-nav-item" data-item="staff-engagement">
+          <span class="psb-nav-icon"><i data-lucide="heart-handshake"></i></span>
+          <span class="psb-nav-label">Staff Engagement</span>
+        </div>
+        <div class="psb-divider"></div>
+        <div class="psb-nav-item" data-item="system">
+          <span class="psb-nav-icon"><i data-lucide="settings"></i></span>
+          <span class="psb-nav-label">System</span>
+        </div>
+      </nav>
+      <div class="psb-bottom">
+        <div class="psb-avatar">OA</div>
+        <div class="psb-user-info">
+          <div class="psb-user-name">Olamide A.</div>
+          <div class="psb-user-role">HR Admin</div>
+        </div>
+      </div>
+    </aside>
+    <main class="psb-demo-content">
+      <h1>Dashboard Content</h1>
+      <p>Hover the pink sidebar on the left to expand it and reveal navigation labels.</p>
+    </main>
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

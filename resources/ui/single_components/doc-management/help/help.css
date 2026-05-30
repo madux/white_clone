@@ -1,0 +1,7 @@
+:root { --he-primary: #d21787; --he-bg: #f5f5f7; --he-text: #1a1a2e; --he-text-muted: #8e8ea0; }
+body { margin: 0; background: var(--he-bg); font-family: 'DM Sans', sans-serif; color: var(--he-text); }
+.he-wrapper { max-width: 800px; margin: 0 auto; padding: 80px 24px; }
+.he-empty { text-align: center; padding: 60px 20px; background: #fff; border-radius: 16px; border: 1px solid #e8e8ee; }
+.he-empty i { color: #d0d5dd; margin-bottom: 16px; }
+.he-empty h2 { margin: 0 0 8px; font-weight: 600; font-size: 20px; }
+.he-empty p { margin: 0; color: var(--he-text-muted); font-size: 14px; }

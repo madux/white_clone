@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Departments & Units</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="departments-units.css">
+</head>
+<body>
+  <div class="du-wrapper">
+
+    <section class="du-tab-navigation-bar">
+      <div class="du-tabs-scroll-container">
+        <button class="du-tab-btn"><i data-lucide="building"></i> Branches & Locations</button>
+        <button class="du-tab-btn du-active"><i data-lucide="network"></i> Departments & Units</button>
+        <button class="du-tab-btn"><i data-lucide="briefcase"></i> Job Roles</button>
+        <button class="du-tab-btn"><i data-lucide="bar-chart-big"></i> Grade Levels</button>
+        <button class="du-tab-btn"><i data-lucide="clipboard-list"></i> Employment Types</button>
+        <button class="du-tab-btn du-icon-only"><i data-lucide="link"></i></button>
+      </div>
+      <button class="du-tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+    </section>
+
+    <section class="du-content-body">
+      <div class="du-data-flow-banner">
+        <div class="du-banner-icon">
+          <i data-lucide="pin"></i>
+        </div>
+        <p class="du-banner-text">
+          <strong>DATA FLOW:</strong> Departments &rarr; feeds Employee "Department" dropdown &rarr; feeds Manager assignment &rarr; feeds Budget reporting. Department Head is pulled from Employees table. Headcount is a live COUNT.
+        </p>
+      </div>
+
+      <div class="du-departments-grid">
+
+        <div class="du-dept-card" data-code="ENG" data-budget="2400000" data-target="48">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F4BB;</span>
+            <span class="du-staff-badge">48 staff</span>
+          </div>
+          <h3 class="du-dept-title">Engineering</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Sarah Wilson</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$2.4M</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">5</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">48</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>78%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-orange" style="width: 78%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="FIN" data-budget="980000" data-target="22">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F4B0;</span>
+            <span class="du-staff-badge">22 staff</span>
+          </div>
+          <h3 class="du-dept-title">Finance</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">James Carter</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$980K</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">2</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">22</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>65%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-green" style="width: 65%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="MKT" data-budget="750000" data-target="18">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F4E3;</span>
+            <span class="du-staff-badge">18 staff</span>
+          </div>
+          <h3 class="du-dept-title">Marketing</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Lisa Park</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> Hybrid</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$750K</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">1</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">18</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>52%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-green" style="width: 52%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="HR" data-budget="620000" data-target="14">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F91D;</span>
+            <span class="du-staff-badge">14 staff</span>
+          </div>
+          <h3 class="du-dept-title">Human Resources</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Grace Adams</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$620K</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">0</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">14</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>71%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-orange" style="width: 71%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="DES" data-budget="480000" data-target="11">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F3A8;</span>
+            <span class="du-staff-badge">11 staff</span>
+          </div>
+          <h3 class="du-dept-title">Product Design</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Alex Rivera</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> Remote</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$480K</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">3</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">11</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>45%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-green" style="width: 45%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="OPS" data-budget="1100000" data-target="31">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x2699;&#xFE0F;</span>
+            <span class="du-staff-badge">31 staff</span>
+          </div>
+          <h3 class="du-dept-title">Operations</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Tom Nash</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> Branch Chicago</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$1.1M</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">2</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">31</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>83%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-orange" style="width: 83%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-dept-card" data-code="EXEC" data-budget="1800000" data-target="4">
+          <div class="du-card-header-row">
+            <span class="du-emoji-icon">&#x1F451;</span>
+            <span class="du-staff-badge">4 staff</span>
+          </div>
+          <h3 class="du-dept-title">Executive</h3>
+          <p class="du-dept-meta">Head: <span class="du-meta-highlight">Robert Hayes</span></p>
+          <p class="du-dept-location"><i data-lucide="map-pin"></i> HQ New York</p>
+          <div class="du-metric-row">
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">$1.8M</span>
+              <span class="du-metric-lbl">Budget</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-pink">0</span>
+              <span class="du-metric-lbl">Open Roles</span>
+            </div>
+            <div class="du-metric-block">
+              <span class="du-metric-val du-text-muted">4</span>
+              <span class="du-metric-lbl">Headcount</span>
+            </div>
+          </div>
+          <div class="du-progress-container">
+            <div class="du-progress-labels">
+              <span>Budget used</span>
+              <span>90%</span>
+            </div>
+            <div class="du-progress-bar-bg">
+              <div class="du-progress-bar-fill du-fill-red" style="width: 90%;"></div>
+            </div>
+          </div>
+          <div class="du-card-actions-row">
+            <button class="du-action-btn du-text-dark">View Detail</button>
+            <button class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+            <button class="du-action-btn du-text-red">Delete</button>
+          </div>
+        </div>
+
+        <div class="du-add-dept-card">
+          <div class="du-add-icon-wrapper">
+            <i data-lucide="plus"></i>
+          </div>
+          <span class="du-add-title">Add New Department</span>
+          <button class="du-btn-create-dept">+ Create Department</button>
+        </div>
+
+      </div>
+    </section>
+
+    <div class="du-os-modal-overlay">
+      <div class="du-os-modal">
+        <div class="du-os-modal-header">
+          <div class="du-os-modal-header-left">
+            <div class="du-os-modal-icon"><i data-lucide="building-2"></i></div>
+            <div>
+              <h3>Create New Department</h3>
+              <p class="du-os-modal-subtitle">Phase 0 &middot; Saved to Departments table &middot; Required before adding employees</p>
+            </div>
+          </div>
+          <button class="du-os-modal-close">&times;</button>
+        </div>
+        <div class="du-os-modal-body">
+          <div class="du-os-info-banner">
+            <i data-lucide="info"></i>
+            <span>Department Head is selected from the Employees table. Headcount is auto-counted via foreign key.</span>
+          </div>
+          <div class="du-os-form-group">
+            <label>Department Name <span class="du-text-red">*</span></label>
+            <input type="text" class="du-os-input" placeholder="e.g. Engineering" />
+          </div>
+          <div class="du-os-form-row">
+            <div class="du-os-form-group">
+              <label>Department Code</label>
+              <input type="text" class="du-os-input" placeholder="e.g. ENG" />
+              <span class="du-os-form-hint">Auto-generated if left blank</span>
+            </div>
+            <div class="du-os-form-group">
+              <label>Location</label>
+              <select class="du-os-input">
+                <option>HQ New York</option>
+                <option>Branch Chicago</option>
+                <option>Branch London</option>
+                <option>Remote Hub</option>
+                <option>Branch Toronto</option>
+                <option>Hybrid</option>
+                <option>Remote</option>
+              </select>
+            </div>
+          </div>
+          <div class="du-os-form-group">
+            <label>Department Head</label>
+            <select class="du-os-input">
+              <option value="">Select employee...</option>
+              <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+              <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+              <option value="James Carter">James Carter &mdash; CFO</option>
+              <option value="Lisa Park">Lisa Park &mdash; Marketing Director</option>
+              <option value="Sarah Wilson">Sarah Wilson &mdash; Engineering Lead</option>
+              <option value="Tom Nash">Tom Nash &mdash; Operations Manager</option>
+              <option value="Alex Rivera">Alex Rivera &mdash; Design Lead</option>
+              <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+            </select>
+            <span class="du-os-form-hint">Populated from Employees table</span>
+          </div>
+          <div class="du-os-form-row">
+            <div class="du-os-form-group">
+              <label>Annual Budget ($) <span class="du-text-red">*</span></label>
+              <input type="text" class="du-os-input" placeholder="e.g. 500000" />
+            </div>
+            <div class="du-os-form-group">
+              <label>Target Headcount</label>
+              <input type="text" class="du-os-input" placeholder="e.g. 20" />
+            </div>
+          </div>
+          <div class="du-os-info-banner du-os-info-banner-sm">
+            <i data-lucide="info"></i>
+            <span><strong>On Create:</strong> Inserts into Departments table &rarr; generates dept_code &rarr; immediately available in Employee dropdowns &rarr; appears in Org Chart.</span>
+          </div>
+        </div>
+        <div class="du-os-modal-footer">
+          <button class="du-btn du-btn-secondary">Cancel</button>
+          <button class="du-btn du-btn-secondary">Save Draft</button>
+          <button class="du-btn du-btn-primary">Create Department</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

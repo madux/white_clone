@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Branches & Locations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="branches-locations.css">
+</head>
+<body>
+  <div class="bl-wrapper">
+
+    <section class="bl-tab-navigation-bar">
+      <div class="bl-tabs-scroll-container">
+        <button class="bl-tab-btn bl-active">
+          <i data-lucide="building"></i> Branches &amp; Locations
+        </button>
+        <button class="bl-tab-btn">
+          <i data-lucide="network"></i> Departments &amp; Units
+        </button>
+        <button class="bl-tab-btn">
+          <i data-lucide="briefcase"></i> Job Roles
+        </button>
+        <button class="bl-tab-btn">
+          <i data-lucide="bar-chart-big"></i> Grade Levels
+        </button>
+        <button class="bl-tab-btn">
+          <i data-lucide="clipboard-list"></i> Employment Types
+        </button>
+        <button class="bl-tab-btn bl-icon-only">
+          <i data-lucide="link"></i>
+        </button>
+      </div>
+      <button class="bl-tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+    </section>
+
+    <section class="bl-content-body">
+
+      <div class="bl-table-title-panel">
+        <div class="bl-panel-left">
+          <h2>Branches &amp; Locations</h2>
+          <p>Foundational &mdash; Define before creating departments or employees</p>
+        </div>
+        <div class="bl-panel-actions">
+          <div class="bl-search-box">
+            <i data-lucide="search"></i>
+            <input type="text" placeholder="Search branches..." />
+          </div>
+          <button class="bl-btn bl-btn-secondary"><i data-lucide="download"></i> Export</button>
+          <button class="bl-btn bl-btn-primary"><i data-lucide="plus"></i> Create Branch</button>
+        </div>
+      </div>
+
+      <div class="bl-table-container">
+        <table class="bl-data-table">
+          <thead>
+            <tr>
+              <th>BRANCH NAME</th>
+              <th>CODE</th>
+              <th>COUNTRY</th>
+              <th>ADDRESS</th>
+              <th>EMPLOYEES</th>
+              <th>STATUS</th>
+              <th>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="bl-font-semibold bl-text-dark">HQ New York</td>
+              <td class="bl-text-muted bl-text-xs">NYC-HQ</td>
+              <td>USA</td>
+              <td class="bl-text-muted bl-text-sm">245 Park Ave, New York, NY 1...</td>
+              <td class="bl-count-highlight bl-font-bold">148</td>
+              <td><span class="bl-badge bl-status-active">Active</span></td>
+              <td class="bl-actions-cell"><a href="#" class="bl-action-link">Edit</a><a href="#" class="bl-action-link">Depts</a></td>
+            </tr>
+            <tr>
+              <td class="bl-font-semibold bl-text-dark">Branch Chicago</td>
+              <td class="bl-text-muted bl-text-xs">CHI-01</td>
+              <td>USA</td>
+              <td class="bl-text-muted bl-text-sm">233 S Wacker Dr, Chicago, IL ...</td>
+              <td class="bl-count-highlight bl-font-bold">42</td>
+              <td><span class="bl-badge bl-status-active">Active</span></td>
+              <td class="bl-actions-cell"><a href="#" class="bl-action-link">Edit</a><a href="#" class="bl-action-link">Depts</a></td>
+            </tr>
+            <tr>
+              <td class="bl-font-semibold bl-text-dark">Branch London</td>
+              <td class="bl-text-muted bl-text-xs">LDN-01</td>
+              <td>UK</td>
+              <td class="bl-text-muted bl-text-sm">30 St Mary Axe, London EC3A...</td>
+              <td class="bl-count-highlight bl-font-bold">31</td>
+              <td><span class="bl-badge bl-status-active">Active</span></td>
+              <td class="bl-actions-cell"><a href="#" class="bl-action-link">Edit</a><a href="#" class="bl-action-link">Depts</a></td>
+            </tr>
+            <tr>
+              <td class="bl-font-semibold bl-text-dark">Remote Hub</td>
+              <td class="bl-text-muted bl-text-xs">REMOTE</td>
+              <td class="bl-text-muted">Global</td>
+              <td class="bl-text-muted bl-text-sm">Virtual/Remote</td>
+              <td class="bl-count-highlight bl-font-bold">26</td>
+              <td><span class="bl-badge bl-status-active">Active</span></td>
+              <td class="bl-actions-cell"><a href="#" class="bl-action-link">Edit</a><a href="#" class="bl-action-link">Depts</a></td>
+            </tr>
+            <tr>
+              <td class="bl-font-semibold bl-text-dark">Branch Toronto</td>
+              <td class="bl-text-muted bl-text-xs">TOR-01</td>
+              <td>Canada</td>
+              <td class="bl-text-muted bl-text-sm">TBD</td>
+              <td class="bl-count-highlight bl-font-bold bl-text-gray">0</td>
+              <td><span class="bl-badge bl-status-planned">Planned</span></td>
+              <td class="bl-actions-cell"><a href="#" class="bl-action-link">Edit</a><a href="#" class="bl-action-link">Depts</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bl-modal-overlay">
+        <div class="bl-modal">
+          <div class="bl-modal-header">
+            <div class="bl-modal-header-left">
+              <div class="bl-modal-icon"><i data-lucide="building-2"></i></div>
+              <div>
+                <h3>Create Branch / Location</h3>
+                <p class="bl-modal-subtitle">Org Setup &middot; Foundational &mdash; Required before departments</p>
+              </div>
+            </div>
+            <button class="bl-modal-close">&times;</button>
+          </div>
+          <div class="bl-modal-body">
+            <div class="bl-form-group">
+              <label>Branch Name <span class="bl-text-red">*</span></label>
+              <input type="text" class="bl-input" placeholder="e.g. Branch Atlanta" />
+            </div>
+            <div class="bl-form-row">
+              <div class="bl-form-group">
+                <label>Branch Code</label>
+                <input type="text" class="bl-input" placeholder="e.g. ATL-01" />
+                <span class="bl-form-hint">Auto-generated if blank</span>
+              </div>
+              <div class="bl-form-group">
+                <label>Country</label>
+                <select class="bl-input">
+                  <option>USA</option><option>UK</option><option>Canada</option><option>Global</option>
+                </select>
+              </div>
+            </div>
+            <div class="bl-form-group">
+              <label>Full Address</label>
+              <textarea class="bl-input bl-textarea" rows="2" placeholder="Street address..."></textarea>
+            </div>
+            <div class="bl-form-row">
+              <div class="bl-form-group">
+                <label>City</label>
+                <input type="text" class="bl-input" placeholder="City" />
+              </div>
+              <div class="bl-form-group">
+                <label>Postal Code</label>
+                <input type="text" class="bl-input" placeholder="ZIP / Postcode" />
+              </div>
+            </div>
+            <div class="bl-form-group">
+              <label>Branch Manager</label>
+              <select class="bl-input">
+                <option value="">Select manager...</option>
+                <option value="Robert Hayes">Robert Hayes &mdash; CEO</option>
+                <option value="Grace Adams">Grace Adams &mdash; HR Manager</option>
+                <option value="James Carter">James Carter &mdash; CFO</option>
+                <option value="Lisa Park">Lisa Park &mdash; Head of Engineering</option>
+                <option value="Anna Chen">Anna Chen &mdash; Marketing Director</option>
+                <option value="Priya Sharma">Priya Sharma &mdash; Senior Accountant</option>
+                <option value="Michael Brown">Michael Brown &mdash; Operations Manager</option>
+                <option value="Alex Rivera">Alex Rivera &mdash; IT Manager</option>
+              </select>
+              <span class="bl-form-hint">Assign from employee list</span>
+            </div>
+            <div class="bl-form-group">
+              <label>Currency</label>
+              <select class="bl-input">
+                <option value="">Select...</option>
+                <option value="USD">USD &mdash; US Dollar</option>
+                <option value="GBP">GBP &mdash; British Pound</option>
+                <option value="CAD">CAD &mdash; Canadian Dollar</option>
+                <option value="EUR">EUR &mdash; Euro</option>
+              </select>
+            </div>
+          </div>
+          <div class="bl-modal-footer">
+            <button class="bl-btn bl-btn-secondary">Cancel</button>
+            <button class="bl-btn bl-btn-primary">Create Branch</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bl-modal-overlay">
+        <div class="bl-modal">
+          <div class="bl-modal-header">
+            <h3>Edit Branch</h3>
+            <button class="bl-modal-close">&times;</button>
+          </div>
+          <div class="bl-modal-body">
+            <div class="bl-form-group">
+              <label>Branch Name</label>
+              <input type="text" class="bl-input" />
+            </div>
+            <div class="bl-form-row">
+              <div class="bl-form-group">
+                <label>Code</label>
+                <input type="text" class="bl-input" />
+              </div>
+              <div class="bl-form-group">
+                <label>Country</label>
+                <input type="text" class="bl-input" />
+              </div>
+            </div>
+            <div class="bl-form-group">
+              <label>Address</label>
+              <textarea class="bl-input bl-textarea" rows="2"></textarea>
+            </div>
+            <div class="bl-form-group">
+              <label>Status</label>
+              <select class="bl-input">
+                <option value="Active">Active</option>
+                <option value="Planned">Planned</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="bl-modal-footer">
+            <button class="bl-btn bl-btn-secondary">Cancel</button>
+            <button class="bl-btn bl-btn-primary">Save Changes</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

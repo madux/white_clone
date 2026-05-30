@@ -1,0 +1,112 @@
+:root {
+  --tf-primary: #d21787;
+  --tf-primary-hover: #b81275;
+  --tf-bg: #f5f5f7;
+  --tf-card-bg: #ffffff;
+  --tf-text: #1a1a2e;
+  --tf-text-muted: #8e8ea0;
+  --tf-border: #e8e8ee;
+}
+
+body { margin: 0; background: var(--tf-bg); font-family: 'DM Sans', sans-serif; color: var(--tf-text); }
+
+.tf-wrapper { max-width: 1200px; margin: 0 auto; padding: 0 24px 40px; position: relative; }
+
+.tf-topbar { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--tf-border); margin-bottom: 20px; }
+.tf-topbar-brand { display: flex; align-items: center; gap: 10px; }
+.tf-logo-grid { display: grid; grid-template-columns: repeat(3, 6px); gap: 2px; }
+.tf-logo-grid span { width: 6px; height: 6px; border-radius: 1px; }
+.tf-topbar-brand-text { font-weight: 700; font-size: 18px; color: var(--tf-text); }
+.tf-topbar-search { flex: 1; max-width: 340px; display: flex; align-items: center; gap: 8px; background: var(--tf-card-bg); border: 1px solid var(--tf-border); border-radius: 8px; padding: 8px 12px; color: var(--tf-text-muted); }
+.tf-topbar-search input { border: none; outline: none; background: transparent; font-family: inherit; font-size: 13px; width: 100%; }
+.tf-topbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.tf-role-toggle { display: flex; background: #f0f0f4; border-radius: 6px; overflow: hidden; }
+.tf-role-btn { border: none; background: transparent; padding: 6px 14px; font-size: 12px; font-family: inherit; font-weight: 500; color: var(--tf-text-muted); cursor: default; }
+.tf-role-btn.active { background: var(--tf-primary); color: #fff; }
+.tf-icon-btn { background: none; border: none; padding: 6px; color: var(--tf-text-muted); cursor: default; display: flex; align-items: center; justify-content: center; }
+.tf-icon-btn i { width: 16px; height: 16px; }
+.tf-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--tf-primary); color: #fff; font-weight: 600; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+.tf-body { display: flex; gap: 24px; }
+
+.tf-main { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+.tf-content-header { display: flex; flex-direction: column; gap: 14px; }
+.tf-profile-row { display: flex; justify-content: space-between; align-items: center; }
+.tf-greeting h1 { margin: 0; font-size: 22px; font-weight: 700; }
+.tf-greeting p { margin: 4px 0 0; color: var(--tf-text-muted); font-size: 14px; }
+.tf-switch-profile-btn { display: flex; align-items: center; gap: 6px; background: var(--tf-card-bg); border: 1px solid var(--tf-border); border-radius: 8px; padding: 8px 14px; font-family: inherit; font-size: 13px; cursor: default; }
+
+.tf-tabs { display: flex; gap: 4px; background: var(--tf-card-bg); border-radius: 10px; padding: 4px; border: 1px solid var(--tf-border); overflow-x: auto; }
+.tf-tab { display: flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 13px; font-weight: 500; color: var(--tf-text-muted); border: none; background: none; border-radius: 6px; white-space: nowrap; font-family: inherit; cursor: default; }
+.tf-tab i { width: 16px; height: 16px; }
+.tf-tab.active { background: var(--tf-primary); color: #fff; }
+.tf-tab-badge { background: var(--tf-primary); color: #fff; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px; margin-left: 2px; }
+
+.tf-page-content { display: flex; flex-direction: column; gap: 20px; }
+
+.tf-page-title-row { display: flex; justify-content: space-between; align-items: center; }
+.tf-page-title-row h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.tf-page-title-row p { margin: 4px 0 0; color: var(--tf-text-muted); font-size: 13px; }
+.tf-btn-primary { display: flex; align-items: center; gap: 6px; background: var(--tf-primary); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: default; }
+
+.tf-toolbar { display: flex; gap: 10px; align-items: center; }
+.tf-search-wrap { flex: 1; max-width: 280px; display: flex; align-items: center; gap: 8px; background: var(--tf-card-bg); border: 1px solid var(--tf-border); border-radius: 8px; padding: 8px 12px; color: var(--tf-text-muted); }
+.tf-search-wrap input { border: none; outline: none; background: transparent; font-family: inherit; font-size: 13px; width: 100%; }
+.tf-select-wrap { position: relative; display: flex; align-items: center; }
+.tf-select-wrap select { appearance: none; background: var(--tf-card-bg); border: 1px solid var(--tf-border); border-radius: 8px; padding: 8px 32px 8px 12px; font-family: inherit; font-size: 13px; color: var(--tf-text); cursor: default; }
+.tf-select-wrap i { position: absolute; right: 10px; pointer-events: none; width: 14px; height: 14px; color: var(--tf-text-muted); }
+.tf-view-toggle { display: flex; background: #f0f0f4; border-radius: 6px; overflow: hidden; }
+.tf-view-btn { border: none; background: transparent; padding: 7px 10px; color: var(--tf-text-muted); cursor: default; display: flex; align-items: center; }
+.tf-view-btn i { width: 15px; height: 15px; }
+.tf-view-btn.active { background: var(--tf-card-bg); color: var(--tf-text); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+.tf-template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.tf-t-card { background: var(--tf-card-bg); border-radius: 12px; padding: 18px; border: 1px solid var(--tf-border); display: flex; flex-direction: column; gap: 10px; }
+.tf-card-top { display: flex; gap: 12px; }
+.tf-file-badge { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; flex-shrink: 0; height: fit-content; }
+.tf-file-badge i { width: 22px; height: 22px; }
+.tf-file-badge.pdf { background: #fef2f2; color: #dc2626; }
+.tf-file-badge.docx { background: #eef2ff; color: #2563eb; }
+.tf-file-type-label { }
+.tf-card-info h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.tf-card-info p { margin: 4px 0 0; font-size: 12px; color: var(--tf-text-muted); line-height: 1.4; }
+.tf-card-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--tf-text-muted); flex-wrap: wrap; }
+.tf-meta-tag { display: flex; align-items: center; gap: 3px; }
+.tf-meta-tag i { width: 11px; height: 11px; }
+.tf-meta-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--tf-border); }
+.tf-meta-plain { }
+.tf-download-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: #f8f9fc; border: 1px solid var(--tf-border); border-radius: 8px; padding: 10px; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--tf-text); cursor: default; }
+.tf-download-btn i { width: 13px; height: 13px; }
+.tf-card-footer { font-size: 11px; color: var(--tf-text-muted); }
+
+.tf-guidelines-box { background: #f8f9fc; border: 1px solid var(--tf-border); border-radius: 10px; padding: 16px 20px; }
+.tf-guidelines-header { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+.tf-guidelines-header i { width: 15px; height: 15px; }
+.tf-guidelines-list { margin: 0; padding-left: 18px; font-size: 13px; color: var(--tf-text-muted); line-height: 2; }
+.tf-guidelines-list li { }
+
+.tf-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; }
+.tf-modal-container { background: var(--tf-card-bg); border-radius: 16px; max-width: 540px; width: 90%; max-height: 90vh; overflow-y: auto; }
+.tf-modal-header { padding: 24px 24px 16px; position: relative; }
+.tf-modal-header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.tf-modal-header p { margin: 4px 0 0; font-size: 13px; color: var(--tf-text-muted); }
+.tf-modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; padding: 4px; color: var(--tf-text-muted); cursor: default; }
+.tf-modal-close i { width: 16px; height: 16px; }
+.tf-modal-body { padding: 0 24px 20px; display: flex; flex-direction: column; gap: 16px; }
+.tf-form-group { display: flex; flex-direction: column; gap: 6px; }
+.tf-form-group label { font-size: 13px; font-weight: 500; }
+.tf-required { color: #ef4444; }
+.tf-form-group input, .tf-form-group textarea { border: 1px solid var(--tf-border); border-radius: 8px; padding: 10px 12px; font-family: inherit; font-size: 13px; outline: none; }
+.tf-form-group textarea { min-height: 80px; resize: vertical; }
+.tf-info-card { display: flex; gap: 12px; background: #f0f9ff; border-radius: 10px; padding: 14px; }
+.tf-info-card-icon { color: #3b82f6; flex-shrink: 0; }
+.tf-info-card-icon i { width: 18px; height: 18px; }
+.tf-info-card-content h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+.tf-info-card-content ul { margin: 0; padding-left: 16px; font-size: 12px; color: var(--tf-text-muted); line-height: 1.8; }
+.tf-modal-footer { padding: 16px 24px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+.tf-btn-cancel { background: #f0f0f4; border: none; border-radius: 8px; padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: default; }
+.tf-btn-submit { background: var(--tf-primary); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: default; }
+
+.tf-chat-fab { position: fixed; bottom: 80px; right: 24px; width: 48px; height: 48px; background: var(--tf-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: default; }
+.tf-ai-widget { position: fixed; bottom: 24px; right: 24px; width: 48px; height: 48px; background: var(--tf-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: default; }

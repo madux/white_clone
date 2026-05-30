@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Roles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="job-roles.css">
+</head>
+<body>
+<div class="jr-wrapper">
+
+  <section class="jr-tab-navigation-bar">
+    <div class="jr-tabs-scroll-container">
+      <button class="jr-tab-btn">
+        <i data-lucide="building"></i> Branches & Locations
+      </button>
+      <button class="jr-tab-btn">
+        <i data-lucide="network"></i> Departments & Units
+      </button>
+      <button class="jr-tab-btn jr-active">
+        <i data-lucide="briefcase"></i> Job Roles
+      </button>
+      <button class="jr-tab-btn">
+        <i data-lucide="bar-chart-big"></i> Grade Levels
+      </button>
+      <button class="jr-tab-btn">
+        <i data-lucide="clipboard-list"></i> Employment Types
+      </button>
+      <button class="jr-tab-btn jr-icon-only">
+        <i data-lucide="link"></i>
+      </button>
+    </div>
+    <button class="jr-tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+  </section>
+
+  <section class="jr-content-body">
+    <div class="jr-table-title-panel">
+      <div class="jr-panel-left">
+        <h2>Job Roles</h2>
+        <p>Define job titles, descriptions, and role requirements</p>
+      </div>
+      <div class="jr-panel-actions">
+        <button class="jr-btn jr-btn-secondary"><i data-lucide="download"></i> Export</button>
+        <button class="jr-btn jr-btn-primary"><i data-lucide="plus"></i> Create Role</button>
+      </div>
+    </div>
+
+    <div class="jr-table-container">
+      <table class="jr-data-table">
+        <thead>
+          <tr>
+            <th>JOB TITLE</th>
+            <th>DEPARTMENT</th>
+            <th>GRADE</th>
+            <th>EMPLOYEES</th>
+            <th>STATUS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="jr-font-semibold jr-text-dark">Chief Executive Officer</td>
+            <td>Executive</td>
+            <td>Grade 8</td>
+            <td class="jr-count-highlight jr-font-bold">1</td>
+            <td><span class="jr-badge jr-status-active">Active</span></td>
+            <td class="jr-actions-cell"><a href="#" class="jr-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="jr-font-semibold jr-text-dark">HR Manager</td>
+            <td>Human Resources</td>
+            <td>Grade 6</td>
+            <td class="jr-count-highlight jr-font-bold">1</td>
+            <td><span class="jr-badge jr-status-active">Active</span></td>
+            <td class="jr-actions-cell"><a href="#" class="jr-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="jr-font-semibold jr-text-dark">Software Engineer</td>
+            <td>Engineering</td>
+            <td>Grade 4</td>
+            <td class="jr-count-highlight jr-font-bold">12</td>
+            <td><span class="jr-badge jr-status-active">Active</span></td>
+            <td class="jr-actions-cell"><a href="#" class="jr-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="jr-font-semibold jr-text-dark">Senior Accountant</td>
+            <td>Finance</td>
+            <td>Grade 5</td>
+            <td class="jr-count-highlight jr-font-bold">3</td>
+            <td><span class="jr-badge jr-status-active">Active</span></td>
+            <td class="jr-actions-cell"><a href="#" class="jr-action-link">Edit</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reporting Structure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="reporting-structure.css">
+</head>
+<body>
+<div class="rs-wrapper">
+
+  <section class="rs-tab-navigation-bar">
+    <div class="rs-tabs-scroll-container">
+      <button class="rs-tab-btn">
+        <i data-lucide="building"></i> Branches & Locations
+      </button>
+      <button class="rs-tab-btn">
+        <i data-lucide="network"></i> Departments & Units
+      </button>
+      <button class="rs-tab-btn">
+        <i data-lucide="briefcase"></i> Job Roles
+      </button>
+      <button class="rs-tab-btn">
+        <i data-lucide="bar-chart-big"></i> Grade Levels
+      </button>
+      <button class="rs-tab-btn">
+        <i data-lucide="clipboard-list"></i> Employment Types
+      </button>
+      <button class="rs-tab-btn rs-icon-only rs-active">
+        <i data-lucide="link"></i>
+      </button>
+    </div>
+    <button class="rs-tab-nav-arrow"><i data-lucide="chevron-right"></i></button>
+  </section>
+
+  <section class="rs-content-body">
+    <div class="rs-table-title-panel">
+      <div class="rs-panel-left">
+        <h2>Reporting Structure</h2>
+        <p>Define reporting lines and manager hierarchies</p>
+      </div>
+      <div class="rs-panel-actions">
+        <button class="rs-btn rs-btn-secondary"><i data-lucide="download"></i> Export</button>
+        <button class="rs-btn rs-btn-primary"><i data-lucide="plus"></i> Add Report</button>
+      </div>
+    </div>
+
+    <div class="rs-table-container">
+      <table class="rs-data-table">
+        <thead>
+          <tr>
+            <th>POSITION</th>
+            <th>REPORTS TO</th>
+            <th>DEPARTMENT</th>
+            <th>LEVEL</th>
+            <th>DIRECT REPORTS</th>
+            <th>STATUS</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rs-font-semibold rs-text-dark">CEO</td>
+            <td class="rs-text-muted">&mdash;</td>
+            <td>Executive</td>
+            <td>1</td>
+            <td class="rs-count-highlight rs-font-bold">4</td>
+            <td><span class="rs-badge rs-status-active">Active</span></td>
+            <td class="rs-actions-cell"><a href="#" class="rs-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="rs-font-semibold rs-text-dark">HR Manager</td>
+            <td>CEO</td>
+            <td>Human Resources</td>
+            <td>2</td>
+            <td class="rs-count-highlight rs-font-bold">3</td>
+            <td><span class="rs-badge rs-status-active">Active</span></td>
+            <td class="rs-actions-cell"><a href="#" class="rs-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="rs-font-semibold rs-text-dark">CFO</td>
+            <td>CEO</td>
+            <td>Finance</td>
+            <td>2</td>
+            <td class="rs-count-highlight rs-font-bold">5</td>
+            <td><span class="rs-badge rs-status-active">Active</span></td>
+            <td class="rs-actions-cell"><a href="#" class="rs-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="rs-font-semibold rs-text-dark">Engineering Lead</td>
+            <td>CEO</td>
+            <td>Engineering</td>
+            <td>2</td>
+            <td class="rs-count-highlight rs-font-bold">8</td>
+            <td><span class="rs-badge rs-status-active">Active</span></td>
+            <td class="rs-actions-cell"><a href="#" class="rs-action-link">Edit</a></td>
+          </tr>
+          <tr>
+            <td class="rs-font-semibold rs-text-dark">Marketing Director</td>
+            <td>CEO</td>
+            <td>Marketing</td>
+            <td>2</td>
+            <td class="rs-count-highlight rs-font-bold rs-text-gray">0</td>
+            <td><span class="rs-badge rs-status-planned">Planned</span></td>
+            <td class="rs-actions-cell"><a href="#" class="rs-action-link">Edit</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

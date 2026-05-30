@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLEON HR - Organization Chart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet"
+          href="org-chart.css">
+</head>
+<body>
+
+    <div class="oc-wrapper">
+
+        <div id="orgChartPage" class="view-section active-view">
+        
+            <section class="hero-banner">
+                <div class="banner-left">
+                    <div class="banner-icon-box">
+                        <i data-lucide="network" style="width: 28px; height: 28px;"></i>
+                    </div>
+                    <div class="banner-title">
+                        <h1>Organizational Chart</h1>
+                        <p>Position-based governance engine with vacancy tracking and reporting structure</p>
+                        
+                        <div class="banner-metrics">
+                            <div class="b-pill">
+                                <i data-lucide="briefcase" style="width:13px; height:13px;"></i>
+                                <span><strong>18</strong> Positions</span>
+                            </div>
+                            <div class="b-pill">
+                                <i data-lucide="user-check" style="width:13px; height:13px; color:#10B981;"></i>
+                                <span><strong>12</strong> Filled</span>
+                            </div>
+                            <div class="b-pill vacant">
+                                <i data-lucide="alert-circle" style="width:13px; height:13px;"></i>
+                                <span><strong>5</strong> Vacant</span>
+                            </div>
+                            <div class="b-pill frozen">
+                                <i data-lucide="snowflake" style="width:13px; height:13px;"></i>
+                                <span><strong>1</strong> Frozen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="banner-right">
+                    <svg width="120" height="70" viewBox="0 0 120 70" fill="none" xmlns="http://www.w3.org/2000/svg" style="opacity: 0.2;">
+                        <rect width="120" height="70" rx="6" fill="white"/>
+                        <rect x="8" y="10" width="30" height="8" rx="2" fill="#E2E8F0"/>
+                        <rect x="8" y="24" width="104" height="4" rx="2" fill="#E2E8F0"/>
+                        <rect x="8" y="34" width="48" height="4" rx="2" fill="#E2E8F0"/>
+                        <circle cx="102" cy="52" r="10" fill="#E2E8F0"/>
+                    </svg>
+                </div>
+            </section>
+
+            <section class="controls-panel">
+                <div class="controls-top">
+                    <div class="search-wrapper">
+                        <i data-lucide="search" style="width:16px; height:16px;"></i>
+                        <input type="text" class="search-input" placeholder="Search employee in chart...">
+                    </div>
+                    <div class="filter-actions">
+                        <select class="select-dropdown">
+                            <option>All Departments</option>
+                        </select>
+                        <button class="btn btn-toggle-vacancies">
+                            <i data-lucide="eye" style="width:15px; height:15px;"></i>
+                            Vacancies ON
+                        </button>
+                        <button class="btn">Expand All</button>
+                        <button class="btn"><i data-lucide="download" style="width:15px; height:15px;"></i> Export</button>
+                        <button class="btn"><i data-lucide="printer" style="width:15px; height:15px;"></i> Print</button>
+                    </div>
+                </div>
+                <div class="dept-legend">
+                    <span class="total-badge">Total: 247 employees</span>
+                    <div class="legend-item"><span class="dot" style="background: var(--engineering);"></span>Engineering <span class="legend-count">48</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--finance);"></span>Finance <span class="legend-count">22</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--marketing);"></span>Marketing <span class="legend-count">18</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--hr);"></span>HR <span class="legend-count">14</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--design);"></span>Design <span class="legend-count">11</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--operations);"></span>Operations <span class="legend-count">31</span></div>
+                    <div class="legend-item"><span class="dot" style="background: var(--executive);"></span>Executive <span class="legend-count">4</span></div>
+                </div>
+            </section>
+
+            <main class="chart-canvas">
+                <div class="tree-level">
+                    <div class="node-card ceo-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=256&q=80" alt="Robert Hayes" class="node-avatar">
+                        </div>
+                        <div class="node-name">Robert Hayes</div>
+                        <div class="node-role">CEO</div>
+                        <div class="node-dept-tag">Executive</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                </div>
+                <div class="tree-level">
+                    <div class="node-card hr-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=256&q=80" alt="Grace Adams" class="node-avatar">
+                        </div>
+                        <div class="node-name">Grace Adams</div>
+                        <div class="node-role">HR Manager</div>
+                        <div class="node-dept-tag">Human Resources</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                    <div class="node-card finance-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=256&q=80" alt="James Carter" class="node-avatar">
+                        </div>
+                        <div class="node-name">James Carter</div>
+                        <div class="node-role">CFO</div>
+                        <div class="node-dept-tag">Finance</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                    <div class="node-card marketing-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=256&q=80" alt="Lisa Park" class="node-avatar">
+                        </div>
+                        <div class="node-name">Lisa Park</div>
+                        <div class="node-role">Marketing Director</div>
+                        <div class="node-dept-tag">Marketing</div>
+                        <div class="node-meta">1 / 1 Filled</div>
+                        <div class="node-toggle-btn"></div>
+                    </div>
+                </div>
+                <div class="tree-level leaf-level">
+                    <div class="node-card engineering-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80" alt="Anna Chen" class="node-avatar">
+                        </div>
+                        <div class="node-name">Anna Chen</div>
+                        <div class="node-role">Frontend Developer</div>
+                        <div class="node-dept-tag">Engineering</div>
+                        <div class="node-meta">1/4 filled</div>
+                    </div>
+                    <div class="node-card hr-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=256&q=80" alt="Priya Sharma" class="node-avatar">
+                        </div>
+                        <div class="node-name">Priya Sharma</div>
+                        <div class="node-role">HR Business Partner</div>
+                        <div class="node-dept-tag">Human Resources</div>
+                        <div class="node-meta">1/2 filled</div>
+                    </div>
+                    <div class="node-card finance-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80" alt="Michael Brown" class="node-avatar">
+                        </div>
+                        <div class="node-name">Michael Brown</div>
+                        <div class="node-role">Financial Analyst</div>
+                        <div class="node-dept-tag">Finance</div>
+                        <div class="node-meta">1/3 filled</div>
+                    </div>
+                    <div class="node-card design-node">
+                        <div class="node-avatar-container">
+                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80" alt="Alex Rivera" class="node-avatar">
+                        </div>
+                        <div class="node-name">Alex Rivera</div>
+                        <div class="node-role">UX Lead</div>
+                        <div class="node-dept-tag">Product Design</div>
+                        <div class="node-meta">1/1 filled</div>
+                    </div>
+                </div>
+                <div class="vacant-section-container">
+                    <div class="section-header-title">
+                        <i data-lucide="alert-circle" style="width:16px; height:16px;"></i>
+                        Vacant & Frozen Positions (6)
+                    </div>
+                    <div class="vacant-grid">
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">DevOps Engineer</div>
+                            <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
+                            <div class="vacant-grade">Grade 4 â€¢ 0/2</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Backend Developer</div>
+                            <div class="vacant-dept" style="background:#EEF2FF; color:var(--engineering);">Engineering</div>
+                            <div class="vacant-grade">Grade 3 â€¢ 0/5</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Content Strategist</div>
+                            <div class="vacant-dept" style="background:#FDF2F8; color:var(--marketing);">Marketing</div>
+                            <div class="vacant-grade">Grade 3 â€¢ 0/1</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card frozen-status">
+                            <div class="status-badge-absolute"><i data-lucide="snowflake" style="width:9px; height:9px;"></i> Frozen</div>
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-minus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Logistics Coordinator</div>
+                            <div class="vacant-dept" style="background:#ECFDF5; color:var(--operations);">Operations</div>
+                            <div class="vacant-grade">Grade 2 â€¢ 0/2</div>
+                            <button class="btn-recruit" style="color: var(--text-light); cursor: not-allowed;">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">UI Designer</div>
+                            <div class="vacant-dept" style="background:#ECFDF5; color:var(--design);">Product Design</div>
+                            <div class="vacant-grade">Grade 3 â€¢ 0/3</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                        <div class="vacant-card">
+                            <div class="vacant-avatar-placeholder"><i data-lucide="user-plus" style="width:16px; height:16px;"></i></div>
+                            <div class="vacant-title">Senior Accountant</div>
+                            <div class="vacant-dept" style="background:#EFF6FF; color:var(--finance);">Finance</div>
+                            <div class="vacant-grade">Grade 4 â€¢ 0/2</div>
+                            <button class="btn-recruit">Recruit</button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <section class="bottom-kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-icon-box pink-bg"><i data-lucide="users" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">247</div><div class="kpi-label">Total Employees</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box blue-bg"><i data-lucide="layers" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">7</div><div class="kpi-label">Departments</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box orange-bg"><i data-lucide="alert-triangle" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">5</div><div class="kpi-label">Open Positions</div></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon-box purple-bg"><i data-lucide="git-commit" style="width:20px; height:20px;"></i></div>
+                    <div class="kpi-data-block"><div class="kpi-num">1:12</div><div class="kpi-label">Management Ratio</div></div>
+                </div>
+            </section>
+
+        </div>
+
+        <div id="profilePage" class="view-section active-view">
+            
+            <div class="profile-layout">
+                <aside>
+                    <div class="profile-side-card">
+                        <div class="profile-initial-badge" id="pCardInitials">RH</div>
+                        <h2 id="pCardName">Robert Hayes</h2>
+                        <div class="p-role" id="pCardRole">CEO</div>
+                        <div class="p-meta" id="pCardMetaDept">Human Resources â€¢ EMP004</div>
+                        <span class="status-pill">Active</span>
+                        <div class="profile-contact-list">
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="mail" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Email</div><div class="contact-val" id="pCardEmail">robert.hayes@cleon.com</div></div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="phone" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Phone</div><div class="contact-val">+1 555-0104</div></div>
+                            </div>
+                            <div class="contact-item">
+                                <div class="contact-icon"><i data-lucide="map-pin" style="width:14px; height:14px;"></i></div>
+                                <div><div class="contact-label">Location</div><div class="contact-val">HQ New York</div></div>
+                            </div>
+                        </div>
+                        <div class="profile-action-btns">
+                            <button class="btn-side-action suspend"><i data-lucide="user-x" style="width:14px; height:14px;"></i> Suspend Employee</button>
+                            <button class="btn-side-action offboard"><i data-lucide="log-out" style="width:14px; height:14px;"></i> Initiate Offboarding</button>
+                        </div>
+                    </div>
+                    <div class="profile-navigation-box">
+                        <div class="profile-nav-item active-tab">
+                            <div><i data-lucide="user" style="width:16px; height:16px;"></i> Overview</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="activity" style="width:16px; height:16px;"></i> Body Composition</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="credit-card" style="width:16px; height:16px;"></i> Compensation</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="calendar" style="width:16px; height:16px;"></i> Time & Leave</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="file-text" style="width:16px; height:16px;"></i> Documents</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="laptop" style="width:16px; height:16px;"></i> Assets</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="award" style="width:16px; height:16px;"></i> Performance</div><span class="active-dot"></span>
+                        </div>
+                        <div class="profile-nav-item">
+                            <div><i data-lucide="door-open" style="width:16px; height:16px;"></i> Exit Details</div><span class="active-dot"></span>
+                        </div>
+                    </div>
+                </aside>
+                <main class="profile-main-content">
+                    <div class="profile-top-bar">
+                        <div class="profile-title-area">
+                            <h1 id="dynamicTabTitle">Overview</h1>
+                            <p id="dynamicTabSubtitle">Detailed employee data management.</p>
+                        </div>
+                        <div class="top-action-cluster">
+                            <button class="btn-back"><i data-lucide="arrow-left" style="width:14px; height:14px;"></i> Back</button>
+                            <button class="btn-deep-view"><i data-lucide="maximize-2" style="width:14px; height:14px;"></i> Deep View</button>
+                            <button class="btn-edit-profile">Edit Profile</button>
+                        </div>
+                    </div>
+                    <div id="subView-Overview" class="profile-subview-content" style="display: block;">
+                        <div class="info-cards-grid">
+                            <div class="info-card">
+                                <div class="info-card-title"><i data-lucide="shield-check" style="width:16px; height:16px;"></i> Employment Details</div>
+                                <div class="details-data-matrix">
+                                    <div class="matrix-cell"><div class="cell-label">Department</div><div class="cell-value" id="mDept">Executive</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Job Role</div><div class="cell-value" id="mRole">CEO</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Employment Status</div><div class="cell-value">Active</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Employment Type</div><div class="cell-value">Permanent</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Work Mode</div><div class="cell-value">Office</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Grade Level</div><div class="cell-value">Grade 5B</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Joining Date</div><div class="cell-value">Jun 12, 2021</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Tenure</div><div class="cell-value">5 Years</div></div>
+                                </div>
+                            </div>
+                            <div class="info-card">
+                                <div class="info-card-title"><i data-lucide="user" style="width:16px; height:16px;"></i> Personal Information</div>
+                                <div class="details-data-matrix">
+                                    <div class="matrix-cell"><div class="cell-label">Full Name</div><div class="cell-value" id="mFullName">Robert Hayes</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Gender</div><div class="cell-value">Female</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Date of Birth</div><div class="cell-value">Apr 19, 1987</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Nationality</div><div class="cell-value">American</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Reporting Manager</div><div class="cell-value">Robert Hayes</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Direct Reports</div><div class="cell-value">3 Employees</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Emergency Contact</div><div class="cell-value">+1 555-9999</div></div>
+                                    <div class="matrix-cell"><div class="cell-label">Blood Group</div><div class="cell-value">O+</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-BodyComposition" class="profile-subview-content" style="display: none;">
+                        <div class="body-comp-canvas-card">
+                            <div class="card-block-title-bar">
+                                <i data-lucide="activity" style="width: 16px; height: 16px; color: #c2410c;"></i>
+                                Vital Stats &amp; Health Indicators
+                            </div>
+                            <div class="vital-indicators-grid">
+                                <div class="vital-measurement-card">
+                                    <div class="lbl">Height</div>
+                                    <div class="numeric-value">182 <span>cm</span></div>
+                                </div>
+                                <div class="vital-measurement-card">
+                                    <div class="lbl">Weight</div>
+                                    <div class="numeric-value">78 <span>kg</span></div>
+                                </div>
+                                <div class="vital-measurement-card">
+                                    <div class="lbl">BMI</div>
+                                    <div class="numeric-value healthy-alert">23.5 <span>Normal</span></div>
+                                </div>
+                                <div class="vital-measurement-card">
+                                    <div class="lbl">Blood Pressure</div>
+                                    <div class="numeric-value">120/80</div>
+                                </div>
+                            </div>
+                            <div class="section-divider-lbl">Health Indicators</div>
+                            <div class="health-status-bars-grid">
+                                <div class="status-metric-row-item">
+                                    <div>
+                                        <div class="title-label">Physical Fitness</div>
+                                        <div class="desc-label">Excellent</div>
+                                    </div>
+                                    <div class="percentage-score">92%</div>
+                                </div>
+                                <div class="status-metric-row-item">
+                                    <div>
+                                        <div class="title-label">Vision</div>
+                                        <div class="desc-label">Corrected</div>
+                                    </div>
+                                    <div class="percentage-score">85%</div>
+                                </div>
+                                <div class="status-metric-row-item">
+                                    <div>
+                                        <div class="title-label">Hearing</div>
+                                        <div class="desc-label">Normal</div>
+                                    </div>
+                                    <div class="percentage-score">98%</div>
+                                </div>
+                                <div class="status-metric-row-item">
+                                    <div>
+                                        <div class="title-label">Allergies</div>
+                                        <div class="desc-label">None Detected</div>
+                                    </div>
+                                    <div class="percentage-score">100%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-Compensation" class="profile-subview-content" style="display: none;">
+                        <div class="compensation-metrics-grid">
+                            <div class="comp-metric-card dark-theme-card">
+                                <div class="label-row">Gross Annual Salary</div>
+                                <div class="main-numerical-value">$115,000</div>
+                                <div class="subtext-explainer">
+                                    <i data-lucide="trending-up" style="width: 14px; height: 14px;"></i> 12% Increase from last year
+                                </div>
+                            </div>
+                            <div class="comp-metric-card">
+                                <div class="label-row">Net Monthly Take-Home</div>
+                                <div class="main-numerical-value">$6,900</div>
+                                <div class="subtext-explainer">*After estimated taxes and deductions</div>
+                            </div>
+                            <div class="comp-metric-card">
+                                <div class="label-row">Total Bonus Accrued</div>
+                                <div class="main-numerical-value pink-alert-value">$12,400</div>
+                                <div class="subtext-explainer">Next payout: Dec 2026</div>
+                            </div>
+                        </div>
+                        <div class="comp-benefits-panel-card">
+                            <div class="benefits-panel-header">
+                                <div class="benefits-panel-title">Benefits &amp; Allowances</div>
+                                <button class="btn-request-review">
+                                    <i data-lucide="file-edit" style="width: 12px; height: 12px;"></i> Request Salary Review
+                                </button>
+                            </div>
+                            <div class="benefits-rows-deck">
+                                <div class="benefit-item-row">
+                                    <div class="benefit-meta-left-box">
+                                        <div class="benefit-icon-container"><i data-lucide="wallet" style="width: 16px; height: 16px;"></i></div>
+                                        <div class="benefit-text-details">
+                                            <div class="title">Health Insurance</div>
+                                            <div class="subtitle">Platinum Plus</div>
+                                        </div>
+                                    </div>
+                                    <div class="benefit-metric-right-value">$1,200 /mo</div>
+                                </div>
+                                <div class="benefit-item-row">
+                                    <div class="benefit-meta-left-box">
+                                        <div class="benefit-icon-container"><i data-lucide="wallet" style="width: 16px; height: 16px;"></i></div>
+                                        <div class="benefit-text-details">
+                                            <div class="title">Pension (401k)</div>
+                                            <div class="subtitle">Company Match 5%</div>
+                                        </div>
+                                    </div>
+                                    <div class="benefit-metric-right-value">$533 /mo</div>
+                                </div>
+                                <div class="benefit-item-row">
+                                    <div class="benefit-meta-left-box">
+                                        <div class="benefit-icon-container"><i data-lucide="wallet" style="width: 16px; height: 16px;"></i></div>
+                                        <div class="benefit-text-details">
+                                            <div class="title">Transportation</div>
+                                            <div class="subtitle">Hybrid Allowance</div>
+                                        </div>
+                                    </div>
+                                    <div class="benefit-metric-right-value">$250 /mo</div>
+                                </div>
+                                <div class="benefit-item-row">
+                                    <div class="benefit-meta-left-box">
+                                        <div class="benefit-icon-container"><i data-lucide="wallet" style="width: 16px; height: 16px;"></i></div>
+                                        <div class="benefit-text-details">
+                                            <div class="title">Life Insurance</div>
+                                            <div class="subtitle">Standard Group</div>
+                                        </div>
+                                    </div>
+                                    <div class="benefit-metric-right-value">$500,000</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-TimeLeave" class="profile-subview-content" style="display: none;">
+                        <div class="time-leave-container">
+                            <div class="dashboard-grid">
+                                <div class="card">
+                                    <h3 class="card-title">Leave Balances</h3>
+                                    <div class="leave-item" data-used="14" data-total="25">
+                                        <div class="leave-meta">
+                                            <span class="leave-name">Annual Leave</span>
+                                            <span class="leave-usage"><span>14</span> / 25 Days Used</span>
+                                        </div>
+                                        <div class="progress-bar-track">
+                                            <div class="progress-bar-fill fill-annual"></div>
+                                        </div>
+                                    </div>
+                                    <div class="leave-item" data-used="8" data-total="10">
+                                        <div class="leave-meta">
+                                            <span class="leave-name">Sick Leave</span>
+                                            <span class="leave-usage"><span>8</span> / 10 Days Used</span>
+                                        </div>
+                                        <div class="progress-bar-track">
+                                            <div class="progress-bar-fill fill-sick"></div>
+                                        </div>
+                                    </div>
+                                    <div class="leave-item" data-used="2" data-total="5">
+                                        <div class="leave-meta">
+                                            <span class="leave-name">Compassionate</span>
+                                            <span class="leave-usage"><span>2</span> / 5 Days Used</span>
+                                        </div>
+                                        <div class="progress-bar-track">
+                                            <div class="progress-bar-fill fill-compassionate"></div>
+                                        </div>
+                                    </div>
+                                    <div class="leave-item" data-used="0" data-total="10">
+                                        <div class="leave-meta">
+                                            <span class="leave-name">Paternity Leave</span>
+                                            <span class="leave-usage"><span>0</span> / 10 Days Used</span>
+                                        </div>
+                                        <div class="progress-bar-track">
+                                            <div class="progress-bar-fill fill-paternity"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <h3 class="card-title">Attendance Summary (Last 30 Days)</h3>
+                                    <div class="metrics-list">
+                                        <div class="metric-row">
+                                            <span class="metric-label">Days Present</span>
+                                            <span class="metric-value val-success">21 / 22</span>
+                                        </div>
+                                        <div class="metric-row">
+                                            <span class="metric-label">Lateness Frequency</span>
+                                            <span class="metric-value val-warning">2 Times</span>
+                                        </div>
+                                        <div class="metric-row">
+                                            <span class="metric-label">Overtime Hours</span>
+                                            <span class="metric-value val-danger">12.5 hrs</span>
+                                        </div>
+                                        <div class="metric-row">
+                                            <span class="metric-label">Work-Life Balance Score</span>
+                                            <span class="metric-value val-success">85%</span>
+                                        </div>
+                                    </div>
+                                    <a href="#" class="view-timesheet-link" id="viewTimesheetLink">View Full Timesheet</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-Documents" class="profile-subview-content" style="display: none;">
+                        <div class="documents-container">
+                            <div class="documents-card">
+                                <div class="card-header-row">
+                                    <h3 class="card-title">File Repository</h3>
+                                    <button class="btn-upload-accent" id="triggerDocModalBtn">
+                                        <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                                        Upload File
+                                    </button>
+                                </div>
+                                <div class="file-list">
+                        <div class="file-row">
+                            <div class="file-meta-side">
+                                <div class="file-icon-box"><i data-lucide="file-text" style="width:20px;height:20px;"></i></div>
+                                <div class="file-details">
+                                    <h4>Employment Contract.pdf</h4>
+                                    <div class="file-subtext">Contract <span class="divider">·</span> Jan 15, 2024 <span class="divider">·</span> 2.4 MB</div>
+                                </div>
+                            </div>
+                            <div class="file-actions-side">
+                                <button class="btn-icon" title="Download"><i data-lucide="download" style="width:18px;height:18px;"></i></button>
+                            </div>
+                        </div>
+                        <div class="file-row">
+                            <div class="file-meta-side">
+                                <div class="file-icon-box"><i data-lucide="file-text" style="width:20px;height:20px;"></i></div>
+                                <div class="file-details">
+                                    <h4>NIN_Verification.pdf</h4>
+                                    <div class="file-subtext">Identity <span class="divider">·</span> Jan 18, 2024 <span class="divider">·</span> 1.1 MB</div>
+                                </div>
+                            </div>
+                            <div class="file-actions-side">
+                                <button class="btn-icon" title="Download"><i data-lucide="download" style="width:18px;height:18px;"></i></button>
+                            </div>
+                        </div>
+                        <div class="file-row">
+                            <div class="file-meta-side">
+                                <div class="file-icon-box"><i data-lucide="file-text" style="width:20px;height:20px;"></i></div>
+                                <div class="file-details">
+                                    <h4>Degree_Certificate.pdf</h4>
+                                    <div class="file-subtext">Education <span class="divider">·</span> Jan 20, 2024 <span class="divider">·</span> 4.8 MB</div>
+                                </div>
+                            </div>
+                            <div class="file-actions-side">
+                                <button class="btn-icon" title="Download"><i data-lucide="download" style="width:18px;height:18px;"></i></button>
+                            </div>
+                        </div>
+                        <div class="file-row">
+                            <div class="file-meta-side">
+                                <div class="file-icon-box"><i data-lucide="file-text" style="width:20px;height:20px;"></i></div>
+                                <div class="file-details">
+                                    <h4>Tax_Clearance_2025.pdf</h4>
+                                    <div class="file-subtext">Tax <span class="divider">·</span> Jan 5, 2026 <span class="divider">·</span> 840 KB</div>
+                                </div>
+                            </div>
+                            <div class="file-actions-side">
+                                <button class="btn-icon" title="Download"><i data-lucide="download" style="width:18px;height:18px;"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-Assets" class="profile-subview-content" style="display: none;">
+                        <div class="assets-subview-container">
+                            <div class="assets-grid">
+                                <article class="asset-card">
+                                    <div class="icon-wrapper"><i data-lucide="laptop"></i></div>
+                                    <h2 class="asset-name">MacBook Pro 16"</h2>
+                                    <span class="asset-serial">SN-4491-002</span>
+                                    <div class="card-divider"></div>
+                                    <div class="asset-status-row">
+                                        <span class="status-label">Status</span>
+                                        <span class="status-value excellent">Excellent</span>
+                                    </div>
+                                </article>
+                                <article class="asset-card">
+                                    <div class="icon-wrapper"><i data-lucide="phone"></i></div>
+                                    <h2 class="asset-name">iPhone 15 Pro</h2>
+                                    <span class="asset-serial">SN-9921-X43</span>
+                                    <div class="card-divider"></div>
+                                    <div class="asset-status-row">
+                                        <span class="status-label">Status</span>
+                                        <span class="status-value good">Good</span>
+                                    </div>
+                                </article>
+                                <article class="asset-card">
+                                    <div class="icon-wrapper"><i data-lucide="shield-check"></i></div>
+                                    <h2 class="asset-name">Security Access Card</h2>
+                                    <span class="asset-serial">AC-10443</span>
+                                    <div class="card-divider"></div>
+                                    <div class="asset-status-row">
+                                        <span class="status-label">Status</span>
+                                        <span class="status-value active">Active</span>
+                                    </div>
+                                </article>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-Performance" class="profile-subview-content" style="display: none;">
+                        <div class="performance-subview-container">
+                            <div class="performance-grid">
+                                <div class="card">
+                                    <h2 class="card-title">Recent Appraisal</h2>
+                                    <div class="appraisal-overview">
+                                        <div class="progress-circle-container">
+                                            <svg class="progress-svg" viewBox="0 0 100 100">
+                                                <circle class="progress-bg" cx="50" cy="50" r="42"></circle>
+                                                <circle class="progress-bar" cx="50" cy="50" r="42"></circle>
+                                            </svg>
+                                            <div class="progress-text">4.2</div>
+                                        </div>
+                                        <div class="appraisal-details">
+                                            <h2>Exceeds Expectations</h2>
+                                            <div class="period">Annual Review 2025</div>
+                                            <div class="stars">
+                                                <i data-lucide="star" class="filled"></i>
+                                                <i data-lucide="star" class="filled"></i>
+                                                <i data-lucide="star" class="filled"></i>
+                                                <i data-lucide="star" class="filled"></i>
+                                                <i data-lucide="star" class="empty"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="feedback-quote">
+                                        <p>"Robert has demonstrated exceptional executive leadership this year, driving record growth."</p>
+                                        <div class="feedback-author">â€” Sarah Wilson (Manager)</div>
+                                    </div>
+                                </div>
+                                <div class="card disciplinary-card">
+                                    <h2 class="card-title" style="margin-bottom: 0;">Disciplinary & Concerns</h2>
+                                    <div class="disciplinary-content">
+                                        <div class="shield-icon-container">
+                                            <i data-lucide="shield-check"></i>
+                                        </div>
+                                        <h3>Clear Record</h3>
+                                        <p>No disciplinary actions or warnings found.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-ExitDetails" class="profile-subview-content" style="display: none;">
+                        <div class="exit-details-container">
+                            <div class="exit-card">
+                                <div class="empty-state">
+                                    <div class="icon-wrapper">
+                                        <i data-lucide="log-out"></i>
+                                    </div>
+                                    <h3>Not in Exit Cycle</h3>
+                                    <p>This employee is currently active and not flagged for offboarding or termination.</p>
+                                    <button class="btn-link">Initiate Separation</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="subView-GenericFallback" class="profile-subview-content" style="display: none;">
+                        <div class="details-fallback-panel">
+                            <div class="fallback-icon-box"><i id="fallbackIcon" data-lucide="layers" style="width:32px; height:32px;"></i></div>
+                            <h3 id="fallbackTitle">Section Details Matrix</h3>
+                            <p>This metrics dashboard workspace area details contextual parameters regarding the employee tracking engine.</p>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- DOCUMENTS UPLOAD MODAL -->
+        <div class="modal-overlay" id="docUploadModal">
+            <div class="modal-window">
+                <div class="modal-header">
+                    <h3>Upload Document File</h3>
+                    <button class="btn-icon" id="closeDocModalBtn"><i data-lucide="x" style="width: 18px; height: 18px;"></i></button>
+                </div>
+                <form id="docUploadForm">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="docName">Document Name *</label>
+                            <input type="text" id="docName" class="form-control" placeholder="e.g. Health_Insurance_Policy.pdf" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="docCategory">Category Type *</label>
+                            <input type="text" id="docCategory" class="form-control" placeholder="e.g. Identity, Contract, Tax" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="docFile">Select File *</label>
+                            <input type="file" id="docFile" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" style="padding: 6px 12px;" id="cancelDocModalBtn">Cancel</button>
+                        <button type="submit" class="btn-primary" style="padding: 6px 12px;">Complete Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="modal-overlay" id="salaryReviewModal">
+            <div class="salary-review-modal">
+                <div class="modal-header">
+                    <h2 class="modal-title">Salary Revision</h2>
+                    <div class="modal-subtitle">Employee Lifecycle - Multi-level approval chain based on percentage</div>
+                    <button class="close-btn" aria-label="Close modal">&times;</button>
+                </div>
+                <form id="salaryRevisionForm">
+                    <div class="modal-body">
+                        <div class="info-box">
+                            <div class="info-icon">i</div>
+                            <div class="info-text">Approval chain: &lt;5% = Line Manager only, 5-15% = Manager + HR Lead, &gt;15% = Manager + HR + Finance/CFO. No change takes effect until all approvers confirm.</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeSelect">Employee<span class="required">*</span></label>
+                            <select id="employeeSelect" class="form-control">
+                                <option value="Robert Hayes">Robert Hayes</option>
+                                <option value="Grace Adams">Grace Adams</option>
+                                <option value="James Carter">James Carter</option>
+                                <option value="Lisa Park">Lisa Park</option>
+                                <option value="Anna Chen">Anna Chen</option>
+                                <option value="Priya Sharma">Priya Sharma</option>
+                                <option value="Michael Brown">Michael Brown</option>
+                                <option value="Alex Rivera">Alex Rivera</option>
+                            </select>
+                        </div>
+                        <div class="employee-card">
+                            <div class="employee-info">
+                                <div id="empAvatar" class="avatar">RH</div>
+                                <div class="employee-details">
+                                    <h4 id="empName">Robert Hayes</h4>
+                                    <p id="empRole">Grade 8 - CEO - Executive</p>
+                                </div>
+                            </div>
+                            <div class="band-container">
+                                <div class="band-label-row">
+                                    <span>Grade Band:</span>
+                                    <span id="bandRangeText" class="band-range-text">$240K - $464K</span>
+                                </div>
+                            <div class="track-wrapper">
+                                <div class="slider-track">
+                                    <div id="sliderFill" class="slider-fill"></div>
+                                    <input type="range" id="salaryRange" class="salary-range-input" min="0" max="100" step="0.1" value="0">
+                                </div>
+                                <div class="track-labels">
+                                        <span>Min</span>
+                                        <span>Max</span>
+                                    </div>
+                                </div>
+                                <div id="currentBandStatus" class="current-band-status">Current: $380,000 (63% of band)</div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="changePercentage">Change (%)<span class="required">*</span></label>
+                                <input type="number" id="changePercentage" class="form-control" placeholder="e.g. 8" step="0.1">
+                                <div class="hint-text">Positive for increase, negative for decrease</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="effectiveDate">Effective Date<span class="required">*</span></label>
+                                <input type="date" id="effectiveDate" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="reason">Reason<span class="required">*</span></label>
+                            <select id="reason" class="form-control">
+                                <option value="">Select reason...</option>
+                                <option value="Role Change" selected>Role Change</option>
+                                <option value="Annual Review">Annual Review</option>
+                                <option value="Promotion">Promotion</option>
+                                <option value="Market Adjustment">Market Adjustment</option>
+                                <option value="Cost of Living">Cost of Living</option>
+                                <option value="Performance Based">Performance Based</option>
+                                <option value="Retention">Retention</option>
+                                <option value="Equity Adjustment">Equity Adjustment</option>
+                                <option value="Contract Renewal">Contract Renewal</option>
+                                <option value="Counter Offer">Counter Offer</option>
+                                <option value="Merit Increase">Merit Increase</option>
+                                <option value="Restructuring">Restructuring</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="justification">Justification</label>
+                            <div class="textarea-wrapper">
+                                <textarea id="justification" class="form-control" placeholder="Business case for this revision..."></textarea>
+                            </div>
+                            <div class="hint-text">Required for changes &gt; 10%</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-submit" id="submitBtn">Submit for Approval</button>
+                        <button type="button" class="btn btn-cancel" id="cancelBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- DEEP VIEW MODAL -->
+        <div class="modal-overlay" id="deepViewModal">
+          <div class="deep-view-modal">
+            <header class="dv-header-banner">
+              <div class="dv-badge-cluster">
+                <div class="dv-initial-avatar" id="dvAvatar">RH</div>
+                <div class="dv-header-text">
+                  <h2 id="dvTitle">Robert Hayes â€” Deep View</h2>
+                  <p id="dvSubtitle">CEO · Executive · EMP012</p>
+                </div>
+              </div>
+              <button class="dv-close-trigger"><i data-lucide="x" style="width: 24px; height: 24px;"></i></button>
+            </header>
+            <div class="dv-scrollable-body">
+              <div class="dv-four-col-row">
+                <div class="dv-card" id="dvEmploymentCard">
+                  <div class="dv-card-headline"><i data-lucide="shield-check" style="width:18px;height:18px;"></i><h3>Employment Details</h3></div>
+                  <div class="dv-kv-grid">
+                    <div class="dv-field"><label>Department</label><p>Executive</p></div>
+                    <div class="dv-field"><label>Job Role</label><p>CEO</p></div>
+                    <div class="dv-field"><label>Status</label><p>Active</p></div>
+                    <div class="dv-field"><label>Type</label><p>Permanent</p></div>
+                    <div class="dv-field"><label>Work Mode</label><p>Office</p></div>
+                    <div class="dv-field"><label>Grade Level</label><p>Grade 8</p></div>
+                    <div class="dv-field"><label>Joining Date</label><p>Jan 15, 2018</p></div>
+                    <div class="dv-field"><label>Tenure</label><p>8 Years</p></div>
+                  </div>
+                </div>
+                <div class="dv-card" id="dvPersonalCard">
+                  <div class="dv-card-headline"><i data-lucide="user" style="width:18px;height:18px;"></i><h3>Personal Information</h3></div>
+                  <div class="dv-kv-grid">
+                    <div class="dv-field" style="grid-column:span 2"><label>Full Name</label><p>Robert Hayes</p></div>
+                    <div class="dv-field"><label>Gender</label><p>Male</p></div>
+                    <div class="dv-field" style="grid-column:span 2"><label>Date of Birth</label><p>Mar 12, 1985</p></div>
+                    <div class="dv-field"><label>Nationality</label><p>American</p></div>
+                    <div class="dv-field" style="grid-column:span 2"><label>Reporting Manager</label><p>—</p></div>
+                    <div class="dv-field"><label>Direct Reports</label><p>5 Employees</p></div>
+                    <div class="dv-field"><label>Emergency Contact</label><p>+1 555-0100</p></div>
+                    <div class="dv-field"><label>Blood Group</label><p>A+</p></div>
+                  </div>
+                </div>
+                <div class="dv-card">
+                  <div class="dv-card-headline"><i data-lucide="calendar" style="width:18px;height:18px;"></i><h3>Leave Balances</h3></div>
+                  <div class="dv-leave-list">
+                    <div class="dv-leave-row"><div class="dv-leave-meta"><span>Annual Leave</span><span><strong>18</strong> / 25 Days Used</span></div><div class="dv-bar-track"><div class="dv-bar-fill" style="width:72%;background:#d21787"></div></div></div>
+                    <div class="dv-leave-row"><div class="dv-leave-meta"><span>Sick Leave</span><span><strong>3</strong> / 10 Days Used</span></div><div class="dv-bar-track"><div class="dv-bar-fill" style="width:30%;background:#f59e0b"></div></div></div>
+                    <div class="dv-leave-row"><div class="dv-leave-meta"><span>Compassionate</span><span><strong>1</strong> / 5 Days Used</span></div><div class="dv-bar-track"><div class="dv-bar-fill" style="width:20%;background:#5c67f2"></div></div></div>
+                    <div class="dv-leave-row"><div class="dv-leave-meta"><span>Paternity Leave</span><span><strong>0</strong> / 10 Days Used</span></div><div class="dv-bar-track"><div class="dv-bar-fill" style="width:0%;background:#14b8a6"></div></div></div>
+                  </div>
+                </div>
+                <div class="dv-card">
+                  <div class="dv-card-headline"><i data-lucide="clock" style="width:18px;height:18px;"></i><h3>Attendance Summary (Last 30 Days)</h3></div>
+                  <div class="dv-capsule-stack">
+                    <div class="dv-capsule"><span>Days Present</span><span class="dv-capsule-val green">21 / 22</span></div>
+                    <div class="dv-capsule"><span>Lateness Frequency</span><span class="dv-capsule-val orange">1 Time</span></div>
+                    <div class="dv-capsule"><span>Overtime Hours</span><span class="dv-capsule-val magenta">8.5 hrs</span></div>
+                    <div class="dv-capsule"><span>Work-Life Balance Score</span><span class="dv-capsule-val green">90%</span></div>
+                  </div>
+                  <a href="#" class="dv-action-link">View Full Timesheet</a>
+                </div>
+              </div>
+              <div class="dv-asymmetric-layout">
+                <div>
+                  <div class="dv-financial-trio">
+                    <div class="dv-fin-card dark"><label>Gross Annual Salary</label><div class="dv-cash">$380,000</div><div class="dv-caption"><i data-lucide="trending-up" style="width:14px;height:14px;"></i> 12% Increase from last year</div></div>
+                    <div class="dv-fin-card light"><label>Net Monthly Take-Home</label><div class="dv-cash">$22,800</div><div class="dv-caption">*After estimated taxes</div></div>
+                    <div class="dv-fin-card light"><label>Total Bonus Accrued</label><div class="dv-cash alt">$45,000</div><div class="dv-caption">Next payout: Dec 2026</div></div>
+                  </div>
+                  <div class="dv-card">
+                    <div class="dv-header-row"><h4>Benefits & Allowances</h4><button class="dv-pill-btn"><i data-lucide="wallet" style="width:14px;height:14px;"></i> Request Salary Review</button></div>
+                    <div class="dv-benefit-row"><div class="dv-benefit-left"><div class="dv-benefit-icon"><i data-lucide="wallet" style="width:18px;height:18px;"></i></div><div><h5>Health Insurance</h5><p>Executive Platinum</p></div></div><div class="dv-benefit-val">$2,400 /mo</div></div>
+                    <div class="dv-benefit-row"><div class="dv-benefit-left"><div class="dv-benefit-icon"><i data-lucide="wallet" style="width:18px;height:18px;"></i></div><div><h5>Transportation</h5><p>Executive Allowance</p></div></div><div class="dv-benefit-val">$600 /mo</div></div>
+                    <div class="dv-benefit-row"><div class="dv-benefit-left"><div class="dv-benefit-icon"><i data-lucide="briefcase" style="width:18px;height:18px;"></i></div><div><h5>Life Insurance</h5><p>Executive Group</p></div></div><div class="dv-benefit-val">$2,000,000</div></div>
+                  </div>
+                </div>
+                <div class="dv-card">
+                  <div class="dv-header-row"><h4>File Repository</h4><button class="dv-pill-btn" style="padding:8px 16px;font-size:12px;">+ Upload File</button></div>
+                  <div class="dv-repo-list">
+                    <div class="dv-file-row"><div class="dv-file-left"><div class="dv-file-icon"><i data-lucide="file-text" style="width:18px;height:18px;"></i></div><div><h5>Employment Contract.pdf</h5><p>Contract · Jan 15, 2024 · 2.4 MB</p></div></div><button class="dv-file-action"><i data-lucide="download" style="width:18px;height:18px;"></i></button></div>
+                    <div class="dv-file-row"><div class="dv-file-left"><div class="dv-file-icon"><i data-lucide="file-text" style="width:18px;height:18px;"></i></div><div><h5>NIN_Verification.pdf</h5><p>Identity · Jan 18, 2024 · 1.1 MB</p></div></div><button class="dv-file-action"><i data-lucide="download" style="width:18px;height:18px;"></i></button></div>
+                    <div class="dv-file-row"><div class="dv-file-left"><div class="dv-file-icon"><i data-lucide="file-text" style="width:18px;height:18px;"></i></div><div><h5>Degree_Certificate.pdf</h5><p>Education · Jan 20, 2024 · 4.8 MB</p></div></div><button class="dv-file-action"><i data-lucide="download" style="width:18px;height:18px;"></i></button></div>
+                    <div class="dv-file-row"><div class="dv-file-left"><div class="dv-file-icon"><i data-lucide="file-text" style="width:18px;height:18px;"></i></div><div><h5>Tax_Clearance_2025.pdf</h5><p>Tax · Jan 5, 2026 · 840 KB</p></div></div><button class="dv-file-action"><i data-lucide="download" style="width:18px;height:18px;"></i></button></div>
+                  </div>
+                </div>
+              </div>
+              <div class="dv-three-col-row">
+                <div class="dv-card">
+                  <div class="dv-header-row"><h4>Company Assets Assigned</h4></div>
+                  <div class="dv-asset-stack">
+                    <div class="dv-asset-card"><div class="dv-asset-icon"><i data-lucide="laptop" style="width:20px;height:20px;"></i></div><h4>MacBook Pro 16"</h4><span class="dv-serial">SN-4491-002</span><div class="dv-asset-footer"><span>Status</span><span class="dv-status excellent">Excellent</span></div></div>
+                    <div class="dv-asset-card"><div class="dv-asset-icon"><i data-lucide="phone" style="width:20px;height:20px;"></i></div><h4>iPhone 15 Pro</h4><span class="dv-serial">SN-9921-X43</span><div class="dv-asset-footer"><span>Status</span><span class="dv-status good">Good</span></div></div>
+                    <div class="dv-asset-card"><div class="dv-asset-icon"><i data-lucide="shield" style="width:20px;height:20px;"></i></div><h4>Security Access Card</h4><span class="dv-serial">AC-10443</span><div class="dv-asset-footer"><span>Status</span><span class="dv-status active">Active</span></div></div>
+                  </div>
+                </div>
+                <div class="dv-card">
+                  <div class="dv-header-row"><h4>Recent Appraisal</h4></div>
+                  <div class="dv-appraisal-cluster">
+                    <div class="dv-donut-frame">
+                      <canvas id="dvDonutCanvas"></canvas>
+                      <div class="dv-donut-text">4.8</div>
+                    </div>
+                    <div class="dv-appraisal-text">
+                      <h4>Outstanding</h4>
+                      <p>Annual Review 2025</p>
+                      <div class="dv-stars"><i data-lucide="star" class="dv-star-filled"></i><i data-lucide="star" class="dv-star-filled"></i><i data-lucide="star" class="dv-star-filled"></i><i data-lucide="star" class="dv-star-filled"></i><i data-lucide="star" class="dv-star-filled"></i></div>
+                    </div>
+                  </div>
+                  <div class="dv-testimonial"><p>"Robert has demonstrated exceptional executive leadership this year, driving record growth."</p><span>â€” Sarah Wilson (Manager)</span></div>
+                </div>
+                <div class="dv-card">
+                  <div class="dv-header-row"><h4>Disciplinary & Concerns</h4></div>
+                  <div class="dv-empty-state"><div class="dv-shield-icon"><i data-lucide="shield-check" style="width:28px;height:28px;"></i></div><h4>Clear Record</h4><p>No disciplinary actions or warnings found.</p></div>
+                </div>
+              </div>
+              <div class="dv-card dv-exit-block">
+                <div class="dv-exit-icon"><i data-lucide="log-out" style="width:26px;height:26px;"></i></div>
+                <h4>Not in Exit Cycle</h4>
+                <p>This employee is currently active and not flagged for offboarding or termination.</p>
+                <button class="dv-exit-action">Initiate Separation</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>lucide.createIcons();</script>
+</body>
+</html>
