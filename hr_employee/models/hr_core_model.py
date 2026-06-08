@@ -14,12 +14,7 @@ class HrCoreTask(models.Model):
     name = fields.Char(string="Name")
 
 
-class HrGrade(models.Model):
-    _name = "hr.grade"
-    _description = "HrGrade"
-    _rec_name = "name"
 
-    name = fields.Char(string="Name")
 
 
 class HrCoreSurvey(models.Model):

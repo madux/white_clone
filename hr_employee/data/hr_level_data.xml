@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Permanent Full-Time -->
+
+    <record id="hr_level_1" model="hr.level">
+        <field name="name">L1</field>
+        <field name="description">
+            Top Senior management level.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+    <record id="hr_level_2" model="hr.level">
+        <field name="name">L2</field>
+        <field name="description">
+            Senior management level.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+    <record id="hr_level_3" model="hr.level">
+        <field name="name">L3</field>
+        <field name="description">
+            Middle management level.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+    <record id="hr_level_4" model="hr.level">
+        <field name="name">L4</field>
+        <field name="description">
+            Junior management level.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+</odoo>

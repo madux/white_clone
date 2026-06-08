@@ -1,0 +1,21 @@
+.o_hr_benefit_card {
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+}
+
+.o_hr_benefit_header {
+    background: linear-gradient(
+        135deg,
+        #4f46e5,
+        #7c3aed
+    );
+
+    color: white;
+    padding: 24px;
+    border-radius: 18px;
+}
+
+.o_hr_benefit_header h1 {
+    color: white !important;
+}

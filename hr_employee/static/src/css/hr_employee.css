@@ -130,6 +130,12 @@
     object-fit: cover;
 }
 
+.employee_avatar img {
+    border-radius: 50% !important;
+    width: 65px !important;
+    height: 65px !important;
+    object-fit: cover ;
+}
 .employee_name {
     font-weight: 700;
     margin-top: 18px;

@@ -1,26 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_hr_core_employee_menu"
-                    name="Employee Core"
-                    sequence="6"
-                    action="hr_employee.action_view_employee_kanban_custom"
-                    />
+         <menuitem id="menu_hr_core_employee_menu"
+                name="Employee Core"
+                sequence="6"
+                action="hr_employee.action_core_multi_branch"
+                />
+
+        <menuitem id="menu_hr_core_organisation_setup"
+                        name="🏛️ Organisation Setup"
+                        sequence="1"
+                        parent="hr_employee.menu_hr_core_employee_menu"
+                        groups="base.group_system"
+                        action="hr_employee.action_core_view_hr_core_employee"/>
+       
+        
+        
         <menuitem id="menu_hr_employee_branch"
-                        name="🏛️ Branch &amp; Locations"
-                        parent="menu_hr_core_employee_menu"
+                        name="🏛️ Branch"
+                        parent="menu_hr_core_organisation_setup"
                         sequence="10"
                         action="hr_employee.action_core_multi_branch"/>
 
         <menuitem id="menu_hr_employee_department"
                         name="🏢 Departments"
-                        parent="menu_hr_core_employee_menu"
-                        sequence="20"
-                        action="hr_employee.action_core_department"/>
+                        parent="menu_hr_core_organisation_setup"
+                        sequence="20" 
+                        action="hr_employee.action_core_department" />
+        <menuitem id="menu_hr_core_job_role"
+                        name="👤 Job Role"
+                        parent="menu_hr_core_organisation_setup"
+                        sequence="30"
+                        action="hr_employee.action_core_job" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+        <menuitem id="menu_hr_core_grade"
+                        name="🎖️Grade &amp; Level"
+                        parent="menu_hr_core_organisation_setup"
+                        sequence="40"
+                        action="hr_employee.action_core_grade" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+        <menuitem id="menu_hr_core_grade2"
+                        name="🎖️Grade"
+                        parent="menu_hr_core_grade"
+                        sequence="10"
+                        action="hr_employee.action_core_grade" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+        <menuitem id="menu_hr_core_level"
+                        name="🎖️Level"
+                        parent="menu_hr_core_grade"
+                        sequence="10"
+                        action="hr_employee.action_hr_core_level" groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
 
         <menuitem id="menu_hr_core_employee_announcement"
-            name="🔔 Announcement"
-            parent="menu_hr_core_employee_menu"
-            sequence="25"
-            action="hr_employee.action_hr_core_announcement"
-            groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+                        name="🔔 Announcement"
+                        parent="menu_hr_core_organisation_setup"
+                        sequence="50"
+                        action="hr_employee.action_hr_core_announcement"
+                        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+
+        
 </odoo>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- TREE VIEW -->
+
+    <record id="view_hr_core_employment_type_tree" model="ir.ui.view">
+        <field name="name">hr.core_employment_type.tree</field>
+        <field name="model">hr.core_employment_type</field>
+        <field name="arch" type="xml">
+            <tree js_class="organisation_list">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+
+    <record id="view_hr_core_employment_type_form" model="ir.ui.view">
+        <field name="name">hr.core_employment_type.form</field>
+        <field name="model">hr.core_employment_type</field>
+        <field name="arch" type="xml">
+            <form string="Employment_type">
+
+                <sheet>
+
+                    <!-- HEADER CARD -->
+                    <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="me-3">
+                                <i class="fa fa-university fa-3x text-primary"/>
+                            </div>
+
+                            <div class="oe_title">
+
+                                <label for="name"/>
+
+                                <h1>
+                                    <field name="name"
+                                           placeholder="Employment_type"/>
+                                </h1>
+                                <div class="text-muted">
+                                    Configure Employment_type classifications for employees.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <group>
+                        <group string="Basic Information">
+                            <field name="code" required="0" readonly="0" invisible="0"/>
+                            <field name="notice_period" required="1" readonly="0" invisible="0"/>
+                            <field name="probation" required="1" readonly="0" invisible="0" placeholder="30 days"/>
+                            <field name="probation_period" required="probation == True" readonly="0" invisible="0"/>
+                        </group>
+                        <group string="Details">
+                            <field name="description" placeholder="Start typing..."/>
+                            <field name="country_id" required="1" readonly="0" invisible="0" options="{'no_open': true, 'no_create': true}"/>
+                            <field name="benefit_ids" widget="many2many_tags" required="1" readonly="0" options="{'no_open': true, 'no_create': true}" invisible="0"/>
+                            <field name="applicable_tax_status_ids" widget="many2many_tags" required="1" options="{'no_open': true, 'no_create': true}" readonly="0" invisible="0"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+
+    <record id="view_hr_core_employment_type_search" model="ir.ui.view">
+        <field name="name">hr.core_employment_type.search</field>
+        <field name="model">hr.core_employment_type</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="code"/>
+                <separator/>
+                <filter string="Active"
+                        name="active"
+                        domain="[('active','=',True)]"/>
+                <filter string="Inactive"
+                        name="inactive"
+                        domain="[('active','=',False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+
+    <record id="action_hr_core_employment_type" model="ir.actions.act_window">
+        <field name="name">Employment type</field>
+        <field name="res_model">hr.core_employment_type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_core_employment_type_search"/>
+    </record>
+
+    <menuitem
+        id="menu_hr_core_employment_type"
+        name="📊 Employment type"
+        parent="hr_employee.menu_hr_core_organisation_setup"
+        action="action_hr_core_employment_type"
+        sequence="70"
+        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+</odoo>

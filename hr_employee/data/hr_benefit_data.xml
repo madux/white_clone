@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- BENEFIT LINES -->
+
+    <!-- Leave -->
+    <record id="benefit_line_annual_leave" model="hr.benefit.line">
+        <field name="name">Annual Leave</field>
+    </record>
+
+    <record id="benefit_line_sick_leave" model="hr.benefit.line">
+        <field name="name">Sick Leave</field>
+    </record>
+
+    <record id="benefit_line_maternity_leave" model="hr.benefit.line">
+        <field name="name">Maternity Leave</field>
+    </record>
+
+    <record id="benefit_line_paternity_leave" model="hr.benefit.line">
+        <field name="name">Paternity Leave</field>
+    </record>
+
+    <record id="benefit_line_compassionate_leave" model="hr.benefit.line">
+        <field name="name">Compassionate Leave</field>
+    </record>
+
+    <!-- Insurance -->
+    <record id="benefit_line_health_insurance" model="hr.benefit.line">
+        <field name="name">Health Insurance</field>
+    </record>
+
+    <record id="benefit_line_life_insurance" model="hr.benefit.line">
+        <field name="name">Life Insurance</field>
+    </record>
+
+    <record id="benefit_line_accident_insurance" model="hr.benefit.line">
+        <field name="name">Accident Insurance</field>
+    </record>
+
+    <!-- Allowances -->
+    <record id="benefit_line_housing_allowance" model="hr.benefit.line">
+        <field name="name">Housing Allowance</field>
+    </record>
+
+    <record id="benefit_line_transport_allowance" model="hr.benefit.line">
+        <field name="name">Transport Allowance</field>
+    </record>
+
+    <record id="benefit_line_meal_allowance" model="hr.benefit.line">
+        <field name="name">Meal Allowance</field>
+    </record>
+
+    <record id="benefit_line_utility_allowance" model="hr.benefit.line">
+        <field name="name">Utility Allowance</field>
+    </record>
+
+    <!-- Retirement -->
+    <record id="benefit_line_pension" model="hr.benefit.line">
+        <field name="name">Pension Contribution</field>
+    </record>
+
+    <record id="benefit_line_gratuity" model="hr.benefit.line">
+        <field name="name">Gratuity</field>
+    </record>
+
+    <!-- Training -->
+    <record id="benefit_line_training" model="hr.benefit.line">
+        <field name="name">Training Sponsorship</field>
+    </record>
+
+    <record id="benefit_line_certification" model="hr.benefit.line">
+        <field name="name">Professional Certification</field>
+    </record>
+
+    <!-- BENEFITS -->
+
+    <record id="benefit_leave" model="hr.benefit">
+        <field name="name">Leave</field>
+        <field name="benefit_line_ids" eval="[(6,0,[
+            ref('benefit_line_annual_leave'),
+            ref('benefit_line_sick_leave'),
+            ref('benefit_line_maternity_leave'),
+            ref('benefit_line_paternity_leave'),
+            ref('benefit_line_compassionate_leave')
+        ])]"/>
+    </record>
+
+    <record id="benefit_insurance" model="hr.benefit">
+        <field name="name">Insurance</field>
+        <field name="benefit_line_ids" eval="[(6,0,[
+            ref('benefit_line_health_insurance'),
+            ref('benefit_line_life_insurance'),
+            ref('benefit_line_accident_insurance')
+        ])]"/>
+    </record>
+
+    <record id="benefit_allowance" model="hr.benefit">
+        <field name="name">Allowance</field>
+        <field name="benefit_line_ids" eval="[(6,0,[
+            ref('benefit_line_housing_allowance'),
+            ref('benefit_line_transport_allowance'),
+            ref('benefit_line_meal_allowance'),
+            ref('benefit_line_utility_allowance')
+        ])]"/>
+    </record>
+
+    <record id="benefit_retirement" model="hr.benefit">
+        <field name="name">Retirement</field>
+        <field name="benefit_line_ids" eval="[(6,0,[
+            ref('benefit_line_pension'),
+            ref('benefit_line_gratuity')
+        ])]"/>
+    </record>
+
+    <record id="benefit_training" model="hr.benefit">
+        <field name="name">Training &amp; Development</field>
+        <field name="benefit_line_ids" eval="[(6,0,[
+            ref('benefit_line_training'),
+            ref('benefit_line_certification')
+        ])]"/>
+    </record>
+
+</odoo>

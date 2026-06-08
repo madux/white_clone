@@ -14,114 +14,35 @@
                 </div>
  
                 <nav class="organi_o_cc_nav" id="primaryNav">
-
                     <!-- Overview -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openRecord">
+                    <div class="organi_o_cc_nav_item psb-active" data-item="overview">
                         <span class="organi_o_cc_nav_icon">
                             <i class="fa fa-dashboard"/>
                         </span>
                         <span class="o_cc_nav_label">Overview</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
+                    </div>
+                    <t t-foreach="sidebarState.menus"
+                        t-as="menu"
+                        t-key="menu.id">
+                        <div class="organi_o_cc_nav_item" t-on-click="() => this.openMenu(menu)">
+                            <span class="organi_o_cc_nav_icon"><i t-att-class="menu.icon_class"/></span>
+                            <span class="organi_o_cc_nav_label"><t t-esc="menu.name"/></span>
+                            <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
+                        </div>
 
-                    <!-- Organisation -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openCustomHearings">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-building"/>
-                        </span>
-                        <span class="organi_o_cc_nav_label">Organisation</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
+                        <!-- <a class="organi_o_cc_nav_item"
+                            t-on-click="() => this.openMenu(menu)">
+                            <span class="organi_o_cc_nav_icon">
+                                <i t-att-class="menu.icon_class"/>
+                            </span>
+                            <span class="o_cc_nav_label">
+                                <t t-esc="menu.name"/>
+                            </span>
+                            <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
 
-                    <!-- Organisation Chart -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-sitemap"/>
-                        </span>
-                        <span class="o_cc_nav_label">Organisation Chart</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
+                        </a> -->
 
-                    <!-- Onboarding -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-user-plus"/>
-                        </span>
-                        <span class="o_cc_nav_label">Onboarding</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Offboarding -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-user-times"/>
-                        </span>
-                        <span class="o_cc_nav_label">Offboarding</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Documentation -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-file-text-o"/>
-                        </span>
-                        <span class="o_cc_nav_label">Documentation</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Verification -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-check-circle"/>
-                        </span>
-                        <span class="o_cc_nav_label">Verification</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Workforce -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-users"/>
-                        </span>
-                        <span class="o_cc_nav_label">Workforce</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Compensation -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-money"/>
-                        </span>
-                        <span class="o_cc_nav_label">Compensation</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Benefits -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-gift"/>
-                        </span>
-                        <span class="o_cc_nav_label">Benefits</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Performance & Dev -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-line-chart"/>
-                        </span>
-                        <span class="o_cc_nav_label">Performance &amp; Dev</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
-
-                    <!-- Staff Engagement -->
-                    <a class="organi_o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="organi_o_cc_nav_icon">
-                            <i class="fa fa-comments"/>
-                        </span>
-                        <span class="o_cc_nav_label">Staff Engagement</span>
-                        <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
-                    </a>
+                    </t>
 
                 </nav>
  

@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Permanent Full-Time -->
+
+    <record id="employment_type_perm_ft" model="hr.core_employment_type">
+        <field name="name">Permanent (Full-Time)</field>
+        <field name="code">PERM-FT</field>
+        <field name="notice_period">30</field>
+        <field name="probation">6</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Permanent full-time employee entitled to all company benefits and statutory deductions.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Permanent Part-Time -->
+
+    <record id="employment_type_perm_pt" model="hr.core_employment_type">
+        <field name="name">Permanent (Part-Time)</field>
+        <field name="code">PERM-PT</field>
+        <field name="notice_period">30</field>
+        <field name="probation">3</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Permanent employee working reduced hours.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Fixed Term -->
+
+    <record id="employment_type_fixed_term" model="hr.core_employment_type">
+        <field name="name">Fixed-Term Employee</field>
+        <field name="code">FIXED</field>
+        <field name="notice_period">30</field>
+        <field name="probation">3</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Employee engaged for a fixed contractual period.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Contract Staff -->
+
+    <record id="employment_type_contract" model="hr.core_employment_type">
+        <field name="name">Contract Staff</field>
+        <field name="code">CONTRACT</field>
+        <field name="notice_period">14</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Employee engaged under a contractual agreement.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Temporary Staff -->
+
+    <record id="employment_type_temp" model="hr.core_employment_type">
+        <field name="name">Temporary Employee</field>
+        <field name="code">TEMP</field>
+        <field name="notice_period">7</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Temporary employee engaged for short-term assignments.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Casual Worker -->
+
+    <record id="employment_type_casual" model="hr.core_employment_type">
+        <field name="name">Casual Worker</field>
+        <field name="code">CASUAL</field>
+        <field name="notice_period">1</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Worker paid on a daily or periodic basis.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Probationary Employee -->
+
+    <record id="employment_type_probation" model="hr.core_employment_type">
+        <field name="name">Probationary Employee</field>
+        <field name="code">PROB</field>
+        <field name="notice_period">14</field>
+        <field name="probation">6</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Newly hired employee undergoing probation assessment.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Graduate Trainee -->
+
+    <record id="employment_type_graduate_trainee" model="hr.core_employment_type">
+        <field name="name">Graduate Trainee</field>
+        <field name="code">GT</field>
+        <field name="notice_period">14</field>
+        <field name="probation">12</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Graduate employee enrolled in a structured trainee programme.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Internship -->
+
+    <record id="employment_type_intern" model="hr.core_employment_type">
+        <field name="name">Intern</field>
+        <field name="code">INTERN</field>
+        <field name="notice_period">7</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Student or graduate attached for industrial training.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- NYSC -->
+
+    <record id="employment_type_nysc" model="hr.core_employment_type">
+        <field name="name">NYSC Corps Member</field>
+        <field name="code">NYSC</field>
+        <field name="notice_period">7</field>
+        <field name="probation">0</field>
+        <field name="description">
+            National Youth Service Corps member serving with the organization.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Consultant -->
+
+    <record id="employment_type_consultant" model="hr.core_employment_type">
+        <field name="name">Consultant</field>
+        <field name="code">CONSULT</field>
+        <field name="notice_period">30</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Independent consultant providing specialized services.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Outsourced Staff -->
+
+    <record id="employment_type_outsourced" model="hr.core_employment_type">
+        <field name="name">Outsourced Staff</field>
+        <field name="code">OUTSOURCE</field>
+        <field name="notice_period">14</field>
+        <field name="probation">0</field>
+        <field name="description">
+            Employee supplied through a third-party service provider.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Commission Based -->
+
+    <record id="employment_type_commission" model="hr.core_employment_type">
+        <field name="name">Commission-Based Employee</field>
+        <field name="code">COMMISSION</field>
+        <field name="notice_period">14</field>
+        <field name="probation">3</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Employee compensated primarily through commissions.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+    <!-- Apprentice -->
+
+    <record id="employment_type_apprentice" model="hr.core_employment_type">
+        <field name="name">Apprentice / Trainee</field>
+        <field name="code">APPRENTICE</field>
+        <field name="notice_period">7</field>
+        <field name="probation">12</field>
+        <field name="probation_period">months</field>
+        <field name="description">
+            Employee undergoing vocational or technical training.
+        </field>
+        <field name="country_id" ref="base.ng"/>
+    </record>
+
+</odoo>

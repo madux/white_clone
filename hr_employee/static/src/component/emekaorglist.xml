@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_employee.OrganisationListRenderer" t-inherit="web.ListRenderer" t-inherit-mode="primary">
+        
+        <xpath expr="//div[@t-ref='root']" position="before">
+            <div class="psb-sidebar">
+ 
+                <div class="psb-logo">
+                    <div class="psb-logo-icon">C</div>
+                    <span class="psb-logo-text">CleonHR</span>
+                </div>
+ 
+                <nav class="o_cc_admin_sidebar" id="primaryNav">
+                    <!-- Overview -->
+                    <div class="psb-nav-item psb-active" data-item="overview">
+                        <span class="psb-nav-icon"><i data-lucide="layout-dashboard"></i></span>
+                        <span class="psb-nav-label">Overview</span>
+                    </div>
+                    <t t-foreach="sidebarState.menus"
+                        t-as="menu"
+                        t-key="menu.id">
+                        <div class="organi_o_cc_nav_item" t-on-click="() => this.openMenu(menu)">
+                            <span class="psb-nav-icon"><i t-att-class="menu.icon_class"/></span>
+                            <span class="psb-nav-label"><t t-esc="menu.name"/></span>
+                            <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
+                        </div>
+
+                        <!-- <a class="organi_o_cc_nav_item"
+                            t-on-click="() => this.openMenu(menu)">
+                            <span class="organi_o_cc_nav_icon">
+                                <i t-att-class="menu.icon_class"/>
+                            </span>
+                            <span class="o_cc_nav_label">
+                                <t t-esc="menu.name"/>
+                            </span>
+                            <i class="fa fa-chevron-right organi_o_cc_nav_arrow"/>
+
+                        </a> -->
+
+                    </t>
+
+                </nav>
+ 
+                <div class="o_cc_sidebar_footer">
+                    <span class="o_cc_footer_label">Solution By MaachSoft</span>
+                    <div class="o_cc_footer_status">
+                        <span class="o_cc_status_dot o_cc_status_green"/>
+                        All integrations active
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </t> 
+</templates>
+ 

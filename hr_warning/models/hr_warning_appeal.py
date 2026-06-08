@@ -588,7 +588,7 @@ class HrWarning(models.Model):
                 'default_warning_id': self.warning_id.id,
                 'default_case_type_id': self.case_type_id.id,
                 'default_employee_id': self.employee_id.id,
-                }
+                },
             'target': 'new',
             # 'domain': [('id', 'in', rec_ids)]
         }

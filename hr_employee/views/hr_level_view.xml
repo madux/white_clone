@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- TREE VIEW -->
+    <record id="view_hr_core_level_tree" model="ir.ui.view">
+        <field name="name">hr.level.tree</field>
+        <field name="model">hr.level</field>
+        <field name="arch" type="xml">
+            <tree js_class="organisation_list">
+                <field name="name"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+
+    <record id="view_hr_core_level_form" model="ir.ui.view">
+        <field name="name">hr.level.form</field>
+        <field name="model">hr.level</field>
+        <field name="arch" type="xml">
+            <form string="Level">
+                <sheet>
+                    <!-- HEADER CARD -->
+
+                    <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="me-3">
+                                <i class="fa fa-university fa-3x text-primary"/>
+                            </div>
+
+                            <div class="oe_title">
+
+                                <label for="name"/>
+
+                                <h1>
+                                    <field name="name"
+                                           placeholder="Level"/>
+                                </h1>
+
+                                <div class="text-muted">
+                                    Configure Level classifications for employees.
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <group>
+
+                        <group string="Basic Information">
+                            <field name="description"/>
+                        </group>
+
+                        <group string="Details">
+
+                            <field name="country_id" options="{'no_open': true, 'no_create': true}" invisible="0"/>
+                        </group>
+
+                    </group>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+
+    <record id="view_hr_core_level_search" model="ir.ui.view">
+        <field name="name">hr.level.search</field>
+        <field name="model">hr.level</field>
+        <field name="arch" type="xml">
+
+            <search>
+
+                <field name="name"/>
+
+                <separator/>
+
+                <filter string="Active"
+                        name="active"
+                        domain="[('active','=',True)]"/>
+
+                <filter string="Inactive"
+                        name="inactive"
+                        domain="[('active','=',False)]"/>
+
+            </search>
+
+        </field>
+    </record>
+
+    <!-- ACTION -->
+
+    <record id="action_hr_core_level" model="ir.actions.act_window">
+        <field name="name">Level</field>
+        <field name="res_model">hr.level</field>
+        <field name="view_mode">tree,form</field>
+        <field name="target">current</field>
+        <field name="search_view_id" ref="view_hr_core_level_search"/>
+    </record>
+</odoo>

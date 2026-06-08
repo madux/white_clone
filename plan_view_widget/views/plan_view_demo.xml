@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Plan view arch definition — attached to res.partner as a demo.
+         The view_type MUST be "plan" to match the JS registry key.
+
+         `src` attribute (optional):
+           - Omit it  → uses the default /plan_view/page route
+           - Set it   → uses any other local Odoo route, e.g.:
+               src="/my_module/custom_dashboard"
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="view_partner_plan" model="ir.ui.view">
+        <field name="name">res.partner.plan</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <!-- You can add src="/your/custom/route" here to point
+                 to a different HTML page instead of the default one -->
+            <plan/>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Window action — adds Plan to the view switcher on Contacts.
+         Add view_mode="list,form,plan" to any existing action, or
+         create a standalone action like this one.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="action_partner_plan_view" model="ir.actions.act_window">
+        <field name="name">Contacts – Plan View</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form,plan</field>
+        <field name="view_ids"
+               eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'plan', 'view_id': ref('view_partner_plan')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Plan View is active.
+            </p>
+        </field>
+    </record>
+
+    <!-- Add a menu item so you can reach it easily during development -->
+    <menuitem
+        id="menu_partner_plan_view"
+        name="Contacts (Plan)"
+        parent="contacts.contacts_menu_root"
+        action="action_partner_plan_view"
+        sequence="99"/>
+
+</odoo>

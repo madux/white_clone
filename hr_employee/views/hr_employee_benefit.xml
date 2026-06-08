@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================= -->
+    <!-- BENEFIT TREE VIEW                         -->
+    <!-- ========================================= -->
+
+    <record id="view_hr_benefit_tree" model="ir.ui.view">
+        <field name="name">hr.benefit.tree</field>
+        <field name="model">hr.benefit</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="benefit_line_ids" js_class="organisation_list">
+                <field name="name"/>
+                <field name="benefit_line_ids" widget="many2many_tags"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- BENEFIT FORM VIEW                         -->
+    <!-- ========================================= -->
+
+    <record id="view_hr_benefit_form" model="ir.ui.view">
+        <field name="name">hr.benefit.form</field>
+        <field name="model">hr.benefit</field>
+        <field name="arch" type="xml">
+            <form string="Benefit">
+
+                <sheet>
+
+                    <!-- HERO HEADER -->
+
+                    <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="me-3">
+                                <i class="fa fa-gift fa-3x text-primary"/>
+                            </div>
+
+                            <div class="oe_title">
+                                <label for="name"/>
+
+                                <h1>
+                                    <field name="name"
+                                           placeholder="Benefit Category"/>
+                                </h1>
+
+                                <div class="text-muted">
+                                    Define and manage employee benefit groups.
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- BENEFIT LINES SECTION -->
+
+                    <div class="mt-4">
+
+                        <h3 class="text-primary">
+                            Benefit Lines
+                        </h3>
+
+                        <div class="alert alert-info">
+                            Add all benefit options available under this category.
+                        </div>
+
+                        <field name="benefit_line_ids" colspan="2"
+                               widget="many2many_tags"
+                               options="{'color_field': false}"
+                               placeholder="Add Benefit Lines..."/>
+
+                    </div>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- BENEFIT SEARCH VIEW                       -->
+    <!-- ========================================= -->
+
+    <record id="view_hr_benefit_search" model="ir.ui.view">
+        <field name="name">hr.benefit.search</field>
+        <field name="model">hr.benefit</field>
+        <field name="arch" type="xml">
+            <search>
+
+                <field name="name"/>
+
+                <filter string="With Benefit Lines"
+                        name="with_lines"
+                        domain="[('benefit_line_ids','!=',False)]"/>
+
+            </search>
+        </field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- BENEFIT LINE TREE VIEW                    -->
+    <!-- ========================================= -->
+
+    <record id="view_hr_benefit_line_tree" model="ir.ui.view">
+        <field name="name">hr.benefit.line.tree</field>
+        <field name="model">hr.benefit.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- BENEFIT LINE FORM VIEW                    -->
+    <!-- ========================================= -->
+
+    <record id="view_hr_benefit_line_form" model="ir.ui.view">
+        <field name="name">hr.benefit.line.form</field>
+        <field name="model">hr.benefit.line</field>
+        <field name="arch" type="xml">
+            <form string="Benefit Line">
+
+                <sheet>
+
+                    <div class="p-4 mb-4 bg-success-subtle rounded shadow-sm">
+
+                        <div class="d-flex align-items-center">
+
+                            <i class="fa fa-check-circle fa-2x text-success me-3"/>
+
+                            <div class="oe_title">
+                                <h1>
+                                    <field name="name"
+                                           placeholder="Benefit Line"/>
+                                </h1>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <group>
+                        <field name="name"/>
+                    </group>
+
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================= -->
+    <!-- ACTIONS                                   -->
+    <!-- ========================================= -->
+
+    <record id="action_hr_benefit" model="ir.actions.act_window">
+        <field name="name">Benefits</field>
+        <field name="res_model">hr.benefit</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_benefit_search"/>
+    </record>
+
+    <record id="action_hr_benefit_line" model="ir.actions.act_window">
+        <field name="name">Benefit Lines</field>
+        <field name="res_model">hr.benefit.line</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_hr_benefit_root"
+                        name="🎁 Benefit"
+                        parent="hr_employee.menu_hr_core_organisation_setup"
+                        sequence="60"
+                        action="hr_employee.action_hr_benefit"
+                        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+
+    <!-- <menuitem
+            id="menu_hr_benefit_root"
+            name="Benefits"
+            sequence="100"
+            web_icon="hr,static/description/icon.png"/> -->
+
+    <menuitem
+            id="menu_hr_benefit"
+            name="Benefit Categories"
+            parent="menu_hr_benefit_root"
+            action="action_hr_benefit"
+            sequence="1"/>
+
+    <menuitem
+            id="menu_hr_benefit_line"
+            name="Benefit Lines"
+            parent="menu_hr_benefit_root"
+            action="action_hr_benefit_line"
+            sequence="2"/>
+
+</odoo>

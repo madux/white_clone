@@ -95,12 +95,65 @@
             </form>
         </field>
     </record>
+    <record id="hr_department_kanban_view" model="ir.ui.view">
+        <field name="name">hr.department.kanban</field>
+        <field name="model">hr.department</field>
+        <field name="arch" type="xml">
+            <kanban create="0">
+                <field name="id"/>
+                <field name="name"/> 
+                <templates>
+                    <!-- <t t-name="kanban-box"> -->
+                    <t t-name="kanban-box">
+                        <!-- <div class="oe_kanban_card"> -->
+                        <div class="du-dept-card" data-code="ENG" data-budget="2400000" data-target="48">
+                            <div class="du-card-header-row">
+                                <span class="du-emoji-icon">&#x1F4BB;</span>
+                                <span class="du-staff-badge"><field name="total_employee" nolabel="1" readonly="0"/> staff</span>
+                            </div>
+                            <h3 class="du-dept-title"><field name="name" nolabel="1"/></h3>
+                            <p class="du-dept-meta">Head: <span class="du-meta-highlight"><field name="manager_id" nolabel="1" readonly="0"/></span></p>
+                            <p class="du-dept-location"><i class="fa fa-map"></i> <field name="company_id" nolabel="1" readonly="0"/></p>
+                            <div class="du-metric-row">
+                                <div class="du-metric-block">
+                                <span class="du-metric-val du-text-pink"><field name="department_budget" nolabel="1" readonly="0"/></span>
+                                <span class="du-metric-lbl">Budget</span>
+                                </div>
+                                <div class="du-metric-block">
+                                <span class="du-metric-val du-text-pink"><field name="expected_employee" nolabel="1" readonly="0"/></span>
+                                <span class="du-metric-lbl">Open Roles</span>
+                                </div>
+                                <div class="du-metric-block">
+                                <span class="du-metric-val du-text-muted"><field name="total_employee" nolabel="1" readonly="0"/></span>
+                                <span class="du-metric-lbl">Headcount</span>
+                                </div>
+                            </div>
+                            <div class="du-progress-container">
+                                <div class="du-progress-labels">
+                                <span>Budget used</span>
+                                <span>78%</span>
+                                </div>
+                                <div class="du-progress-bar-bg">
+                                <div class="du-progress-bar-fill du-fill-orange" style="width: 78%;"></div>
+                                </div>
+                            </div>
+                            <div class="du-card-actions-row">
+                                <button name="action_view_record" type="object" class="du-action-btn du-text-dark">View Detail</button>
+                                <button name="action_view_record" type="object" class="du-action-btn du-text-muted" data-action="edit-dept">Edit</button>
+                                <button name="unlink" type="object" confirm="Do you want to Delete?" class="du-action-btn du-text-red">Delete</button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
 
     <record id="action_core_department" model="ir.actions.act_window">
         <field name="name">Department</field>
         <field name="res_model">hr.department</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="view_core_department_tree"/>
+        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_id" ref="hr_department_kanban_view"/>
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {
@@ -110,6 +163,10 @@
             (0, 0, {
                 'view_mode': 'form',
                 'view_id': ref('hr_employee.hr_department_form_view'),
+            }),
+            (0, 0, {
+                'view_mode': 'kanban',
+                'view_id': ref('hr_employee.hr_department_kanban_view'),
             }),
         ]"/>
         <field name="help" type="html">

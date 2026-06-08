@@ -658,6 +658,40 @@ class HrWarning(models.Model):
     def _read_group_stage_ids(self, stages, domain, order):
         return stages.search([], order=order)
 
+    @api.model
+    def get_employee_warning_dashboard(self):
+        employee = self.env.user.employee_id
+        record = self.env['hr.warning'].search([('employee_id', '=', employee.id)]) 
+        if record:
+            tree_view_id = self.env.ref(
+                'hr_warning.hr_warning_tree_view'
+            ).id
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'{employee.name.capitalize()} Incidents',
+                'res_model': 'hr.warning',
+                'view_mode': 'tree',
+                'views': [
+                    (tree_view_id, 'tree')
+                ], 
+                'domain': [('id', 'in', record.ids)],
+                'target': 'new',
+            } 
+        else:
+            # reused because of readablility and easy maintenance
+            # the app is complex
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'{employee.name.capitalize()} Incidents',
+                'res_model': 'hr.warning',
+                'view_mode': 'tree',
+                'views': [
+                    (tree_view_id, 'tree')
+                ], 
+                'domain': [('id', 'in', [0])],
+                'target': 'new',
+            } 
+
     # ─────────────────────────────────────────────────────────────────────────
     # Computed fields
     # ─────────────────────────────────────────────────────────────────────────

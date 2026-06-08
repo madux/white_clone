@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         Plan View — OWL Component Template
+         Renders as an iframe view type, just like the map view.
+    ═══════════════════════════════════════════════════════════════════ -->
+    <t t-name="plan_view_widget.PlanView">
+        <div class="o_plan_view">
+
+            <!-- Top control bar (mirrors o_map_view toolbar style) -->
+            <div class="o_plan_view_control_panel">
+                <div class="o_plan_view_title">
+                    <i class="fa fa-map-o" aria-hidden="true"/>
+                    Plan View
+                </div>
+                <div class="o_plan_view_actions">
+                    <button class="btn btn-sm btn-secondary" t-on-click="reload">
+                        <i class="fa fa-refresh" aria-hidden="true"/>
+                        Reload
+                    </button>
+                    <button
+                        class="btn btn-sm btn-secondary"
+                        t-on-click="toggleFullscreen"
+                        t-att-title="state.isFullscreen ? 'Exit fullscreen' : 'Fullscreen'">
+                        <i t-att-class="state.isFullscreen ? 'fa fa-compress' : 'fa fa-expand'" aria-hidden="true"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- iframe container -->
+            <div class="o_plan_view_iframe_wrapper" t-att-class="state.isFullscreen ? 'o_plan_fullscreen' : ''">
+                <t t-if="state.isLoading">
+                    <div class="o_plan_view_loading">
+                        <div class="o_loading_spinner">
+                            <i class="fa fa-circle-o-notch fa-spin fa-2x" aria-hidden="true"/>
+                        </div>
+                        <p>Loading plan view…</p>
+                    </div>
+                </t>
+
+                <iframe
+                    t-ref="planIframe"
+                    t-att-src="iframeSrc"
+                    class="o_plan_view_iframe"
+                    t-att-class="{ 'o_hidden': state.isLoading }"
+                    frameborder="0"
+                    allowfullscreen="1"
+                    t-on-load="onIframeLoad"
+                />
+            </div>
+
+        </div>
+    </t>
+
+</templates>

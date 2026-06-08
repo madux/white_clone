@@ -2,3 +2,11 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_core_announcement_user,hr_core_announcement user,model_hr_core_announcement,hr_employee.group_hr_employee_core_user,1,0,0,0
 access_hr_core_announcement_manager,hr_core_announcement manager,model_hr_core_announcement,hr_employee.group_hr_employee_core_manager,1,1,1,1
 access_hr_core_announcement_admin,hr_core_announcement admin,model_hr_core_announcement,base.group_system,1,1,1,1
+
+access_hr_benefit_user,hr.benefit.user,model_hr_benefit,,1,1,1,1
+access_hr_benefit_line_user,hr.benefit.line.user,model_hr_benefit_line,,1,1,1,1
+access_hr_tax_status_user,hr.tax.status.user,model_hr_tax_status,,1,1,1,1
+access_hr_level_user,hr_level.user,model_hr_level,,1,1,1,1
+access_hr_grade_user,hr_grade.user,model_hr_grade,,1,1,1,1
+access_core_employment_type_user,core_employment_type.user,model_hr_core_employment_type,,1,1,1,1
+access_hr_reporting_structure_user,hr_reporting_structure.user,model_hr_reporting_structure,,1,1,1,1

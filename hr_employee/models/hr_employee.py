@@ -5,16 +5,109 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-# class EhaBranch(models.Model):
-#     _inherit = "multi.branch"
+class irAttachment(models.Model):
+    _inherit = "ir.attachment"
+
+    employee_id = fields.Many2one('hr.employee')
 
 
 class HrEmployee(models.Model):
     _inherit = 'hr.employee'
 
+    @api.model
+    def get_employee_profile_dashboard(self):
+        view_id = self.env.ref(
+                'hr_employee.action_view_employee_kanban_custom'
+            ).id
+        staff_directory = {
+                'type': 'ir.actions.act_window',
+                'name': 'Employee Directory',
+                'res_model': 'hr.employee',
+                'view_mode': 'kanban',
+                'views': [
+                    (view_id, 'kanban')
+                ], 
+                'target': 'current',
+            }
+        is_employee_dashboard = self.env.context.get('default_is_employee_dashboard')
+        # if is_employee_dashboard: 
+        employee = self.env.user.employee_id
+        record = self.search([('id', '=', employee.id)], limit=1)
+        # if not record:
+        #     record = super(HrInsurance, self).create({})
+        # record._compute_dashboard_values()
+        if record:
+            form_view_id = self.env.ref(
+                'hr_employee.hr_employee_profile_form_view'
+            ).id
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'{employee.name.capitalize()}',
+                'res_model': 'hr.employee',
+                'view_mode': 'form',
+                'views': [
+                    (form_view_id, 'form')
+                ], 
+                'res_id': record.id,
+                'target': 'current',
+            }
+        else:
+            return staff_directory
+        
+    @api.model
+    def get_get_employee_action_data(self): 
+        action_view_id = self.env.ref(
+                'hr_employee.action_core_view_hr_core_employee'
+            ).id
+        menu_view_id = self.env.ref(
+                'hr_employee.menu_hr_core_organisation'
+            ).id
+        if action_view_id and menu_view_id:
+            return [action_view_id, menu_view_id]
+
+        return [False, False]
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        is_employee_dashboard = self.env.context.get('default_is_employee_dashboard')
+        # raise ValidationError(f'every thingd {is_employee_dashboard}')
+        employee = self.env.user.employee_id
+        _logger.info(f'every thingd {is_employee_dashboard} -- {employee}')
+        if employee and is_employee_dashboard:
+            res.update({
+                'name': employee.name,
+                'number_of_incidents': employee.number_of_incidents,
+                'emp_remaining_leave_days': employee.emp_remaining_leave_days,
+                'email': employee.work_email,
+                'image_1920': employee.image_1920,
+                'announcement_ids': employee.announcement_ids,
+                'employee_number': employee._compute_formatted_date(),
+                'is_present_text': employee.is_present_text,
+                'is_present': employee.is_present,
+                'employee_document_ids': employee.employee_document_ids,
+                'employee_leave_ids': employee.employee_leave_ids,
+                'anniversary_count': len(employee.anniversary_celebrant_ids.ids),
+                'anniversary_celebrant_ids': employee.anniversary_celebrant_ids,
+                'employment_years_count': employee.employment_years_count,
+                'birthday_celebrant_ids': employee.birthday_celebrant_ids,
+                'number_open_announcement': len(employee.announcement_ids.ids),
+                'birthday_count': employee.birthday_count,
+                'hr_warning_ids': employee.hr_warning_ids,
+
+            })
+            # employee.action_open_emp_leave()
+            # employee.action_open_emp_document()
+            # employee.action_open_emp_incident()
+
+
+        return res
+
     first_name = fields.Char(string="First name", required=True, copy=False)
     middle_name = fields.Char(string="Middle name", copy=False)
     branch_id = fields.Many2one('multi.branch', string='Branch')
+    grade_id = fields.Many2one('hr.grade', string='Grade')
+    employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     
     last_name = fields.Char("Surname", required=True, copy=False)
     birthday = fields.Date(string="Birthday", copy=False)
@@ -63,6 +156,11 @@ class HrEmployee(models.Model):
     number_open_incident = fields.Integer(
         compute="_compute_number_of_incidents",
         string="Number of Incidents"
+    )
+
+    employee_document_count = fields.Integer(
+        compute="_compute_number_of_documents",
+        string="Document count"
     )
     number_open_announcement = fields.Integer(
         compute="_compute_announcements",
@@ -125,9 +223,18 @@ class HrEmployee(models.Model):
         default="incident", help="Used to compute the type of list to display .e.g all, incident, leave, document, etc"
     )
 
+    @api.model
+    def create(self, vals):
+        if self.env.context.get('default_is_employee_dashboard'):
+            # pass 
+            raise ValidationError("dffdwcedcd")
+        else:
+            return super().create(vals)
+
     def action_open_emp_leave(self):
         self.action_type = 'leave'
-        employee_leaves = self.env['hr.leave'].search([('employee_id', '=', self.id)], limit=5)
+        context_id = self.env.user.employee_id.id if self.env.context.get('default_is_employee_dashboard') else self.id
+        employee_leaves = self.env['hr.leave'].search([('employee_id', '=', context_id)], limit=5)
         if employee_leaves:
             self.employee_leave_ids = [(6, 0, employee_leaves.ids)]
         
@@ -139,9 +246,9 @@ class HrEmployee(models.Model):
 
     def action_open_emp_incident(self):
         self.action_type = 'incident'
-        employee_document = self.env['hr.warning'].search([('employee_id', '=', self.id)], limit=5)
-        if employee_document:
-            self.employee_document_ids = [(6, 0, employee_document.ids)]
+        employee_warning = self.env['hr.warning'].search([('employee_id', '=', self.id)], limit=5)
+        if employee_warning:
+            self.hr_warning_ids = [(6, 0, employee_warning.ids)]
 
     # calendar_ids = fields.Many2many(
     #     comodel_name='calendar.event',
@@ -281,29 +388,36 @@ class HrEmployee(models.Model):
                 rec.employment_years_count = diff.days
             else:
                 rec.employment_years_count = 0
-            
+           
     @api.depends('name')
     def _compute_remaining_leave_days(self):
         for rec in self:
+            leaves = self.env['hr.leave'].search_count([
+                ('employee_id', '=', rec.id),
+                ('state', '=', 'validate'),
+            ])
+            rec.emp_remaining_leave_days = leaves
             # Total Approved Allocations
-            allocations = self.env['hr.leave.allocation'].search([
-                ('employee_id', '=', rec.id),
-                ('state', '=', 'validate'),
-            ])
-            allocated_days = sum(
-                allocations.mapped('number_of_days_display')
-            )
-            # Total Approved Leaves Taken
-            leaves = self.env['hr.leave'].search([
-                ('employee_id', '=', rec.id),
-                ('state', '=', 'validate'),
-            ])
-            taken_days = sum(
-                leaves.mapped('number_of_days_display')
-            )
-            rec.emp_remaining_leave_days = (
-                allocated_days - taken_days
-            )
+            # allocations = self.env['hr.leave.allocation'].search([
+            #     ('employee_id', '=', rec.id),
+            #     ('state', '=', 'validate'),
+            # ])
+            # allocated_days = sum(
+            #     allocations.mapped('number_of_days_display')
+            # )
+            # # Total Approved Leaves Taken
+            # leaves = self.env['hr.leave'].search([
+            #     ('employee_id', '=', rec.id),
+            #     ('state', '=', 'validate'),
+            # ])
+            # taken_days = sum(
+            #     leaves.mapped('number_of_days_display')
+            # )
+            # rec.emp_remaining_leave_days = 2
+            # (
+            #     allocated_days - taken_days
+            # )
+            
 
     @api.depends('hr_warning_ids')
     def _compute_number_of_incidents(self):
@@ -321,6 +435,13 @@ class HrEmployee(models.Model):
                 ('state', 'not in', ['draft','closed']),
 
             ]) 
+
+    @api.depends('employee_document_ids')
+    def _compute_number_of_documents(self):
+        for rec in self:
+            employee_document = self.env['ir.attachment'].search_count([
+                ('employee_id', '=', self.id)])
+            rec.employee_document_count = employee_document
 
     def action_review_incident(self):
         self.ensure_one()

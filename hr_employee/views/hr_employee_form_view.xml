@@ -26,7 +26,7 @@
         <field name="name">hr.employee.profile.form</field>
         <field name="model">hr.employee</field>
         <field name="arch" type="xml">
-            <form string="Incident" class="profile-body" create="0">
+            <form string="Incident" class="profile-body" create="0" edit="0">
                 <notebook>
                     <page string="Dashboard">
                         <div class="profile-layout">
@@ -41,7 +41,7 @@
                                 </div>
 
                                 <div>
-                                    <div class="profile-user-name"><field name="name" readonly="1" nolabel="1"/></div>
+                                    <div class="profile-user-name"><field name="name" readonly="1" nolabel="0"/></div>
                                     <div class="profile-user-role"><field name="employee_number" readonly="1" nolabel="1"/></div>
                                 </div>
 
@@ -156,7 +156,7 @@
                                         <div class="profile-kpi-icon profile-bg-orange">📄</div>
                                         <span class="profile-kpi-tag profile-orange">4 expiring this month</span>
                                         </div>
-                                        <div class="profile-kpi-number">2</div>
+                                        <div class="profile-kpi-number"><field name="employee_document_count" class="profile-kpi-number" readonly="1" nolabel="1"/></div>
                                         <div class="profile-kpi-label">Expiring Documents</div>
                                     </div>
                                 </div>
@@ -186,7 +186,7 @@
                                             <button class="profile-tab" type="object" name="action_open_emp_incident">Incidents</button>
                                             <button class="profile-tab" type="object" name="action_open_emp_leave">Leave</button>
                                             <button class="profile-tab" type="object" name="action_open_emp_document">Document</button>
-                                            <button class="profile-tab profile-tab-active">Open Incidents <span class="profile-tab-badge"><field name="number_open_incident" readonly="1" nolabel="1"/></span></button>
+                                            <button class="profile-tab profile-tab-active" name="action_open_emp_incident">Open Incidents <span class="profile-tab-badge"><field name="number_open_incident" readonly="1" nolabel="1"/></span></button>
                                         </div>
                                         <div class="profile-incident-table" invisible="action_type != 'incident'">
                                             <field name="hr_warning_ids"
@@ -258,7 +258,8 @@
                                         <div class="profile-suggest-item">
                                             <div class="profile-suggest-item-left">
                                                 <span class="profile-suggest-radio"></span>
-                                                <field name="number_of_incidents" readonly="1" nolabel="1"/> Disciplinary cases require review
+                                                <field name="number_of_incidents" readonly="1" nolabel="1"/> <a class="btn-link" type="action" name="%(hr_warning.server_action_my_hr_warning)d" tabindex="-1">Disciplinary cases require review</a>
+                                                
                                             </div>
                                             <span>›</span>
                                         </div>
@@ -619,40 +620,41 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <!-- On Leave Today -->
+                                        <div class="profile-milestone-card">
+                                            <div class="profile-leave-header-row">
+                                                <div class="profile-leave-title-row">
+                                                    <div class="profile-milestone-icon profile-bg-blue">✈️</div>
+                                                    <span class="profile-milestone-title">On Leave Today</span>
+                                                    <span class="profile-milestone-count">2</span>
+                                                </div>
+                                                <a class="profile-view-all" href="#">View All →</a>
+                                            </div>
+                                            <div class="profile-leave-body">
+                                                <div class="profile-leave-item">
+                                                    <div class="profile-emp-avatar profile-color-a" style="width:36px;height:36px;font-size:14px;">A</div>
+                                                    <div>
+                                                        <div class="profile-leave-name">Amaka Osei</div>
+                                                        <div class="profile-leave-role">HR Analyst</div>
+                                                        <span class="profile-leave-type-tag profile-leave-annual">Annual Leave</span>
+                                                        <div class="profile-leave-until">Until Mar 25</div>
+                                                    </div>
+                                                </div>
+                                                <div class="profile-leave-item">
+                                                    <div class="profile-emp-avatar profile-color-u" style="width:36px;height:36px;font-size:14px;">U</div>
+                                                    <div>
+                                                        <div class="profile-leave-name">Uche Ndibe</div>
+                                                        <div class="profile-leave-role">Labor Relations</div>
+                                                        <span class="profile-leave-type-tag profile-leave-sick">Sick Leave</span>
+                                                        <div class="profile-leave-until">Until Mar 24</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="profile-leave-footer">2 employees absent today</div>
+                                        </div>
                                     </div>
 
-                                    <!-- On Leave Today -->
-                                    <div class="profile-milestone-card">
-                                        <div class="profile-leave-header-row">
-                                            <div class="profile-leave-title-row">
-                                                <div class="profile-milestone-icon profile-bg-blue">✈️</div>
-                                                <span class="profile-milestone-title">On Leave Today</span>
-                                                <span class="profile-milestone-count">2</span>
-                                            </div>
-                                            <a class="profile-view-all" href="#">View All →</a>
-                                        </div>
-                                        <div class="profile-leave-body">
-                                            <div class="profile-leave-item">
-                                                <div class="profile-emp-avatar profile-color-a" style="width:36px;height:36px;font-size:14px;">A</div>
-                                                <div>
-                                                    <div class="profile-leave-name">Amaka Osei</div>
-                                                    <div class="profile-leave-role">HR Analyst</div>
-                                                    <span class="profile-leave-type-tag profile-leave-annual">Annual Leave</span>
-                                                    <div class="profile-leave-until">Until Mar 25</div>
-                                                </div>
-                                            </div>
-                                            <div class="profile-leave-item">
-                                                <div class="profile-emp-avatar profile-color-u" style="width:36px;height:36px;font-size:14px;">U</div>
-                                                <div>
-                                                    <div class="profile-leave-name">Uche Ndibe</div>
-                                                    <div class="profile-leave-role">Labor Relations</div>
-                                                    <span class="profile-leave-type-tag profile-leave-sick">Sick Leave</span>
-                                                    <div class="profile-leave-until">Until Mar 24</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="profile-leave-footer">2 employees absent today</div>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -664,7 +666,8 @@
                         </group>
                     </page>
                     <page string="Quick Actions">
-                        <field name="announcement_ids" readonly="1" context="{'kanban_view_ref': 'hr_employee.hr_core_announcemen_kanban_view'}"/>
+                        <!-- <field name="announcement_ids" readonly="1" context="{'kanban_view_ref': 'hr_employee.hr_core_announcemen_kanban_view'}"/> -->
+                        <field name="announcement_ids" readonly="1"/>
                     </page>
                     <page string="Announcements">
                         <field name="announcement_ids" readonly="1" domain="[('is_published', '=', True)]">
@@ -714,23 +717,30 @@
         </field>
     </record>
 
+    <record id="action_profile_dashboard_server" model="ir.actions.server">
+        <field name="name">Employee Profile</field>
+        <field name="model_id" ref="model_hr_employee"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['hr.employee'].get_employee_profile_dashboard()
+        </field>
+    </record>
      
-     
-    <record id="action_view_employee_profile_kanban_custom"
+    <record id="action_view_employee_profile_dashboard_custom"
         model="ir.actions.act_window">
         <field name="name">Employee Profile</field>
         <field name="res_model">hr.employee</field>
-        <field name="view_mode">kanban,form</field>
-        <!-- <field name="search_view_id"
-            ref="view_employee_search_custom"/> -->
-        <field name="view_id"
+        <field name="view_mode">form</field>
+		<field name="context">{'default_is_employee_dashboard': True, 'form_view_ref': 'hr_employee.hr_employee_profile_form_view',}</field>
+		<field name="view_id"
             ref="hr_employee.view_employee_kanban_custom"/>
-            <!-- <field name="view_ids" eval="[
-                (ref('hr_employee.hr_employee_profile_form_view'), 'form'),
-            ]"/> -->
-                <!-- (ref('hr_employee.hr_employee_profile_form_view'), 'form') -->
-
-
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_employee.hr_employee_profile_form_view'),
+            }),
+        ]"/>
         <field name="target">current</field>
 
     </record>

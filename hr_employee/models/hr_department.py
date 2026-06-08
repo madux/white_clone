@@ -14,10 +14,26 @@ class Hrdepartment(models.Model):
     contact_person = fields.Char(string="Contact person", required=False, copy=False)
     contact_person_phone = fields.Char(string="Contact person phone", required=False, copy=False)
     contact_person_mail = fields.Char(string="Contact person mail", required=False, copy=False)
+    department_budget = fields.Float(string="Budget", required=False, copy=False, default=0.0)
     department_attachment_ids = fields.Many2many(
         comodel_name='ir.attachment',
         relation='hr_department_attachment_rel',
         column1='department_id',
         column2='attachment_id',
         string='Attachments',
-    ) 
+    )
+
+    def action_view_record(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Announcement',
+            'res_model': self._name,
+            'view_mode': 'form',
+            'views': [
+                # (False, 'list'),
+                (False, 'form')
+            ],
+            'res_id': self.id,
+            'target': 'new',
+        }

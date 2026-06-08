@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_reporting_structure_tree" model="ir.ui.view">
+        <field name="name">hr.reporting.structure.tree</field>
+        <field name="model">hr.reporting.structure</field>
+        <field name="arch" type="xml">
+
+            <tree string="HR Org Structure"
+                  default_order="level, parent_job_id">
+
+                <field name="job_id"/>
+                <field name="parent_job_id"/>
+                <field name="department_id"/>
+                <field name="level"/>
+                <field name="size"/>
+
+            </tree>
+
+        </field>
+    </record>
+    
+    <!-- FORM VIEW -->
+    <record id="view_hr_reporting_structure_form" model="ir.ui.view">
+        <field name="name">hr.reporting.structure.form</field>
+        <field name="model">hr.reporting.structure</field>
+        <field name="arch" type="xml">
+
+            <form string="HR Org Structure">
+
+                <sheet>
+
+                    <!-- HEADER -->
+                    <div class="p-4 mb-4 bg-primary-subtle rounded shadow-sm">
+
+                        <div class="d-flex align-items-center">
+
+                            <div class="me-3">
+                                <i class="fa fa-sitemap fa-3x text-primary"/>
+                            </div>
+
+                            <div class="oe_title">
+
+                                <h1>
+                                    <field name="job_id" options="{'no_open': true, 'no_create': true}"/>
+                                </h1>
+
+                                <div class="text-muted">
+                                    Organizational hierarchy &amp; reporting chain
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <group>
+
+                        <group string="Hierarchy">
+                            <!-- <field name="job_id"/> -->
+                            <field name="parent_job_id" options="{'no_open': true, 'no_create': true}"/>
+                            <!-- <field name="level" readonly="0"/> -->
+                        </group>
+
+                        <group string="Structure">
+                            <field name="department_id" readonly="0" options="{'no_open': true, 'no_create': true}"/>
+                            <field name="level_id" options="{'no_open': true, 'no_create': true}"/>
+                        </group>
+
+                    </group>
+
+                    <notebook>
+
+                        <!-- EMPLOYEES -->
+                        <page string="Employees">
+
+                            <div class="alert alert-info">
+                                Employees assigned to this job position
+                            </div>
+
+                            <field name="employee_ids" widget="many2many_tags"/>
+
+                            <div class="mt-3">
+                                <strong>Total Employees:</strong>
+                                <field name="size" readonly="1"/>
+                            </div>
+
+                        </page>
+
+                        <!-- CHILD POSITIONS -->
+                        <!-- <page string="Subordinates">
+
+                            <field name="child_job_ids">
+                                <tree>
+                                    <field name="job_id"/>
+                                    <field name="level"/>
+                                    <field name="size"/>
+                                </tree>
+                            </field>
+
+                        </page> -->
+
+                    </notebook>
+
+                </sheet>
+
+            </form>
+
+        </field>
+    </record>
+
+    <record id="view_hr_reporting_structure_search" model="ir.ui.view">
+        <field name="name">hr.reporting.structure.search</field>
+        <field name="model">hr.reporting.structure</field>
+        <field name="arch" type="xml">
+
+            <search>
+
+                <field name="job_id"/>
+                <field name="parent_job_id"/>
+                <field name="department_id"/>
+                <field name="level"/>
+
+                <separator/>
+
+                <filter string="Top Level"
+                        name="top_level"
+                        domain="[('parent_job_id','=',False)]"/>
+
+                <!-- <filter string="Has Subordinates"
+                        name="has_children"
+                        domain="[('child_job_ids','!=',False)]"/> -->
+
+                <separator/>
+
+                <!-- GROUP BY (your requirement) -->
+                <filter string="Group by Manager"
+                        name="group_by_parent"
+                        context="{'group_by':'parent_job_id'}"/>
+
+                <filter string="Group by Department"
+                        name="group_by_department"
+                        context="{'group_by':'department_id'}"/>
+
+                <filter string="Group by Level"
+                        name="group_by_level"
+                        context="{'group_by':'level'}"/>
+
+            </search>
+
+        </field>
+    </record>
+        <!-- ACTION -->
+    <record id="action_hr_reporting_structure" model="ir.actions.act_window">
+        <field name="name">Reporting Structure</field>
+        <field name="res_model">hr.reporting.structure</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_reporting_structure_search"/>
+        <!-- <field name="context">{'group_by': 'parent_job_id'}</field> -->
+        <field name="context">{'search_default_group_by_parent': 1, 'group_expand': True}</field>
+    </record>
+
+    <!-- <menuitem id="menu_hr_reporting_root"
+              name="Reporting Structure"
+              sequence="90"
+              web_icon="hr,static/description/icon.png"/> -->
+
+    <menuitem id="menu_hr_reporting_structure"
+              name="🛡️Job Structure"
+              parent="hr_employee.menu_hr_core_organisation_setup"
+              action="action_hr_reporting_structure"
+              sequence="85"/>
+
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_core_grade_tree" model="ir.ui.view">
+        <field name="name">hr.core.grade.tree</field>
+        <field name="model">hr.grade</field>
+        <field name="arch" type="xml">
+            <tree string="Grade" js_class="organisation_list" sample="1">
+                <field name="name"/>
+                <field name="leave_duration" required="1"/>
+                <field name="cash_advance_limit" required="1"/>
+                <field name="cash_approval_limit"/>
+                <field name="salary_band"/>
+                <field name="employee_count" string="Employees"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_core_grade_form" model="ir.ui.view">
+        <field name="name">hr.core.grade.form</field>
+        <field name="model">hr.grade</field>
+        <field name="arch" type="xml">
+            <form string="Grade">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+
+                        <h1>
+                            <field name="name"
+                                    placeholder="Grade 1"/>
+                        </h1>
+
+                        <div class="text-muted">
+                            Define and manage employee grade groups.
+                        </div>
+                    </div>
+
+                    <group>
+                    
+                        <group>
+                            <field name="min_salary_band" nolabel="0" readonly="1"/>
+                            <field name="max_salary_band" nolabel="0" readonly="1"/>
+                            <field name="salary_band" nolabel="0" readonly="1"/>
+                            <field name="leave_duration" nolabel="0" required="1"/>
+                        </group>
+                        <group>
+                            <field name="cash_advance_limit" nolabel="0" required="1"/>
+                            <field name="cash_approval_limit" nolabel="0" required="1"/>
+                        </group>
+                    </group>
+
+                    
+                    <notebook>
+                        <page>
+                            <field name="employee_ids" readonly="1" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+        
+    </record>
+     
+    <record id="action_core_grade" model="ir.actions.act_window">
+        <field name="name">Grade</field>
+        <field name="res_model">hr.grade</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_employee.view_core_grade_tree"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_employee.view_core_grade_tree'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_employee.view_core_grade_form'),
+            }),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record>
+</odoo>

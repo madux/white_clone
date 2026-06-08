@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- <record id="view_core_job_tree" model="ir.ui.view">
+        <field name="name">hr.job.tree</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+            <tree string="Job role" js_class="organisation_list" sample="1">
+                <field name="sequence" widget="handle" field_id="sequence_0"/>
+                <field name="name" field_id="name_0"/>
+                <field name="department_id" field_id="department_id_0"/>
+                <field name="salary_band"/>
+                <field name="grade_id"/>
+                <field name="application_count" string="Applications" field_id="application_count_0"/>
+                <field name="no_of_recruitment" on_change="1" field_id="no_of_recruitment_0"/>
+                <field name="alias_name" column_invisible="True" on_change="1" field_id="alias_name_0"/>
+                <field name="is_published" string="Published" field_id="is_published_0"/>
+                <field name="alias_id" invisible="not alias_name" optional="hide" on_change="1" field_id="alias_id_0"/>
+                <field name="allowed_user_ids" invisible="1" field_id="allowed_user_ids_0"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="hide" field_id="user_id_0"/>
+                <field name="no_of_employee" optional="show" field_id="no_of_employee_0"/>
+                <field name="expected_employees" optional="show" field_id="expected_employees_0"/>
+                <field name="no_of_hired_employee" optional="show" field_id="no_of_hired_employee_0"/>
+                <field name="message_needaction" column_invisible="True" field_id="message_needaction_0"/>
+                <field name="company_id" column_invisible="True" on_change="1" field_id="company_id_0"/>
+            </tree>
+        </field>
+    </record> -->
+    <record id="view_core_job_tree" model="ir.ui.view">
+        <field name="name">hr.core.job.tree</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+            <tree string="Job role" js_class="organisation_list" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="department_id"/>
+                <field name="salary_band"/>
+                <field name="grade_id"/>
+                <field name="application_count" string="Applications"/>
+                <field name="no_of_recruitment"/>
+                <field name="alias_name"/>
+                <field name="is_published" string="Published"/>
+                <field name="alias_id" invisible="not alias_name" optional="hide"/>
+                <field name="allowed_user_ids" invisible="1"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="hide" />
+                <field name="no_of_employee" optional="show"/>
+                <field name="expected_employees" optional="show"/>
+                <field name="no_of_hired_employee" optional="show"/>
+                <field name="message_needaction" column_invisible="True"/>
+                <field name="company_id" column_invisible="True" on_change="1"/>
+            </tree>
+        </field>
+    </record>
+     
+    <record id="hr_core_job_form_view" model="ir.ui.view">
+        <field name="name">hr.job.form</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="min_salary_band"/>
+                <field name="max_salary_band"/>
+                <field name="salary_band" readonly="1"/>
+                <field name="grade_id" readonly="0"/>
+            </xpath>
+        </field>
+    </record>
+     
+    <record id="action_core_job" model="ir.actions.act_window">
+        <field name="name">job</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_employee.view_core_job_tree"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_employee.view_core_job_tree'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr.view_hr_job_form'),
+            }),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record>
+</odoo>

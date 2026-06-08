@@ -244,7 +244,7 @@
         </field>
     </record>
     <record id="action_hr_core_announcement" model="ir.actions.act_window">
-        <field name="name">hr_core_announcement</field>
+        <field name="name">🔔 Announcement</field>
         <field name="res_model">hr.core_announcement</field>
         <field name="view_mode">kanban,tree,form</field>
         <field name="help" type="html">

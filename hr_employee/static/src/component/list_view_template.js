@@ -28,7 +28,7 @@ export class CustomListRenderer extends ListRenderer {
         const [lastRecordId, view_ref] =
             await this.orm.call(
                 'hr.warning',
-                'get_last_draft_record',
+                'get_get_employee_action_data',
                 []
             );
 
