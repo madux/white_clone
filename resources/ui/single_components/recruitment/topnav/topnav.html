@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topnav — CleonHR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+<header class="topnav">
+    <div class="topnav-left">
+        <span class="topnav-title">CleonHR</span>
+    </div>
+    <div class="topnav-pills">
+        <div class="topnav-pill">
+            <svg data-lucide="building-2"></svg>
+            Company
+            <svg data-lucide="chevron-down"></svg>
+        </div>
+        <div class="topnav-pill">
+            <svg data-lucide="shield"></svg>
+            Admin
+            <svg data-lucide="chevron-down"></svg>
+        </div>
+        <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+            <svg data-lucide="eye"></svg>
+            Select Employee View
+            <svg data-lucide="chevron-down"></svg>
+        </div>
+    </div>
+    <div class="topnav-right">
+        <div class="topnav-icon-btn">
+            <svg data-lucide="inbox"></svg>
+        </div>
+        <div class="topnav-icon-btn">
+            <svg data-lucide="calendar"></svg>
+        </div>
+        <div class="topnav-icon-btn">
+            <svg data-lucide="users-2"></svg>
+        </div>
+        <div class="topnav-icon-btn" style="position:relative;">
+            <svg data-lucide="bell"></svg>
+            <span class="topnav-notif-badge">8</span>
+        </div>
+    </div>
+</header>
+<script>if(window.lucide) lucide.createIcons();</script>
+</body>
+</html>
