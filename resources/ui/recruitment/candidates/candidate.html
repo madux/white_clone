@@ -10,14 +10,137 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
     <link rel="stylesheet" href="modals/css/style.css">
     
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
-    <!-- ===== PAGE SCROLL (single container for both views) ===== -->
-    <div class="page-scroll">
+<div class="app-shell">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-mark">C</div>
+            <span class="sidebar-logo-text">CleonHR</span>
+        </div>
+
+        <p class="sidebar-section-label">Recruiting</p>
+        <ul>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="briefcase"></svg>
+                    Jobs
+                    <span class="sidebar-badge">6</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item active" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="users"></svg>
+                    Candidates
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="check-circle"></svg>
+                    Offers and Hired
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="store"></svg>
+                    Vendors
+                </a>
+            </li>
+        </ul>
+
+        <p class="sidebar-section-label">Workflow</p>
+        <ul>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="clipboard-list"></svg>
+                    Tasks
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="building-2"></svg>
+                    Depts
+                </a>
+            </li>
+        </ul>
+
+        <ul style="margin-top: 12px;">
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="layout-grid"></svg>
+                    ATS
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="settings"></svg>
+                    Settings
+                </a>
+            </li>
+        </ul>
+
+        <div style="flex:1;"></div>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar">J</div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">John</div>
+                <div class="sidebar-user-email">john.okafor@farmplus.com</div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+
+        <!-- ===== TOP NAV ===== -->
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <svg data-lucide="building-2"></svg>
+                    Company
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill">
+                    <svg data-lucide="shield"></svg>
+                    Admin
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <svg data-lucide="eye"></svg>
+                    Select Employee View
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="inbox"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="calendar"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="users-2"></svg>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <svg data-lucide="bell"></svg>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== PAGE SCROLL (single container for both views) ===== -->
+        <div class="page-scroll">
 
         <!-- ===== LISTING VIEW ===== -->
         <div id="candidateListingView">
@@ -655,6 +778,9 @@
     <div class="fab">
         <svg data-lucide="message-circle"></svg>
     </div>
+
+    </div><!-- /main-content -->
+    </div><!-- /app-shell -->
 
 <div id="addCandidateModalContainer"></div>
 
