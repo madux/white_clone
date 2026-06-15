@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Vendors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+    <div class="rsb-wrapper">
+        <aside class="rsb-sidebar">
+            <div class="rsb-sidebar-logo">
+                <div class="rsb-sidebar-logo-mark">C</div>
+                <span class="rsb-sidebar-logo-text">CleonHR</span>
+            </div>
+
+            <p class="rsb-sidebar-section-label">Recruiting</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-briefcase rsb-sidebar-nav-icon"></i>
+                        Jobs
+                        <span class="rsb-sidebar-badge">6</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-users rsb-sidebar-nav-icon"></i>
+                        Candidates
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item active" href="#">
+                        <i class="fa-solid fa-store rsb-sidebar-nav-icon"></i>
+                        Vendors
+                    </a>
+                </li>
+            </ul>
+
+            <p class="rsb-sidebar-section-label">Workflow</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-clipboard-list rsb-sidebar-nav-icon"></i>
+                        Tasks
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-building rsb-sidebar-nav-icon"></i>
+                        Depts
+                    </a>
+                </li>
+            </ul>
+
+            <ul style="margin-top: 12px;">
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-table-cells rsb-sidebar-nav-icon"></i>
+                        ATS
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-gear rsb-sidebar-nav-icon"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+
+            <div style="flex:1;"></div>
+
+            <div class="rsb-sidebar-user">
+                <div class="rsb-sidebar-user-avatar">J</div>
+                <div class="rsb-sidebar-user-info">
+                    <div class="rsb-sidebar-user-name">John</div>
+                    <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="main-content">
+
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-building"></i>
+                    Company
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Admin
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <i class="fa-solid fa-eye"></i>
+                    Select Employee View
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-user-group"></i>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-scroll">
+
+            <div class="vn-container">
+
+                <div class="vn-header">
+                    <div class="vn-header-title">
+                        <h2>Vendors</h2>
+                        <p>Manage your recruitment vendors and agencies</p>
+                    </div>
+                    <button class="vn-btn-primary" id="vn-open-modal-btn">
+                        <i class="fa-solid fa-plus"></i> Add Vendor
+                    </button>
+                </div>
+
+                <div class="vn-metrics-grid">
+                    <div class="vn-card">
+                        <div class="vn-card-icon-wrapper vn-icon-blue">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div class="vn-card-content">
+                            <span class="vn-card-label">Total Vendors</span>
+                            <span class="vn-card-value" id="vn-count-total">0</span>
+                        </div>
+                    </div>
+
+                    <div class="vn-card">
+                        <div class="vn-card-icon-wrapper vn-icon-green">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="vn-card-content">
+                            <span class="vn-card-label">Active Vendors</span>
+                            <span class="vn-card-value" id="vn-count-active">0</span>
+                        </div>
+                    </div>
+
+                    <div class="vn-card">
+                        <div class="vn-card-icon-wrapper vn-icon-purple">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div class="vn-card-content">
+                            <span class="vn-card-label">Total Submissions</span>
+                            <span class="vn-card-value">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="vn-search-wrapper">
+                    <i class="fa-solid fa-magnifying-glass vn-search-icon"></i>
+                    <input type="text" class="vn-search-input" id="vn-search-bar" placeholder="Search vendors...">
+                </div>
+
+                <div class="vn-table-container">
+                    <table class="vn-table">
+                        <thead>
+                            <tr>
+                                <th>VENDOR NAME</th>
+                                <th>CONTACT</th>
+                                <th>SPECIALIZATION</th>
+                                <th>SUBMISSIONS</th>
+                                <th>STATUS</th>
+                                <th style="text-align: center;">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vn-table-body">
+                        </tbody>
+                    </table>
+
+                    <div class="vn-empty-state" id="vn-empty-state">
+                        <div class="vn-empty-icon">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <p>No vendors found</p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="addVendorModalContainer"></div>
+
+<script src="js/script.js"></script>
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/add-vendor-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('addVendorModalContainer').innerHTML = html;
+            if (window.initAddVendorModal) initAddVendorModal();
+        });
+</script>
+
+</body>
+</html>

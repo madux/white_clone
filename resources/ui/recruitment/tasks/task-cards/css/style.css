@@ -1,0 +1,229 @@
+.ts-task-group-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ts-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--ts-clr-border);
+}
+
+.ts-header-status-overdue { color: var(--ts-clr-danger); border-bottom-color: #fcdede; }
+.ts-header-status-nodate { color: var(--ts-clr-text-muted); }
+
+.ts-group-count-pill {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+}
+
+.ts-header-status-overdue .ts-group-count-pill {
+    background-color: var(--ts-clr-danger-bg);
+}
+
+.ts-task-cards-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ts-task-item-card {
+    background-color: var(--ts-clr-bg-card);
+    border: 1px solid var(--ts-clr-border);
+    border-radius: var(--ts-radius-md);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+    transition: transform var(--ts-transition-speed) cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow var(--ts-transition-speed) cubic-bezier(0.16, 1, 0.3, 1),
+                border-color var(--ts-transition-speed) ease;
+}
+
+.ts-task-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ts-shadow-raised);
+    border-color: var(--ts-clr-text-placeholder);
+}
+
+.ts-task-item-card.ts-selected-active {
+    border-color: var(--ts-clr-primary);
+    background-color: var(--ts-clr-primary-light);
+}
+
+.ts-task-card-left-block {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ts-checkbox-mimic {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ts-clr-text-placeholder);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all var(--ts-transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ts-task-item-card:hover .ts-checkbox-mimic {
+    border-color: var(--ts-clr-primary);
+}
+
+.ts-task-card-core-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.ts-task-card-title-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ts-clr-text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ts-task-card-meta-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--ts-clr-text-muted);
+}
+
+.ts-meta-actor-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ts-meta-actor-node i {
+    font-size: 12px;
+    color: var(--ts-clr-text-placeholder);
+}
+
+.ts-deadline-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+}
+
+.ts-deadline-tag.ts-tag-is-overdue {
+    color: var(--ts-clr-danger);
+}
+
+.ts-functional-pill-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--ts-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ts-pill-style-job {
+    background-color: var(--ts-clr-badge-purple-bg);
+    color: var(--ts-clr-badge-purple-txt);
+}
+
+.ts-pill-style-auto {
+    background-color: var(--ts-clr-primary-light);
+    color: var(--ts-clr-primary);
+}
+
+.ts-task-card-right-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    padding-left: 16px;
+}
+
+.ts-alarm-bell-notification-icon {
+    color: var(--ts-clr-primary);
+    font-size: 14px;
+}
+
+.ts-status-dot-marker {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.ts-dot-color-red { background-color: var(--ts-clr-danger); }
+.ts-dot-color-amber { background-color: var(--ts-clr-warning); }
+
+.ts-task-item-card.ts-task-state-completed .ts-task-card-title-text {
+    text-decoration: line-through;
+    color: var(--ts-clr-text-placeholder);
+}
+
+.ts-task-item-card.ts-task-state-completed .ts-checkbox-mimic {
+    background-color: var(--ts-clr-success);
+    border-color: var(--ts-clr-success);
+}
+
+.ts-task-item-card.ts-task-state-completed .ts-checkbox-mimic::after {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: white;
+    font-size: 10px;
+}
+
+.ts-job-bucket-card-wrapper {
+    background-color: var(--ts-clr-bg-card);
+    border: 1px solid var(--ts-clr-border);
+    border-radius: var(--ts-radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--ts-shadow-sm);
+}
+
+.ts-job-bucket-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.ts-job-bucket-title-icon {
+    color: var(--ts-clr-badge-purple-txt);
+    font-size: 16px;
+}
+
+.ts-job-bucket-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ts-clr-text-main);
+}
+
+.ts-job-bucket-count-pill {
+    font-size: 11px;
+    font-weight: 600;
+    background-color: #f5f4f2;
+    color: var(--ts-clr-text-muted);
+    padding: 2px 8px;
+    border-radius: 10px;
+}

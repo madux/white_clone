@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Tasks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+    <link rel="stylesheet" href="automation/css/style.css">
+    <link rel="stylesheet" href="task-cards/css/style.css">
+</head>
+<body>
+
+<main class="ts-tasks-workspace">
+
+    <header class="ts-tasks-header">
+        <div class="ts-header-left">
+            <h1 class="ts-page-title">Tasks</h1>
+            <p class="ts-page-subtitle">8 pending · 6 overdue · 1 completed this week</p>
+        </div>
+        <div class="ts-header-actions">
+            <button class="ts-btn ts-btn-secondary" id="ts-automation-rules-toggle">
+                <i class="fa-solid fa-bolt"></i> Automation Rules
+            </button>
+            <button class="ts-btn ts-btn-primary" id="ts-new-task-trigger">
+                <i class="fa-solid fa-plus"></i> New Task
+            </button>
+        </div>
+    </header>
+
+    <nav class="ts-view-navigation">
+        <button class="ts-tab-btn ts-active" data-view-target="all-tasks">All Tasks</button>
+        <button class="ts-tab-btn" data-view-target="my-tasks">My Tasks</button>
+        <button class="ts-tab-btn" data-view-target="by-job">By Job</button>
+    </nav>
+
+    <div class="ts-view-display-wrapper">
+
+        <div class="ts-view-workspace-core" id="ts-main-tasks-container">
+            <aside class="ts-secondary-filter-sidebar">
+                <div class="ts-filter-group">
+                    <h4 class="ts-filter-group-title">URGENCY GROUPS</h4>
+                    <div class="ts-filter-item ts-active" data-filter-type="urgency" data-filter-value="overdue">
+                        <span class="ts-filter-label"><i class="fa-solid fa-circle-exclamation ts-icon-overdue"></i> OVERDUE</span>
+                        <span class="ts-filter-badge">6</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="due-today">
+                        <span class="ts-filter-label"><i class="fa-solid fa-clock ts-icon-today"></i> DUE TODAY</span>
+                        <span class="ts-filter-badge ts-badge-empty">0</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="this-week">
+                        <span class="ts-filter-label"><i class="fa-solid fa-calendar-days ts-icon-week"></i> THIS WEEK</span>
+                        <span class="ts-filter-badge ts-badge-empty">0</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="no-due-date">
+                        <span class="ts-filter-label"><i class="fa-solid fa-circle-notch ts-icon-nodate"></i> NO DUE DATE</span>
+                        <span class="ts-filter-badge">1</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="completed">
+                        <span class="ts-filter-label"><i class="fa-solid fa-circle-check ts-icon-complete"></i> COMPLETED</span>
+                        <span class="ts-filter-badge">3</span>
+                    </div>
+                </div>
+
+                <div class="ts-filter-group">
+                    <h4 class="ts-filter-group-title">BY JOB</h4>
+                    <div class="ts-filter-item" data-filter-type="job" data-filter-value="Administrative Assistant">
+                        <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Administrative Assistant</span>
+                        <span class="ts-filter-badge">2</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="job" data-filter-value="Chief Executive Officer">
+                        <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Chief Executive Officer</span>
+                        <span class="ts-filter-badge">1</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="job" data-filter-value="HR Specialist">
+                        <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> HR Specialist</span>
+                        <span class="ts-filter-badge">1</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="job" data-filter-value="Python Data Scientist">
+                        <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Python Data Scientist</span>
+                        <span class="ts-filter-badge">1</span>
+                    </div>
+                    <div class="ts-filter-item" data-filter-type="job" data-filter-value="SEC Specialist">
+                        <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> SEC Specialist</span>
+                        <span class="ts-filter-badge">1</span>
+                    </div>
+                </div>
+
+                <div class="ts-auto-tasks-summary-card">
+                    <span class="ts-auto-card-title"><i class="fa-solid fa-bolt"></i> AUTO TASKS</span>
+                    <span class="ts-auto-card-badge">4</span>
+                </div>
+            </aside>
+
+            <section class="ts-dynamic-view-viewport">
+
+                <div class="ts-sub-view-pane ts-view-active" id="ts-pane-all-tasks">
+                    <div class="ts-task-group-section" id="ts-group-overdue">
+                        <div class="ts-group-header ts-header-status-overdue">
+                            <span>OVERDUE</span>
+                            <span class="ts-group-count-pill">6</span>
+                        </div>
+                        <div class="ts-task-cards-list-container" id="ts-overdue-cards-wrapper">
+                            <div class="ts-task-item-card" data-task-id="tsk-1">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Complete quarterly performance reviews</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Emily Thompson</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 485 days overdue</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-red"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card" data-task-id="tsk-2">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Update employee handbook</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Emily Thompson</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 480 days overdue</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-amber"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card" data-task-id="tsk-3">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Review CVs for Senior Software Engineer</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Emeka Okafor</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 87 days overdue</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> Administrative Assistant</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-auto"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <i class="fa-solid fa-bell ts-alarm-bell-notification-icon"></i>
+                                    <div class="ts-status-dot-marker ts-dot-color-red"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card" data-task-id="tsk-4">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Schedule interviews for Product Manager role</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Sarah Adeola</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 80 days overdue</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> Chief Executive Officer</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-auto"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <i class="fa-solid fa-bell ts-alarm-bell-notification-icon"></i>
+                                    <div class="ts-status-dot-marker ts-dot-color-red"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card" data-task-id="tsk-5">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Send offer letter to finalist candidate</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Chioma Nwosu</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 74 days overdue</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> HR Specialist</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-auto"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-red"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card" data-task-id="tsk-6">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Post job to Jobberman and LinkedIn</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Emeka Okafor</span>
+                                            <span class="ts-deadline-tag ts-tag-is-overdue"><i class="fa-solid fa-triangle-exclamation"></i> 79 days overdue</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> Python Data Scientist</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-red"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ts-task-group-section ts-mt-lg" id="ts-group-no-due-date">
+                        <div class="ts-group-header ts-header-status-nodate">
+                            <span>NO DUE DATE</span>
+                            <span class="ts-group-count-pill">2</span>
+                        </div>
+                        <div class="ts-task-cards-list-container" id="ts-no-due-cards-wrapper">
+                            <div class="ts-task-item-card" data-task-id="tsk-7">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Shortlist candidates for UI/UX Designer</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> Sarah Adeola</span>
+                                            <span>No due date</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> SEC Specialist</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-amber"></div>
+                                </div>
+                            </div>
+                            <div class="ts-task-item-card ts-task-state-completed" data-task-id="tsk-completed-1">
+                                <div class="ts-task-card-left-block">
+                                    <div class="ts-checkbox-mimic"></div>
+                                    <div class="ts-task-card-core-details">
+                                        <h4 class="ts-task-card-title-text">Collect scorecards from interviewers</h4>
+                                        <div class="ts-task-card-meta-line">
+                                            <span class="ts-meta-actor-node"><i class="fa-solid fa-user"></i> David Adeleke</span>
+                                            <span><i class="fa-solid fa-calendar"></i> Due March 15, 2026</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-job"><i class="fa-solid fa-briefcase"></i> Administrative Assistant</span>
+                                            <span class="ts-functional-pill-tag ts-pill-style-auto"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ts-task-card-right-block">
+                                    <div class="ts-status-dot-marker ts-dot-color-amber"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ts-sub-view-pane" id="ts-pane-my-tasks">
+                    <div class="ts-empty-state-canvas">
+                        <div class="ts-empty-graphic-ring">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <h3>No tasks assigned to you</h3>
+                        <p>You're all caught up! When tasks get assigned to your profile, they will show up right here.</p>
+                    </div>
+                </div>
+
+                <div class="ts-sub-view-pane" id="ts-pane-by-job">
+                    <div class="ts-jobs-grouped-stack" id="ts-jobs-grouped-stack-wrapper">
+                    </div>
+                </div>
+
+            </section>
+        </div>
+
+        <div class="ts-view-workspace-automation ts-hidden-view" id="ts-main-automation-container">
+            <div class="ts-automation-rules-view-heading">
+                <h2>Task Automation Rules</h2>
+                <p>Define rules that make your tasks control the system automatically.</p>
+            </div>
+            <div class="ts-automation-cards-vertical-stack" id="ts-automation-cards-container">
+                <div class="ts-automation-rule-card-item" data-rule-id="auto-1">
+                    <div class="ts-automation-card-main-row-header">
+                        <div class="ts-automation-card-left-meta-info">
+                            <div class="ts-automation-rule-title-line-row">
+                                <h3>CV Review Overdue Escalation</h3>
+                                <span class="ts-status-pill-badge-active">
+                                    <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                                </span>
+                            </div>
+                            <div class="ts-automation-flow-chain-visual-row">
+                                <div class="ts-flow-block-node ts-flow-node-style-when">
+                                    <span>WHEN</span>
+                                    <span>Task is overdue by 7 days</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-if">
+                                    <span>IF</span>
+                                    <span>Task is not marked complete</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-then">
+                                    <span>THEN</span>
+                                    <span>2 actions: notify, escalate</span>
+                                </div>
+                            </div>
+                            <div class="ts-automation-trigger-frequency-meta-footer">
+                                <span>Last triggered: Mar 25, 3:30 PM</span>
+                                <span>Triggered 3 times this week</span>
+                            </div>
+                        </div>
+                        <div class="ts-automation-card-right-controls-cell">
+                            <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    <div class="ts-automation-expandable-details-drawer-panel">
+                        <div class="ts-automation-drawer-inner-padding-box">
+                            <div class="ts-automation-detailed-configuration-dump-box">
+                                <h4>Full Configuration</h4>
+                                <ul>
+                                    <li>Trigger: Task is overdue by 7 days</li>
+                                    <li>Condition: Task is not marked complete</li>
+                                    <li>Actions: Notify assigned user via both email &amp; internal notification dashboard context, then automatically escalate priority elevation matrix tier to admin-1 level ruleset automatically.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ts-automation-rule-card-item" data-rule-id="auto-2">
+                    <div class="ts-automation-card-main-row-header">
+                        <div class="ts-automation-card-left-meta-info">
+                            <div class="ts-automation-rule-title-line-row">
+                                <h3>Interview Scorecard Missing Reminder</h3>
+                                <span class="ts-status-pill-badge-active">
+                                    <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                                </span>
+                            </div>
+                            <div class="ts-automation-flow-chain-visual-row">
+                                <div class="ts-flow-block-node ts-flow-node-style-when">
+                                    <span>WHEN</span>
+                                    <span>Task is completed</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-if">
+                                    <span>IF</span>
+                                    <span>No scorecard submitted within 2 hours of interview end</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-then">
+                                    <span>THEN</span>
+                                    <span>Notify assigned user via both</span>
+                                </div>
+                            </div>
+                            <div class="ts-automation-trigger-frequency-meta-footer">
+                                <span>Last triggered: Mar 27, 12:00 PM</span>
+                                <span>Triggered 8 times this week</span>
+                            </div>
+                        </div>
+                        <div class="ts-automation-card-right-controls-cell">
+                            <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    <div class="ts-automation-expandable-details-drawer-panel">
+                        <div class="ts-automation-drawer-inner-padding-box">
+                            <div class="ts-automation-detailed-configuration-dump-box">
+                                <h4>Full Configuration</h4>
+                                <ul>
+                                    <li>Trigger: Task is completed status transition fired</li>
+                                    <li>Condition: No scorecard submitted within 2 hours of interview session end markers</li>
+                                    <li>Actions: Fire automated operational logging notification block to current user dashboards.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ts-automation-rule-card-item" data-rule-id="auto-3">
+                    <div class="ts-automation-card-main-row-header">
+                        <div class="ts-automation-card-left-meta-info">
+                            <div class="ts-automation-rule-title-line-row">
+                                <h3>Offer Task Escalation</h3>
+                                <span class="ts-status-pill-badge-active">
+                                    <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                                </span>
+                            </div>
+                            <div class="ts-automation-flow-chain-visual-row">
+                                <div class="ts-flow-block-node ts-flow-node-style-when">
+                                    <span>WHEN</span>
+                                    <span>Task is overdue by 2 days</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-then">
+                                    <span>THEN</span>
+                                    <span>2 actions: notify, create_task</span>
+                                </div>
+                            </div>
+                            <div class="ts-automation-trigger-frequency-meta-footer">
+                                <span>Last triggered: Mar 20, 5:00 PM</span>
+                                <span>Triggered 2 times this week</span>
+                            </div>
+                        </div>
+                        <div class="ts-automation-card-right-controls-cell">
+                            <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    <div class="ts-automation-expandable-details-drawer-panel">
+                        <div class="ts-automation-drawer-inner-padding-box">
+                            <div class="ts-automation-detailed-configuration-dump-box">
+                                <h4>Full Configuration</h4>
+                                <ul>
+                                    <li>Trigger: Task is overdue by 2 days threshold check</li>
+                                    <li>Condition: Global run mode active</li>
+                                    <li>Actions: Dispatch instant manager escalation alert logs and spin up dependent verification side tasks automatically.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ts-automation-rule-card-item" data-rule-id="auto-4">
+                    <div class="ts-automation-card-main-row-header">
+                        <div class="ts-automation-card-left-meta-info">
+                            <div class="ts-automation-rule-title-line-row">
+                                <h3>Auto-Create Checklist on Job Post</h3>
+                                <span class="ts-status-pill-badge-active">
+                                    <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                                </span>
+                            </div>
+                            <div class="ts-automation-flow-chain-visual-row">
+                                <div class="ts-flow-block-node ts-flow-node-style-when">
+                                    <span>WHEN</span>
+                                    <span>A new job is published</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-then">
+                                    <span>THEN</span>
+                                    <span>Create task: "Create all checklist tasks from template"</span>
+                                </div>
+                            </div>
+                            <div class="ts-automation-trigger-frequency-meta-footer">
+                                <span>Last triggered: Mar 26, 11:30 AM</span>
+                                <span>Triggered 15 times this week</span>
+                            </div>
+                        </div>
+                        <div class="ts-automation-card-right-controls-cell">
+                            <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    <div class="ts-automation-expandable-details-drawer-panel">
+                        <div class="ts-automation-drawer-inner-padding-box">
+                            <div class="ts-automation-detailed-configuration-dump-box">
+                                <h4>Full Configuration</h4>
+                                <ul>
+                                    <li>Trigger: A new job is published system webhook event</li>
+                                    <li>Condition: None</li>
+                                    <li>Actions: Generate complete onboarding sub-checklist nodes mapped from global configuration directory templates automatically.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ts-automation-rule-card-item" data-rule-id="auto-5">
+                    <div class="ts-automation-card-main-row-header">
+                        <div class="ts-automation-card-left-meta-info">
+                            <div class="ts-automation-rule-title-line-row">
+                                <h3>Stage Transition Task Creation</h3>
+                                <span class="ts-status-pill-badge-active">
+                                    <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                                </span>
+                            </div>
+                            <div class="ts-automation-flow-chain-visual-row">
+                                <div class="ts-flow-block-node ts-flow-node-style-when">
+                                    <span>WHEN</span>
+                                    <span>Candidate moves to Interview stage</span>
+                                </div>
+                                <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                                <div class="ts-flow-block-node ts-flow-node-style-then">
+                                    <span>THEN</span>
+                                    <span>Create task: "Collect scorecard from [Interviewer Name]"</span>
+                                </div>
+                            </div>
+                            <div class="ts-automation-trigger-frequency-meta-footer">
+                                <span>Last triggered: Mar 27, 2:00 PM</span>
+                                <span>Triggered 12 times this week</span>
+                            </div>
+                        </div>
+                        <div class="ts-automation-card-right-controls-cell">
+                            <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                            <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                        </div>
+                    </div>
+                    <div class="ts-automation-expandable-details-drawer-panel">
+                        <div class="ts-automation-drawer-inner-padding-box">
+                            <div class="ts-automation-detailed-configuration-dump-box">
+                                <h4>Full Configuration</h4>
+                                <ul>
+                                    <li>Trigger: Candidate moves to Interview pipeline step status location node</li>
+                                    <li>Condition: None</li>
+                                    <li>Actions: Map structural scorecard validation collection targets tracking owner parameters.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="ts-context-detail-panel-drawer" id="ts-detail-context-drawer">
+            <button class="ts-drawer-close-btn" id="ts-close-drawer-action"><i class="fa-solid fa-xmark"></i></button>
+            <div class="ts-drawer-scrollable-content" id="ts-drawer-content-slot">
+            </div>
+        </aside>
+
+    </div>
+</main>
+
+<div id="ts-modal-container"></div>
+
+<div class="ts-popover-dropdown-menu" id="ts-global-popover-menu">
+    <div class="ts-popover-item"><i class="fa-solid fa-pen"></i> Edit Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-copy"></i> Duplicate Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-pause"></i> Pause Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-clock-rotate-left"></i> View History</div>
+    <div class="ts-popover-separator"></div>
+    <div class="ts-popover-item ts-destructive"><i class="fa-solid fa-trash-can"></i> Delete Rule</div>
+</div>
+
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/task-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('ts-modal-container').innerHTML = html;
+            if (window.initTaskModal) initTaskModal();
+        });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var newTaskBtn = document.getElementById('ts-new-task-trigger');
+        if (newTaskBtn && window.openTaskModal) {
+            newTaskBtn.addEventListener('click', function() {
+                if (window.openTaskModal) window.openTaskModal();
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

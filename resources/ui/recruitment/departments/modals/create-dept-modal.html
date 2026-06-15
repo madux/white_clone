@@ -1,0 +1,52 @@
+<div class="chr-modal-overlay-backdrop" id="chr-create-dept-modal">
+    <div class="chr-modal-content-dialog-box">
+        <header class="chr-modal-dialog-header">
+            <h3 class="chr-modal-title-text">Create Department</h3>
+            <button type="button" class="chr-modal-close-x-btn" id="chr-modal-close-btn">&times;</button>
+        </header>
+        <form id="chr-create-department-form" autocomplete="off">
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Department Name <span class="chr-required-indicator">*</span></label>
+                <input type="text" id="chr-form-dept-name" class="chr-modal-input-field" placeholder="e.g., Human Resources" required>
+            </div>
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Description</label>
+                <textarea id="chr-form-dept-desc" class="chr-modal-textarea-field" placeholder="Brief description of the department" rows="3"></textarea>
+            </div>
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Location <span class="chr-required-indicator">*</span></label>
+                <input type="text" id="chr-form-dept-loc" class="chr-modal-input-field" placeholder="e.g., Dallas, TX, United States" required>
+            </div>
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Department Owner <span class="chr-required-indicator">*</span></label>
+                <select id="chr-form-dept-owner" class="chr-modal-select-dropdown" required>
+                    <option value="" disabled selected>Select an owner</option>
+                    <option value="Sarah Chen">Sarah Chen</option>
+                    <option value="Michael Rodriguez">Michael Rodriguez</option>
+                    <option value="Emily Thompson">Emily Thompson</option>
+                </select>
+            </div>
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Department Team</label>
+                <div class="chr-multi-select-input-container">
+                    <select id="chr-form-dept-team" class="chr-modal-select-dropdown" multiple style="height: 65px; padding: 6px;">
+                        <option value="Sarah Chen">Sarah Chen (Admin)</option>
+                        <option value="Michael Rodriguez">Michael Rodriguez (Recruiter)</option>
+                        <option value="Emily Thompson">Emily Thompson (HR Generalist)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="chr-form-group-block">
+                <label class="chr-form-field-label">Color</label>
+                <div class="chr-color-picker-input-wrapper">
+                    <input type="color" id="chr-form-dept-color" class="chr-color-input-native" value="#ec4899">
+                    <input type="text" id="chr-form-dept-color-text" class="chr-modal-input-field chr-color-hex-text" value="#ec4899" readonly>
+                </div>
+            </div>
+            <footer class="chr-modal-dialog-footer">
+                <button type="button" class="chr-btn chr-btn-secondary" id="chr-modal-cancel-btn">Cancel</button>
+                <button type="submit" class="chr-btn chr-btn-primary-action">Create Department</button>
+            </footer>
+        </form>
+    </div>
+</div>
