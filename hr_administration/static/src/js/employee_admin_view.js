@@ -133,7 +133,7 @@ $(function () {
     {key:'total_employees',   label:'Total Employees',   sub:'vs last month',     icon:'👥', color:C.cobalt,   changeKey:'total_employees_change', route:'/app/employees'},
     {key:'active_employees',  label:'Active Employees',  sub:'vs last month',     icon:'✅', color:C.emerald,  route:'/app/employees'},
     {key:'on_leave_today',    label:'On Leave Today',    sub:'employees',         icon:'🌴', color:C.amber,    route:'/app/leave'},
-    {key:'pending_requests',  label:'Pending Requests',  sub:'awaiting approval', icon:'📋', color:C.rose,     route:'/app/leave'},
+    {key:'pending_requests',  label:'Pending Requests',  sub:'aPending', icon:'📋', color:C.rose,     route:'/app/leave'},
     {key:'disciplinary_cases',label:'Disciplinary Cases',sub:'open cases',        icon:'⚠️', color:C.slate,    route:'/app/employees'},
     {key:'expiring_contracts',label:'Expiring Contracts',sub:'in 30 days',        icon:'📄', color:'#FF8F00',  route:'/app/employees'},
     {key:'pending_approvals', label:'Pending Approvals', sub:'across modules',    icon:'🔔', color:C.lavender, route:'/app/leave'},

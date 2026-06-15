@@ -97,11 +97,5 @@
         <field name="search_view_id" ref="view_hr_core_employment_type_search"/>
     </record>
 
-    <menuitem
-        id="menu_hr_core_employment_type"
-        name="📊 Employment type"
-        parent="hr_employee.menu_hr_core_organisation_setup"
-        action="action_hr_core_employment_type"
-        sequence="70"
-        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+    
 </odoo>

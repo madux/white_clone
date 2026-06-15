@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ─────────────────────────────────────────────
+         Server Action — auto-populates the transient model
+         ───────────────────────────────────────────── -->
+
+    <!-- <record id="action_dashboard_server" model="ir.actions.server">
+        <field name="name">Open HMO</field>
+        <field name="model_id" ref="model_hr_insurance"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['company.calendar.dashboard'].get_dashboard()
+        </field>
+    </record> -->
+    <record id="action_load_company_calendar_data" model="ir.actions.server">
+        <field name="name">Company Calendar Activities</field>
+        <field name="model_id" ref="model_company_calendar_dashboard"/>
+        <field name="binding_model_id" ref="model_company_calendar_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['company.calendar.dashboard'].action_load_data()
+        </field>
+    </record>
+
+
+    <menuitem
+        id="menu_company_activities"
+        name="Company Activities"
+        parent="calendar.mail_menu_calendar"
+        action="action_load_company_calendar_data"
+        sequence="8"
+        />
+    <!-- ─────────────────────────────────────────────
+         Form View — Transient (wizard) model
+         ───────────────────────────────────────────── -->
+    <record id="view_company_calendar_wizard_form" model="ir.ui.view">
+        <field name="name">company.calendar.dashboard.form</field>
+        <field name="model">company.calendar.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Company Calendar"
+                  class="cc_root"
+                  js_class="company_calendar_form" create="0" edit="0">
+                <!-- ══ TOP HEADER ══ -->
+                <!-- <aside class="hd-sidebar"> -->
+                <!-- <div class="o_cc_admin_sidebar">
+
+                    <div class="o_cc_sidebar_header">
+                        <span class="o_cc_header_dot"/>
+                        <span class="o_cc_header_title">ADMIN CONTROLS</span>
+                        <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                            <i class="fa fa-th-large"/>
+                        </button>
+                    </div>
+    
+                    <nav class="o_cc_nav">
+                        <a class="o_cc_nav_item o_cc_nav_active" type="action" name="hr_company_calendar.action_load_company_calendar_data">
+                            <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
+                            <span class="o_cc_nav_label">Calendar</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                        <a class="o_cc_nav_item" type="action" name="%(hr_company_calendar.action_load_company_calendar_data)d">
+                            <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                            <span class="o_cc_nav_label">Company Activities</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                        <a class="o_cc_nav_item" type="action" name="hr_company_calendar.action_load_company_calendar_data">
+                            <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
+                            <span class="o_cc_nav_label">Approvals</span>
+                            <span class="o_cc_nav_badge">2</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                        <a class="o_cc_nav_item" type="action" name="hr_company_calendar.action_load_company_calendar_data">
+                            <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
+                            <span class="o_cc_nav_label">Calendar Settings</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                        <a class="o_cc_nav_item" type="action" name="hr_company_calendar.action_load_company_calendar_data">
+                            <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                            <span class="o_cc_nav_label">Audit Log</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                    </nav>
+    
+                    <div class="o_cc_sidebar_footer">
+                        <span class="o_cc_footer_label">Calendar Engine Status</span>
+                        <div class="o_cc_footer_status">
+                            <span class="o_cc_status_dot o_cc_status_green"/>
+                            All integrations active
+                        </div>
+                    </div>
+    
+                </div> -->
+                <!-- </aside> -->
+                <div class="cc_header">
+                    <div class="cc_header_left">
+                        <span class="cc_header_icon">📅</span>
+                        <div>
+                            <h2 class="cc_header_title">Company Calendar</h2>
+                            <p class="cc_header_sub">Operational heartbeat &amp; temporal control center</p>
+                        </div>
+                    </div>
+                    <div class="cc_header_actions">
+                        <button class="btn cc_btn_outline" name="action_get_started" type="object">
+                            📖 Get Started
+                        </button>
+                        <button class="btn cc_btn_outline cc_btn_tour" name="action_guided_tour" type="object">
+                            ✨ Guided Tour
+                        </button>
+                        <div class="cc_view_as">
+                            <span>View as:</span>
+                            <field name="view_mode" widget="selection" nolabel="1" class="cc_select"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PAGE TITLE ROW ══ -->
+                <div class="cc_page_title_row">
+                    <div>
+                        <h3 class="cc_section_title">Company Activities</h3>
+                        <p class="cc_section_sub">Manage organizational events, meetings, and announcements</p>
+                    </div>
+                    <button class="btn cc_btn_primary" name="action_create_event" type="object" invisible="tabIsVisible != 'event'">
+                        ＋ Create Event
+                    </button>
+                    <button class="btn cc_btn_primary" name="action_create_event" type="object" invisible="tabIsVisible != 'meeting'">
+                        ＋ Create Meeting
+                    </button>
+                    <button class="btn cc_btn_primary" name="action_create_announcement" type="object" invisible="tabIsVisible != 'announcement'">
+                        ＋ Create Announcement
+                    </button>
+                    <!-- <button class="btn cc_btn_primary" name="action_create_chat" type="object" invisible="tabIsVisible != 'chat'">
+                        ＋ Start Chat
+                    </button> -->
+                </div>
+                 
+                <div class="cc_tab_nav">
+                    <button class="cc_tab" type="object" name="action_show_event">
+                        📅 Events <span class="cc_badge">
+                            <field name="event_count" readonly="1" nolabel="1"/>
+                        </span>
+                    </button>
+                    <button class="cc_tab" data-tab="meetings" type="object" name="action_show_meeting">
+                        👥 Meetings <span class="cc_badge">
+                            <field name="meeting_count" readonly="1" nolabel="1"/>
+                        </span>
+                    </button>
+                    <button class="cc_tab" data-tab="announcements" type="object" name="action_show_announcement">
+                        📢 Announcements <span class="cc_badge">
+                            <field name="announcement_count" readonly="1" nolabel="1"/>
+                        </span>
+                    </button>
+                    <button class="cc_tab" data-tab="chat" type="object" name="action_show_chat">
+                        💬 Chat
+                    </button>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     TAB PANEL 1 — EVENTS
+                ══════════════════════════════════════ -->
+                <div class="cc_panel active" id="cc_panel_events" invisible="tabIsVisible != 'event'">
+
+                    <!-- Calendar sub-nav -->
+                    <div class="cc_cal_nav">
+                        <button class="cc_cal_btn" data-cal="list" type="object" name="action_show_list">☰ List</button>
+                        <button class="cc_cal_btn" data-cal="month" type="object" name="action_show_month">⊞ Month</button>
+                        <button class="cc_cal_btn" data-cal="week" type="object" name="action_show_week">📅 Week</button>
+                        <button class="cc_cal_btn" data-cal="day" type="object" name="action_show_day">☀ Day</button>
+                    </div>
+
+                    <!-- ── LIST VIEW ── -->
+                    <div class="cc_cal_panel active" id="cc_cal_list">
+                        <!-- Search + filter bar -->
+                        <div class="cc_search_bar">
+                            <div class="cc_search_input_wrap">
+                                <span class="cc_search_icon">🔍</span>
+                                <field name="event_search"
+                                       placeholder="Search events by title, description or category..."
+                                       class="cc_search_input"
+                                       nolabel="1"/>
+                            </div>
+                            <div class="cc_filters">
+                                <field name="filter_category" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Category"/>
+                                <field name="filter_visibility" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Visibility"/>
+                                <field name="filter_sort" widget="selection" nolabel="1" class="cc_filter_select"/>
+                                <span class="cc_result_count">
+                                    <field name="event_count" readonly="1" nolabel="1"/> events
+                                </span>
+                            </div>
+                        </div>
+                        <field name="tabIsVisible" readonly="1" nolabel="1"/>
+                        <!-- Event cards -->
+                        <div class="cc_card cc_group_card" invisible="tabIsVisible != 'event'">
+                            <p class="cc_group_label">All Company Events</p>
+                            <p class="cc_group_meta">
+                                <field name="event_count" readonly="1" nolabel="1"/> events scheduled
+                            </p>
+
+                            <field name="event_ids" readonly="1" nolabel="1"
+                                   context="{'form_view_ref': 'hr_company_calendar.event_inline_view'}">
+                                 
+                                <kanban create="0">
+                                    <field name="id"/>
+                                    <field name="name"/> 
+                                    <field name="description"/>
+                                    <field name="byday"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_card cc-card-footer">
+                                                <!-- <div class="cc-card-footer"> -->
+                                                <div class="cc_content">
+                                                    <h4><field name="name" readonly="1" nolabel="1"/></h4>
+                                                    <p><h6><field name="description" readonly="1" nolabel="1"/></h6></p>
+                                                    <p><h6>📅<field name="start" readonly="1" nolabel="1"/></h6><field name="byday" readonly="1" nolabel="1"/></p>
+                                                </div>
+                                                <button name="action_open_event" type="object" class="cc-btn-primary" >
+                                                    <i class="fa fa-eye"/> Review
+                                                </button>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                            <div class="cc-record-footer">
+                                <div class="cc_content">
+                                </div>
+                                <span class="" >
+                                    <i class="fa fa-eye"/>
+                                    <a name="action_view_all_event" type="object" class="btn-sm">View all</a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── MONTH VIEW ── -->
+                    <div class="cc_cal_panel" id="cc_cal_month">
+                        <!-- Odoo native calendar widget injected via JS -->
+                        <div class="cc_calendar_host" data-mode="month" data-model="calendar.event">
+                            <div class="cc_cal_month_header">
+                                <button class="cc_cal_nav_btn" id="cc_month_prev">‹</button>
+                                <span class="cc_cal_month_label" id="cc_month_label">June 2026</span>
+                                <button class="cc_cal_btn_today">Today</button>
+                                <button class="cc_cal_nav_btn" id="cc_month_next">›</button>
+                            </div>
+                            <div class="cc_month_grid" id="cc_month_grid">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── WEEK VIEW ── -->
+                    <div class="cc_cal_panel" id="cc_cal_week">
+                        <div class="cc_calendar_host" data-mode="week" data-model="calendar.event">
+                            <div class="cc_cal_month_header">
+                                <button class="cc_cal_nav_btn" id="cc_week_prev">‹</button>
+                                <span class="cc_cal_month_label" id="cc_week_label">Week of Jun 9, 2026</span>
+                                <button class="cc_cal_btn_today">Today</button>
+                                <button class="cc_cal_nav_btn" id="cc_week_next">›</button>
+                            </div>
+                            <div class="cc_week_grid" id="cc_week_grid">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── DAY VIEW ── -->
+                    <div class="cc_cal_panel" id="cc_cal_day">
+                        <div class="cc_calendar_host" data-mode="day" data-model="calendar.event">
+                            <div class="cc_cal_month_header">
+                                <button class="cc_cal_nav_btn" id="cc_day_prev">‹</button>
+                                <span class="cc_cal_month_label" id="cc_day_label">Wednesday, Jun 10, 2026</span>
+                                <button class="cc_cal_btn_today">Today</button>
+                                <button class="cc_cal_nav_btn" id="cc_day_next">›</button>
+                            </div>
+                            <div class="cc_day_grid" id="cc_day_grid">
+                                <!-- Rendered by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     TAB PANEL 2 — MEETINGS
+                ══════════════════════════════════════ -->
+                <div class="cc_panel" id="cc_panel_meetings" invisible="tabIsVisible != 'meeting'">
+                    <div class="cc_card cc_group_card">
+                        <p class="cc_group_label">Scheduled Meetings</p>
+                        <p class="cc_group_meta">
+                            <field name="meeting_count" readonly="1" nolabel="1"/> meetings scheduled
+                        </p>
+
+                        <field name="meeting_ids" readonly="1" nolabel="1">
+                            <tree>
+                                <field name="name"/>
+                                <field name="location"/>
+                                <field name="start"/>
+                                <field name="stop"/>
+                                <field name="attendee_ids"/>
+                                <field name="user_id"/>
+                                <field name="videocall_location"/>
+                            </tree>
+                        </field>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     TAB PANEL 3 — ANNOUNCEMENTS
+                ══════════════════════════════════════ -->
+                <div class="cc_panel" id="cc_panel_announcements" invisible="tabIsVisible != 'announcement'">
+                    <div class="cc_card cc_group_card">
+                        <p class="cc_group_label">Company Announcements</p>
+                        <p class="cc_group_meta">
+                            <field name="announcement_count" readonly="1" nolabel="1"/> announcements
+                        </p>
+                        <field name="announcement_ids" readonly="1">
+                            <kanban create="0">
+                                <field name="priority_level"/> 
+                                <field name="announcement_type"/>
+                                <field name="announcement_title"/>
+                                <field name="date_publish"/>
+                                <field name="number_of_views"/>
+                                <templates>
+                                    <t t-name="kanban-box">
+                                        <div class="oe_kanban_card cc-card-footer">
+                                            <div class="cc_content">
+                                                <p><h6><field name="announcement_title" readonly="1" nolabel="1"/></h6></p>
+                                                <p><h5>📅<field name="date_publish" readonly="1" nolabel="1"/></h5></p>
+                                                <div class="cc-action-row">
+                                                    <span>
+                                                        <i class="fa fa-flag mt-3"/> <field name="priority_level" readonly="1" nolabel="1"/>
+                                                    </span>
+
+                                                    <span>
+                                                        <i class="fa fa-eye"/> <field name="number_of_views" readonly="1" nolabel="1"/>
+                                                    </span>
+                                                    <span class="cc-btn-primary m-2">
+                                                        <i class="fa fa-eye"/> Review
+                                                    </span>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                        
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field> 
+                        <div class="cc-record-footer">
+                            <div class="cc_content">
+                            </div>
+                            <span class="cc_btn_outline" >
+                                <i class="fa fa-eye"/>
+                                <a name="action_view_all_event" type="object" class="btn-sm cc_btn_outline">View all</a>
+                            </span>
+                        </div>
+
+
+                        <!-- <field name="announcement_ids" readonly="1" nolabel="1"/> -->
+                            <!-- <tree>
+                                <field name="announcement_type"/>
+                                <field name="is_published"/>
+                                <field name="announcement_title"/>
+                                <field name="date_publish"/>
+                                <field name="number_of_views"/>
+                                <field name="priority_level" widget="badge"/>
+                            </tree>
+                        </field> -->
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════
+                     TAB PANEL 4 — CHAT (Discuss)
+                ══════════════════════════════════════ -->
+                <div class="cc_panel" id="cc_panel_chat" invisible="tabIsVisible != 'chat'">
+                    <div class="cc_card cc_chat_card">
+                        <div class="cc_chat_host" id="cc_discuss_host">
+                            <!-- Odoo Discuss widget mounted here via JS -->
+                            <field name="channel_id" widget="discuss" nolabel="1" class="cc_discuss_widget"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden fields used by the server action / wizard -->
+                <field name="event_count" invisible="1"/>
+                <field name="meeting_count" invisible="1"/>
+                <field name="announcement_count" invisible="1"/>
+
+                <!-- Footer buttons -->
+                <!-- <footer> -->
+                    <!-- <button name="action_refresh" string="↺ Refresh" type="object" class="btn cc_btn_outline"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/> -->
+                <!-- </footer> -->
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+    <record id="action_open_company_calendar" model="ir.actions.act_window">
+        <field name="name">Company Calendar</field>
+        <field name="res_model">company.calendar.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_company_calendar_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'default_auto_load': True}</field>
+    </record>
+
+    
+</odoo>

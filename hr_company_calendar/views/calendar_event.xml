@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<record id="view_calendar_event_form_inherit_category" model="ir.ui.view">
+    <field name="name">calendar.event.form.inherit.category</field>
+    <field name="model">calendar.event</field>
+    <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+    <field name="arch" type="xml">
+
+        <xpath expr="//form" position="inside">
+            <header>
+                <button name="send_event_for_approval"
+                        type="object"
+                        string="Send for approval"
+                        class="btn-primary"
+                        invisible="calendar_status not in ['Opened']"/>
+
+                <button name="approve_events"
+                        type="object"
+                        string="Approve Event"
+                        class="btn-primary"
+                        invisible="calendar_status not in ['Pending']"/>
+
+                <button name="reject_events"
+                        type="object"
+                        string="Reject Event"
+                        class="btn-primary"
+                        invisible="calendar_status not in ['Pending']"/>
+
+                <button name="set_event_as_public"
+                        type="object"
+                        string="Mark as Open Event"
+                        class="btn-primary"
+                        invisible="calendar_status not in ['Rejected', 'Opened']"/>
+                <field name="calendar_status" widget="statusbar"/>
+            
+            </header>
+        </xpath>
+        <!-- Insert after the event name -->
+        <xpath expr="//field[@name='location']" position="after">
+            <field name="filter_category"/>
+            <field name="to_approved_by"/>
+            <field name="department_id"/>
+        </xpath>
+
+        <!-- Insert after attendees -->
+        <xpath expr="//field[@name='alarm_ids']" position="after">
+            <field name="check_in_attendee_ids"
+                   widget="many2many_tags" readonly="1" placeholder="This shows list of attendees"/>
+        </xpath>
+
+        <xpath expr="//button[@name='set_discuss_videocall_location']" position="replace">
+            <button name="set_discuss_videocall_location" type="object" class="btn btn-link ps-0" 
+            invisible="videocall_location or not user_can_edit" 
+            context="{'recurrence_update': recurrence_update}">
+                <span class="fa fa-plus"/><span> Add video Meeting</span>
+            </button>
+                          
+        </xpath>
+
+    </field>
+</record>
+</odoo>

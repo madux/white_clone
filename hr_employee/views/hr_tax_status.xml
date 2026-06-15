@@ -113,12 +113,5 @@
         <field name="search_view_id" ref="view_hr_tax_status_search"/>
     </record>
 
-    <menuitem
-        id="menu_hr_tax_status"
-        name="💰 Tax Status"
-        parent="hr_employee.menu_hr_core_organisation_setup"
-        action="action_hr_tax_status"
-        sequence="70"
-        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
-
+    
 </odoo>

@@ -16,6 +16,10 @@ A synchronization with an internal agenda (Meetings of the CRM module) is also p
 """,
     'depends': ['hr', 'calendar', 'resource', 'hr_administration'],
     'data': [
+        'views/company_activities.xml',
+        'views/company_approval.xml',
+        'views/calendar_event.xml',
+        'security/ir.model.access.csv'
     ],
      
     'installable': True,
@@ -26,6 +30,8 @@ A synchronization with an internal agenda (Meetings of the CRM module) is also p
             "hr_company_calendar/static/src/views/calendar/calendar_controller.xml",
             "hr_company_calendar/static/src/views/calendar/calendar_controller.js",
             "hr_company_calendar/static/src/views/calendar/calendar_controller.scss",
+            "hr_company_calendar/static/src/views/calendar/company_activities.js",
+            "hr_company_calendar/static/src/css/company_activities.scss",
             # 'hr_company_calendar/static/src/views/calendar/calendar_controller.xml',
             # Don't include dark mode files in light mode
             # ('remove', 'hr_holidays/static/src/**/*.dark.scss'),

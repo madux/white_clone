@@ -92,7 +92,7 @@
     { key: 'total_employees',   label: 'Total Employees',    sublabel: 'vs last month', icon: '👥', color: C.blue,   changeKey: 'total_employees_change', route: '/app/employees' },
     { key: 'active_employees',  label: 'Active Employees',   sublabel: 'vs last month', icon: '✅', color: C.green,  route: '/app/employees' },
     { key: 'on_leave_today',    label: 'On Leave Today',     sublabel: 'employees',     icon: '🌴', color: C.orange, route: '/app/leave' },
-    { key: 'pending_requests',  label: 'Pending Requests',   sublabel: 'awaiting approval', icon: '📋', color: C.pink, route: '/app/leave' },
+    { key: 'pending_requests',  label: 'Pending Requests',   sublabel: 'aPending', icon: '📋', color: C.pink, route: '/app/leave' },
     { key: 'disciplinary_cases',label: 'Disciplinary Cases', sublabel: 'open cases',    icon: '⚠️', color: C.red,    route: '/app/employees' },
     { key: 'expiring_contracts',label: 'Expiring Soon',      sublabel: 'in 30 days',    icon: '📄', color: C.yellow, route: '/app/employees' },
     { key: 'pending_approvals', label: 'Pending Approvals',  sublabel: 'across modules',icon: '🔔', color: C.purple, route: '/app/leave' },

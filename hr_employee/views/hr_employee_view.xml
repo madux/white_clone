@@ -279,20 +279,19 @@
         <field name="url">/organisation-chart</field>
         <field name="target">self</field>
     </record>
+
+     <menuitem id="menu_hr_core_employee_menu"
+                name="Employee Core"
+                sequence="6"
+                action="hr_employee.action_core_multi_branch"
+                />
    
     <record id="hr_employee.menu_hr_core_employee_menu" model="ir.ui.menu">
         <field name="icon_class">fa fa-building</field>
         <field name="category_name">HRCORE</field>
     </record>
 
-    <menuitem id="menu_hr_core_employee_profile"
-                    name="My Profile"
-                    sequence="1"
-                    parent="hr_employee.menu_hr_core_employee_menu"
-                    action="hr_employee.action_profile_dashboard_server"/>
-     <record id="hr_employee.menu_hr_core_employee_profile" model="ir.ui.menu">
-        <field name="icon_class">fa fa-user</field>
-    </record>
+    
     <menuitem id="menu_hr_core_organisation"
                     name="🏛️ Organisation"
                     sequence="2"

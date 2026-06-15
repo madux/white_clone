@@ -1,5 +1,5 @@
 :root {
-  --os-primary: #d1127d;
+  --os-primary: #ec4899;
   --os-primary-light: #fdf2f8;
   --os-border: #f1f2f4;
   --os-text-dark: #121826;
@@ -193,7 +193,7 @@
  {
     height: 50%;
     width: 100%;
-    background: #e91e8c;
+    background: #ec4899;
     color: white;
     border: none;
     border-radius: 10px;
@@ -210,7 +210,7 @@
     flex-direction: column;
     gap: 1px;
     overflow-y: auto;
-    background: #e91e8c;
+    background: #ec4899;
     color: white;
 }
 
@@ -259,7 +259,7 @@
     align-items: center;
     gap: 8px;
     padding: 14px 16px 10px;
-    background: #e91e8c;
+    background: #ec4899;
     /* border-bottom: 1px solid #ffffff; */
     flex-shrink: 0;
 }

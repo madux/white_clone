@@ -82,6 +82,8 @@ class Hr_announcement(models.Model):
         string='Target Role',
     )
     expiry_date = fields.Datetime(string="Expiry time", required=True, copy=False)
+    date_publish = fields.Datetime(string="Date publish", readonly=True)
+
     is_published = fields.Boolean(string="is published", default=False, copy=False)
     number_of_views = fields.Integer(string="Views", copy=False)
     send_email_notification = fields.Boolean(string="Send Mail Notification", default=True)
@@ -123,6 +125,7 @@ class Hr_announcement(models.Model):
 
     def action_publish_announcement(self):
         self.is_published = True
+        self.date_publish = fields.Datetime.now()
         target_audience_ids = []
         if fields.Datetime.now() > self.expiry_date:
             raise UserError("Sorry you cannot publish this because the expiry date is less than today's date")

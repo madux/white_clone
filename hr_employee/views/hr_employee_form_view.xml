@@ -745,4 +745,13 @@
 
     </record>
 
+    <menuitem id="menu_hr_core_employee_profile"
+                    name="My Profile"
+                    sequence="1"
+                    parent="hr_employee.menu_hr_core_employee_menu"
+                    action="hr_employee.action_profile_dashboard_server"/>
+     <record id="hr_employee.menu_hr_core_employee_profile" model="ir.ui.menu">
+        <field name="icon_class">fa fa-user</field>
+    </record>
+
 </odoo>

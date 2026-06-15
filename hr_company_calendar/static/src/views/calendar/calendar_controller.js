@@ -35,4 +35,26 @@ patch(CalendarController.prototype, {
         });
     },
 
+    async openCompanyActivities(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "hr_company_calendar.action_load_company_calendar_data",
+            {
+                target: "new",
+            }
+        );
+    },
+
+    async openApprovalsView(ev) {
+        ev.preventDefault();
+
+        await this.env.services.action.doAction(
+            "hr_company_calendar.action_load_company_calendar_approvals",
+            {
+                target: "new",
+            }
+        );
+    }
+
 });

@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_company_activities_id,access_name_company_activities,hr_company_calendar.model_company_calendar_dashboard,,1,1,1,1
+access_hr_core_announcement_id,access_name_hr_core_announcement,hr_company_calendar.model_hr_core_announcement,,1,1,1,1
+access_calendar_approval_dashboard_id,access_name_calendar_approval_dashboard,hr_company_calendar.model_calendar_approval_dashboard,,1,1,1,1

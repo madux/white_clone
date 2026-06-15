@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ─────────────────────────────────────────────
+         Server Action — auto-populates the transient model
+         ───────────────────────────────────────────── -->
+    <record id="action_load_company_calendar_approvals" model="ir.actions.server">
+        <field name="name">Company Calendar Approval Action</field>
+        <field name="model_id" ref="model_calendar_approval_dashboard"/>
+        <field name="binding_model_id" ref="model_calendar_approval_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['calendar.approval.dashboard'].action_load_data()
+        </field>
+    </record>
+
+
+    <menuitem
+        id="menu_company_approvals"
+        name="Approvals"
+        parent="calendar.mail_menu_calendar"
+        action="action_load_company_calendar_approvals"
+        sequence="9"
+        />
+    <!-- ─────────────────────────────────────────────
+         Form View — Transient (wizard) model
+         ───────────────────────────────────────────── -->
+    <record id="view_company_calendar_approval_wizard_form" model="ir.ui.view">
+        <field name="name">company.calendar.approval.dashboard.form</field>
+        <field name="model">calendar.approval.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Company Calendar Approval"
+                  class="cc_root" create="0" edit="0">
+                <div class="cc_header">
+                    <div class="cc_header_left">
+                        <span class="cc_header_icon">📅</span>
+                        <div>
+                            <h2 class="cc_header_title">Company Calendar Approvals</h2>
+                            <p class="cc_header_sub">Operational heartbeat &amp; temporal control center</p>
+                        </div>
+                    </div>
+                    <div class="cc_header_actions">
+                        <button class="btn cc_btn_outline" name="action_get_started" type="object">
+                            📖 Get Started
+                        </button>
+                        <button class="btn cc_btn_outline cc_btn_tour" name="action_guided_tour" type="object">
+                            ✨ Guided Tour
+                        </button>
+                        <div class="cc_view_as">
+                            <span>View as:</span>
+                            <field name="view_mode" widget="selection" nolabel="1" class="cc_select"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PAGE TITLE ROW ══ -->
+                <div class="cc_page_title_row">
+                    <div>
+                        <h3 class="cc_section_title">Approval Management</h3>
+                        <p class="cc_section_sub">Review and process calendar-related approval requests</p>
+                    </div>
+                    <div class="cc_header p-0">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-amber-600 profile-kpi-number">
+                                <field name="pending_count" readonly="1" nolabel="1"/>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Pending
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600 profile-kpi-number">
+                                <field name="approved_count" readonly="1" nolabel="1"/>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Approved
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-red-600 profile-kpi-number">
+                                <field name="rejected_count" readonly="1" nolabel="1"/>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                Rejected
+                            </div>
+                        </div>
+                    </div>
+
+                </div> 
+
+                <div class="cc_panel" id="cc_panel_events">
+                    <div class="cc_card cc_group_card">
+                        <div class="cc_card cc_group_card">
+                            <p class="cc_group_label">Company Event Approval</p>
+                            <p class="cc_group_meta">
+                                <!-- <field name="announcement_count" readonly="1" nolabel="1"/> announcements -->
+                            </p>
+                        </div>
+                        <field name="event_ids" readonly="1" nolabel="1">
+                            
+                            <kanban create="0">
+                                <field name="id"/>
+                                <field name="name"/> 
+                                <field name="description"/>
+                                <field name="byday"/>
+                                <templates>
+                                    <t t-name="kanban-box">
+                                        <div class="oe_kanban_card cc-card-footer">
+                                            <!-- <div class="cc-card-footer"> -->
+                                            <div class="cc_content shiftpush">
+                                                <h4><field name="name" readonly="1" nolabel="1"/></h4>
+                                                <p><h6><field name="description" readonly="1" nolabel="1"/></h6></p>
+                                                <p><h6>📅<field name="start" readonly="1" nolabel="1"/></h6><field name="byday" readonly="1" nolabel="1"/></p>
+                                                <div class="cc-action-row">
+                                                    <span>
+                                                        <i class="fa fa-user"/> To be approved by: <field name="to_approved_by" readonly="1" nolabel="1"/>
+                                                    </span>
+                                                    <span class="cc-btn-primary m-2">
+                                                        <field name="calendar_status" readonly="1" nolabel="1"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div class="cc_content">
+                                                <button name="approve_events" type="object" class="btn-sm btn-success m-3" invisible="calendar_status not in ['Pending']">
+                                                    <i class="fa fa-check"/> Approve
+                                                </button>
+                                                <button name="action_open_event" type="object" class="btn-sm btn-danger" invisible="calendar_status not in ['Pending']">
+                                                    <i class="fa fa-ban"/> Reject
+                                                </button>
+                                            </div>
+
+                                            
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field> 
+                        <div class="cc-record-footer">
+                            <div class="cc_content">
+                            </div>
+                            <span class="cc_btn_outline" >
+                                <i class="fa fa-eye"/>
+                                <a name="action_view_all_event_approval" type="object" class="btn-sm cc_btn_outline">View all</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+</odoo>

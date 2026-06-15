@@ -167,8 +167,8 @@
 
     <menuitem id="menu_hr_reporting_structure"
               name="🛡️Job Structure"
-              parent="hr_employee.menu_hr_core_organisation_setup"
               action="action_hr_reporting_structure"
               sequence="85"/>
+              <!-- parent="hr_employee.menu_hr_core_organisation_setup" -->
 
 </odoo>

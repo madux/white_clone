@@ -41,6 +41,18 @@ $cc-radius:     8px;
         order: 0;
         flex-wrap: nowrap !important;   // items inside header stay on one line
     }
+    .cc-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 13px;
+    }
+
+    .cc-action-row {
+        margin-top: 12px;
+        text-align: right;
+    }
 
     // ── Row 2: our sidebar (left) ──
     > .o_cc_admin_sidebar {

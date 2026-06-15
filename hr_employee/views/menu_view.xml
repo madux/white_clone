@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-         <menuitem id="menu_hr_core_employee_menu"
-                name="Employee Core"
-                sequence="6"
-                action="hr_employee.action_core_multi_branch"
-                />
+        
 
         <menuitem id="menu_hr_core_organisation_setup"
                         name="🏛️ Organisation Setup"
@@ -13,13 +9,56 @@
                         groups="base.group_system"
                         action="hr_employee.action_core_view_hr_core_employee"/>
        
+        <menuitem
+                id="menu_hr_core_employment_type"
+                name="📊 Employment type"
+                parent="hr_employee.menu_hr_core_organisation_setup"
+                action="hr_employee.action_hr_core_employment_type"
+                sequence="70"
+                groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
         
+        <menuitem id="menu_hr_benefit_root"
+                        name="🎁 Benefit"
+                        parent="hr_employee.menu_hr_core_organisation_setup"
+                        sequence="60"
+                        action="hr_employee.action_hr_benefit"
+                        groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
+
+        <!-- <menuitem
+                id="menu_hr_benefit_root"
+                name="Benefits"
+                sequence="100"
+                web_icon="hr,static/description/icon.png"/> -->
+
+        <menuitem
+                id="menu_hr_benefit"
+                name="Benefit Categories"
+                parent="menu_hr_benefit_root"
+                action="action_hr_benefit"
+                sequence="1"/>
+
+        <menuitem
+                id="menu_hr_benefit_line"
+                name="Benefit Lines"
+                parent="menu_hr_benefit_root"
+                action="action_hr_benefit_line"
+                sequence="2"/>
+
+        <menuitem
+                id="menu_hr_tax_status"
+                name="💰 Tax Status"
+                parent="hr_employee.menu_hr_core_organisation_setup"
+                action="action_hr_tax_status"
+                sequence="70"
+                groups="base.group_system,hr_employee.group_hr_employee_core_superuser,hr_employee.group_hr_employee_core_superuser"/>
         
         <menuitem id="menu_hr_employee_branch"
                         name="🏛️ Branch"
                         parent="menu_hr_core_organisation_setup"
                         sequence="10"
                         action="hr_employee.action_core_multi_branch"/>
+
+
 
         <menuitem id="menu_hr_employee_department"
                         name="🏢 Departments"

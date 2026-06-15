@@ -63,7 +63,7 @@ class HRAdministrationController(http.Controller):
         ])
         active_employees = total_employees - leaves_today
 
-        # Pending requests (leave requests awaiting approval)
+        # Pending requests (leave requests aPending)
         pending_requests = env['hr.leave'].search_count([('state', '=', 'confirm')])
 
         # Disciplinary cases — use hr.warning if available, fallback gracefully
