@@ -1,0 +1,71 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #FAFAFA;
+    padding: 40px;
+}
+
+.osc-wrapper { max-width: 1440px; margin: 0 auto; }
+
+.osc-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.osc-metric-card {
+    background: #FFFFFF;
+    border: 1px solid #EAEAEA;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.osc-metric-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--osc-card-color);
+    transform: scaleY(0.3);
+    transition: transform 0.3s ease, width 0.3s ease;
+}
+
+.osc-metric-card:hover::before {
+    transform: scaleY(1);
+    width: 6px;
+}
+
+.osc-metric-card.active {
+    background-color: var(--osc-card-color);
+    border-color: var(--osc-card-color);
+}
+
+.osc-metric-card.active .osc-metric-val,
+.osc-metric-card.active .osc-metric-label {
+    color: #FFFFFF;
+}
+
+.osc-metric-card.active::before {
+    background-color: rgba(255,255,255,0.4);
+    transform: scaleY(1);
+}
+
+.osc-metric-val {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: #1A1A1A;
+}
+
+.osc-metric-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #999999;
+}
