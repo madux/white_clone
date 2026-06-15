@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ===================================================== -->
+    <!-- UNITED KINGDOM -->
+    <!-- ===================================================== -->
+
+    <record id="hr_case_type_uk_absenteeism" model="hr.warning.case.type">
+        <field name="name">Absenteeism</field>
+        <field name="sequence">1</field>
+        <field name="categories">attendance</field>
+        <field name="code">UK_ABSENT</field>
+        <field name="description">Repeated unauthorized absence from work.</field>
+        <field name="country_id" ref="base.uk"/>
+        <field name="color">1</field>
+    </record>
+
+    <record id="hr_case_type_uk_harassment" model="hr.warning.case.type">
+        <field name="name">Workplace Harassment</field>
+        <field name="sequence">2</field>
+        <field name="categories">conduct</field>
+        <field name="code">UK_HARASS</field>
+        <field name="description">Harassment or bullying of coworkers.</field>
+        <field name="country_id" ref="base.uk"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="hr_case_type_uk_data_breach" model="hr.warning.case.type">
+        <field name="name">Data Privacy Breach</field>
+        <field name="sequence">3</field>
+        <field name="categories">it_security</field>
+        <field name="code">UK_GDPR</field>
+        <field name="description">Violation of GDPR or company data policies.</field>
+        <field name="country_id" ref="base.uk"/>
+        <field name="color">3</field>
+    </record>
+
+    <record id="hr_case_type_uk_theft" model="hr.warning.case.type">
+        <field name="name">Company Property Theft</field>
+        <field name="sequence">4</field>
+        <field name="categories">assets</field>
+        <field name="code">UK_THEFT</field>
+        <field name="description">Unauthorized removal of company assets.</field>
+        <field name="country_id" ref="base.uk"/>
+        <field name="color">4</field>
+    </record>
+
+    <record id="hr_case_type_uk_expense_fraud" model="hr.warning.case.type">
+        <field name="name">Expense Fraud</field>
+        <field name="sequence">5</field>
+        <field name="categories">financial</field>
+        <field name="code">UK_EXPENSE</field>
+        <field name="description">False expense claims or reimbursement fraud.</field>
+        <field name="country_id" ref="base.uk"/>
+        <field name="color">5</field>
+    </record>
+
+
+    <!-- ===================================================== -->
+    <!-- NIGERIA -->
+    <!-- ===================================================== -->
+
+    <record id="hr_case_type_ng_lateness" model="hr.warning.case.type">
+        <field name="name">Repeated Lateness</field>
+        <field name="sequence">10</field>
+        <field name="categories">attendance</field>
+        <field name="code">NG_LATE</field>
+        <field name="description">Persistent lateness to work without excuse.</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="color">1</field>
+    </record>
+
+    <record id="hr_case_type_ng_insubordination" model="hr.warning.case.type">
+        <field name="name">Insubordination</field>
+        <field name="sequence">11</field>
+        <field name="categories">conduct</field>
+        <field name="code">NG_INSUB</field>
+        <field name="description">Failure to obey lawful management directives.</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="hr_case_type_ng_safety" model="hr.warning.case.type">
+        <field name="name">Safety Violation</field>
+        <field name="sequence">12</field>
+        <field name="categories">safety</field>
+        <field name="code">NG_SAFETY</field>
+        <field name="description">Violation of workplace safety procedures.</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="color">3</field>
+    </record>
+
+    <record id="hr_case_type_ng_misuse_assets" model="hr.warning.case.type">
+        <field name="name">Misuse of Company Assets</field>
+        <field name="sequence">13</field>
+        <field name="categories">assets</field>
+        <field name="code">NG_ASSET</field>
+        <field name="description">Improper use of company property or tools.</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="color">4</field>
+    </record>
+
+    <record id="hr_case_type_ng_payroll" model="hr.warning.case.type">
+        <field name="name">Payroll Manipulation</field>
+        <field name="sequence">14</field>
+        <field name="categories">financial</field>
+        <field name="code">NG_PAYROLL</field>
+        <field name="description">Unauthorized payroll adjustments or manipulation.</field>
+        <field name="country_id" ref="base.ng"/>
+        <field name="color">5</field>
+    </record>
+
+
+    <!-- ===================================================== -->
+    <!-- SOUTH AFRICA -->
+    <!-- ===================================================== -->
+
+    <record id="hr_case_type_za_discrimination" model="hr.warning.case.type">
+        <field name="name">Workplace Discrimination</field>
+        <field name="sequence">20</field>
+        <field name="categories">conduct</field>
+        <field name="code">ZA_DISC</field>
+        <field name="description">Discriminatory behavior in the workplace.</field>
+        <field name="country_id" ref="base.za"/>
+        <field name="color">1</field>
+    </record>
+
+    <record id="hr_case_type_za_absence" model="hr.warning.case.type">
+        <field name="name">Unauthorized Absence</field>
+        <field name="sequence">21</field>
+        <field name="categories">attendance</field>
+        <field name="code">ZA_ABS</field>
+        <field name="description">Absence without management approval.</field>
+        <field name="country_id" ref="base.za"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="hr_case_type_za_confidentiality" model="hr.warning.case.type">
+        <field name="name">Confidentiality Breach</field>
+        <field name="sequence">22</field>
+        <field name="categories">ethics</field>
+        <field name="code">ZA_CONF</field>
+        <field name="description">Unauthorized disclosure of confidential information.</field>
+        <field name="country_id" ref="base.za"/>
+        <field name="color">3</field>
+    </record>
+
+    <record id="hr_case_type_za_poor_perf" model="hr.warning.case.type">
+        <field name="name">Poor Performance</field>
+        <field name="sequence">23</field>
+        <field name="categories">performance</field>
+        <field name="code">ZA_PERF</field>
+        <field name="description">Failure to meet expected performance standards.</field>
+        <field name="country_id" ref="base.za"/>
+        <field name="color">4</field>
+    </record>
+
+    <record id="hr_case_type_za_it_access" model="hr.warning.case.type">
+        <field name="name">Unauthorized System Access</field>
+        <field name="sequence">24</field>
+        <field name="categories">it_security</field>
+        <field name="code">ZA_IT</field>
+        <field name="description">Unauthorized access to company systems.</field>
+        <field name="country_id" ref="base.za"/>
+        <field name="color">5</field>
+    </record>
+
+
+    <!-- ===================================================== -->
+    <!-- KENYA -->
+    <!-- ===================================================== -->
+
+    <record id="hr_case_type_ke_dress_code" model="hr.warning.case.type">
+        <field name="name">Dress Code Violation</field>
+        <field name="sequence">30</field>
+        <field name="categories">professionalism</field>
+        <field name="code">KE_DRESS</field>
+        <field name="description">Failure to comply with company dress code.</field>
+        <field name="country_id" ref="base.ke"/>
+        <field name="color">1</field>
+    </record>
+
+    <record id="hr_case_type_ke_bullying" model="hr.warning.case.type">
+        <field name="name">Workplace Bullying</field>
+        <field name="sequence">31</field>
+        <field name="categories">conduct</field>
+        <field name="code">KE_BULLY</field>
+        <field name="description">Bullying or intimidation of employees.</field>
+        <field name="country_id" ref="base.ke"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="hr_case_type_ke_ppe" model="hr.warning.case.type">
+        <field name="name">Failure to Wear PPE</field>
+        <field name="sequence">32</field>
+        <field name="categories">safety</field>
+        <field name="code">KE_PPE</field>
+        <field name="description">Failure to wear required protective equipment.</field>
+        <field name="country_id" ref="base.ke"/>
+        <field name="color">3</field>
+    </record>
+
+    <record id="hr_case_type_ke_fraud" model="hr.warning.case.type">
+        <field name="name">Financial Fraud</field>
+        <field name="sequence">33</field>
+        <field name="categories">financial</field>
+        <field name="code">KE_FRAUD</field>
+        <field name="description">Fraudulent financial activity.</field>
+        <field name="country_id" ref="base.ke"/>
+        <field name="color">4</field>
+    </record>
+
+    <record id="hr_case_type_ke_theft" model="hr.warning.case.type">
+        <field name="name">Theft of Company Property</field>
+        <field name="sequence">34</field>
+        <field name="categories">assets</field>
+        <field name="code">KE_THEFT</field>
+        <field name="description">Stealing company-owned assets.</field>
+        <field name="country_id" ref="base.ke"/>
+        <field name="color">5</field>
+    </record>
+
+
+    <!-- ===================================================== -->
+    <!-- SAUDI ARABIA -->
+    <!-- ===================================================== -->
+
+    <record id="hr_case_type_sa_absenteeism" model="hr.warning.case.type">
+        <field name="name">Excessive Absenteeism</field>
+        <field name="sequence">40</field>
+        <field name="categories">attendance</field>
+        <field name="code">SA_ABS</field>
+        <field name="description">Frequent absence without valid reason.</field>
+        <field name="country_id" ref="base.sa"/>
+        <field name="color">1</field>
+    </record>
+
+    <record id="hr_case_type_sa_ethics" model="hr.warning.case.type">
+        <field name="name">Ethics Violation</field>
+        <field name="sequence">41</field>
+        <field name="categories">ethics</field>
+        <field name="code">SA_ETHICS</field>
+        <field name="description">Violation of workplace ethics or compliance rules.</field>
+        <field name="country_id" ref="base.sa"/>
+        <field name="color">2</field>
+    </record>
+
+    <record id="hr_case_type_sa_harassment" model="hr.warning.case.type">
+        <field name="name">Verbal Harassment</field>
+        <field name="sequence">42</field>
+        <field name="categories">conduct</field>
+        <field name="code">SA_HARASS</field>
+        <field name="description">Harassing or abusive communication.</field>
+        <field name="country_id" ref="base.sa"/>
+        <field name="color">3</field>
+    </record>
+
+    <record id="hr_case_type_sa_it_policy" model="hr.warning.case.type">
+        <field name="name">IT Policy Violation</field>
+        <field name="sequence">43</field>
+        <field name="categories">it_security</field>
+        <field name="code">SA_IT</field>
+        <field name="description">Violation of corporate IT usage policies.</field>
+        <field name="country_id" ref="base.sa"/>
+        <field name="color">4</field>
+    </record>
+
+    <record id="hr_case_type_sa_performance" model="hr.warning.case.type">
+        <field name="name">Unsatisfactory Performance</field>
+        <field name="sequence">44</field>
+        <field name="categories">performance</field>
+        <field name="code">SA_PERF</field>
+        <field name="description">Continued poor work performance.</field>
+        <field name="country_id" ref="base.sa"/>
+        <field name="color">5</field>
+    </record>
+
+</odoo>

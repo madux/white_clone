@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <record id="ps1" model="pay.status">
+            <field name="name">Full Pay</field>
+            <field name="description">Under Nigerian labour law, suspension during investigation should generally be on full pay unless the contract of employment or collective agreement provides otherwise. Unpaid suspension without a contractual basis may be challenged as constructive dismissal. Employers must provide written notification of the suspension, its expected duration, and the reason. The Nigerian Industrial Court has jurisdiction over disputes arising from suspension.</field>
+        </record>
+        <record id="ps2" model="pay.status">
+            <field name="name">Half Pay</field>
+            <field name="description">Under Nigerian labour law, suspension during investigation should generally be on full pay unless the contract of employment or collective agreement provides otherwise. Unpaid suspension without a contractual basis may be challenged as constructive dismissal. Employers must provide written notification of the suspension, its expected duration, and the reason. The Nigerian Industrial Court has jurisdiction over disputes arising from suspension.</field>
+        </record>
+        <record id="ps3" model="pay.status">
+            <field name="name">No Pay</field>
+            <field name="description">Under Nigerian labour law, suspension during investigation should generally be on full pay unless the contract of employment or collective agreement provides otherwise. Unpaid suspension without a contractual basis may be challenged as constructive dismissal. Employers must provide written notification of the suspension, its expected duration, and the reason. The Nigerian Industrial Court has jurisdiction over disputes arising from suspension.</field>
+        </record>
+        
+
+    </data>
+</odoo>

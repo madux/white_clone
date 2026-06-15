@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+    
+
+    <record id="hr_warning_dialog_form_view" model="ir.ui.view">
+        <field name="name">hr.warning.form</field>
+        <field name="model">hr.warning</field>
+        <field name="arch" type="xml">
+            <form string="New Incident" class="o_warning_form" create="0">
+                <header>
+                    <field name="workflow_status" widget="statusbar"/>
+                    <!-- <field name="workflow_status" widget="statusWidget"/> -->
+                </header>
+                <div class='alert alert-info' role="alert" invisible="display_unfinished_message == False">
+                    <field name="display_unfinished_message" nolabel="1" readonly="1" class="d-inline"/>
+                    <button name="action_resolve"
+                                type="object"
+                                class="oe_highlight fa fa-plus"/>
+                </div>
+                <div class="warning-qms-header-hero" invisible="workflow_status in ['1', '2', '3']">
+                    <div class="d-flex justify-content-between align-items-start">
+                        
+                        <div>
+                            <div class="warning-qms-hero-ref">
+                                <field name="name" readonly="1" class="d-inline"/>
+                            </div>
+                            <div class="warning-qms-hero-sub"> <field name="case_type_id" readonly="1" class="d-inline"/></div>
+
+                            <div class="qms-badge-row"> 
+                            </div>
+                        </div>
+                        <div class="text-end" invisible="1">
+                            <div>
+                                <button name="action_report_disciplinary"
+                                        string="Report Incident"
+                                        type="object"
+                                        class="btn-sm oe_highlight" 
+                                        invisible="workflow_status != '4'"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+ 
+                <!-- Two-column layout: main + sidebar -->
+                <!-- <div class="o_warning_layout"> -->
+                    <!-- ── LEFT: main content ── -->
+                    <!-- <div class="o_warning_main"> -->
+                        <notebook>
+
+                            <page string="Overview" name="overview">
+                                <div class="o_warning_section" invisible="workflow_status not in ['1', '4']">
+                                    <group>
+                                        <group class="o_warning_section">
+                                            <field name="state" invisible="1"/>
+                                            <field name="subject" required="1"/>
+                                            <field name="employee_id" required="1" readonly="workflow_status in ['4']" options="{'no_open': true, 'no_create': true}"/>
+                                            <field name="case_type_id" required="1" readonly="workflow_status in ['4']" options="{'no_open': true, 'no_create': true}" />
+                                            
+                                        </group>
+                                        <group>
+                                            <field name="priority" required="1" readonly="workflow_status in ['4']"/>
+                                            <field name="severity_level" required="1" readonly="workflow_status in ['4']"/>
+                                            <field name="require_investigation" readonly="workflow_status in ['4']" widget="boolean_toggle"/>
+                                            <field name="company_id" groups="base.group_multi_company" options="{'no_open': true, 'no_create': true}"/>
+                                        </group>
+                                    </group> 
+                                    <group class="o_warning_section">
+                                        <group class="o_warning_section">
+                                            <field name="date_incident" required="1" readonly="workflow_status in ['4']" widget="date"/>
+                                            
+                                        </group>
+                                        <group>
+                                            <field name="policy_id" required="1" readonly="workflow_status in ['4']" options="{'no_open': true, 'no_create': true}" />
+                                        </group>
+                                    </group> 
+                                    <!-- Investigation -->
+                                    
+                                    <group>
+                                        <field name="location" required="1" colspan="2" readonly="workflow_status in ['4']"/>
+                                    </group>
+                                    <group>
+                                        <field name="action_taken" colspan="2" readonly="workflow_status in ['4']"/>
+                                        <field name="other_action_taken" colspan="2" widget="text" 
+                                        invisible="action_taken != 'Others'" required="action_taken == 'Others'" 
+                                        readonly="workflow_status in ['4']"/>
+                                    </group>
+
+                                    <group string="Measure Type" class="measure-type-section">
+                                        <div class="measure-option measure-option-selected" colspan="2">
+                                            <div class="measure-option-title">Reporter identity</div>
+                                            <div class="measure-option-subtitle">Reporter identity is automatically recorded as the logged-in user and permanently protected. It will not be visible to anyone in the system, including admins, DC members, witnesses, and the subject employee</div>
+                                            <field name="reporter_identity_recorded" nolable="1" invisible="0"/>
+                                        </div>
+                                    </group>
+                                    <group>
+                                        <p><strong>Description</strong></p>
+                                            <field name="description"
+                                                nolabel="1"
+                                                widget="text"
+                                                colspan="2"
+                                                required="1"
+                                                readonly="workflow_status in ['4']"
+                                                class="o_warning_desc_field"
+                                                placeholder="Describe the incident in detail..."/>
+                                    </group>
+                                </div>
+                                <!-- WORKFLOW STATUS 2 -->
+                                <div class="o_warning_section" invisible="workflow_status not in ['2', '4']">
+                                    <!-- Status alert banner -->
+                                    
+                                    <group>
+                                        <field name="investigator_id"
+                                                    nolabel="0" placeholder="DC Head(optional)" required="0" options="{'no_open': true, 'no_create': true}"/> 
+                                    </group>
+
+                                    <group>
+                                        <field name="disciplinary_committee_ids"
+                                                    readonly="workflow_status in ['4']"
+                                                    nolabel="0" 
+                                                    placeholder="DC Members"
+                                                    widget="many2many_tags" options="{'no_open': true, 'no_create': true}"/>
+                                    </group>
+
+                                    <group>
+                                        <field name="witness_ids"
+                                                    readonly="workflow_status in ['4']"
+                                                    placeholder="Witness"
+                                                    widget="many2many_tags" options="{'no_open': true, 'no_create': true}"/>
+                                    </group>
+                                </div>
+                                <div class="o_warning_section" invisible="workflow_status not in ['3', '4']">
+                                    <field name="evidence_ids"
+                                            widget="many2many_binary"
+                                            nolabel="1"
+                                            string="Evidence / Attachments"
+                                            required="workflow_status in ['3']"/>
+                                </div>
+                                <div class='alert alert-info' role="alert" invisible="workflow_status != '4'">
+                                    <field name="confirm_option" widget="boolean_toggle" nolabel="1" readonly="state != 'draft'" class="d-inline m-2"/> I confirm this information is accurate and complete to the best of my knowledge.
+                                </div>
+                            </page>
+                        </notebook>
+                    <!-- </div>
+                </div> -->
+                <footer class="text-end">
+                    <div class="text-end">
+                        <button name="button_previous_step"
+                                string="Back"
+                                type="object"
+                                class="fa fa-chevron-left m-2"/>
+                        <button name="button_next_step"
+                                string="Next"
+                                type="object"
+                                class="oe_highlight fa fa-chevron-right" invisible="workflow_status in ['4', '5']"/>
+
+
+                        <button name="action_submit_incident"
+                                string="Submit incident"
+                                type="object"
+                                class="oe_highlight fa fa-chevron-right" invisible="workflow_status not in ['4']"/>
+                    </div>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_warning_custom_form" model="ir.actions.act_window">
+        <field name="name">New Incident Case</field>
+        <field name="res_model">hr.warning</field>
+        <field name="view_mode">form</field>
+
+        <!-- IMPORTANT -->
+        <field name="view_id" ref="hr_warning_dialog_form_view"/>
+        <!-- OPEN AS DIALOG -->
+        <field name="target">new</field>
+    </record>
+ 
+</odoo>

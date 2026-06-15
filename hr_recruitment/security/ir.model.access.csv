@@ -1,0 +1,18 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_warning_user,hr.warning user,model_hr_warning,hr_warning.group_hr_warning_user,1,1,1,0
+access_hr_warning_group_user_user,hr.warning normal user,model_hr_warning,base.group_user,1,1,1,1
+access_hr_warning_officer,hr.warning officer,model_hr_warning,hr_warning.group_hr_warning_officer,1,1,1,1
+access_hr_warning_manager,hr.warning manager,model_hr_warning,hr_warning.group_hr_warning_manager,1,1,1,1
+access_hr_warning_stage_user,hr.warning.stage user,model_hr_warning_stage,hr_warning.group_hr_warning_user,1,1,0,0
+access_hr_warning_stage_manager,hr.warning.stage manager,model_hr_warning_stage,hr_warning.group_hr_warning_manager,1,1,1,1
+access_hr_warning_stage_emp_user,Employee User Stage Access,model_hr_warning_stage,base.group_user,1,1,0,0
+access_hr_warning_case_type_user,hr.warning.case.type user,model_hr_warning_case_type,hr_warning.group_hr_warning_user,1,1,0,0
+access_hr_warning_case_type_group_user,hr.warning.case.type group_user,model_hr_warning_case_type,base.group_user,1,1,0,0
+access_hr_warning_case_type_manager,hr.warning.case.type manager,model_hr_warning_case_type,hr_warning.group_hr_warning_manager,1,1,1,1
+access_hr_warning_investigator_user,hr.warning.investigator user,model_hr_warning_investigator,,1,1,1,0
+access_hr_warning_policy_user,hr.warning.policy user,model_hr_warning_policy,hr_warning.group_hr_warning_manager,1,1,1,1
+access_hr_warning_policy_user,hr.warning.policy user,model_hr_warning_policy,base.group_user,1,1,1,0
+access_model_hr.warning.interim_measure_user,model_hr.warning.interim_measure user,model_hr_warning_interim_measure,base.group_user,1,1,0,0
+access_model_hr.warning.interim_measure_manager,model_hr.warning.interim_measure manager,model_hr_warning_interim_measure,hr_warning.group_hr_warning_manager,1,1,1,1
+access_hr_pay_status_user,hr.pay_status user,model_pay_status,,1,1,1,1
+

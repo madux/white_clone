@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_warning_interim_measure_form_view" model="ir.ui.view">
+        <field name="name">hr.warning.interim_measure.form</field>
+        <field name="model">hr.warning.interim_measure</field>
+        <field name="arch" type="xml">
+            <form string="Interim Measure">
+                <sheet>
+                    <group string="Measure Type" class="measure-type-section">
+                        <div class="measure-option measure-option-selected" colspan="2">
+                            <div class="measure-option-title">Suspension Pending Investigation</div>
+                            <div class="measure-option-subtitle">Employee removed from workplace during investigation</div>
+                            <field name="measure_type_suspension_pending" invisible="0"/>
+                        </div>
+
+                        <div class="measure-option" colspan="2">
+                            <div class="measure-option-title-default">Restricted Access</div>
+                            <div class="measure-option-subtitle">Employee remains at work but loses access to specific areas or systems</div>
+                            <field name="restricted_access" invisible="0"/>
+                        </div>
+
+                        <div class="measure-option" colspan="2">
+                            <div class="measure-option-title-default">
+                            Redeployment
+                            </div>
+                            <div class="measure-option-subtitle">Employee temporarily moved to a different role or team</div>
+                        </div>
+
+                        <div class="measure-option" colspan="2">
+                            <div class="measure-option-title-default">Remote Work Restriction</div>
+                            <div class="measure-option-subtitle">Employee may not work remotely during investigation</div>
+                            <field name="remote_work_restriction" invisible="0"/>
+                        </div>
+
+                        <div class="measure-option" colspan="2">
+                            <div class="measure-option-title-default">Reporting Restriction</div>
+                            <div class="measure-option-subtitle">Employee must not communicate with named parties</div>
+                            <field name="report_restriction" invisible="0"/>
+                        </div>
+                    </group>
+
+                    <div class="button-row">
+                        <span>Start Date
+                            <field name="start_date" nolabel="1"/>
+                        </span>
+                        <span>Expected End Date
+                            <field name="expected_end_date" nolabel="1"/>
+                        </span>
+                        <span>Review Date 
+                            <field name="review_date" nolabel="1"/>
+                        </span>
+                    </div>
+
+                    <div class="button-row">
+                        <span style="padding: 2px;">Employee
+                            <field name="employee_id" nolabel="1"/>
+                        </span>
+                        <span style="padding: 2px;">Case No.
+                            <field name="warning_id" nolabel="1"/>
+                        </span>
+                    </div>
+
+                    <group string="Pay Status *">
+                        <field name="pay_status_id" nolabel="1" colspan="2" options="{'no_open': true, 'no_create': true}"/>
+                        <div class="pay-status-box" colspan="2">
+                            <div class="pay-status-title">
+                                <field name="pay_status_id" readonly="1" nolabel="1"/>
+                            </div>
+                            <div class="pay-status-warning">
+                                <span class="pay-status-warning-icon">⚠</span>
+                                <field name="pay_status_description" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="Additional Information">
+                        <field name="payroll_impact_note" string="Payroll Impact Note"/>
+                        <field name="authorization_note" string="Authorization Note"/>
+                    </group>
+                    <!-- <footer class="text-end">
+                        <div>
+                            <button name="action_assign_investigator"
+                                    string="Assign"
+                                    type="object"
+                                    class="oe_highlight"/>
+                        </div>
+                    </footer> -->
+                </sheet>
+            </form>
+        </field>
+        
+    </record>
+    <record id="hr_warning_interim_measure_tree_view" model="ir.ui.view">
+        <field name="name">Interim measure .tree</field>
+        <field name="model">hr.warning.interim_measure</field>
+        <field name="arch" type="xml">
+            <tree string="Policies" create="0" edit="0" js_class="warning_dashboard_list">
+                <field name="employee_id"/>
+                <field name="warning_id"/>
+                <field name="start_date"/>
+                <field name="review_date"/>
+                <field name="expected_end_date"/>
+                <field name="pay_status_id"/>
+            </tree>
+        </field>
+    </record>
+    <record id="action_hr_warning_interim_measure" model="ir.actions.act_window">
+        <field name="name">Interim measure</field>
+        <field name="res_model">hr.warning.interim_measure</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Measures found recorded yet.
+            </p>
+            <p>Create a new Measures.</p>
+        </field>
+    </record>
+</odoo>
