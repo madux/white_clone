@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recruitment Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/recruitment-dashboard.css">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="dashboard-container">
+    
+    <header class="dashboard-header">
+        <div class="header-title">
+            <h1>Recruitment Dashboard</h1>
+            <p>End-to-end recruitment pipeline synced with Candidate CV Builder</p>
+        </div>
+        <div class="header-actions">
+            <div class="date-picker">
+                <i data-lucide="calendar"></i>
+                <span>May 20 - May 26, 2026</span>
+            </div>
+            <div class="dept-select">
+                <span>All Departments</span>
+                <i data-lucide="chevron-down"></i>
+            </div>
+            <button class="btn-primary">
+                <i data-lucide="plus"></i>
+                <span>Create Requisition</span>
+            </button>
+        </div>
+    </header>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-badge">↑ 11.8% vs lm</span>
+            <div class="stat-value">5</div>
+            <div class="stat-label">Open Requisitions</div>
+            <div class="stat-icon"><i data-lucide="file-text"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 12.5% vs lm</span>
+            <div class="stat-value">3</div>
+            <div class="stat-label">Total Candidates</div>
+            <div class="stat-icon"><i data-lucide="users"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 9.8% vs lm</span>
+            <div class="stat-value">1</div>
+            <div class="stat-label">Active Pipeline</div>
+            <div class="stat-icon"><i data-lucide="git-commit"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 14.3% vs lm</span>
+            <div class="stat-value">128</div>
+            <div class="stat-label">Shortlisted</div>
+            <div class="stat-icon"><i data-lucide="user-check"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 10.3% vs lm</span>
+            <div class="stat-value">2</div>
+            <div class="stat-label">Interviews Scheduled</div>
+            <div class="stat-icon"><i data-lucide="calendar-days"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 15.0% vs lm</span>
+            <div class="stat-value">15</div>
+            <div class="stat-label">Offers Made</div>
+            <div class="stat-icon"><i data-lucide="award"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↑ 18.8% vs lm</span>
+            <div class="stat-value">19</div>
+            <div class="stat-label">Hired (This Month)</div>
+            <div class="stat-icon"><i data-lucide="briefcase"></i></div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-badge">↘ -14.8 Days</span>
+            <div class="stat-value">18 Days</div>
+            <div class="stat-label">Time to Hire (Avg)</div>
+            <div class="stat-icon"><i data-lucide="clock"></i></div>
+        </div>
+    </section>
+
+    <div class="row-4col">
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Recruitment Pipeline Overview</h3>
+            </div>
+            <div class="card-subtitle">Overall Conversion Rate: <span style="color:var(--primary); font-weight:700;">0.00%</span></div>
+            
+            <div class="pipeline-item">
+                <div class="pipeline-info"><span>Applied</span><span>3 (100%)</span></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill" style="width: 100%; background: var(--primary);"></div></div>
+            </div>
+            <div class="pipeline-item">
+                <div class="pipeline-info"><span>Screening</span><span>1 (51.4%)</span></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill" style="width: 51%; background: var(--blue);"></div></div>
+            </div>
+            <div class="pipeline-item">
+                <div class="pipeline-info"><span>Interview</span><span>0 (25.5%)</span></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill" style="width: 0%; background: var(--purple);"></div></div>
+            </div>
+            <div class="pipeline-item">
+                <div class="pipeline-info"><span>Interview (Final)</span><span>0 (12.7%)</span></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill" style="width: 0%; background: var(--orange);"></div></div>
+            </div>
+            <div class="pipeline-item">
+                <div class="pipeline-info"><span>Offer</span><span>0 (3.6%)</span></div>
+                <div class="pipeline-bar-bg"><div class="pipeline-bar-fill" style="width: 0%; background: var(--cyan);"></div></div>
+            </div>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Pipeline Trend (Weekly)</h3>
+                <a href="#" class="card-link">View Pipeline Analytics →</a>
+            </div>
+            <div class="chart-placeholder">
+                <div class="mock-lines"></div>
+                <svg class="mock-line-svg" viewBox="0 0 100 50" preserveAspectRatio="none">
+                    <path d="M0,40 Q25,25 50,30 T100,10" fill="none" stroke="var(--primary)" stroke-width="2"/>
+                    <path d="M0,45 Q25,35 50,38 T100,20" fill="none" stroke="var(--blue)" stroke-width="1.5"/>
+                </svg>
+                <div class="chart-labels">
+                    <span>20</span><span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span>
+                </div>
+            </div>
+            <div class="chart-legends">
+                <span><span class="legend-dot" style="background:var(--primary)"></span>Applied</span>
+                <span><span class="legend-dot" style="background:var(--blue)"></span>Screening</span>
+                <span><span class="legend-dot" style="background:var(--purple)"></span>Interview</span>
+                <span><span class="legend-dot" style="background:var(--orange)"></span>Offer</span>
+            </div>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Pipeline by Department</h3>
+                <a href="#" class="card-link">View Department Report →</a>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Department</th><th>Reqs</th><th>Cands</th><th>Short.</th><th>TTH</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>IT</td><td>12</td><td>354</td><td>41</td><td>15d</td></tr>
+                    <tr><td>Finance</td><td>8</td><td>178</td><td>22</td><td>14d</td></tr>
+                    <tr><td>HR</td><td>4</td><td>93</td><td>11</td><td>15d</td></tr>
+                    <tr><td>Operations</td><td>7</td><td>142</td><td>18</td><td>18d</td></tr>
+                    <tr><td>Sales & Mktg</td><td>5</td><td>102</td><td>13</td><td>16d</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Recruitment Sources</h3>
+                <a href="#" class="card-link">View Source Report →</a>
+            </div>
+            <div class="donut-box">
+                <div class="donut-chart">
+                    <div class="donut-center-text">3<span>Total</span></div>
+                </div>
+                <ul class="donut-list">
+                    <li><span><span class="legend-dot" style="background:var(--primary)"></span>Company</span><strong>1 (54.5%)</strong></li>
+                    <li><span><span class="legend-dot" style="background:var(--blue)"></span>LinkedIn</span><strong>0 (29.0%)</strong></li>
+                    <li><span><span class="legend-dot" style="background:var(--orange)"></span>Referrals</span><strong>0 (8.5%)</strong></li>
+                    <li><span><span class="legend-dot" style="background:var(--purple)"></span>Job Boards</span><strong>0 (8.0%)</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row-4col">
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Job Requisitions</h3>
+                <a href="#" class="card-link">View All Requisitions →</a>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Job Title</th><th>Dept</th><th>Cands</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Administrative...</td><td>HR</td><td>0</td><td><span class="status-badge open">Open</span></td></tr>
+                    <tr><td>Chief Executiv...</td><td>Ops</td><td>0</td><td><span class="status-badge draft">Draft</span></td></tr>
+                    <tr><td>HR Specialist</td><td>HR</td><td>0</td><td><span class="status-badge open">Open</span></td></tr>
+                    <tr><td>Python Data S...</td><td>IT</td><td>0</td><td><span class="status-badge open">Open</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Top Positions by Pipeline Stage</h3>
+                <a href="#" class="card-link">View All Candidates →</a>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr><th>Position</th><th>App</th><th>Scr</th><th>Int</th><th>Off</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Shortlisted</td><td>312</td><td>158</td><td>34</td><td>18</td></tr>
+                    <tr><td>Sales Executive</td><td>183</td><td>98</td><td>44</td><td>22</td></tr>
+                    <tr><td>Product Manager</td><td>123</td><td>64</td><td>15</td><td>5</td></tr>
+                    <tr><td>HR Officer</td><td>72</td><td>35</td><td>10</td><td>4</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Candidates from CV Builder</h3>
+                <a href="#" class="card-link">Go to Candidates →</a>
+            </div>
+            <div class="cv-sync-box">
+                <div class="cv-radial">
+                    <div class="cv-radial-inner">1,102<span>Total CVs</span></div>
+                </div>
+                <div class="cv-stats">
+                    <div class="cv-stat-line"><span><span class="legend-dot" style="background:var(--green)"></span>Synced</span><strong>887</strong></div>
+                    <div class="cv-stat-line"><span><span class="legend-dot" style="background:var(--orange)"></span>Pending Review</span><strong>224</strong></div>
+                    <div class="cv-stat-line"><span><span class="legend-dot" style="background:var(--red)"></span>Not Shortlisted</span><strong>128</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Time to Hire Analytics</h3>
+                <a href="#" class="card-link">Details →</a>
+            </div>
+            <div class="analytics-tth-box">
+                <div class="tth-mini-card blue">
+                    <div class="tth-mini-title">Median TTH</div>
+                    <div class="tth-mini-value">18 Days</div>
+                    <div class="tth-mini-sub">▼ 1.6 Days vs lm</div>
+                </div>
+                <div class="tth-mini-card purple">
+                    <div class="tth-mini-title">Avg TTH</div>
+                    <div class="tth-mini-value">15 Days</div>
+                    <div class="tth-mini-sub">▼ 1.2 Days vs lm</div>
+                </div>
+            </div>
+            <div class="tth-speed-row">
+                <span class="tth-speed-lbl">Fastest Hire<br><small style="color:var(--text-muted)">Sales Executive</small></span>
+                <span class="tth-speed-days fast">7 Days</span>
+            </div>
+            <div class="tth-speed-row">
+                <span class="tth-speed-lbl">Slowest Hire<br><small style="color:var(--text-muted)">Product Manager</small></span>
+                <span class="tth-speed-days slow">36 Days</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row-4col">
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Upcoming Interviews</h3>
+                <a href="#" class="card-link">View All Interviews →</a>
+            </div>
+            <div class="interview-item">
+                <div class="interview-profile">
+                    <div class="avatar">AO</div>
+                    <div class="interview-details">
+                        <h4>Adaeze Okonkwo</h4>
+                        <p>Senior Frontend Engineer • Video</p>
+                    </div>
+                </div>
+                <button class="btn-join">Join</button>
+            </div>
+            <div class="interview-item">
+                <div class="interview-profile">
+                    <div class="avatar">AO</div>
+                    <div class="interview-details">
+                        <h4>Adaeze Okonkwo</h4>
+                        <p>Product Designer • Phone</p>
+                    </div>
+                </div>
+                <button class="btn-join">Join</button>
+            </div>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Offer Summary (This Month)</h3>
+                <a href="#" class="card-link">View Offer Report →</a>
+            </div>
+            <div class="offer-grid">
+                <div class="offer-box blue"><div class="offer-box-val">15</div><div class="offer-box-lbl">Extended</div></div>
+                <div class="offer-box green"><div class="offer-box-val">3</div><div class="offer-box-lbl">Accepted</div></div>
+                <div class="offer-box red"><div class="offer-box-val">5</div><div class="offer-box-lbl">Declined</div></div>
+            </div>
+            <div class="offer-sub-grid">
+                <div><div class="offer-box-val">1</div><div class="offer-box-lbl">Withdrawn</div></div>
+                <div><div class="offer-box-val">4</div><div class="offer-box-lbl">Pending</div></div>
+            </div>
+            <div class="offer-rate-card">
+                <div class="offer-rate-title">Offer Acceptance Rate</div>
+                <div class="offer-rate-val">20%</div>
+                <div style="font-size: 9px; font-weight:600;">+4.2% vs last month</div>
+            </div>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Recruitment Activity Feed</h3>
+                <a href="#" class="card-link">View All Activity →</a>
+            </div>
+            <ul class="feed-list">
+                <li class="feed-item">
+                    <div class="feed-text">New application received for <strong>Software Engineer</strong> by Chinedu Eze</div>
+                    <div class="feed-time">10:15 AM</div>
+                </li>
+                <li class="feed-item">
+                    <div class="feed-text">Fatima moved to <strong>Technical Interview</strong> stage for Product Manager</div>
+                    <div class="feed-time">09:42 AM</div>
+                </li>
+                <li class="feed-item">
+                    <div class="feed-text">Offer accepted by <strong>Aisha Bello</strong> for Sales Executive</div>
+                    <div class="feed-time">08:15 AM</div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="grid-card">
+            <div class="card-header">
+                <h3 class="card-title">Recruitment Calendar</h3>
+                <a href="#" class="card-link">View Full Calendar →</a>
+            </div>
+            <div class="mini-cal-header">
+                <i data-lucide="chevron-left" style="width:14px; cursor:pointer;"></i>
+                <span>May 2026</span>
+                <i data-lucide="chevron-right" style="width:14px; cursor:pointer;"></i>
+            </div>
+            <div class="mini-cal-grid">
+                <span class="cal-day-lbl">Su</span><span class="cal-day-lbl">Mo</span><span class="cal-day-lbl">Tu</span><span class="cal-day-lbl">We</span><span class="cal-day-lbl">Th</span><span class="cal-day-lbl">Fr</span><span class="cal-day-lbl">Sa</span>
+                
+                <span class="cal-day">26</span><span class="cal-day">27</span><span class="cal-day">28</span><span class="cal-day">29</span><span class="cal-day">30</span><span class="cal-day">1</span><span class="cal-day">2</span>
+                <span class="cal-day">3</span><span class="cal-day">4</span><span class="cal-day">5</span><span class="cal-day">6</span><span class="cal-day">7</span><span class="cal-day">8</span><span class="cal-day">9</span>
+                <span class="cal-day">10</span><span class="cal-day">11</span><span class="cal-day">12</span><span class="cal-day">13</span><span class="cal-day">14</span><span class="cal-day">15</span><span class="cal-day">16</span>
+                <span class="cal-day">17</span><span class="cal-day">18</span><span class="cal-day">19</span><span class="cal-day active">20<span class="cal-dot"></span></span><span class="cal-day">21</span><span class="cal-day">22</span><span class="cal-day">23</span>
+                <span class="cal-day">24</span><span class="cal-day">25</span><span class="cal-day">26</span><span class="cal-day">27</span><span class="cal-day">28</span><span class="cal-day">29</span><span class="cal-day">30</span>
+            </div>
+        </div>
+    </div>
+
+    <footer class="quick-actions-bar">
+        <button class="action-tile"><i data-lucide="plus-circle"></i>Create Requisition</button>
+        <button class="action-tile"><i data-lucide="file-plus-2"></i>Review Applications</button>
+        <button class="action-tile"><i data-lucide="user-plus"></i>Shortlist Candidates</button>
+        <button class="action-tile"><i data-lucide="calendar-plus"></i>Schedule Interview</button>
+        <button class="action-tile"><i data-lucide="send"></i>Approve Offers</button>
+        <button class="action-tile"><i data-lucide="database"></i>CV Builder Sync</button>
+        <button class="action-tile"><i data-lucide="pie-chart"></i>Pipeline Report</button>
+        <button class="action-tile"><i data-lucide="trending-up"></i>Source Report</button>
+        <button class="action-tile"><i data-lucide="bar-chart-3"></i>Turnaround Report</button>
+        <button class="action-tile"><i data-lucide="sliders"></i>Configure Workflow</button>
+    </footer>
+
+</div>
+
+<script>
+    // Initialize Lucide Icons after DOM content is loaded
+    document.addEventListener("DOMContentLoaded", function() {
+        lucide.createIcons();
+    });
+</script>
+</body>
+</html>

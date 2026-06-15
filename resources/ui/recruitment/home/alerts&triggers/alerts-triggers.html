@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts & Triggers Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="at-alerts-tab-content">
+    
+    <main class="at-feed-area">
+        
+        <div class="at-feed-header">
+            <div class="at-filter-group">
+                <button class="at-pill active">All <span class="at-badge">8</span></button>
+                <button class="at-pill"><span class="at-dot at-critical"></span> Critical <span class="at-badge at-count">3</span></button>
+                <button class="at-pill"><span class="at-dot at-warning"></span> Warnings <span class="at-badge at-count">3</span></button>
+                <button class="at-pill"><span class="at-dot at-info"></span> Info <span class="at-badge at-count">2</span></button>
+                <button class="at-pill"><span class="at-dot at-resolved"></span> Resolved</button>
+            </div>
+            
+            <button class="at-dropdown-sort">
+                <span>Newest first</span>
+                <i data-lucide="chevron-down"></i>
+            </button>
+        </div>
+
+        <div class="at-alerts-stack">
+            
+            <article class="at-alert-panel at-border-info">
+                <div class="at-panel-icon at-icon-info"><i data-lucide="info"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">2 hours ago</span>
+                    </div>
+                    <h2 class="at-alert-title">1 new applications this week</h2>
+                    <p class="at-alert-subtitle">Senior Software Engineer</p>
+                    <p class="at-alert-desc">Senior Software Engineer received 1 new applications in the last 7 days.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Review Applicants</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-critical">
+                <div class="at-panel-icon at-icon-critical"><i data-lucide="alert-circle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">6 hours ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Offer expiring in 18 hours</h2>
+                    <p class="at-alert-subtitle">James Nwachukwu · Backend Engineer</p>
+                    <p class="at-alert-desc">James Nwachukwu has not responded to his offer for Backend Engineer. Offers auto-expire in 18 hours.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Send Reminder</button>
+                        <button class="at-btn-secondary">View Offer</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-info">
+                <div class="at-panel-icon at-icon-info"><i data-lucide="info"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">8 hours ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Career site traffic spike</h2>
+                    <p class="at-alert-subtitle">340 views yesterday</p>
+                    <p class="at-alert-desc">Your career site had 340 views yesterday — 3x above average.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">View Analytics</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-warning">
+                <div class="at-panel-icon at-icon-warning"><i data-lucide="alert-triangle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">12 hours ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Requisition pending 8 days</h2>
+                    <p class="at-alert-subtitle">REQ-2026-014 · Product Manager</p>
+                    <p class="at-alert-desc">REQ-2026-014 for Product Manager has been waiting for approval for 8 days. Requisitions pending over 5 days may indicate bottlenecks.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Review Requisitions</button>
+                        <button class="at-btn-secondary">Send Reminder</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-warning">
+                <div class="at-panel-icon at-icon-warning"><i data-lucide="alert-triangle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">20 hours ago</span>
+                    </div>
+                    <h2 class="at-alert-title">5 unanswered candidate messages</h2>
+                    <p class="at-alert-subtitle">Oldest: 2 days ago from Aisha Bello</p>
+                    <p class="at-alert-desc">Oldest message is 2 days old from Aisha Bello. Response rate may affect candidate experience.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Open Inbox</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-warning">
+                <div class="at-panel-icon at-icon-warning"><i data-lucide="alert-triangle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">1 day ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Interview without scorecard</h2>
+                    <p class="at-alert-subtitle">Chidi Adeyemi · 3 days ago</p>
+                    <p class="at-alert-desc">Chidi Adeyemi interviewed 3 days ago. No scorecard from Sarah Bello. Automated reminder sent 2 hours ago.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Remind Interviewer</button>
+                        <button class="at-btn-secondary">View Candidate</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-critical">
+                <div class="at-panel-icon at-icon-critical"><i data-lucide="alert-circle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">473 days ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Task overdue: Update employee handbook</h2>
+                    <p class="at-alert-subtitle">Due 474 days ago</p>
+                    <p class="at-alert-desc">This task has passed its deadline. Completing it now will help maintain project momentum and team accountability.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Mark Complete</button>
+                        <button class="at-btn-secondary">View Task</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+            <article class="at-alert-panel at-border-critical">
+                <div class="at-panel-icon at-icon-critical"><i data-lucide="alert-circle"></i></div>
+                <div class="at-panel-body">
+                    <div class="at-panel-meta">
+                        <span class="at-timestamp">478 days ago</span>
+                    </div>
+                    <h2 class="at-alert-title">Task overdue: Complete quarterly performance reviews</h2>
+                    <p class="at-alert-subtitle">Due 479 days ago</p>
+                    <p class="at-alert-desc">This task has passed its deadline. Completing it now will help maintain project momentum and team accountability.</p>
+                    <div class="at-action-progress-bar"></div>
+                    <div class="at-panel-actions">
+                        <button class="at-btn-action at-bg-magenta">Mark Complete</button>
+                        <button class="at-btn-secondary">View Task</button>
+                    </div>
+                </div>
+                <button class="at-btn-dismiss"><i data-lucide="x"></i> Dismiss</button>
+            </article>
+
+        </div>
+    </main>
+
+    <aside class="at-widgets-area">
+        
+        <section class="at-widget-card">
+            <h3 class="at-widget-heading">Alert Summary</h3>
+            <div class="at-summary-box-grid">
+                <div class="at-summary-box at-box-critical">
+                    <span class="at-count-num">3</span>
+                    <span class="at-count-lbl">Critical</span>
+                </div>
+                <div class="at-summary-box at-box-warning">
+                    <span class="at-count-num">3</span>
+                    <span class="at-count-lbl">Warnings</span>
+                </div>
+                <div class="at-summary-box at-box-info">
+                    <span class="at-count-num">2</span>
+                    <span class="at-count-lbl">Info</span>
+                </div>
+                <div class="at-summary-box at-box-resolved">
+                    <span class="at-count-num">0</span>
+                    <span class="at-count-lbl">Resolved today</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="at-widget-card">
+            <h3 class="at-widget-heading">Active Automations</h3>
+            <p class="at-widget-subheading">Running in background</p>
+            
+            <div class="at-automation-row">
+                <div class="at-auto-details">
+                    <h4>Auto-email on stage change</h4>
+                    <p>Last triggered: 2h ago</p>
+                </div>
+                <label class="at-toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="at-slider"></span>
+                </label>
+            </div>
+
+            <div class="at-automation-row">
+                <div class="at-auto-details">
+                    <h4>Overdue task escalation</h4>
+                    <p>Last triggered: 3h ago</p>
+                </div>
+                <label class="at-toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="at-slider"></span>
+                </label>
+            </div>
+
+            <div class="at-automation-row">
+                <div class="at-auto-details">
+                    <h4>Scorecard reminder</h4>
+                    <p>Last triggered: 5h ago</p>
+                </div>
+                <label class="at-toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="at-slider"></span>
+                </label>
+            </div>
+
+            <div class="at-automation-row">
+                <div class="at-auto-details">
+                    <h4>Job auto-close check</h4>
+                    <p>Runs: midnight daily</p>
+                </div>
+                <label class="at-toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="at-slider"></span>
+                </label>
+            </div>
+
+            <a href="#" class="at-widget-action-link">Manage Automation Rules →</a>
+        </section>
+
+        <section class="at-widget-card">
+            <h3 class="at-widget-heading">System Status</h3>
+            
+            <div class="at-status-row">
+                <span class="at-status-lbl">Career site</span>
+                <span class="at-status-indicator at-live"><span class="at-check-inline">✓</span> live</span>
+            </div>
+            <div class="at-status-row">
+                <span class="at-status-lbl">Job boards</span>
+                <span class="at-status-indicator at-live"><span class="at-check-inline">✓</span> 4 connected</span>
+            </div>
+            <div class="at-status-row">
+                <span class="at-status-lbl">Calendar sync</span>
+                <span class="at-status-indicator at-live"><span class="at-check-inline">✓</span> Active</span>
+            </div>
+            <div class="at-status-row">
+                <span class="at-status-lbl">Email integration</span>
+                <span class="at-status-indicator at-live"><span class="at-check-inline">✓</span> Active</span>
+            </div>
+            <div class="at-status-row">
+                <span class="at-status-lbl">WhiteClean board</span>
+                <span class="at-status-indicator at-sync-warn">▲ Syncing</span>
+            </div>
+            <div class="at-status-row">
+                <span class="at-status-lbl">Webhooks</span>
+                <span class="at-status-indicator at-live"><span class="at-check-inline">✓</span> All active</span>
+            </div>
+
+            <a href="#" class="at-widget-action-link">View Integrations →</a>
+        </section>
+
+    </aside>
+
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>

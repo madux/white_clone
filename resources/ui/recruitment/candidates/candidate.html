@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidates Dashboard Management</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-mark">C</div>
+            <span class="sidebar-logo-text">CleonHR</span>
+        </div>
+
+        <p class="sidebar-section-label">Recruiting</p>
+        <ul>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="briefcase"></svg>
+                    Jobs
+                    <span class="sidebar-badge">6</span>
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item active" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="users"></svg>
+                    Candidates
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="check-circle"></svg>
+                    Offers and Hired
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="store"></svg>
+                    Vendors
+                </a>
+            </li>
+        </ul>
+
+        <p class="sidebar-section-label">Workflow</p>
+        <ul>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="clipboard-list"></svg>
+                    Tasks
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="building-2"></svg>
+                    Depts
+                </a>
+            </li>
+        </ul>
+
+        <ul style="margin-top: 12px;">
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="layout-grid"></svg>
+                    ATS
+                </a>
+            </li>
+            <li>
+                <a class="sidebar-nav-item" href="#">
+                    <svg class="sidebar-nav-icon" data-lucide="settings"></svg>
+                    Settings
+                </a>
+            </li>
+        </ul>
+
+        <div style="flex:1;"></div>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar">J</div>
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-name">John</div>
+                <div class="sidebar-user-email">john.okafor@farmplus.com</div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+
+        <!-- ===== TOP NAV ===== -->
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <svg data-lucide="building-2"></svg>
+                    Company
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill">
+                    <svg data-lucide="shield"></svg>
+                    Admin
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <svg data-lucide="eye"></svg>
+                    Select Employee View
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="inbox"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="calendar"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="users-2"></svg>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <svg data-lucide="bell"></svg>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== PAGE SCROLL (single container for both views) ===== -->
+        <div class="page-scroll">
+
+        <!-- ===== LISTING VIEW ===== -->
+        <div id="candidateListingView">
+
+<div class="cn-candidates-panel-wrapper">
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px;">
+        <button class="cn-btn-primary-action" id="addCandidateBtn">
+            <i data-lucide="plus"></i>
+            <span>Add Candidate</span>
+        </button>
+    </div>
+
+    <div class="cn-metrics-grid-ribbon">
+        <div class="cn-metric-card-item" data-metric="total">
+            <div class="cn-metric-top-row">
+                <h2 class="cn-metric-value-display">3,240</h2>
+                <div class="cn-metric-icon-box bg-purple-sub"><i data-lucide="users"></i></div>
+            </div>
+            <span class="cn-metric-label">Total Candidates</span>
+        </div>
+
+        <div class="cn-metric-card-item" data-metric="shortlisted">
+            <div class="cn-metric-top-row">
+                <h2 class="cn-metric-value-display">1,120</h2>
+                <div class="cn-metric-icon-box bg-blue-sub"><i data-lucide="user-check"></i></div>
+            </div>
+            <span class="cn-metric-label">Shortlisted</span>
+        </div>
+
+        <div class="cn-metric-card-item" data-metric="interviewing">
+            <div class="cn-metric-top-row">
+                <h2 class="cn-metric-value-display">485</h2>
+                <div class="cn-metric-icon-box bg-gold-sub"><i data-lucide="message-square"></i></div>
+            </div>
+            <span class="cn-metric-label">Interviewing</span>
+        </div>
+
+        <div class="cn-metric-card-item" data-metric="hired">
+            <div class="cn-metric-top-row">
+                <h2 class="cn-metric-value-display">294</h2>
+                <div class="cn-metric-icon-box bg-green-sub"><i data-lucide="award"></i></div>
+            </div>
+            <span class="cn-metric-label">Hired Placement</span>
+        </div>
+    </div>
+
+    <div class="cn-dashboard-action-toolbar">
+        <div class="cn-search-input-container">
+            <i data-lucide="search" class="cn-search-icon-fixed"></i>
+            <input type="text" id="candidateSearchInput" placeholder="Search candidates name, skills or role...">
+        </div>
+
+        <div class="cn-view-mode-pill-box">
+            <button class="cn-view-toggle-pill active" data-view-target="list">
+                <i data-lucide="list"></i>
+            </button>
+            <button class="cn-view-toggle-pill" data-view-target="grid">
+                <i data-lucide="grid"></i>
+            </button>
+            <button class="cn-view-toggle-pill" data-view-target="pipeline">
+                <i data-lucide="git-commit"></i>
+            </button>
+        </div>
+
+        <div class="cn-toolbar-right">
+            <button class="cn-btn-secondary-action" id="filterDropdownToggleBtn">
+                <i data-lucide="sliders"></i>
+                <span>Filter</span>
+                <i data-lucide="chevron-down" class="cn-chevron-rotator"></i>
+            </button>
+
+            <button class="cn-btn-secondary-action">
+                <i data-lucide="download"></i>
+                <span>Export</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="cn-filter-sliding-dropdown-drawer" id="filterDropdownDrawer">
+        <div class="cn-drawer-inputs-form-grid">
+            <div class="cn-input-field-group">
+                <label for="filterStatus">Application Status</label>
+                <select id="filterStatus">
+                    <option value="all">All Statuses</option>
+                    <option value="Shortlisted">Shortlisted</option>
+                    <option value="Interviewing">Interviewing</option>
+                    <option value="Applied">Applied</option>
+                    <option value="Rejected">Rejected</option>
+                </select>
+            </div>
+            
+            <div class="cn-input-field-group">
+                <label for="filterExperience">Experience Level</label>
+                <select id="filterExperience">
+                    <option value="all">All Levels</option>
+                    <option value="Junior">Junior (0-2 Yrs)</option>
+                    <option value="Mid-Level">Mid-Level (3-5 Yrs)</option>
+                    <option value="Senior">Senior (5+ Yrs)</option>
+                </select>
+            </div>
+
+            <div class="cn-input-field-group">
+                <label for="filterRole">Target Role Group</label>
+                <select id="filterRole">
+                    <option value="all">All Roles</option>
+                    <option value="Product Designer">Product Designer</option>
+                    <option value="Software Engineer">Software Engineer</option>
+                    <option value="Data Analyst">Data Analyst</option>
+                </select>
+            </div>
+
+            <div class="cn-input-field-group">
+                <label for="filterRating">Minimum Match Score</label>
+                <select id="filterRating">
+                    <option value="all">Any Rating</option>
+                    <option value="4">4+ Stars</option>
+                    <option value="4.5">4.5+ Stars</option>
+                </select>
+            </div>
+        </div>
+        <div class="cn-drawer-action-footer">
+            <button class="cn-btn-secondary-action size-sm" id="resetFiltersActionBtn">Reset Parameters</button>
+            <button class="cn-btn-primary-action size-sm" id="applyFiltersActionBtn">Apply Parameters</button>
+        </div>
+    </div>
+
+    <div class="cn-master-dynamic-view-viewport" id="dynamicViewViewport">
+        
+        <div class="cn-view-content-pane active" id="viewPaneList">
+            <div class="cn-data-table-scroll-outer-frame">
+                <table class="cn-pinned-data-table-matrix" id="candidatesTable">
+                    <thead>
+                        <tr>
+                            <th class="cn-col-checkbox cn-cell-pinned-left-1">
+                                <label class="cn-cell-checkbox-container">
+                                    <input type="checkbox" id="masterSelectAllCheckbox">
+                                    <span class="cn-custom-checkbox-checkmark"></span>
+                                </label>
+                            </th>
+                            <th class="cn-col-candidate cn-cell-pinned-left-2">CANDIDATE</th>
+                            <th class="cn-col-phone cn-cell-pinned-left-3">PHONE</th>
+                            <th class="cn-col-email cn-cell-pinned-left-4">EMAIL ADDRESS</th>
+                            <th class="cn-col-role">TARGET ROLE</th>
+                            <th class="cn-col-experience">EXPERIENCE</th>
+                            <th class="cn-col-rating">MATCH RATING</th>
+                            <th class="cn-col-status">STATUS</th>
+                            <th class="cn-col-date">APPLIED DATE</th>
+                            <th class="cn-col-actions cn-cell-pinned-right-end">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidatesTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="cn-view-content-pane" id="viewPaneGrid">
+            <div class="cn-cards-flex-grid-system" id="candidatesGridBody">
+                </div>
+        </div>
+
+        <div class="cn-view-content-pane" id="viewPanePipeline">
+            <div class="cn-pipeline-swimlane-scroll-container">
+                
+                <div class="cn-pipeline-column" data-stage="Applied">
+                    <div class="cn-column-header-row">
+                        <div class="cn-col-title-flex">
+                            <span class="cn-dot-indicator bg-slate"></span>
+                            <h3>Applied</h3>
+                        </div>
+                        <span class="cn-col-counter-badge" id="count-Applied">0</span>
+                    </div>
+                    <div class="cn-pipeline-cards-drop-zone" id="laneApplied"></div>
+                </div>
+
+                <div class="cn-pipeline-column" data-stage="Shortlisted">
+                    <div class="cn-column-header-row">
+                        <div class="cn-col-title-flex">
+                            <span class="cn-dot-indicator bg-blue"></span>
+                            <h3>Shortlisted</h3>
+                        </div>
+                        <span class="cn-col-counter-badge" id="count-Shortlisted">0</span>
+                    </div>
+                    <div class="cn-pipeline-cards-drop-zone" id="laneShortlisted"></div>
+                </div>
+
+                <div class="cn-pipeline-column" data-stage="Interviewing">
+                    <div class="cn-column-header-row">
+                        <div class="cn-col-title-flex">
+                            <span class="cn-dot-indicator bg-gold"></span>
+                            <h3>Interviewing</h3>
+                        </div>
+                        <span class="cn-col-counter-badge" id="count-Interviewing">0</span>
+                    </div>
+                    <div class="cn-pipeline-cards-drop-zone" id="laneInterviewing"></div>
+                </div>
+
+                <div class="cn-pipeline-column" data-stage="Hired">
+                    <div class="cn-column-header-row">
+                        <div class="cn-col-title-flex">
+                            <span class="cn-dot-indicator bg-green"></span>
+                            <h3>Hired</h3>
+                        </div>
+                        <span class="cn-col-counter-badge" id="count-Hired">0</span>
+                    </div>
+                    <div class="cn-pipeline-cards-drop-zone" id="laneHired"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <div class="cn-bulk-action-toast-panel" id="bulkActionToast">
+        <div class="cn-toast-left-meta">
+            <span class="cn-selection-badge" id="selectedCountBadge">0</span>
+            <span class="cn-selection-lbl">candidates selected</span>
+        </div>
+        <div class="cn-toast-action-btn-group">
+            <button class="cn-btn-toast btn-active-blue" onclick="moveToStage()"><i data-lucide="chevron-right"></i>Move to Stage</button>
+            <button class="cn-btn-toast btn-standard-border" onclick="sendBulkEmail()"><i data-lucide="mail"></i>Send Email</button>
+            <button class="cn-btn-toast btn-standard-border" onclick="exportCandidates()"><i data-lucide="download"></i>Export</button>
+            <button class="cn-btn-toast btn-critical-danger" onclick="deleteSelectedCandidates()"><i data-lucide="trash-2"></i>Delete</button>
+        </div>
+        <button class="cn-toast-close-trigger" id="clearSelectionBtn"><i data-lucide="x"></i></button>
+    </div>
+
+
+
+</div>
+
+        </div><!-- /candidateListingView -->
+
+        <!-- ===== DETAIL VIEW (from index.html reference) ===== -->
+        <div id="candidateDetailView" style="display:none">
+
+    <div class="candidate-hero">
+        <a class="hero-back-link" onclick="hideCandidateDashboard()">
+            <svg data-lucide="arrow-left"></svg>
+            Back to Candidates
+        </a>
+
+        <div class="hero-profile-row">
+            <div class="hero-avatar-wrap">
+                <div class="hero-avatar" id="detailDisplayAvatar">TW</div>
+                <div class="hero-avatar-badge" id="detailDisplayStatus">Shortlisted</div>
+            </div>
+
+            <div class="hero-info">
+                <h1 class="hero-name" id="detailDisplayName">Name</h1>
+
+                <div class="hero-meta-chips">
+                    <span class="hero-chip">
+                        <svg data-lucide="briefcase"></svg>
+                        <span id="detailDisplayRole">Role</span>
+                    </span>
+                    <span class="hero-chip">
+                        <svg data-lucide="map-pin"></svg>
+                        <span id="detailDisplayLocation">Location</span>
+                    </span>
+                    <span class="hero-chip">
+                        <svg data-lucide="clock"></svg>
+                        <span id="detailDisplayExperience">Exp</span>
+                    </span>
+                    <span class="hero-chip">
+                        <svg data-lucide="building"></svg>
+                        <span id="detailDisplaySource">Source</span>
+                    </span>
+                </div>
+
+                <div>
+                    <span class="hero-star-badge" id="detailDisplayRating">★ 4.5 Star Candidate</span>
+                </div>
+
+                <div class="hero-contacts">
+                    <div class="hero-contact-item">
+                        <svg data-lucide="mail"></svg>
+                        <span>email@domain.com</span>
+                        <div class="hero-contact-copy">
+                            <svg data-lucide="copy"></svg>
+                        </div>
+                    </div>
+                    <div class="hero-contact-item">
+                        <svg data-lucide="phone"></svg>
+                        <span>+1 000 0000</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-actions">
+                <button class="btn-send-message">
+                    <svg data-lucide="send"></svg>
+                    Send Message
+                </button>
+                <div class="hero-icon-actions">
+                    <div class="hero-icon-btn"><svg data-lucide="video"></svg></div>
+                    <div class="hero-icon-btn"><svg data-lucide="user-plus"></svg></div>
+                    <div class="hero-icon-btn"><svg data-lucide="share-2"></svg></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-stats-row">
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">Applications</div>
+                <div class="hero-stat-value">1</div>
+            </div>
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">Interviews</div>
+                <div class="hero-stat-value">3</div>
+            </div>
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">Response Rate</div>
+                <div class="hero-stat-value">85%</div>
+            </div>
+            <div class="hero-stat-card">
+                <div class="hero-stat-label">Days in Pipeline</div>
+                <div class="hero-stat-value">17</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="tab-nav">
+        <div class="tab-item active">
+            <svg data-lucide="layout-grid"></svg>
+            Overview
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="file-text"></svg>
+            Resume
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="activity"></svg>
+            Activities
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="folder-open"></svg>
+            Documents
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="briefcase"></svg>
+            Jobs
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="message-square"></svg>
+            Messages
+        </div>
+        <div class="tab-item">
+            <svg data-lucide="video"></svg>
+            Meeting
+        </div>
+    </nav>
+
+    <div class="content-body">
+        <div class="left-col">
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="clipboard"></svg>
+                        Professional Summary
+                    </div>
+                    <span class="card-action-link">[Edit]</span>
+                </div>
+                <p class="summary-text">
+                    Experienced software engineer with 6+ years of expertise in building scalable web applications. Passionate about clean code, test-driven development, and mentoring junior developers. Strong background in <span>React, Node.js</span>, and cloud infrastructure.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="briefcase"></svg>
+                        Work Experience
+                    </div>
+                    <span class="card-action-link">+ [Add]</span>
+                </div>
+                <div class="entry-block">
+                    <div class="entry-title">Senior Software Engineer</div>
+                    <div class="entry-subtitle">Tech Solutions Ltd | 6 yrs</div>
+                    <div class="entry-meta">
+                        <svg data-lucide="map-pin"></svg>
+                        Lagos, Nigeria
+                    </div>
+                    <div class="entry-actions">
+                        <span class="entry-action-btn">[Edit]</span>
+                        <span class="entry-action-btn">[Delete]</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="graduation-cap"></svg>
+                        Education
+                    </div>
+                    <span class="card-action-link">+ [Add]</span>
+                </div>
+                <div class="entry-block">
+                    <div class="entry-title">BSc Computer Science</div>
+                    <div class="entry-subtitle">University of Lagos | 2017</div>
+                    <div class="entry-actions" style="margin-top:6px;">
+                        <span class="entry-action-btn">[Edit]</span>
+                        <span class="entry-action-btn">[Delete]</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="activity"></svg>
+                        Skills &amp; Competencies
+                    </div>
+                    <span class="card-action-link">[Edit]</span>
+                </div>
+
+                <div class="skills-section-label">Technical Skills:</div>
+
+                <div class="skill-row">
+                    <span class="skill-label">JavaScript</span>
+                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:75%"></div></div>
+                    <span class="skill-pct">75%</span>
+                </div>
+                <div class="skill-row">
+                    <span class="skill-label">React</span>
+                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:85%"></div></div>
+                    <span class="skill-pct">85%</span>
+                </div>
+                <div class="skill-row">
+                    <span class="skill-label">Node.js</span>
+                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:73%"></div></div>
+                    <span class="skill-pct">73%</span>
+                </div>
+                <div class="skill-row">
+                    <span class="skill-label">TypeScript</span>
+                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:97%"></div></div>
+                    <span class="skill-pct">97%</span>
+                </div>
+                <div class="skill-row">
+                    <span class="skill-label">AWS</span>
+                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:76%"></div></div>
+                    <span class="skill-pct">76%</span>
+                </div>
+
+                <div class="skills-section-label" style="margin-top:12px;">Soft Skills:</div>
+                <div class="soft-skills-wrap">
+                    <span class="soft-skill-chip">Leadership</span>
+                    <span class="soft-skill-chip">Communication</span>
+                    <span class="soft-skill-chip">Problem Solving</span>
+                    <span class="soft-skill-chip">Teamwork</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="right-col">
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="file-text"></svg>
+                        Quick Info
+                    </div>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="mail"></svg>
+                    <span class="quick-info-text" id="detailDisplayEmail">email@domain.com</span>
+                    <div class="quick-info-copy" data-copy="email"><svg data-lucide="copy"></svg></div>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="phone"></svg>
+                    <span class="quick-info-text" id="detailDisplayPhone">+1 000 0000</span>
+                    <div class="quick-info-copy" data-copy="phone"><svg data-lucide="copy"></svg></div>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="map-pin"></svg>
+                    <span class="quick-info-text" id="detailDisplayLocation">—</span>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="globe"></svg>
+                    <span class="quick-info-text" id="detailDisplaySource">—</span>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="user"></svg>
+                    <span class="quick-info-text" id="detailDisplaySourcedBy">—</span>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="calendar"></svg>
+                    <span class="quick-info-text" id="detailDisplayAppliedDate">—</span>
+                </div>
+                <div class="quick-info-row">
+                    <svg class="quick-info-icon" data-lucide="hash"></svg>
+                    <span class="quick-info-text" id="detailDisplayId">#CN-0000</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="map-pin"></svg>
+                        Application Journey
+                    </div>
+                </div>
+                <div style="font-size:11.5px; color:#6B7280; margin-bottom:8px; font-weight:500;">Applied Jobs:</div>
+                <div class="journey-item">
+                    <div class="journey-job-title" id="detailDisplayAppliedJob">Administrative Assistant</div>
+                    <div class="journey-status-row">
+                        <div class="journey-dot"></div>
+                        <span class="journey-status-label">Technical Interview</span>
+                        <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                    </div>
+                </div>
+                <div class="journey-item">
+                    <div class="journey-job-title">Chief Executive Officer</div>
+                    <div class="journey-status-row">
+                        <div class="journey-dot"></div>
+                        <span class="journey-status-label">Technical Interview</span>
+                        <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                    </div>
+                </div>
+                <a href="#" class="view-all-link">
+                    View All Applications
+                    <svg data-lucide="arrow-right"></svg>
+                </a>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="trending-up"></svg>
+                        Engagement Metrics
+                    </div>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Response Rate:</span>
+                    <span class="metric-value green">85% <span class="metric-up-arrow">↑</span></span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Avg. Response Time:</span>
+                    <span class="metric-value">4 hours</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Last Active:</span>
+                    <span class="metric-value">2 hours ago</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Email Opens:</span>
+                    <span class="metric-value">12/15 (80%)</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">Link Clicks:</span>
+                    <span class="metric-value">8</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="message-circle"></svg>
+                        Recent Notes
+                    </div>
+                    <span class="card-action-link">[View All]</span>
+                </div>
+                <div class="note-item">
+                    <div class="note-meta">
+                        <svg class="note-meta-icon" data-lucide="user"></svg>
+                        <span class="note-author">Sarah M.</span>
+                        <span class="note-time">• 2 hours ago</span>
+                    </div>
+                    <p class="note-text">Strong technical background, good communication</p>
+                </div>
+                <div class="note-item">
+                    <div class="note-meta">
+                        <svg class="note-meta-icon" data-lucide="user"></svg>
+                        <span class="note-author">John D.</span>
+                        <span class="note-time">• 1 day ago</span>
+                    </div>
+                    <p class="note-text">Great cultural fit for the team</p>
+                </div>
+                <button class="btn-add-note">[Add Quick Note]</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <svg data-lucide="clock"></svg>
+                        Recent Activity
+                    </div>
+                    <span class="card-action-link">[View All]</span>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-text">• Applied to Senior Software Engineer</span>
+                    <span class="activity-date">5/24/2026</span>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-text">• Resume viewed</span>
+                    <span class="activity-date">6/8/2026</span>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-text">• Email opened</span>
+                    <span class="activity-date">6/9/2026</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+        </div><!-- /candidateDetailView -->
+
+        </div><!-- /page-scroll -->
+
+    <!-- Modal -->
+    <div class="cn-dashboard-modal-backdrop-layer" id="candidateDetailsModal">
+        <div class="cn-modal-surface-container-window cn-metric-modal-window">
+            <div class="cn-modal-header-actions-row">
+                <div class="cn-modal-badge-wrapper-flex">
+                    <span class="cn-metric-modal-title" id="metricModalTitle">All Candidates</span>
+                </div>
+                <div class="cn-modal-window-controls-group">
+                    <button class="cn-modal-close-window-trigger" id="closeModalWindowBtn"><i data-lucide="x"></i></button>
+                </div>
+            </div>
+            <div class="cn-metric-modal-body">
+                <p class="cn-metric-modal-subtitle">Showing all 0 candidates</p>
+                <div class="cn-metric-modal-candidates-list" id="metricCandidatesList"></div>
+                <p class="cn-metric-modal-footer-text">Click on any candidate to view their full profile</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+        <svg data-lucide="message-circle"></svg>
+    </div>
+
+    </div><!-- /main-content -->
+    </div><!-- /app-shell -->
+
+<div id="addCandidateModalContainer"></div>
+
+<script src="js/script.js"></script>
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/add-candidate-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('addCandidateModalContainer').innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+            if (window.initAddCandidateModal) initAddCandidateModal();
+        });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs Dashboard Management</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="jb-jobs-view-wrapper">
+
+    <div class="jb-bulk-action-toast-panel" id="bulkActionToast">
+        <div class="jb-toast-left-meta">
+            <span class="jb-selection-badge" id="selectedCountBadge">0</span>
+            <span class="jb-selection-lbl">job selected</span>
+        </div>
+        <div class="jb-toast-action-btn-group">
+            <button class="jb-btn-toast jb-active-green"><i data-lucide="globe"></i>Publish</button>
+            <button class="jb-btn-toast jb-warning-gold"><i data-lucide="pause-circle"></i>Pause</button>
+            <button class="jb-btn-toast jb-dark-slate"><i data-lucide="x-circle"></i>Close</button>
+            <button class="jb-btn-toast jb-standard-border"><i data-lucide="copy"></i>Duplicate</button>
+            <button class="jb-btn-toast jb-standard-border"><i data-lucide="sliders"></i>Set Priority</button>
+            <button class="jb-btn-toast jb-standard-border"><i data-lucide="download"></i>Export</button>
+            <button class="jb-btn-toast jb-critical-danger"><i data-lucide="trash-2"></i>Delete</button>
+        </div>
+        <button class="jb-toast-close-trigger" id="clearSelectionBtn"><i data-lucide="x"></i></button>
+    </div>
+
+    <div id="mainJobsTableContext">
+        
+        <div class="jb-dept-filter-bar" id="deptFilterBar">
+            <button class="jb-btn-back-filter" id="deptFilterBackBtn">
+                <i data-lucide="arrow-left"></i>
+                <span>Back to All Jobs</span>
+            </button>
+            <span>Filtered by department: <strong id="deptFilterLabel"></strong></span>
+        </div>
+
+        <div class="jb-jobs-toolbar-section">
+            <div class="jb-toolbar-left-filters">
+                <div class="jb-status-tab-pill-box">
+                    <button class="jb-tab-pill active" data-filter="all">All Jobs</button>
+                    <button class="jb-tab-pill" data-filter="Active">Active</button>
+                    <button class="jb-tab-pill" data-filter="Draft">Draft</button>
+                    <button class="jb-tab-pill" data-filter="Closed">Closed</button>
+                </div>
+            </div>
+
+            <div class="jb-toolbar-right-actions">
+                <div class="jb-native-dropdown-control">
+                    <select id="filterDeptDropdown">
+                        <option value="all">All Departments</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Operations and Support">Operations and Support</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Information Technology">Information Technology</option>
+                    </select>
+                </div>
+
+                <div class="jb-native-dropdown-control">
+                    <select id="filterPriorityDropdown">
+                        <option value="all">All Priorities</option>
+                        <option value="high">High Priority</option>
+                        <option value="medium">Medium Priority</option>
+                        <option value="low">Low Priority</option>
+                    </select>
+                </div>
+
+                <button class="jb-btn-toggle-filters" id="advancedFilterToggleBtn">
+                    <i data-lucide="sliders"></i>
+                    <span>Filters</span>
+                </button>
+
+                <button class="jb-btn-create-job-action">
+                    <i data-lucide="plus"></i>
+                    <span>Create Job</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="jb-advanced-filter-sliding-drawer" id="advancedFilterDrawer">
+            <div class="jb-drawer-header-row">
+                <h3>Advanced Filters</h3>
+                <button class="jb-drawer-close-x" id="closeDrawerX"><i data-lucide="x"></i></button>
+            </div>
+            
+            <div class="jb-drawer-inputs-form-grid">
+                <div class="jb-input-field-group">
+                    <label>Location</label>
+                    <input type="text" placeholder="Search location..." id="advLocation">
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Job Type</label>
+                    <select id="advJobType">
+                        <option value="all">All Types</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Contract">Contract</option>
+                    </select>
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Job Nature</label>
+                    <select id="advJobNature">
+                        <option value="all">All Arrangements</option>
+                        <option value="Onsite">Onsite</option>
+                        <option value="Remote">Remote</option>
+                        <option value="Hybrid">Hybrid</option>
+                    </select>
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Job Stage</label>
+                    <select id="advJobStage">
+                        <option value="all">All Stages</option>
+                        <option value="Planning">Planning</option>
+                        <option value="Active Recruiting">Active Recruiting</option>
+                    </select>
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Posted From</label>
+                    <input type="date" placeholder="mm/dd/yyyy" id="advPostedFrom">
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Posted To</label>
+                    <input type="date" placeholder="mm/dd/yyyy" id="advPostedTo">
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Min Applicants</label>
+                    <input type="number" value="0" min="0" id="advMinApplicants">
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Max Applicants</label>
+                    <input type="number" value="999" max="999" id="advMaxApplicants">
+                </div>
+                <div class="jb-input-field-group">
+                    <label>Hiring Team</label>
+                    <select id="advHiringTeam">
+                        <option value="all">All Jobs</option>
+                        <option value="team">With Team</option>
+                        <option value="noteam">Without Team</option>
+                    </select>
+                </div>
+            </div>
+            <div class="jb-drawer-action-footer">
+                <button class="jb-btn-toast jb-standard-border" id="resetAdvancedFiltersBtn">Reset Filters</button>
+                <button class="jb-btn-create-job-action" id="applyAdvancedFiltersBtn">Apply Parameters</button>
+            </div>
+        </div>
+
+        <div class="jb-jobs-showing-indicator" id="showingCountText">Showing 8 of 8 jobs</div>
+
+        <div class="jb-data-table-scroll-outer-frame">
+            <table class="jb-pinned-data-table-matrix" id="jobsTable">
+                <thead>
+                    <tr>
+                        <th class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" id="masterSelectAllCheckbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </th>
+                        <th class="jb-col-job-title jb-cell-pinned-left-2 jb-draggable-header" draggable="true">
+                            <div class="jb-header-inner-split">
+                                <span>JOB TITLE</span>
+                                <i data-lucide="chevrons-up-down" class="jb-sort-icon"></i>
+                            </div>
+                        </th>
+                        <th class="jb-col-department jb-cell-pinned-left-3 jb-draggable-header" draggable="true">
+                            <div class="jb-header-inner-split">
+                                <span>DEPARTMENT</span>
+                                <i data-lucide="chevrons-up-down" class="jb-sort-icon"></i>
+                            </div>
+                        </th>
+                        <th class="jb-col-timeline jb-draggable-header" draggable="true">TIMELINE</th>
+                        <th class="jb-col-job-type jb-draggable-header" draggable="true">JOB TYPE</th>
+                        <th class="jb-col-job-nature jb-draggable-header" draggable="true">JOB NATURE</th>
+                        <th class="jb-col-location jb-draggable-header" draggable="true">LOCATION</th>
+                        <th class="jb-col-status jb-draggable-header" draggable="true">STATUS</th>
+                        <th class="jb-col-applicants jb-draggable-header" draggable="true">APPLICANTS</th>
+                        <th class="jb-col-headcount jb-draggable-header" draggable="true">HEADCOUNT</th>
+                        <th class="jb-col-job-stage jb-draggable-header" draggable="true">JOB STAGE</th>
+                        <th class="jb-col-hiring-team jb-draggable-header" draggable="true">HIRING TEAM</th>
+                        <th class="jb-col-priority jb-draggable-header" draggable="true">PRIORITY</th>
+                        <th class="jb-col-actions jb-cell-pinned-right-end">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="jobsTableBody">
+                    <tr data-id="1" data-status="Active" data-dept="Human Resources" data-priority="high" data-location="Dallas, TX" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Administrative Assistant</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Human Resources</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 15 Jan 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">Dallas, TX</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-published">Published</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>0</span></div></td>
+                        <td class="jb-col-headcount">0/1</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team">
+                            <div class="jb-hiring-team-avatar-stack">
+                                <span class="jb-avatar-circle-text jb-bg-p1">MR</span>
+                                <span class="jb-avatar-circle-text jb-bg-p2">ET</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gold"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="2" data-status="Draft" data-dept="Operations and Support" data-priority="medium" data-location="New York, NY" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Chief Executive Officer</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Operations and Support</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 20 Jan 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">New York, NY</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-internal">Internal</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>0</span></div></td>
+                        <td class="jb-col-headcount">0/1</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team"><span class="jb-unassigned-lbl-italic">Not assigned</span></td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gray"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="3" data-status="Active" data-dept="Marketing" data-priority="low" data-location="Miami, FL" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Digital Marketing Specialist</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Marketing</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 14 Feb 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">Miami, FL</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-published">Published</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>1</span></div></td>
+                        <td class="jb-col-headcount">0/2</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team"><span class="jb-unassigned-lbl-italic">Not assigned</span></td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gray"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="4" data-status="Active" data-dept="Human Resources" data-priority="high" data-location="Dallas, TX" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">HR Specialist</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Human Resources</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 1 Feb 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">Dallas, TX</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-published">Published</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>1</span></div></td>
+                        <td class="jb-col-headcount">0/2</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team">
+                            <div class="jb-hiring-team-avatar-stack">
+                                <span class="jb-avatar-circle-text jb-bg-p1">MR</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gold"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="5" data-status="Active" data-dept="Information Technology" data-priority="medium" data-location="Seattle, WA" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Python Data Scientist</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Information Technology</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 5 Feb 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">Seattle, WA</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-published">Published</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>0</span></div></td>
+                        <td class="jb-col-headcount">0/3</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team">
+                            <div class="jb-hiring-team-avatar-stack">
+                                <span class="jb-avatar-circle-text jb-bg-p3">ET</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gray"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="6" data-status="Active" data-dept="Operations and Support" data-priority="medium" data-location="New York, NY" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Quality Control Manager</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Operations and Support</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 12 Feb 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">New York, NY</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-published">Published</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>1</span></div></td>
+                        <td class="jb-col-headcount">0/1</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team"><span class="jb-unassigned-lbl-italic">Not assigned</span></td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gray"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="7" data-status="Draft" data-dept="Operations and Support" data-priority="high" data-location="New York, NY" data-type="Contract" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">SEC Specialist</strong>
+                                    <span class="jb-subtext-lbl">Contract</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Operations and Support</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 10 Feb 2024</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-purple">Contract</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">New York, NY</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-draft">Draft</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>0</span></div></td>
+                        <td class="jb-col-headcount">0/1</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team">
+                            <div class="jb-hiring-team-avatar-stack">
+                                <span class="jb-avatar-circle-text jb-bg-p1">MR</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gold"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+
+                    <tr data-id="8" data-status="Closed" data-dept="Operations and Support" data-priority="high" data-location="New York, NY" data-type="Full-time" data-nature="Onsite" data-stage="Planning">
+                        <td class="jb-col-checkbox jb-cell-pinned-left-1">
+                            <label class="jb-cell-checkbox-container">
+                                <input type="checkbox" class="jb-row-selector-checkbox">
+                                <span class="jb-custom-checkbox-checkmark"></span>
+                            </label>
+                        </td>
+                        <td class="jb-col-job-title jb-cell-pinned-left-2 jb-drilldown-trigger">
+                            <div class="jb-job-identity-block">
+                                <div class="jb-job-icon-avatar jb-color-pink-avatar"><i data-lucide="briefcase"></i></div>
+                                <div class="jb-identity-text">
+                                    <strong class="jb-job-title-strong">Senior Accountant</strong>
+                                    <span class="jb-subtext-lbl">Full-time</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="jb-col-department jb-cell-pinned-left-3 jb-dept-filter-trigger">
+                            <div class="jb-dept-flex-cell">
+                                <i data-lucide="building-2" class="jb-dept-icon"></i>
+                                <span>Operations and Support</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-timeline">
+                            <div class="jb-timeline-stack">
+                                <span><strong class="jb-bold-timeline-lbl">Posted:</strong> 1 Dec 2023</span>
+                                <span class="jb-subtext-lbl"><i data-lucide="clock"></i> No deadline</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-job-type"><span class="jb-pill-type-outline">Full-time</span></td>
+                        <td class="jb-col-job-nature"><span class="jb-pill-nature-gray">Onsite</span></td>
+                        <td class="jb-col-location">New York, NY</td>
+                        <td class="jb-col-status"><span class="jb-status-badge-indicator-pill jb-state-closed">Closed</span></td>
+                        <td class="jb-col-applicants"><div class="jb-applicants-metric-cell"><i data-lucide="users"></i><span>0</span></div></td>
+                        <td class="jb-col-headcount">0/1</td>
+                        <td class="jb-col-job-stage"><span class="jb-stage-pill-text-blue">Planning</span></td>
+                        <td class="jb-col-hiring-team">
+                            <div class="jb-hiring-team-avatar-stack">
+                                <span class="jb-avatar-circle-text jb-bg-p1">MR</span>
+                                <span class="jb-avatar-circle-text jb-bg-p2">ET</span>
+                            </div>
+                        </td>
+                        <td class="jb-col-priority"><i data-lucide="flag" class="jb-flag-priority jb-icon-gold"></i></td>
+                        <td class="jb-col-actions jb-cell-pinned-right-end">
+                            <button class="jb-row-options-dropdown-trigger-btn"><i data-lucide="more-vertical"></i></button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="jobDetailViewContext">
+        <div class="jb-job-detail-header-banner">
+            <button class="jb-btn-back-to-jobs" id="backToJobsListBtn">
+                <i data-lucide="arrow-left"></i> Back to Jobs
+            </button>
+
+            <div class="jb-job-main-profile-row">
+                <div class="jb-profile-left-meta">
+                    <div class="jb-job-detail-avatar-square">
+                        <i data-lucide="building-2"></i>
+                    </div>
+                    <div class="jb-profile-title-text-stack">
+                        <div class="jb-title-status-inline">
+                            <h2 id="detailJobTitle">Administrative Assistant</h2>
+                            <span class="jb-status-badge-indicator-pill jb-state-published">Published</span>
+                        </div>
+                        <div class="jb-metadata-tags-row">
+                            <span class="jb-meta-tag-pill"><i data-lucide="building-2"></i> <span id="detailDept">Human Resources</span></span>
+                            <span class="jb-meta-tag-pill"><i data-lucide="map-pin"></i> <span id="detailLocation">Dallas, TX</span></span>
+                            <span class="jb-meta-tag-pill"><i data-lucide="clock"></i> <span id="detailType">Full-time</span></span>
+                            <span class="jb-meta-tag-pill"><i data-lucide="target"></i> <span>Entry Level</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="jb-profile-right-actions">
+                    <button class="jb-btn-icon-square"><i data-lucide="list"></i></button>
+                    <button class="jb-btn-icon-square"><i data-lucide="layout-grid"></i></button>
+                    <button class="jb-btn-create-job-action jb-text-pink-bg"><i data-lucide="user-plus"></i> Add Candidate</button>
+                    <button class="jb-btn-icon-square"><i data-lucide="share-2"></i></button>
+                    <button class="jb-btn-icon-square"><i data-lucide="edit-3"></i></button>
+                </div>
+            </div>
+
+            <div class="jb-job-metrics-summary-grid">
+                <div class="jb-metric-summary-card">
+                    <label>Total Candidates</label>
+                    <div class="jb-metric-val">0</div>
+                </div>
+                <div class="jb-metric-summary-card">
+                    <label>Interviewing</label>
+                    <div class="jb-metric-val">0</div>
+                </div>
+                <div class="jb-metric-summary-card">
+                    <label>Views</label>
+                    <div class="jb-metric-val">342</div>
+                </div>
+                <div class="jb-metric-summary-card">
+                    <label>Days Open</label>
+                    <div class="jb-metric-val">0</div>
+                </div>
+            </div>
+
+            <div class="jb-detail-sub-navigation-tabs">
+                <button class="jb-sub-tab-item jb-active-line">Overview</button>
+                <button class="jb-sub-tab-item">Candidates</button>
+                <button class="jb-sub-tab-item">Pipeline</button>
+                <button class="jb-sub-tab-item">Collaboration</button>
+                <button class="jb-sub-tab-item">Reports</button>
+                <button class="jb-sub-tab-item">Sourcing</button>
+                <button class="jb-sub-tab-item">Status</button>
+            </div>
+        </div>
+
+        <div class="jb-detail-dashboard-layout-matrix">
+            <div class="jb-matrix-left-column">
+                <div class="jb-double-card-row-flex">
+                    <div class="jb-dashboard-widget-card">
+                        <h3>Job Health Score <i data-lucide="trending-up" class="jb-header-widget-icon"></i></h3>
+                        <div class="jb-radial-progress-container-frame">
+                            <div class="jb-radial-progress-circle">
+                                <span class="jb-score-number-bold">70</span>
+                                <span class="jb-score-lbl-sub">Score</span>
+                            </div>
+                        </div>
+                        <div class="jb-score-card-footer-metrics">
+                            <div><span class="jb-lbl">Candidates</span><strong>0</strong></div>
+                            <div><span class="jb-lbl">Days Open</span><strong>0</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="jb-dashboard-widget-card">
+                        <h3>Job Timeline</h3>
+                        <div class="jb-vertical-stepper-line-wrapper">
+                            <div class="jb-step-node-item">
+                                <div class="jb-step-icon-status jb-active-check"><i data-lucide="check"></i></div>
+                                <div class="jb-step-details-meta">
+                                    <h4>Job Posted</h4>
+                                    <span class="jb-step-time-lbl">0 days ago</span>
+                                </div>
+                            </div>
+                            <div class="jb-step-node-item">
+                                <div class="jb-step-icon-status jb-blue-users"><i data-lucide="users"></i></div>
+                                <div class="jb-step-details-meta">
+                                    <h4>First Applicants</h4>
+                                    <span class="jb-step-time-lbl">0 total candidates</span>
+                                </div>
+                            </div>
+                            <div class="jb-step-node-item">
+                                <div class="jb-step-icon-status jb-neutral-target"><i data-lucide="target"></i></div>
+                                <div class="jb-step-details-meta">
+                                    <h4>Target Close Date</h4>
+                                    <span class="jb-step-time-lbl">30 days from now</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="jb-dashboard-widget-card">
+                    <div class="jb-widget-header-with-action">
+                        <h3>Pipeline Overview</h3>
+                        <button class="jb-btn-silent-icon"><i data-lucide="trello"></i></button>
+                    </div>
+                    <div class="jb-pipeline-bar-chart-visualization">
+                        <div class="jb-pipeline-bar-column"><div class="jb-bar-fill-empty-zero"></div><span class="jb-count-metric">0</span><span class="jb-stage-name-lbl">Applied</span></div>
+                        <div class="jb-pipeline-bar-column"><div class="jb-bar-fill-empty-zero"></div><span class="jb-count-metric">0</span><span class="jb-stage-name-lbl">Screening</span></div>
+                        <div class="jb-pipeline-bar-column"><div class="jb-bar-fill-empty-zero"></div><span class="jb-count-metric">0</span><span class="jb-stage-name-lbl">Interview</span></div>
+                        <div class="jb-pipeline-bar-column"><div class="jb-bar-fill-empty-zero"></div><span class="jb-count-metric">0</span><span class="jb-stage-name-lbl">Offer</span></div>
+                        <div class="jb-pipeline-bar-column"><div class="jb-bar-fill-empty-zero"></div><span class="jb-count-metric">0</span><span class="jb-stage-name-lbl">Hired</span></div>
+                    </div>
+                </div>
+
+                <div class="jb-dashboard-widget-card">
+                    <div class="jb-widget-header-with-action">
+                        <h3>Hiring Team</h3>
+                        <button class="jb-btn-silent-icon"><i data-lucide="user-plus"></i></button>
+                    </div>
+                    <div class="jb-hiring-team-list-stack">
+                        <div class="jb-team-member-list-item">
+                            <span class="jb-avatar-circle-text jb-bg-p1">JD</span>
+                            <div class="jb-member-info-text">
+                                <strong>John Doe</strong>
+                                <span>Hiring Manager</span>
+                            </div>
+                            <span class="jb-status-indicator-dot jb-online"></span>
+                        </div>
+                        <div class="jb-team-member-list-item">
+                            <span class="jb-avatar-circle-text jb-bg-p2">SK</span>
+                            <div class="jb-member-info-text">
+                                <strong>Sarah Kim</strong>
+                                <span>Recruiter</span>
+                            </div>
+                            <span class="jb-status-indicator-dot jb-online"></span>
+                        </div>
+                        <div class="jb-team-member-list-item">
+                            <span class="jb-avatar-circle-text jb-bg-p3">ML</span>
+                            <div class="jb-member-info-text">
+                                <strong>Mike Lee</strong>
+                                <span>Interviewer</span>
+                            </div>
+                            <span class="jb-status-indicator-dot jb-offline"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="jb-matrix-right-column">
+                <div class="jb-ai-insights-purple-card-panel">
+                    <div class="jb-ai-panel-header">
+                        <i data-lucide="sparkles"></i>
+                        <h3>AI Insights</h3>
+                    </div>
+                    <div class="jb-ai-insight-block-item jb-shadow-tint">
+                        <div class="jb-insight-title-row">
+                            <i data-lucide="trending-up"></i>
+                            <h4>Strong Pipeline</h4>
+                        </div>
+                        <p>You have 0 candidates, above average for this role type</p>
+                    </div>
+                    <div class="jb-ai-insight-block-item jb-transparent-tint">
+                        <div class="jb-insight-title-row">
+                            <i data-lucide="zap"></i>
+                            <h4>Quick Tip</h4>
+                        </div>
+                        <p>Reach out to 3 candidates this week</p>
+                    </div>
+                </div>
+
+                <div class="jb-dashboard-widget-card">
+                    <h3>Recent Activity <i data-lucide="activity" class="jb-header-widget-icon"></i></h3>
+                    <div class="jb-activity-feed-timeline-stack">
+                        <div class="jb-activity-feed-item">
+                            <div class="jb-activity-icon-container jb-green-bg"><i data-lucide="user-plus"></i></div>
+                            <div class="jb-activity-text-content-block">
+                                <p>New candidate applied</p>
+                                <span class="jb-timestamp-lbl">2 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="jb-activity-feed-item">
+                            <div class="jb-activity-icon-container jb-blue-bg"><i data-lucide="calendar"></i></div>
+                            <div class="jb-activity-text-content-block">
+                                <p>Interview scheduled</p>
+                                <span class="jb-timestamp-lbl">5 hours ago</span>
+                            </div>
+                        </div>
+                        <div class="jb-activity-feed-item">
+                            <div class="jb-activity-icon-container jb-purple-bg"><i data-lucide="message-square"></i></div>
+                            <div class="jb-activity-text-content-block">
+                                <p>New note added</p>
+                                <span class="jb-timestamp-lbl">Yesterday</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="jb-context-menu-floating-dropdown" id="rowActionMenu">
+    <button class="jb-menu-item"><i data-lucide="edit"></i>Edit Job</button>
+    <button class="jb-menu-item"><i data-lucide="eye"></i>View Job Details</button>
+    <button class="jb-menu-item"><i data-lucide="users"></i>View Applicants</button>
+    <hr>
+    <button class="jb-menu-item"><i data-lucide="share-2"></i>Share Job</button>
+    <button class="jb-menu-item"><i data-lucide="download"></i>Export Applicants</button>
+    <button class="jb-menu-item"><i data-lucide="copy"></i>Duplicate Job</button>
+    <hr>
+    <button class="jb-menu-item"><i data-lucide="pause-circle"></i>Pause Job</button>
+    <button class="jb-menu-item jb-color-success" id="menuMarkFilled"><i data-lucide="check-circle-2"></i>Mark as Filled</button>
+    <button class="jb-menu-item"><i data-lucide="x-circle"></i>Close Job</button>
+    <button class="jb-menu-item jb-color-danger"><i data-lucide="archive"></i>Archive Job</button>
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>
