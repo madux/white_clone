@@ -1,0 +1,106 @@
+.oh-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.oh-modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.oh-modal-container {
+    background: white;
+    border-radius: 16px;
+    width: 560px;
+    max-width: 90vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.oh-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--oh-border-color, #EAEAEA);
+}
+
+.oh-modal-header h2 {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.oh-modal-header h2 svg { width: 20px; height: 20px; color: var(--oh-primary-magenta, #E60067); }
+
+.oh-modal-close-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--oh-text-light, #999);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.oh-modal-close-btn:hover { background: #F5F5F5; color: #333; }
+.oh-modal-close-btn svg { width: 20px; height: 20px; }
+
+.oh-modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+
+.oh-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.oh-form-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--oh-text-main, #1A1A1A);
+}
+
+.oh-form-group input,
+.oh-form-group select,
+.oh-form-group textarea {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--oh-border-color, #EAEAEA);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.oh-form-group input:focus,
+.oh-form-group select:focus,
+.oh-form-group textarea:focus {
+    border-color: var(--oh-primary-magenta, #E60067);
+}
+
+.oh-form-group textarea { resize: vertical; }
+
+.oh-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.oh-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--oh-border-color, #EAEAEA);
+}
