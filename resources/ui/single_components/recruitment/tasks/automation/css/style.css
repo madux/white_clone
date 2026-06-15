@@ -1,0 +1,197 @@
+.ts-automation-rules-view-heading {
+    margin-bottom: 24px;
+}
+
+.ts-automation-rules-view-heading h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ts-clr-text-main);
+    margin-bottom: 4px;
+}
+
+.ts-automation-rules-view-heading p {
+    font-size: 14px;
+    color: var(--ts-clr-text-muted);
+}
+
+.ts-automation-cards-vertical-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ts-automation-rule-card-item {
+    background-color: #ffffff;
+    border: 1px solid var(--ts-clr-border);
+    border-radius: var(--ts-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--ts-shadow-sm);
+    border-left: 4px solid var(--ts-clr-primary);
+}
+
+.ts-automation-card-main-row-header {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.ts-automation-card-left-meta-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+}
+
+.ts-automation-rule-title-line-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ts-automation-rule-title-line-row h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ts-clr-text-main);
+}
+
+.ts-status-pill-badge-active {
+    background-color: var(--ts-clr-success-bg);
+    color: var(--ts-clr-success);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ts-automation-flow-chain-visual-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ts-flow-block-node {
+    padding: 8px 14px;
+    border-radius: var(--ts-radius-md);
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ts-flow-block-node span:first-child {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    opacity: 0.6;
+}
+
+.ts-flow-node-style-when { background-color: #e2ecf8; color: #1d4ed8; }
+.ts-flow-node-style-if { background-color: #fef3c7; color: #b45309; }
+.ts-flow-node-style-then { background-color: #d1fae5; color: #047857; }
+
+.ts-flow-arrow-separator-icon {
+    color: var(--ts-clr-text-placeholder);
+    font-size: 12px;
+}
+
+.ts-automation-trigger-frequency-meta-footer {
+    font-size: 12px;
+    color: var(--ts-clr-text-placeholder);
+    display: flex;
+    gap: 16px;
+}
+
+.ts-automation-card-right-controls-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ts-btn-text-expand-trigger {
+    background: none;
+    border: none;
+    color: var(--ts-clr-primary);
+    font-family: var(--ts-font-family);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+.ts-btn-text-expand-trigger:hover {
+    text-decoration: underline;
+}
+
+.ts-icon-button-more-popover-trigger {
+    background: none;
+    border: none;
+    color: var(--ts-clr-text-placeholder);
+    font-size: 16px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--ts-transition-speed) ease;
+}
+
+.ts-icon-button-more-popover-trigger:hover {
+    background-color: #f5f4f2;
+    color: var(--ts-clr-text-main);
+}
+
+.ts-automation-expandable-details-drawer-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: #fcfbfa;
+    border-top: 0 solid var(--ts-clr-border);
+}
+
+.ts-automation-expandable-details-drawer-panel.ts-slide-down-expanded {
+    max-height: 400px;
+    border-top: 1px solid var(--ts-clr-border);
+}
+
+.ts-automation-drawer-inner-padding-box {
+    padding: 20px;
+}
+
+.ts-automation-detailed-configuration-dump-box h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ts-clr-text-placeholder);
+    margin-bottom: 12px;
+}
+
+.ts-automation-detailed-configuration-dump-box ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 4px;
+}
+
+.ts-automation-detailed-configuration-dump-box li {
+    font-size: 13px;
+    color: var(--ts-clr-text-muted);
+    position: relative;
+    padding-left: 14px;
+}
+
+.ts-automation-detailed-configuration-dump-box li::before {
+    content: "\2022";
+    color: var(--ts-clr-primary);
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+}

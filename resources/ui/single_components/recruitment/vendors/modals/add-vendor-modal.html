@@ -1,0 +1,60 @@
+<div class="vn-modal-overlay" id="vn-modal-overlay">
+    <div class="vn-modal-card">
+        <div class="vn-modal-header">
+            <h3>Add New Vendor</h3>
+            <button class="vn-modal-close-btn" id="vn-modal-close-btn">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="vn-vendor-form">
+            <div class="vn-form-group">
+                <label class="vn-form-label">Vendor Name <span class="vn-required">*</span></label>
+                <input type="text" id="vn-input-name" class="vn-form-control" placeholder="e.g., TechRecruit Solutions" required>
+            </div>
+
+            <div class="vn-form-row">
+                <div class="vn-form-group">
+                    <label class="vn-form-label">Email</label>
+                    <input type="email" id="vn-input-email" class="vn-form-control" placeholder="contact@vendor.com">
+                </div>
+                <div class="vn-form-group">
+                    <label class="vn-form-label">Phone</label>
+                    <input type="text" id="vn-input-phone" class="vn-form-control" placeholder="+1 234 567 8900">
+                </div>
+            </div>
+
+            <div class="vn-form-group">
+                <label class="vn-form-label">Website</label>
+                <input type="url" id="vn-input-web" class="vn-form-control" placeholder="https://vendor.com">
+            </div>
+
+            <div class="vn-form-group">
+                <label class="vn-form-label">Specialization Tags</label>
+                <div class="vn-tag-input-container">
+                    <input type="text" id="vn-input-tag" class="vn-form-control" placeholder="Add tag (e.g., IT, Sales, Healthcare)">
+                    <button type="button" class="vn-btn-secondary" id="vn-add-tag-btn">Add</button>
+                </div>
+                <div class="vn-tags-preview-zone" id="vn-tags-zone"></div>
+            </div>
+
+            <div class="vn-form-group">
+                <label class="vn-form-label">Status</label>
+                <select id="vn-input-status" class="vn-form-control vn-select">
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div class="vn-form-group">
+                <label class="vn-form-label">Notes</label>
+                <textarea id="vn-input-notes" class="vn-form-control vn-textarea" placeholder="Additional notes about this vendor..."></textarea>
+            </div>
+
+            <div class="vn-modal-footer">
+                <button type="button" class="vn-btn-cancel" id="vn-cancel-modal-btn">Cancel</button>
+                <button type="submit" class="vn-btn-submit">Create Vendor</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Departments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+</head>
+<body class="chr-body-context">
+
+<main class="chr-dept-module">
+
+    <div class="chr-departments-list-container">
+
+    <header class="chr-module-header">
+        <div class="chr-header-left">
+            <h1 class="chr-module-title">Departments</h1>
+            <p class="chr-module-subtitle">Manage organizational departments and their teams</p>
+        </div>
+        <div class="chr-header-right">
+            <button type="button" class="chr-btn chr-btn-primary" id="chr-create-dept-trigger">
+                <i class="fa-solid fa-plus"></i> Create Department
+            </button>
+        </div>
+    </header>
+
+    <section class="chr-control-action-bar">
+        <div class="chr-search-box-wrapper">
+            <i class="fa-solid fa-magnifying-glass chr-search-icon"></i>
+            <input type="text" class="chr-input-field" placeholder="Search by Name, Job ID, or Department" readonly>
+        </div>
+        <div class="chr-action-buttons-group">
+            <button type="button" class="chr-btn chr-btn-secondary">
+                <i class="fa-solid fa-filter"></i> Filters
+            </button>
+            <button type="button" class="chr-btn chr-btn-secondary">
+                <i class="fa-solid fa-rotate"></i> Refresh
+            </button>
+            <button type="button" class="chr-btn chr-btn-icon-only">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+        </div>
+    </section>
+
+    <div class="chr-filter-panel-slide" id="chr-filter-panel">
+        <div class="chr-filter-select-wrapper">
+            <select class="chr-select-dropdown">
+                <option value="All Locations">All Locations</option>
+                <option value="enugu">enugu</option>
+                <option value="Dallas, TX, United States">Dallas, TX, United States</option>
+                <option value="Seattle, WA, United States">Seattle, WA, United States</option>
+                <option value="Miami, FL, United States">Miami, FL, United States</option>
+                <option value="New York, NY, United States">New York, NY, United States</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="chr-master-workspace-view">
+        <div class="chr-table-scroll-container">
+            <table class="chr-custom-data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 48px;"><input type="checkbox" class="chr-checkbox-control"></th>
+                        <th>DEPARTMENT NAME</th>
+                        <th>DEPARTMENT LOCATION</th>
+                        <th>JOB COUNT</th>
+                        <th>DEPARTMENT OWNER</th>
+                        <th>DEPARTMENT TEAM</th>
+                        <th>DEPARTMENT CREATED</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" class="chr-checkbox-control" onclick="event.stopPropagation();"></td>
+                        <td>
+                            <a href="departments-detail.html" style="text-decoration: none; color: inherit; display: block;">
+                            <div class="chr-table-identity-card">
+                                <div class="chr-dept-badge-icon chr-avatar-green">y</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">yuui</span>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chr-location-marker-text">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>enugu</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500;">0</td>
+                        <td>
+                            <div class="chr-table-identity-card">
+                                <div class="chr-user-profile-avatar chr-avatar-pink">SC</div>
+                                <span class="chr-identity-primary-label">Sarah Chen</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="chr-avatar-group-stack">
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Sarah Chen">SC</div>
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Michael Rodriguez">MR</div>
+                            </div>
+                        </td>
+                        <td style="color: var(--chr-clr-txt-muted); font-size: 13px;">06/15/2026 22:06</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="chr-checkbox-control" onclick="event.stopPropagation();"></td>
+                        <td>
+                            <a href="departments-detail.html" style="text-decoration: none; color: inherit; display: block;">
+                            <div class="chr-table-identity-card">
+                                <div class="chr-dept-badge-icon chr-avatar-pink">H</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Human Resources</span>
+                                    <span class="chr-identity-sub-label">Talent acquisition and employee relations</span>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chr-location-marker-text">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>Dallas, TX, United States</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500;">2</td>
+                        <td>
+                            <div class="chr-table-identity-card">
+                                <div class="chr-user-profile-avatar chr-avatar-pink">MR</div>
+                                <span class="chr-identity-primary-label">Michael Rodriguez</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="chr-avatar-group-stack">
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Michael Rodriguez">MR</div>
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Emily Thompson">ET</div>
+                            </div>
+                        </td>
+                        <td style="color: var(--chr-clr-txt-muted); font-size: 13px;">07/24/2021 15:36</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="chr-checkbox-control" onclick="event.stopPropagation();"></td>
+                        <td>
+                            <a href="departments-detail.html" style="text-decoration: none; color: inherit; display: block;">
+                            <div class="chr-table-identity-card">
+                                <div class="chr-dept-badge-icon chr-avatar-blue">I</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Information Technology</span>
+                                    <span class="chr-identity-sub-label">Technology infrastructure and support</span>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chr-location-marker-text">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>Seattle, WA, United States</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500;">1</td>
+                        <td>
+                            <div class="chr-table-identity-card">
+                                <div class="chr-user-profile-avatar chr-avatar-pink">ET</div>
+                                <span class="chr-identity-primary-label">Emily Thompson</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="chr-avatar-group-stack">
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Emily Thompson">ET</div>
+                            </div>
+                        </td>
+                        <td style="color: var(--chr-clr-txt-muted); font-size: 13px;">08/15/2021 11:22</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="chr-checkbox-control" onclick="event.stopPropagation();"></td>
+                        <td>
+                            <a href="departments-detail.html" style="text-decoration: none; color: inherit; display: block;">
+                            <div class="chr-table-identity-card">
+                                <div class="chr-dept-badge-icon chr-avatar-orange">M</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Marketing</span>
+                                    <span class="chr-identity-sub-label">Brand strategy and digital marketing</span>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chr-location-marker-text">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>Miami, FL, United States</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500;">1</td>
+                        <td><span style="color: var(--chr-clr-txt-placeholder);">No owner</span></td>
+                        <td><span style="color: var(--chr-clr-txt-placeholder);">No team</span></td>
+                        <td style="color: var(--chr-clr-txt-muted); font-size: 13px;">09/01/2021 17:45</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="chr-checkbox-control" onclick="event.stopPropagation();"></td>
+                        <td>
+                            <a href="departments-detail.html" style="text-decoration: none; color: inherit; display: block;">
+                            <div class="chr-table-identity-card">
+                                <div class="chr-dept-badge-icon chr-avatar-teal">O</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Operations and Support</span>
+                                    <span class="chr-identity-sub-label">Customer service and operational excellence</span>
+                                </div>
+                            </div>
+                            </a>
+                        </td>
+                        <td>
+                            <div class="chr-location-marker-text">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <span>New York, NY, United States</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500;">4</td>
+                        <td><span style="color: var(--chr-clr-txt-placeholder);">No owner</span></td>
+                        <td>
+                            <div class="chr-avatar-group-stack">
+                                <div class="chr-user-profile-avatar chr-avatar-pink" title="Michael Rodriguez">MR</div>
+                            </div>
+                        </td>
+                        <td style="color: var(--chr-clr-txt-muted); font-size: 13px;">10/12/2021 10:15</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <footer class="chr-table-pagination-summary">
+            Showing 5 of 5 departments
+        </footer>
+    </div>
+
+    </div>
+
+</main>
+
+<div id="chr-modal-container"></div>
+
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/create-dept-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('chr-modal-container').innerHTML = html;
+            if (window.initCreateDeptModal) initCreateDeptModal();
+        });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var createBtn = document.getElementById('chr-create-dept-trigger');
+        if (createBtn && window.openCreateDeptModal) {
+            createBtn.addEventListener('click', function() {
+                if (window.openCreateDeptModal) window.openCreateDeptModal();
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

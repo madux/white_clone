@@ -1,0 +1,231 @@
+<div class="ts-automation-cards-vertical-stack" id="ts-automation-cards-container">
+    <div class="ts-automation-rule-card-item" data-rule-id="auto-1">
+        <div class="ts-automation-card-main-row-header">
+            <div class="ts-automation-card-left-meta-info">
+                <div class="ts-automation-rule-title-line-row">
+                    <h3>CV Review Overdue Escalation</h3>
+                    <span class="ts-status-pill-badge-active">
+                        <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                    </span>
+                </div>
+                <div class="ts-automation-flow-chain-visual-row">
+                    <div class="ts-flow-block-node ts-flow-node-style-when">
+                        <span>WHEN</span>
+                        <span>Task is overdue by 7 days</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-if">
+                        <span>IF</span>
+                        <span>Task is not marked complete</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-then">
+                        <span>THEN</span>
+                        <span>2 actions: notify, escalate</span>
+                    </div>
+                </div>
+                <div class="ts-automation-trigger-frequency-meta-footer">
+                    <span>Last triggered: Mar 25, 3:30 PM</span>
+                    <span>Triggered 3 times this week</span>
+                </div>
+            </div>
+            <div class="ts-automation-card-right-controls-cell">
+                <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </div>
+        <div class="ts-automation-expandable-details-drawer-panel">
+            <div class="ts-automation-drawer-inner-padding-box">
+                <div class="ts-automation-detailed-configuration-dump-box">
+                    <h4>Full Configuration</h4>
+                    <ul>
+                        <li>Trigger: Task is overdue by 7 days</li>
+                        <li>Condition: Task is not marked complete</li>
+                        <li>Actions: Notify assigned user via both email &amp; internal notification dashboard context, then automatically escalate priority elevation matrix tier to admin-1 level ruleset automatically.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ts-automation-rule-card-item" data-rule-id="auto-2">
+        <div class="ts-automation-card-main-row-header">
+            <div class="ts-automation-card-left-meta-info">
+                <div class="ts-automation-rule-title-line-row">
+                    <h3>Interview Scorecard Missing Reminder</h3>
+                    <span class="ts-status-pill-badge-active">
+                        <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                    </span>
+                </div>
+                <div class="ts-automation-flow-chain-visual-row">
+                    <div class="ts-flow-block-node ts-flow-node-style-when">
+                        <span>WHEN</span>
+                        <span>Task is completed</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-if">
+                        <span>IF</span>
+                        <span>No scorecard submitted within 2 hours of interview end</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-then">
+                        <span>THEN</span>
+                        <span>Notify assigned user via both</span>
+                    </div>
+                </div>
+                <div class="ts-automation-trigger-frequency-meta-footer">
+                    <span>Last triggered: Mar 27, 12:00 PM</span>
+                    <span>Triggered 8 times this week</span>
+                </div>
+            </div>
+            <div class="ts-automation-card-right-controls-cell">
+                <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </div>
+        <div class="ts-automation-expandable-details-drawer-panel">
+            <div class="ts-automation-drawer-inner-padding-box">
+                <div class="ts-automation-detailed-configuration-dump-box">
+                    <h4>Full Configuration</h4>
+                    <ul>
+                        <li>Trigger: Task is completed status transition fired</li>
+                        <li>Condition: No scorecard submitted within 2 hours of interview session end markers</li>
+                        <li>Actions: Fire automated operational logging notification block to current user dashboards.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ts-automation-rule-card-item" data-rule-id="auto-3">
+        <div class="ts-automation-card-main-row-header">
+            <div class="ts-automation-card-left-meta-info">
+                <div class="ts-automation-rule-title-line-row">
+                    <h3>Offer Task Escalation</h3>
+                    <span class="ts-status-pill-badge-active">
+                        <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                    </span>
+                </div>
+                <div class="ts-automation-flow-chain-visual-row">
+                    <div class="ts-flow-block-node ts-flow-node-style-when">
+                        <span>WHEN</span>
+                        <span>Task is overdue by 2 days</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-then">
+                        <span>THEN</span>
+                        <span>2 actions: notify, create_task</span>
+                    </div>
+                </div>
+                <div class="ts-automation-trigger-frequency-meta-footer">
+                    <span>Last triggered: Mar 20, 5:00 PM</span>
+                    <span>Triggered 2 times this week</span>
+                </div>
+            </div>
+            <div class="ts-automation-card-right-controls-cell">
+                <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </div>
+        <div class="ts-automation-expandable-details-drawer-panel">
+            <div class="ts-automation-drawer-inner-padding-box">
+                <div class="ts-automation-detailed-configuration-dump-box">
+                    <h4>Full Configuration</h4>
+                    <ul>
+                        <li>Trigger: Task is overdue by 2 days threshold check</li>
+                        <li>Condition: Global run mode active</li>
+                        <li>Actions: Dispatch instant manager escalation alert logs and spin up dependent verification side tasks automatically.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ts-automation-rule-card-item" data-rule-id="auto-4">
+        <div class="ts-automation-card-main-row-header">
+            <div class="ts-automation-card-left-meta-info">
+                <div class="ts-automation-rule-title-line-row">
+                    <h3>Auto-Create Checklist on Job Post</h3>
+                    <span class="ts-status-pill-badge-active">
+                        <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                    </span>
+                </div>
+                <div class="ts-automation-flow-chain-visual-row">
+                    <div class="ts-flow-block-node ts-flow-node-style-when">
+                        <span>WHEN</span>
+                        <span>A new job is published</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-then">
+                        <span>THEN</span>
+                        <span>Create task: "Create all checklist tasks from template"</span>
+                    </div>
+                </div>
+                <div class="ts-automation-trigger-frequency-meta-footer">
+                    <span>Last triggered: Mar 26, 11:30 AM</span>
+                    <span>Triggered 15 times this week</span>
+                </div>
+            </div>
+            <div class="ts-automation-card-right-controls-cell">
+                <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </div>
+        <div class="ts-automation-expandable-details-drawer-panel">
+            <div class="ts-automation-drawer-inner-padding-box">
+                <div class="ts-automation-detailed-configuration-dump-box">
+                    <h4>Full Configuration</h4>
+                    <ul>
+                        <li>Trigger: A new job is published system webhook event</li>
+                        <li>Condition: None</li>
+                        <li>Actions: Generate complete onboarding sub-checklist nodes mapped from global configuration directory templates automatically.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ts-automation-rule-card-item" data-rule-id="auto-5">
+        <div class="ts-automation-card-main-row-header">
+            <div class="ts-automation-card-left-meta-info">
+                <div class="ts-automation-rule-title-line-row">
+                    <h3>Stage Transition Task Creation</h3>
+                    <span class="ts-status-pill-badge-active">
+                        <span style="display:inline-block; width:6px; height:6px; background-color:#2da160; border-radius:50%;"></span> Active
+                    </span>
+                </div>
+                <div class="ts-automation-flow-chain-visual-row">
+                    <div class="ts-flow-block-node ts-flow-node-style-when">
+                        <span>WHEN</span>
+                        <span>Candidate moves to Interview stage</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right ts-flow-arrow-separator-icon"></i>
+                    <div class="ts-flow-block-node ts-flow-node-style-then">
+                        <span>THEN</span>
+                        <span>Create task: "Collect scorecard from [Interviewer Name]"</span>
+                    </div>
+                </div>
+                <div class="ts-automation-trigger-frequency-meta-footer">
+                    <span>Last triggered: Mar 27, 2:00 PM</span>
+                    <span>Triggered 12 times this week</span>
+                </div>
+            </div>
+            <div class="ts-automation-card-right-controls-cell">
+                <button class="ts-btn-text-expand-trigger" data-action="slide-toggle">View details <i class="fa-solid fa-chevron-down"></i></button>
+                <button class="ts-icon-button-more-popover-trigger" data-action="popover-open"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+            </div>
+        </div>
+        <div class="ts-automation-expandable-details-drawer-panel">
+            <div class="ts-automation-drawer-inner-padding-box">
+                <div class="ts-automation-detailed-configuration-dump-box">
+                    <h4>Full Configuration</h4>
+                    <ul>
+                        <li>Trigger: Candidate moves to Interview pipeline step status location node</li>
+                        <li>Condition: None</li>
+                        <li>Actions: Map structural scorecard validation collection targets tracking owner parameters.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
