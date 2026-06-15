@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_applicant_custom_tree_view" model="ir.ui.view">
+        <field name="name">hr.applicant.tree</field>
+        <field name="model">hr.applicant</field>
+        <field name="arch" type="xml">
+            <tree string="Candidate" js_class="myrecruitment_dashboard_list">
+                <!-- <div class="cn-view-content-pane active" id="viewPaneList">
+                    <div class="cn-data-table-scroll-outer-frame"> -->
+                        <field name="name" string="CANDIDATE" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
+                        <field name="partner_phone" string="PHONE" class="overwrite-field cn-col-phone cn-cell-pinned-left-3"/>
+                        <field name="email_from" string="EMAIL" class="overwrite-field cn-col-email cn-cell-pinned-left-4"/>
+                        <field name="job_id" string="TARGET ROLE" class="overwrite-field cn-col-role"/>
+                        <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role"/>
+                        <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
+                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
+                        <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating"/>
+                        <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="create_date" string="APPLIED DATE" class="overwrite-field cn-col-date"/>
+                        <field name="stage_id" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge"/>
+
+                    <!-- </div>
+                </div> -->
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_hr_applicant_recruitment" model="ir.actions.act_window">
+        <field name="name">Candidates</field>
+        <field name="res_model">hr.applicant</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_applicant_custom_tree_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_applicant_custom_tree_view'),
+            }),
+            
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record>
+
+    <!-- (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_employee.view_hr_core_multi_branch_form'),
+            }), -->
+
+    <menuitem id="menu_hr_applicant_recruitment_root"
+              name="HR Recruitment"
+              sequence="3"
+              action="action_hr_applicant_recruitment"
+              groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
+</odoo>
+
+              <!-- web_icon="hr_cleon_recruitment,static/description/icon.png" -->

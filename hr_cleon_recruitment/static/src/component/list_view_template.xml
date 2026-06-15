@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_cleon_recruitment.CustomRecruitmentListRenderer" t-inherit="web.ListRenderer" t-inherit-mode="primary">
+
+        <!-- <xpath expr="//div[@t-ref='root']" position="before">
+            <h1 style="color:red;">
+                WORKING TEMPLATE
+            </h1>
+
+        </xpath> -->
+        <!-- <xpath expr="//table[@t-ref='table']" position="before">
+                <div class="rsb-flex-grow-1 d-none d-md-block"/>
+                <button class="rsb-btn o_cc_btn_pink btn-sm m-4" t-on-click="openCustomWarningForm" type="button">
+                    <i class="rsb-fa fa-book"/> New Incident
+                </button>
+                <button class="rsb-btn o_cc_btn_pink_outline btn-sm" t-on-click="openGuidedTour" type="button">
+                    <i class="rsb-fa fa-magic"/> Guided Tour
+                </button>
+                <div class="rsb-btn-group m-2">
+                    <button class="rsb-btn o_cc_btn_light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
+                        <i class="rsb-fa fa-user-circle-o"/> View as: <strong>Admin View</strong>
+                    </button>
+                    <ul class="rsb-dropdown-menu dropdown-menu-end">
+                        <li><a class="rsb-dropdown-item" href="#">Admin View</a></li>
+                        <li><a class="rsb-dropdown-item" href="#">Employee View</a></li>
+                        <li><a class="rsb-dropdown-item" href="#">Manager View</a></li>
+                    </ul>
+                </div>
+                <button class="rsb-btn o_cc_btn_light btn-sm m-4" t-on-click="exportCalendar" type="button">
+                    <i class="rsb-fa fa-upload"/> Export
+                </button> 
+
+        </xpath> -->
+        <xpath expr="//div[@t-ref='root']" position="before">
+            <div class="rsb-sidebar">
+                <div class="rsb-sidebar-logo">
+                    <div class="rsb-sidebar-logo-mark">C</div>
+                    <span class="rsb-sidebar-logo-text">CleonHR</span>
+                </div>
+
+                <p class="rsb-sidebar-section-label">Recruiting</p>
+                <ul>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" href="#">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="briefcase"></svg>
+                            Jobs
+                            <span class="rsb-sidebar-badge">6</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="rsb-sidebar-nav-item active" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="users"></svg>
+                            Candidates
+                        </a>
+                    </li>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="check-circle"></svg>
+                            Offers and Hired
+                        </a>
+                    </li>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="store"></svg>
+                            Vendors
+                        </a>
+                    </li>
+                </ul>
+
+                <p class="rsb-sidebar-section-label">Workflow</p>
+                <ul>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="clipboard-list"></svg>
+                            Tasks
+                        </a>
+                    </li>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="building-2"></svg>
+                            Depts
+                        </a>
+                    </li>
+                </ul>
+
+                <ul style="margin-top: 12px;">
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="layout-grid"></svg>
+                            ATS
+                        </a>
+                    </li>
+                    <li>
+                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
+                            <svg class="rsb-sidebar-nav-icon" data-lucide="settings"></svg>
+                            Settings
+                        </a>
+                    </li>
+                </ul>
+
+                <div style="flex:1;"></div>
+                <div class="rsb-sidebar-user">
+                    <div class="rsb-sidebar-user-avatar">J</div>
+                    <div class="rsb-sidebar-user-info">
+                        <div class="rsb-sidebar-user-name">John</div>
+                        <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </t> 
+</templates>

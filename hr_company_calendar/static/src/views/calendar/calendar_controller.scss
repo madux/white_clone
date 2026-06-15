@@ -64,6 +64,7 @@ $cc-radius:     8px;
         background: #fff;
         display: flex !important;
         flex-direction: column;
+        // z-index: 99999;
     }
 
     // ── Row 2: calendar renderer (centre, fills remaining space) ──
