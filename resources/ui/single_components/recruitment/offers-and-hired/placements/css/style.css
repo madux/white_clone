@@ -1,0 +1,101 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #FAFAFA;
+    color: #1A1A1A;
+    -webkit-font-smoothing: antialiased;
+}
+
+.pl-dashboard-content { padding: 40px; max-width: 1440px; margin: 0 auto; }
+.pl-content-header { margin-bottom: 32px; }
+.pl-page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+.pl-page-subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
+
+.pl-inner-tabs { display: flex; gap: 8px; border-bottom: 1px solid #EAEAEA; padding-bottom: 12px; }
+
+.pl-inner-tab-btn {
+    background: none; border: none; font-family: inherit; font-size: 14px; font-weight: 500;
+    color: #666; padding: 8px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-radius: 6px;
+}
+
+.pl-inner-tab-btn svg { width: 16px; height: 16px; }
+.pl-inner-tab-btn.active { background-color: #FFF0F6; color: #E60067; font-weight: 600; }
+
+.pl-hired-section { display: flex; flex-direction: column; gap: 24px; }
+
+.pl-section-title-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+    background: white; border: 1px solid #EAEAEA; border-radius: 12px; padding: 24px;
+}
+
+.pl-title-meta h2 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+.pl-title-meta p { font-size: 14px; color: #666; }
+
+.pl-btn-primary {
+    font-family: inherit; background: #E60067; border: 1px solid #E60067; color: white;
+    font-size: 14px; font-weight: 600; padding: 12px 20px; border-radius: 8px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+}
+
+.pl-btn-primary svg { width: 16px; height: 16px; }
+
+.pl-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+
+.pl-insight-card {
+    background: white; border: 1px solid #EAEAEA; border-radius: 12px;
+    padding: 24px; display: flex; flex-direction: column;
+}
+
+.pl-metric-val { font-size: 48px; font-weight: 700; line-height: 1; margin-bottom: 12px; }
+.pl-metric-val.text-dark { color: #1A1A1A; }
+.pl-metric-val.text-green { color: #00B351; }
+
+.pl-metric-label { font-size: 14px; color: #666; margin-bottom: 8px; }
+
+.pl-metric-badge { font-size: 12px; font-weight: 600; }
+.pl-metric-badge.pink { color: #E60067; }
+.pl-metric-badge.gray { color: #999; }
+
+.pl-table-card { background: white; border: 1px solid #EAEAEA; border-radius: 12px; padding: 24px; }
+
+.pl-table-sub-tabs { display: flex; gap: 24px; border-bottom: 1px solid #EAEAEA; margin-bottom: 20px; padding-bottom: 4px; }
+
+.pl-sub-tab {
+    background: none; border: none; font-family: inherit; font-size: 14px; font-weight: 500;
+    color: #666; padding: 8px 4px 12px; cursor: pointer; position: relative; display: flex; align-items: center; gap: 8px;
+}
+
+.pl-sub-tab.active { color: #1A1A1A; font-weight: 600; }
+.pl-sub-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background-color: #E60067; }
+
+.pl-dot { width: 24px; height: 14px; border-radius: 4px; display: inline-block; }
+.pl-dot.pink { background-color: #E60067; }
+
+.pl-table-wrap { overflow-x: auto; width: 100%; }
+
+.pl-table { width: 100%; border-collapse: collapse; text-align: left; }
+
+.pl-table th {
+    font-size: 12px; font-weight: 700; color: #999;
+    letter-spacing: 0.04em; padding: 12px 16px; border-bottom: 1px solid #EAEAEA; text-transform: uppercase;
+}
+
+.pl-empty-row td { padding: 0; }
+
+.pl-empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 24px; text-align: center; max-width: 440px; margin: 0 auto;
+}
+
+.pl-empty-icon {
+    width: 56px; height: 56px; border-radius: 50%; background: #FAFAFA;
+    border: 1px solid #EAEAEA; display: flex; align-items: center;
+    justify-content: center; color: #999; margin-bottom: 16px;
+}
+
+.pl-empty-icon svg { width: 24px; height: 24px; }
+.pl-empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+.pl-empty-state p { font-size: 14px; color: #666; line-height: 1.5; }
+.text-right { text-align: right; }

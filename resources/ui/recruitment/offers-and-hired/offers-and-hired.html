@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR - Placements and Offers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/placements.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+<div class="rsb-wrapper">
+    <aside class="rsb-sidebar">
+        <div class="rsb-sidebar-logo">
+            <div class="rsb-sidebar-logo-mark">C</div>
+            <span class="rsb-sidebar-logo-text">CleonHR</span>
+        </div>
+
+        <p class="rsb-sidebar-section-label">Recruiting</p>
+        <ul>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="../jobs/jobs.html">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="briefcase"></svg>
+                    Jobs
+                    <span class="rsb-sidebar-badge">6</span>
+                </a>
+            </li>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="../candidates/candidate.html">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="users"></svg>
+                    Candidates
+                </a>
+            </li>
+            <li>
+                <a class="rsb-sidebar-nav-item active" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="check-circle"></svg>
+                    Offers and Hired
+                </a>
+            </li>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="store"></svg>
+                    Vendors
+                </a>
+            </li>
+        </ul>
+
+        <p class="rsb-sidebar-section-label">Workflow</p>
+        <ul>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="clipboard-list"></svg>
+                    Tasks
+                </a>
+            </li>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="building-2"></svg>
+                    Depts
+                </a>
+            </li>
+        </ul>
+
+        <ul style="margin-top: 12px;">
+            <li>
+                <a class="rsb-sidebar-nav-item" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="layout-grid"></svg>
+                    ATS
+                </a>
+            </li>
+            <li>
+                <a class="rsb-sidebar-nav-item" href="#">
+                    <svg class="rsb-sidebar-nav-icon" data-lucide="settings"></svg>
+                    Settings
+                </a>
+            </li>
+        </ul>
+
+        <div style="flex:1;"></div>
+
+        <div class="rsb-sidebar-user">
+            <div class="rsb-sidebar-user-avatar">J</div>
+            <div class="rsb-sidebar-user-info">
+                <div class="rsb-sidebar-user-name">John</div>
+                <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+            </div>
+        </div>
+    </aside>
+</div>
+
+    <div class="main-content">
+
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <svg data-lucide="building-2"></svg>
+                    Company
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill">
+                    <svg data-lucide="shield"></svg>
+                    Admin
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <svg data-lucide="eye"></svg>
+                    Select Employee View
+                    <svg data-lucide="chevron-down"></svg>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="inbox"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="calendar"></svg>
+                </div>
+                <div class="topnav-icon-btn">
+                    <svg data-lucide="users-2"></svg>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <svg data-lucide="bell"></svg>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-scroll">
+
+            <main class="oh-dashboard-content">
+                <header class="oh-content-header">
+                    <h1 class="oh-page-title">Placements and Offers</h1>
+                    <p class="oh-page-subtitle">Manage job offers and track successful placements</p>
+
+                    <div class="oh-inner-tabs">
+                        <button class="oh-inner-tab-btn oh-inner-tab-placements active"><i data-lucide="award"></i> Placements</button>
+                        <button class="oh-inner-tab-btn oh-inner-tab-offers"><i data-lucide="file-text"></i> Offers</button>
+                    </div>
+                </header>
+
+                <!-- ============ PLACEMENTS VIEW ============ -->
+                <div id="ohPlacementsView" class="oh-placement-view">
+                    <section class="oh-hired-candidates-section">
+                        <div class="oh-section-title-bar">
+                            <div class="oh-title-meta">
+                                <h2>Hired Candidates</h2>
+                                <p>Track and manage successful placements and fees</p>
+                            </div>
+                            <button class="oh-btn-record-placement" id="ohRecordPlacementBtn">
+                                <i data-lucide="trophy"></i> Record Placement
+                            </button>
+                        </div>
+
+                        <div class="oh-insights-summary-grid">
+                            <div class="oh-insight-card">
+                                <div class="oh-metric-value text-dark">0</div>
+                                <div class="oh-metric-label">All time</div>
+                                <div class="oh-metric-badge magenta-tag">Total Hires</div>
+                            </div>
+                            <div class="oh-insight-card">
+                                <div class="oh-metric-value text-green">2</div>
+                                <div class="oh-metric-label">Last 90 days</div>
+                                <div class="oh-metric-badge gray-tag">This Quarter</div>
+                            </div>
+                            <div class="oh-insight-card">
+                                <div class="oh-metric-value text-dark">28</div>
+                                <div class="oh-metric-label">Days</div>
+                                <div class="oh-metric-badge gray-tag">Avg Time to Fill</div>
+                            </div>
+                            <div class="oh-insight-card">
+                                <div class="oh-metric-value text-green">89%</div>
+                                <div class="oh-metric-label">Acceptance rate</div>
+                                <div class="oh-metric-badge gray-tag">Offer Acceptance</div>
+                            </div>
+                        </div>
+
+                        <div class="oh-placements-table-card">
+                            <div class="oh-table-sub-tabs">
+                                <button class="oh-sub-tab-item active">
+                                    <span class="oh-color-dot magenta-dot"></span> Offered (0)
+                                </button>
+                                <button class="oh-sub-tab-item">Hired (0)</button>
+                            </div>
+
+                            <div class="oh-table-responsive-wrapper">
+                                <table class="oh-placements-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>CANDIDATE / JOB TITLE</th>
+                                            <th>DEPARTMENT</th>
+                                            <th>STATUS</th>
+                                            <th>START DATE</th>
+                                            <th>SALARY</th>
+                                            <th>CONTRACT TYPE</th>
+                                            <th>RECRUITER</th>
+                                            <th class="text-right">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ohPlacementsTableBody">
+                                        <tr class="oh-empty-state-row">
+                                            <td colspan="8">
+                                                <div class="oh-empty-state-container">
+                                                    <div class="oh-empty-icon-shield">
+                                                        <i data-lucide="users"></i>
+                                                    </div>
+                                                    <h3>No placements recorded yet</h3>
+                                                    <p>Click on "Record Placement" above to add your first hired candidate details onto your tracking dashboard pipeline view.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- ============ OFFERS VIEW ============ -->
+                <div id="ohOffersView" class="oh-offer-view" style="display:none;">
+                    <section class="oh-offer-management-card">
+                        <div class="oh-card-header-actions">
+                            <div class="oh-header-text">
+                                <div class="oh-title-with-icon">
+                                    <div class="oh-header-icon-badge"><i data-lucide="trophy"></i></div>
+                                    <h2>Offer Management</h2>
+                                </div>
+                                <p>Track, send and manage all offers across your pipeline</p>
+                            </div>
+                            <div class="oh-action-buttons">
+                                <button class="oh-btn oh-btn-secondary"><i data-lucide="layers"></i> Templates</button>
+                                <button class="oh-btn oh-btn-primary" id="ohCreateOfferBtn"><i data-lucide="plus"></i> Create New Offer</button>
+                            </div>
+                        </div>
+
+                        <div class="oh-metrics-grid">
+                            <div class="oh-metric-card active" data-tab="total" style="--oh-card-color: #E60067;">
+                                <div class="oh-metric-val">15</div>
+                                <div class="oh-metric-label">TOTAL OFFERS</div>
+                            </div>
+                            <div class="oh-metric-card" data-tab="awaiting" style="--oh-card-color: #E28700;">
+                                <div class="oh-metric-val">5</div>
+                                <div class="oh-metric-label">AWAITING</div>
+                            </div>
+                            <div class="oh-metric-card" data-tab="accepted" style="--oh-card-color: #00B351;">
+                                <div class="oh-metric-val">4</div>
+                                <div class="oh-metric-label">ACCEPTED</div>
+                            </div>
+                            <div class="oh-metric-card" data-tab="rejected" style="--oh-card-color: #E61C24;">
+                                <div class="oh-metric-val">1</div>
+                                <div class="oh-metric-label">REJECTED</div>
+                            </div>
+                            <div class="oh-metric-card" data-tab="countered" style="--oh-card-color: #8338EC;">
+                                <div class="oh-metric-val">1</div>
+                                <div class="oh-metric-label">COUNTERED</div>
+                            </div>
+                        </div>
+
+                        <div class="oh-table-utilities">
+                            <div class="oh-search-wrapper">
+                                <i data-lucide="search" class="oh-search-icon"></i>
+                                <input type="text" id="ohSearchInput" placeholder="Search by candidate name, job title, or email...">
+                            </div>
+                            <button class="oh-btn-filter"><i data-lucide="sliders-horizontal"></i> Most Recent</button>
+                        </div>
+
+                        <div class="oh-filter-status-row" id="ohActiveFiltersRow" style="display: none;">
+                            <div class="oh-active-tags">
+                                <span class="oh-filter-label">Active filters:</span>
+                                <span class="oh-filter-badge" id="ohFilterBadgeValue">Status: sent</span>
+                            </div>
+                            <button class="oh-clear-all-btn" id="ohClearFilters">Clear all</button>
+                        </div>
+
+                        <div class="oh-offers-table-wrapper">
+                            <div class="oh-table-header-title">
+                                <h3>Offers <span class="oh-badge-count" id="ohTableCountBadge">15 offers</span></h3>
+                                <span class="oh-pagination-tracker" id="ohPaginationTracker">Showing 15 of 15 total</span>
+                            </div>
+
+                            <div class="oh-responsive-table-scroll">
+                                <table class="oh-offers-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>CANDIDATE</th>
+                                            <th>JOB</th>
+                                            <th>OFFER DETAILS</th>
+                                            <th>STATUS</th>
+                                            <th><i data-lucide="clock" class="oh-th-icon"></i> SENT</th>
+                                            <th><i data-lucide="calendar" class="oh-th-icon"></i> EXPIRY</th>
+                                            <th>RECRUITER</th>
+                                            <th class="text-right">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ohOffersTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+            </main>
+
+        </div>
+
+    </div>
+</div>
+
+<div class="oh-sheet-overlay" id="ohSheetOverlay"></div>
+<aside class="oh-right-drawer-sheet" id="ohDetailSheet">
+    <button class="oh-close-sheet-btn" id="ohCloseSheetBtn"><i data-lucide="x"></i></button>
+    <div class="oh-sheet-content-scroll" id="ohSheetDynamicContent"></div>
+</aside>
+
+<div id="ohCreateOfferModalContainer"></div>
+<div id="ohRecordPlacementModalContainer"></div>
+
+<script src="js/script.js"></script>
+<script src="js/placements.js"></script>
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/create-offer-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('ohCreateOfferModalContainer').innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+            if (window.initCreateOfferModal) initCreateOfferModal();
+        });
+
+    fetch('modals/record-placement-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('ohRecordPlacementModalContainer').innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+            if (window.initRecordPlacementModal) initRecordPlacementModal();
+        });
+</script>
+</body>
+</html>

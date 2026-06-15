@@ -1,0 +1,71 @@
+<div class="oh-modal-overlay" id="ohRecordPlacementModal">
+    <div class="oh-modal-container">
+        <div class="oh-modal-header">
+            <h2><i data-lucide="trophy"></i> Record Placement</h2>
+            <button class="oh-modal-close-btn" id="ohRecordModalCloseBtn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="oh-modal-body">
+            <div class="oh-form-group">
+                <label>Candidate</label>
+                <select id="ohRecordCandidate">
+                    <option value="">Select candidate...</option>
+                    <option value="Blessing Okoro">Blessing Okoro — Sales Executive</option>
+                    <option value="Fatima Ibrahim">Fatima Ibrahim — Marketing Manager</option>
+                    <option value="Yusuf Mohammed">Yusuf Mohammed — Backend Developer</option>
+                    <option value="Chiamaka Okonkwo">Chiamaka Okonkwo — Software Engineering Intern</option>
+                    <option value="Kunle Bamidele">Kunle Bamidele — Frontend Developer</option>
+                    <option value="Ahmed Hassan">Ahmed Hassan — DevOps Engineer</option>
+                </select>
+            </div>
+            <div class="oh-form-group">
+                <label>Job Title</label>
+                <input type="text" id="ohRecordJob" placeholder="e.g. Software Engineer">
+            </div>
+            <div class="oh-form-row">
+                <div class="oh-form-group">
+                    <label>Department</label>
+                    <select id="ohRecordDept">
+                        <option value="Engineering">Engineering</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Product">Product</option>
+                        <option value="Design">Design</option>
+                        <option value="Human Resources">Human Resources</option>
+                    </select>
+                </div>
+                <div class="oh-form-group">
+                    <label>Salary</label>
+                    <input type="text" id="ohRecordSalary" placeholder="e.g. ₦500,000">
+                </div>
+            </div>
+            <div class="oh-form-row">
+                <div class="oh-form-group">
+                    <label>Contract Type</label>
+                    <select id="ohRecordContract">
+                        <option value="permanent">Permanent</option>
+                        <option value="contract">Contract</option>
+                        <option value="part_time">Part Time</option>
+                        <option value="internship">Internship</option>
+                    </select>
+                </div>
+                <div class="oh-form-group">
+                    <label>Start Date</label>
+                    <input type="date" id="ohRecordStartDate">
+                </div>
+            </div>
+            <div class="oh-form-group">
+                <label>Status</label>
+                <select id="ohRecordStatus">
+                    <option value="offered">Offered</option>
+                    <option value="hired">Hired</option>
+                    <option value="onboarding">Onboarding</option>
+                </select>
+            </div>
+        </div>
+        <div class="oh-modal-footer">
+            <button class="oh-btn oh-btn-secondary" id="ohRecordModalCancelBtn">Cancel</button>
+            <button class="oh-btn oh-btn-primary" id="ohRecordModalSubmitBtn"><i data-lucide="check"></i> Record Placement</button>
+        </div>
+    </div>
+</div>

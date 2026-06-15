@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR - Placements and Offers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+<main class="s-oh-dashboard-content">
+    <header class="s-oh-content-header">
+        <h1 class="s-oh-page-title">Placements and Offers</h1>
+        <p class="s-oh-page-subtitle">Manage job offers and track successful placements</p>
+
+        <div class="s-oh-inner-tabs">
+            <button class="s-oh-inner-tab-btn active"><i data-lucide="award"></i> Placements</button>
+            <button class="s-oh-inner-tab-btn"><i data-lucide="file-text"></i> Offers</button>
+        </div>
+    </header>
+
+    <!-- Placements Section -->
+    <section class="s-oh-hired-candidates-section">
+        <div class="s-oh-section-title-bar">
+            <div class="s-oh-title-meta">
+                <h2>Hired Candidates</h2>
+                <p>Track and manage successful placements and fees</p>
+            </div>
+            <button class="s-oh-btn-record-placement">
+                <i data-lucide="trophy"></i> Record Placement
+            </button>
+        </div>
+
+        <div class="s-oh-insights-summary-grid">
+            <div class="s-oh-insight-card">
+                <div class="s-oh-metric-value text-dark">0</div>
+                <div class="s-oh-metric-label">All time</div>
+                <div class="s-oh-metric-badge magenta-tag">Total Hires</div>
+            </div>
+            <div class="s-oh-insight-card">
+                <div class="s-oh-metric-value text-green">2</div>
+                <div class="s-oh-metric-label">Last 90 days</div>
+                <div class="s-oh-metric-badge gray-tag">This Quarter</div>
+            </div>
+            <div class="s-oh-insight-card">
+                <div class="s-oh-metric-value text-dark">28</div>
+                <div class="s-oh-metric-label">Days</div>
+                <div class="s-oh-metric-badge gray-tag">Avg Time to Fill</div>
+            </div>
+            <div class="s-oh-insight-card">
+                <div class="s-oh-metric-value text-green">89%</div>
+                <div class="s-oh-metric-label">Acceptance rate</div>
+                <div class="s-oh-metric-badge gray-tag">Offer Acceptance</div>
+            </div>
+        </div>
+
+        <div class="s-oh-placements-table-card">
+            <div class="s-oh-table-sub-tabs">
+                <button class="s-oh-sub-tab-item active">
+                    <span class="s-oh-color-dot magenta-dot"></span> Offered (0)
+                </button>
+                <button class="s-oh-sub-tab-item">Hired (0)</button>
+            </div>
+
+            <div class="s-oh-table-responsive-wrapper">
+                <table class="s-oh-placements-data-table">
+                    <thead>
+                        <tr>
+                            <th>CANDIDATE / JOB TITLE</th>
+                            <th>DEPARTMENT</th>
+                            <th>STATUS</th>
+                            <th>START DATE</th>
+                            <th>SALARY</th>
+                            <th>CONTRACT TYPE</th>
+                            <th>RECRUITER</th>
+                            <th class="text-right">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="s-oh-empty-state-row">
+                            <td colspan="8">
+                                <div class="s-oh-empty-state-container">
+                                    <div class="s-oh-empty-icon-shield">
+                                        <i data-lucide="users"></i>
+                                    </div>
+                                    <h3>No placements recorded yet</h3>
+                                    <p>Click on "Record Placement" above to add your first hired candidate details onto your tracking dashboard pipeline view.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Offers Section -->
+    <section class="s-oh-offer-management-card" style="margin-top:24px;">
+        <div class="s-oh-card-header-actions">
+            <div class="s-oh-header-text">
+                <div class="s-oh-title-with-icon">
+                    <div class="s-oh-header-icon-badge"><i data-lucide="trophy"></i></div>
+                    <h2>Offer Management</h2>
+                </div>
+                <p>Track, send and manage all offers across your pipeline</p>
+            </div>
+            <div class="s-oh-action-buttons">
+                <button class="s-oh-btn s-oh-btn-secondary"><i data-lucide="layers"></i> Templates</button>
+                <button class="s-oh-btn s-oh-btn-primary"><i data-lucide="plus"></i> Create New Offer</button>
+            </div>
+        </div>
+
+        <div class="s-oh-metrics-grid">
+            <div class="s-oh-metric-card active" style="--s-oh-card-color: #E60067;">
+                <div class="s-oh-metric-val">15</div>
+                <div class="s-oh-metric-label">TOTAL OFFERS</div>
+            </div>
+            <div class="s-oh-metric-card" style="--s-oh-card-color: #E28700;">
+                <div class="s-oh-metric-val">5</div>
+                <div class="s-oh-metric-label">AWAITING</div>
+            </div>
+            <div class="s-oh-metric-card" style="--s-oh-card-color: #00B351;">
+                <div class="s-oh-metric-val">4</div>
+                <div class="s-oh-metric-label">ACCEPTED</div>
+            </div>
+            <div class="s-oh-metric-card" style="--s-oh-card-color: #E61C24;">
+                <div class="s-oh-metric-val">1</div>
+                <div class="s-oh-metric-label">REJECTED</div>
+            </div>
+            <div class="s-oh-metric-card" style="--s-oh-card-color: #8338EC;">
+                <div class="s-oh-metric-val">1</div>
+                <div class="s-oh-metric-label">COUNTERED</div>
+            </div>
+        </div>
+
+        <div class="s-oh-offers-table-wrapper">
+            <div class="s-oh-table-header-title">
+                <h3>Offers <span class="s-oh-badge-count">15 offers</span></h3>
+                <span class="s-oh-pagination-tracker">Showing 15 of 15 total</span>
+            </div>
+
+            <div class="s-oh-responsive-table-scroll">
+                <table class="s-oh-offers-data-table">
+                    <thead>
+                        <tr>
+                            <th>CANDIDATE</th>
+                            <th>JOB</th>
+                            <th>OFFER DETAILS</th>
+                            <th>STATUS</th>
+                            <th><i data-lucide="clock" class="s-oh-th-icon"></i> SENT</th>
+                            <th><i data-lucide="calendar" class="s-oh-th-icon"></i> EXPIRY</th>
+                            <th>RECRUITER</th>
+                            <th class="text-right">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="s-oh-candidate-cell">
+                                    <div class="s-oh-avatar-badge" style="background-color:#E60067">BO</div>
+                                    <div class="s-oh-candidate-info">
+                                        <h4>Blessing Okoro</h4>
+                                        <p>blessing.okoro@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-job-cell">
+                                    <h4>Sales Executive</h4>
+                                    <span class="s-oh-department-tag">Sales</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-salary-text">₦350,000<span style="font-size:11px; font-weight:400; color:#666;">/month</span></div>
+                                <span class="s-oh-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="s-oh-status-pill draft">draft</span></td>
+                            <td><span>Not sent</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="s-oh-recruiter-avatar-wrap">
+                                    <div class="s-oh-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-actions-cell-container">
+                                    <button class="s-oh-action-row-trigger"><i data-lucide="eye"></i></button>
+                                    <div class="s-oh-options-dropdown">
+                                        <button class="s-oh-dots-trigger-btn s-oh-action-row-trigger"><i data-lucide="more-vertical"></i></button>
+                                        <div class="s-oh-options-menu">
+                                            <button class="s-oh-opt-btn edit">Edit</button>
+                                            <button class="s-oh-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="s-oh-candidate-cell">
+                                    <div class="s-oh-avatar-badge" style="background-color:#9C27B0">FI</div>
+                                    <div class="s-oh-candidate-info">
+                                        <h4>Fatima Ibrahim</h4>
+                                        <p>fatima.ibrahim@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-job-cell">
+                                    <h4>Marketing Manager</h4>
+                                    <span class="s-oh-department-tag">Marketing</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-salary-text">₦500,000<span style="font-size:11px;">/month</span></div>
+                                <span class="s-oh-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="s-oh-status-pill viewed">viewed</span></td>
+                            <td><span>Mar 20, 2026</span><span class="s-oh-time-passed-txt">02 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="s-oh-recruiter-avatar-wrap">
+                                    <div class="s-oh-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-actions-cell-container">
+                                    <button class="s-oh-action-row-trigger"><i data-lucide="eye"></i></button>
+                                    <div class="s-oh-options-dropdown">
+                                        <button class="s-oh-dots-trigger-btn s-oh-action-row-trigger"><i data-lucide="more-vertical"></i></button>
+                                        <div class="s-oh-options-menu">
+                                            <button class="s-oh-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="s-oh-candidate-cell">
+                                    <div class="s-oh-avatar-badge" style="background-color:#00B351">CA</div>
+                                    <div class="s-oh-candidate-info">
+                                        <h4>Chiamaka Okonkwo</h4>
+                                        <p>chiamaka.okonkwo@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-job-cell">
+                                    <h4>Software Engineering Intern</h4>
+                                    <span class="s-oh-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-salary-text">₦150,000<span style="font-size:11px;">/month</span></div>
+                                <span class="s-oh-contract-tag internship">internship</span>
+                            </td>
+                            <td><span class="s-oh-status-pill accepted">accepted</span></td>
+                            <td><span>Mar 11, 2026</span><span class="s-oh-time-passed-txt">12 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="s-oh-recruiter-avatar-wrap">
+                                    <div class="s-oh-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="s-oh-actions-cell-container">
+                                    <button class="s-oh-action-row-trigger"><i data-lucide="eye"></i></button>
+                                    <div class="s-oh-options-dropdown">
+                                        <button class="s-oh-dots-trigger-btn s-oh-action-row-trigger"><i data-lucide="more-vertical"></i></button>
+                                        <div class="s-oh-options-menu">
+                                            <button class="s-oh-opt-btn edit">Edit</button>
+                                            <button class="s-oh-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+
+<script src="js/script.js"></script>
+</body>
+</html>
