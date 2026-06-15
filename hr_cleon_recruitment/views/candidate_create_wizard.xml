@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         MAIN CANDIDATE WIZARD FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_recruitment_candidate_form_view" model="ir.ui.view">
+        <field name="name">hr.applicant.candidate.wizard.form</field>
+        <field name="model">hr.applicant.candidate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Candidate" create="0" edit="1">
+
+                <field name="mode" invisible="1"/>
+
+                <!-- ══════════════════════════════
+                     SCREEN 1: SELECTION GRID
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'select'">
+                    <div class="rc_modal_header">
+                        <h2 class="rc_modal_title">Add Candidate</h2>
+                        <p class="rc_modal_subtitle">Choose how you'd like to add candidates</p>
+                    </div>
+
+                    <div class="rc_options_grid">
+
+                        <!-- Complete a Form -->
+                        <button class="rc_option_card rc_pink" name="action_mode_manual" type="object">
+                            <div class="rc_icon_wrap rc_icon_pink">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                    <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                                </svg>
+                            </div>
+                            <h3 class="rc_option_title">Complete a Form</h3>
+                            <p class="rc_option_desc">Enter candidate details manually</p>
+                        </button>
+
+                        <!-- Upload Resume -->
+                        <button class="rc_option_card rc_green" name="action_mode_resume" type="object">
+                            <div class="rc_icon_wrap rc_icon_green">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" x2="12" y1="3" y2="15"/>
+                                </svg>
+                            </div>
+                            <h3 class="rc_option_title">Upload Resume</h3>
+                            <p class="rc_option_desc">AI will extract information</p>
+                        </button>
+
+                        <!-- Bulk Upload -->
+                        <button class="rc_option_card rc_purple" name="action_mode_bulk" type="object">
+                            <div class="rc_icon_wrap rc_icon_purple">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" x2="12" y1="3" y2="15"/>
+                                    <path d="M17 3h4v4"/><path d="M21 3l-5 5"/>
+                                </svg>
+                            </div>
+                            <h3 class="rc_option_title">Bulk Upload</h3>
+                            <p class="rc_option_desc">Import multiple resumes or CSV</p>
+                        </button>
+
+                        <!-- LinkedIn -->
+                        <button class="rc_option_card rc_blue" name="action_mode_linkedin" type="object">
+                            <div class="rc_icon_wrap rc_icon_blue">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                </svg>
+                            </div>
+                            <h3 class="rc_option_title">LinkedIn URL</h3>
+                            <p class="rc_option_desc">Import from LinkedIn profile</p>
+                        </button>
+
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     SCREEN 2: MANUAL ENTRY FORM
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'manual'">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Manual Entry</h2>
+                            <p class="rc_screen_subtitle">Enter candidate details manually</p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Basic Information</h3>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="first_name">First Name</label>
+                                <field name="first_name" placeholder="John" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="last_name">Last Name</label>
+                                <field name="last_name" placeholder="Doe" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="email_from">Email</label>
+                            <field name="email_from" placeholder="john.doe@example.com" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="partner_phone">Phone</label>
+                            <field name="partner_phone" placeholder="+1 (555) 123-4567" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="partner_name">Location</label>
+                            <field name="partner_name" placeholder="San Francisco, CA" nolabel="1" class="rc_input"/>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Professional Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Professional Information</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="job_id">Current/Desired Position</label>
+                            <field name="job_id" placeholder="e.g. Senior Software Engineer" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="years_experience">Years of Experience</label>
+                            <field name="years_experience" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="salary_expected">Current Salary (Optional)</label>
+                                <field name="salary_expected" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="salary_proposed">Expected Salary (Optional)</label>
+                                <field name="salary_proposed" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Job Application -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Job Application (Optional)</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="job_id">Apply to Job</label>
+                            <field name="job_id" placeholder="Select a job (optional)" nolabel="1" class="rc_input"/>
+                        </div>
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="rc_footer">
+                        <button class="rc_btn_back" name="action_mode_select" type="object">Back</button>
+                        <button class="rc_btn_primary" name="action_add_candidate_manual" type="object">Add Candidate</button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     SCREEN 3: UPLOAD RESUME
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'resume'">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_green">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" x2="12" y1="3" y2="15"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Upload Resume</h2>
+                            <p class="rc_screen_subtitle">AI will extract candidate information</p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <div class="rc_section">
+                        <!-- Drop Zone -->
+                        <div class="rc_dropzone rc_dropzone_green">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" x2="12" y1="3" y2="15"/>
+                            </svg>
+                            <field name="resume_file" widget="binary" nolabel="1" invisible="1"/>
+                            <p class="rc_dropzone_title">Drop your resume here</p>
+                            <p class="rc_dropzone_sub">or click to browse files</p>
+                            <p class="rc_dropzone_hint">Supports PDF, DOC, DOCX, TXT up to 10MB</p>
+                        </div>
+
+                        <!-- How it works -->
+                        <div class="rc_info_box rc_info_green">
+                            <p class="rc_info_title">How it works:</p>
+                            <ul class="rc_info_list">
+                                <li>Upload a resume in PDF, DOC, DOCX, or TXT format</li>
+                                <li>Our AI extracts name, email, phone, experience, and skills</li>
+                                <li>Review and edit the information before adding</li>
+                                <li>Candidate will be added to your pipeline</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="rc_footer">
+                        <button class="rc_btn_back" name="action_mode_select" type="object">Back</button>
+                        <button class="rc_btn_primary rc_btn_green" name="action_add_candidate_resume" type="object">Add Candidate</button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     SCREEN 4: BULK UPLOAD
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'bulk'">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_purple">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" x2="12" y1="3" y2="15"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Bulk Upload</h2>
+                            <p class="rc_screen_subtitle">Import multiple candidates at once</p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <div class="rc_section">
+
+                        <!-- Two Upload Cards -->
+                        <div class="rc_bulk_grid">
+
+                            <!-- Upload CSV -->
+                            <div class="rc_bulk_card">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" x2="12" y1="3" y2="15"/>
+                                </svg>
+                                <h3 class="rc_bulk_card_title">Upload CSV</h3>
+                                <p class="rc_bulk_card_desc">Upload a CSV file with candidate data</p>
+                                <field name="csv_file" widget="binary" nolabel="1" invisible="1"/>
+                                <button class="rc_btn_purple" name="action_choose_csv" type="object">Choose CSV File</button>
+                            </div>
+
+                            <!-- Upload Resumes -->
+                            <div class="rc_bulk_card">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" x2="12" y1="3" y2="15"/>
+                                </svg>
+                                <h3 class="rc_bulk_card_title">Upload Resumes</h3>
+                                <p class="rc_bulk_card_desc">Upload multiple resume files</p>
+                                <field name="bulk_resume_files" widget="binary" nolabel="1" invisible="1"/>
+                                <button class="rc_btn_purple" name="action_choose_resumes" type="object">Choose Files</button>
+                            </div>
+
+                        </div>
+
+                        <!-- Need a template? -->
+                        <div class="rc_info_box rc_info_purple">
+                            <p class="rc_info_title rc_purple_text">Need a template?</p>
+                            <p class="rc_purple_text">Download our CSV template to see the required format</p>
+                            <button class="rc_link_btn" name="action_download_csv_template" type="object">Download CSV Template</button>
+                        </div>
+
+                        <!-- CSV Format -->
+                        <div class="rc_info_box rc_info_plain">
+                            <p class="rc_info_title">CSV Format:</p>
+                            <ul class="rc_info_list">
+                                <li>Required columns: firstName, lastName, email</li>
+                                <li>Optional: phone, location, position, experience</li>
+                                <li>Maximum 100 candidates per upload</li>
+                                <li>File size limit: 5MB</li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="rc_footer rc_footer_left">
+                        <button class="rc_btn_back" name="action_mode_select" type="object">Back</button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     SCREEN 5: LINKEDIN
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'linkedin'">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_blue">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Import from LinkedIn</h2>
+                            <p class="rc_screen_subtitle">Fetch candidate data from LinkedIn profile</p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <div class="rc_section">
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="linkedin_url">LinkedIn Profile URL</label>
+                            <field name="linkedin_url" placeholder="https://www.linkedin.com/in/username" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="job_id">Apply to Job (Optional)</label>
+                            <field name="job_id" placeholder="Select a job position" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <!-- How it works -->
+                        <div class="rc_info_box rc_info_blue">
+                            <p class="rc_info_title rc_blue_text">How it works:</p>
+                            <ul class="rc_info_list rc_blue_text">
+                                <li>Paste the LinkedIn profile URL above</li>
+                                <li>We'll fetch public profile information</li>
+                                <li>Review and edit the imported data</li>
+                                <li>Candidate will be added to your pipeline</li>
+                            </ul>
+                        </div>
+
+                        <div class="rc_example_text">
+                            <strong>Example:</strong> https://www.linkedin.com/in/john-doe-12345
+                        </div>
+
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="rc_footer">
+                        <button class="rc_btn_back" name="action_mode_select" type="object">Back</button>
+                        <button class="rc_btn_primary rc_btn_blue" name="action_import_linkedin" type="object">Import from LinkedIn</button>
+                    </div>
+                </div>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         ACTION TO OPEN THE WIZARD
+    ════════════════════════════════════════════ -->
+    <record id="action_hr_recruitment_add_candidate" model="ir.actions.act_window">
+        <field name="name">Add Candidate</field>
+        <field name="res_model">hr.applicant.candidate.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_recruitment_candidate_form_view"/>
+        <field name="target">new</field>
+        <field name="context">{'default_mode': 'select'}</field>
+    </record>
+
+</odoo>

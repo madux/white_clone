@@ -12,9 +12,10 @@
     'depends': ['hr', 'hr_recruitment'],
     'data': [
         'security/security.xml',
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
         # 'data/hr_recruitment_data.xml',
         'views/hr_recruitment_views.xml',
+        'views/candidate_create_wizard.xml'
     ],
     'assets': {
         'web.assets_backend': [
@@ -23,6 +24,8 @@
             'hr_cleon_recruitment/static/src/component/list_view_template.scss',
             'hr_cleon_recruitment/static/src/component/list_view_template.xml',
             'hr_cleon_recruitment/static/src/component/list_view_template.js',
+            'hr_cleon_recruitment/static/src/css/candidate_wizard.css',
+            'hr_cleon_recruitment/static/src/component/candidate_css.scss'
         ],
     },
     'installable': True,

@@ -1,0 +1,369 @@
+/* ═══════════════════════════════════════════════════════════
+   Recruitment Candidate Wizard  –  rc_ namespaced styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ─────────────────────────────────────────────── */
+.rc_modal_wrapper {
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── Selection Screen Header ─────────────────────────────── */
+.rc_modal_header {
+    padding: 28px 28px 20px;
+}
+.rc_modal_title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+}
+.rc_modal_subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* ── 2×2 Options Grid ────────────────────────────────────── */
+.rc_options_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 28px 28px;
+}
+
+.rc_option_card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 28px 16px;
+    border-radius: 14px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    transition: transform .15s, box-shadow .15s;
+    background: #fff;
+}
+.rc_option_card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,.08);
+}
+
+/* Card colours */
+.rc_pink   { background: #fff0f6; }
+.rc_green  { background: #f0fdf4; }
+.rc_purple { background: #f5f3ff; }
+.rc_blue   { background: #eff6ff; }
+
+/* Icon circle */
+.rc_icon_wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.rc_icon_pink   { background: #fce7f3; color: #db2777; }
+.rc_icon_green  { background: #d1fae5; color: #059669; }
+.rc_icon_purple { background: #ede9fe; color: #7c3aed; }
+.rc_icon_blue   { background: #dbeafe; color: #2563eb; }
+
+.rc_option_title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+.rc_option_desc {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* ── Inner Screen Header (Manual / Resume / Bulk / LinkedIn) */
+.rc_screen_header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 24px 18px;
+}
+.rc_screen_icon_wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.rc_icon_bg_pink   { background: #fce7f3; }
+.rc_icon_bg_green  { background: #d1fae5; }
+.rc_icon_bg_purple { background: #ede9fe; }
+.rc_icon_bg_blue   { background: #dbeafe; }
+
+.rc_screen_title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 2px;
+}
+.rc_screen_subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* ── Divider ─────────────────────────────────────────────── */
+.rc_divider {
+    height: 1px;
+    background: #f3f4f6;
+    margin: 0;
+}
+
+/* ── Section container ───────────────────────────────────── */
+.rc_section {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.rc_section_title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px;
+}
+
+/* ── Field groups ────────────────────────────────────────── */
+.rc_row_2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.rc_field_group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.rc_label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+}
+.rc_label.rc_required::after {
+    content: " *";
+    color: #ef4444;
+}
+.rc_input,
+.rc_field_group .o_field_widget input,
+.rc_field_group .o_field_widget select {
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
+    font-size: 14px !important;
+    color: #111827 !important;
+    background: #fff !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: border-color .15s;
+}
+.rc_field_group .o_field_widget input:focus,
+.rc_field_group .o_field_widget select:focus {
+    border-color: #6366f1 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.1) !important;
+}
+
+/* ── Drop Zone ───────────────────────────────────────────── */
+.rc_dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: #fafafa;
+    transition: border-color .15s, background .15s;
+}
+.rc_dropzone:hover {
+    background: #f0fdf4;
+    border-color: #6ee7b7;
+}
+.rc_dropzone_green {
+    border-color: #6ee7b7;
+    background: #f0fdf4;
+}
+.rc_dropzone_title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+    margin: 6px 0 0;
+}
+.rc_dropzone_sub {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+}
+.rc_dropzone_hint {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* ── Info boxes ──────────────────────────────────────────── */
+.rc_info_box {
+    border-radius: 10px;
+    padding: 16px 18px;
+}
+.rc_info_green  { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.rc_info_purple { background: #f5f3ff; border: 1px solid #ddd6fe; }
+.rc_info_blue   { background: #eff6ff; border: 1px solid #bfdbfe; }
+.rc_info_plain  { background: #f9fafb; border: 1px solid #e5e7eb; }
+
+.rc_info_title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 8px;
+}
+.rc_info_list {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.rc_info_list li {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.5;
+}
+.rc_purple_text { color: #5b21b6 !important; }
+.rc_blue_text   { color: #1e40af !important; }
+.rc_blue_text li { color: #1e40af !important; }
+
+/* ── Bulk grid ───────────────────────────────────────────── */
+.rc_bulk_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+.rc_bulk_card {
+    border: 1.5px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 28px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+}
+.rc_bulk_card_title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+.rc_bulk_card_desc {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* ── Link button ─────────────────────────────────────────── */
+.rc_link_btn {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: #7c3aed !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    text-decoration: underline !important;
+}
+.rc_link_btn:hover { color: #5b21b6 !important; }
+
+/* ── Example text ────────────────────────────────────────── */
+.rc_example_text {
+    font-size: 13px;
+    color: #6b7280;
+    padding: 4px 0;
+}
+.rc_example_text strong { color: #374151; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.rc_footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px 20px;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 4px;
+}
+.rc_footer_left {
+    justify-content: flex-start;
+}
+
+.rc_btn_back {
+    background: #fff !important;
+    border: 1.5px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 9px 20px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    cursor: pointer !important;
+    transition: background .15s;
+}
+.rc_btn_back:hover { background: #f9fafb !important; }
+
+.rc_btn_primary {
+    background: linear-gradient(135deg, #f472b6, #ec4899) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 22px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: opacity .15s;
+}
+.rc_btn_primary:hover { opacity: .9; }
+
+.rc_btn_primary.rc_btn_green {
+    background: linear-gradient(135deg, #34d399, #10b981) !important;
+}
+.rc_btn_primary.rc_btn_blue {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6) !important;
+}
+
+.rc_btn_purple {
+    background: #7c3aed !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 18px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: background .15s;
+}
+.rc_btn_purple:hover { background: #6d28d9 !important; }
+
+/* ── Odoo form chrome clean-up ───────────────────────────── */
+.o_form_view .rc_modal_wrapper .o_field_widget {
+    width: 100%;
+}
+.o_form_view .rc_modal_wrapper .o_statusbar_status,
+.o_form_view .rc_modal_wrapper .o_form_statusbar {
+    display: none !important;
+}

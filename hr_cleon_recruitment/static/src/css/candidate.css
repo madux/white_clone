@@ -1,0 +1,100 @@
+/* Container and Header */
+.modal-content {
+  font-family: sans-serif;
+  color: #111827;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #4b5563;
+  margin-top: 0.25rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #4b5563;
+}
+
+/* Grid Layout */
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Base Card Styling */
+.option-card {
+  text-align: left;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background: white;
+}
+
+.option-card:hover {
+  transform: scale(1.01);
+}
+
+.icon {
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.option-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  color: #111827;
+}
+
+.option-desc {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* Themed Variations */
+.pink { background-color: #fdf2f8; }
+.pink:hover { border-color: #fbcfe8; background-color: #fce7f3; }
+.pink .icon { color: #db2777; }
+
+.green { background-color: #f0fdf4; }
+.green:hover { border-color: #bbf7d0; background-color: #dcfce7; }
+.green .icon { color: #16a34a; }
+
+.purple { background-color: #f5f3ff; }
+.purple:hover { border-color: #ddd6fe; background-color: #ede9fe; }
+.purple .icon { color: #7c3aed; }
+
+.blue { background-color: #eff6ff; }
+.blue:hover { border-color: #bfdbfe; background-color: #dbeafe; }
+.blue .icon { color: #2563eb; }
+
+/* Responsive adjustment */
+@media (max-width: 640px) {
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+}

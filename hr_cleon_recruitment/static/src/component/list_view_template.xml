@@ -9,76 +9,96 @@
             </h1>
 
         </xpath> -->
-        <!-- <xpath expr="//table[@t-ref='table']" position="before">
-                <div class="rsb-flex-grow-1 d-none d-md-block"/>
-                <button class="rsb-btn o_cc_btn_pink btn-sm m-4" t-on-click="openCustomWarningForm" type="button">
-                    <i class="rsb-fa fa-book"/> New Incident
+        <xpath expr="//table[@t-ref='table']" position="before">
+            <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right: 10px">
+                <button class="cn-btn-primary-action" id="addCandidateBtn" t-on-click="openCandidateWizard" type="button">
+                    <i class="fa fa-plus"></i>
+                    <span>Add Candidate</span>
                 </button>
-                <button class="rsb-btn o_cc_btn_pink_outline btn-sm" t-on-click="openGuidedTour" type="button">
-                    <i class="rsb-fa fa-magic"/> Guided Tour
-                </button>
-                <div class="rsb-btn-group m-2">
-                    <button class="rsb-btn o_cc_btn_light btn-sm dropdown-toggle" data-bs-toggle="dropdown" type="button">
-                        <i class="rsb-fa fa-user-circle-o"/> View as: <strong>Admin View</strong>
-                    </button>
-                    <ul class="rsb-dropdown-menu dropdown-menu-end">
-                        <li><a class="rsb-dropdown-item" href="#">Admin View</a></li>
-                        <li><a class="rsb-dropdown-item" href="#">Employee View</a></li>
-                        <li><a class="rsb-dropdown-item" href="#">Manager View</a></li>
-                    </ul>
-                </div>
-                <button class="rsb-btn o_cc_btn_light btn-sm m-4" t-on-click="exportCalendar" type="button">
-                    <i class="rsb-fa fa-upload"/> Export
-                </button> 
+            </div>
 
-        </xpath> -->
+            <div class="cn-metrics-grid-ribbon">
+                <div class="cn-metric-card-item" data-metric="total">
+                    <div class="cn-metric-top-row">
+                        <h2 class="cn-metric-value-display">3</h2>
+                        <div class="cn-metric-icon-box bg-purple-sub"><i class="fa fa-users"></i></div>
+                    </div>
+                    <span class="cn-metric-label">Total Candidates</span>
+                </div>
+
+                <div class="cn-metric-card-item" data-metric="shortlisted">
+                    <div class="cn-metric-top-row">
+                        <h2 class="cn-metric-value-display">2</h2>
+                        <div class="cn-metric-icon-box bg-blue-sub"><i class="fa fa-list"></i></div>
+                    </div>
+                    <span class="cn-metric-label">Shortlisted</span>
+                </div>
+
+                <div class="cn-metric-card-item" data-metric="interviewing">
+                    <div class="cn-metric-top-row">
+                        <h2 class="cn-metric-value-display">1</h2>
+                        <div class="cn-metric-icon-box bg-gold-sub"><i class="fa fa-bullhorn"></i></div>
+                    </div>
+                    <span class="cn-metric-label">Interviewing</span>
+                </div>
+
+                <div class="cn-metric-card-item" data-metric="hired">
+                    <div class="cn-metric-top-row">
+                        <h2 class="cn-metric-value-display">0</h2>
+                        <div class="cn-metric-icon-box bg-green-sub"><i class="fa fa-certificate"></i></div>
+                    </div>
+                    <span class="cn-metric-label">Hired Placement</span>
+                </div>
+            </div> 
+
+        </xpath>
         <xpath expr="//div[@t-ref='root']" position="before">
-            <div class="rsb-sidebar">
-                <div class="rsb-sidebar-logo">
-                    <div class="rsb-sidebar-logo-mark">C</div>
-                    <span class="rsb-sidebar-logo-text">CleonHR</span>
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-mark">C</div>
+                    <span class="sidebar-logo-text">CleonHR</span>
                 </div>
 
-                <p class="rsb-sidebar-section-label">Recruiting</p>
+                <p class="sidebar-section-label">Recruiting</p>
                 <ul>
                     <li>
-                        <a class="rsb-sidebar-nav-item" href="#">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="briefcase"></svg>
+                        <a class="sidebar-nav-item" href="#">
+                            <i class="sidebar-nav-icon fa fa-briefcase"></i>
                             Jobs
-                            <span class="rsb-sidebar-badge">6</span>
+                            <span class="sidebar-badge">6</span>
                         </a>
                     </li>
                     <li>
-                        <a class="rsb-sidebar-nav-item active" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="users"></svg>
+                        <a class="sidebar-nav-item active" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-users"></i>
                             Candidates
                         </a>
                     </li>
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="check-circle"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-check-circle"></i>
                             Offers and Hired
                         </a>
                     </li>
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="store"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-store"></i>
                             Vendors
                         </a>
                     </li>
                 </ul>
 
-                <p class="rsb-sidebar-section-label">Workflow</p>
+                <p class="sidebar-section-label">Workflow</p>
                 <ul>
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="clipboard-list"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-clipboard-list"></i>
                             Tasks
                         </a>
                     </li>
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="building-2"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-building-2"></i>
                             Depts
                         </a>
                     </li>
@@ -86,28 +106,28 @@
 
                 <ul style="margin-top: 12px;">
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="layout-grid"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-layout-grid"></i>
                             ATS
                         </a>
                     </li>
                     <li>
-                        <a class="rsb-sidebar-nav-item" t-on-click="openCandidate">
-                            <svg class="rsb-sidebar-nav-icon" data-lucide="settings"></svg>
+                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                            <i class="sidebar-nav-icon fa fa-settings"></i>
                             Settings
                         </a>
                     </li>
                 </ul>
 
                 <div style="flex:1;"></div>
-                <div class="rsb-sidebar-user">
-                    <div class="rsb-sidebar-user-avatar">J</div>
-                    <div class="rsb-sidebar-user-info">
-                        <div class="rsb-sidebar-user-name">John</div>
-                        <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+                <div class="sidebar-user">
+                    <div class="sidebar-user-avatar">J</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name">John</div>
+                        <div class="sidebar-user-email">john.okafor@farmplus.com</div>
                     </div>
                 </div>
-            </div>
+            </aside>
         </xpath>
     </t> 
 </templates>

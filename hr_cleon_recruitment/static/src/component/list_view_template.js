@@ -14,68 +14,18 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         console.log("Again recrutiment tree view Loading the sidebar widget")
     } 
 
-    // async openCustomWarningForm() {
-    //     await this.env.services.action.doAction(
-    //         "hr_warning.action_hr_warning_custom_form",
-    //         {
-    //             target: "current",
-    //         }
-    //     );
-    // }
+    async openCandidateWizard(ev) {
+        ev.preventDefault();
 
-    // async openCustomWarningForm() {
+        await this.env.services.action.doAction(
+            "hr_cleon_recruitment.action_hr_recruitment_add_candidate",
+            {
+                target: "new",
+                name: "Add candidate"
+            }
+        );
+    }
 
-    //     const [lastRecordId, view_ref] =
-    //         await this.orm.call(
-    //             'hr.warning',
-    //             'get_last_draft_record',
-    //             []
-    //         );
-
-    //     if (lastRecordId) {
-
-    //         this.action.doAction({
-    //             type: 'ir.actions.act_window',
-    //             res_model: 'hr.warning',
-    //             res_id: lastRecordId,
-    //             name: 'Incident Report',
-    //             views: [[view_ref, 'form']],
-    //             target: 'new',
-    //         });
-
-    //     } else {
-
-    //         await this.env.services.action.doAction(
-    //             "hr_warning.action_hr_warning_custom_form",
-    //             {
-    //                 target: "new",
-    //             }
-    //         );
-    //     }
-    // }
-
-    // async openCustomHearings() {
-
-    //     const RecordIds =
-    //         await this.orm.call(
-    //             'hr.warning',
-    //             'get_all_hearing_records',
-    //             []
-    //         );
-
-    //     this.action.doAction({
-    //         type: 'ir.actions.act_window',
-    //         name: 'Hearings & Decisions',
-    //         res_model: 'hr.warning',
-    //         view_mode: 'list,form',
-    //         views: [
-    //             [false, 'list'],
-    //             [false, 'form']
-    //         ],
-    //         domain: [['id', 'in', RecordIds]],
-    //         target: 'current',
-    //     });
-    // }
 
     async openCandidate(ev) {
         ev.preventDefault();

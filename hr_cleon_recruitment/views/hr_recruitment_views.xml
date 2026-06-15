@@ -15,15 +15,15 @@
                         <field name="partner_phone" string="PHONE" class="overwrite-field cn-col-phone cn-cell-pinned-left-3"/>
                         <field name="email_from" string="EMAIL" class="overwrite-field cn-col-email cn-cell-pinned-left-4"/>
                         <field name="job_id" string="TARGET ROLE" class="overwrite-field cn-col-role"/>
-                        <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role"/>
+                        <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role" optional="hide"/>
                         <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
-                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
                         <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
-                        <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating"/>
+                        <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating" optional="hide"/>
                         <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
                         <field name="create_date" string="APPLIED DATE" class="overwrite-field cn-col-date"/>
                         <field name="stage_id" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
-                        <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
 
                     <!-- </div>
                 </div> -->
@@ -44,12 +44,12 @@
             }),
             
         ]"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
+        <!-- <field name="help" type="html">
+            <p>
                 No recorded yet.
             </p>
             <p>Create a New record.</p>
-        </field>
+        </field> -->
     </record>
 
     <!-- (0, 0, {

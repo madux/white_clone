@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_recruitment_candidate_form_view" model="ir.ui.view">
+        <field name="name">hr.applicant.profile.form</field>
+        <field name="model">hr.applicant</field>
+        <field name="arch" type="xml">
+            <form string="Candidate" class="o_warning_form">
+                <div class="modal-content">
+                    <!-- Header -->
+                    <div class="modal-header">
+                        <div>
+                        <h2 class="title">Add Candidate</h2>
+                        <p class="subtitle">Choose how you'd like to add candidates</p>
+                        </div>
+                        <!-- <button class="close-btn" aria-label="Close">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                        </button> -->
+                    </div>
+
+                    <!-- Selection Grid -->
+                    <div class="options-grid">
+                        <!-- Manual Form -->
+                        <button class="option-card pink" name="actionOpenForm" type="object">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="M10 9H8"></path><path d="M16 13H8"></path><path d="M16 17H8"></path></svg>
+                        <h3 class="option-title">Complete a Form</h3>
+                        <p class="option-desc">Enter candidate details manually</p>
+                        </button>
+
+                        <!-- Upload Resume -->
+                        <button class="option-card green" name="actionOpenForm" type="object">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+                            <h3 class="option-title">Upload Resume</h3>
+                            <p class="option-desc">AI will extract information</p>
+                        </button>
+
+                        <!-- Bulk Upload -->
+                        <button class="option-card purple" name="actionOpenForm" type="object">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+                            <h3 class="option-title">Bulk Upload</h3>
+                            <p class="option-desc">Import multiple resumes or CSV</p>
+                        </button>
+
+                        <!-- LinkedIn -->
+                        <button class="option-card blue" name="actionOpenForm" type="object">
+                            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                            <h3 class="option-title">LinkedIn URL</h3>
+                            <p class="option-desc">Import from LinkedIn profile</p>
+                        </button>
+                    </div>
+                </div> 
+            </form>
+        </field>
+    </record>
+ 
+</odoo>

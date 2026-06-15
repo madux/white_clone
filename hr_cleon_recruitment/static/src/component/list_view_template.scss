@@ -3,9 +3,9 @@
     --brand-pink-dark: #C4176F;
     --brand-pink-light: #F472B6;
     --brand-pink-faint: #FDF2F8;
-    --text-primary: #000000;
-    --text-secondary: #000000;
-    --text-muted: #000000;
+    --text-primary: #1A1D23;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
     --border-light: #E5E7EB;
     --bg-sidebar: #FFFFFF;
     --radius-pill: 9999px;
@@ -36,9 +36,7 @@ svg { display: block; flex-shrink: 0; }
     overflow-y: auto;
     padding-bottom: 16px;
     min-height: 100vh;
-    // z-index: 99999;
 }
- 
 
 .sidebar-logo {
     display: flex;
