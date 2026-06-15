@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule & Tasks Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="st-schedule-tasks-container">
+    
+    <nav class="st-sub-tab-navigation">
+        <button class="st-sub-tab-btn active" id="tab-schedule-trigger">
+            <i data-lucide="calendar"></i>
+            <span>Schedule & Interviews</span>
+        </button>
+        <button class="st-sub-tab-btn" id="tab-tasks-trigger">
+            <i data-lucide="list-todo"></i>
+            <span>Tasks & Checklist</span>
+        </button>
+    </nav>
+
+    <div class="st-tab-panel-view active" id="panel-schedule">
+        <div class="st-panel-two-column-layout">
+            
+            <aside class="st-sidebar-widgets-col">
+                
+                <div class="st-ui-card st-card-padding">
+                    <div class="st-calendar-strip-header">
+                        <span class="st-month-title">June 2026</span>
+                        <div class="st-strip-arrows">
+                            <button class="st-arrow-btn"><i data-lucide="chevron-left"></i></button>
+                            <button class="st-arrow-btn"><i data-lucide="chevron-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="st-calendar-days-row">
+                        <div class="st-day-col"><span class="st-day-lbl">M</span><span class="st-day-num active">8<span class="st-dot-indicator"></span></span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">T</span><span class="st-day-num">9<span class="st-dot-indicator st-info-dot"></span></span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">W</span><span class="st-day-num">10<span class="st-dot-indicator st-warning-dot"></span></span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">T</span><span class="st-day-num">11</span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">F</span><span class="st-day-num">12</span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">S</span><span class="st-day-num">13</span></div>
+                        <div class="st-day-col"><span class="st-day-lbl">S</span><span class="st-day-num">14</span></div>
+                    </div>
+                    <button class="st-btn-today-strip">Today</button>
+                </div>
+
+                <div class="st-ui-card st-gradient-purple-box">
+                    <h3 class="st-gradient-title">This Week</h3>
+                    <div class="st-gradient-metric-row">
+                        <span>Total Interviews</span>
+                        <strong class="st-metric-val-large">4</strong>
+                    </div>
+                    <div class="st-gradient-metric-row">
+                        <span>Confirmed</span>
+                        <strong>3</strong>
+                    </div>
+                    <div class="st-gradient-metric-row">
+                        <span>Pending</span>
+                        <strong>1</strong>
+                    </div>
+                </div>
+
+                <div class="st-ui-card st-card-padding">
+                    <div class="st-filter-card-header">
+                        <i data-lucide="filter" class="st-filter-icon-title"></i>
+                        <span class="st-filter-label-title">View:</span>
+                    </div>
+                    <div class="st-custom-select-wrapper">
+                        <select class="st-ui-native-select" id="interview-view-selector">
+                            <option value="my">My Interviews</option>
+                            <option value="all">All Team Interviews</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="st-select-chevron-icon"></i>
+                    </div>
+                    <div class="st-accent-footer-block"></div>
+                </div>
+
+            </aside>
+
+            <main class="st-feed-listing-col">
+                
+                <div class="st-feed-header-block">
+                    <div class="st-header-text-group">
+                        <h2 class="st-feed-current-date-title">Monday, June 8, 2026</h2>
+                        <p class="st-feed-count-subtitle">2 interviews scheduled</p>
+                    </div>
+                    <button class="st-btn-primary-action">
+                        <i data-lucide="plus"></i>
+                        <span>Schedule Interview</span>
+                    </button>
+                </div>
+
+                <div class="st-cards-feed-stack" id="interviews-list-container">
+                    
+                    <article class="st-feed-item-card st-transition-hover" data-scope="my">
+                        <div class="st-card-main-split">
+                            <div class="st-profile-avatar-block st-icon-confirmed-bg">
+                                <i data-lucide="video"></i>
+                            </div>
+                            <div class="st-candidate-details-block">
+                                <h3 class="st-candidate-name-title">Adewale Ogunleye</h3>
+                                <p class="st-candidate-position-meta">Senior Backend Engineer</p>
+                                <div class="st-badge-status-pill st-status-confirmed">
+                                    <i data-lucide="check-circle-2"></i>
+                                    <span>Confirmed</span>
+                                </div>
+                                <div class="st-interview-meta-info-grid">
+                                    <div class="st-meta-item-lbl"><i data-lucide="clock"></i><span>Technical Interview</span></div>
+                                    <div class="st-meta-item-lbl"><i data-lucide="video"></i><span>Google Meet</span></div>
+                                </div>
+                                <div class="st-interviewers-line-row">
+                                    <span class="st-row-lbl-text">Interviewers:</span>
+                                    <span class="st-name-tag-pill">Sarah Bello</span>
+                                    <span class="st-name-tag-pill">Chidi Eze</span>
+                                </div>
+                            </div>
+                            <div class="st-time-meta-right-block">
+                                <time class="st-scheduled-exact-time">10:00 AM</time>
+                                <span class="st-duration-meta-lbl">60 min</span>
+                            </div>
+                        </div>
+                        <div class="st-card-action-buttons-footer">
+                            <button class="st-btn-footer-action st-btn-solid-pink">View Details</button>
+                            <button class="st-btn-footer-action st-btn-bordered">Reschedule</button>
+                            <button class="st-btn-footer-action st-btn-bordered">Send Reminder</button>
+                        </div>
+                    </article>
+
+                    <article class="st-feed-item-card st-transition-hover" data-scope="all">
+                        <div class="st-card-main-split">
+                            <div class="st-profile-avatar-block st-icon-pending-bg">
+                                <i data-lucide="video"></i>
+                            </div>
+                            <div class="st-candidate-details-block">
+                                <h3 class="st-candidate-name-title">Fatima Ibrahim</h3>
+                                <p class="st-candidate-position-meta">Product Manager</p>
+                                <div class="st-badge-status-pill st-status-pending">
+                                    <i data-lucide="help-circle"></i>
+                                    <span>Pending</span>
+                                </div>
+                                <div class="st-interview-meta-info-grid">
+                                    <div class="st-meta-item-lbl"><i data-lucide="clock"></i><span>Culture Fit Interview</span></div>
+                                    <div class="st-meta-item-lbl"><i data-lucide="map-pin"></i><span>Office - Conference Room B</span></div>
+                                </div>
+                                <div class="st-interviewers-line-row">
+                                    <span class="st-row-lbl-text">Interviewers:</span>
+                                    <span class="st-name-tag-pill">Emeka Okafor</span>
+                                </div>
+                            </div>
+                            <div class="st-time-meta-right-block">
+                                <time class="st-scheduled-exact-time">2:00 PM</time>
+                                <span class="st-duration-meta-lbl">45 min</span>
+                            </div>
+                        </div>
+                        <div class="st-card-action-buttons-footer">
+                            <button class="st-btn-footer-action st-btn-solid-pink">View Details</button>
+                            <button class="st-btn-footer-action st-btn-bordered">Reschedule</button>
+                            <button class="st-btn-footer-action st-btn-bordered">Send Reminder</button>
+                        </div>
+                    </article>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div class="st-tab-panel-view" id="panel-tasks">
+        <div class="st-panel-two-column-layout">
+            
+            <aside class="st-sidebar-widgets-col">
+                
+                <div class="st-ui-card st-card-padding">
+                    <h3 class="st-sidebar-card-small-title">Task Overview</h3>
+                    
+                    <div class="st-task-status-count-row st-row-red-accent">
+                        <span class="st-status-lbl-group"><i data-lucide="alert-circle"></i>Overdue</span>
+                        <strong class="st-count-output-value" id="overdue-counter-badge">7</strong>
+                    </div>
+                    <div class="st-task-status-count-row st-row-orange-accent">
+                        <span class="st-status-lbl-group"><i data-lucide="clock"></i>Due Today</span>
+                        <strong class="st-count-output-value">0</strong>
+                    </div>
+                    <div class="st-task-status-count-row st-row-blue-accent">
+                        <span class="st-status-lbl-group"><i data-lucide="calendar"></i>Upcoming</span>
+                        <strong class="st-count-output-value">0</strong>
+                    </div>
+                    <div class="st-task-status-count-row st-row-green-accent">
+                        <span class="st-status-lbl-group"><i data-lucide="check-circle-2"></i>Completed</span>
+                        <strong class="st-count-output-value" id="completed-counter-badge">2</strong>
+                    </div>
+                </div>
+
+                <div class="st-ui-card st-gradient-purple-box">
+                    <h3 class="st-gradient-title">Progress</h3>
+                    <div class="st-progress-percentage-line">
+                        <span>Completion Rate</span>
+                        <strong class="st-progress-bold-pct" id="progress-percentage-text">20%</strong>
+                    </div>
+                    <div class="st-progress-track-bg">
+                        <div class="st-progress-fill-bar" id="progress-fill-element" style="width: 20%;"></div>
+                    </div>
+                    <div class="st-progress-footer-total-box">
+                        <span class="st-total-lbl">Total Tasks</span>
+                        <div class="st-total-count-num" id="total-tasks-counter-text">10</div>
+                    </div>
+                </div>
+
+                <div class="st-ui-card st-card-padding">
+                    <div class="st-filter-card-header">
+                        <i data-lucide="filter" class="st-filter-icon-title"></i>
+                        <span class="st-filter-label-title">View:</span>
+                    </div>
+                    <div class="st-custom-select-wrapper">
+                        <select class="st-ui-native-select" id="task-scope-toggle-dropdown">
+                            <option value="my">My Tasks</option>
+                            <option value="all" selected>All Team Tasks</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="st-select-chevron-icon"></i>
+                    </div>
+                    <div class="st-accent-footer-block"></div>
+                </div>
+
+            </aside>
+
+            <main class="st-feed-listing-col">
+                
+                <div class="st-feed-header-block">
+                    <div class="st-header-text-group">
+                        <h2 class="st-feed-current-date-title" id="tasks-scope-heading-title">My Tasks</h2>
+                        <p class="st-feed-count-subtitle" id="tasks-summary-subline-text">8 pending &bull; 2 completed</p>
+                    </div>
+                    <button class="st-btn-primary-action">
+                        <i data-lucide="plus"></i>
+                        <span>Create Task</span>
+                    </button>
+                </div>
+
+                <section class="st-overdue-section-container-box">
+                    <header class="st-overdue-section-header">
+                        <i data-lucide="alert-circle"></i>
+                        <h3 id="overdue-section-title-banner">Overdue Tasks (7)</h3>
+                    </header>
+
+                    <div class="st-tasks-rows-stack" id="tasks-rows-container">
+                        
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="1" data-owner="all">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Complete quarterly performance reviews</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">478d overdue</span>
+                                <time class="st-target-calendar-date">2/15/2025</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="2" data-owner="my">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Update employee handbook</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">473d overdue</span>
+                                <time class="st-target-calendar-date">2/20/2025</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="3" data-owner="all">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Review CVs for Senior Software Engineer</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">80d overdue</span>
+                                <time class="st-target-calendar-date">3/20/2026</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="4" data-owner="my">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Schedule interviews for Product Manager role</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">73d overdue</span>
+                                <time class="st-target-calendar-date">3/27/2026</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="5" data-owner="all">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Collect scorecards from interviewers</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">71d overdue</span>
+                                <time class="st-target-calendar-date">3/29/2026</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="6" data-owner="my">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Send offer letter to finalist candidate</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">67d overdue</span>
+                                <time class="st-target-calendar-date">4/2/2026</time>
+                            </div>
+                        </div>
+
+                        <div class="st-task-row-card st-item-overdue st-transition-hover" data-task-id="7" data-owner="all">
+                            <label class="st-custom-checkbox-container">
+                                <input type="checkbox" class="st-task-native-checkbox">
+                                <span class="st-checkbox-checkmark-box"></span>
+                            </label>
+                            <div class="st-task-content-details">
+                                <h4 class="st-task-headline-text">Post job to Jobberman and LinkedIn</h4>
+                            </div>
+                            <div class="st-task-deadline-meta-right">
+                                <span class="st-days-overdue-tag">72d overdue</span>
+                                <time class="st-target-calendar-date">3/28/2026</time>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,1147 @@
+/* ==========================================================================
+   DESIGN VARIABLES & SPECIFICATION SYSTEM TOKENS
+   ========================================================================== */
+:root {
+    --bg-workspace-light: #F8F9FA;
+    --surface-pure-white: #FFFFFF;
+    --border-neutral-fine: #E2E8F0;
+    --border-neutral-darker: #CBD5E1;
+    
+    /* Font Color Tokens */
+    --text-slate-heavy: #0F172A;
+    --text-slate-mid: #334155;
+    --text-slate-muted: #64748B;
+    
+    /* Branding Colors & Subtle Accent Variants */
+    --orchid-magenta: #D12975;
+    --orchid-magenta-sub: #FDF2F7;
+    --blue-accent: #2563EB;
+    --blue-accent-sub: #EFF6FF;
+    --gold-accent: #D97706;
+    --gold-accent-sub: #FEF3C7;
+    --green-accent: #16A34A;
+    --green-accent-sub: #DCFCE7;
+    --slate-accent-sub: #F1F5F9;
+
+    /* Shadow Scaling Systems */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-toast: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================================
+   RESET & SYSTEM BASE RULES
+   ========================================================================== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'DM Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: var(--bg-workspace-light);
+    color: var(--text-slate-heavy);
+    padding: 32px;
+}
+
+/* Base Wrapper Grid */
+.cn-candidates-panel-wrapper {
+    max-width: 1440px;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* ==========================================================================
+   TOP METRICS BANNER LAYER
+   ========================================================================== */
+.cn-metrics-grid-ribbon {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.cn-metric-card-item {
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-fine);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cn-metric-card-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-neutral-darker);
+}
+
+.cn-metric-card-item.active-total {
+    border: 2px solid var(--orchid-magenta);
+    box-shadow: var(--shadow-md);
+}
+
+.cn-metric-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.cn-metric-label {
+    font-size: 14px;
+    color: var(--text-slate-muted);
+    font-weight: 500;
+}
+
+.cn-metric-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-metric-icon-box svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Dynamic Accent Token Mapping classes */
+.bg-purple-sub { background-color: var(--orchid-magenta-sub); color: var(--orchid-magenta); }
+.bg-blue-sub { background-color: var(--blue-accent-sub); color: var(--blue-accent); }
+.bg-gold-sub { background-color: var(--gold-accent-sub); color: var(--gold-accent); }
+.bg-green-sub { background-color: var(--green-accent-sub); color: var(--green-accent); }
+
+.cn-metric-value-display {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-slate-heavy);
+    margin-bottom: 8px;
+}
+
+.cn-metric-trend-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.cn-metric-trend-row.trend-up { color: var(--green-accent); }
+.cn-metric-trend-row.trend-neutral { color: var(--text-slate-muted); }
+.cn-metric-trend-row svg { width: 14px; height: 14px; }
+.cn-metric-trend-row span { color: var(--text-slate-muted); }
+
+/* ==========================================================================
+   TOOLBAR FILTER & TOGGLE CORE CONTROLS
+   ========================================================================== */
+.cn-dashboard-action-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--surface-pure-white);
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border-neutral-fine);
+    box-shadow: var(--shadow-sm);
+}
+
+.cn-toolbar-left-side, .cn-toolbar-right-side {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Custom Search Field */
+.cn-search-input-container {
+    position: relative;
+    width: 320px;
+}
+
+.cn-search-icon-fixed {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    color: var(--text-slate-muted);
+}
+
+#candidateSearchInput {
+    width: 100%;
+    padding: 10px 14px 10px 40px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-neutral-fine);
+    background-color: var(--bg-workspace-light);
+    color: var(--text-slate-heavy);
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+#candidateSearchInput:focus {
+    border-color: var(--border-neutral-darker);
+    background-color: var(--surface-pure-white);
+}
+
+/* Button UI Definitions */
+.cn-btn-primary-action, .cn-btn-secondary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+    white-space: nowrap;
+}
+
+.cn-btn-primary-action {
+    background-color: var(--orchid-magenta);
+    color: var(--surface-pure-white);
+}
+
+.cn-btn-primary-action:hover {
+    background-color: #be185d;
+}
+
+.cn-btn-secondary-action {
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-fine);
+    color: var(--text-slate-mid);
+}
+
+.cn-btn-secondary-action:hover {
+    background-color: var(--bg-workspace-light);
+    border-color: var(--border-neutral-darker);
+}
+
+.cn-btn-secondary-action.active-filtering {
+    background-color: var(--orchid-magenta-sub);
+    border-color: var(--orchid-magenta);
+    color: var(--orchid-magenta);
+}
+
+.cn-chevron-rotator {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+}
+
+.cn-btn-secondary-action.active-filtering .cn-chevron-rotator {
+    transform: rotate(180deg);
+}
+
+.cn-btn-primary-action svg, .cn-btn-secondary-action svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Segmented Toggle Control Layout */
+.cn-view-mode-pill-box {
+    display: flex;
+    background-color: var(--slate-accent-sub);
+    padding: 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border-neutral-fine);
+}
+
+.cn-view-toggle-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-slate-muted);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cn-view-toggle-pill svg {
+    width: 14px;
+    height: 14px;
+}
+
+.cn-view-toggle-pill:hover {
+    color: var(--text-slate-heavy);
+}
+
+.cn-view-toggle-pill.active {
+    background-color: var(--surface-pure-white);
+    color: var(--orchid-magenta);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ==========================================================================
+   SLIDE DOWN FILTER DRAWER MODIFIER
+   ========================================================================== */
+.cn-filter-sliding-dropdown-drawer {
+    display: none;
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-fine);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    animation: slideDownFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownFade {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.cn-filter-sliding-dropdown-drawer.open {
+    display: block;
+}
+
+.cn-drawer-inputs-form-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.cn-input-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.cn-input-field-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-slate-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.cn-input-field-group select {
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border-neutral-fine);
+    outline: none;
+    background-color: var(--surface-pure-white);
+    color: var(--text-slate-heavy);
+}
+
+.cn-drawer-action-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    border-top: 1px solid var(--border-neutral-fine);
+    padding-top: 16px;
+}
+
+.cn-btn-primary-action.size-sm, .cn-btn-secondary-action.size-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+/* ==========================================================================
+   VIEW VIEWPORTS ARCHITECTURE
+   ========================================================================== */
+.cn-master-dynamic-view-viewport {
+    width: 100%;
+}
+
+.cn-view-content-pane {
+    display: none;
+}
+
+.cn-view-content-pane.active {
+    display: block;
+}
+
+/* ==========================================================================
+   VIEW 1: COMPLEX HYBRID STICKY/PINNED DATATABLE MATRIX
+   ========================================================================== */
+.cn-data-table-scroll-outer-frame {
+    width: 100%;
+    overflow-x: auto;
+    background-color: var(--surface-pure-white);
+    border-radius: 12px;
+    border: 1px solid var(--border-neutral-fine);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Ensure clean layer stacking on cell scroll translations */
+.cn-pinned-data-table-matrix {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+}
+
+.cn-pinned-data-table-matrix th, 
+.cn-pinned-data-table-matrix td {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-neutral-fine);
+    white-space: nowrap;
+    background-color: var(--surface-pure-white);
+}
+
+.cn-pinned-data-table-matrix th {
+    background-color: #F8FAFC;
+    color: var(--text-slate-muted);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    user-select: none;
+}
+
+/* --- Core Sticky Layout Specs ---
+   Pinned columns positions calculated sequentially */
+.cn-cell-pinned-left-1 {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+}
+.cn-cell-pinned-left-2 {
+    position: sticky;
+    left: 54px; /* Width of check cell */
+    z-index: 10;
+}
+.cn-cell-pinned-left-3 {
+    position: sticky;
+    left: 254px; /* Width of check + candidate profile cell */
+    z-index: 10;
+}
+.cn-cell-pinned-left-4 {
+    position: sticky;
+    left: 414px; /* Previous total accumulated lengths */
+    z-index: 10;
+    border-right: 2px solid var(--border-neutral-fine) !important;
+}
+.cn-cell-pinned-right-end {
+    position: sticky;
+    right: 0;
+    z-index: 10;
+    border-left: 1px solid var(--border-neutral-fine) !important;
+    text-align: center;
+}
+
+/* Darker header bounds */
+.cn-pinned-data-table-matrix thead th.cn-cell-pinned-left-4 {
+    border-right: 2px solid var(--border-neutral-darker) !important;
+}
+
+/* Box shadowing effects dynamically emulated during scroll overlays */
+.cn-pinned-data-table-matrix td.cn-cell-pinned-left-4 {
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,0.08);
+}
+.cn-pinned-data-table-matrix td.cn-cell-pinned-right-end,
+.cn-pinned-data-table-matrix th.cn-cell-pinned-right-end {
+    background-color: #F8FAFC;
+}
+.cn-pinned-data-table-matrix tbody td.cn-cell-pinned-right-end {
+    background-color: var(--surface-pure-white);
+    box-shadow: -4px 0 8px -4px rgba(0,0,0,0.08);
+}
+
+/* Table Row Active Selection Coloring state rules */
+.cn-pinned-data-table-matrix tbody tr:hover td {
+    background-color: #F8FAFC;
+}
+.cn-pinned-data-table-matrix tbody tr.row-selected td {
+    background-color: var(--orchid-magenta-sub);
+}
+
+/* Cell Elements Architecture */
+.cn-candidate-meta-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cn-avatar-circle-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--orchid-magenta);
+    color: var(--surface-pure-white);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cn-identity-text-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.cn-candidate-click-trigger {
+    font-weight: 700;
+    color: var(--text-slate-heavy);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.cn-candidate-click-trigger:hover {
+    color: var(--orchid-magenta);
+    text-decoration: underline;
+}
+
+.cn-cell-subtext {
+    font-size: 12px;
+    color: var(--text-slate-muted);
+}
+
+/* Rating Metric Render layout */
+.cn-star-rating-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--gold-accent);
+}
+
+.cn-star-rating-row svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+}
+
+.cn-star-rating-row svg.star-empty {
+    color: var(--border-neutral-darker);
+    fill: none;
+}
+
+/* Status Badge System Architecture components */
+.cn-status-badge-indicator-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    text-transform: capitalize;
+}
+
+.cn-status-badge-indicator-pill.applied { background-color: var(--slate-accent-sub); color: var(--text-slate-heavy); }
+.cn-status-badge-indicator-pill.shortlisted { background-color: var(--blue-accent-sub); color: var(--blue-accent); }
+.cn-status-badge-indicator-pill.interviewing { background-color: var(--gold-accent-sub); color: var(--gold-accent); }
+.cn-status-badge-indicator-pill.hired { background-color: var(--green-accent-sub); color: var(--green-accent); }
+.cn-status-badge-indicator-pill.rejected { background-color: #FEE2E2; color: #EF4444; }
+
+.cn-row-options-dropdown-trigger-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-slate-muted);
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.cn-row-options-dropdown-trigger-btn:hover {
+    color: var(--text-slate-heavy);
+    background-color: var(--slate-accent-sub);
+}
+
+/* Checkbox Custom Theme overrides */
+.cn-cell-checkbox-container {
+    display: block;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cn-cell-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.cn-custom-checkbox-checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-darker);
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.cn-cell-checkbox-container:hover input ~ .cn-custom-checkbox-checkmark {
+    border-color: var(--orchid-magenta);
+}
+
+.cn-cell-checkbox-container input:checked ~ .cn-custom-checkbox-checkmark {
+    background-color: var(--orchid-magenta);
+    border-color: var(--orchid-magenta);
+}
+
+.cn-custom-checkbox-checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid var(--surface-pure-white);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.cn-cell-checkbox-container input:checked ~ .cn-custom-checkbox-checkmark:after {
+    display: block;
+}
+
+/* ==========================================================================
+   VIEW 2: GRID CARDS GRAPHICAL MESH
+   ========================================================================== */
+.cn-cards-flex-grid-system {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.cn-grid-profile-card-node {
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-fine);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.cn-grid-profile-card-node:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--orchid-magenta);
+}
+
+.cn-card-absolute-checkbox-wrapper {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+}
+
+.cn-grid-avatar-circle-md {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: var(--orchid-magenta-sub);
+    color: var(--orchid-magenta);
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.cn-grid-card-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-slate-heavy);
+    margin-bottom: 4px;
+}
+
+.cn-grid-card-role-lbl {
+    font-size: 13px;
+    color: var(--text-slate-muted);
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.cn-grid-card-metrics-divider-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-neutral-fine);
+    border-bottom: 1px solid var(--border-neutral-fine);
+    margin-bottom: 14px;
+}
+
+.cn-grid-meta-metric-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.cn-grid-meta-metric-cell .val {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-slate-mid);
+}
+
+.cn-grid-meta-metric-cell .lbl {
+    font-size: 11px;
+    color: var(--text-slate-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.cn-grid-card-footer-flex-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ==========================================================================
+   VIEW 3: WORKFLOW PIPELINE KANBAN VIEW
+   ========================================================================== */
+.cn-pipeline-swimlane-scroll-container {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    align-items: flex-start;
+}
+
+.cn-pipeline-column {
+    flex: 1;
+    min-width: 300px;
+    max-width: 360px;
+    background-color: #EDF2F7;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 720px;
+}
+
+.cn-column-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px;
+}
+
+.cn-col-title-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cn-dot-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.cn-dot-indicator.bg-slate { background-color: var(--text-slate-muted); }
+.cn-dot-indicator.bg-blue { background-color: var(--blue-accent); }
+.cn-dot-indicator.bg-gold { background-color: var(--gold-accent); }
+.cn-dot-indicator.bg-green { background-color: var(--green-accent); }
+
+.cn-col-title-flex h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-slate-heavy);
+}
+
+.cn-col-counter-badge {
+    background-color: var(--surface-pure-white);
+    color: var(--text-slate-heavy);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border-neutral-fine);
+}
+
+.cn-pipeline-cards-drop-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    min-height: 150px;
+}
+
+/* Kanban Cards Structural Sub-Element rules */
+.cn-pipeline-card-component {
+    background-color: var(--surface-pure-white);
+    border: 1px solid var(--border-neutral-fine);
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: var(--shadow-sm);
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cn-pipeline-card-component:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-neutral-darker);
+}
+
+.cn-pipeline-card-component:active {
+    cursor: grabbing;
+}
+
+.cn-pipe-card-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.cn-pipe-card-name-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-slate-heavy);
+}
+
+.cn-pipe-card-role-sub {
+    font-size: 12px;
+    color: var(--text-slate-muted);
+}
+
+.cn-pipe-card-bottom-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border-neutral-fine);
+    padding-top: 8px;
+    font-size: 12px;
+    color: var(--text-slate-muted);
+}
+
+/* ==========================================================================
+   GLOBAL BULK ACTION TOAST COMPONENT OVERLAY
+   ========================================================================== */
+.cn-bulk-action-toast-panel {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--text-slate-heavy);
+    color: var(--surface-pure-white);
+    padding: 14px 24px;
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    box-shadow: var(--shadow-toast);
+    z-index: 100;
+    transition: bottom 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+.cn-bulk-action-toast-panel.visible {
+    bottom: 32px;
+}
+
+.cn-toast-left-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-right: 1px solid #334155;
+    padding-right: 16px;
+}
+
+.cn-selection-badge {
+    background-color: var(--orchid-magenta);
+    color: var(--surface-pure-white);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.cn-selection-lbl {
+    font-size: 13px;
+    font-weight: 500;
+    color: #94A3B8;
+}
+
+.cn-toast-action-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cn-btn-toast {
+    background: none;
+    border: none;
+    color: var(--surface-pure-white);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+.cn-btn-toast svg { width: 14px; height: 14px; }
+
+.cn-btn-toast.btn-active-blue:hover { background-color: var(--blue-accent); }
+.cn-btn-toast.btn-warning-gold:hover { background-color: var(--gold-accent); }
+.cn-btn-toast.btn-standard-border { border: 1px solid #334155; }
+.cn-btn-toast.btn-standard-border:hover { background-color: #334155; }
+.cn-btn-toast.btn-critical-danger:hover { background-color: #EF4444; }
+
+.cn-toast-close-trigger {
+    background: none;
+    border: none;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 4px;
+}
+.cn-toast-close-trigger:hover { color: var(--surface-pure-white); }
+
+/* ==========================================================================
+   VIEW INTERACTION MODAL VIEW SURFACE
+   ========================================================================== */
+.cn-dashboard-modal-backdrop-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-dashboard-modal-backdrop-layer.open {
+    display: flex;
+}
+
+.cn-modal-surface-container-window {
+    background-color: var(--surface-pure-white);
+    width: 100%;
+    max-width: 760px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    animation: modalScaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    overflow: hidden;
+}
+
+@keyframes modalScaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.cn-modal-header-actions-row {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border-neutral-fine);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #F8FAFC;
+}
+
+.cn-modal-badge-wrapper-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cn-badge-modal-id-context {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-slate-muted);
+}
+
+.cn-modal-window-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cn-modal-action-btn-iconic, .cn-modal-close-window-trigger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    color: var(--text-slate-muted);
+}
+.cn-modal-action-btn-iconic:hover, .cn-modal-close-window-trigger:hover {
+    background-color: var(--border-neutral-fine);
+    color: var(--text-slate-heavy);
+}
+.cn-modal-action-btn-iconic svg, .cn-modal-close-window-trigger svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Modal Identity Layout Banner */
+.cn-modal-profile-core-hero-section {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid var(--border-neutral-fine);
+}
+
+.cn-modal-avatar-big-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background-color: var(--orchid-magenta);
+    color: var(--surface-pure-white);
+    font-size: 24px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cn-modal-hero-identity-text-stack h1 {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-slate-heavy);
+    margin-bottom: 2px;
+}
+
+.cn-modal-hero-identity-text-stack p {
+    font-size: 14px;
+    color: var(--text-slate-muted);
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.cn-modal-rating-row-flex {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--gold-accent);
+}
+.cn-modal-rating-row-flex svg { width: 14px; height: 14px; fill: currentColor; }
+.cn-modal-rating-row-flex svg.star-empty { color: var(--border-neutral-darker); fill: none; }
+
+/* Modal Body split work space panels */
+.cn-modal-body-layout-tab-grid {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+}
+
+.cn-modal-left-details-column {
+    border-right: 1px solid var(--border-neutral-fine);
+    padding: 24px;
+    background-color: #F8FAFC;
+}
+
+.cn-modal-section-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-slate-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 14px;
+}
+
+.cn-contact-cards-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cn-contact-info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.cn-contact-info-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-slate-muted);
+    margin-top: 2px;
+}
+
+.cn-contact-lbl-stack {
+    display: flex;
+    flex-direction: column;
+}
+
+.cn-lbl-light { font-size: 11px; color: var(--text-slate-muted); }
+.cn-lbl-bold { font-size: 13px; font-weight: 700; color: var(--text-slate-heavy); word-break: break-all; }
+
+.cn-modal-right-workspace-column {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.cn-modal-prose-text-paragraph {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-slate-mid);
+    margin-bottom: 16px;
+}
+
+.cn-modal-tags-interactive-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: auto;
+    padding-bottom: 24px;
+}
+
+.cn-tag-pill-node {
+    background-color: var(--slate-accent-sub);
+    color: var(--text-slate-mid);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.cn-modal-action-footer-row {
+    border-top: 1px solid var(--border-neutral-fine);
+    padding-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cn-modal-footer-primary-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cn-btn-secondary-action.btn-critical-danger-border {
+    color: #EF4444;
+}
+.cn-btn-secondary-action.btn-critical-danger-border:hover {
+    background-color: #FEE2E2;
+    border-color: #EF4444;
+}

@@ -1,0 +1,273 @@
+<div class="modal-backdrop" id="candidateModalBackdrop">
+
+    <div class="modal-card active" id="add-candidate-parent-modal">
+        <button class="modal-close-btn" aria-label="Close modal" data-action="close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="modal-header-block">
+            <h2 class="modal-title">Add Candidate</h2>
+            <p class="modal-subtitle">Choose how you'd like to add candidates</p>
+        </div>
+
+        <div class="parent-grid">
+            <div class="selection-card form-variant" data-target="complete-a-form-modal">
+                <div class="card-icon-wrapper">
+                    <i data-lucide="file-text"></i>
+                </div>
+                <h3 class="card-title">Complete a Form</h3>
+                <p class="card-desc">Enter candidate details manually</p>
+            </div>
+
+            <div class="selection-card resume-variant" data-target="upload-a-document-modal">
+                <div class="card-icon-wrapper">
+                    <i data-lucide="upload-cloud"></i>
+                </div>
+                <h3 class="card-title">Upload Resume</h3>
+                <p class="card-desc">AI will extract information</p>
+            </div>
+
+            <div class="selection-card bulk-variant" data-target="bulk-upload-modal">
+                <div class="card-icon-wrapper">
+                    <i data-lucide="upload"></i>
+                </div>
+                <h3 class="card-title">Bulk Upload</h3>
+                <p class="card-desc">Import multiple resumes or CSV</p>
+            </div>
+
+            <div class="selection-card linkedin-variant" data-target="import-from-linkedin-modal">
+                <div class="card-icon-wrapper">
+                    <i data-lucide="link-2"></i>
+                </div>
+                <h3 class="card-title">LinkedIn URL</h3>
+                <p class="card-desc">Import from LinkedIn profile</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-card" id="complete-a-form-modal">
+        <button class="modal-close-btn" aria-label="Close modal" data-action="close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="modal-header-inline">
+            <div class="header-icon-badge form-badge">
+                <i data-lucide="file-text"></i>
+            </div>
+            <div class="header-text-group">
+                <h2 class="modal-title">Manual Entry</h2>
+                <p class="modal-subtitle">Enter candidate details manually</p>
+            </div>
+        </div>
+
+        <div class="modal-scroll-content">
+            <form id="manualEntryForm" onsubmit="event.preventDefault();">
+                <div class="form-section-title">Basic Information</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name *</label>
+                        <input type="text" class="form-control" placeholder="John" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Name *</label>
+                        <input type="text" class="form-control" placeholder="Doe" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email *</label>
+                    <input type="email" class="form-control" placeholder="john.doe@example.com" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    <input type="tel" class="form-control" placeholder="+1 (555) 123-4567" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" class="form-control" placeholder="San Francisco, CA" />
+                </div>
+
+                <div class="form-section-title">Professional Information</div>
+                <div class="form-group">
+                    <label class="form-label">Current/Desired Position</label>
+                    <input type="text" class="form-control" placeholder="e.g. Senior Software Engineer" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Years of Experience</label>
+                    <input type="number" class="form-control" value="0" min="0" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Current Salary (Optional)</label>
+                        <input type="number" class="form-control" value="0" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expected Salary (Optional)</label>
+                        <input type="number" class="form-control" value="0" min="0" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Application (Optional)</label>
+                    <div class="select-wrapper">
+                        <select class="form-control select-control">
+                            <option value="" disabled selected>Select a job (optional)</option>
+                            <option value="sr-eng">Senior Software Engineer</option>
+                            <option value="prod-mgr">Product Manager</option>
+                            <option value="qa-lead">QA Lead</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary back-to-parent">Back</button>
+            <button type="submit" form="manualEntryForm" class="btn btn-primary form-submit-btn">Add Candidate</button>
+        </div>
+    </div>
+
+    <div class="modal-card" id="upload-a-document-modal">
+        <button class="modal-close-btn" aria-label="Close modal" data-action="close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="modal-header-inline">
+            <div class="header-icon-badge resume-badge">
+                <i data-lucide="upload-cloud"></i>
+            </div>
+            <div class="header-text-group">
+                <h2 class="modal-title">Upload Resume</h2>
+                <p class="modal-subtitle">AI will extract candidate information</p>
+            </div>
+        </div>
+
+        <div class="modal-scroll-content">
+            <div class="dropzone-area" id="resumeDropzone">
+                <input type="file" id="resumeFileInput" accept=".pdf,.doc,.docx,.txt" hidden />
+                <i data-lucide="upload" class="dropzone-icon"></i>
+                <p class="dropzone-main-text"><strong>Drop your resume here</strong></p>
+                <p class="dropzone-sub-text">or click to browse files</p>
+                <p class="dropzone-limits">Supports PDF, DOC, DOCX, TXT up to 10MB</p>
+            </div>
+
+            <div class="info-callout-box info-green">
+                <h4 class="callout-heading">How it works:</h4>
+                <ul class="callout-list">
+                    <li>Upload a resume in PDF, DOC, DOCX, or TXT format</li>
+                    <li>Our AI extracts name, email, phone, experience, and skills</li>
+                    <li>Review and edit the information before adding</li>
+                    <li>Candidate will be added to your pipeline</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary back-to-parent">Back</button>
+            <button type="button" class="btn btn-primary resume-submit-btn" disabled>Add Candidate</button>
+        </div>
+    </div>
+
+    <div class="modal-card" id="bulk-upload-modal">
+        <button class="modal-close-btn" aria-label="Close modal" data-action="close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="modal-header-inline">
+            <div class="header-icon-badge bulk-badge">
+                <i data-lucide="upload"></i>
+            </div>
+            <div class="header-text-group">
+                <h2 class="modal-title">Bulk Upload</h2>
+                <p class="modal-subtitle">Import multiple candidates at once</p>
+            </div>
+        </div>
+
+        <div class="modal-scroll-content">
+            <div class="split-dropzone-grid">
+                <div class="mini-dropzone" onclick="document.getElementById('csvFileInput').click()">
+                    <input type="file" id="csvFileInput" accept=".csv" hidden />
+                    <i data-lucide="upload" class="mini-dz-icon"></i>
+                    <h4 class="mini-dz-title">Upload CSV</h4>
+                    <p class="mini-dz-desc">Upload a CSV file with candidate data</p>
+                    <button type="button" class="mini-dz-btn bulk-theme-btn">Choose CSV File</button>
+                </div>
+                <div class="mini-dropzone" onclick="document.getElementById('bulkResumesInput').click()">
+                    <input type="file" id="bulkResumesInput" multiple accept=".pdf,.doc,.docx,.txt" hidden />
+                    <i data-lucide="upload" class="mini-dz-icon"></i>
+                    <h4 class="mini-dz-title">Upload Resumes</h4>
+                    <p class="mini-dz-desc">Upload multiple resume files</p>
+                    <button type="button" class="mini-dz-btn bulk-theme-btn">Choose Files</button>
+                </div>
+            </div>
+
+            <div class="info-callout-box info-purple text-center-box">
+                <h4 class="callout-heading font-semibold-heading text-purple-700">Need a template?</h4>
+                <p class="callout-desc text-purple-600">Download our CSV template to see the required format</p>
+                <button type="button" class="download-template-link" id="downloadTemplateBtn">Download CSV Template</button>
+            </div>
+
+            <div class="csv-specs-card">
+                <h4 class="specs-title">CSV Format:</h4>
+                <ul class="specs-list">
+                    <li><strong>Required columns:</strong> firstName, lastName, email</li>
+                    <li><strong>Optional:</strong> phone, location, position, experience</li>
+                    <li>Maximum 100 candidates per upload</li>
+                    <li>File size limit: 5MB</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal-footer justify-start">
+            <button type="button" class="btn btn-secondary back-to-parent">Back</button>
+        </div>
+    </div>
+
+    <div class="modal-card" id="import-from-linkedin-modal">
+        <button class="modal-close-btn" aria-label="Close modal" data-action="close">
+            <i data-lucide="x"></i>
+        </button>
+        <div class="modal-header-inline">
+            <div class="header-icon-badge linkedin-badge">
+                <i data-lucide="link-2"></i>
+            </div>
+            <div class="header-text-group">
+                <h2 class="modal-title">Import from LinkedIn</h2>
+                <p class="modal-subtitle">Fetch candidate data from LinkedIn profile</p>
+            </div>
+        </div>
+
+        <div class="modal-scroll-content">
+            <div class="form-group">
+                <label class="form-label label-bold">LinkedIn Profile URL</label>
+                <input type="url" class="form-control" id="linkedinUrlInput" placeholder="https://www.linkedin.com/in/username" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label label-bold">Apply to Job (Optional)</label>
+                <div class="select-wrapper">
+                    <select class="form-control select-control">
+                        <option value="" disabled selected>Select a job position</option>
+                        <option value="sr-eng">Senior Software Engineer</option>
+                        <option value="prod-mgr">Product Manager</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="info-callout-box info-blue">
+                <h4 class="callout-heading text-blue-800">How it works:</h4>
+                <ul class="callout-list text-blue-700">
+                    <li>Paste the LinkedIn profile URL above</li>
+                    <li>We'll fetch public profile information</li>
+                    <li>Review and edit the imported data</li>
+                    <li>Candidate will be added to your pipeline</li>
+                </ul>
+            </div>
+
+            <div class="example-container">
+                <span class="example-label">Example:</span>
+                <span class="example-value">https://www.linkedin.com/in/john-doe-12345</span>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary back-to-parent">Back</button>
+            <button type="button" class="btn btn-primary linkedin-submit-btn">Import from LinkedIn</button>
+        </div>
+    </div>
+
+</div>
