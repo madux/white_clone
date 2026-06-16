@@ -3,105 +3,140 @@
 import { registry } from "@web/core/registry";
 import { listView } from "@web/views/list/list_view";
 import { ListRenderer } from "@web/views/list/list_renderer";
-console.log("Recruitment tree view Loading the sidebar widget")
+import { useService } from "@web/core/utils/hooks";
+import { onMounted, onWillUpdateProps } from "@odoo/owl";
 
 export class CustomRecruitmentListRenderer extends ListRenderer {
+
     setup() {
         super.setup();
-        this.orm = this.env.services.orm;
-        this.action = this.env.services.action;
-        this.userService = this.env.services.user;
-        console.log("Again recrutiment tree view Loading the sidebar widget")
-    } 
+        this.orm           = useService("orm");
+        this.actionService = useService("action");
+        this.userService   = useService("user");
+
+        // Debug — runs once on mount so you can inspect in the console
+        onMounted(() => {
+            console.group("[Recruitment] DEBUG — action resolution");
+            console.log("env.config              →", this.env.config);
+            console.log("env.config.action       →", this.env.config?.action);
+            console.log("env.config.actionId     →", this.env.config?.actionId);
+            console.log("env.config.actionType   →", this.env.config?.actionType);
+            console.log("currentController       →", this.actionService.currentController);
+            console.log("currentController.action→", this.actionService.currentController?.action);
+            console.log("props.list              →", this.props.list);
+            console.log("props.list.resModel     →", this.props.list?.resModel);
+            console.log("_resolveActionName()    →", this._resolveCurrentActionName());
+            console.groupEnd();
+        });
+
+        // Also re-log when props change (navigation between actions)
+        onWillUpdateProps((nextProps) => {
+            console.group("[Recruitment] onWillUpdateProps — action resolution");
+            console.log("currentController.action→", this.actionService.currentController?.action);
+            console.log("env.config.action       →", this.env.config?.action);
+            console.groupEnd();
+        });
+    }
+
+    // ── Robust fallback chain ───────────────────────────────────────────────
+    // Try every known location across Odoo 16/17 until we get a name.
+
+    _resolveAction() {
+        return (
+            this.env.config?.action ||                          // Odoo 17 primary
+            this.actionService.currentController?.action ||    // Odoo 16 / fallback
+            {}
+        );
+    }
+
+    _resolveCurrentModel() {
+        return (
+            this._resolveAction().res_model ||
+            this.props?.list?.resModel ||           // Odoo 17
+            this.props?.list?.config?.resModel ||   // Odoo 16
+            ""
+        );
+    }
+
+    _resolveCurrentActionName() {
+        // Try every known path — one of them will have the name
+        // return (
+        //     this.env.config?.action?.name ||
+        //     this.env.config?.displayName ||
+        //     this.actionService.currentController?.action?.name ||
+        //     this.props?.action?.name ||
+        //     ""
+        // ).trim();
+        return (
+            this.props.list?.resModel
+        ).trim();
+    }
+
+    // ── getters ─────────────────────────────────────────────────────────────
+
+    get isApplicantView() {
+        const name = this._resolveCurrentActionName();
+        console.log("[Recruitment] isApplicantView — name:", name);
+        return name === "hr.applicant";
+    }
+
+    get isJobView() {
+        const name = this._resolveCurrentActionName();
+        console.log("[Recruitment] isJobView — name:", name);
+        return name === "hr.job";
+    }
+
+    get currentModel() {
+        return this._resolveCurrentModel();
+    }
+
+    get currentActionName() {
+        return this._resolveCurrentActionName();
+    }
+
+    // ── action handlers ──────────────────────────────────────────────────────
 
     async openCandidateWizard(ev) {
         ev.preventDefault();
-
-        await this.env.services.action.doAction(
+        await this.actionService.doAction(
             "hr_cleon_recruitment.action_hr_recruitment_add_candidate",
-            {
-                target: "new",
-                name: "Add candidate"
-            }
+            { target: "new", name: "Add Candidate" }
         );
     }
 
+    async openJob(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_job_recruitment",
+            { target: "current" }
+        );
+    }
 
     async openCandidate(ev) {
         ev.preventDefault();
-
-        await this.env.services.action.doAction(
+        await this.actionService.doAction(
             "hr_cleon_recruitment.action_hr_applicant_recruitment",
-            {
-                target: "current",
-            }
+            { target: "current" }
         );
     }
 
-    // async openRecord() {
-    //     // ev.preventDefault();
-    //     console.log("openAllocationView clicked");
-
-    //     await this.env.services.action.doAction({
-    //         type: "ir.actions.act_window",
-    //         name: "Displinary",
-    //         res_model: "hr.warning",
-    //         view_mode: "list,form",
-    //         views: [[false, "list"], [false, "form"]],
-    //         target: "current",
-    //     });
-    // }
-
-    // async openCaseType() {
-    //     await this.env.services.action.doAction({
-    //         type: "ir.actions.act_window",
-    //         name: "Cases",
-    //         res_model: "hr.warning.case.type",
-    //         view_mode: "kanban,list,form",
-    //         views: [[false, "kanban"],[false, "list"], [false, "form"]],
-    //         target: "current",
-    //     });
-    // }
-
-    // async openInvestigations(ev) {
-    //     ev.preventDefault();
-
-    //     await this.env.services.action.doAction(
-    //         "hr_warning.action_hr_warning_investigations",
-    //         {
-    //             target: "new",
-    //         }
-    //     );
-    // }
-
-    // async openHearings(ev) {
-    //     ev.preventDefault();
-
-    //     await this.env.services.action.doAction(
-    //         "hr_warning.action_hr_warning_hearing",
-    //         {
-    //             target: "new",
-    //         }
-    //     );
-    // }
-
-    // async openMeasures(ev) {
-    //     ev.preventDefault();
-
-    //     await this.env.services.action.doAction(
-    //         "hr_warning.action_hr_warning_interim_measure",
-    //         {
-    //             target: "new",
-    //         }
-    //     );
-    // }
+    async openDepartment(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_department_recruitment",
+            { target: "current" }
+        );
+    }
 }
-// CustomListRenderer.components = { ...ExpenseDashboardListRenderer.components, ExpenseDashboard};
-CustomRecruitmentListRenderer.template = "hr_cleon_recruitment.CustomRecruitmentListRenderer";
+
+CustomRecruitmentListRenderer.template =
+    "hr_cleon_recruitment.CustomRecruitmentListRenderer";
 
 export const CustomRecruitmentDashboardListView = {
     ...listView,
     Renderer: CustomRecruitmentListRenderer,
 };
 
-registry.category("views").add("myrecruitment_dashboard_list", CustomRecruitmentDashboardListView);
+registry
+    .category("views")
+    .add("myrecruitment_dashboard_list", CustomRecruitmentDashboardListView);

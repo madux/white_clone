@@ -4,26 +4,14 @@
     <!-- ═══════════════════════════════════════════
          FORM VIEW
     ════════════════════════════════════════════ -->
-    <record id="hr_department_recruitment_custom_tree_view" model="ir.ui.view">
-        <field name="name">hr.job.candidate.tree</field>
-        <field name="model">hr.job</field>
-        <field name="arch" type="xml">
-            <tree string="Jobs" js_class="myrecruitment_dashboard_list">
-                <field name="name"/>
-                <field name="manager_id"/>
-                <field name="location"/>
-                <field name="contact_person" string="Department Owner"/>
-                <field name="total_employee"/>
-            </tree>
-        </field>
-    </record>
-    <record id="hr_job_recruitment_custom_search_view" model="ir.ui.view">
-        <field name="name">hr.job.candidate.search</field>
-        <field name="model">hr.job</field>
+    <record id="hr_offer_custom_search_view" model="ir.ui.view">
+        <field name="name">hr.offer.search</field>
+        <field name="model">hr.offer</field>
         <field name="arch" type="xml">
         <search string="Jobs">
-            <field name="name" string="Job Position"/>
-            <field name="department_id" operator="child_of"/>
+            <field name="date" string="Date"/>
+            <field name="date_generated"/>
+            <field name="department_id"/>
             <separator/>
             <filter name="message_needaction" string="Unread Messages" domain="[('message_needaction', '=', True)]" groups="mail.group_mail_notification_type_inbox"/>
             <separator/>
@@ -126,22 +114,6 @@
             (0, 0, {
                 'view_mode': 'tree',
                 'view_id': ref('hr_job_recruitment_custom_tree_view'),
-            }),
-            
-        ]"/> 
-    </record>
-
-    <record id="action_hr_department_recruitment" model="ir.actions.act_window">
-        <field name="name">DEPARTMENT:</field>
-        <field name="res_model">hr.department</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="hr_cleon_recruitment.hr_department_recruitment_custom_tree_view"/>
-        <!-- <field name="search_view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_search_view"/> -->
-        <field name="view_ids" eval="[
-            (5, 0, 0),
-            (0, 0, {
-                'view_mode': 'tree',
-                'view_id': ref('hr_department_recruitment_custom_tree_view'),
             }),
             
         ]"/> 

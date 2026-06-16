@@ -5,6 +5,51 @@ import logging
 
 _logger = logging.getLogger(__name__)
  
+class HrJob(models.Model):
+    _inherit = 'hr.job'
+
+    priority = fields.Selection([
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    ], string="Priority", default='medium')
+
+    job_stage = fields.Selection([
+        ('planning', 'Planning'),
+        ('published', 'Published'),
+        ('hired', 'Hired'),
+        ('cancelled', 'Cancelled'),
+        ('closed', 'closed'),
+    ], string="Job Stage", default='planning')
+
+    job_nature = fields.Selection([
+        ('remote', 'Remote'),
+        ('hybrid', 'Hybrid'),
+        ('full_time', 'Full Time'),
+    ], string="Job Nature")
+    hiring_team_ids = fields.Many2many(
+        'hr.employee',
+        string='Hiring_team ids',
+        store=True,
+    )
+    deadline_date = fields.Datetime(string="Deadline")
+
+    deadline_date_char = fields.Char(
+        string="Deadline Display",
+        compute="_compute_deadline_date_char",
+        store=True
+    )
+
+    @api.depends('deadline_date')
+    def _compute_deadline_date_char(self):
+        for rec in self:
+            if rec.deadline_date:
+                rec.deadline_date_char = rec.deadline_date.strftime('%d %b %Y')
+                # Example: 15 Mar 2025
+            else:
+                rec.deadline_date_char = False
+
+
 class HrApplicant(models.Model):
     _inherit = 'hr.applicant'
 

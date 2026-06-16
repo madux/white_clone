@@ -10,46 +10,103 @@
 
         </xpath> -->
         <xpath expr="//table[@t-ref='table']" position="before">
-            <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right: 10px">
-                <button class="cn-btn-primary-action" id="addCandidateBtn" t-on-click="openCandidateWizard" type="button">
-                    <i class="fa fa-plus"></i>
-                    <span>Add Candidate</span>
-                </button>
-            </div>
-
-            <div class="cn-metrics-grid-ribbon">
-                <div class="cn-metric-card-item" data-metric="total">
-                    <div class="cn-metric-top-row">
-                        <h2 class="cn-metric-value-display">3</h2>
-                        <div class="cn-metric-icon-box bg-purple-sub"><i class="fa fa-users"></i></div>
-                    </div>
-                    <span class="cn-metric-label">Total Candidates</span>
+            <div class="" t-if="isApplicantView" id="candidateId">
+                <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right: 10px">
+                    <button class="cn-btn-primary-action" id="addCandidateBtn" t-on-click="openCandidateWizard" type="button">
+                        <i class="fa fa-plus"></i>
+                        <span>Add Candidate</span>
+                    </button>
                 </div>
 
-                <div class="cn-metric-card-item" data-metric="shortlisted">
-                    <div class="cn-metric-top-row">
-                        <h2 class="cn-metric-value-display">2</h2>
-                        <div class="cn-metric-icon-box bg-blue-sub"><i class="fa fa-list"></i></div>
+                <div class="cn-metrics-grid-ribbon">
+                    <div class="cn-metric-card-item" data-metric="total">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">3</h2>
+                            <div class="cn-metric-icon-box bg-purple-sub"><i class="fa fa-users"></i></div>
+                        </div>
+                        <span class="cn-metric-label">Total Candidates</span>
                     </div>
-                    <span class="cn-metric-label">Shortlisted</span>
-                </div>
 
-                <div class="cn-metric-card-item" data-metric="interviewing">
-                    <div class="cn-metric-top-row">
-                        <h2 class="cn-metric-value-display">1</h2>
-                        <div class="cn-metric-icon-box bg-gold-sub"><i class="fa fa-bullhorn"></i></div>
+                    <div class="cn-metric-card-item" data-metric="shortlisted">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">2</h2>
+                            <div class="cn-metric-icon-box bg-blue-sub"><i class="fa fa-list"></i></div>
+                        </div>
+                        <span class="cn-metric-label">Shortlisted</span>
                     </div>
-                    <span class="cn-metric-label">Interviewing</span>
-                </div>
 
-                <div class="cn-metric-card-item" data-metric="hired">
-                    <div class="cn-metric-top-row">
-                        <h2 class="cn-metric-value-display">0</h2>
-                        <div class="cn-metric-icon-box bg-green-sub"><i class="fa fa-certificate"></i></div>
+                    <div class="cn-metric-card-item" data-metric="interviewing">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">1</h2>
+                            <div class="cn-metric-icon-box bg-gold-sub"><i class="fa fa-bullhorn"></i></div>
+                        </div>
+                        <span class="cn-metric-label">Interviewing</span>
                     </div>
-                    <span class="cn-metric-label">Hired Placement</span>
-                </div>
+
+                    <div class="cn-metric-card-item" data-metric="hired">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">0</h2>
+                            <div class="cn-metric-icon-box bg-green-sub"><i class="fa fa-certificate"></i></div>
+                        </div>
+                        <span class="cn-metric-label">Hired Placement</span>
+                    </div>
+                </div> 
             </div> 
+
+            <div t-if="isJobView" class="job-header-ribbon">
+
+                <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right:10px">
+                    <button class="cn-btn-primary-action"
+                            t-on-click="openCandidateWizard"
+                            type="button">
+                        <i class="fa fa-plus"/>
+                        <span>Add Job Position</span>
+                    </button>
+                </div>
+
+                <div class="cn-metrics-grid-ribbon">
+                    <div class="cn-metric-card-item" data-metric="open">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">5</h2>
+                            <div class="cn-metric-icon-box bg-purple-sub">
+                                <i class="fa fa-briefcase"/>
+                            </div>
+                        </div>
+                        <span class="cn-metric-label">Open Positions</span>
+                    </div>
+
+                    <div class="cn-metric-card-item" data-metric="published">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">3</h2>
+                            <div class="cn-metric-icon-box bg-blue-sub">
+                                <i class="fa fa-globe"/>
+                            </div>
+                        </div>
+                        <span class="cn-metric-label">Published</span>
+                    </div>
+
+                    <div class="cn-metric-card-item" data-metric="draft">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">2</h2>
+                            <div class="cn-metric-icon-box bg-gold-sub">
+                                <i class="fa fa-pencil"/>
+                            </div>
+                        </div>
+                        <span class="cn-metric-label">Draft</span>
+                    </div>
+
+                    <div class="cn-metric-card-item" data-metric="filled">
+                        <div class="cn-metric-top-row">
+                            <h2 class="cn-metric-value-display">1</h2>
+                            <div class="cn-metric-icon-box bg-green-sub">
+                                <i class="fa fa-check-circle"/>
+                            </div>
+                        </div>
+                        <span class="cn-metric-label">Filled</span>
+                    </div>
+                </div>
+
+            </div>
 
         </xpath>
         <xpath expr="//div[@t-ref='root']" position="before">
@@ -62,10 +119,10 @@
                 <p class="sidebar-section-label">Recruiting</p>
                 <ul>
                     <li>
-                        <a class="sidebar-nav-item" href="#">
+                        <a class="sidebar-nav-item" t-on-click="openJob">
                             <i class="sidebar-nav-icon fa fa-briefcase"></i>
                             Jobs
-                            <span class="sidebar-badge">6</span>
+                            <span class="sidebar-badge">2</span>
                         </a>
                     </li>
                     <li>
@@ -97,9 +154,9 @@
                         </a>
                     </li>
                     <li>
-                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                        <a class="sidebar-nav-item" t-on-click="openDepartment">
                             <i class="sidebar-nav-icon fa fa-building-2"></i>
-                            Depts
+                            Department
                         </a>
                     </li>
                 </ul>

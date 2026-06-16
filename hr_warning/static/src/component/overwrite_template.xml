@@ -14,7 +14,7 @@
         </xpath>
 
         <!-- Change button label -->
-        <xpath expr="//button[contains(@class, 'o_list_button_add')]" position="replace">
+        <!-- <xpath expr="//button[contains(@class, 'o_list_button_add')]" position="replace">
             <button
                 type="button"
                 class="btn btn-primary btn-sm o_list_button_add text-end ms-auto"
@@ -23,6 +23,23 @@
                 data-bounce-button=""
             >
                 New Record
+            </button>
+        </xpath> -->
+        <xpath expr="//button[contains(@class, 'o_list_button_add')]" position="replace">
+            <button
+                type="button"
+                class="btn btn-primary btn-sm o_list_button_add text-end ms-auto"
+                data-hotkey="c"
+                t-on-click="onClickCreate"
+                data-bounce-button=""
+            >
+                <!--
+                    createButtonLabel is a getter on ListController (patched in JS).
+                    - Action name has NO dot  →  "Create Recruitment"
+                    - Action name HAS a dot   →  "New Record"
+                    - No action name at all   →  "New Record"
+                -->
+                <t t-esc="createButtonLabel"/>
             </button>
         </xpath>
 
