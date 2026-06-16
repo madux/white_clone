@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Tasks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+    <link rel="stylesheet" href="automation/css/style.css">
+    <link rel="stylesheet" href="task-cards/css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+    <div class="rsb-wrapper">
+        <aside class="rsb-sidebar">
+            <div class="rsb-sidebar-logo">
+                <div class="rsb-sidebar-logo-mark">C</div>
+                <span class="rsb-sidebar-logo-text">CleonHR</span>
+            </div>
+
+            <p class="rsb-sidebar-section-label">Recruiting</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-briefcase rsb-sidebar-nav-icon"></i>
+                        Jobs
+                        <span class="rsb-sidebar-badge">6</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-users rsb-sidebar-nav-icon"></i>
+                        Candidates
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-store rsb-sidebar-nav-icon"></i>
+                        Vendors
+                    </a>
+                </li>
+            </ul>
+
+            <p class="rsb-sidebar-section-label">Workflow</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item active" href="#">
+                        <i class="fa-solid fa-clipboard-list rsb-sidebar-nav-icon"></i>
+                        Tasks
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-building rsb-sidebar-nav-icon"></i>
+                        Depts
+                    </a>
+                </li>
+            </ul>
+
+            <ul style="margin-top: 12px;">
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-table-cells rsb-sidebar-nav-icon"></i>
+                        ATS
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-gear rsb-sidebar-nav-icon"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+
+            <div style="flex:1;"></div>
+
+            <div class="rsb-sidebar-user">
+                <div class="rsb-sidebar-user-avatar">J</div>
+                <div class="rsb-sidebar-user-info">
+                    <div class="rsb-sidebar-user-name">John</div>
+                    <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="main-content">
+
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-building"></i>
+                    Company
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Admin
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <i class="fa-solid fa-eye"></i>
+                    Select Employee View
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-user-group"></i>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-scroll">
+
+            <main class="ts-tasks-workspace">
+
+                <header class="ts-tasks-header">
+                    <div class="ts-header-left">
+                        <h1 class="ts-page-title">Tasks</h1>
+                        <p class="ts-page-subtitle" id="ts-tasks-summary">8 pending · 6 overdue · 1 completed this week</p>
+                    </div>
+                    <div class="ts-header-actions">
+                        <button class="ts-btn ts-btn-secondary" id="ts-automation-rules-toggle">
+                            <i class="fa-solid fa-bolt"></i> Automation Rules
+                        </button>
+                        <button class="ts-btn ts-btn-primary" id="ts-new-task-trigger">
+                            <i class="fa-solid fa-plus"></i> New Task
+                        </button>
+                    </div>
+                </header>
+
+                <nav class="ts-view-navigation">
+                    <button class="ts-tab-btn ts-active" data-view-target="all-tasks">All Tasks</button>
+                    <button class="ts-tab-btn" data-view-target="my-tasks">My Tasks</button>
+                    <button class="ts-tab-btn" data-view-target="by-job">By Job</button>
+                </nav>
+
+                <div class="ts-view-display-wrapper">
+
+                    <div class="ts-view-workspace-core" id="ts-main-tasks-container">
+                        <aside class="ts-secondary-filter-sidebar">
+                            <div class="ts-filter-group">
+                                <h4 class="ts-filter-group-title">URGENCY GROUPS</h4>
+                                <div class="ts-filter-item ts-active" data-filter-type="urgency" data-filter-value="overdue">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-circle-exclamation ts-icon-overdue"></i> OVERDUE</span>
+                                    <span class="ts-filter-badge">6</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="due-today">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-clock ts-icon-today"></i> DUE TODAY</span>
+                                    <span class="ts-filter-badge ts-badge-empty">0</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="this-week">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-calendar-days ts-icon-week"></i> THIS WEEK</span>
+                                    <span class="ts-filter-badge ts-badge-empty">0</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="no-due-date">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-circle-notch ts-icon-nodate"></i> NO DUE DATE</span>
+                                    <span class="ts-filter-badge">1</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="urgency" data-filter-value="completed">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-circle-check ts-icon-complete"></i> COMPLETED</span>
+                                    <span class="ts-filter-badge">3</span>
+                                </div>
+                            </div>
+
+                            <div class="ts-filter-group">
+                                <h4 class="ts-filter-group-title">BY JOB</h4>
+                                <div class="ts-filter-item" data-filter-type="job" data-filter-value="Administrative Assistant">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Administrative Assistant</span>
+                                    <span class="ts-filter-badge">2</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="job" data-filter-value="Chief Executive Officer">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Chief Executive Officer</span>
+                                    <span class="ts-filter-badge">1</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="job" data-filter-value="HR Specialist">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> HR Specialist</span>
+                                    <span class="ts-filter-badge">1</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="job" data-filter-value="Python Data Scientist">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> Python Data Scientist</span>
+                                    <span class="ts-filter-badge">1</span>
+                                </div>
+                                <div class="ts-filter-item" data-filter-type="job" data-filter-value="SEC Specialist">
+                                    <span class="ts-filter-label"><i class="fa-solid fa-chevron-right ts-arrow-icon"></i> SEC Specialist</span>
+                                    <span class="ts-filter-badge">1</span>
+                                </div>
+                            </div>
+
+                            <div class="ts-auto-tasks-summary-card">
+                                <span class="ts-auto-card-title"><i class="fa-solid fa-bolt"></i> AUTO TASKS</span>
+                                <span class="ts-auto-card-badge">4</span>
+                            </div>
+                        </aside>
+
+                        <section class="ts-dynamic-view-viewport">
+
+                            <div class="ts-sub-view-pane ts-view-active" id="ts-pane-all-tasks">
+                                <div class="ts-task-group-section" id="ts-group-overdue">
+                                    <div class="ts-group-header ts-header-status-overdue">
+                                        <span>OVERDUE</span>
+                                        <span class="ts-group-count-pill">6</span>
+                                    </div>
+                                    <div class="ts-task-cards-list-container" id="ts-overdue-cards-wrapper">
+                                    </div>
+                                </div>
+
+                                <div class="ts-task-group-section ts-mt-lg" id="ts-group-no-due-date">
+                                    <div class="ts-group-header ts-header-status-nodate">
+                                        <span>NO DUE DATE</span>
+                                        <span class="ts-group-count-pill">1</span>
+                                    </div>
+                                    <div class="ts-task-cards-list-container" id="ts-no-due-cards-wrapper">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ts-sub-view-pane" id="ts-pane-my-tasks">
+                                <div class="ts-empty-state-canvas">
+                                    <div class="ts-empty-graphic-ring">
+                                        <i class="fa-solid fa-list-check"></i>
+                                    </div>
+                                    <h3>No tasks assigned to you</h3>
+                                    <p>You're all caught up! When tasks get assigned to your profile, they will show up right here.</p>
+                                </div>
+                            </div>
+
+                            <div class="ts-sub-view-pane" id="ts-pane-by-job">
+                                <div class="ts-jobs-grouped-stack" id="ts-jobs-grouped-stack-wrapper">
+                                </div>
+                            </div>
+
+                        </section>
+                    </div>
+
+                    <div class="ts-view-workspace-automation ts-hidden-view" id="ts-main-automation-container">
+                        <div class="ts-automation-rules-view-heading">
+                            <h2>Task Automation Rules</h2>
+                            <p>Define rules that make your tasks control the system automatically.</p>
+                        </div>
+                        <div class="ts-automation-cards-vertical-stack" id="ts-automation-cards-container">
+                        </div>
+                    </div>
+
+                    <aside class="ts-context-detail-panel-drawer" id="ts-detail-context-drawer">
+                        <button class="ts-drawer-close-btn" id="ts-close-drawer-action"><i class="fa-solid fa-xmark"></i></button>
+                        <div class="ts-drawer-scrollable-content" id="ts-drawer-content-slot">
+                        </div>
+                    </aside>
+
+                </div>
+            </main>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="ts-modal-container"></div>
+
+<div class="ts-popover-dropdown-menu" id="ts-global-popover-menu">
+    <div class="ts-popover-item"><i class="fa-solid fa-pen"></i> Edit Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-copy"></i> Duplicate Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-pause"></i> Pause Rule</div>
+    <div class="ts-popover-item"><i class="fa-solid fa-clock-rotate-left"></i> View History</div>
+    <div class="ts-popover-separator"></div>
+    <div class="ts-popover-item ts-destructive"><i class="fa-solid fa-trash-can"></i> Delete Rule</div>
+</div>
+
+<script src="js/script.js"></script>
+<script src="automation/js/app.js"></script>
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/task-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('ts-modal-container').innerHTML = html;
+            if (window.initTaskModal) initTaskModal();
+        });
+</script>
+
+</body>
+</html>

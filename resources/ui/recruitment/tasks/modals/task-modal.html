@@ -1,0 +1,84 @@
+<div class="ts-modal-overlay-backdrop" id="ts-new-task-modal-backdrop">
+    <div class="ts-modal-window-box">
+        <header class="ts-modal-header-row">
+            <h3>Create New Task</h3>
+            <button class="ts-modal-close-icon-btn" id="ts-dismiss-modal-action"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <form class="ts-modal-form-body" id="ts-create-task-submission-form" novalidate>
+            <div class="ts-form-field-wrapper">
+                <label class="ts-form-field-label">Task Title <span class="ts-required-star">*</span></label>
+                <input type="text" class="ts-form-input-text" id="ts-field-title" placeholder="e.g., Review CVs for Senior Developer role" required>
+            </div>
+
+            <div class="ts-form-field-wrapper">
+                <label class="ts-form-field-label">Description <span class="ts-optional-tag">(Optional)</span></label>
+                <textarea class="ts-form-textarea" id="ts-field-desc" placeholder="Add more details about this task..."></textarea>
+            </div>
+
+            <div class="ts-form-grid-two-columns">
+                <div class="ts-form-field-wrapper">
+                    <label class="ts-form-field-label">Assign To <span class="ts-required-star">*</span></label>
+                    <select class="ts-form-select-dropdown" id="ts-field-assignee" required>
+                        <option value="" disabled selected>Select person...</option>
+                        <option value="Emily Thompson">Emily Thompson</option>
+                        <option value="Emeka Okafor">Emeka Okafor</option>
+                        <option value="Sarah Adeola">Sarah Adeola</option>
+                        <option value="Chioma Nwosu">Chioma Nwosu</option>
+                    </select>
+                </div>
+                <div class="ts-form-field-wrapper">
+                    <label class="ts-form-field-label">Due Date</label>
+                    <input type="date" class="ts-form-input-date" id="ts-field-due-date">
+                </div>
+            </div>
+
+            <div class="ts-form-field-wrapper">
+                <label class="ts-form-field-label">Link to Job <span class="ts-optional-tag">(Optional)</span></label>
+                <select class="ts-form-select-dropdown" id="ts-field-job-link">
+                    <option value="">No job link</option>
+                    <option value="Administrative Assistant">Administrative Assistant</option>
+                    <option value="Chief Executive Officer">Chief Executive Officer</option>
+                    <option value="HR Specialist">HR Specialist</option>
+                    <option value="Python Data Scientist">Python Data Scientist</option>
+                    <option value="SEC Specialist">SEC Specialist</option>
+                </select>
+            </div>
+
+            <div class="ts-form-field-wrapper">
+                <label class="ts-form-field-label">Priority</label>
+                <div class="ts-priority-toggle-button-group">
+                    <button type="button" class="ts-priority-btn" data-priority="Low">Low</button>
+                    <button type="button" class="ts-priority-btn ts-selected-priority" data-priority="Medium">Medium</button>
+                    <button type="button" class="ts-priority-btn" data-priority="High">High</button>
+                </div>
+            </div>
+
+            <div class="ts-form-toggle-switch-row">
+                <div class="ts-toggle-switch-meta">
+                    <span class="ts-toggle-main-label"><i class="fa-solid fa-bell"></i> Enable Reminder</span>
+                    <span class="ts-toggle-sub-description">Send reminder 1 day before due date</span>
+                </div>
+                <label class="ts-switch-input-component">
+                    <input type="checkbox" id="ts-field-reminder">
+                    <span class="ts-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="ts-form-toggle-switch-row">
+                <div class="ts-toggle-switch-meta">
+                    <span class="ts-toggle-main-label"><i class="fa-solid fa-bolt"></i> Automated Task</span>
+                    <span class="ts-toggle-sub-description">This task is triggered by automation rules</span>
+                </div>
+                <label class="ts-switch-input-component">
+                    <input type="checkbox" id="ts-field-is-auto">
+                    <span class="ts-switch-slider"></span>
+                </label>
+            </div>
+
+            <div class="ts-modal-action-buttons-footer-row">
+                <button type="button" class="ts-btn ts-btn-neutral" id="ts-cancel-modal-action">Cancel</button>
+                <button type="submit" class="ts-btn ts-btn-accent">Create Task</button>
+            </div>
+        </form>
+    </div>
+</div>

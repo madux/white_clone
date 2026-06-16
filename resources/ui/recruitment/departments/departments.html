@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Departments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="../sidebar/css/style.css">
+    <link rel="stylesheet" href="../topnav/css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+</head>
+<body class="chr-body-context">
+
+<div class="app-shell">
+
+    <div class="rsb-wrapper">
+        <aside class="rsb-sidebar">
+            <div class="rsb-sidebar-logo">
+                <div class="rsb-sidebar-logo-mark">C</div>
+                <span class="rsb-sidebar-logo-text">CleonHR</span>
+            </div>
+
+            <p class="rsb-sidebar-section-label">Recruiting</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-briefcase rsb-sidebar-nav-icon"></i>
+                        Jobs
+                        <span class="rsb-sidebar-badge">6</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-users rsb-sidebar-nav-icon"></i>
+                        Candidates
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-store rsb-sidebar-nav-icon"></i>
+                        Vendors
+                    </a>
+                </li>
+            </ul>
+
+            <p class="rsb-sidebar-section-label">Workflow</p>
+            <ul>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-clipboard-list rsb-sidebar-nav-icon"></i>
+                        Tasks
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item active" href="#">
+                        <i class="fa-solid fa-building rsb-sidebar-nav-icon"></i>
+                        Depts
+                    </a>
+                </li>
+            </ul>
+
+            <ul style="margin-top: 12px;">
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-table-cells rsb-sidebar-nav-icon"></i>
+                        ATS
+                    </a>
+                </li>
+                <li>
+                    <a class="rsb-sidebar-nav-item" href="#">
+                        <i class="fa-solid fa-gear rsb-sidebar-nav-icon"></i>
+                        Settings
+                    </a>
+                </li>
+            </ul>
+
+            <div style="flex:1;"></div>
+
+            <div class="rsb-sidebar-user">
+                <div class="rsb-sidebar-user-avatar">J</div>
+                <div class="rsb-sidebar-user-info">
+                    <div class="rsb-sidebar-user-name">John</div>
+                    <div class="rsb-sidebar-user-email">john.okafor@farmplus.com</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div class="main-content">
+
+        <header class="topnav">
+            <div class="topnav-left">
+                <span class="topnav-title">CleonHR</span>
+            </div>
+            <div class="topnav-pills">
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-building"></i>
+                    Company
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Admin
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="topnav-pill" style="border-color: rgba(233,30,140,0.3); color: var(--brand-pink);">
+                    <i class="fa-solid fa-eye"></i>
+                    Select Employee View
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="topnav-right">
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-inbox"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-calendar"></i>
+                </div>
+                <div class="topnav-icon-btn">
+                    <i class="fa-solid fa-user-group"></i>
+                </div>
+                <div class="topnav-icon-btn" style="position:relative;">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="topnav-notif-badge">8</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-scroll">
+
+            <main class="chr-dept-module">
+
+                <div id="chr-departments-list-container">
+
+                <header class="chr-module-header">
+                    <div class="chr-header-left">
+                        <h1 class="chr-module-title">Departments</h1>
+                        <p class="chr-module-subtitle">Manage organizational departments and their teams</p>
+                    </div>
+                    <div class="chr-header-right">
+                        <button type="button" class="chr-btn chr-btn-primary" id="chr-create-dept-trigger">
+                            <i class="fa-solid fa-plus"></i> Create Department
+                        </button>
+                    </div>
+                </header>
+
+                <section class="chr-control-action-bar">
+                    <div class="chr-search-box-wrapper">
+                        <i class="fa-solid fa-magnifying-glass chr-search-icon"></i>
+                        <input type="text" id="chr-search-input" class="chr-input-field" placeholder="Search by Name, Job ID, or Department">
+                    </div>
+                    <div class="chr-action-buttons-group">
+                        <button type="button" class="chr-btn chr-btn-secondary" id="chr-filter-toggle-btn">
+                            <i class="fa-solid fa-filter"></i> Filters
+                        </button>
+                        <button type="button" class="chr-btn chr-btn-secondary" id="chr-refresh-btn">
+                            <i class="fa-solid fa-rotate"></i> Refresh
+                        </button>
+                        <button type="button" class="chr-btn chr-btn-icon-only">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <div class="chr-filter-panel-slide" id="chr-filter-panel">
+                    <div class="chr-filter-select-wrapper">
+                        <select id="chr-location-filter" class="chr-select-dropdown">
+                            <option value="All Locations">All Locations</option>
+                            <option value="enugu">enugu</option>
+                            <option value="Dallas, TX, United States">Dallas, TX, United States</option>
+                            <option value="Seattle, WA, United States">Seattle, WA, United States</option>
+                            <option value="Miami, FL, United States">Miami, FL, United States</option>
+                            <option value="New York, NY, United States">New York, NY, United States</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="chr-master-workspace-view" id="chr-master-view">
+                    <div class="chr-table-scroll-container">
+                        <table class="chr-custom-data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 48px;"><input type="checkbox" class="chr-checkbox-control"></th>
+                                    <th>DEPARTMENT NAME</th>
+                                    <th>DEPARTMENT LOCATION</th>
+                                    <th>JOB COUNT</th>
+                                    <th>DEPARTMENT OWNER</th>
+                                    <th>DEPARTMENT TEAM</th>
+                                    <th>DEPARTMENT CREATED</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chr-department-rows-root"></tbody>
+                        </table>
+                    </div>
+                    <footer class="chr-table-pagination-summary" id="chr-pagination-counter">
+                        Showing 5 of 5 departments
+                    </footer>
+                </div>
+
+                </div>
+
+                <div class="chr-detail-profile-workspace" id="chr-detail-view" style="display: none;">
+                    <header class="chr-detail-header-nav">
+                        <button type="button" class="chr-back-navigation-btn" id="chr-back-to-master-btn">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div class="chr-detail-profile-summary">
+                            <div class="chr-dept-badge-icon" id="chr-detail-avatar"></div>
+                            <div class="chr-detail-title-meta">
+                                <h2 class="chr-detail-name-text" id="chr-detail-name"></h2>
+                                <span class="chr-detail-loc-text"><i class="fa-solid fa-location-dot"></i> <span id="chr-detail-location"></span></span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <nav class="chr-navigation-tab-strip">
+                        <button type="button" class="chr-tab-link active" data-target="jobs"><i class="fa-solid fa-briefcase"></i> Jobs</button>
+                        <button type="button" class="chr-tab-link" data-target="summary"><i class="fa-solid fa-chart-simple"></i> Summary</button>
+                        <button type="button" class="chr-tab-link" data-target="activities"><i class="fa-solid fa-chart-line"></i> Activities</button>
+                        <button type="button" class="chr-tab-link" data-target="notes"><i class="fa-regular fa-file-lines"></i> Notes</button>
+                        <button type="button" class="chr-tab-link" data-target="attachments"><i class="fa-solid fa-paperclip"></i> Attachments</button>
+                        <button type="button" class="chr-tab-link" data-target="team"><i class="fa-solid fa-users"></i> Team</button>
+                        <button type="button" class="chr-tab-link" data-target="guests"><i class="fa-solid fa-user-plus"></i> Guests</button>
+                        <button type="button" class="chr-tab-link" data-target="contacts"><i class="fa-regular fa-address-book"></i> Contacts</button>
+                        <button type="button" class="chr-tab-link" data-target="job-requisitions"><i class="fa-solid fa-list"></i> Job Requisitions</button>
+                        <button type="button" class="chr-tab-link" data-target="history"><i class="fa-regular fa-clock"></i> History</button>
+                    </nav>
+
+                    <div class="chr-tabs-content-display-box">
+                        <div class="chr-tab-panel active" id="chr-panel-jobs">
+                            <div class="chr-table-scroll-container">
+                                <table class="chr-custom-data-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 48px;"><input type="checkbox" class="chr-checkbox-control"></th>
+                                            <th>POSITION NAME</th>
+                                            <th>HEADCOUNT</th>
+                                            <th>JOB TEAM</th>
+                                            <th>JOB STATUS</th>
+                                            <th>JOB STAGE</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="6">
+                                                <div class="chr-empty-state-card-view">
+                                                    <i class="fa-solid fa-briefcase chr-empty-icon"></i>
+                                                    <p class="chr-empty-state-headline">No positions in this department</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-summary">
+                            <div class="chr-summary-cards-dashboard">
+                                <div class="chr-summary-metric-card">
+                                    <span class="chr-metric-label">Total Jobs</span>
+                                    <span class="chr-metric-value" id="chr-summary-total-jobs">0</span>
+                                </div>
+                                <div class="chr-summary-metric-card">
+                                    <span class="chr-metric-label">Team Size</span>
+                                    <span class="chr-metric-value" id="chr-summary-team-size">0</span>
+                                </div>
+                                <div class="chr-summary-metric-card">
+                                    <span class="chr-metric-label">Status</span>
+                                    <span class="chr-metric-value chr-status-active-txt">Active</span>
+                                </div>
+                            </div>
+                            <div class="chr-summary-owner-section">
+                                <h4 class="chr-section-inner-heading">Department Owner</h4>
+                                <div class="chr-owner-profile-block">
+                                    <div class="chr-user-profile-avatar chr-avatar-pink" id="chr-summary-owner-avatar"></div>
+                                    <div class="chr-owner-meta-data">
+                                        <p class="chr-owner-name-str" id="chr-summary-owner-name"></p>
+                                        <p class="chr-owner-role-str" id="chr-summary-owner-role"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-activities">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-solid fa-chart-line chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Activities</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-notes">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-regular fa-file-lines chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Notes</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-attachments">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-solid fa-paperclip chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Attachments</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-team">
+                            <div class="chr-team-list-card">
+                                <h3 class="chr-team-card-title">Department Team (<span id="chr-team-count-badge">0</span>)</h3>
+                                <div class="chr-team-members-list-stack" id="chr-team-members-root"></div>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-guests">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-solid fa-user-plus chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Guests</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-contacts">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-regular fa-address-book chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Contacts</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-job-requisitions">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-solid fa-list chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">Job Requisitions</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+
+                        <div class="chr-tab-panel" id="chr-panel-history">
+                            <div class="chr-empty-state-card-view">
+                                <i class="fa-regular fa-clock chr-empty-icon"></i>
+                                <h3 class="chr-empty-state-headline">History</h3>
+                                <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="chr-modal-container"></div>
+
+<script src="js/script.js"></script>
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/create-dept-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('chr-modal-container').innerHTML = html;
+            if (window.initCreateDeptModal) initCreateDeptModal();
+        });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Department Detail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="chr-body-context">
+
+<main class="chr-dept-module">
+
+    <div class="chr-detail-profile-workspace">
+
+        <header class="chr-detail-header-nav">
+            <a href="departments.html" class="chr-back-navigation-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div class="chr-detail-profile-summary">
+                <div class="chr-dept-badge-icon chr-avatar-pink">H</div>
+                <div class="chr-detail-title-meta">
+                    <h2 class="chr-detail-name-text">Human Resources</h2>
+                    <span class="chr-detail-loc-text"><i class="fa-solid fa-location-dot"></i> Dallas, TX, United States</span>
+                </div>
+            </div>
+        </header>
+
+        <nav class="chr-navigation-tab-strip">
+            <button type="button" class="chr-tab-link active" disabled><i class="fa-solid fa-briefcase"></i> Jobs</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-chart-simple"></i> Summary</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-chart-line"></i> Activities</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-regular fa-file-lines"></i> Notes</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-paperclip"></i> Attachments</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-users"></i> Team</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-user-plus"></i> Guests</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-regular fa-address-book"></i> Contacts</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-solid fa-list"></i> Job Requisitions</button>
+            <button type="button" class="chr-tab-link" disabled><i class="fa-regular fa-clock"></i> History</button>
+        </nav>
+
+        <div class="chr-tabs-content-display-box">
+            <div class="chr-tab-panel active" id="chr-panel-jobs">
+                <div class="chr-table-scroll-container">
+                    <table class="chr-custom-data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 48px;"><input type="checkbox" class="chr-checkbox-control"></th>
+                                <th>POSITION NAME</th>
+                                <th>HEADCOUNT</th>
+                                <th>JOB TEAM</th>
+                                <th>JOB STATUS</th>
+                                <th>JOB STAGE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="chr-empty-state-card-view">
+                                        <i class="fa-solid fa-briefcase chr-empty-icon"></i>
+                                        <p class="chr-empty-state-headline">No positions in this department</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-summary">
+                <div class="chr-summary-cards-dashboard">
+                    <div class="chr-summary-metric-card">
+                        <span class="chr-metric-label">Total Jobs</span>
+                        <span class="chr-metric-value">2</span>
+                    </div>
+                    <div class="chr-summary-metric-card">
+                        <span class="chr-metric-label">Team Size</span>
+                        <span class="chr-metric-value">2</span>
+                    </div>
+                    <div class="chr-summary-metric-card">
+                        <span class="chr-metric-label">Status</span>
+                        <span class="chr-metric-value chr-status-active-txt">Active</span>
+                    </div>
+                </div>
+                <div class="chr-summary-owner-section">
+                    <h4 class="chr-section-inner-heading">Department Owner</h4>
+                    <div class="chr-owner-profile-block">
+                        <div class="chr-user-profile-avatar chr-avatar-pink">MR</div>
+                        <div class="chr-owner-meta-data">
+                            <p class="chr-owner-name-str">Michael Rodriguez</p>
+                            <p class="chr-owner-role-str">Recruiter</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-activities">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-solid fa-chart-line chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Activities</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-notes">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-regular fa-file-lines chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Notes</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-attachments">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-solid fa-paperclip chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Attachments</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-team">
+                <div class="chr-team-list-card">
+                    <h3 class="chr-team-card-title">Department Team (<span>2</span>)</h3>
+                    <div class="chr-team-members-list-stack">
+                        <div class="chr-team-row-item">
+                            <div class="chr-team-member-left">
+                                <div class="chr-user-profile-avatar chr-avatar-pink">MR</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Michael Rodriguez</span>
+                                    <span class="chr-identity-sub-label">Recruiter</span>
+                                </div>
+                            </div>
+                            <div class="chr-team-member-email">michael.rodriguez@cleonhr.com</div>
+                        </div>
+                        <div class="chr-team-row-item">
+                            <div class="chr-team-member-left">
+                                <div class="chr-user-profile-avatar chr-avatar-pink">ET</div>
+                                <div class="chr-identity-meta-stack">
+                                    <span class="chr-identity-primary-label">Emily Thompson</span>
+                                    <span class="chr-identity-sub-label">HR Generalist</span>
+                                </div>
+                            </div>
+                            <div class="chr-team-member-email">emily.t@cleonhr.com</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-guests">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-solid fa-user-plus chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Guests</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-contacts">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-regular fa-address-book chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Contacts</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-job-requisitions">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-solid fa-list chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">Job Requisitions</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+
+            <div class="chr-tab-panel" id="chr-panel-history">
+                <div class="chr-empty-state-card-view">
+                    <i class="fa-regular fa-clock chr-empty-icon"></i>
+                    <h3 class="chr-empty-state-headline">History</h3>
+                    <p class="chr-empty-state-sub-text">This section is available for future enhancements</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+</body>
+</html>

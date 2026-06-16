@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR — Vendors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="modals/css/style.css">
+</head>
+<body>
+
+    <div class="vn-container">
+
+        <div class="vn-header">
+            <div class="vn-header-title">
+                <h2>Vendors</h2>
+                <p>Manage your recruitment vendors and agencies</p>
+            </div>
+            <button class="vn-btn-primary" id="vn-open-modal-btn">
+                <i class="fa-solid fa-plus"></i> Add Vendor
+            </button>
+        </div>
+
+        <div class="vn-metrics-grid">
+            <div class="vn-card">
+                <div class="vn-card-icon-wrapper vn-icon-blue">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div class="vn-card-content">
+                    <span class="vn-card-label">Total Vendors</span>
+                    <span class="vn-card-value">6</span>
+                </div>
+            </div>
+
+            <div class="vn-card">
+                <div class="vn-card-icon-wrapper vn-icon-green">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="vn-card-content">
+                    <span class="vn-card-label">Active Vendors</span>
+                    <span class="vn-card-value">5</span>
+                </div>
+            </div>
+
+            <div class="vn-card">
+                <div class="vn-card-icon-wrapper vn-icon-purple">
+                    <i class="fa-solid fa-file-lines"></i>
+                </div>
+                <div class="vn-card-content">
+                    <span class="vn-card-label">Total Submissions</span>
+                    <span class="vn-card-value">42</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="vn-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass vn-search-icon"></i>
+            <input type="text" class="vn-search-input" placeholder="Search vendors...">
+        </div>
+
+        <div class="vn-table-container">
+            <table class="vn-table">
+                <thead>
+                    <tr>
+                        <th>VENDOR NAME</th>
+                        <th>CONTACT</th>
+                        <th>SPECIALIZATION</th>
+                        <th>SUBMISSIONS</th>
+                        <th>STATUS</th>
+                        <th style="text-align: center;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">TechRecruit Solutions</div>
+                            <div class="vn-text-secondary">https://techrecruit.com</div>
+                        </td>
+                        <td>
+                            <div>contact@techrecruit.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8901</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">IT</span>
+                            <span class="vn-inline-tag">Software Engineering</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">18</td>
+                        <td><span class="vn-badge-pill vn-badge-active">Active</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">Healthcare Connect Agency</div>
+                            <div class="vn-text-secondary">https://healthcareconnect.com</div>
+                        </td>
+                        <td>
+                            <div>info@healthcareconnect.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8902</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">Healthcare</span>
+                            <span class="vn-inline-tag">Medical</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">9</td>
+                        <td><span class="vn-badge-pill vn-badge-active">Active</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">SalesForce Staffing</div>
+                            <div class="vn-text-secondary">https://salesforcestaffing.com</div>
+                        </td>
+                        <td>
+                            <div>hello@salesforcestaffing.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8903</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">Sales</span>
+                            <span class="vn-inline-tag">Marketing</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">7</td>
+                        <td><span class="vn-badge-pill vn-badge-active">Active</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">Finance & Accounting Pros</div>
+                            <div class="vn-text-secondary">No website</div>
+                        </td>
+                        <td>
+                            <div>team@financepros.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8904</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">Finance</span>
+                            <span class="vn-inline-tag">Accounting</span>
+                            <span class="vn-inline-tag">Audit</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">0</td>
+                        <td><span class="vn-badge-pill vn-badge-inactive">Inactive</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">Global HR Partners</div>
+                            <div class="vn-text-secondary">https://globalhrp.com</div>
+                        </td>
+                        <td>
+                            <div>contact@globalhrp.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8905</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">HR</span>
+                            <span class="vn-inline-tag">Administration</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">5</td>
+                        <td><span class="vn-badge-pill vn-badge-active">Active</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 600;">Executive Search Elite</div>
+                            <div class="vn-text-secondary">https://executiveelite.com</div>
+                        </td>
+                        <td>
+                            <div>search@executiveelite.com</div>
+                            <div class="vn-text-secondary">+1 234 567 8906</div>
+                        </td>
+                        <td>
+                            <span class="vn-inline-tag">Executive</span>
+                            <span class="vn-inline-tag">C-Suite</span>
+                        </td>
+                        <td style="font-weight: 600; color: #1e293b;">3</td>
+                        <td><span class="vn-badge-pill vn-badge-active">Active</span></td>
+                        <td>
+                            <div class="vn-action-btn-row">
+                                <button class="vn-row-delete-btn" title="Delete Vendor">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+<div id="addVendorModalContainer"></div>
+
+<script src="modals/js/app.js"></script>
+<script>
+    fetch('modals/add-vendor-modal.html')
+        .then(function(r) { return r.text(); })
+        .then(function(html) {
+            document.getElementById('addVendorModalContainer').innerHTML = html;
+            if (window.initAddVendorModal) initAddVendorModal();
+        });
+</script>
+
+</body>
+</html>
