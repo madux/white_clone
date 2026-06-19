@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         MAIN CANDIDATE WIZARD FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_offer_wizard_form_view" model="ir.ui.view">
+        <field name="name">hr.offer.wizard.form</field>
+        <field name="model">hr.offer.wizard</field><field name="arch" type="xml">
+            <form string="Add Offer letter" create="0" edit="1">
+                <!-- ══════════════════════════════
+                     SCREEN 2: MANUAL ENTRY FORM
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                            </svg>
+                        </div>
+                        <div>
+                
+                            <h2 class="rc_screen_title">Instruction</h2><field name="offer_stage" invisible="1" widget="badge"/>
+                            <p class="rc_screen_subtitle">1. Select from the candidate dropdown, 2. Select the job, Select Department if you wish to change department and job role </p>
+                            <p class="rc_screen_subtitle">2. Select Department or job if you wish to change department and job role </p>
+                            <p class="rc_screen_subtitle">3. Click on the View Offer terms </p>
+                            <p class="rc_screen_subtitle">4. Click on review to ensure your inputs are correct</p>
+                            <p class="rc_screen_subtitle">5. Send to Candidate</p>
+                            
+                        </div>
+                    </div>
+                    <div class="rc_footer">
+                        <button class="rc_btn_back" name="action_goback" type="object">Back</button>
+                        <button class="rc_btn_primary" name="action_view_offer_terms" type="object" invisible="offer_stage != 'candidate'">View Offer terms</button>
+                        <button class="rc_btn_primary" name="action_view_reiew" type="object" invisible="offer_stage != 'offer_terms'">Review</button>
+                        <button class="rc_btn_primary" name="action_generate_offers" type="object" invisible="offer_stage != 'review'">Send Offer to Candidate(s)</button>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Basic Information</h3>
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="candidate_ids">Candidate(s)</label>
+                            <field name="candidate_ids" readonly="0" nolabel="1" options="{'no_create': true}">
+                                   <!-- context="{'form_view_ref': 'hr_company_calendar.event_inline_view'}"> -->
+                                <kanban create="0">
+                                    <field name="id"/>
+                                    <field name="partner_name"/> 
+                                    <field name="email_from"/> 
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_card rc-card-footer">
+                                                <div class="rc_content">
+                                                    <div class="user-avatar" id="userInitials">OA</div>
+                                                    <h4><field name="name" readonly="1" nolabel="1"/></h4>
+                                                    <p><h6><field name="description" readonly="1" nolabel="1"/></h6></p>
+                                                    <p><h6>Email: 📅<field name="email_from" readonly="1" nolabel="1"/></h6><field name="applied_date" readonly="1" nolabel="1"/></p>
+                                                </div>
+                                                <!-- <button name="action_open_event" type="object" class="cc-btn-primary" >
+                                                    <i class="fa fa-eye"/> Review
+                                                </button> -->
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="department_id">Department</label>
+                                <field name="department_id" placeholder="ICT" nolabel="1" class="rc_input" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="job_id" options="{'no_open': true, 'no_create': true}">Job</label>
+                                <field name="job_id" placeholder="John" nolabel="1" class="rc_input"/>
+                            </div>
+                            
+                        </div>
+                        <h3 class="rc_section_title">Offer Templates</h3>
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="offer_report_ids">Offer templates</label>
+                                <!-- Kanban templates goes here -->
+                            <field name="offer_report_ids" readonly="0" nolabel="1" options="{'no_open': true, 'no_create': true}">
+                                   <!-- context="{'form_view_ref': 'hr_company_calendar.event_inline_view'}"> -->
+                                <kanban create="0">
+                                    <field name="id"/>
+                                    <field name="name"/> 
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="oe_kanban_card rc-card-footer">
+                                                <div class="rc_content">
+                                                    <div class="user-avatar" id="userInitials">OA</div>
+                                                    <h4><field name="name" readonly="1" nolabel="1"/></h4>
+                                                    <!-- <p><h6><field name="description" readonly="1" nolabel="1"/></h6></p> -->
+                                                    <!-- <p><h6>Email: 📅<field name="email_from" readonly="1" nolabel="1"/></h6><field name="applied_date" readonly="1" nolabel="1"/></p> -->
+                                                </div>
+                                                <!-- <button name="action_open_event" type="object" class="cc-btn-primary" >
+                                                    <i class="fa fa-eye"/> Review
+                                                </button> -->
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </div>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="mail_template_id">Mail Template</label>
+                            <field name="mail_template_id" nolabel="1" class="rc_input" 
+                            options="{'no_open': true, 'no_create': true}" help="This indicates that the applicant is for a particular client"/>
+                        </div>
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="vendor_id">Vendor</label>
+                            <field name="vendor_id" 
+                            options="{'no_open': true, 'no_create': true}"
+                            placeholder="Enter vendor if applicable" nolabel="1" class="rc_input" help="This indicates that the applicant is for a particular client"/>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Professional Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Professional Information</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="offer_terms">Offer terms</label>
+                            <field name="offer_terms" widget="html" readonly="0" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="date">Date Sent</label>
+                                <field name="date" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="date_expiry">Expiry date</label>
+                                <field name="date_expiry" nolabel="1" required="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="create_date">Date Created</label>
+                                <field name="create_date" readonly="1" nolabel="1" class="rc_input" options="{'no_open': true, 'no_create': true}"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="include_attachment"></label>
+                                <field name="include_attachment" nolabel="1" widget="radio" help="This determines if the offer template will also be sent as attachment"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         ACTION TO OPEN THE WIZARD
+    ════════════════════════════════════════════ -->
+    <record id="action_hr_offer_wizard_recruitment" model="ir.actions.act_window">
+        <field name="name">Offer Wizard</field>
+        <field name="res_model">hr.offer.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_offer_wizard_form_view"/>
+        <field name="target">new</field>
+        <!-- <field name="context">{'default_mode': 'select'}</field> -->
+    </record>
+
+</odoo>

@@ -13,6 +13,7 @@ class HrJob(models.Model):
         ('medium', 'Medium'),
         ('high', 'High'),
     ], string="Priority", default='medium')
+    offer_terms = fields.Html(string='Offer terms', default="No offer terms added... ")
 
     job_stage = fields.Selection([
         ('planning', 'Planning'),
@@ -33,11 +34,18 @@ class HrJob(models.Model):
         store=True,
     )
     deadline_date = fields.Datetime(string="Deadline")
-
+    email_sent = fields.Boolean(string="Email sent", help="This tracks the emails sent")
+    location = fields.Char(string="Location")
     deadline_date_char = fields.Char(
         string="Deadline Display",
         compute="_compute_deadline_date_char",
         store=True
+    )
+    offer_report_ids = fields.Many2many(
+        'ir.actions.report',
+        # domain="[('type', 'in', ['qweb', 'html'])]",
+        string='Templates',
+        store=True,
     )
 
     @api.depends('deadline_date')
@@ -59,7 +67,9 @@ class HrApplicant(models.Model):
                                      ('excellent', 'Excellent'),
                                      ], string="Match rating", default="")
     
-    applied_date = fields.Date("Applied Date")
+    applied_date = fields.Date("Applied Date", default=fields.Date.today())
+    offer_id = fields.Many2one("hr.offer", "Offer Reference", readonly="1")
+    email_sent = fields.Boolean(string="Email sent", help="This tracks the emails sent")
 
     def addCandidateBtn(self):
         form_view_id = self.env.ref(

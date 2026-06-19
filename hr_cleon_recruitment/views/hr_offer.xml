@@ -8,9 +8,10 @@
         <field name="name">hr.offer.search</field>
         <field name="model">hr.offer</field>
         <field name="arch" type="xml">
-        <search string="Jobs">
-            <field name="date" string="Date"/>
-            <field name="date_generated"/>
+        <search string="Job offer">
+            <field name="candidate_id" string="Candidate"/>
+            <field name="proposed_salary" string="Salary"/>
+            <field name="job_id"/>
             <field name="department_id"/>
             <separator/>
             <filter name="message_needaction" string="Unread Messages" domain="[('message_needaction', '=', True)]" groups="mail.group_mail_notification_type_inbox"/>
@@ -19,105 +20,167 @@
             <group expand="0" string="Group By">
                 <filter string="Department" name="department" domain="[]" context="{'group_by': 'department_id'}"/>
                 <filter string="Company" name="company" domain="[]" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
-                <filter string="Employment Type" name="employment_type" domain="[]" context="{'group_by': 'contract_type_id'}"/>
+                <filter string="Stage" name="offer_stage" domain="[]" context="{'group_by': 'offer_stage'}"/>
             </group>
         </search>
         </field>
     </record>
-    <record id="hr_job_recruitment_custom_tree_view" model="ir.ui.view">
-        <field name="name">hr.job.candidate.tree</field>
-        <field name="model">hr.job</field>
+    <record id="hr_offer_recruitment_tree_view" model="ir.ui.view">
+        <field name="name">hr.offer.candidate.tree</field>
+        <field name="model">hr.offer</field>
         <field name="arch" type="xml">
-            <tree string="Jobs" js_class="myrecruitment_dashboard_list">
-                <field name="sequence" widget="handle" optional="hide"/>
-                <field name="name" string="JOB TITLE"/>
+            <tree string="Job Offer" js_class="myrecruitment_dashboard_list">
+                <field name="candidate_id"/>
+                <field name="job_id" string="JOB TITLE"/>
                 <field name="department_id" string="DEPARTMENT"/>
-                <field name="deadline_date" string="TIMELINE"/>
-                <field name="contract_type_id" string="TYPE" widget="badge" optional="hide"/>
-                <field name="job_nature" string="NATURE" widget="badge"/>
-                <!-- <field name="is_published" string="Published"/> -->
-                <field name="application_count" string="Applications"/>
-                <field name="job_stage" optional="hide"/>
-                <field name="priority" optional="hide"/>
-                <field name="hiring_team_ids" widget="many2one_avatar_user" string="HIRE TEAM"/>
-
-                <field name="applicant_hired" string="Hired"/>
-                <field name="user_id" widget="many2one_avatar_user" optional="hide"/>
-                <field name="no_of_employee" optional="hide"/>
-                <field name="expected_employees" optional="hide"/>
-                <field name="no_of_hired_employee" optional="hide"/>
+                <field name="details" string="DETAILS" optional="show"/>
+                <field name="proposed_salary" string="SALARY" optional="hide"/>
+                <field name="sent_by" string="SENT BY" widget="badge" optional="show"/>
+                <field name="offer_stage" string="SENT BY" widget="badge" optional="show"/>
+                <field name="vendor_id" string="VENDOR" optional="hide"/>
+                <field name="date_expiry" string="EXPIRY"/>
                 <field name="company_id" column_invisible="True" on_change="1"/>
             </tree>
         </field>
     </record>
-    <record id="hr_applicant_custom_tree_view" model="ir.ui.view">
-        <field name="name">hr.applicant.tree</field>
-        <field name="model">hr.applicant</field>
-        <field name="arch" type="xml">
-            <tree string="Candidate" js_class="myrecruitment_dashboard_list">
-                <!-- <div class="cn-view-content-pane active" id="viewPaneList">
-                    <div class="cn-data-table-scroll-outer-frame"> -->
-                        <field name="name" string="CANDIDATE" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
-                        <field name="partner_phone" string="PHONE" class="overwrite-field cn-col-phone cn-cell-pinned-left-3"/>
-                        <field name="email_from" string="EMAIL" class="overwrite-field cn-col-email cn-cell-pinned-left-4"/>
-                        <field name="job_id" string="ROLE" class="overwrite-field cn-col-role"/>
-                        <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role" optional="hide"/>
-                        <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
-                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
-                        <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
-                        <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating" optional="hide"/>
-                        <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
-                        <field name="create_date" string="APPLIED DATE" class="overwrite-field cn-col-date"/>
-                        <field name="stage_id" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
-                        <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
 
-                    <!-- </div>
-                </div> -->
-            </tree>
+    <record id="hr_offer_form_view" model="ir.ui.view">
+        <field name="name">hr.offer.form</field>
+        <field name="model">hr.offer</field><field name="arch" type="xml">
+            <form string="Offer letter" create="0" edit="0">
+                <div class="ods-demo-layout">
+                    <div class="ods-overlay open"></div>
+                    <aside class="ods-drawer-sheet open">
+                        <div class="ods-sheet-content">
+                            <div class="ods-sheet-header">
+                                <button class="ods-close-btn" special="cancel"><i class="fa fa-close"></i></button>
+                                
+                                <span class="ods-status-pill accepted"><field name="offer_stage" readonly="1" nolabel="1"/></span>
+                                <h2><field name="candidate_id"/></h2>
+                                <p><field name="job_id" nolabel="1"/></p>
+                            </div>
+
+                            <div class="ods-action-row">
+                                <button class="ods-btn ods-btn-primary" type="object" name="action_create_placement" style="width:100%; background:#E60067; border-color:#E60067;"><i class="fa fa-briefcase"></i> Create Placement</button>
+                            </div>
+
+                            <div class="ods-timeline-card">
+                                <h4 class="ods-section-title">Offer Timeline</h4>
+                                <div class="ods-timeline-stream">
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Created</h5><p><field name="create_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot"><i class="fa fa-circle"></i></div>
+                                        <div class="ods-node-text"><h5>Approved</h5><p><field name="approved_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Sent</h5><p><field name="date_char" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Viewed</h5><p><field name="viewed_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Response</h5><p><field name="response_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ods-summary-section">
+                                <h4 class="ods-section-title">Offer Summary</h4>
+                                <div class="ods-attributes">
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Candidate</span>
+                                        <span class="ods-attr-value"><field name="candidate_id" nolabel="1" readonly="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Job</span>
+                                        <span class="ods-attr-value"><field name="job_id" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Base Salary</span>
+                                        <span class="ods-attr-value"><field name="proposed_salary" nolabel="1"/>/<field name="salary_period" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Contract</span>
+                                        <span class="ods-attr-value"><field name="contract_type_id" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Start Date</span>
+                                        <span class="ods-attr-value"><field name="start_date" nolabel="1"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </form>
         </field>
     </record>
-
-    <record id="action_hr_applicant_recruitment" model="ir.actions.act_window">
-        <field name="name">Candidates</field>
-        <field name="res_model">hr.applicant</field>
+     
+    <record id="action_hr_offer_recruitment" model="ir.actions.act_window">
+        <field name="name">Offer:</field>
+        <field name="res_model">hr.offer</field>
         <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="hr_cleon_recruitment.hr_applicant_custom_tree_view"/>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_recruitment_tree_view"/>
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {
                 'view_mode': 'tree',
-                'view_id': ref('hr_applicant_custom_tree_view'),
+                'view_id': ref('hr_offer_recruitment_tree_view'),
             }),
             
         ]"/> 
     </record>
 
-    <!-- (0, 0, {
-                'view_mode': 'form',
-                'view_id': ref('hr_employee.view_hr_core_multi_branch_form'),
-            }), -->
+    <record id="action_hr_add_offer" model="ir.actions.act_window">
+        <field name="name">Add offer</field>
+        <field name="res_model">hr.offer</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_form_view"/>
+        <field name="target">new</field>
+        <!-- <field name="context">{'default_mode': 'select'}</field> -->
+    </record>
 
-    <menuitem id="menu_hr_applicant_recruitment_root"
-              name="HR Recruitment"
-              sequence="3"
-              action="action_hr_applicant_recruitment"
+    <record id="action_hr_offer_hired_recruitment" model="ir.actions.act_window">
+        <field name="name">Offer:</field>
+        <field name="res_model">hr.offer</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('offer_stage','=','hired')]</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_recruitment_tree_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_offer_recruitment_tree_view'),
+            }),
+            
+        ]"/> 
+    </record>
+ 
+    <menuitem id="menu_hr_offer_recruitment_root"
+              name="Offer Management"
+              sequence="2"
+              parent="hr_cleon_recruitment.menu_hr_applicant_recruitment_root"
+              action="action_hr_offer_recruitment"
               groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
-
-    <record id="action_hr_job_recruitment" model="ir.actions.act_window">
-        <field name="name">JOBS:</field>
-        <field name="res_model">hr.job</field>
-        <field name="view_mode">tree,form</field>
-        <field name="view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_tree_view"/>
-        <field name="search_view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_search_view"/>
-        <field name="view_ids" eval="[
-            (5, 0, 0),
-            (0, 0, {
-                'view_mode': 'tree',
-                'view_id': ref('hr_job_recruitment_custom_tree_view'),
-            }),
-            
-        ]"/> 
-    </record>
+    <menuitem id="menu_hr_offers_recruitment_root"
+              name="Offers"
+              sequence="3"
+              parent="hr_cleon_recruitment.menu_hr_offer_recruitment_root"
+              action="action_hr_offer_recruitment"
+              groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
+    <menuitem id="menu_hr_offers_hired_recruitment_root"
+              name="Hired"
+              sequence="6"
+              parent="hr_cleon_recruitment.menu_hr_offer_recruitment_root"
+              action="action_hr_offer_hired_recruitment"
+              />
+ 
 </odoo>
 
               <!-- web_icon="hr_cleon_recruitment,static/description/icon.png" -->

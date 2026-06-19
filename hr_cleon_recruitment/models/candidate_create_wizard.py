@@ -85,7 +85,8 @@ class HrApplicantCandidateWizard(models.TransientModel):
             raise UserError(_('First Name and Last Name are required.'))
         if not self.email_from:
             raise UserError(_('Email is required.'))
-
+        if not self.job_id.offer_report_ids:
+            raise UserError(_('Contact admin to set up an offer template.'))
         full_name = f"{self.first_name} {self.last_name}".strip()
 
         applicant = self.env['hr.applicant'].create({

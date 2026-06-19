@@ -25,7 +25,7 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
             console.log("currentController.action→", this.actionService.currentController?.action);
             console.log("props.list              →", this.props.list);
             console.log("props.list.resModel     →", this.props.list?.resModel);
-            console.log("_resolveActionName()    →", this._resolveCurrentActionName());
+            console.log("_resolveActionName()    →", this._resolveCurrentModelName());
             console.groupEnd();
         });
 
@@ -58,7 +58,10 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         );
     }
 
-    _resolveCurrentActionName() {
+    _resolveCurrentModelName() {
+        return (
+            this.props.list?.resModel
+        ).trim();
         // Try every known path — one of them will have the name
         // return (
         //     this.env.config?.action?.name ||
@@ -67,23 +70,27 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         //     this.props?.action?.name ||
         //     ""
         // ).trim();
-        return (
-            this.props.list?.resModel
-        ).trim();
+        
     }
 
     // ── getters ─────────────────────────────────────────────────────────────
 
     get isApplicantView() {
-        const name = this._resolveCurrentActionName();
+        const name = this._resolveCurrentModelName();
         console.log("[Recruitment] isApplicantView — name:", name);
         return name === "hr.applicant";
     }
 
     get isJobView() {
-        const name = this._resolveCurrentActionName();
+        const name = this._resolveCurrentModelName();
         console.log("[Recruitment] isJobView — name:", name);
         return name === "hr.job";
+    }
+
+    get isJobOffer() {
+        const name = this._resolveCurrentModelName();
+        console.log("[Recruitment] isJobOffer — name:", name);
+        return name === "hr.offer";
     }
 
     get currentModel() {
@@ -91,7 +98,7 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
     }
 
     get currentActionName() {
-        return this._resolveCurrentActionName();
+        return this._resolveCurrentModelName();
     }
 
     // ── action handlers ──────────────────────────────────────────────────────
@@ -101,6 +108,22 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         await this.actionService.doAction(
             "hr_cleon_recruitment.action_hr_recruitment_add_candidate",
             { target: "new", name: "Add Candidate" }
+        );
+    }
+
+    async openJobWizard(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_add_job",
+            { target: "new", name: "Add Job positions"}
+        );
+    }
+
+    async openOfferWizard(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_offer_wizard_recruitment",
+            { target: "new", name: "Add Offer"}
         );
     }
 
@@ -123,8 +146,15 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
     async openDepartment(ev) {
         ev.preventDefault();
         await this.actionService.doAction(
-            "hr_cleon_recruitment.action_hr_department_recruitment",
+            "hr_cleon_recruitment.hr_department_recruitment_custom_tree_view",
             { target: "current" }
+        );
+    }
+    async openOffers(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_offer_recruitment",
+            { target: "new" }
         );
     }
 }

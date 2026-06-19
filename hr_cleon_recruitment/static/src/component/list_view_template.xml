@@ -53,11 +53,11 @@
                 </div> 
             </div> 
 
-            <div t-if="isJobView" class="job-header-ribbon">
+            <div t-if="isJobView" class="rc-header-ribbon">
 
                 <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right:10px">
                     <button class="cn-btn-primary-action"
-                            t-on-click="openCandidateWizard"
+                            t-on-click="openJobWizard"
                             type="button">
                         <i class="fa fa-plus"/>
                         <span>Add Job Position</span>
@@ -67,7 +67,7 @@
                 <div class="cn-metrics-grid-ribbon">
                     <div class="cn-metric-card-item" data-metric="open">
                         <div class="cn-metric-top-row">
-                            <h2 class="cn-metric-value-display">5</h2>
+                            <h2 class="cn-metric-value-display">0</h2>
                             <div class="cn-metric-icon-box bg-purple-sub">
                                 <i class="fa fa-briefcase"/>
                             </div>
@@ -108,6 +108,63 @@
 
             </div>
 
+            <div t-if="isJobOffer" class="rc-header-ribbon">
+                <div class="s-oh-card-header-actions">
+                    <div class="s-oh-header-text">
+                        <div class="s-oh-title-with-icon">
+                            <div class="s-oh-header-icon-badge"><i class="fa fa-trophy"></i></div>
+                            <h2>Offer Management</h2>
+                        </div>
+                        <p>Track, send and manage all offers across your pipeline</p>
+                    </div>
+                    <div class="s-oh-action-buttons">
+                        
+                        <button class="s-oh-btn s-oh-btn-secondary"
+                            t-on-click="openOfferWizard"
+                                type="button">
+                            <i class="fa fa-layers"/>
+                            <span>Templates</span>
+                        </button>
+                        <button class="cn-btn-primary-action"
+                            t-on-click="openOfferWizard"
+                                type="button">
+                            <i class="fa fa-plus"/>
+                            <span>Create New Offer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="s-oh-metrics-grid">
+                    <div class="s-oh-metric-card active" style="--s-oh-card-color: #E60067;">
+                        <div class="s-oh-metric-val">15</div>
+                        <div class="s-oh-metric-label">TOTAL OFFERS</div>
+                    </div>
+                    <div class="s-oh-metric-card" style="--s-oh-card-color: #E28700;">
+                        <div class="s-oh-metric-val">5</div>
+                        <div class="s-oh-metric-label">AWAITING</div>
+                    </div>
+                    <div class="s-oh-metric-card" style="--s-oh-card-color: #00B351;">
+                        <div class="s-oh-metric-val">4</div>
+                        <div class="s-oh-metric-label">ACCEPTED</div>
+                    </div>
+                    <div class="s-oh-metric-card" style="--s-oh-card-color: #E61C24;">
+                        <div class="s-oh-metric-val">1</div>
+                        <div class="s-oh-metric-label">REJECTED</div>
+                    </div>
+                    <div class="s-oh-metric-card" style="--s-oh-card-color: #8338EC;">
+                        <div class="s-oh-metric-val">1</div>
+                        <div class="s-oh-metric-label">COUNTERED</div>
+                    </div>
+                </div>
+
+                <div class="s-oh-offers-table-wrapper">
+                    <div class="s-oh-table-header-title">
+                        <h3>Offers <span class="s-oh-badge-count">0 offers</span></h3>
+                        <span class="s-oh-pagination-tracker">Showing 80 offers</span>
+                    </div>
+                </div>
+            </div>
+
         </xpath>
         <xpath expr="//div[@t-ref='root']" position="before">
             <aside class="sidebar">
@@ -132,7 +189,7 @@
                         </a>
                     </li>
                     <li>
-                        <a class="sidebar-nav-item" t-on-click="openCandidate">
+                        <a class="sidebar-nav-item" t-on-click="openOffers">
                             <i class="sidebar-nav-icon fa fa-check-circle"></i>
                             Offers and Hired
                         </a>

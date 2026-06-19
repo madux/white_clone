@@ -300,6 +300,46 @@
 }
 .rc_example_text strong { color: #374151; }
 
+.rc-btn-primary:hover {
+    background: #f16da8;
+}
+
+.rc-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid #e5e7eb;
+    background: #fafafa;
+    width: 100% !important;
+}
+
+.rc_content .shiftpush{
+    gap: 5px !important;
+     
+}
+.rc_content span{
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    margin-top: 6px !important;
+    color: #a5adb5 !important;
+}
+
+.rc_content h4 span {
+    font-family: 'DM Sans', system-ui, sans-serif !important;
+    color: #2a2f32 !important; /* Example: Orange color */
+    font-weight: bold;
+    font-size: 2rem;
+}
+
+/* Style for span inside h6 */
+.rc_content h6 span {
+    font-family: 'DM Sans', system-ui, sans-serif !important;
+    color: #849aa8 !important; /* Example: Blue color */
+    font-size: 0.9rem;
+}
+
 /* ── Buttons ─────────────────────────────────────────────── */
 .rc_footer {
     display: flex;

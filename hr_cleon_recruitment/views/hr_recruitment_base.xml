@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <record id="hr_recruitment_base_job_form_view" model="ir.ui.view">
+        <field name="name">hr.job.form</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="offer_report_ids" readonly="0" required="1" widget="many2many_tags"/>
+                <field name="hiring_team_ids" readonly="0" required="1" widget="many2many_tags"/>
+                <field name="job_stage" readonly="0" widget="badge"/>
+                <field name="job_nature" readonly="0" widget="radio" options="{'horizontal': true}"/>
+                <field name="priority" readonly="0" widget="priority"/>
+                <field name="deadline_date" readonly="0"/>
+                <field name="deadline_date_char" readonly="1"/>
+            </xpath>
+
+            <xpath expr="//notebook/page[last()]" position="after">
+                <field name ="offer_terms" widget="html"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_applicant_recruitment_base_form_view" model="ir.ui.view">
+        <field name="name">hr.applicant.recruitment.form</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='job_id']" position="after">
+                <field name="applied_date" readonly="0" required="0"/>
+                <field name="email_sent" readonly="1"/>
+
+            </xpath>
+        </field>
+    </record>
+    <record id="action_hr_add_job" model="ir.actions.act_window">
+        <field name="name">Add Job</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr.view_hr_job_form"/>
+        <field name="target">new</field>
+        <!-- <field name="context">{'default_mode': 'select'}</field> -->
+    </record>
+     
+    
+</odoo>
