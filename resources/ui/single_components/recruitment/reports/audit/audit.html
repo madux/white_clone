@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Trail</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="rca-body">
+
+    <main class="rca-container">
+        <div class="rca-audit-section-header">
+            <div>
+                <h2 class="rca-audit-title"><i class="fa-solid fa-shield-halved color-pink"></i> Audit Trail</h2>
+                <p class="rca-sub-title">Complete system activity log with IP tracking</p>
+            </div>
+            <div class="rca-audit-strip-actions">
+                <span class="rca-btn-refresh"><i class="fa-solid fa-rotate"></i> Refresh</span>
+                <span class="rca-btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</span>
+            </div>
+        </div>
+
+        <div class="rca-audit-metrics-strip">
+            <div class="rca-audit-metric-block b-l-default">
+                <span class="rca-amb-val">39</span>
+                <span class="rca-amb-lbl">Total Events</span>
+            </div>
+            <div class="rca-audit-metric-block b-l-danger">
+                <span class="rca-amb-val color-red">4</span>
+                <span class="rca-amb-lbl">Critical</span>
+            </div>
+            <div class="rca-audit-metric-block b-l-warning">
+                <span class="rca-amb-val color-orange">4</span>
+                <span class="rca-amb-lbl">Warnings</span>
+            </div>
+            <div class="rca-audit-metric-block b-l-info">
+                <span class="rca-amb-val color-blue">5</span>
+                <span class="rca-amb-lbl">Unique Users</span>
+            </div>
+            <div class="rca-audit-metric-block b-l-purple">
+                <span class="rca-amb-val color-purple">23</span>
+                <span class="rca-amb-lbl">Unique IPs</span>
+            </div>
+        </div>
+
+        <div class="rca-audit-search-row">
+            <div class="rca-audit-filter-pill"><i class="fa-solid fa-filter"></i> Filters <i class="fa-solid fa-chevron-down"></i></div>
+            <div class="rca-search-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search by User, action, IP address, location..." class="rca-audit-input-field">
+            </div>
+        </div>
+
+        <div class="rca-table-wrapper">
+            <table class="rca-data-table rca-audit-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th><th>User</th><th>Action Type</th><th>Module</th><th>Action & Description</th><th>Severity</th><th>IP Address</th><th>Location</th><th>Device</th><th>Session ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1:36:20 PM<br><span class="rca-muted-text">6/15/2026</span></td>
+                        <td><strong>Emekaokoli00 Demo</strong><br><span class="rca-muted-text">emekaokoli00@gmail.com<br>Admin</span></td>
+                        <td>Auth</td>
+                        <td class="color-pink font-semibold">Authentication</td>
+                        <td><strong>User Login</strong><br><span class="rca-muted-text">Emekaokoli00 Demo logged in successfully</span></td>
+                        <td><span class="rca-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                        <td>104.111.91.223</td>
+                        <td>Ikeja, Nigeria</td>
+                        <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="rca-muted-text">Windows</span></td>
+                        <td class="rca-ellipsis-cell">session_17823788...</td>
+                    </tr>
+                    <tr>
+                        <td>12:24:10 PM<br><span class="rca-muted-text">6/15/2026</span></td>
+                        <td><strong>Sarah Chen</strong><br><span class="rca-muted-text">sarah.chen@democompany.com<br>Admin</span></td>
+                        <td>Update</td>
+                        <td class="color-blue font-semibold">Settings</td>
+                        <td><strong>Updated Settings</strong><br><span class="rca-muted-text">Updated company branding settings</span></td>
+                        <td><span class="rca-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                        <td>41.50.112.10</td>
+                        <td>Lagos, Nigeria</td>
+                        <td><i class="fa-solid fa-question"></i> Unknown<br><span class="rca-muted-text">Unknown OS</span></td>
+                        <td class="rca-ellipsis-cell">sess_307991234_yn2a1</td>
+                    </tr>
+                    <tr>
+                        <td>11:15:18 PM<br><span class="rca-muted-text">6/8/2026</span></td>
+                        <td><strong>Michael Rodriguez</strong><br><span class="rca-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                        <td>System</td>
+                        <td class="color-purple font-semibold">Candidates</td>
+                        <td><strong>Permission Changed</strong><br><span class="rca-muted-text">Changed user role from Recruiter to Admin</span></td>
+                        <td><span class="rca-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                        <td>41.50.112.10</td>
+                        <td>Lagos, Nigeria</td>
+                        <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="rca-muted-text">Windows</span></td>
+                        <td class="rca-ellipsis-cell">sess_307991234_op113</td>
+                    </tr>
+                    <tr>
+                        <td>11:12:10 AM<br><span class="rca-muted-text">6/8/2026</span></td>
+                        <td><strong>Unknown</strong></td>
+                        <td>Auth</td>
+                        <td class="color-pink font-semibold">Authentication</td>
+                        <td><strong>Login Failed</strong><br><span class="rca-muted-text">Failed login attempt with email admin@test.com</span></td>
+                        <td><span class="rca-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                        <td>81.202.45.211</td>
+                        <td>Unknown</td>
+                        <td><i class="fa-brands fa-firefox"></i> Firefox<br><span class="rca-muted-text">Linux</span></td>
+                        <td class="rca-ellipsis-cell">sess_failed_32ad</td>
+                    </tr>
+                    <tr>
+                        <td>10:15:10 AM<br><span class="rca-muted-text">6/7/2026</span></td>
+                        <td><strong>Michael Rodriguez</strong><br><span class="rca-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                        <td>Delete</td>
+                        <td class="color-purple font-semibold">Candidates</td>
+                        <td><strong>Deleted Candidate</strong><br><span class="rca-muted-text">Deleted candidate: John Smith</span></td>
+                        <td><span class="rca-badge badge-warning"><i class="fa-solid fa-circle-exclamation"></i> Warning</span></td>
+                        <td>197.210.33.12</td>
+                        <td>Abuja, Nigeria</td>
+                        <td><i class="fa-solid fa-question"></i> Unknown<br><span class="rca-muted-text">Unknown OS</span></td>
+                        <td class="rca-ellipsis-cell">sess_307991234_x2r78</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</body>
+</html>
