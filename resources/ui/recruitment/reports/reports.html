@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="rc-body">
+
+    <main class="rc-reports-container">
+        <header class="rc-header">
+            <div class="rc-header-title-zone">
+                <h1 class="rc-main-title">Reports</h1>
+                <p class="rc-sub-title">Comprehensive recruitment analytics</p>
+            </div>
+            <div class="rc-header-actions">
+                <button class="rc-btn rc-btn-secondary">Take Tour</button>
+                <button class="rc-btn rc-btn-primary"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                <button class="rc-btn rc-btn-primary"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+            </div>
+        </header>
+
+        <section class="rc-filter-bar">
+            <div class="rc-date-selector">
+                <i class="fa-solid fa-calendar-days"></i>
+                <label for="date-range" class="rc-date-label">Date Range:</label>
+                <select id="date-range" class="rc-select-dropdown">
+                    <option value="30">Last 30 days</option>
+                    <option value="14">Last 14 days</option>
+                    <option value="7">Last 7 days</option>
+                </select>
+            </div>
+        </section>
+
+        <nav class="rc-tabs-nav">
+            <button class="rc-tab-link active" data-tab="overview"><i class="fa-solid fa-chart-simple"></i> Overview</button>
+            <button class="rc-tab-link" data-tab="pipeline"><i class="fa-solid fa-chart-gantt"></i> Pipeline Performance</button>
+            <button class="rc-tab-link" data-tab="source"><i class="fa-solid fa-bullseye"></i> Source & Attribution</button>
+            <button class="rc-tab-link" data-tab="recruiter"><i class="fa-solid fa-users"></i> Recruiter Performance</button>
+            <button class="rc-tab-link" data-tab="job-level"><i class="fa-solid fa-briefcase"></i> Job-Level Reports</button>
+            <button class="rc-tab-link" data-tab="candidate-quality"><i class="fa-solid fa-award"></i> Candidate Quality</button>
+            <button class="rc-tab-link" data-tab="communication"><i class="fa-solid fa-envelope"></i> Communication</button>
+            <button class="rc-tab-link" data-tab="audit"><i class="fa-solid fa-shield-halved"></i> Audit Trail</button>
+        </nav>
+
+        <hr class="rc-divider">
+
+        <div class="rc-tab-content-container">
+
+            <div id="overview" class="rc-tab-pane active">
+                <div class="rc-kpi-grid">
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Total Jobs</span>
+                            <span class="rc-kpi-value">0</span>
+                            <span class="rc-kpi-sub">0 active, 0 closed</span>
+                        </div>
+                        <i class="fa-solid fa-briefcase rc-icon-kpi color-pink"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Total Candidates</span>
+                            <span class="rc-kpi-value">3</span>
+                            <span class="rc-kpi-sub">0 hired, 0 rejected</span>
+                        </div>
+                        <i class="fa-solid fa-user-group rc-icon-kpi color-purple"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Avg Time to Hire</span>
+                            <span class="rc-kpi-value">0</span>
+                            <span class="rc-kpi-sub">days (median: 0)</span>
+                        </div>
+                        <i class="fa-solid fa-clock rc-icon-kpi color-red"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Offer Acceptance</span>
+                            <span class="rc-kpi-value">0%</span>
+                            <span class="rc-kpi-sub">acceptance rate</span>
+                        </div>
+                        <i class="fa-solid fa-ribbon rc-icon-kpi color-pink"></i>
+                    </div>
+                </div>
+                <div class="rc-chart-full-box">
+                    <h3>Candidates by Stage</h3>
+                    <div class="rc-chart-wrapper">
+                        <canvas id="overviewChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pipeline" class="rc-tab-pane">
+                <div class="rc-chart-full-box m-b-20">
+                    <h3>Pipeline Funnel</h3>
+                    <div class="rc-chart-wrapper-horizontal">
+                        <canvas id="pipelineFunnelChart"></canvas>
+                    </div>
+                </div>
+                <div class="rc-chart-full-box m-b-20">
+                    <h3>Stage Conversion Rates</h3>
+                    <div class="rc-conversion-list">
+                        <div class="rc-conversion-item">
+                            <span class="rc-conv-label">New <i class="fa-solid fa-chevron-right"></i> Screening</span>
+                            <div class="rc-progress-bar-container">
+                                <div class="rc-progress-fill" style="width: 100%;"></div>
+                            </div>
+                            <span class="rc-conv-pct">100%</span>
+                        </div>
+                        <div class="rc-conversion-item">
+                            <span class="rc-conv-label">Screening <i class="fa-solid fa-chevron-right"></i> Interview</span>
+                            <div class="rc-progress-bar-container">
+                                <div class="rc-progress-fill" style="width: 100%;"></div>
+                            </div>
+                            <span class="rc-conv-pct">100%</span>
+                        </div>
+                        <div class="rc-conversion-item">
+                            <span class="rc-conv-label">Interview <i class="fa-solid fa-chevron-right"></i> Offer</span>
+                            <div class="rc-progress-bar-container">
+                                <div class="rc-progress-fill" style="width: 0%;"></div>
+                            </div>
+                            <span class="rc-conv-pct">0%</span>
+                        </div>
+                        <div class="rc-conversion-item">
+                            <span class="rc-conv-label">Offer <i class="fa-solid fa-chevron-right"></i> Hired</span>
+                            <div class="rc-progress-bar-container">
+                                <div class="rc-progress-fill" style="width: 0%;"></div>
+                            </div>
+                            <span class="rc-conv-pct">0%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="rc-chart-full-box">
+                    <h3>Average Time in Stage</h3>
+                    <div class="rc-chart-wrapper">
+                        <canvas id="avgTimeStageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="source" class="rc-tab-pane">
+                <div class="rc-chart-split-grid">
+                    <div class="rc-chart-card">
+                        <h3>Candidates by Source</h3>
+                        <div class="rc-pie-chart-container">
+                            <canvas id="candidatesSourceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="rc-chart-card">
+                        <h3>Conversion Rate by Source</h3>
+                        <div class="rc-chart-wrapper">
+                            <canvas id="conversionSourceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="rc-table-card">
+                    <h3>Source Performance Details</h3>
+                    <div class="rc-table-wrapper">
+                        <table class="rc-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Source</th>
+                                    <th>Total</th>
+                                    <th>Hired</th>
+                                    <th>Rejected</th>
+                                    <th>Conversion</th>
+                                    <th>Avg Time to Hire</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>LinkedIn</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Career Site</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Referral</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="recruiter" class="rc-tab-pane">
+                <div class="rc-table-card m-b-20">
+                    <h3>Recruiter Performance Leaderboard</h3>
+                    <div class="rc-table-wrapper">
+                        <table class="rc-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Recruiter</th>
+                                    <th>Role</th>
+                                    <th>Candidates</th>
+                                    <th>Interviews</th>
+                                    <th>Hires</th>
+                                    <th>Avg TTH</th>
+                                    <th>Emails</th>
+                                    <th>Offers</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>#1</strong></td><td><strong>Sarah Chen</strong></td><td>Admin</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>#2</strong></td><td><strong>Michael Rodriguez</strong></td><td>Recruiter</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>#3</strong></td><td><strong>Emily Thompson</strong></td><td>Hiring Manager</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="rc-chart-full-box">
+                    <h3>Hires by Recruiter</h3>
+                    <div class="rc-chart-wrapper">
+                        <canvas id="hiresRecruiterChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="job-level" class="rc-tab-pane">
+                <div class="rc-job-selector-card">
+                    <label class="rc-block-label">Select Job</label>
+                    <select class="rc-full-dropdown">
+                        <option value="" disabled selected>Select a job to view details...</option>
+                        <option value="se">Software Engineer</option>
+                        <option value="pm">Product Manager</option>
+                    </select>
+                </div>
+                <div class="rc-empty-state-container">
+                    <i class="fa-solid fa-briefcase rc-empty-icon"></i>
+                    <p>Select a job from the dropdown above to view detailed analytics</p>
+                </div>
+            </div>
+
+            <div id="candidate-quality" class="rc-tab-pane">
+                <div class="rc-chart-split-grid">
+                    <div class="rc-chart-card">
+                        <h3>Average AI Score by Stage</h3>
+                        <div class="rc-chart-wrapper">
+                            <canvas id="aiScoreChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="rc-chart-card">
+                        <h3>Candidate Rating Distribution</h3>
+                        <div class="rc-chart-wrapper">
+                            <canvas id="ratingDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="rc-kpi-grid m-t-20">
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Scorecards Completed</span>
+                            <span class="rc-kpi-value">0</span>
+                        </div>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Average Scorecard Score</span>
+                            <span class="rc-kpi-value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="communication" class="rc-tab-pane">
+                <div class="rc-kpi-grid">
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Emails Sent</span>
+                            <span class="rc-kpi-value">0</span>
+                            <span class="rc-kpi-sub">0 manual</span>
+                        </div>
+                        <i class="fa-solid fa-envelope rc-icon-kpi color-pink"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">SMS Sent</span>
+                            <span class="rc-kpi-value">0</span>
+                        </div>
+                        <i class="fa-solid fa-comment-sms rc-icon-kpi color-pink"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Response Rate</span>
+                            <span class="rc-kpi-value">0%</span>
+                        </div>
+                        <i class="fa-solid fa-arrow-trend-up rc-icon-kpi color-pink"></i>
+                    </div>
+                    <div class="rc-kpi-card">
+                        <div class="rc-kpi-info">
+                            <span class="rc-kpi-title">Avg Response Time</span>
+                            <span class="rc-kpi-value">4.2</span>
+                            <span class="rc-kpi-sub">hours</span>
+                        </div>
+                        <i class="fa-solid fa-clock rc-icon-kpi color-pink"></i>
+                    </div>
+                </div>
+                <div class="rc-chart-split-grid">
+                    <div class="rc-chart-card">
+                        <h3>Messages by Type</h3>
+                        <div class="rc-chart-wrapper"><canvas id="msgTypeChart"></canvas></div>
+                    </div>
+                    <div class="rc-chart-card">
+                        <h3>Automation vs Manual</h3>
+                        <div class="rc-chart-wrapper"><canvas id="msgAutomationChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="rc-chart-full-box m-t-20">
+                    <h3>Messages Over Time (Last 14 Days)</h3>
+                    <div class="rc-chart-wrapper-horizontal">
+                        <canvas id="msgOverTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="audit" class="rc-tab-pane">
+                <div class="rc-audit-section-header">
+                    <div>
+                        <h2 class="rc-audit-title"><i class="fa-solid fa-shield-halved color-pink"></i> Audit Trail</h2>
+                        <p class="rc-sub-title">Complete system activity log with IP tracking</p>
+                    </div>
+                    <div class="rc-audit-strip-actions">
+                        <button class="rc-btn-refresh"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <button class="rc-btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                    </div>
+                </div>
+                <div class="rc-audit-metrics-strip">
+                    <div class="rc-audit-metric-block b-l-default">
+                        <span class="rc-amb-val">39</span>
+                        <span class="rc-amb-lbl">Total Events</span>
+                    </div>
+                    <div class="rc-audit-metric-block b-l-danger">
+                        <span class="rc-amb-val color-red">4</span>
+                        <span class="rc-amb-lbl">Critical</span>
+                    </div>
+                    <div class="rc-audit-metric-block b-l-warning">
+                        <span class="rc-amb-val color-orange">4</span>
+                        <span class="rc-amb-lbl">Warnings</span>
+                    </div>
+                    <div class="rc-audit-metric-block b-l-info">
+                        <span class="rc-amb-val color-blue">5</span>
+                        <span class="rc-amb-lbl">Unique Users</span>
+                    </div>
+                    <div class="rc-audit-metric-block b-l-purple">
+                        <span class="rc-amb-val color-purple">23</span>
+                        <span class="rc-amb-lbl">Unique IPs</span>
+                    </div>
+                </div>
+
+                <div class="rc-audit-search-row">
+                    <div class="rc-audit-filter-pill"><i class="fa-solid fa-filter"></i> Filters <i class="fa-solid fa-chevron-down"></i></div>
+                    <div class="rc-search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" placeholder="Search by User, action, IP address, location..." class="rc-audit-input-field">
+                    </div>
+                </div>
+
+                <div class="rc-table-wrapper">
+                    <table class="rc-data-table rc-audit-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action Type</th>
+                                <th>Module</th>
+                                <th>Action & Description</th>
+                                <th>Severity</th>
+                                <th>IP Address</th>
+                                <th>Location</th>
+                                <th>Device</th>
+                                <th>Session ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1:36:20 PM<br><span class="rc-muted-text">6/15/2026</span></td>
+                                <td><strong>Emekaokoli00 Demo</strong><br><span class="rc-muted-text">emekaokoli00@gmail.com<br>Admin</span></td>
+                                <td>Auth</td>
+                                <td class="color-pink font-semibold">Authentication</td>
+                                <td><strong>User Login</strong><br><span class="rc-muted-text">Emekaokoli00 Demo logged in successfully</span></td>
+                                <td><span class="rc-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                                <td>104.111.91.223</td>
+                                <td>Ikeja, Nigeria</td>
+                                <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="rc-muted-text">Windows</span></td>
+                                <td class="rc-ellipsis-cell">session_17823788...</td>
+                            </tr>
+                            <tr>
+                                <td>12:24:10 PM<br><span class="rc-muted-text">6/15/2026</span></td>
+                                <td><strong>Sarah Chen</strong><br><span class="rc-muted-text">sarah.chen@democompany.com<br>Admin</span></td>
+                                <td>Update</td>
+                                <td class="color-blue font-semibold">Settings</td>
+                                <td><strong>Updated Settings</strong><br><span class="rc-muted-text">Updated company branding settings</span></td>
+                                <td><span class="rc-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                                <td>41.50.112.10</td>
+                                <td>Lagos, Nigeria</td>
+                                <td><i class="fa-solid fa-question"></i> Unknown<br><span class="rc-muted-text">Unknown OS</span></td>
+                                <td class="rc-ellipsis-cell">sess_307991234_yn2a1</td>
+                            </tr>
+                            <tr>
+                                <td>11:15:18 PM<br><span class="rc-muted-text">6/8/2026</span></td>
+                                <td><strong>Michael Rodriguez</strong><br><span class="rc-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                                <td>System</td>
+                                <td class="color-purple font-semibold">Candidates</td>
+                                <td><strong>Permission Changed</strong><br><span class="rc-muted-text">Changed user role from Recruiter to Admin</span></td>
+                                <td><span class="rc-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                                <td>41.50.112.10</td>
+                                <td>Lagos, Nigeria</td>
+                                <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="rc-muted-text">Windows</span></td>
+                                <td class="rc-ellipsis-cell">sess_307991234_op113</td>
+                            </tr>
+                            <tr>
+                                <td>11:12:10 AM<br><span class="rc-muted-text">6/8/2026</span></td>
+                                <td><strong>Unknown</strong></td>
+                                <td>Auth</td>
+                                <td class="color-pink font-semibold">Authentication</td>
+                                <td><strong>Login Failed</strong><br><span class="rc-muted-text">Failed login attempt with email admin@test.com</span></td>
+                                <td><span class="rc-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                                <td>81.202.45.211</td>
+                                <td>Unknown</td>
+                                <td><i class="fa-brands fa-firefox"></i> Firefox<br><span class="rc-muted-text">Linux</span></td>
+                                <td class="rc-ellipsis-cell">sess_failed_32ad</td>
+                            </tr>
+                            <tr>
+                                <td>10:15:10 AM<br><span class="rc-muted-text">6/7/2026</span></td>
+                                <td><strong>Michael Rodriguez</strong><br><span class="rc-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                                <td>Delete</td>
+                                <td class="color-purple font-semibold">Candidates</td>
+                                <td><strong>Deleted Candidate</strong><br><span class="rc-muted-text">Deleted candidate: John Smith</span></td>
+                                <td><span class="rc-badge badge-warning"><i class="fa-solid fa-circle-exclamation"></i> Warning</span></td>
+                                <td>197.210.33.12</td>
+                                <td>Abuja, Nigeria</td>
+                                <td><i class="fa-solid fa-question"></i> Unknown<br><span class="rc-muted-text">Unknown OS</span></td>
+                                <td class="rc-ellipsis-cell">sess_307991234_x2r78</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

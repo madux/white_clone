@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="s-rc-body">
+
+    <main class="s-rc-reports-container">
+        <header class="s-rc-header">
+            <div class="s-rc-header-title-zone">
+                <h1 class="s-rc-main-title">Reports</h1>
+                <p class="s-rc-sub-title">Comprehensive recruitment analytics</p>
+            </div>
+            <div class="s-rc-header-actions">
+                <span class="s-rc-btn s-rc-btn-secondary">Take Tour</span>
+                <span class="s-rc-btn s-rc-btn-primary"><i class="fa-solid fa-file-csv"></i> Export CSV</span>
+                <span class="s-rc-btn s-rc-btn-primary"><i class="fa-solid fa-file-pdf"></i> Export PDF</span>
+            </div>
+        </header>
+
+        <section class="s-rc-filter-bar">
+            <div class="s-rc-date-selector">
+                <i class="fa-solid fa-calendar-days"></i>
+                <label class="s-rc-date-label">Date Range:</label>
+                <select class="s-rc-select-dropdown">
+                    <option value="30">Last 30 days</option>
+                    <option value="14">Last 14 days</option>
+                    <option value="7">Last 7 days</option>
+                </select>
+            </div>
+        </section>
+
+        <nav class="s-rc-tabs-nav">
+            <span class="s-rc-tab-link active"><i class="fa-solid fa-chart-simple"></i> Overview</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-chart-gantt"></i> Pipeline Performance</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-bullseye"></i> Source & Attribution</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-users"></i> Recruiter Performance</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-briefcase"></i> Job-Level Reports</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-award"></i> Candidate Quality</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-envelope"></i> Communication</span>
+            <span class="s-rc-tab-link"><i class="fa-solid fa-shield-halved"></i> Audit Trail</span>
+        </nav>
+
+        <hr class="s-rc-divider">
+
+        <!-- Overview -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Overview</h2>
+            <div class="s-rc-kpi-grid">
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Total Jobs</span>
+                        <span class="s-rc-kpi-value">0</span>
+                        <span class="s-rc-kpi-sub">0 active, 0 closed</span>
+                    </div>
+                    <i class="fa-solid fa-briefcase s-rc-icon-kpi color-pink"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Total Candidates</span>
+                        <span class="s-rc-kpi-value">3</span>
+                        <span class="s-rc-kpi-sub">0 hired, 0 rejected</span>
+                    </div>
+                    <i class="fa-solid fa-user-group s-rc-icon-kpi color-purple"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Avg Time to Hire</span>
+                        <span class="s-rc-kpi-value">0</span>
+                        <span class="s-rc-kpi-sub">days (median: 0)</span>
+                    </div>
+                    <i class="fa-solid fa-clock s-rc-icon-kpi color-red"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Offer Acceptance</span>
+                        <span class="s-rc-kpi-value">0%</span>
+                        <span class="s-rc-kpi-sub">acceptance rate</span>
+                    </div>
+                    <i class="fa-solid fa-ribbon s-rc-icon-kpi color-pink"></i>
+                </div>
+            </div>
+            <div class="s-rc-chart-full-box">
+                <h3>Candidates by Stage</h3>
+                <div class="s-rc-chart-placeholder">
+                    <div class="s-rc-static-chart">Technical Interview: 1 &middot; Phone Screen: 1 &middot; Applied: 1</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pipeline -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Pipeline Performance</h2>
+            <div class="s-rc-chart-full-box s-rc-mb-20">
+                <h3>Pipeline Funnel</h3>
+                <div class="s-rc-static-chart">New: 1 &rarr; Screening: 1 &rarr; Interview: 1 &rarr; Offer: 0 &rarr; Hired: 0</div>
+            </div>
+            <div class="s-rc-chart-full-box">
+                <h3>Average Time in Stage</h3>
+                <div class="s-rc-static-chart">New: 16d &middot; Screening: 21d &middot; Interview: 28d &middot; Offer: 0d &middot; Hired: 0d</div>
+            </div>
+        </section>
+
+        <!-- Source -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Source & Attribution</h2>
+            <div class="s-rc-chart-split-grid">
+                <div class="s-rc-chart-card">
+                    <h3>Candidates by Source</h3>
+                    <div class="s-rc-static-chart">LinkedIn: 1 &middot; Career Site: 1 &middot; Referral: 1</div>
+                </div>
+                <div class="s-rc-chart-card">
+                    <h3>Conversion Rate by Source</h3>
+                    <div class="s-rc-static-chart">LinkedIn: 0% &middot; Career Site: 0% &middot; Referral: 0%</div>
+                </div>
+            </div>
+            <div class="s-rc-table-card">
+                <h3>Source Performance Details</h3>
+                <div class="s-rc-table-wrapper">
+                    <table class="s-rc-data-table">
+                        <thead>
+                            <tr><th>Source</th><th>Total</th><th>Hired</th><th>Rejected</th><th>Conversion</th><th>Avg Time to Hire</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>LinkedIn</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td></tr>
+                            <tr><td><strong>Career Site</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td></tr>
+                            <tr><td><strong>Referral</strong></td><td>1</td><td class="color-green">0</td><td class="color-red">0</td><td><strong>0%</strong></td><td>0 days</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recruiter -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Recruiter Performance</h2>
+            <div class="s-rc-table-card s-rc-mb-20">
+                <h3>Recruiter Performance Leaderboard</h3>
+                <div class="s-rc-table-wrapper">
+                    <table class="s-rc-data-table">
+                        <thead>
+                            <tr><th>Rank</th><th>Recruiter</th><th>Role</th><th>Candidates</th><th>Interviews</th><th>Hires</th><th>Avg TTH</th><th>Emails</th><th>Offers</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>#1</strong></td><td><strong>Sarah Chen</strong></td><td>Admin</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td></tr>
+                            <tr><td><strong>#2</strong></td><td><strong>Michael Rodriguez</strong></td><td>Recruiter</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td></tr>
+                            <tr><td><strong>#3</strong></td><td><strong>Emily Thompson</strong></td><td>Hiring Manager</td><td>1</td><td>1</td><td class="color-green">0</td><td>- days</td><td>0</td><td>0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="s-rc-chart-full-box">
+                <h3>Hires by Recruiter</h3>
+                <div class="s-rc-static-chart">Sarah Chen: 0 hires &middot; Michael Rodriguez: 0 hires &middot; Emily Thompson: 0 hires</div>
+            </div>
+        </section>
+
+        <!-- Job Level -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Job Level Reports</h2>
+            <div class="s-rc-job-selector-card">
+                <label class="s-rc-block-label">Select Job</label>
+                <select class="s-rc-full-dropdown">
+                    <option disabled selected>Select a job to view details...</option>
+                    <option>Software Engineer</option>
+                    <option>Product Manager</option>
+                </select>
+            </div>
+            <div class="s-rc-empty-state-container">
+                <i class="fa-solid fa-briefcase s-rc-empty-icon"></i>
+                <p>Select a job from the dropdown above to view detailed analytics</p>
+            </div>
+        </section>
+
+        <!-- Candidate Quality -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Candidate Quality</h2>
+            <div class="s-rc-chart-split-grid">
+                <div class="s-rc-chart-card">
+                    <h3>Average AI Score by Stage</h3>
+                    <div class="s-rc-static-chart">Technical: 90 &middot; Phone Screen: 85 &middot; Applied: 82</div>
+                </div>
+                <div class="s-rc-chart-card">
+                    <h3>Candidate Rating Distribution</h3>
+                    <div class="s-rc-static-chart">Rating 4: 1 candidate</div>
+                </div>
+            </div>
+            <div class="s-rc-kpi-grid">
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Scorecards Completed</span>
+                        <span class="s-rc-kpi-value">0</span>
+                    </div>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Average Scorecard Score</span>
+                        <span class="s-rc-kpi-value">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Communication -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Communication</h2>
+            <div class="s-rc-kpi-grid">
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Emails Sent</span>
+                        <span class="s-rc-kpi-value">0</span>
+                        <span class="s-rc-kpi-sub">0 manual</span>
+                    </div>
+                    <i class="fa-solid fa-envelope s-rc-icon-kpi color-pink"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">SMS Sent</span>
+                        <span class="s-rc-kpi-value">0</span>
+                    </div>
+                    <i class="fa-solid fa-comment-sms s-rc-icon-kpi color-pink"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Response Rate</span>
+                        <span class="s-rc-kpi-value">0%</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-trend-up s-rc-icon-kpi color-pink"></i>
+                </div>
+                <div class="s-rc-kpi-card">
+                    <div class="s-rc-kpi-info">
+                        <span class="s-rc-kpi-title">Avg Response Time</span>
+                        <span class="s-rc-kpi-value">4.2</span>
+                        <span class="s-rc-kpi-sub">hours</span>
+                    </div>
+                    <i class="fa-solid fa-clock s-rc-icon-kpi color-pink"></i>
+                </div>
+            </div>
+            <div class="s-rc-chart-split-grid">
+                <div class="s-rc-chart-card"><h3>Messages by Type</h3><div class="s-rc-static-chart">Emails: 0 &middot; SMS: 0</div></div>
+                <div class="s-rc-chart-card"><h3>Automation vs Manual</h3><div class="s-rc-static-chart">Automated: 0 &middot; Manual: 0</div></div>
+            </div>
+        </section>
+
+        <!-- Audit Trail -->
+        <section class="s-rc-section-block">
+            <h2 class="s-rc-section-heading">Audit Trail</h2>
+            <div class="s-rc-audit-section-header">
+                <div>
+                    <h2 class="s-rc-audit-title"><i class="fa-solid fa-shield-halved color-pink"></i> Audit Trail</h2>
+                    <p class="s-rc-sub-title">Complete system activity log with IP tracking</p>
+                </div>
+                <div class="s-rc-audit-strip-actions">
+                    <span class="s-rc-btn-refresh"><i class="fa-solid fa-rotate"></i> Refresh</span>
+                    <span class="s-rc-btn-export-csv"><i class="fa-solid fa-file-csv"></i> Export CSV</span>
+                </div>
+            </div>
+            <div class="s-rc-audit-metrics-strip">
+                <div class="s-rc-audit-metric-block b-l-default">
+                    <span class="s-rc-amb-val">39</span>
+                    <span class="s-rc-amb-lbl">Total Events</span>
+                </div>
+                <div class="s-rc-audit-metric-block b-l-danger">
+                    <span class="s-rc-amb-val color-red">4</span>
+                    <span class="s-rc-amb-lbl">Critical</span>
+                </div>
+                <div class="s-rc-audit-metric-block b-l-warning">
+                    <span class="s-rc-amb-val color-orange">4</span>
+                    <span class="s-rc-amb-lbl">Warnings</span>
+                </div>
+                <div class="s-rc-audit-metric-block b-l-info">
+                    <span class="s-rc-amb-val color-blue">5</span>
+                    <span class="s-rc-amb-lbl">Unique Users</span>
+                </div>
+                <div class="s-rc-audit-metric-block b-l-purple">
+                    <span class="s-rc-amb-val color-purple">23</span>
+                    <span class="s-rc-amb-lbl">Unique IPs</span>
+                </div>
+            </div>
+
+            <div class="s-rc-audit-search-row">
+                <div class="s-rc-audit-filter-pill"><i class="fa-solid fa-filter"></i> Filters <i class="fa-solid fa-chevron-down"></i></div>
+                <div class="s-rc-search-input-wrapper">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" placeholder="Search by User, action, IP address, location..." class="s-rc-audit-input-field">
+                </div>
+            </div>
+
+            <div class="s-rc-table-wrapper">
+                <table class="s-rc-data-table s-rc-audit-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th><th>User</th><th>Action Type</th><th>Module</th><th>Action & Description</th><th>Severity</th><th>IP Address</th><th>Location</th><th>Device</th><th>Session ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1:36:20 PM<br><span class="s-rc-muted-text">6/15/2026</span></td>
+                            <td><strong>Emekaokoli00 Demo</strong><br><span class="s-rc-muted-text">emekaokoli00@gmail.com<br>Admin</span></td>
+                            <td>Auth</td>
+                            <td class="color-pink font-semibold">Authentication</td>
+                            <td><strong>User Login</strong><br><span class="s-rc-muted-text">Emekaokoli00 Demo logged in successfully</span></td>
+                            <td><span class="s-rc-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                            <td>104.111.91.223</td>
+                            <td>Ikeja, Nigeria</td>
+                            <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="s-rc-muted-text">Windows</span></td>
+                            <td class="s-rc-ellipsis-cell">session_17823788...</td>
+                        </tr>
+                        <tr>
+                            <td>12:24:10 PM<br><span class="s-rc-muted-text">6/15/2026</span></td>
+                            <td><strong>Sarah Chen</strong><br><span class="s-rc-muted-text">sarah.chen@democompany.com<br>Admin</span></td>
+                            <td>Update</td>
+                            <td class="color-blue font-semibold">Settings</td>
+                            <td><strong>Updated Settings</strong><br><span class="s-rc-muted-text">Updated company branding settings</span></td>
+                            <td><span class="s-rc-badge badge-info"><i class="fa-solid fa-circle-info"></i> Info</span></td>
+                            <td>41.50.112.10</td>
+                            <td>Lagos, Nigeria</td>
+                            <td><i class="fa-solid fa-question"></i> Unknown<br><span class="s-rc-muted-text">Unknown OS</span></td>
+                            <td class="s-rc-ellipsis-cell">sess_307991234_yn2a1</td>
+                        </tr>
+                        <tr>
+                            <td>11:15:18 PM<br><span class="s-rc-muted-text">6/8/2026</span></td>
+                            <td><strong>Michael Rodriguez</strong><br><span class="s-rc-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                            <td>System</td>
+                            <td class="color-purple font-semibold">Candidates</td>
+                            <td><strong>Permission Changed</strong><br><span class="s-rc-muted-text">Changed user role from Recruiter to Admin</span></td>
+                            <td><span class="s-rc-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                            <td>41.50.112.10</td>
+                            <td>Lagos, Nigeria</td>
+                            <td><i class="fa-brands fa-chrome"></i> Chrome<br><span class="s-rc-muted-text">Windows</span></td>
+                            <td class="s-rc-ellipsis-cell">sess_307991234_op113</td>
+                        </tr>
+                        <tr>
+                            <td>11:12:10 AM<br><span class="s-rc-muted-text">6/8/2026</span></td>
+                            <td><strong>Unknown</strong></td>
+                            <td>Auth</td>
+                            <td class="color-pink font-semibold">Authentication</td>
+                            <td><strong>Login Failed</strong><br><span class="s-rc-muted-text">Failed login attempt with email admin@test.com</span></td>
+                            <td><span class="s-rc-badge badge-critical"><i class="fa-solid fa-triangle-exclamation"></i> Critical</span></td>
+                            <td>81.202.45.211</td>
+                            <td>Unknown</td>
+                            <td><i class="fa-brands fa-firefox"></i> Firefox<br><span class="s-rc-muted-text">Linux</span></td>
+                            <td class="s-rc-ellipsis-cell">sess_failed_32ad</td>
+                        </tr>
+                        <tr>
+                            <td>10:15:10 AM<br><span class="s-rc-muted-text">6/7/2026</span></td>
+                            <td><strong>Michael Rodriguez</strong><br><span class="s-rc-muted-text">m.rodriguez@democompany.com<br>Recruiter</span></td>
+                            <td>Delete</td>
+                            <td class="color-purple font-semibold">Candidates</td>
+                            <td><strong>Deleted Candidate</strong><br><span class="s-rc-muted-text">Deleted candidate: John Smith</span></td>
+                            <td><span class="s-rc-badge badge-warning"><i class="fa-solid fa-circle-exclamation"></i> Warning</span></td>
+                            <td>197.210.33.12</td>
+                            <td>Abuja, Nigeria</td>
+                            <td><i class="fa-solid fa-question"></i> Unknown<br><span class="s-rc-muted-text">Unknown OS</span></td>
+                            <td class="s-rc-ellipsis-cell">sess_307991234_x2r78</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>

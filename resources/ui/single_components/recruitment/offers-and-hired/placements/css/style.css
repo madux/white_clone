@@ -19,7 +19,7 @@ body {
     color: #666; padding: 8px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; border-radius: 6px;
 }
 
-.pl-inner-tab-btn svg { width: 16px; height: 16px; }
+.pl-inner-tab-btn i { font-size: 16px; }
 .pl-inner-tab-btn.active { background-color: #FFF0F6; color: #E60067; font-weight: 600; }
 
 .pl-hired-section { display: flex; flex-direction: column; gap: 24px; }
@@ -39,7 +39,7 @@ body {
     cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
 }
 
-.pl-btn-primary svg { width: 16px; height: 16px; }
+.pl-btn-primary i { font-size: 16px; }
 
 .pl-insights-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
 
@@ -95,7 +95,7 @@ body {
     justify-content: center; color: #999; margin-bottom: 16px;
 }
 
-.pl-empty-icon svg { width: 24px; height: 24px; }
+.pl-empty-icon i { font-size: 24px; }
 .pl-empty-state h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
 .pl-empty-state p { font-size: 14px; color: #666; line-height: 1.5; }
 .text-right { text-align: right; }

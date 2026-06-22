@@ -37,7 +37,7 @@ body {
 }
 
 .com-modal-header h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.com-modal-header h2 svg { width: 20px; height: 20px; color: #E60067; }
+.com-modal-header h2 i { font-size: 20px; color: #E60067; }
 
 .com-modal-close-btn {
     background: none; border: none; cursor: pointer;
@@ -45,7 +45,7 @@ body {
 }
 
 .com-modal-close-btn:hover { background: #F5F5F5; color: #333; }
-.com-modal-close-btn svg { width: 20px; height: 20px; }
+.com-modal-close-btn i { font-size: 20px; }
 
 .com-modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 
@@ -92,7 +92,7 @@ body {
     gap: 8px;
 }
 
-.com-btn svg { width: 16px; height: 16px; }
+.com-btn i { font-size: 16px; }
 
 .com-btn-primary {
     background: #E60067;
