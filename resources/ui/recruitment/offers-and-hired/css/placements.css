@@ -49,7 +49,7 @@
     border-color: var(--oh-primary-magenta-hover);
 }
 
-.oh-btn-record-placement svg { width: 16px; height: 16px; }
+.oh-btn-record-placement i { font-size: 16px; }
 
 .oh-insights-summary-grid {
     display: grid;
@@ -196,7 +196,7 @@
     margin-bottom: 16px;
 }
 
-.oh-empty-icon-shield svg { width: 24px; height: 24px; }
+.oh-empty-icon-shield i { font-size: 24px; }
 
 .oh-empty-state-container h3 {
     font-size: 16px;

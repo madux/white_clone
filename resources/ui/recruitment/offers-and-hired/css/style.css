@@ -65,7 +65,7 @@
     transition: all 0.2s ease;
 }
 
-.oh-inner-tab-btn svg { width: 16px; height: 16px; }
+.oh-inner-tab-btn i { font-size: 16px; }
 
 .oh-inner-tab-btn.active {
     background-color: #FFF0F6;
@@ -106,7 +106,7 @@
     justify-content: center;
 }
 
-.oh-header-icon-badge svg { width: 20px; height: 20px; }
+.oh-header-icon-badge i { font-size: 20px; }
 
 .oh-title-with-icon h2 { font-size: 20px; font-weight: 700; }
 
@@ -127,7 +127,7 @@
     transition: all 0.2s ease;
 }
 
-.oh-btn svg { width: 16px; height: 16px; }
+.oh-btn i { font-size: 16px; }
 
 .oh-btn-primary {
     background: var(--oh-primary-magenta);
@@ -235,8 +235,7 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--oh-text-light);
-    width: 18px;
-    height: 18px;
+    font-size: 18px;
 }
 
 .oh-search-wrapper input {
@@ -349,8 +348,7 @@
 }
 
 .oh-th-icon {
-    width: 12px !important;
-    height: 12px !important;
+    font-size: 12px;
     display: inline-block;
     vertical-align: middle;
     margin-right: 2px;
@@ -506,7 +504,7 @@
     color: var(--oh-text-main);
 }
 
-.oh-action-row-trigger svg { width: 16px; height: 16px; }
+.oh-action-row-trigger i { font-size: 16px; }
 
 /* 3-dots button: hidden by default, shows on row hover */
 .oh-dots-trigger-btn {
@@ -607,7 +605,7 @@
 }
 
 .oh-close-sheet-btn:hover { background: var(--oh-bg-main); color: var(--oh-text-main); }
-.oh-close-sheet-btn svg { width: 20px; height: 20px; }
+.oh-close-sheet-btn i { font-size: 20px; }
 
 .oh-sheet-content-scroll {
     flex: 1;
@@ -687,7 +685,7 @@
 
 .oh-node-icon-dot.completed { background: var(--oh-primary-magenta); }
 
-.oh-node-icon-dot svg { width: 12px; height: 12px; }
+.oh-node-icon-dot i { font-size: 12px; }
 
 .oh-node-details-text h5 {
     font-size: 13px;
