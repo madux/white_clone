@@ -25,7 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
     initOHSearch();
 
     document.getElementById("ohCreateOfferBtn").addEventListener("click", () => {
-        document.getElementById("ohCreateOfferModalContainer").querySelector(".oh-modal-overlay").classList.add("open");
+        const modalContainer = document.getElementById("ohCreateOfferModalContainer").querySelector(".oh-modal-overlay");
+        if (modalContainer) modalContainer.classList.add("open");
     });
 });
 
@@ -152,7 +153,7 @@ function renderOHTable() {
             </td>
             <td>
                 <span class="oh-status-pill ${row.status}">${row.status}</span>
-                ${row.actionRequired ? '<span style="display:block; font-size:10px; color:#8338EC; font-weight:700; margin-top:4px;"><i data-lucide="alert-circle" style="width:10px; height:10px; vertical-align:middle;"></i> ACTION REQUIRED</span>' : ''}
+                ${row.actionRequired ? '<span style="display:block; font-size:10px; color:#8338EC; font-weight:700; margin-top:4px;"><i class="fa-solid fa-circle-exclamation" style="font-size:10px; vertical-align:middle;"></i> ACTION REQUIRED</span>' : ''}
             </td>
             <td>
                 <span>${row.sentDate}</span>
@@ -171,10 +172,10 @@ function renderOHTable() {
                 <div class="oh-actions-cell-container">
                     ${optionsHTML}
                     <button class="oh-action-row-trigger oh-eye-trigger-btn" title="View details">
-                        <i data-lucide="eye"></i>
+                        <i class="fa-regular fa-eye"></i>
                     </button>
                     <button class="oh-action-row-trigger oh-dots-trigger-btn" title="More actions">
-                        <i data-lucide="more-vertical"></i>
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
                     </button>
                 </div>
             </td>
@@ -209,7 +210,6 @@ function renderOHTable() {
         tableBody.appendChild(tr);
     });
 
-    lucide.createIcons();
 }
 
 function initOHDrawerMechanics() {
@@ -243,48 +243,48 @@ function openOHDetailSheet(rowData) {
     } else if (rowData.status === 'accepted') {
         contextActionButtons = `
             <div class="oh-sheet-action-row">
-                <button class="oh-btn oh-btn-primary" style="width:100%; background:#E60067; border-color:#E60067;"><i data-lucide="briefcase"></i> Create Placement</button>
+                <button class="oh-btn oh-btn-primary" style="width:100%; background:#E60067; border-color:#E60067;"><i class="fa-solid fa-briefcase"></i> Create Placement</button>
             </div>`;
     }
 
     if (rowData.status === 'accepted' || rowData.status === 'signed') {
         timelineNodes = `
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Created</h5><p>Mar 10, 10:00 AM</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot"><i data-lucide="circle"></i></div>
+                <div class="oh-node-icon-dot"><i class="fa-regular fa-circle"></i></div>
                 <div class="oh-node-details-text"><h5>Approved</h5><p>—</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Sent</h5><p>Mar 11, 11:00 AM</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Viewed</h5><p>Mar 11, 05:00 PM</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Response</h5><p>Accepted • Mar 13, 12:00 PM</p></div>
             </div>`;
     } else {
         timelineNodes = `
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Created</h5><p>Mar 19, 10:00 AM</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot"><i data-lucide="circle"></i></div>
+                <div class="oh-node-icon-dot"><i class="fa-regular fa-circle"></i></div>
                 <div class="oh-node-details-text"><h5>Approved</h5><p>—</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot completed"><i data-lucide="check"></i></div>
+                <div class="oh-node-icon-dot completed"><i class="fa-solid fa-check"></i></div>
                 <div class="oh-node-details-text"><h5>Sent</h5><p>${rowData.sentDate !== 'Not sent' ? rowData.sentDate : '—'}</p></div>
             </div>
             <div class="oh-timeline-node-item">
-                <div class="oh-node-icon-dot"><i data-lucide="circle"></i></div>
+                <div class="oh-node-icon-dot"><i class="fa-regular fa-circle"></i></div>
                 <div class="oh-node-details-text"><h5>Viewed</h5><p>—</p></div>
             </div>`;
     }
@@ -335,7 +335,6 @@ function openOHDetailSheet(rowData) {
     overlay.classList.add("open");
     sheet.classList.add("open");
 
-    lucide.createIcons();
 }
 
 function addOHNewOffer(offerData) {

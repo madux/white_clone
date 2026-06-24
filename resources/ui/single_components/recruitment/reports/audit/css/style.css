@@ -1,0 +1,206 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body.rca-body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: #fcfcfd;
+    color: #1d2939;
+    padding: 32px;
+}
+
+:root {
+    --rca-primary-pink: #e63988;
+    --rca-border-color: #eaecf0;
+    --rca-text-muted: #667085;
+}
+
+.rca-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.rca-audit-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.rca-audit-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #101828;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rca-sub-title {
+    font-size: 14px;
+    color: var(--rca-text-muted);
+}
+
+.rca-audit-strip-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rca-btn-refresh, .rca-btn-export-csv {
+    background: white;
+    border: 1px solid var(--rca-border-color);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: default;
+    color: #344054;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rca-btn-export-csv {
+    background-color: var(--rca-primary-pink);
+    color: white;
+    border: none;
+}
+
+.rca-audit-metrics-strip {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.rca-audit-metric-block {
+    flex: 1;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 1px solid var(--rca-border-color);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.b-l-default { border-bottom: 3px solid #d0d5dd; }
+.b-l-danger  { border-bottom: 3px solid #ef4444; }
+.b-l-warning { border-bottom: 3px solid #f97316; }
+.b-l-info    { border-bottom: 3px solid #3b82f6; }
+.b-l-purple  { border-bottom: 3px solid #7c3aed; }
+
+.rca-amb-val {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.rca-amb-lbl {
+    font-size: 12px;
+    color: var(--rca-text-muted);
+    font-weight: 500;
+}
+
+.rca-audit-search-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.rca-audit-filter-pill {
+    border: 1px solid var(--rca-border-color);
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rca-search-input-wrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
+.rca-search-input-wrapper i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--rca-text-muted);
+}
+
+.rca-audit-input-field {
+    width: 100%;
+    padding: 10px 10px 10px 40px;
+    border-radius: 8px;
+    border: 1px solid var(--rca-border-color);
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+.rca-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.rca-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+
+.rca-data-table th {
+    background-color: #f9fafb;
+    color: var(--rca-text-muted);
+    font-weight: 500;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rca-border-color);
+}
+
+.rca-data-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--rca-border-color);
+    color: #344054;
+    vertical-align: top;
+    line-height: 1.5;
+}
+
+.rca-muted-text {
+    font-size: 12px;
+    color: var(--rca-text-muted);
+}
+
+.rca-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.rca-ellipsis-cell {
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.color-pink { color: var(--rca-primary-pink); }
+.color-purple { color: #7c3aed; }
+.color-red { color: #ef4444; }
+.color-orange { color: #f97316; }
+.color-blue { color: #06b6d4; }
+.font-semibold { font-weight: 600; }

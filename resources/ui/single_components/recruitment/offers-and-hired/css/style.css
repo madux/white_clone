@@ -42,7 +42,7 @@ body {
     display: inline-flex; align-items: center; gap: 8px; border-radius: 6px; transition: all 0.2s ease;
 }
 
-.s-oh-inner-tab-btn svg { width: 16px; height: 16px; }
+.s-oh-inner-tab-btn i { font-size: 16px; }
 .s-oh-inner-tab-btn.active { background-color: #FFF0F6; color: var(--s-oh-primary-magenta); font-weight: 600; }
 
 .s-oh-hired-candidates-section { display: flex; flex-direction: column; gap: 24px; }
@@ -63,7 +63,7 @@ body {
 }
 
 .s-oh-btn-record-placement:hover { background-color: var(--s-oh-primary-magenta-hover); border-color: var(--s-oh-primary-magenta-hover); }
-.s-oh-btn-record-placement svg { width: 16px; height: 16px; }
+.s-oh-btn-record-placement i { font-size: 16px; }
 
 .s-oh-insights-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
 
@@ -128,7 +128,7 @@ body {
     justify-content: center; color: var(--s-oh-text-light); margin-bottom: 16px;
 }
 
-.s-oh-empty-icon-shield svg { width: 24px; height: 24px; }
+.s-oh-empty-icon-shield i { font-size: 24px; }
 .s-oh-empty-state-container h3 { font-size: 16px; font-weight: 600; color: var(--s-oh-text-main); margin-bottom: 8px; }
 .s-oh-empty-state-container p { font-size: 14px; color: var(--s-oh-text-muted); line-height: 1.5; }
 
@@ -146,7 +146,7 @@ body {
     border-radius: 8px; display: flex; align-items: center; justify-content: center;
 }
 
-.s-oh-header-icon-badge svg { width: 20px; height: 20px; }
+.s-oh-header-icon-badge i { font-size: 20px; }
 .s-oh-title-with-icon h2 { font-size: 20px; font-weight: 700; }
 .s-oh-header-text p { font-size: 14px; color: var(--s-oh-text-muted); }
 .s-oh-action-buttons { display: flex; gap: 12px; }
@@ -156,7 +156,7 @@ body {
     border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease;
 }
 
-.s-oh-btn svg { width: 16px; height: 16px; }
+.s-oh-btn i { font-size: 16px; }
 .s-oh-btn-primary { background: var(--s-oh-primary-magenta); border: 1px solid var(--s-oh-primary-magenta); color: white; }
 .s-oh-btn-primary:hover { background: var(--s-oh-primary-magenta-hover); }
 .s-oh-btn-secondary { background: white; border: 1px solid var(--s-oh-border-color); color: var(--s-oh-text-main); }
@@ -212,7 +212,7 @@ body {
     color: var(--s-oh-text-light); padding: 16px 12px; border-bottom: 1px solid var(--s-oh-border-color);
 }
 
-.s-oh-th-icon { width: 12px !important; height: 12px !important; display: inline-block; vertical-align: middle; margin-right: 2px; }
+.s-oh-th-icon { font-size: 12px; display: inline-block; vertical-align: middle; margin-right: 2px; }
 
 .s-oh-offers-data-table tbody tr { border-bottom: 1px solid var(--s-oh-border-color); }
 .s-oh-offers-data-table tbody tr:hover { background-color: #FAFAFA; }
@@ -274,7 +274,7 @@ body {
 }
 
 .s-oh-action-row-trigger:hover { background: #EAEAEA; color: var(--s-oh-text-main); }
-.s-oh-action-row-trigger svg { width: 16px; height: 16px; }
+.s-oh-action-row-trigger i { font-size: 16px; }
 
 /* 3-dots button: hidden by default, shows on row hover */
 .s-oh-dots-trigger-btn { display: none; }

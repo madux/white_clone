@@ -43,7 +43,7 @@
     gap: 8px;
 }
 
-.oh-modal-header h2 svg { width: 20px; height: 20px; color: var(--oh-primary-magenta, #E60067); }
+.oh-modal-header h2 i { font-size: 20px; color: var(--oh-primary-magenta, #E60067); }
 
 .oh-modal-close-btn {
     background: none;
@@ -55,7 +55,7 @@
 }
 
 .oh-modal-close-btn:hover { background: #F5F5F5; color: #333; }
-.oh-modal-close-btn svg { width: 20px; height: 20px; }
+.oh-modal-close-btn i { font-size: 20px; }
 
 .oh-modal-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 

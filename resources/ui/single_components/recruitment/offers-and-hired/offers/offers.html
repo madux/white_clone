@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR - Offers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="of-dashboard-content">
+    <header class="of-content-header">
+        <h1 class="of-page-title">Placements and Offers</h1>
+        <p class="of-page-subtitle">Manage job offers and track successful placements</p>
+        <div class="of-inner-tabs">
+            <button class="of-inner-tab-btn"><i class="fa-solid fa-trophy"></i> Placements</button>
+            <button class="of-inner-tab-btn active"><i class="fa-solid fa-file-lines"></i> Offers</button>
+        </div>
+    </header>
+
+    <section class="of-offer-management-card">
+        <div class="of-card-header-actions">
+            <div class="of-header-text">
+                <div class="of-title-with-icon">
+                    <div class="of-header-icon-badge"><i class="fa-solid fa-trophy"></i></div>
+                    <h2>Offer Management</h2>
+                </div>
+                <p>Track, send and manage all offers across your pipeline</p>
+            </div>
+            <div class="of-action-buttons">
+                <button class="of-btn of-btn-secondary"><i class="fa-solid fa-layer-group"></i> Templates</button>
+                <button class="of-btn of-btn-primary"><i class="fa-solid fa-plus"></i> Create New Offer</button>
+            </div>
+        </div>
+
+        <div class="of-metrics-grid">
+            <div class="of-metric-card active" style="--of-card-color: #E60067;">
+                <div class="of-metric-val">15</div>
+                <div class="of-metric-label">TOTAL OFFERS</div>
+            </div>
+            <div class="of-metric-card" style="--of-card-color: #E28700;">
+                <div class="of-metric-val">5</div>
+                <div class="of-metric-label">AWAITING</div>
+            </div>
+            <div class="of-metric-card" style="--of-card-color: #00B351;">
+                <div class="of-metric-val">4</div>
+                <div class="of-metric-label">ACCEPTED</div>
+            </div>
+            <div class="of-metric-card" style="--of-card-color: #E61C24;">
+                <div class="of-metric-val">1</div>
+                <div class="of-metric-label">REJECTED</div>
+            </div>
+            <div class="of-metric-card" style="--of-card-color: #8338EC;">
+                <div class="of-metric-val">1</div>
+                <div class="of-metric-label">COUNTERED</div>
+            </div>
+        </div>
+
+        <div class="of-table-utilities">
+            <div class="of-search-wrapper">
+                <i class="fa-solid fa-magnifying-glass of-search-icon"></i>
+                <input type="text" placeholder="Search by candidate name, job title, or email...">
+            </div>
+            <button class="of-btn-filter"><i class="fa-solid fa-sliders"></i> Most Recent</button>
+        </div>
+
+        <div class="of-filter-status-row">
+            <div class="of-active-tags">
+                <span class="of-filter-label">Active filters:</span>
+                <span class="of-filter-badge">Status: sent</span>
+            </div>
+            <button class="of-clear-all-btn">Clear all</button>
+        </div>
+
+        <div class="of-offers-table-wrapper">
+            <div class="of-table-header-title">
+                <h3>Offers <span class="of-badge-count">15 offers</span></h3>
+                <span class="of-pagination-tracker">Showing 15 of 15 total</span>
+            </div>
+
+            <div class="of-responsive-table-scroll">
+                <table class="of-offers-data-table">
+                    <thead>
+                        <tr>
+                            <th>CANDIDATE</th>
+                            <th>JOB</th>
+                            <th>OFFER DETAILS</th>
+                            <th>STATUS</th>
+                            <th><i class="fa-regular fa-clock of-th-icon"></i> SENT</th>
+                            <th><i class="fa-regular fa-calendar of-th-icon"></i> EXPIRY</th>
+                            <th>RECRUITER</th>
+                            <th class="text-right">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#E60067">BO</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Blessing Okoro</h4>
+                                        <p>blessing.okoro@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Sales Executive</h4>
+                                    <span class="of-department-tag">Sales</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦350,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill draft">draft</span></td>
+                            <td><span>Not sent</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#9C27B0">FI</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Fatima Ibrahim</h4>
+                                        <p>fatima.ibrahim@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Marketing Manager</h4>
+                                    <span class="of-department-tag">Marketing</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦500,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill viewed">viewed</span></td>
+                            <td><span>Mar 20, 2026</span><span class="of-time-passed-txt">02 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#009688">YM</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Yusuf Mohammed</h4>
+                                        <p>yusuf.mohammed@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Backend Developer</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦500,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag contract">contract</span>
+                            </td>
+                            <td><span class="of-status-pill pending">pending</span></td>
+                            <td><span>Not sent</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#FF9800">HY</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Hauwa Yusuf</h4>
+                                        <p>hauwa.yusuf@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Business Analyst</h4>
+                                    <span class="of-department-tag">Operations</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦420,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill sent">sent</span></td>
+                            <td><span>Mar 20, 2026</span><span class="of-time-passed-txt">03 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#E91E63">CO</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Chinedu Obi</h4>
+                                        <p>chinedu.obi@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Product Manager</h4>
+                                    <span class="of-department-tag">Product</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦550,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill sent">sent</span></td>
+                            <td><span>Mar 19, 2026</span><span class="of-time-passed-txt">04 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#3F51B5">DN</div>
+                                    <div class="of-candidate-info">
+                                        <h4>David Nwankwo</h4>
+                                        <p>david.nwankwo@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Content Writer</h4>
+                                    <span class="of-department-tag">Marketing</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦200,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag part_time">part time</span>
+                            </td>
+                            <td><span class="of-status-pill sent">sent</span></td>
+                            <td><span>Mar 18, 2026</span><span class="of-time-passed-txt">05 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#4CAF50">IS</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Ibrahim Suleiman</h4>
+                                        <p>ibrahim.suleiman@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Chief Technology Officer</h4>
+                                    <span class="of-department-tag">Executive</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦2,500,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill sent">sent</span></td>
+                            <td><span>Mar 16, 2026</span><span class="of-time-passed-txt">07 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#9C27B0">AB</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Aisha Bello</h4>
+                                        <p>aisha.bello@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Senior Software Engineer</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦600,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td>
+                                <span class="of-status-pill countered">countered</span>
+                                <span class="of-action-required-tag"><i class="fa-solid fa-circle-exclamation"></i> ACTION REQUIRED</span>
+                            </td>
+                            <td><span>Mar 16, 2026</span><span class="of-time-passed-txt">07 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn withdraw">Withdraw</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#00BCD4">CO</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Chiamaka Okonkwo</h4>
+                                        <p>chiamaka.okonkwo@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Software Engineering Intern</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦150,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag internship">internship</span>
+                            </td>
+                            <td><span class="of-status-pill accepted">accepted</span></td>
+                            <td><span>Mar 11, 2026</span><span class="of-time-passed-txt">12 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#FF5722">KB</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Kunle Bamidele</h4>
+                                        <p>kunle.bamidele@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Frontend Developer</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦550,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill accepted">accepted</span></td>
+                            <td><span>Mar 9, 2026</span><span class="of-time-passed-txt">14 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#795548">OA</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Oluwaseun Adeyemi</h4>
+                                        <p>oluwaseun.adeyemi@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>QA Engineer</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦480,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill withdrawn">withdrawn</span></td>
+                            <td><span>Mar 6, 2026</span><span class="of-time-passed-txt">17 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#607D8B">AH</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Ahmed Hassan</h4>
+                                        <p>ahmed.hassan@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>DevOps Engineer</h4>
+                                    <span class="of-department-tag">Engineering</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦650,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill signed">signed</span></td>
+                            <td><span>Mar 2, 2026</span><span class="of-time-passed-txt">21 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#E60067">NA</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Ngozi Adebayo</h4>
+                                        <p>ngozi.adebayo@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>UX Designer</h4>
+                                    <span class="of-department-tag">Design</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦450,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill accepted">accepted</span></td>
+                            <td><span>Feb 26, 2026</span><span class="of-time-passed-txt">25 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn edit">Edit</button>
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#9E9E9E">TL</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Tunde Lawal</h4>
+                                        <p>tunde.lawal@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>Data Analyst</h4>
+                                    <span class="of-department-tag">Analytics</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦400,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill rejected">rejected</span></td>
+                            <td><span>Feb 2, 2026</span><span class="of-time-passed-txt">120 days ago</span></td>
+                            <td><span>—</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="of-candidate-cell">
+                                    <div class="of-avatar-badge" style="background-color:#3F51B5">GE</div>
+                                    <div class="of-candidate-info">
+                                        <h4>Grace Eze</h4>
+                                        <p>grace.eze@gmail.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-job-cell">
+                                    <h4>HR Manager</h4>
+                                    <span class="of-department-tag">Human Resources</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-salary-text">₦520,000<span class="of-salary-period">/month</span></div>
+                                <span class="of-contract-tag permanent">permanent</span>
+                            </td>
+                            <td><span class="of-status-pill expired">expired</span></td>
+                            <td><span>Jan 2, 2026</span><span class="of-time-passed-txt">150 days ago</span></td>
+                            <td><span style="color:#E61C24">Expired</span></td>
+                            <td>
+                                <div class="of-recruiter-avatar-wrap">
+                                    <div class="of-recruiter-mini-ico">E</div>
+                                    <span>Emeka</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="of-actions-cell-container">
+                                    <button class="of-action-row-trigger"><i class="fa-regular fa-eye"></i></button>
+                                    <div class="of-options-dropdown">
+                                        <button class="of-dots-trigger-btn of-action-row-trigger"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                        <div class="of-options-menu">
+                                            <button class="of-opt-btn delete">Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>
