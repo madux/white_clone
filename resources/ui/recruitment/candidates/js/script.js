@@ -18,9 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     updateMetricCardValues();
     renderActiveViewContexts();
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 });
 
 /**
@@ -140,9 +138,9 @@ function registerEventHandlers() {
             if (val && navigator.clipboard) {
                 navigator.clipboard.writeText(val);
                 const original = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<svg data-lucide="check" style="color:#22C55E;width:11px;height:11px"></svg>';
-                if (window.lucide) window.lucide.createIcons();
-                setTimeout(() => { copyBtn.innerHTML = original; if (window.lucide) window.lucide.createIcons(); }, 1500);
+                copyBtn.innerHTML = '<i class="fa-solid fa-check" style="color:#22C55E;width:11px;height:11px"></i>';
+                
+                setTimeout(() => { copyBtn.innerHTML = original;  }, 1500);
             }
         }
     });
@@ -174,9 +172,7 @@ function renderActiveViewContexts() {
     if (currentActiveViewProfile === "pipeline") renderKanbanWorkflowStructure();
     updateMetricCardValues();
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 }
 
 /**
@@ -221,7 +217,7 @@ function renderListTableStructure() {
             <td class="cn-col-date">12 May 2026</td>
             <td class="cn-col-actions cn-cell-pinned-right-end">
                 <div class="cn-card-options-wrapper">
-                    <button class="cn-card-options-btn" data-card-id="${item.id}"><i data-lucide="more-vertical"></i></button>
+                    <button class="cn-card-options-btn" data-card-id="${item.id}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                 </div>
             </td>
         `;
@@ -379,7 +375,7 @@ function createOptionsButton(cardId) {
     const btn = document.createElement("button");
     btn.className = "cn-card-options-btn";
     btn.setAttribute("data-card-id", cardId);
-    btn.innerHTML = '<i data-lucide="more-vertical"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical"></i>';
     
     btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -431,67 +427,67 @@ function showPopover(cardId, triggerBtn, event) {
         <div class="cn-popover-arrow"></div>
         <div class="cn-popover-section">
             <button class="cn-popover-header" data-section="primary-${cardId}">
-                <i data-lucide="user-check"></i><span>Primary</span><i data-lucide="chevron-down"></i>
+                <i class="fa-solid fa-user-check"></i><span>Primary</span><i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="cn-popover-content" id="popover-primary-${cardId}">
                 <button class="cn-popover-item" onclick="showCandidateDashboard('${candidate.id}')">
-                    <i data-lucide="eye"></i><span>View Profile</span>
+                    <i class="fa-solid fa-eye"></i><span>View Profile</span>
                 </button>
-                <button class="cn-popover-item">${'<i data-lucide="edit-3"></i><span>Edit Candidate</span>'}</button>
+                <button class="cn-popover-item">${'<i class="fa-solid fa-pen-to-square"></i><span>Edit Candidate</span>'}</button>
             </div>
         </div>
         <div class="cn-popover-section">
             <button class="cn-popover-header" data-section="communication-${cardId}">
-                <i data-lucide="mail"></i><span>Communication</span><i data-lucide="chevron-down"></i>
+                <i class="fa-solid fa-envelope"></i><span>Communication</span><i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="cn-popover-content" id="popover-communication-${cardId}">
                 <button class="cn-popover-item" onclick="sendEmail('${candidate.email}')">
-                    <i data-lucide="mail"></i><span>Send Email</span>
+                    <i class="fa-solid fa-envelope"></i><span>Send Email</span>
                 </button>
                 <button class="cn-popover-item">
-                    <i data-lucide="calendar"></i><span>Schedule Interview</span>
+                    <i class="fa-solid fa-calendar"></i><span>Schedule Interview</span>
                 </button>
             </div>
         </div>
         <div class="cn-popover-section">
             <button class="cn-popover-header" data-section="management-${cardId}">
-                <i data-lucide="briefcase"></i><span>Management</span><i data-lucide="chevron-down"></i>
+                <i class="fa-solid fa-briefcase"></i><span>Management</span><i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="cn-popover-content" id="popover-management-${cardId}">
                 <button class="cn-popover-item" onclick="assignToJob('${candidate.id}')">
-                    <i data-lucide="tag"></i><span>Assign to Job</span>
+                    <i class="fa-solid fa-tag"></i><span>Assign to Job</span>
                 </button>
                 <button class="cn-popover-item">
-                    <i data-lucide="users"></i><span>Assign Recruiter</span>
+                    <i class="fa-solid fa-users"></i><span>Assign Recruiter</span>
                 </button>
             </div>
         </div>
         <div class="cn-popover-section">
             <button class="cn-popover-header" data-section="sharing-${cardId}">
-                <i data-lucide="share-2"></i><span>Sharing & Export</span><i data-lucide="chevron-down"></i>
+                <i class="fa-solid fa-share-nodes"></i><span>Sharing & Export</span><i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="cn-popover-content" id="popover-sharing-${cardId}">
                 <button class="cn-popover-item" onclick="shareProfile('${candidate.id}')">
-                    <i data-lucide="share-2"></i><span>Share Profile</span>
+                    <i class="fa-solid fa-share-nodes"></i><span>Share Profile</span>
                 </button>
                 <button class="cn-popover-item" onclick="exportToPDF('${candidate.id}')">
-                    <i data-lucide="file-text"></i><span>Export to PDF</span>
+                    <i class="fa-solid fa-file-lines"></i><span>Export to PDF</span>
                 </button>
                 <button class="cn-popover-item" onclick="addToTalentPool('${candidate.id}')">
-                    <i data-lucide="star"></i><span>Add to Talent Pool</span>
+                    <i class="fa-solid fa-star"></i><span>Add to Talent Pool</span>
                 </button>
             </div>
         </div>
         <div class="cn-popover-section">
             <button class="cn-popover-header" data-section="destructive-${cardId}">
-                <i data-lucide="alert-triangle"></i><span>Destructive</span><i data-lucide="chevron-down"></i>
+                <i class="fa-solid fa-triangle-exclamation"></i><span>Destructive</span><i class="fa-solid fa-chevron-down"></i>
             </button>
             <div class="cn-popover-content" id="popover-destructive-${cardId}">
                 <button class="cn-popover-item destructive" onclick="rejectCandidate('${candidate.id}')">
-                    <i data-lucide="x-circle"></i><span>Reject Candidate</span>
+                    <i class="fa-solid fa-circle-xmark"></i><span>Reject Candidate</span>
                 </button>
                 <button class="cn-popover-item destructive" onclick="deleteCandidate('${candidate.id}')">
-                    <i data-lucide="trash-2"></i><span>Delete Candidate</span>
+                    <i class="fa-solid fa-trash-can"></i><span>Delete Candidate</span>
                 </button>
             </div>
         </div>
@@ -500,9 +496,7 @@ function showPopover(cardId, triggerBtn, event) {
     document.body.appendChild(popover);
     activePopoverId = cardId;
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 }
 
 function hidePopover() {
@@ -571,11 +565,11 @@ function renderStarRatingElements(rating) {
 
     for (let i = 1; i <= 5; i++) {
         if (i <= fullStars) {
-            html += `<i data-lucide="star" style="fill: currentColor;"></i>`;
+            html += `<i class="fa-solid fa-star" style="fill: currentColor;"></i>`;
         } else if (i === fullStars + 1 && hasHalf) {
-            html += `<i data-lucide="star-half" style="fill: currentColor;"></i>`;
+            html += `<i class="fa-solid fa-star-half-stroke" style="fill: currentColor;"></i>`;
         } else {
-            html += `<i data-lucide="star" class="star-empty"></i>`;
+            html += `<i class="fa-solid fa-star star-empty"></i>`;
         }
     }
     return `<div class="cn-star-rating-row">${html}</div>`;
@@ -605,9 +599,7 @@ function bindTargetProfileDossier(id) {
 
     toggleModalBackdropWindow();
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 }
 
 function toggleModalBackdropWindow() {
@@ -666,9 +658,7 @@ function showCandidateDashboard(id) {
     document.getElementById("candidateListingView").style.display = "none";
     document.getElementById("candidateDetailView").style.display = "block";
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 }
 
 function hideCandidateDashboard() {
@@ -746,19 +736,19 @@ function openMetricCandidatesModal(metric) {
                 <span class="cn-status-badge-indicator-pill ${c.status.toLowerCase()}">${c.status}</span>
             </div>
             <div class="cn-metric-card-row">
-                <span class="cn-metric-card-label"><i data-lucide="mail"></i> ${c.email}</span>
-                <span class="cn-metric-card-label"><i data-lucide="phone"></i> ${c.phone}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-envelope"></i> ${c.email}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-phone"></i> ${c.phone}</span>
             </div>
             <div class="cn-metric-card-row">
-                <span class="cn-metric-card-label"><i data-lucide="map-pin"></i> ${c.location || "—"}</span>
-                <span class="cn-metric-card-label"><i data-lucide="clock"></i> ${c.appliedDate || "—"}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-location-dot"></i> ${c.location || "—"}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-clock"></i> ${c.appliedDate || "—"}</span>
             </div>
             <div class="cn-metric-card-row">
-                <span class="cn-metric-card-label"><i data-lucide="link"></i> ${c.source || "—"}</span>
-                <span class="cn-metric-card-label"><i data-lucide="user"></i> Sourced by ${c.sourcedBy || "—"}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-link"></i> ${c.source || "—"}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-user"></i> Sourced by ${c.sourcedBy || "—"}</span>
             </div>
             <div class="cn-metric-card-row">
-                <span class="cn-metric-card-label"><i data-lucide="briefcase"></i> ${c.experience}</span>
+                <span class="cn-metric-card-label"><i class="fa-solid fa-briefcase"></i> ${c.experience}</span>
             </div>
             ${skillsHtml ? `<div class="cn-metric-card-skills">${skillsHtml}</div>` : ""}
         `;
@@ -768,9 +758,7 @@ function openMetricCandidatesModal(metric) {
     
     modal.style.display = "flex";
     
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
+    
 }
 
 /**

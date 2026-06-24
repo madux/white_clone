@@ -105,9 +105,7 @@
 }
 
 .modal-close-btn i {
-    width: 20px;
-    height: 20px;
-    stroke-width: 2.2px;
+    font-size: 20px;
 }
 
 .modal-header-block {
@@ -196,9 +194,7 @@
 }
 
 .selection-card .card-icon-wrapper i {
-    width: 22px;
-    height: 22px;
-    stroke-width: 2px;
+    font-size: 22px;
 }
 
 .selection-card .card-title {
@@ -272,7 +268,7 @@
     align-items: center;
     justify-content: center;
 }
-.header-icon-badge i { width: 20px; height: 20px; }
+.header-icon-badge i { font-size: 20px; }
 
 .form-badge { background-color: var(--pink-light); color: var(--pink-primary); }
 .resume-badge { background-color: var(--green-light); color: var(--green-primary); }
@@ -379,10 +375,8 @@
 }
 
 .dropzone-icon {
-    width: 40px;
-    height: 40px;
+    font-size: 40px;
     color: var(--text-muted);
-    stroke-width: 1.5px;
     margin-bottom: 16px;
 }
 
@@ -487,10 +481,8 @@
 }
 
 .mini-dz-icon {
-    width: 28px;
-    height: 28px;
+    font-size: 28px;
     color: var(--text-muted);
-    stroke-width: 1.8px;
     margin-bottom: 12px;
 }
 
