@@ -39,6 +39,7 @@ class Hroffer(models.Model):
     ], string="PERIOD", default='Monthly')
     date_expiry = fields.Datetime(string="Expiry Date")
     proposed_salary = fields.Float(string="Proposed salary") #, related="candidate_id.proposed_salary")
+    salary_currency = fields.Many2one('res.currency', string="Currency")
     sent_by = fields.Many2one('res.users', string="Sent by")
     vendor_id = fields.Many2one('res.partner', string="Vendors")
     job_id = fields.Many2one('hr.job', string="Job")
@@ -103,8 +104,35 @@ class Hroffer(models.Model):
         # TODO: send the email to candidate along with templates, 
         pass 
 
+    def create_employee_from_applicant(self):
+        self.ensure_one()
+        res = super().create_employee_from_applicant()
+        res['context']['default_first_name'] = self.candidate_id.first_name
+        res['context']['default_name'] = f"{self.candidate_id.first_name or ''} {self.candidate_id.middle_name} {self.candidate_id.last_name}"
+        res['context']['default_middle_name'] = self.candidate_id.middle_name
+        res['context']['default_last_name'] = self.candidate_id.last_name
+        res['context']['default_department_id'] = self.candidate_id.department_id.id
+        res['context']['default_phone'] = self.candidate_id.partner_phone
+        res['context']['default_private_email'] = self.candidate_id.email_from
+        res['context']['default_job_title'] = self.candidate_id.job_id.name
+        res['context']['default_skills_text'] = self.candidate_id.skills_text
+        res['context']['default_qualifications_text'] = self.candidate_id.qualifications_text
+        res['context']['default_experience_text'] = self.candidate_id.experience_text
+        res['context']['default_wage'] = self.proposed_salary
+        res['context']['default_applicant_documentation_checklist'] = [(6, 0, [doc.id for doc in self.candidate_id.applicant_documentation_checklist])]
+
+        return res 
+    
     def action_create_placement(self):
-        pass 
+        return self.create_employee_from_applicant()
+        # return {
+        #     "type": "ir.actions.act_window",
+        #     "name": "Matching Employees",
+        #     "res_model": "hr.employee",
+        #     "view_mode": "kanban,list,form",
+        #     "domain": [("id", "in", self.matching_candidate_ids.ids)],
+        #     "target": "current",
+        # }  
 
     def action_send_to_reminder_email(self):
         # TODO: send the email reminder: system should be able to use a mail template, 
@@ -216,6 +244,8 @@ class Hrofferwizard(models.TransientModel):
     offer_terms = fields.Html(string='Offer terms')
     vendor_id = fields.Many2one('res.partner', string="Vendors")
     department_id = fields.Many2one('hr.department', string="Department")
+    
+    salary_currency = fields.Many2one('res.currency', string="Currency")
     job_id = fields.Many2one('hr.job', string="Job Role")
     # grade_id = fields.Many2one('hr.grade', string="Grade")
  
@@ -235,6 +265,7 @@ class Hrofferwizard(models.TransientModel):
     date = fields.Datetime(string="Date Sent")
     date_generated = fields.Datetime(string="Date Sent")
     date_expiry = fields.Datetime(string="Expiry Date")
+    salary_proposed = fields.Float(string='Proposed Salary')
 
     date_char = fields.Char(
         string="Date Display",
@@ -347,18 +378,18 @@ class Hrofferwizard(models.TransientModel):
         if not self.offer_report_ids:
             raise UserError(_('Please Select offer templates'))
         # if not self.mapped('candidate_ids'):# .filtered(lambda self: not self.email_from):
-        for count, cd in enumerate(self.candidate_ids, 1):
-            if not cd.email_from:
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                        'params': {
-                            'title': _("Validation Notification"),
-                            'message':  _(f"The candidate {cd.partner_name} does not have email set at line {count}. Kindly review and correct"),
-                            'type': 'danger',
-                            'sticky': False
-                        }
-                }
+        # for count, cd in enumerate(self.candidate_ids, 1):
+        #     if not cd.email_from:
+        #         return {
+        #             'type': 'ir.actions.client',
+        #             'tag': 'display_notification',
+        #                 'params': {
+        #                     'title': _("Validation Notification"),
+        #                     'message':  _(f"The candidate {cd.partner_name or cd.name or ''} does not have email set at line {count}. Kindly review and correct"),
+        #                     'type': 'danger',
+        #                     'sticky': False
+        #                 }
+        #         }
         items =[]
         for rec in self.candidate_ids:
             offer = self.env['hr.offer'].create({

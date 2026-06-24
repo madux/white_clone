@@ -37,8 +37,8 @@
                     <group>
                     
                         <group>
-                            <field name="min_salary_band" nolabel="0" readonly="1"/>
-                            <field name="max_salary_band" nolabel="0" readonly="1"/>
+                            <field name="min_salary_band" nolabel="0" readonly="0"/>
+                            <field name="max_salary_band" nolabel="0" readonly="0"/>
                             <field name="salary_band" nolabel="0" readonly="1"/>
                             <field name="leave_duration" nolabel="0" required="1"/>
                         </group>

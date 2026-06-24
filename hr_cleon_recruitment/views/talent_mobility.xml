@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_talent_mobility_form" model="ir.ui.view">
+        <field name="name">hr.talent.mobility.form</field>
+        <field name="model">hr.talent.mobility</field>
+        <field name="arch" type="xml">
+            <form class="o_talent_mobility_form" js_class="recruitment_sidebar_items" create="0">
+                <header>
+                    <button name="action_view_matching_mobility" type="object"
+                            string="View Employees" class="btn-primary o_tm_scan_btn"
+                            icon="fa-rotate"/>
+                    <button name="show_all_matches" type="object"
+                            string="Scan for Mobility" class="btn-primary o_tm_scan_btn"
+                            icon="fa-rotate"/>
+                    
+                </header>
+                <sheet>
+                    <div class="o_tm_alert_banner_job">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <span class="tm-span-class">
+                            <div class="field-small-text"><field name="total_match_count" readonly="1"/></div> open roles have potential internal candidates
+                            <a type="object" name="show_all_matches"
+                                class="btn o_tm_btn_primary btm-sm">
+                                <i class="fa fa-eye"/> View All
+                            </a>
+                        </span>
+                        <div class="o_tm_card_grid_job">
+                            <field name="job_match_line_ids" nolabel="1" readonly="1" options="{'no_create': true, 'no_open': true}">
+                                <kanban create="0" edit="0">
+                                    <field name="id"/>
+                                    <field name="total_matching_mobility"/>
+                                    <field name="job_id"/>
+                                    <field name="mobility_jobmatch_ids"/>
+                                    <field name="job_category"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div class="o_tm_card_job">
+                                                <div>
+                                                    <div class="o_tm_job_title">
+                                                        <field name="job_id"/>
+                                                    </div>
+
+                                                    <div class="o_tm_job_category">
+                                                        <span t-if="record.job_category.raw_value">
+                                                            <t t-esc="record.job_category.raw_value"/>
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="o_tm_skills_label">
+                                                        AI found: <field name="total_matching_mobility"/> internal matches
+                                                    </div>
+                                                </div>
+
+                                                <div class="o_tm_employee_row_job">
+                                                    <div>
+                                                        <a type="object"
+                                                        name="show_mobility_matches"
+                                                        class="btn o_tm_btn_primary_job">
+                                                            View Matches →
+                                                        </a>
+                                                    </div>
+
+                                                    <div>
+                                                        <a type="object"
+                                                        name="show_mobility_matches"
+                                                        class="btn o_tm_btn_outline_job">
+                                                            Filter
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </div>
+                    </div>
+
+                    
+                    
+
+                    <separator string="Internal Matches"/>
+
+                    <div class="o_tm_card_grid">
+                        <field name="match_line_display_ids" readonly="1" nolabel="1" options="{'no_create': true, 'no_open': true}">
+                            <kanban create="0" edit="0">
+                                <field name="employee_id"/>
+                                <field name="job_id"/>
+                                <field name="match_score"/>
+                                <field name="match_reason"/>
+                                <field name="matched_skill_ids"/>
+                                <field name="state"/>
+                                <templates>
+                                    <t t-name="kanban-box">
+                                        <div class="o_tm_card">
+                                            <div class="o_tm_card_header">
+                                                <span class="o_tm_badge">
+                                                    <i class="fa fa-bolt"/> Internal Match Identified
+                                                </span>
+                                                <span t-if="record.state.raw_value === 'pipeline'" class="o_tm_pipeline_tag">
+                                                    <i class="fa fa-check-circle"/> In Pipeline
+                                                </span>
+                                            </div>
+
+                                            <div class="o_tm_employee_row">
+                                                <div class="o_tm_avatar">
+                                                    <t t-esc="record.employee_id.value ? record.employee_id.value.charAt(0) : '?'"/>
+                                                </div>
+                                                <div>
+                                                    <div class="o_tm_employee_name">
+                                                        <field name="employee_id"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="o_tm_ready_for">
+                                                <span class="o_tm_role_tag">
+                                                    <field name="job_id"/>
+                                                </span>
+                                            </div>
+
+                                            <div class="o_tm_progress_label">
+                                                <span>Promotion readiness</span>
+                                                <span>
+                                                    <t t-esc="Math.round(record.match_score.raw_value) + '%'"/>
+                                                </span>
+                                            </div>
+                                            <div class="o_tm_progress_bar">
+                                                <div class="o_tm_progress_fill"
+                                                    t-attf-style="width: {{record.match_score.raw_value}}%"/>
+                                            </div>
+
+                                            <div class="o_tm_skills_label">Current skills vs target:</div>
+                                            <div class="o_tm_skills_list">
+                                                <field name="matched_skill_ids" widget="many2many_tags"/>
+                                            </div>
+
+                                            <div class="o_tm_reason_box">
+                                                <field name="match_reason"/>
+                                            </div>
+
+                                            <a type="object" name="action_discuss_with_hr"
+                                            class="btn o_tm_btn_primary w-100">
+                                                <i class="fa fa-comment"/> Discuss with HR
+                                            </a>
+                                            <a type="object" name="action_create_dev_plan"
+                                            class="btn o_tm_btn_secondary w-100">
+                                                <i class="fa fa-file-text"/> Create Development Plan
+                                            </a>
+                                            <a t-if="record.state.raw_value !== 'pipeline'"
+                                            type="object" name="action_add_to_pipeline"
+                                            class="btn o_tm_btn_outline w-100">
+                                                <i class="fa fa-plus"/> Add to Role Pipeline
+                                            </a>
+                                            <div t-else="" class="o_tm_added_tag">
+                                                <i class="fa fa-check-circle"/> Added to Pipeline
+                                            </div>
+                                        </div>
+                                    </t>
+                                </templates>
+                            </kanban>
+                        </field>
+                    </div>
+                    <div class="o_tm_analytics_card">
+
+                        <div class="o_tm_analytics_header">
+                            <i class="fa fa-bar-chart"/>
+                            <span>Mobility Analytics</span>
+                        </div>
+
+                        <div class="o_tm_analytics_body">
+
+                            <!-- LEFT -->
+                            <div class="o_tm_analytics_left">
+
+                                <div class="o_tm_chart_title">
+                                    Internal vs External Hire Rate (12 months)
+                                </div>
+
+                                <div class="o_tm_chart_container">
+
+                                    <div class="o_tm_bar" style="height:30%;"></div>
+                                    <div class="o_tm_bar" style="height:40%;"></div>
+                                    <div class="o_tm_bar" style="height:50%;"></div>
+                                    <div class="o_tm_bar" style="height:36%;"></div>
+                                    <div class="o_tm_bar" style="height:60%;"></div>
+                                    <div class="o_tm_bar" style="height:44%;"></div>
+                                    <div class="o_tm_bar" style="height:56%;"></div>
+                                    <div class="o_tm_bar" style="height:70%;"></div>
+
+                                </div>
+
+                                <div class="o_tm_chart_footer">
+                                    ↑ Internal mobility rate improving
+                                </div>
+
+                            </div>
+
+                            <!-- RIGHT -->
+                            <div class="o_tm_savings_card">
+
+                                <div class="o_tm_savings_title">
+                                    Cost savings from internal mobility
+                                </div>
+
+                                <div class="o_tm_savings_amount field-bold-text" >
+                                    ₦<field name="mobility_cost" readonly="1" nolabel="1"/>
+                                </div>
+
+                                <div class="o_tm_savings_desc field-small-text">
+                                    est. — <field name="mobility_match_score" readonly="1" nolabel="1"/>
+                                    internal transfers vs average external hire cost
+                                </div>
+
+                                <div class="o_tm_powered">
+                                    Powered by CleonAI
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                    <group>
+                        <group>
+                            <field name="name" string="Marketplace Name"/>
+                            <field name="job_ids" widget="many2many_tags"/>
+                            <field name="match_threshold"/>
+                        </group>
+
+                        <group string="Cost Overview" col="3">
+                            <field name="mobility_cost" widget="monetary" readonly="1"/>
+                            <field name="current_employee_cost" widget="monetary" readonly="1"/>
+                            <field name="saved_mobility_cost" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_talent_mobility" model="ir.actions.act_window">
+        <field name="name">Talent mobility:</field>
+        <field name="res_model">hr.talent.mobility</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.view_hr_talent_mobility_form"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('view_hr_talent_mobility_form'),
+            }),
+            
+        ]"/> 
+    </record>
+
+    <record id="action_hr_talent_mobility_server_action" model="ir.actions.server">
+        <field name="name">Talent mobility</field>
+        <field name="model_id" ref="model_hr_talent_mobility"/>
+        <field name="binding_model_id" ref="model_hr_talent_mobility"/>
+        <field name="state">code</field>
+        <field name="code">
+            action = env['hr.talent.mobility'].get_dashboard()
+        </field>
+    </record>
+</odoo>

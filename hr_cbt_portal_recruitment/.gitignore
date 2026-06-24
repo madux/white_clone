@@ -1,0 +1,12 @@
+**/__pycache__/
+*.pyc
+ **/controllers/__pycache__/
+ **/__pycache__/*.pyc
+ company_memo/__pycache__/
+ eedc_addons/__pycache__/
+ eedc_addons/model/__pycache__/
+ account_loan/__pycache__/
+ account_loan/model/__pycache__/
+ account_loan/wizard/__pycache__/
+ auditlog/__pycache__/
+ auditlog/models/__pycache__/

@@ -1,0 +1,39 @@
+    /* <!-- Custom CSS and JavaScript --> */
+    .applicant-pool-form input:focus,
+    .applicant-pool-form select:focus,
+    .applicant-pool-form textarea:focus {
+        border-color: #3498db !important;
+        box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25) !important;
+        outline: 0 !important;
+    }
+
+    .applicant-pool-form .form-control {
+        transition: all 0.3s ease;
+    }
+    .text-bg-primary {
+        background-color: #e81f58 !important;
+    }
+    .btn-primary {
+        color: #FFFFFF;
+        background-color: #e81f58;
+        border-color: #e81f58;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4) !important;
+    }
+
+    .form-section {
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .applicant-pool-container {
+            margin: 20px 10px !important;
+            padding: 10px !important;
+        }
+
+        .applicant-pool-form {
+            padding: 20px !important;
+        }
+    }

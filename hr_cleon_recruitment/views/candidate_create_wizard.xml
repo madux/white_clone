@@ -194,6 +194,17 @@
                             <h2 class="rc_screen_title">Upload Resume</h2>
                             <p class="rc_screen_subtitle">AI will extract candidate information</p>
                         </div>
+                        <div>
+                            <p class="rc_screen_subtitle"><field name="extract_option" widget="radio" options="{'horizontal': true}"/></p>
+                        </div>
+                    </div>
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Job Position (Optional)</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="job_id">Apply to Job</label>
+                            <field name="job_id" placeholder="Select a job (optional)" nolabel="1" class="rc_input"/>
+                        </div>
                     </div>
 
                     <div class="rc_divider"/>
@@ -206,7 +217,8 @@
                                 <polyline points="17 8 12 3 7 8"/>
                                 <line x1="12" x2="12" y1="3" y2="15"/>
                             </svg>
-                            <field name="resume_file" widget="binary" nolabel="1" invisible="1"/>
+                             <field name="resume_file_name" invisible="1"/>
+                            <field name="resume_file" widget="binary" nolabel="1" invisible="0" filename="resume_file_name"/>
                             <p class="rc_dropzone_title">Drop your resume here</p>
                             <p class="rc_dropzone_sub">or click to browse files</p>
                             <p class="rc_dropzone_hint">Supports PDF, DOC, DOCX, TXT up to 10MB</p>
@@ -266,8 +278,10 @@
                                 </svg>
                                 <h3 class="rc_bulk_card_title">Upload CSV</h3>
                                 <p class="rc_bulk_card_desc">Upload a CSV file with candidate data</p>
-                                <field name="csv_file" widget="binary" nolabel="1" invisible="1"/>
-                                <button class="rc_btn_purple" name="action_choose_csv" type="object">Choose CSV File</button>
+                                <field name="csv_file_name" invisible="1"/>
+                                <field name="csv_file" widget="binary" nolabel="1" invisible="0" filename="csv_file_name"/>
+                                
+                                <!-- <button class="rc_btn_purple" name="action_choose_csv" type="object">Choose CSV File</button> -->
                             </div>
 
                             <!-- Upload Resumes -->
@@ -279,7 +293,7 @@
                                 </svg>
                                 <h3 class="rc_bulk_card_title">Upload Resumes</h3>
                                 <p class="rc_bulk_card_desc">Upload multiple resume files</p>
-                                <field name="bulk_resume_files" widget="binary" nolabel="1" invisible="1"/>
+                                <field name="bulk_resume_files" widget="binary" nolabel="1" invisible="0"/>
                                 <button class="rc_btn_purple" name="action_choose_resumes" type="object">Choose Files</button>
                             </div>
 

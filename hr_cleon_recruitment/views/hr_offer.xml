@@ -47,8 +47,108 @@
     <record id="hr_offer_form_view" model="ir.ui.view">
         <field name="name">hr.offer.form</field>
         <field name="model">hr.offer</field><field name="arch" type="xml">
-            <form string="Offer letter" create="0" edit="0">
-                <div class="ods-demo-layout">
+            <form string="Offer letter" create="0" edit="0" js_class="recruitment_sidebar_items">
+                <div class="rc_modal_wrapper">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Offer</h2>
+                            <p class="rc_screen_subtitle">Enter candidate offer </p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Information</h3>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="candidate_id">Candidate</label>
+                                <field name="candidate_id" required="1" placeholder="John" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="job_id">Job</label>
+                                <field name="job_id" required="1" placeholder="ICT" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="proposed_salary">Proposed salary</label>
+                                <field name="proposed_salary" required="1" placeholder="800,000" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="contract_type_id">Employment type</label>
+                                <field name="contract_type_id" required="1" placeholder="Remote" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Professional Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Offer Summary</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="candidate_id">Candidate</label>
+                            <field name="candidate_id" placeholder="e.g. Maduka Sopulu" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="proposed_salary">Proposed Salary (Optional)</label>
+                                <field name="proposed_salary" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="salary_currency">Currency</label>
+                                <field name="salary_currency" nolabel="1" required="proposed_salary != False" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="approved_date">Approved Date</label>
+                                <field name="approved_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="create_date">Create Date</label>
+                                <field name="create_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="approved_date">Approved Date</label>
+                                <field name="approved_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="response_date">Response Date</label>
+                                <field name="response_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="viewed_date">Viewed Date</label>
+                                <field name="viewed_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="date_char">Sent Date</label>
+                                <field name="date_char" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="ods-demo-layout">
                     <div class="ods-overlay open"></div>
                     <aside class="ods-drawer-sheet open">
                         <div class="ods-sheet-content">
@@ -117,10 +217,12 @@
                             </div>
                         </div>
                     </aside>
-                </div>
+                </div> -->
             </form>
         </field>
     </record>
+
+    
      
     <record id="action_hr_offer_recruitment" model="ir.actions.act_window">
         <field name="name">Offer:</field>

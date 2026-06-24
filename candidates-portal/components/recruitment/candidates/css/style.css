@@ -218,6 +218,15 @@ body {
     background-color: #be185d;
 }
 
+.cn-btn-primary-light {
+    background-color: #f4b8b8;
+    color: #ff4b4b;
+    border-color: #be185d;
+}
+
+.cn-btn-primary-light:hover {
+    background-color: #f4c6d9;
+}
 .cn-btn-secondary-action {
     background-color: var(--surface-pure-white);
     border: 1px solid var(--border-neutral-fine);

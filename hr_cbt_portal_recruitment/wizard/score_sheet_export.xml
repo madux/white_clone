@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="score_sheet_export_view_tree" model="ir.ui.view">
+          <field name="name">score.sheet.export.tree</field>
+          <field name="model">score.sheet.export</field>
+          <field name="arch" type="xml">
+            <tree string="Score Sheet Export" js_class="myrecruitment_dashboard_list">
+              <field name="name" required="1"/>
+              <field name="applicant_ids" widget="many2many_tags" required="1"/>
+              <field name="export_option"/>
+              <field name="excel_file" />
+            </tree>
+          </field>
+        </record>
+
+        <record id="score_sheet_export_form" model="ir.ui.view">
+          <field name="name">score.sheet.export.form</field>
+          <field name="model">score.sheet.export</field>
+          <field name="arch" type="xml">
+            <form string="Score sheet Export">
+              <header>
+                  <button name="method_export" type='object' string="Export &amp; Download: " class="oe_highlight"/>
+              </header>
+              <sheet>
+                <group>
+                    <group>
+                        <field name="name" required="1"/>
+                        <field name="applicant_ids" widget="many2many_tags" required="1"/>
+                        <field name="export_option"/>
+                    </group>
+                    <group>
+                        <field name="excel_file" nolabel="0" filename="filename"/>
+                        <field name="filename" invisible="1"/>
+                    </group>
+                    
+                </group>
+                <notebook>
+                  <page>
+                  </page>
+                </notebook>
+              </sheet>
+            </form>
+          </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_score_sheet_export">
+            <field name="name">Export as XLS</field>
+            <field name="res_model">score.sheet.export</field>
+
+            <field name="view_mode">form</field>
+            <field name="target">current</field>
+            <field name="view_mode">tree,form</field>
+            <!-- <field name="view_id" ref="view_maach_export_form"/> -->
+        </record>
+
+          <menuitem id="menu_score_sheet_export" name="Score Sheet Export" parent="hr_recruitment.menu_hr_recruitment_root" groups="group_hr_recruitment_officer_id" action="action_score_sheet_export" sequence="98"/>
+    </data>
+</odoo>

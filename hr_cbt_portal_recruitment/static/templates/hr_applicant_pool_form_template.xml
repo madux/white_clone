@@ -1,0 +1,223 @@
+<odoo>
+    <data>
+        <template id="hr_applicant_pool_form_template" name="Applicant Pool Form Template">
+                <t t-call="website.layout">
+                    <div class="applicant-pool-container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <h2 style="color: #2c3e50; margin-bottom: 10px;">Talent Pool</h2>
+                            <p style="color: #7f8c8d; font-size: 16px;">Please fill in all required fields to submit your application</p>
+                        </div>
+                        
+                        <!-- Alert container for IP address restriction -->
+                        <div id="ip-alert" class="alert alert-warning" style="display: none; margin-bottom: 20px;">
+                            <strong>Submission Restricted!</strong> You have already submitted an application within the last 5 days. Please try again later.
+                        </div>
+
+                        <form action="/applicant-pool-form/submit" method="post" enctype="multipart/form-data" class="applicant-pool-form" id="applicationForm" style="background: #f8f9fa; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                            
+                            <!-- Personal Information Section -->
+                            <div class="form-section" style="margin-bottom: 25px;">
+                                <h4 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-bottom: 20px;">
+                                    <i class="fa fa-user" style="margin-right: 8px;"></i>Personal Information
+                                </h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="first_name" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            First Name <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" required="required" 
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="Enter your first name"/>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="middle_name" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            Middle Name <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="text" class="form-control" id="middle_name" name="middle_name" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="Enter your middle name"/>
+                                    </div>
+                                    
+                                    <div class="col-md-4 mb-3">
+                                        <label for="last_name" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            Last Name <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="Enter your last name"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contact Information Section -->
+                            <div class="form-section" style="margin-bottom: 25px;">
+                                <h4 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-bottom: 20px;">
+                                    <i class="fa fa-phone" style="margin-right: 8px;"></i>Contact Information
+                                </h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            Email Address <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="email" class="form-control" id="email" name="email" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="Enter your email address"/>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone_number" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            Phone Number <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="tel" class="form-control" id="phone_number" name="phone_number" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="Enter your phone number"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Professional Information Section -->
+                            <div class="form-section" style="margin-bottom: 25px;">
+                                <h4 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-bottom: 20px;">
+                                    <i class="fa fa-briefcase" style="margin-right: 8px;"></i>Professional Information
+                                </h4>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="cv_link" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            CV / Resume Link <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="url" class="form-control" id="applicant_cv_link" name="applicant_cv_link" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="https://your-cv-or-resume-link"/>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="linkedin_account" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            LinkedIn Profile <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <input type="url" class="form-control" id="linkedin_account" name="linkedin_account" required="required"
+                                               style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;"
+                                               placeholder="https://linkedin.com/in/your-profile"/>
+                                    </div>
+                                    
+                                    <div class="col-md-6 mb-3">
+                                        <label for="has_completed_nysc" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                            NYSC Status <span style="color: #e74c3c;">*</span>
+                                        </label>
+                                        <select class="form-control" id="has_completed_nysc" name="has_completed_nysc" required="required"
+                                                style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px;">
+                                            <option value="">Select NYSC Status</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="ongoing">Ongoing</option>
+                                            <option value="exempted">Exempted</option>
+                                            <option value="not_applicable">Not Applicable</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Information Section -->
+                            <div class="form-section" style="margin-bottom: 25px;">
+                                <h4 style="color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 8px; margin-bottom: 20px;">
+                                    <i class="fa fa-info-circle" style="margin-right: 8px;"></i>Additional Information
+                                </h4>
+                                
+                                <div class="mb-3">
+                                    <label for="brief_introduction" class="form-label" style="font-weight: 600; color: #2c3e50;">
+                                        Brief Introduction
+                                    </label>
+                                    <textarea class="form-control" id="brief_introduction" name="brief_introduction" rows="4"
+                                              style="border: 2px solid #bdc3c7; border-radius: 5px; padding: 10px; resize: vertical;"
+                                              placeholder="Tell us a bit about yourself, your experience, and why you're interested in joining our team..."></textarea>
+                                    <small class="form-text text-muted">Optional: Provide a brief introduction about yourself</small>
+                                </div>
+                            </div>
+
+                            <!-- Hidden field for IP address -->
+                            <!-- <input type="hidden" id="applicant_ipaddress" name="applicant_ipaddress" value=""/> -->
+                            <input type="hidden" name="applied_date" value=""/>
+
+                            <!-- Submit Button -->
+                            <div style="text-align: center; margin-top: 30px;">
+                                <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" 
+                                        style="background: linear-gradient(135deg, #3498db, #2980b9); border: none; padding: 12px 40px; border-radius: 25px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3); transition: all 0.3s ease;">
+                                    <i class="fa fa-paper-plane" style="margin-right: 8px;"></i>Submit Application
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                
+                </t>
+            </template>
+
+            <template id="thank_you_template" name="Thank You">
+                <t t-call="website.layout">
+                    <div class="applicant-pool-form-container" style="text-align: center; padding: 48px 30px;">
+                        <div style="margin-bottom: 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#4BB543" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" fill="#E9F8ED"/>
+                                <path d="M8.5 13.5l2.5 2.5 4.5-5.5" fill="none" stroke="#4BB543" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h2 style="color: #138496; margin-bottom: 16px;">Thank You!</h2>
+                        <p style="font-size: 18px; color: #555; margin-bottom: 24px;">
+                            Your job application form has been <strong>successfully submitted</strong>.
+                        </p>
+                        <p style="font-size: 14px; color: #777; margin-bottom: 24px;">
+                            We will review your application and get back to you soon.
+                        </p>
+                        <a href="/applicant-pool" class="btn btn-primary" style="padding: 10px 28px; font-size: 16px; border-radius: 6px; text-decoration: none;">
+                            Submit Another
+                        </a>
+                    </div>
+                </t>
+            </template>
+
+             <template id="applicant_error_template" name="Application Error">
+                <t t-call="website.layout">
+                    <div class="applicant-pool-form-container" style="text-align: center; padding: 48px 30px;">
+                        <div style="margin-bottom: 24px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="#e74c3c" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" fill="#fdf2f2"/>
+                                <path d="M12 8v4m0 4h.01" fill="none" stroke="#e74c3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h2 style="color: #e74c3c; margin-bottom: 16px;" t-esc="error_title or 'Application Error'"/>
+                        <p style="font-size: 18px; color: #555; margin-bottom: 24px;" t-esc="error_message or 'An error occurred while processing your application.'"/>
+                        
+                        <t t-if="missing_fields">
+                            <div style="background: #fdf2f2; border: 1px solid #f5c6cb; border-radius: 6px; padding: 15px; margin: 20px auto; max-width: 500px;">
+                                <h5 style="color: #721c24; margin-bottom: 10px;">Missing Fields:</h5>
+                                <ul style="text-align: left; color: #721c24; margin: 0;">
+                                    <t t-foreach="missing_fields" t-as="field">
+                                        <li t-esc="field.replace('_', ' ').title()"/>
+                                    </t>
+                                </ul>
+                            </div>
+                        </t>
+                        
+                        <t t-if="technical_error">
+                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; margin: 20px auto; max-width: 600px;">
+                                <h5 style="color: #495057; margin-bottom: 10px;">Technical Details:</h5>
+                                <code style="color: #e83e8c; word-break: break-all;" t-esc="technical_error"/>
+                            </div>
+                        </t>
+                        
+                        <div style="margin-top: 30px;">
+                            <a href="/applicant-pool" class="btn btn-primary" style="padding: 10px 28px; font-size: 16px; border-radius: 6px; text-decoration: none; margin-right: 15px;">
+                                Try Again
+                            </a>
+                            <t t-if="show_retry != False">
+                                <a href="javascript:history.back()" class="btn btn-secondary" style="padding: 10px 28px; font-size: 16px; border-radius: 6px; text-decoration: none;">
+                                    Go Back
+                                </a>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </template>
+    </data>
+</odoo>

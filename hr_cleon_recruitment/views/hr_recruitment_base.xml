@@ -6,18 +6,42 @@
         <field name="model">hr.job</field>
         <field name="inherit_id" ref="hr.view_hr_job_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='department_id']" position="after">
-                <field name="offer_report_ids" readonly="0" required="1" widget="many2many_tags"/>
-                <field name="hiring_team_ids" readonly="0" required="1" widget="many2many_tags"/>
-                <field name="job_stage" readonly="0" widget="badge"/>
-                <field name="job_nature" readonly="0" widget="radio" options="{'horizontal': true}"/>
-                <field name="priority" readonly="0" widget="priority"/>
-                <field name="deadline_date" readonly="0"/>
-                <field name="deadline_date_char" readonly="1"/>
+            <xpath expr="//page[@name='recruitment_page']/group" position="after">
+                <group string="Additional Information">
+                    <group>
+                        <field name="job_stage" readonly="0" widget="badge"/>
+                        <field name="priority" readonly="0" widget="priority"/>
+                        <field name="deadline_date" readonly="0"/>
+                        <field name="job_nature" readonly="0" widget="radio" options="{'horizontal': true}"/>
+                        
+                    </group>
+                    <group>
+                        <field name="opened_date" readonly="0" required="0"/>
+                        <field name="deadline_date_char" readonly="1"/>
+                        <field name="offer_report_ids" readonly="0" required="1" widget="many2many_tags"/>
+                        <field name="hiring_team_ids" readonly="0" required="1" widget="many2many_tags"/>
+                        <field name ="offer_terms" widget="html"/>
+                    </group>
+                </group>
             </xpath>
-
+            <!-- <xpath expr="//field[@name='close_date']" position="before">
+            </xpath> --> 
             <xpath expr="//notebook/page[last()]" position="after">
-                <field name ="offer_terms" widget="html"/>
+                <page string="Other Requirement">
+                    <group string="req &amp; Qualification">
+                        <field name="requirements" readonly="0" widget="text" placeholder="Enter Requirement"/>
+                    </group>
+                </page>
+                <page string="Talent Mobility">
+                    <group string="Talent">
+                        <field name="talent_mobility_ids" readonly="0">
+                            <tree string="">
+                                <field name="employee_id" readonly="0"/>
+                                <field name="matched_skill_ids" readonly="0" widget="many2many_tags"/>
+                            </tree>
+                        </field>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>
@@ -27,11 +51,35 @@
         <field name="model">hr.applicant</field>
         <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='job_id']" position="after">
+            <xpath expr="//field[@name='job_id']" position="after"> 
                 <field name="applied_date" readonly="0" required="0"/>
                 <field name="email_sent" readonly="1"/>
-
             </xpath>
+             
+        </field>
+    </record>
+
+    <record id="hr_applicant_cbt_recruitment_base_form_view" model="ir.ui.view">
+        <field name="name">hr.applicant.recruitment.form</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_cbt_portal_recruitment.hr_applicant_innherited_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook/page[@name='Other informations']" position="before">
+                <page string="AI Extracted Skills, Education, Experiences">
+                    <group string="Education &amp; Qualification">
+                        <field name="qualifications_text" readonly="1" widget="text"/>
+                    </group>
+                    <group string="Experiences">
+                        <field name="experience_text" readonly="1" widget="text"/>
+                    </group>
+                    <group string="Skills">
+                        <field name="skills_text" readonly="1" widget="text"/>
+                    </group>
+                </page>
+                
+            </xpath>
+            
+           
         </field>
     </record>
     <record id="action_hr_add_job" model="ir.actions.act_window">
@@ -41,6 +89,137 @@
         <field name="view_id" ref="hr.view_hr_job_form"/>
         <field name="target">new</field>
         <!-- <field name="context">{'default_mode': 'select'}</field> -->
+    </record>
+
+    <record id="action_hr_survey_cbt_tree_action" model="ir.actions.act_window">
+        <field name="name">CBT</field>
+        <field name="res_model">survey.survey</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_id" ref="survey.survey_survey_view_tree"/>
+        <field name="target">current</field>
+    </record>
+
+    
+
+    <record id="survey_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">survey.survey.recruitment.view.inherit</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_applicant_pool_tree_inherit" model="ir.ui.view">
+        <field name="name">Applicnt pool tree</field>
+        <field name="model">hr.applicant.pool</field>
+        <field name="inherit_id" ref="hr_cbt_portal_recruitment.view_applicant_pool_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
+    </record>
+    <menuitem id="view_hr_applicant_pool" name="Talent pool" action="hr_cbt_portal_recruitment.action_applicant_pool_id"
+     sequence="8" parent="hr_cleon_recruitment.menu_hr_applicant_recruitment_root" />
+    <menuitem id="view_hr_jobposition" name="Application by Job " action="hr_recruitment.action_hr_job"
+     sequence="5" parent="hr_cleon_recruitment.menu_hr_applicant_recruitment_root" />
+
+    <record id="documentation_type_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">documentationtype.recruitment.view.inherit</field>
+        <field name="model">documentation.type</field>
+        <field name="inherit_id" ref="hr_cbt_portal_recruitment.documentation_type_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="hr_job_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr.job.recruitment.request.view.inherit</field>
+        <field name="model">hr.job.recruitment.request</field>
+        <field name="inherit_id" ref="hr_cbt_portal_recruitment.hr_job_recruitment_request_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="js_class">recruitment_sidebar_items</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="hr_job_cleon_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr.job.recruitment.view.inherit</field>
+        <field name="model">hr.job</field>
+        <field name="inherit_id" ref="hr.view_hr_job_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="js_class">recruitment_sidebar_items</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="hr_applicant_cleon_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr.job.recruitment.view.inherit</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="js_class">recruitment_sidebar_items</attribute>
+            </xpath>
+        </field>
+    </record>
+
+     <record id="hr_survey_survey_cleon_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr.survey.survey.recruitment.view.inherit</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="js_class">recruitment_sidebar_items</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_recruitment_stage_cleon_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr_recruitment_stage_cleon.view.inherit</field>
+        <field name="model">hr.recruitment.stage</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_recruitment_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="attributes">
+                <attribute name="js_class">recruitment_sidebar_items</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="score_sheet_export_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">score.sheet.export.recruitment.view.inherit</field>
+        <field name="model">score.sheet.export</field>
+        <field name="inherit_id" ref="hr_cbt_portal_recruitment.score_sheet_export_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
+    </record>
+    <record id="stage_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">hr.recruitment.stage.view.inherit</field>
+        <field name="model">hr.recruitment.stage</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_recruitment_stage_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="survey_user_recruitment_tree_view_inherit" model="ir.ui.view">
+        <field name="name">survey.user_input.view.inherit</field>
+        <field name="model">survey.user_input</field>
+        <field name="inherit_id" ref="survey.survey_user_input_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="attributes">
+                <attribute name="js_class">myrecruitment_dashboard_list</attribute>
+            </xpath>
+        </field>
     </record>
      
     

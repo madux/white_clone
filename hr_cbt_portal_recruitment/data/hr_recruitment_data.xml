@@ -1,0 +1,99 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <data noupdate="0">
+    
+        <record id="hr_recruitment_stage_request_initiation" model="hr.recruitment.stage">
+            <field name="name">Request initiation</field>
+            <field name="sequence">1</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_online_application" model="hr.recruitment.stage">
+            <field name="name">Online Application</field>
+            <field name="sequence">2</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_shortlisted_candidates" model="hr.recruitment.stage">
+            <field name="name">Shortlisted Candidates</field>
+            <field name="sequence">3</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_interview_process" model="hr.recruitment.stage">
+            <field name="name">Interview Process</field>
+            <field name="sequence">4</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_awaiting_panelist_feedback" model="hr.recruitment.stage">
+            <field name="name">Awaiting Panelist Feedback (Score Sheet)</field>
+            <field name="sequence">5</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_documentation" model="hr.recruitment.stage">
+            <field name="name">Documentation</field>
+            <field name="sequence">6</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_talent_management" model="hr.recruitment.stage">
+            <field name="name">Talent Management For onboarding</field>
+            <field name="sequence">7</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_audit_check" model="hr.recruitment.stage">
+            <field name="name">Audit Check</field>
+            <field name="sequence">8</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        <record id="hr_recruitment_stage_contract_signed" model="hr.recruitment.stage">
+            <field name="name">Contract Signed</field>
+            <field name="sequence">14</field>
+            <field name="fold">True</field>
+            <field name="hired_stage">True</field>
+        </record>
+        <record id="hr_recruitment_stage_finance_for_payroll" model="hr.recruitment.stage">
+            <field name="name">Finance For Payroll</field>
+            <field name="sequence">15</field>
+            <field name="fold">False</field>
+            <field name="hired_stage">False</field>
+        </record>
+        
+        <function name="write" model="ir.model.data">
+            <function name="search" model="ir.model.data">
+                <value eval="[('name', '=like', 'stage_job_'), ('model', '=', 'hr.recruitment.stage')]"/>
+            </function>
+            <value eval="{'noupdate': False}"/>
+        </function>
+
+        <record id="hr_recruitment.stage_job1" model="hr.recruitment.stage">
+            <field name="active">0</field>
+        </record>
+        <record id="hr_recruitment.stage_job2" model="hr.recruitment.stage">
+            <field name="active">0</field>
+        </record>
+        <record id="hr_recruitment.stage_job3" model="hr.recruitment.stage">
+            <field name="active">0</field>
+        </record>
+        <record id="hr_recruitment.stage_job4" model="hr.recruitment.stage">
+            <field name="active">0</field>
+        </record>
+        <record id="hr_recruitment.stage_job5" model="hr.recruitment.stage">
+            <field name="active">0</field>
+        </record>
+
+        <function name="write" model="ir.model.data">
+            <function name="search" model="ir.model.data">
+                <value eval="[('name', '=like', 'stage_job_'), ('model', '=', 'hr.recruitment.stage')]"/>
+            </function>
+            <value eval="{'noupdate': True}"/>
+        </function>
+        
+    
+    </data>
+    
+</odoo>

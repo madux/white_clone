@@ -13,7 +13,7 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         this.orm           = useService("orm");
         this.actionService = useService("action");
         this.userService   = useService("user");
-
+        this.action = this.env.services.action;
         // Debug — runs once on mount so you can inspect in the console
         onMounted(() => {
             console.group("[Recruitment] DEBUG — action resolution");
@@ -111,6 +111,45 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         );
     }
 
+    async openApplicantImportWizard(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cbt_portal_recruitment.action_wizard_hr_import_applicants",
+            { target: "new", name: "Import Applicant" }
+        );
+    }
+
+    // async detectDuplicates() {
+
+    //     const action = await this.orm.call(
+    //         "hr.applicant",
+    //         "action_detect_duplicates",
+    //         [[]]
+    //     );
+
+    //     this.actionService.doAction(action);
+    // }
+
+    async detectDuplicates() {
+        const recordIds = await this.orm.call(
+            'hr.applicant',
+            'action_detect_duplicates',
+            []
+        );
+
+        console.log(recordIds);
+        // if system complains are map undefined
+        //  : ensure to add views: [[false, 'list'], [false, 'form']]
+        this.action.doAction({
+            type: 'ir.actions.act_window',
+            name: 'Detected Duplicate Applicants',
+            res_model: 'hr.applicant',
+            views: [[false, 'list'], [false, 'form']],   // <-- this was missing
+            view_mode: 'list,form',
+            domain: [['id', 'in', recordIds]],
+            target: 'new',
+        });
+    }
     async openJobWizard(ev) {
         ev.preventDefault();
         await this.actionService.doAction(
@@ -135,6 +174,62 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
         );
     }
 
+    async openRecruitmentRequest(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cbt_portal_recruitment.recruitment_request_action",
+            { target: "current" }
+        );
+    }
+
+    async openCBT(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_survey_cbt_tree_action",
+            { target: "current" }
+        );
+    }
+
+    async openRecruitmentStages(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_recruitment.hr_recruitment_stage_act",
+            { target: "current" }
+        );
+    }
+
+    async openTalentMobility(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_talent_mobility_server_action",
+            { target: "current" }
+        );
+    }
+
+    // async openRecruitmentStages(ev) {
+    //     ev.preventDefault();
+    //     await this.actionService.doAction(
+    //         "hr_recruitment.hr_recruitment_stage_act",
+    //         { target: "current" }
+    //     );
+    // }
+
+    async openRecruitmentScoreSheet(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cbt_portal_recruitment.action_score_sheet_export",
+            { target: "current" }
+        );
+    }
+
+    async openRecruitmentDocumentType(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cbt_portal_recruitment.action_documentation_type",
+            { target: "current" }
+        );
+    }
+
     async openCandidate(ev) {
         ev.preventDefault();
         await this.actionService.doAction(
@@ -146,7 +241,7 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
     async openDepartment(ev) {
         ev.preventDefault();
         await this.actionService.doAction(
-            "hr_cleon_recruitment.hr_department_recruitment_custom_tree_view",
+            "hr_cleon_recruitment.action_hr_department_recruitment",
             { target: "current" }
         );
     }

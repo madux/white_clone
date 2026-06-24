@@ -1,0 +1,85 @@
+<odoo>
+    <data>
+        <template name="hr_documentation_success_template" id="hr_documentation_success_template">
+            <t t-call="website.layout">
+                <div id="wrap" class="oe_structure oe_empty h-100">
+                    <div class="container d-flex flex-column justify-content-center h-100">
+                        <div class="oe_structure" id="oe_structure_documentation_thanks_you"/>
+                        <div class="row justify-content-center">
+                            <h1 class="text-center">Thank you for submitting your documentation. You will get Notification on approval processes</h1>
+                        </div>
+                        <div class="oe_structure" id="oe_go_back"/>
+                    </div>
+                </div>
+            </t>
+        </template>
+        
+        <template id="documentation_request_template" name="Documentation form">
+            <t t-call="portal.portal_layout">
+                <!-- <t t-set="wrapwrap_classes" t-value="'o_portal_bg_dark'"/> -->
+                <t t-set="o_portal_fullwidth_alert" groups="base.group_user">
+                    <t t-call="portal.portal_back_in_edit_mode">
+                        <t t-set="backend_url" t-value="'/web#model=hr.applicant&amp;id=%s&amp;view_type=form' % (applicant.id)"/>
+                    </t>
+                </t>
+                <section class="pt16 pb16 o_colored_level documentation-request-form" id="documentation-request-form" data-vcss="001" data-name="Form" style="background-image: none;">
+
+                    <div class="row mt16">
+                        
+                        <div id="document_request_content" class="col-12 col-lg justify-content-end">
+                            <div id="card" class="card">
+                                <div id="card_header" class="card-header container" data-anchor="true">
+                                    <form id="msform1" method="post" enctype="multipart/form-data" data-mark="*" data-pre-fill="true">
+                                        <div class="row gs-0">
+                                            <div class="col-md">
+                                                <h5 class="row mx-1 mb-1 mb-md-0">
+                                                    <div class="col-6 text-truncate">
+                                                        <span t-field="applicant.partner_name"/>
+                                                        <a t-att-id="applicant.id" class="record_id"/>
+                                                        <small class="text-muted "> (Job Role: <span t-field="applicant.job_id.name"/>) </small>
+                                                    </div>
+                                                    <div class="col-3 text-truncate">
+                                                        
+                                                    </div>
+                                                    <div class="col-3 text-end">
+                                                        <small class="text-end">Status:</small>
+                                                        <span t-field="applicant.stage_id.name" class=" badge rounded-pill text-bg-info" title="Current stage of this request"/>
+                                                    </div>
+                                                </h5>
+                                            </div>
+                                        </div>
+                                    </form>  
+                                </div>
+                                <form id="msformidocs" method="post" enctype="multipart/form-data">
+                                    <div id="build_attachment" class="card-body">
+                                    
+                                    </div>
+                                </form>
+                                <div class="mb-0 py-2 col-12 s_website_form_submit d-none" id="s_website_form_submit_div" data-name="Submit Button">
+                                    <div style="width: 200px;" class="s_website_form_label"/>
+                                    <a href="#" role="button" class="btn btn-primary btn-lg o_default_snippet_text button_doc_submit">Submit</a>
+                                    <span id="s_website_form_result"/>
+                                </div>
+                                <div class="alert alert-info d-none" id="show-if-no-documentation" role="alert">
+                                    No documentation to upload<br/>
+                                </div>
+                                
+                                <div class="text-center mt-3" id="start_documentation_div">
+                                    <div class="alert alert-info" role="alert">
+                                        Please ensure all compulsory documents are filled. <br/>
+                                        In case a red alert warning is displayed, kindly note that our HR officer faulted your document. Read the comment and resubmit it <br/>
+                                        Click on the start documentation button below to proceed.<br/>
+                                    </div>
+                                    <a class="btn btn-secondary start-documentation" id="start-documentation" style="display: inline-block; margin-top: 10px;">
+                                        Click to Start Documentation
+                                    </a>
+                                </div>                        
+                            </div>
+                            
+                        </div>
+                    </div>
+                </section>
+            </t>
+        </template>
+    </data>
+</odoo>

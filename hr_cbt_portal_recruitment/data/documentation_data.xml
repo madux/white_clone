@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <data noupdate="1">
+    
+        <record model="documentation.type" id="documentation_type_1">
+            <field name="name">ACKNOWLEDGE COPY ACCEPTANCE OF OFFER LETTER</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_2">
+            <field name="name">CURRENT MEDICAL CERTIFICATE (Must be obtained from a Government Hospital)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_3">
+            <field name="name">2 COMPLETED GUARANTORS FORM (Executed in Notary Public / Court of Law)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_4">
+            <field name="name">BIRTH CERTIFICATE</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_5">
+            <field name="name">DULY FILLED BIO - DATA FORM (INCLUDING DETAILS OF PREVIOUS EMPLOYMENT AND UPDATED CV)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_6">
+            <field name="name">ORIGINAL CREDENTIALS (For Sighting) AND PHOTOCOPIES</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_7">
+            <field name="name">PASSPORT (4 Copies)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_8">
+            <field name="name">ASSUMPTION OF DUTY FORM</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_9">
+            <field name="name">PENSION NUMBER AND BANK ACCOUNT NUMBER</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_10">
+            <field name="name">NON – DISCLOSURE FORM</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_11">
+            <field name="name">MARRIAGE CERTIFICATE / AFFIDAFIT OF MARRIAGE (Where Applicable)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_12">
+            <field name="name">PASSPORT PHOTOGRAPH &amp; BIRTH CERTIFICATE OF SPOUSE &amp; CHILDREN (Where Applicable)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_13">
+            <field name="name">AFFIDAFIT &amp; NEWSPAPER PUBLICATION FOR CHANGE OF NAME (Where Applicable)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_14">
+            <field name="name">ACKNOWLEDGE COPY OF RESIGNATION LETTER FROM APTIS (for Outsourced Staff Only)</field>
+        </record>
+        <record model="documentation.type" id="documentation_type_15">
+            <field name="name">NATIONAL ID CARD/ SLIP (NIN)</field>
+        </record>
+    
+    </data>
+    
+</odoo>

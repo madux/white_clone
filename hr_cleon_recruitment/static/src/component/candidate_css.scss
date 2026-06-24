@@ -222,6 +222,78 @@ body {
     background-color: #be185d;
 }
 
+// .o_form_view_container {
+//     display: flex;
+
+//     .o_cc_admin_sidebar {
+//         flex-shrink: 0 !important;
+//         width: 240px !important;
+//     }
+
+//     > .o_action_manager,
+//     // > .Layout, // Owl components render with their own root, check actual class via devtools
+//     .o_content {
+//         flex-grow: 1 !important;
+//         min-width: 0 !important;
+//     }
+// }
+
+// .o_form_view .o_form_view_container {
+//   display: grid !important;
+//   grid-template-columns: 240px 1fr !important;
+//   flex-direction: unset !important;
+// }
+
+// .o_form_view_container .o_cc_admin_sidebar {
+//   grid-column: 1 !important;
+// }
+
+// .flex-grow-1 {
+//   grid-column: 2 !important;
+// }
+
+.dynamic-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 70px;
+  background: #f5f4f0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 200;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: "DM Sans", sans-serif;
+  --psb-font: "DM Sans", sans-serif;
+}
+
+.dynamic-sidebar * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dynamic-sidebar:hover { width: 200px; }
+
+.cn-btn-primary-light {
+    background-color: #f8dbdb;
+    color: #f86f6f;
+    border-color: #be185d;
+    border-radius: 2px solid 1px;
+    gap: 8px;
+    margin-right: 4px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.cn-btn-primary-light:hover {
+    background-color: #f4c6d9;
+}
+
 .cn-btn-secondary-action {
     background-color: var(--surface-pure-white);
     border: 1px solid var(--border-neutral-fine);

@@ -1,0 +1,48 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+
+    <record id="survey_question_form_inherit_scoring_type" model="ir.ui.view">
+        <field name="name">survey.question.form.inherit.scoring.type</field>
+        <field name="model">survey.question</field>
+        <field name="inherit_id" ref="survey.survey_question_form"/>
+        <field name="arch" type="xml">
+            <!-- <xpath expr="//field[@name='scoring_type']" position="attributes"> 
+                <attribute name="invisible">0</attribute>
+            </xpath> -->
+            <!-- <xpath expr="//field[@name='scoring_type']" position="replace">
+                <field name="scoring_type"/>
+            </xpath> -->
+            <xpath expr="//field[@name='title']" position="after">
+                <label for="scoring_type"/>
+                <field name="scoring_type" readonly="0" widget="radio" options="{'horizontal': true}"/>
+            </xpath> 
+        </field>
+    </record>
+ 
+    <record id="view_survey_survey_form_inherit" model="ir.ui.view">
+        <field name="name">survey.survey.form.inherit</field>
+        <field name="model">survey.survey</field>
+        <field name="inherit_id" ref="survey.survey_survey_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='scoring']" position="after">
+                <group string="Scheduling" name="scheduling">
+                    <field name="start_time" widget="datetime" string="Start Time"/>
+                    <field name="deadline" widget="datetime" string="Deadline"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_survey_user_input_search_inherit" model="ir.ui.view">
+        <field name="name">survey.survey_user_input_view_search.inherit</field>
+        <field name="model">survey.user_input</field>
+        <field name="inherit_id" ref="survey.survey_user_input_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='not_test']" position="after">
+                <filter string="Archived" name="archived" domain="[('active','=', False)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    
+</odoo>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_recruitment_applicant_checklist_wizard_form_view" model="ir.ui.view">
+            <field name="name">checklist.setup.wizard.view.form</field>
+            <field name="model">checklist.setup.wizard</field>
+            <field name="arch" type="xml">
+                <form string="checklist">
+                    <group>
+                        <group>
+                            <field name="documentation_type_ids" required="1" widget="many2many_tags"/>
+                        </group>
+                        <group>
+                            <field name="sign_template_ids" required="0" widget="many2many_tags"/>
+                        </group>
+                        <notebook>
+                            <page name="Applicants_move" string="Applicants">
+                                <field name="applicant_ids" context="{
+                                    'form_view_ref': 'hr_recruitment.hr_applicant_view_form', 
+                                    }">
+                                    <tree string="Applicants">
+                                        <field name="partner_name"/>
+                                        <field name="email_from"/>
+                                        <field name="partner_phone"/>
+                                        <field name="type_id"/>
+                                        <field name="job_id"/>
+                                    </tree>
+                                </field>
+                            </page>
+                        </notebook>
+                    </group>
+                    
+                    <footer>
+                        <button type="object" name="action_send_checklist"
+                            string="Send Documents" class="oe_highlight"/>
+                        <button special="cancel" string="Cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record> 
+
+        <record id="send_checklist_document_wizard_action" model="ir.actions.act_window">
+            <field name="name">4. Send Checklist Documents</field>
+            <field name="res_model">checklist.setup.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="context">{'default_applicant_ids': active_ids}</field>
+            <field name="target">new</field>
+            <field name="views">[[False, 'form']]</field> 
+            <field name="binding_model_id" ref="hr_recruitment.model_hr_applicant" />
+        </record>
+    </data>
+</odoo>

@@ -4,7 +4,7 @@
     --brand-pink-light: #F472B6;
     --brand-pink-faint: #FDF2F8;
     --text-primary: #1A1D23;
-    --text-secondary: #6B7280;
+    --text-secondary: #2e3035;
     --text-muted: #9CA3AF;
     --border-light: #E5E7EB;
     --bg-sidebar: #FFFFFF;
@@ -26,8 +26,51 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 ul { list-style: none; }
 svg { display: block; flex-shrink: 0; }
 
+.dynamicsidebar {
+    width: 250px;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    // overflow-y: auto;
+    padding-bottom: 16px;
+    min-height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 52px;
+    height: 100vh;
+    width: 18px;
+    z-index: 250;
+    overflow: hidden;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+}
+
+.dynamicsidebar * { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dynamicsidebar:hover { width: 200px; }
+
+// .dynamic-sidebar {
+//   position: fixed;
+//   left: 0;
+//   top: 0;
+//   height: 100vh;
+//   width: 70px;
+//   background: #f7f4f6;
+//   display: flex;
+//   flex-direction: column;
+//   align-items: center;
+//   z-index: 200;
+//   transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+//   overflow: hidden;
+//   border-right: 1px solid rgba(255, 255, 255, 0.06);
+//   font-family: "DM Sans", sans-serif;
+//   --psb-font: "DM Sans", sans-serif;
+// }
+
 .sidebar {
-    width: 220px;
+    width: 250px;
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-light);
     display: flex;
@@ -64,7 +107,7 @@ svg { display: block; flex-shrink: 0; }
 .sidebar-logo-text {
     font-weight: 600;
     font-size: 13px;
-    color: var(--text-primary);
+    color: #1a1d2e;
 }
 
 .sidebar-section-label {
@@ -83,16 +126,20 @@ svg { display: block; flex-shrink: 0; }
     padding: 7px 16px;
     border-radius: 0;
     // font-size: 12.5px;
-    color: var(--text-secondary);
+    color: #060607 !important;
     position: relative;
     transition: background 0.15s, color 0.15s;
     font-size: 14px;
-
+    font-weight: 450 !important;
+    font-family: 'DM Sans', sans-serif !important;
+    -webkit-font-smoothing: antialiased !important;
 }
 
 .sidebar-nav-item:hover {
-    background: var(--brand-pink-faint);
-    color: var(--brand-pink);
+    background: #E91E8C !important;
+    // color: var(--brand-pink);
+    color: #fbf4f4 !important;
+    border-radius: 2px !important;
 }
 
 .sidebar-nav-item.active {

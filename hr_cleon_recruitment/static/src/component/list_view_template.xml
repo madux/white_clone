@@ -11,7 +11,12 @@
         </xpath> -->
         <xpath expr="//table[@t-ref='table']" position="before">
             <div class="" t-if="isApplicantView" id="candidateId">
+                 
                 <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px; padding-right: 10px">
+                    <button class="cn-btn-primary-light" t-on-click="detectDuplicates" type="button">
+                        <i class="fas fa-biohazard"></i>
+                        <span>Detect Duplicate</span>
+                    </button>
                     <button class="cn-btn-primary-action" id="addCandidateBtn" t-on-click="openCandidateWizard" type="button">
                         <i class="fa fa-plus"></i>
                         <span>Add Candidate</span>
@@ -136,7 +141,7 @@
 
                 <div class="s-oh-metrics-grid">
                     <div class="s-oh-metric-card active" style="--s-oh-card-color: #E60067;">
-                        <div class="s-oh-metric-val">15</div>
+                        <div class="s-oh-metric-val">3</div>
                         <div class="s-oh-metric-label">TOTAL OFFERS</div>
                     </div>
                     <div class="s-oh-metric-card" style="--s-oh-card-color: #E28700;">
@@ -194,6 +199,7 @@
                             Offers and Hired
                         </a>
                     </li>
+
                     <li>
                         <a class="sidebar-nav-item" t-on-click="openCandidate">
                             <i class="sidebar-nav-icon fa fa-store"></i>
@@ -205,6 +211,12 @@
                 <p class="sidebar-section-label">Workflow</p>
                 <ul>
                     <li>
+                        <a class="sidebar-nav-item" t-on-click="openRecruitmentRequest">
+                            <i class="sidebar-nav-icon fa fa-shirtsinbulk"></i>
+                            Requisition
+                        </a>
+                    </li>
+                    <li>
                         <a class="sidebar-nav-item" t-on-click="openCandidate">
                             <i class="sidebar-nav-icon fa fa-clipboard-list"></i>
                             Tasks
@@ -212,13 +224,49 @@
                     </li>
                     <li>
                         <a class="sidebar-nav-item" t-on-click="openDepartment">
-                            <i class="sidebar-nav-icon fa fa-building-2"></i>
+                            <i class="sidebar-nav-icon fa fa-university"></i>
                             Department
                         </a>
                     </li>
                 </ul>
-
+                <p class="sidebar-section-label">Processes</p>
                 <ul style="margin-top: 12px;">
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openCBT">
+                            <i class="sidebar-nav-icon fa fa-mortar-board"></i>
+                            CBT Test
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openRecruitmentStages">
+                            <i class="sidebar-nav-icon fa fa-line-chart"></i>
+                            Stages
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openTalentMobility">
+                            <i class="sidebar-nav-icon fa fa-grav"></i>
+                            Talent Mobility
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openRecruitmentScoreSheet">
+                            <i class="sidebar-nav-icon fa fa fa-table"></i>
+                            Score Sheet
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openRecruitmentDocumentType">
+                            <i class="sidebar-nav-icon fa fa-book"></i>
+                            Documentation
+                        </a>
+                    </li>
+                    <li>
+                        <a class="sidebar-nav-item" t-on-click="openApplicantImportWizard">
+                            <i class="sidebar-nav-icon fa fa-download"></i>
+                            Import Applicant
+                        </a>
+                    </li>
                     <li>
                         <a class="sidebar-nav-item" t-on-click="openCandidate">
                             <i class="sidebar-nav-icon fa fa-layout-grid"></i>
@@ -237,8 +285,8 @@
                 <div class="sidebar-user">
                     <div class="sidebar-user-avatar">J</div>
                     <div class="sidebar-user-info">
-                        <div class="sidebar-user-name">John</div>
-                        <div class="sidebar-user-email">john.okafor@farmplus.com</div>
+                        <div class="sidebar-user-name">CleonHR</div>
+                        <div class="sidebar-user-email">by Maachsolutions</div>
                     </div>
                 </div>
             </aside>

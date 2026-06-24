@@ -1,0 +1,62 @@
+<odoo>
+  <data>
+
+    <record id="view_hr_job_form_eha_website_recruitment" model="ir.ui.view">
+      <field name="name">hr.job.view.form.inherit</field>
+      <field name="model">hr.job</field>
+      <field name="inherit_id" ref="hr.view_hr_job_form"/>
+      <field name="arch" type="xml">
+        
+        <xpath expr="//field[@name='website_published']" position="replace">
+        </xpath>
+        <xpath expr="//field[@name='contract_type_id']" position="after">
+            <field name="website_published" string="Publish to Website" nolabel="0"/>
+        </xpath>
+        <xpath expr="//field[@name='website_published']" position="after">
+          <!-- <group> -->
+            <field name="datetime_publish" string="Publish Date"/>
+            <field name="close_date" />
+          <!-- </group> -->
+        </xpath>
+        <xpath expr="//notebook" position="inside">
+            <page string="Descriptions" name="more_descriptions">
+                <field name="job_section_descriptions" domain="[('id', '=', None)]">
+                  <form>
+                    <group>
+                      <field name="title" />
+                    </group>
+                    <field name="job_descriptions">
+                      <tree>
+                          <field name="description" />
+                      </tree>
+                    </field>
+                  </form>
+                  <tree>
+                    <field name="title" />
+                  </tree>
+                </field>
+            </page>
+            <page string="Skills Proficiency Scale" name="skills_proficiency_scale">
+              <field name="job_section_proficiency_scale" domain="[('id', '=', None)]">
+                  <form>
+                      <group>
+                        <group>
+                          <field name="skill" />
+                        </group>
+                          <group>
+                            <field name="scale_selection" widget="radio" options="{'horizontal': true}"/>
+                          </group>
+                      </group>
+                  </form>
+                  <tree>
+                      <field name="skill" />
+                      <field name="scale_selection" widget="radio" options="{'horizontal': true}"/>
+                  </tree>
+              </field>
+          </page>                    
+          </xpath>
+      </field>
+    </record>
+    
+  </data>
+</odoo>

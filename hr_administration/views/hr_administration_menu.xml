@@ -51,6 +51,13 @@
                             </svg>
                             Employees
                         </a>
+                        <a href="/app/recruitment" class="nav-item" data-page="recruitment">
+                            <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M10 6v8M8 8h3a1 1 0 0 1 0 2H8M8 10h4a1 1 0 0 1 0 2H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            Recruitment
+                        </a>
                         <a href="/app/leave" class="nav-item" data-page="leave">
                             <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
                                 <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
@@ -72,6 +79,7 @@
                             </svg>
                             Contracts
                         </a>
+
                         <a href="/app/payslips" class="nav-item" data-page="payroll">
                             <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
                                 <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>

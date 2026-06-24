@@ -80,5 +80,227 @@
             ]]></field>
             <field name="auto_delete">True</field>
         </record>
+
+        <record id="mail_template_move_applicants" model="mail.template">
+            <field name="name">Job Application Stage Update</field>
+            <field name="model_id" ref="hr_cbt_portal_recruitment.model_hr_applicant_move_wizard"/>
+            <field name="subject">Job Application Update</field>
+            <field name="email_to"></field>
+            <field name="description">Sent to job applicant when your stages are changes</field>
+            <field name="body_html" type="html">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="background-color: white; border-collapse: collapse; margin-left: 20px;">
+                    <tr>
+                        <td valign="top" style="padding: 0px 10px;">
+                            <div style="margin: 0px; padding: 0px; font-size: 13px;">
+                                <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                                    Dear Applicant<br/><br/>
+                                    Your job application has been updated to <strong t-out="object.stage_id.name or ''">Next stage</strong><br/>
+                                    <t t-if="object.interview_date">
+                                        Your Interview date is scheduled on <strong t-out="object.interview_date or ''"></strong>
+                                    </t>
+                                    <t t-else="">
+                                        <strong t-out="''"></strong>
+                                    </t>
+                                    <br/>
+                                    We wish you good luck!
+                                </p><br/><br/>
+                                <p>
+                                    <t t-out="object.create_uid.company_id.name or ''">My company</t><br/>
+                                    <t t-if="object.create_uid.company_id.street">
+                                        <t t-out="object.create_uid.company_id.street or ''">Houston street</t><br/>
+                                    </t>
+                                    <t t-if="object.create_uid.company_id.street2">
+                                        <t t-out="object.create_uid.company_id.street2 or ''">Houston street 2</t><br/>
+                                    </t>
+                                    <t t-out="object.create_uid.company_id.phone or ''">+232445069090</t><br/>
+                                </p> 
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </field>
+            <field name="lang">{{ object.create_uid.partner_id.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <record id="mail_template_applicants_checklist" model="mail.template">
+            <field name="name">Applicant Documentation Checklist </field>
+            <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+            <field name="email_from">"{{ object.write_uid.company_id.email or object.write_uid.login }}"</field>
+            <field name="email_to">"{{ object.work_email }}"</field>
+            <field name="subject">"{{ object.write_uid.company_id.name }}" HR: Applicant Documentation Checklist </field>
+            <field name="reply_to">"{{ object.write_uid.company_id.email or object.write_uid.login }}"</field>
+            <field name="body_html" type="html">
+            <table border="0" cellpadding="0" cellspacing="0" style="background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;"><tr><td align="center">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="padding: 16px; background-color: white; color: #454748; border-collapse:separate;">
+                    <tbody>
+                        <!-- CONTENT -->
+                        <tr>
+                            <td align="center" style="min-width: 590px;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;">
+
+                                    <tr><td valign="top" style="font-size: 15px;">
+                                        <div>
+                                            Dear <t t-out="object.partner_name"/>,<br/> <br/>
+                                            Please. <br/>
+                                            Kindly check the mail attachment to upload the relevant required documents <br/> <br/>
+                                            
+                                            You are advised to check other mail thread for fill forms and validate e-Signatures.<br/>
+
+                                            <!-- <t t-foreach="object.sign_request_ids" t-as="sr">
+                                                
+                                                    <t t-if="sr.is_currently_sent">
+                                                        <li><a t-att-href="'%s' %(sr.dummy_share_link)"><t t-esc="sr.reference"/></a></li>
+                                                    </t>
+                                                
+                                            </t> -->
+
+                                            Once you navigate to the link, click on start icon, and fill required / optional fields <br/>
+                                            Ensure all the forms listed here are provided: <br/>
+                                            or use the link below to upload your data from the web portal <br/>
+                                            <!-- <a t-att-href="'/documentation-request/%s/' %(object.id)">Click to upload</a> -->
+                                            <a t-att-href="'%s/documentation-request/%s/' %(object.get_base_url(), object.id)">Click to upload</a>
+
+                                            <br />
+                                            <t t-foreach="object.applicant_documentation_checklist" t-as="file">
+                                                <li>
+                                                    <t t-if="file.document_file.datas != False ">
+                                                        <t t-esc="file.document_type.name"/> : See attachment to download <br/>
+                                                    </t>
+                                                    <t t-esc="file.document_type.name"/>
+                                                </li>
+                                            </t>
+
+                                            Should you require any additional information, please contact EEDC HR support for help.<br/>
+                                            <br /><br/>
+
+                                            Regards,<br />
+                                            --<br/>EEDC HR
+                                        </div>
+                                    </td></tr>
+                                    <tr><td style="text-align:center;">
+                                    <hr width="100%" style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;"/>
+                                    </td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </td></tr>
+            </table>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+        <record id="mail_template_fault_documentation" model="mail.template">
+            <field name="name">Documentation Re-Upload</field>
+            <field name="model_id" ref="hr_cbt_portal_recruitment.model_hr_applicant_documentation"/>
+            <field name="subject">Notification of Fault in your Documentation</field>
+            <field name="email_to"></field>
+            <field name="description">Notification of Fault in your Documentation</field>
+            <field name="body_html" type="html">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="background-color: white; border-collapse: collapse; margin-left: 20px;">
+                    <tr>
+                        <td valign="top" style="padding: 0px 10px;">
+                            <div style="margin: 0px; padding: 0px; font-size: 13px;">
+                                <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                                    Dear Applicant<br/><br/>
+                                    This is a notification that your document <strong t-out="object.document_type.name or ''"></strong> has been faulted with the following comment. <br/>
+                                    <p>
+                                    Comments: <strong t-out="object.hr_comment"></strong> <br/>
+                                        <!-- <div class="col-lg-12" t-raw="object.hr_comment"/>
+                                        <t t-esc="object.hr_comment"/>
+                                        <t t-esc="object.is_compulsory"/>
+                                        ${ctx['hr_comment']} -->
+                                    </p>
+                                    Please use the link below review the comments and reupload the document<br/>
+                                    <a class="btn btn-secondary" t-att-href="'/documentation-request/%s'%(object.applicant_id.id)">Click here</a><br/>
+                                     <br/>
+                                </p><br/>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+        <record id="mail_template_hr_documentation_notification" model="mail.template">
+            <field name="name">HR Notification for Documentation Upload</field>
+            <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+            <field name="subject">Notification for new Documentation Upload: "{{object.name}}"</field>
+            <field name="email_to"></field>
+            <field name="description">Notification of Fault in your Documentation</field>
+            <field name="body_html" type="html">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="background-color: white; border-collapse: collapse; margin-left: 20px;">
+                    <tr>
+                        <td valign="top" style="padding: 0px 10px;">
+                            <div style="margin: 0px; padding: 0px; font-size: 13px;">
+                                <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                                    Dear HR<br/><br/>
+                                    This is a notification that the applicant <t t-esc="object.name"/>  has uploaded the following document. <br/>
+                                    
+                                    <ul>
+                                        <t t-foreach="ctx.get('default_list')" t-as="item">
+                                            <li>
+                                                <t t-esc="item"/>
+                                            </li>
+                                        </t>
+                                    </ul>
+                                    
+                                     <br/>
+                                </p><br/>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+        <record id="mail_template_applicants_rejection" model="mail.template">
+            <field name="name"> Rejection Email </field>
+            <field name="model_id" ref="hr_recruitment.model_hr_applicant"/>
+            <field name="email_from">"{{ object.write_uid.company_id.email or object.write_uid.login }}"</field>
+            <field name="email_to">"{{ object.work_email }}"</field>
+            <field name="subject">"{{ object.write_uid.company_id.name }}" Application Update: "{{object.job_id.name}}" </field>
+            <field name="reply_to">"{{ object.write_uid.company_id.email or object.write_uid.login }}"</field>
+            <field name="body_html" type="html">
+            <table border="0" cellpadding="0" cellspacing="0" style="background-color: #F1F1F1; font-family:Verdana, Arial,sans-serif; color: #454748; width: 100%; border-collapse:separate;"><tr><td align="center">
+                <table border="0" cellpadding="0" cellspacing="0" width="590" style="padding: 16px; background-color: white; color: #454748; border-collapse:separate;">
+                    <tbody>
+                        <!-- CONTENT -->
+                        <tr>
+                            <td align="center" style="min-width: 590px;">
+                                <table border="0" cellpadding="0" cellspacing="0" width="590" style="min-width: 590px; background-color: white; padding: 0px 8px 0px 8px; border-collapse:separate;">
+
+                                    <tr><td valign="top" style="font-size: 15px;">
+                                        <div>
+                                            Dear <t t-out="object.partner_name"/>,<br/> <br/>
+                                            Thank you for considering <t t-esc="object.write_uid.company_id.name"/> for the <t t-esc="object.job_id.name"/> role. We appreciate your interest and the effort you've invested in your application.<br/><br />
+
+                                            After thorough review, we regret to inform you that your application did not progress to the next stage at this time. While we were impressed by your skills and experience, we have chosen candidates whose profiles better match our current requirements. <br /><br />
+
+                                            Please note that this decision does not necessarily reflect on your qualifications or potential.<br /><br />
+
+                                            We sincerely appreciate your interest in joining our team. Your application will remain on file for future opportunities.<br /><br />
+
+                                            Thank you again for considering <t t-esc="object.write_uid.company_id.name"/>. If you have any questions or would like feedback, feel free to reach out to us.<br /><br />
+
+                                            Best regards,<br />
+                                            Human Resources <br />
+                                            Enugu Electricity Distribution Company
+                                        </div>
+                                    </td></tr>
+                                    <tr><td style="text-align:center;">
+                                    <hr width="100%" style="background-color:rgb(204,204,204);border:medium none;clear:both;display:block;font-size:0px;min-height:1px;line-height:0; margin: 16px 0px 16px 0px;"/>
+                                    </td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </td></tr>
+            </table>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
     </data>
 </odoo>

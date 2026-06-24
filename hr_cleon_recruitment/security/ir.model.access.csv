@@ -2,4 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_hr_applicant_candidate_wizard_user,hr_applicant_candidate_wizard user,model_hr_applicant_candidate_wizard,,1,1,1,1
 access_hr_offer_user,hr_offer user,model_hr_offer,,1,1,1,1
 access_hr_offer_wizard_user,hr_offer_wizard user,model_hr_offer_wizard,,1,1,1,1
-
+access_hr_talent_mobility_user,hr_talent_mobility user,model_hr_talent_mobility,,1,1,1,1
+access_hr_talent_mobility_match_user,hr_talent_mobility match user,model_hr_talent_mobility_match,,1,1,1,1
+access_hr_mobility_match_skill_user,hr_mobility_match_skill user,model_hr_mobility_match_skill,,1,1,1,1
+access_hr_talent_mobility_jobmatch_user,hr_talent_mobility_jobmatch user,model_hr_talent_mobility_jobmatch,,1,1,1,1

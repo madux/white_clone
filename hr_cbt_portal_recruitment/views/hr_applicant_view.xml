@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<record model="ir.ui.view" id="hr_applicant_innherited_view_form">
+            <field name="name">hr.applicant.inherit</field>
+            <field name="model">hr.applicant</field>
+            <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_form"/>
+            <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_audit_certify" string="Audit Certify" class="oe_highlight" type="object" invisible="stage_type != 'audit'"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <field name="audited" invisible="1" />
+            </xpath> 
+            <xpath expr="//div[@name='button_box']" position="after">
+                <div classs="row">
+                    <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_128'}"/>
+                </div>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <!-- Ribbon for successful audit -->
+                <widget name="web_ribbon" title="Audit Successful" bg_color="bg-success" invisible="audited == False"/>
+            </xpath> 
+            
+            <field name="email_from" position="before">
+                <field name="applicant_code" />
+                <field name="first_name"/>
+                <field name="middle_name"/>
+                <field name="last_name" invisible="0" force_save="1" required="1"/>
+                <field name="partner_id" invisible="0" force_save="1" readonly="1"/>
+                <field name="stage_type" invisible="1" />
+            </field>
+            <field name="availability" position="before">
+                <field name="current_salary" string="Current salary"/>
+            </field>
+            <xpath expr="//form/sheet/group[last()]">
+                <notebook name="otherinfo">
+                    <page name="Other informations" string="Other informations">
+                        <group>
+                            <group>
+                                <field name="is_graduate" />
+                                <field name="has_completed_nysc"/>
+                                <field name="know_anyone_at_organisation"/>
+                                <field name="linkedin_account"/>
+                                <field name="specify_personal_personality" invisible="know_anyone_at_organisation != 'Yes'"/>
+                                <field name="relationship_type"/>
+                                <field name="degree_in_relevant_field"/>
+                                <field name="specifylevel_qualification" invisible="degree_in_relevant_field not in ['Yes', 'yes']"/>
+                                <field name="course_of_study" />
+                                <field name="nysc_certificate_number" invisible="is_graduate != True"/>
+                                <field name="is_external_staff" />
+                                <field name="skills" />
+                                <field name="prefered_district" />
+                                <field name="worked_at_organisation" />
+                                <field name="mode_of_exit_at_organisation" invisible="worked_at_organisation != 'yes'"/>
+                                <field name="why_do_you_leave" invisible="worked_at_organisation != 'yes'" />
+                                <field name="date_of_birth" />
+                                <field name="age" />
+                            </group>
+                            <group>
+                                <field name="reside_job_location"/>
+                                <field name="presentlocation"/>
+                                <field name="relocation_plans" invisible="reside_job_location != 'No'"/>
+                                <field name="resumption_period"/>
+                                <field name="knowledge_description"/>
+                                <field name="professional_certificate_link"/>
+                                <field name="nysc_certificate_link"/>
+                                <field name="has_professional_certification"/>
+                                <field name="gender"/>
+                                <field name="is_panelist_added"/>
+                            </group>
+
+                            <group>
+                                 <field name="reference_name"/>
+                                <field name="reference_title"/>
+                            </group>
+                            <group>
+                                <field name="reference_email"/>
+                                <field name="reference_phone"/>
+                            </group>
+                        </group>
+                    </page> 
+                    <page name="CBT_Information" string="CBT Information" invisible="1">
+                        <group>
+                            <group> 
+                                <field name="cbt_scheduled_date" readonly="1" force_save="1"/>
+                                <field name="shared_url" readonly="1" force_save="1"/>
+                                <field name="cbt_template_config_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="test_started" readonly="1"/>
+                                <field name="cbt_start_date" readonly="1"/>
+                                <field name="cbt_end_date" readonly="1"/>
+                                <field name="duration" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                    </page> 
+                    <page name="cbt_applicants_survey" string="CBT Information / Applicant's Test">
+                        <field name="survey_user_input_id" string="CBT Sent" readonly="1"
+                        context="{'form_view_ref': 'survey.survey_user_input_view_form','tree_view_ref': 'survey.survey_user_input_view_tree',}"/>
+                        <group>
+                            <group>
+                                <field name="test_passed" readonly="1" force_save="1"/>
+                            </group>
+                            <group>
+                                <field name="scoring_percentage" readonly="1"/>
+                                <field name="scoring_total" readonly="1" />
+                            </group>
+                        </group>
+                    </page>
+                    <page string='Checklist'>
+                        <field name="applicant_documentation_checklist">
+                            <tree editable="bottom" create="0">
+                                <field name="select" invisible="0"/>
+                                <field name="document_type"/>
+                                <!-- <field name="filename" invisible="1"/> -->
+                                <field name="document_file"/>
+                                <!-- <field name="applicant_submitted_document_file" widget="binary" filename="applicant_filename"/> -->
+                                <field name="applicant_submitted_document_file" readonly="1" force_save="1"/>
+                                <button name="return_with_comment" class="btn-sm oe_highlight" string="Fault" type="object" />
+                                <field name="hr_comment" readonly="1" force_save="1"/>
+
+                                <field name="is_compulsory" readonly="1"/>
+                                <!-- <field name="applicant_filename" invisible="1"/> -->
+                            </tree>
+                        </field>
+                    </page>
+                    <page name="panelist_score_sheet" string="Panelist Score Sheet">
+                        <field name="survey_panelist_input_ids" string="Panelist Score Sheet" readonly="0">
+                            <tree string="Panelist Score Sheet">
+                                <field name="panelist_id"/>
+                                <field name="survey_user_input_ids" widget="many2many_tags"/>
+                            </tree>
+                            <form string="Panelist Score Sheet">
+                                <sheet>
+                                    <group>
+                                        <group>
+                                            <field name="panelist_id"/>
+                                        </group>
+                                        <group>
+                                        </group>
+                                        <notebook>
+                                            <page string="Panelist survey">
+                                                <field name="survey_user_input_ids" context="{'form_view_ref': 'survey.survey_user_input_view_form','tree_view_ref': 'survey.survey_user_input_view_tree',}">
+                                                </field>
+                                            </page>
+                                        </notebook>
+                                    </group>
+                                </sheet> 
+                            </form>
+                        </field>
+                    </page>
+                    <page string='Signature request'>
+                        <!-- <field name="sign_request_ids" context="{'tree_view_ref': 'sign.sign_request_view_tree'}"/> -->
+                    </page>
+                </notebook>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="hr_applicant_view_search_cbt_inherit" model="ir.ui.view">
+        <field name="name">hr.applicant.view.search.inherit.cbt</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.hr_applicant_view_search_bis"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='my_applications']" position="after">
+                <field name="applicant_code" string="Application Code" />
+                <filter string="Test Sent" name="cbt_completed" domain="[('survey_user_input_id', '!=', False)]"/>
+                <filter string="Test not Sent" name="cbt_not_completed" domain="[('survey_user_input_id', '=', False)]"/>
+                <filter string="Test Completed" name="cbt_completed" domain="[('survey_user_input_id.state', '=', 'done')]"/>
+                <filter string="Test In Progress" name="cbt_completed" domain="[('survey_user_input_id.state', '=', 'in_progress')]"/>
+                <filter string="Test not started" name="cbt_not_completed" domain="[('survey_user_input_id.state', '=', 'new')]"/>
+                <filter name="passed" string="Passed Applicants" domain="[('test_passed', '=', True)]"/>
+                <filter string="Score: 0" name="score_0" domain="[('scoring_percentage','=', 0)]"/>
+                <filter string="Score: 0 - 19" name="score_0_19" domain="[('scoring_percentage','&lt;', 20)]"/>
+                <filter string="Score: 20 - 29" name="score_0_20" domain="[('scoring_percentage','&gt;', 19),('scoring_percentage','&lt;', 30)]"/>
+                <filter string="Score: 30 - 39" name="score_0_30" domain="[('scoring_percentage','&gt;', 29),('scoring_percentage','&lt;', 40)]"/>
+                <filter string="Score: 40 - 49" name="score_0_40" domain="[('scoring_percentage','&gt;', 39),('scoring_percentage','&lt;', 50)]"/>
+                <filter string="Score: 50 - 59" name="score_0_50" domain="[('scoring_percentage','&gt;', 49),('scoring_percentage','&lt;', 60)]"/>
+                <filter string="Score: 60 - 69" name="score_0_60" domain="[('scoring_percentage','&gt;', 59),('scoring_percentage','&lt;', 70)]"/>
+                <filter string="Score: 70 - 79" name="score_0_70" domain="[('scoring_percentage','&gt;', 69),('scoring_percentage','&lt;', 80)]"/>
+                <filter string="Score: 80 - 89" name="score_0_80" domain="[('scoring_percentage','&gt;', 79),('scoring_percentage','&lt;', 90)]"/>
+                <filter string="Score: 90 - 99" name="score_0_90" domain="[('scoring_percentage','&gt;', 89),('scoring_percentage','&lt;', 100)]"/>
+                <filter string="Score: 100" name="score_0_100" domain="[('scoring_percentage','=', 100)]"/>
+
+                <filter string="Test Created Today" name="test_created_today" domain="[('survey_user_input_id.create_date', '>=', context_today())]"/>
+                <filter string="Test Not Created Today" name="test_not_created_today" domain="[('survey_user_input_id.create_date', '&lt;', context_today())]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="cbt_hr_recruitment_inherit_crm_case_tree_view_job" model="ir.ui.view">
+        <field name="name">hr.applicant.view.list.inherit.cbt</field>
+        <field name="model">hr.applicant</field>
+        <field name="inherit_id" ref="hr_recruitment.crm_case_tree_view_job"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='create_date']" position="before">
+                <field name="test_passed" readonly="1" force_save="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="ir_action_server_pms_mail" model="ir.actions.server">
+        <field name="name">5. Re-Send Documentation Checklist</field>
+        <field name="type">ir.actions.server</field>
+        <field name="model_id" ref="hr_recruitment.model_hr_applicant" />
+        <field name="binding_model_id" ref="hr_recruitment.model_hr_applicant" />
+        <field name="state">code</field>
+        <field name="sequence" eval="5"/>
+        <field name="groups_id" eval="[(6, 0, [
+        ref('base.group_system'), 
+        ref('hr.group_hr_manager')
+        ])]"/>
+        <field name="code">action=model.sudo().send_applicants_checklist()</field>
+    </record>
+
+    <record id="ir_action_server_applicants_for_audit" model="ir.actions.server">
+        <field name="name">Applicants for Audit</field>
+        <field name="type">ir.actions.server</field>
+        <field name="model_id" ref="hr_recruitment.model_hr_applicant" />
+        <field name="state">code</field>
+        <field name="groups_id" eval="[(6, 0, [
+        ref('hr_cbt_portal_recruitment.group_hr_recruitment_audit_id')
+        ])]"/>
+        <field name="code">action=model.sudo().get_filtered_audit_stage_menu()</field>
+    </record>
+
+    <menuitem
+            id="hr_applicant_audit_menu"
+            name="Applicants for Audit"
+            action="hr_cbt_portal_recruitment.ir_action_server_applicants_for_audit"
+            groups="hr_cbt_portal_recruitment.group_hr_recruitment_audit_id"
+            parent="hr_recruitment.menu_crm_case_categ0_act_job"
+            sequence="10"/>
+</odoo>
