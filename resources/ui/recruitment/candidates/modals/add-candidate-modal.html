@@ -2,7 +2,7 @@
 
     <div class="modal-card active" id="add-candidate-parent-modal">
         <button class="modal-close-btn" aria-label="Close modal" data-action="close">
-            <i data-lucide="x"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="modal-header-block">
             <h2 class="modal-title">Add Candidate</h2>
@@ -12,7 +12,7 @@
         <div class="parent-grid">
             <div class="selection-card form-variant" data-target="complete-a-form-modal">
                 <div class="card-icon-wrapper">
-                    <i data-lucide="file-text"></i>
+                    <i class="fa-solid fa-file-lines"></i>
                 </div>
                 <h3 class="card-title">Complete a Form</h3>
                 <p class="card-desc">Enter candidate details manually</p>
@@ -20,7 +20,7 @@
 
             <div class="selection-card resume-variant" data-target="upload-a-document-modal">
                 <div class="card-icon-wrapper">
-                    <i data-lucide="upload-cloud"></i>
+                    <i class="fa-solid fa-cloud-upload-alt"></i>
                 </div>
                 <h3 class="card-title">Upload Resume</h3>
                 <p class="card-desc">AI will extract information</p>
@@ -28,7 +28,7 @@
 
             <div class="selection-card bulk-variant" data-target="bulk-upload-modal">
                 <div class="card-icon-wrapper">
-                    <i data-lucide="upload"></i>
+                    <i class="fa-solid fa-upload"></i>
                 </div>
                 <h3 class="card-title">Bulk Upload</h3>
                 <p class="card-desc">Import multiple resumes or CSV</p>
@@ -36,7 +36,7 @@
 
             <div class="selection-card linkedin-variant" data-target="import-from-linkedin-modal">
                 <div class="card-icon-wrapper">
-                    <i data-lucide="link-2"></i>
+                    <i class="fa-solid fa-link"></i>
                 </div>
                 <h3 class="card-title">LinkedIn URL</h3>
                 <p class="card-desc">Import from LinkedIn profile</p>
@@ -46,11 +46,11 @@
 
     <div class="modal-card" id="complete-a-form-modal">
         <button class="modal-close-btn" aria-label="Close modal" data-action="close">
-            <i data-lucide="x"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="modal-header-inline">
             <div class="header-icon-badge form-badge">
-                <i data-lucide="file-text"></i>
+                <i class="fa-solid fa-file-lines"></i>
             </div>
             <div class="header-text-group">
                 <h2 class="modal-title">Manual Entry</h2>
@@ -125,11 +125,11 @@
 
     <div class="modal-card" id="upload-a-document-modal">
         <button class="modal-close-btn" aria-label="Close modal" data-action="close">
-            <i data-lucide="x"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="modal-header-inline">
             <div class="header-icon-badge resume-badge">
-                <i data-lucide="upload-cloud"></i>
+                <i class="fa-solid fa-cloud-upload-alt"></i>
             </div>
             <div class="header-text-group">
                 <h2 class="modal-title">Upload Resume</h2>
@@ -140,7 +140,7 @@
         <div class="modal-scroll-content">
             <div class="dropzone-area" id="resumeDropzone">
                 <input type="file" id="resumeFileInput" accept=".pdf,.doc,.docx,.txt" hidden />
-                <i data-lucide="upload" class="dropzone-icon"></i>
+                <i class="fa-solid fa-upload dropzone-icon"></i>
                 <p class="dropzone-main-text"><strong>Drop your resume here</strong></p>
                 <p class="dropzone-sub-text">or click to browse files</p>
                 <p class="dropzone-limits">Supports PDF, DOC, DOCX, TXT up to 10MB</p>
@@ -165,11 +165,11 @@
 
     <div class="modal-card" id="bulk-upload-modal">
         <button class="modal-close-btn" aria-label="Close modal" data-action="close">
-            <i data-lucide="x"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="modal-header-inline">
             <div class="header-icon-badge bulk-badge">
-                <i data-lucide="upload"></i>
+                <i class="fa-solid fa-upload"></i>
             </div>
             <div class="header-text-group">
                 <h2 class="modal-title">Bulk Upload</h2>
@@ -181,14 +181,14 @@
             <div class="split-dropzone-grid">
                 <div class="mini-dropzone" onclick="document.getElementById('csvFileInput').click()">
                     <input type="file" id="csvFileInput" accept=".csv" hidden />
-                    <i data-lucide="upload" class="mini-dz-icon"></i>
+                    <i class="fa-solid fa-upload mini-dz-icon"></i>
                     <h4 class="mini-dz-title">Upload CSV</h4>
                     <p class="mini-dz-desc">Upload a CSV file with candidate data</p>
                     <button type="button" class="mini-dz-btn bulk-theme-btn">Choose CSV File</button>
                 </div>
                 <div class="mini-dropzone" onclick="document.getElementById('bulkResumesInput').click()">
                     <input type="file" id="bulkResumesInput" multiple accept=".pdf,.doc,.docx,.txt" hidden />
-                    <i data-lucide="upload" class="mini-dz-icon"></i>
+                    <i class="fa-solid fa-upload mini-dz-icon"></i>
                     <h4 class="mini-dz-title">Upload Resumes</h4>
                     <p class="mini-dz-desc">Upload multiple resume files</p>
                     <button type="button" class="mini-dz-btn bulk-theme-btn">Choose Files</button>
@@ -219,11 +219,11 @@
 
     <div class="modal-card" id="import-from-linkedin-modal">
         <button class="modal-close-btn" aria-label="Close modal" data-action="close">
-            <i data-lucide="x"></i>
+            <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="modal-header-inline">
             <div class="header-icon-badge linkedin-badge">
-                <i data-lucide="link-2"></i>
+                <i class="fa-solid fa-link"></i>
             </div>
             <div class="header-text-group">
                 <h2 class="modal-title">Import from LinkedIn</h2>
