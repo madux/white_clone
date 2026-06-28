@@ -10,56 +10,54 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="modals/css/style.css">
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
     <!-- ===== PAGE SCROLL (single container for both views) ===== -->
-    <div class="page-scroll">
+    <div class="cn-page-scroll">
 
         <!-- ===== LISTING VIEW ===== -->
         <div id="candidateListingView">
 
 <div class="cn-candidates-panel-wrapper">
 
-    <div style="display:flex; justify-content:flex-end; margin-bottom:16px; padding-top:24px;">
-        <button class="cn-btn-primary-action" id="addCandidateBtn">
-            <i data-lucide="plus"></i>
+    <div class="cn-add-btn-bar">
+        <button class="cn-btn-primary-action">
+            <i class="fa-solid fa-plus"></i>
             <span>Add Candidate</span>
         </button>
     </div>
 
     <div class="cn-metrics-grid-ribbon">
-        <div class="cn-metric-card-item" data-metric="total">
+        <div class="cn-metric-cn-card-item" data-metric="total">
             <div class="cn-metric-top-row">
                 <h2 class="cn-metric-value-display">3,240</h2>
-                <div class="cn-metric-icon-box bg-purple-sub"><i data-lucide="users"></i></div>
+                <div class="cn-metric-icon-box bg-purple-sub"><i class="fa-solid fa-users"></i></div>
             </div>
             <span class="cn-metric-label">Total Candidates</span>
         </div>
 
-        <div class="cn-metric-card-item" data-metric="shortlisted">
+        <div class="cn-metric-cn-card-item" data-metric="shortlisted">
             <div class="cn-metric-top-row">
                 <h2 class="cn-metric-value-display">1,120</h2>
-                <div class="cn-metric-icon-box bg-blue-sub"><i data-lucide="user-check"></i></div>
+                <div class="cn-metric-icon-box bg-blue-sub"><i class="fa-solid fa-user-check"></i></div>
             </div>
             <span class="cn-metric-label">Shortlisted</span>
         </div>
 
-        <div class="cn-metric-card-item" data-metric="interviewing">
+        <div class="cn-metric-cn-card-item" data-metric="interviewing">
             <div class="cn-metric-top-row">
                 <h2 class="cn-metric-value-display">485</h2>
-                <div class="cn-metric-icon-box bg-gold-sub"><i data-lucide="message-square"></i></div>
+                <div class="cn-metric-icon-box bg-gold-sub"><i class="fa-solid fa-comment"></i></div>
             </div>
             <span class="cn-metric-label">Interviewing</span>
         </div>
 
-        <div class="cn-metric-card-item" data-metric="hired">
+        <div class="cn-metric-cn-card-item" data-metric="hired">
             <div class="cn-metric-top-row">
                 <h2 class="cn-metric-value-display">294</h2>
-                <div class="cn-metric-icon-box bg-green-sub"><i data-lucide="award"></i></div>
+                <div class="cn-metric-icon-box bg-green-sub"><i class="fa-solid fa-award"></i></div>
             </div>
             <span class="cn-metric-label">Hired Placement</span>
         </div>
@@ -67,31 +65,31 @@
 
     <div class="cn-dashboard-action-toolbar">
         <div class="cn-search-input-container">
-            <i data-lucide="search" class="cn-search-icon-fixed"></i>
+            <i class="fa-solid fa-search cn-search-icon-fixed"></i>
             <input type="text" id="candidateSearchInput" placeholder="Search candidates name, skills or role...">
         </div>
 
         <div class="cn-view-mode-pill-box">
             <button class="cn-view-toggle-pill active" data-view-target="list">
-                <i data-lucide="list"></i>
+                <i class="fa-solid fa-list"></i>
             </button>
             <button class="cn-view-toggle-pill" data-view-target="grid">
-                <i data-lucide="grid"></i>
+                <i class="fa-solid fa-table-cells"></i>
             </button>
             <button class="cn-view-toggle-pill" data-view-target="pipeline">
-                <i data-lucide="git-commit"></i>
+                <i class="fa-solid fa-code-commit"></i>
             </button>
         </div>
 
         <div class="cn-toolbar-right">
             <button class="cn-btn-secondary-action" id="filterDropdownToggleBtn">
-                <i data-lucide="sliders"></i>
+                <i class="fa-solid fa-sliders"></i>
                 <span>Filter</span>
-                <i data-lucide="chevron-down" class="cn-chevron-rotator"></i>
+                <i class="fa-solid fa-chevron-down cn-chevron-rotator"></i>
             </button>
 
             <button class="cn-btn-secondary-action">
-                <i data-lucide="download"></i>
+                <i class="fa-solid fa-download"></i>
                 <span>Export</span>
             </button>
         </div>
@@ -170,6 +168,90 @@
                         </tr>
                     </thead>
                     <tbody id="candidatesTableBody">
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">TW</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Theresa Webb</span><span class="cn-cell-subtext">CN-8941</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(208) 555-0112</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">theresa.w@gmail.com</td>
+                            <td class="cn-col-role">Product Designer</td>
+                            <td class="cn-col-experience">4 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill shortlisted">Shortlisted</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">EP</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Eleanor Pena</span><span class="cn-cell-subtext">CN-3214</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(406) 555-0120</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">eleanor.p@hotmail.com</td>
+                            <td class="cn-col-role">Software Engineer</td>
+                            <td class="cn-col-experience">6 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill interviewing">Interviewing</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">AM</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Arlene McCoy</span><span class="cn-cell-subtext">CN-7721</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(303) 555-0105</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">arlene.mccoy@yahoo.com</td>
+                            <td class="cn-col-role">Data Analyst</td>
+                            <td class="cn-col-experience">2 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i><i class="fa-solid fa-star star-empty"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill applied">Applied</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">AF</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Albert Flores</span><span class="cn-cell-subtext">CN-4410</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(704) 555-0189</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">albert.flores@aol.com</td>
+                            <td class="cn-col-role">Product Designer</td>
+                            <td class="cn-col-experience">5 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star star-empty"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill shortlisted">Shortlisted</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">SN</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Savannah Nguyen</span><span class="cn-cell-subtext">CN-5932</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(907) 555-0143</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">savannah.n@outlook.com</td>
+                            <td class="cn-col-role">Software Engineer</td>
+                            <td class="cn-col-experience">3 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill interviewing">Interviewing</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">KW</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Kristin Watson</span><span class="cn-cell-subtext">CN-1109</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(252) 555-0126</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">kristin.w@gmail.com</td>
+                            <td class="cn-col-role">Software Engineer</td>
+                            <td class="cn-col-experience">7 Years</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill hired">Hired</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
+                        <tr>
+                            <td class="cn-col-checkbox cn-cell-pinned-left-1"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></td>
+                            <td class="cn-col-candidate cn-cell-pinned-left-2"><div class="cn-candidate-meta-cell"><div class="cn-avatar-circle-sm">CH</div><div class="cn-identity-text-box"><span class="cn-candidate-click-trigger">Courtney Henry</span><span class="cn-cell-subtext">CN-6652</span></div></div></td>
+                            <td class="cn-col-phone cn-cell-pinned-left-3">(308) 555-0176</td>
+                            <td class="cn-col-email cn-cell-pinned-left-4">courtney.h@live.com</td>
+                            <td class="cn-col-role">Product Designer</td>
+                            <td class="cn-col-experience">1 Year</td>
+                            <td class="cn-col-rating"><div class="cn-star-rating-row"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i><i class="fa-solid fa-star star-empty"></i><i class="fa-solid fa-star star-empty"></i></div></td>
+                            <td class="cn-col-status"><span class="cn-status-badge-indicator-pill rejected">Rejected</span></td>
+                            <td class="cn-col-date">12 May 2026</td>
+                            <td class="cn-col-actions cn-cell-pinned-right-end"><div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div></td>
+                        </tr>
                         </tbody>
                 </table>
             </div>
@@ -177,6 +259,69 @@
 
         <div class="cn-view-content-pane" id="viewPaneGrid">
             <div class="cn-cards-flex-grid-system" id="candidatesGridBody">
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">TW</div>
+                    <h3 class="cn-grid-cn-card-name">Theresa Webb</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Product Designer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">4 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">4.5</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill shortlisted">Shortlisted</span><span class="cn-cell-subtext">CN-8941</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">EP</div>
+                    <h3 class="cn-grid-cn-card-name">Eleanor Pena</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Software Engineer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">6 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">5.0</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill interviewing">Interviewing</span><span class="cn-cell-subtext">CN-3214</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">AM</div>
+                    <h3 class="cn-grid-cn-card-name">Arlene McCoy</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Data Analyst</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">2 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">3.5</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill applied">Applied</span><span class="cn-cell-subtext">CN-7721</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">AF</div>
+                    <h3 class="cn-grid-cn-card-name">Albert Flores</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Product Designer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">5 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">4.0</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill shortlisted">Shortlisted</span><span class="cn-cell-subtext">CN-4410</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">SN</div>
+                    <h3 class="cn-grid-cn-card-name">Savannah Nguyen</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Software Engineer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">3 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">4.5</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill interviewing">Interviewing</span><span class="cn-cell-subtext">CN-5932</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">KW</div>
+                    <h3 class="cn-grid-cn-card-name">Kristin Watson</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Software Engineer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">7 Years</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">4.8</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill hired">Hired</span><span class="cn-cell-subtext">CN-1109</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
+                <div class="cn-grid-profile-cn-card-node">
+                    <div class="cn-card-absolute-checkbox-wrapper"><label class="cn-cell-checkbox-container"><input type="checkbox"><span class="cn-custom-checkbox-checkmark"></span></label></div>
+                    <div class="cn-grid-avatar-circle-md">CH</div>
+                    <h3 class="cn-grid-cn-card-name">Courtney Henry</h3>
+                    <p class="cn-grid-cn-card-role-lbl">Product Designer</p>
+                    <div class="cn-grid-cn-card-metrics-divider-row"><div class="cn-grid-meta-metric-cell"><span class="cn-val">1 Year</span><span class="cn-lbl">Exp</span></div><div class="cn-grid-meta-metric-cell"><span class="cn-val">2.5</span><span class="cn-lbl">Rating</span></div></div>
+                    <div class="cn-grid-cn-card-footer-flex-row"><span class="cn-status-badge-indicator-pill rejected">Rejected</span><span class="cn-cell-subtext">CN-6652</span></div>
+                    <div class="cn-card-options-wrapper"><button class="cn-card-options-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button></div>
+                </div>
                 </div>
         </div>
 
@@ -189,9 +334,14 @@
                             <span class="cn-dot-indicator bg-slate"></span>
                             <h3>Applied</h3>
                         </div>
-                        <span class="cn-col-counter-badge" id="count-Applied">0</span>
+                        <span class="cn-col-counter-badge">1</span>
                     </div>
-                    <div class="cn-pipeline-cards-drop-zone" id="laneApplied"></div>
+                    <div class="cn-pipeline-cn-cards-drop-zone">
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Arlene McCoy</h4><p class="cn-pipe-cn-card-role-sub">Data Analyst</p></div><span class="cn-cell-subtext">CN-7721</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>2 Years</strong></span><span>★ 3.5</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="cn-pipeline-column" data-stage="Shortlisted">
@@ -200,9 +350,18 @@
                             <span class="cn-dot-indicator bg-blue"></span>
                             <h3>Shortlisted</h3>
                         </div>
-                        <span class="cn-col-counter-badge" id="count-Shortlisted">0</span>
+                        <span class="cn-col-counter-badge">2</span>
                     </div>
-                    <div class="cn-pipeline-cards-drop-zone" id="laneShortlisted"></div>
+                    <div class="cn-pipeline-cn-cards-drop-zone">
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Theresa Webb</h4><p class="cn-pipe-cn-card-role-sub">Product Designer</p></div><span class="cn-cell-subtext">CN-8941</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>4 Years</strong></span><span>★ 4.5</span></div>
+                        </div>
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Albert Flores</h4><p class="cn-pipe-cn-card-role-sub">Product Designer</p></div><span class="cn-cell-subtext">CN-4410</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>5 Years</strong></span><span>★ 4.0</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="cn-pipeline-column" data-stage="Interviewing">
@@ -211,9 +370,18 @@
                             <span class="cn-dot-indicator bg-gold"></span>
                             <h3>Interviewing</h3>
                         </div>
-                        <span class="cn-col-counter-badge" id="count-Interviewing">0</span>
+                        <span class="cn-col-counter-badge">2</span>
                     </div>
-                    <div class="cn-pipeline-cards-drop-zone" id="laneInterviewing"></div>
+                    <div class="cn-pipeline-cn-cards-drop-zone">
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Eleanor Pena</h4><p class="cn-pipe-cn-card-role-sub">Software Engineer</p></div><span class="cn-cell-subtext">CN-3214</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>6 Years</strong></span><span>★ 5.0</span></div>
+                        </div>
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Savannah Nguyen</h4><p class="cn-pipe-cn-card-role-sub">Software Engineer</p></div><span class="cn-cell-subtext">CN-5932</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>3 Years</strong></span><span>★ 4.5</span></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="cn-pipeline-column" data-stage="Hired">
@@ -222,9 +390,14 @@
                             <span class="cn-dot-indicator bg-green"></span>
                             <h3>Hired</h3>
                         </div>
-                        <span class="cn-col-counter-badge" id="count-Hired">0</span>
+                        <span class="cn-col-counter-badge">1</span>
                     </div>
-                    <div class="cn-pipeline-cards-drop-zone" id="laneHired"></div>
+                    <div class="cn-pipeline-cn-cards-drop-zone">
+                        <div class="cn-pipeline-cn-card-component">
+                            <div class="cn-pipe-cn-card-top-row"><div><h4 class="cn-pipe-cn-card-name-title">Kristin Watson</h4><p class="cn-pipe-cn-card-role-sub">Software Engineer</p></div><span class="cn-cell-subtext">CN-1109</span></div>
+                            <div class="cn-pipe-cn-card-bottom-meta"><span>Exp: <strong>7 Years</strong></span><span>★ 4.8</span></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -238,12 +411,12 @@
             <span class="cn-selection-lbl">candidates selected</span>
         </div>
         <div class="cn-toast-action-btn-group">
-            <button class="cn-btn-toast btn-active-blue" onclick="moveToStage()"><i data-lucide="chevron-right"></i>Move to Stage</button>
-            <button class="cn-btn-toast btn-standard-border" onclick="sendBulkEmail()"><i data-lucide="mail"></i>Send Email</button>
-            <button class="cn-btn-toast btn-standard-border" onclick="exportCandidates()"><i data-lucide="download"></i>Export</button>
-            <button class="cn-btn-toast btn-critical-danger" onclick="deleteSelectedCandidates()"><i data-lucide="trash-2"></i>Delete</button>
+            <button class="cn-btn-toast btn-active-blue"><i class="fa-solid fa-chevron-right"></i>Move to Stage</button>
+            <button class="cn-btn-toast btn-standard-border"><i class="fa-solid fa-envelope"></i>Send Email</button>
+            <button class="cn-btn-toast btn-standard-border"><i class="fa-solid fa-download"></i>Export</button>
+            <button class="cn-btn-toast btn-critical-danger"><i class="fa-solid fa-trash-can"></i>Delete</button>
         </div>
-        <button class="cn-toast-close-trigger" id="clearSelectionBtn"><i data-lucide="x"></i></button>
+        <button class="cn-toast-close-trigger" id="clearSelectionBtn"><i class="fa-solid fa-xmark"></i></button>
     </div>
 
 
@@ -253,375 +426,375 @@
         </div><!-- /candidateListingView -->
 
         <!-- ===== DETAIL VIEW (from index.html reference) ===== -->
-        <div id="candidateDetailView" style="display:none">
+        <div id="candidateDetailView" class="cn-detail-view">
 
-    <div class="candidate-hero">
-        <a class="hero-back-link" onclick="hideCandidateDashboard()">
-            <svg data-lucide="arrow-left"></svg>
+    <div class="cn-candidate-hero">
+        <a class="cn-hero-back-link">
+            <i class="fa-solid fa-arrow-left"></i>
             Back to Candidates
         </a>
 
-        <div class="hero-profile-row">
-            <div class="hero-avatar-wrap">
-                <div class="hero-avatar" id="detailDisplayAvatar">TW</div>
-                <div class="hero-avatar-badge" id="detailDisplayStatus">Shortlisted</div>
+        <div class="cn-hero-profile-row">
+            <div class="cn-cn-hero-avatar-wrap">
+                <div class="cn-hero-avatar" id="detailDisplayAvatar">TW</div>
+                <div class="cn-cn-hero-avatar-badge" id="detailDisplayStatus">Shortlisted</div>
             </div>
 
-            <div class="hero-info">
-                <h1 class="hero-name" id="detailDisplayName">Name</h1>
+            <div class="cn-hero-info">
+                <h1 class="cn-hero-name" id="detailDisplayName">Name</h1>
 
-                <div class="hero-meta-chips">
-                    <span class="hero-chip">
-                        <svg data-lucide="briefcase"></svg>
+                <div class="cn-hero-meta-chips">
+                    <span class="cn-hero-chip">
+                        <i class="fa-solid fa-briefcase"></i>
                         <span id="detailDisplayRole">Role</span>
                     </span>
-                    <span class="hero-chip">
-                        <svg data-lucide="map-pin"></svg>
+                    <span class="cn-hero-chip">
+                        <i class="fa-solid fa-location-dot"></i>
                         <span id="detailDisplayLocation">Location</span>
                     </span>
-                    <span class="hero-chip">
-                        <svg data-lucide="clock"></svg>
+                    <span class="cn-hero-chip">
+                        <i class="fa-solid fa-clock"></i>
                         <span id="detailDisplayExperience">Exp</span>
                     </span>
-                    <span class="hero-chip">
-                        <svg data-lucide="building"></svg>
+                    <span class="cn-hero-chip">
+                        <i class="fa-solid fa-building"></i>
                         <span id="detailDisplaySource">Source</span>
                     </span>
                 </div>
 
                 <div>
-                    <span class="hero-star-badge" id="detailDisplayRating">★ 4.5 Star Candidate</span>
+                    <span class="cn-hero-star-badge" id="detailDisplayRating">★ 4.5 Star Candidate</span>
                 </div>
 
-                <div class="hero-contacts">
-                    <div class="hero-contact-item">
-                        <svg data-lucide="mail"></svg>
+                <div class="cn-hero-contacts">
+                    <div class="cn-hero-contact-item">
+                        <i class="fa-solid fa-envelope"></i>
                         <span>email@domain.com</span>
-                        <div class="hero-contact-copy">
-                            <svg data-lucide="copy"></svg>
+                        <div class="cn-hero-contact-copy">
+                            <i class="fa-solid fa-copy"></i>
                         </div>
                     </div>
-                    <div class="hero-contact-item">
-                        <svg data-lucide="phone"></svg>
+                    <div class="cn-hero-contact-item">
+                        <i class="fa-solid fa-phone"></i>
                         <span>+1 000 0000</span>
                     </div>
                 </div>
             </div>
 
-            <div class="hero-actions">
-                <button class="btn-send-message">
-                    <svg data-lucide="send"></svg>
+            <div class="cn-hero-actions">
+                <button class="cn-btn-send-message">
+                    <i class="fa-solid fa-paper-plane"></i>
                     Send Message
                 </button>
-                <div class="hero-icon-actions">
-                    <div class="hero-icon-btn"><svg data-lucide="video"></svg></div>
-                    <div class="hero-icon-btn"><svg data-lucide="user-plus"></svg></div>
-                    <div class="hero-icon-btn"><svg data-lucide="share-2"></svg></div>
+                <div class="cn-hero-icon-actions">
+                    <div class="cn-hero-icon-btn"><i class="fa-solid fa-video"></i></div>
+                    <div class="cn-hero-icon-btn"><i class="fa-solid fa-user-plus"></i></div>
+                    <div class="cn-hero-icon-btn"><i class="fa-solid fa-share-nodes"></i></div>
                 </div>
             </div>
         </div>
 
-        <div class="hero-stats-row">
-            <div class="hero-stat-card">
-                <div class="hero-stat-label">Applications</div>
-                <div class="hero-stat-value">1</div>
+        <div class="cn-hero-stats-row">
+            <div class="cn-hero-stat-cn-card">
+                <div class="cn-hero-stat-label">Applications</div>
+                <div class="cn-hero-stat-value">1</div>
             </div>
-            <div class="hero-stat-card">
-                <div class="hero-stat-label">Interviews</div>
-                <div class="hero-stat-value">3</div>
+            <div class="cn-hero-stat-cn-card">
+                <div class="cn-hero-stat-label">Interviews</div>
+                <div class="cn-hero-stat-value">3</div>
             </div>
-            <div class="hero-stat-card">
-                <div class="hero-stat-label">Response Rate</div>
-                <div class="hero-stat-value">85%</div>
+            <div class="cn-hero-stat-cn-card">
+                <div class="cn-hero-stat-label">Response Rate</div>
+                <div class="cn-hero-stat-value">85%</div>
             </div>
-            <div class="hero-stat-card">
-                <div class="hero-stat-label">Days in Pipeline</div>
-                <div class="hero-stat-value">17</div>
+            <div class="cn-hero-stat-cn-card">
+                <div class="cn-hero-stat-label">Days in Pipeline</div>
+                <div class="cn-hero-stat-value">17</div>
             </div>
         </div>
     </div>
 
-    <nav class="tab-nav">
-        <div class="tab-item active">
-            <svg data-lucide="layout-grid"></svg>
+    <nav class="cn-tab-nav">
+        <div class="cn-tab-item active">
+            <i class="fa-solid fa-th-large"></i>
             Overview
         </div>
-        <div class="tab-item">
-            <svg data-lucide="file-text"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-file-lines"></i>
             Resume
         </div>
-        <div class="tab-item">
-            <svg data-lucide="activity"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-chart-line"></i>
             Activities
         </div>
-        <div class="tab-item">
-            <svg data-lucide="folder-open"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-folder-open"></i>
             Documents
         </div>
-        <div class="tab-item">
-            <svg data-lucide="briefcase"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-briefcase"></i>
             Jobs
         </div>
-        <div class="tab-item">
-            <svg data-lucide="message-square"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-comment"></i>
             Messages
         </div>
-        <div class="tab-item">
-            <svg data-lucide="video"></svg>
+        <div class="cn-tab-item">
+            <i class="fa-solid fa-video"></i>
             Meeting
         </div>
     </nav>
 
-    <div class="content-body">
-        <div class="left-col">
+    <div class="cn-content-body">
+        <div class="cn-left-col">
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="clipboard"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-clipboard"></i>
                         Professional Summary
                     </div>
-                    <span class="card-action-link">[Edit]</span>
+                    <span class="cn-card-action-link">[Edit]</span>
                 </div>
-                <p class="summary-text">
+                <p class="cn-summary-text">
                     Experienced software engineer with 6+ years of expertise in building scalable web applications. Passionate about clean code, test-driven development, and mentoring junior developers. Strong background in <span>React, Node.js</span>, and cloud infrastructure.
                 </p>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="briefcase"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-briefcase"></i>
                         Work Experience
                     </div>
-                    <span class="card-action-link">+ [Add]</span>
+                    <span class="cn-card-action-link">+ [Add]</span>
                 </div>
-                <div class="entry-block">
-                    <div class="entry-title">Senior Software Engineer</div>
-                    <div class="entry-subtitle">Tech Solutions Ltd | 6 yrs</div>
-                    <div class="entry-meta">
-                        <svg data-lucide="map-pin"></svg>
+                <div class="cn-entry-block">
+                    <div class="cn-entry-title">Senior Software Engineer</div>
+                    <div class="cn-entry-subtitle">Tech Solutions Ltd | 6 yrs</div>
+                    <div class="cn-entry-meta">
+                        <i class="fa-solid fa-location-dot"></i>
                         Lagos, Nigeria
                     </div>
-                    <div class="entry-actions">
-                        <span class="entry-action-btn">[Edit]</span>
-                        <span class="entry-action-btn">[Delete]</span>
+                    <div class="cn-entry-actions">
+                        <span class="cn-entry-action-btn">[Edit]</span>
+                        <span class="cn-entry-action-btn">[Delete]</span>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="graduation-cap"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-graduation-cap"></i>
                         Education
                     </div>
-                    <span class="card-action-link">+ [Add]</span>
+                    <span class="cn-card-action-link">+ [Add]</span>
                 </div>
-                <div class="entry-block">
-                    <div class="entry-title">BSc Computer Science</div>
-                    <div class="entry-subtitle">University of Lagos | 2017</div>
-                    <div class="entry-actions" style="margin-top:6px;">
-                        <span class="entry-action-btn">[Edit]</span>
-                        <span class="entry-action-btn">[Delete]</span>
+                <div class="cn-entry-block">
+                    <div class="cn-entry-title">BSc Computer Science</div>
+                    <div class="cn-entry-subtitle">University of Lagos | 2017</div>
+                    <div class="cn-entry-actions cn-entry-actions-mt">
+                        <span class="cn-entry-action-btn">[Edit]</span>
+                        <span class="cn-entry-action-btn">[Delete]</span>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="activity"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-chart-line"></i>
                         Skills &amp; Competencies
                     </div>
-                    <span class="card-action-link">[Edit]</span>
+                    <span class="cn-card-action-link">[Edit]</span>
                 </div>
 
-                <div class="skills-section-label">Technical Skills:</div>
+                <div class="cn-skills-section-label">Technical Skills:</div>
 
-                <div class="skill-row">
-                    <span class="skill-label">JavaScript</span>
-                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:75%"></div></div>
-                    <span class="skill-pct">75%</span>
+                <div class="cn-skill-row">
+                    <span class="cn-skill-label">JavaScript</span>
+                    <div class="cn-skill-bar-wrap"><div class="cn-skill-bar-fill" style="width:75%"></div></div>
+                    <span class="cn-skill-pct">75%</span>
                 </div>
-                <div class="skill-row">
-                    <span class="skill-label">React</span>
-                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:85%"></div></div>
-                    <span class="skill-pct">85%</span>
+                <div class="cn-skill-row">
+                    <span class="cn-skill-label">React</span>
+                    <div class="cn-skill-bar-wrap"><div class="cn-skill-bar-fill" style="width:85%"></div></div>
+                    <span class="cn-skill-pct">85%</span>
                 </div>
-                <div class="skill-row">
-                    <span class="skill-label">Node.js</span>
-                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:73%"></div></div>
-                    <span class="skill-pct">73%</span>
+                <div class="cn-skill-row">
+                    <span class="cn-skill-label">Node.js</span>
+                    <div class="cn-skill-bar-wrap"><div class="cn-skill-bar-fill" style="width:73%"></div></div>
+                    <span class="cn-skill-pct">73%</span>
                 </div>
-                <div class="skill-row">
-                    <span class="skill-label">TypeScript</span>
-                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:97%"></div></div>
-                    <span class="skill-pct">97%</span>
+                <div class="cn-skill-row">
+                    <span class="cn-skill-label">TypeScript</span>
+                    <div class="cn-skill-bar-wrap"><div class="cn-skill-bar-fill" style="width:97%"></div></div>
+                    <span class="cn-skill-pct">97%</span>
                 </div>
-                <div class="skill-row">
-                    <span class="skill-label">AWS</span>
-                    <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:76%"></div></div>
-                    <span class="skill-pct">76%</span>
+                <div class="cn-skill-row">
+                    <span class="cn-skill-label">AWS</span>
+                    <div class="cn-skill-bar-wrap"><div class="cn-skill-bar-fill" style="width:76%"></div></div>
+                    <span class="cn-skill-pct">76%</span>
                 </div>
 
-                <div class="skills-section-label" style="margin-top:12px;">Soft Skills:</div>
-                <div class="soft-skills-wrap">
-                    <span class="soft-skill-chip">Leadership</span>
-                    <span class="soft-skill-chip">Communication</span>
-                    <span class="soft-skill-chip">Problem Solving</span>
-                    <span class="soft-skill-chip">Teamwork</span>
+                <div class="cn-skills-section-label cn-skills-section-mt">Soft Skills:</div>
+                <div class="cn-soft-skills-wrap">
+                    <span class="cn-soft-skill-chip">Leadership</span>
+                    <span class="cn-soft-skill-chip">Communication</span>
+                    <span class="cn-soft-skill-chip">Problem Solving</span>
+                    <span class="cn-soft-skill-chip">Teamwork</span>
                 </div>
             </div>
 
         </div>
 
-        <div class="right-col">
+        <div class="cn-right-col">
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="file-text"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-file-lines"></i>
                         Quick Info
                     </div>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="mail"></svg>
-                    <span class="quick-info-text" id="detailDisplayEmail">email@domain.com</span>
-                    <div class="quick-info-copy" data-copy="email"><svg data-lucide="copy"></svg></div>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-envelope cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplayEmail">email@domain.com</span>
+                    <div class="cn-quick-info-copy" data-copy="email"><i class="fa-solid fa-copy"></i></div>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="phone"></svg>
-                    <span class="quick-info-text" id="detailDisplayPhone">+1 000 0000</span>
-                    <div class="quick-info-copy" data-copy="phone"><svg data-lucide="copy"></svg></div>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-phone cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplayPhone">+1 000 0000</span>
+                    <div class="cn-quick-info-copy" data-copy="phone"><i class="fa-solid fa-copy"></i></div>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="map-pin"></svg>
-                    <span class="quick-info-text" id="detailDisplayLocation">—</span>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-location-dot cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplayLocation">—</span>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="globe"></svg>
-                    <span class="quick-info-text" id="detailDisplaySource">—</span>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-globe cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplaySource">—</span>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="user"></svg>
-                    <span class="quick-info-text" id="detailDisplaySourcedBy">—</span>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-user cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplaySourcedBy">—</span>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="calendar"></svg>
-                    <span class="quick-info-text" id="detailDisplayAppliedDate">—</span>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-calendar cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplayAppliedDate">—</span>
                 </div>
-                <div class="quick-info-row">
-                    <svg class="quick-info-icon" data-lucide="hash"></svg>
-                    <span class="quick-info-text" id="detailDisplayId">#CN-0000</span>
+                <div class="cn-quick-info-row">
+                    <i class="fa-solid fa-hashtag cn-quick-info-icon" ></i>
+                    <span class="cn-quick-info-text" id="detailDisplayId">#CN-0000</span>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="map-pin"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-location-dot"></i>
                         Application Journey
                     </div>
                 </div>
-                <div style="font-size:11.5px; color:#6B7280; margin-bottom:8px; font-weight:500;">Applied Jobs:</div>
-                <div class="journey-item">
-                    <div class="journey-job-title" id="detailDisplayAppliedJob">Administrative Assistant</div>
-                    <div class="journey-status-row">
-                        <div class="journey-dot"></div>
-                        <span class="journey-status-label">Technical Interview</span>
-                        <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                <div class="cn-journey-section-label">Applied Jobs:</div>
+                <div class="cn-journey-item">
+                    <div class="cn-journey-job-title" id="detailDisplayAppliedJob">Administrative Assistant</div>
+                    <div class="cn-journey-status-row">
+                        <div class="cn-journey-dot"></div>
+                        <span class="cn-journey-status-label">Technical Interview</span>
+                        <span class="cn-journey-days cn-journey-days-auto">17 days ago</span>
                     </div>
                 </div>
-                <div class="journey-item">
-                    <div class="journey-job-title">Chief Executive Officer</div>
-                    <div class="journey-status-row">
-                        <div class="journey-dot"></div>
-                        <span class="journey-status-label">Technical Interview</span>
-                        <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                <div class="cn-journey-item">
+                    <div class="cn-journey-job-title">Chief Executive Officer</div>
+                    <div class="cn-journey-status-row">
+                        <div class="cn-journey-dot"></div>
+                        <span class="cn-journey-status-label">Technical Interview</span>
+                        <span class="cn-journey-days cn-journey-days-auto">17 days ago</span>
                     </div>
                 </div>
-                <a href="#" class="view-all-link">
+                <a href="#" class="cn-view-all-link">
                     View All Applications
-                    <svg data-lucide="arrow-right"></svg>
+                    <i class="fa-solid fa-arrow-right"></i>
                 </a>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="trending-up"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
                         Engagement Metrics
                     </div>
                 </div>
-                <div class="metric-row">
-                    <span class="metric-label">Response Rate:</span>
-                    <span class="metric-value green">85% <span class="metric-up-arrow">↑</span></span>
+                <div class="cn-metric-row">
+                    <span class="cn-metric-label">Response Rate:</span>
+                    <span class="cn-metric-value green">85% <span class="cn-metric-up-arrow">↑</span></span>
                 </div>
-                <div class="metric-row">
-                    <span class="metric-label">Avg. Response Time:</span>
-                    <span class="metric-value">4 hours</span>
+                <div class="cn-metric-row">
+                    <span class="cn-metric-label">Avg. Response Time:</span>
+                    <span class="cn-metric-value">4 hours</span>
                 </div>
-                <div class="metric-row">
-                    <span class="metric-label">Last Active:</span>
-                    <span class="metric-value">2 hours ago</span>
+                <div class="cn-metric-row">
+                    <span class="cn-metric-label">Last Active:</span>
+                    <span class="cn-metric-value">2 hours ago</span>
                 </div>
-                <div class="metric-row">
-                    <span class="metric-label">Email Opens:</span>
-                    <span class="metric-value">12/15 (80%)</span>
+                <div class="cn-metric-row">
+                    <span class="cn-metric-label">Email Opens:</span>
+                    <span class="cn-metric-value">12/15 (80%)</span>
                 </div>
-                <div class="metric-row">
-                    <span class="metric-label">Link Clicks:</span>
-                    <span class="metric-value">8</span>
+                <div class="cn-metric-row">
+                    <span class="cn-metric-label">Link Clicks:</span>
+                    <span class="cn-metric-value">8</span>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="message-circle"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-comment-dots"></i>
                         Recent Notes
                     </div>
-                    <span class="card-action-link">[View All]</span>
+                    <span class="cn-card-action-link">[View All]</span>
                 </div>
-                <div class="note-item">
-                    <div class="note-meta">
-                        <svg class="note-meta-icon" data-lucide="user"></svg>
-                        <span class="note-author">Sarah M.</span>
-                        <span class="note-time">• 2 hours ago</span>
+                <div class="cn-note-item">
+                    <div class="cn-note-meta">
+                        <i class="fa-solid fa-user cn-note-meta-icon" ></i>
+                        <span class="cn-note-author">Sarah M.</span>
+                        <span class="cn-note-time">• 2 hours ago</span>
                     </div>
-                    <p class="note-text">Strong technical background, good communication</p>
+                    <p class="cn-note-text">Strong technical background, good communication</p>
                 </div>
-                <div class="note-item">
-                    <div class="note-meta">
-                        <svg class="note-meta-icon" data-lucide="user"></svg>
-                        <span class="note-author">John D.</span>
-                        <span class="note-time">• 1 day ago</span>
+                <div class="cn-note-item">
+                    <div class="cn-note-meta">
+                        <i class="fa-solid fa-user cn-note-meta-icon" ></i>
+                        <span class="cn-note-author">John D.</span>
+                        <span class="cn-note-time">• 1 day ago</span>
                     </div>
-                    <p class="note-text">Great cultural fit for the team</p>
+                    <p class="cn-note-text">Great cultural fit for the team</p>
                 </div>
-                <button class="btn-add-note">[Add Quick Note]</button>
+                <button class="cn-btn-add-note">[Add Quick Note]</button>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">
-                        <svg data-lucide="clock"></svg>
+            <div class="cn-card">
+                <div class="cn-card-header">
+                    <div class="cn-card-title">
+                        <i class="fa-solid fa-clock"></i>
                         Recent Activity
                     </div>
-                    <span class="card-action-link">[View All]</span>
+                    <span class="cn-card-action-link">[View All]</span>
                 </div>
-                <div class="activity-item">
-                    <span class="activity-text">• Applied to Senior Software Engineer</span>
-                    <span class="activity-date">5/24/2026</span>
+                <div class="cn-activity-item">
+                    <span class="cn-activity-text">• Applied to Senior Software Engineer</span>
+                    <span class="cn-activity-date">5/24/2026</span>
                 </div>
-                <div class="activity-item">
-                    <span class="activity-text">• Resume viewed</span>
-                    <span class="activity-date">6/8/2026</span>
+                <div class="cn-activity-item">
+                    <span class="cn-activity-text">• Resume viewed</span>
+                    <span class="cn-activity-date">6/8/2026</span>
                 </div>
-                <div class="activity-item">
-                    <span class="activity-text">• Email opened</span>
-                    <span class="activity-date">6/9/2026</span>
+                <div class="cn-activity-item">
+                    <span class="cn-activity-text">• Email opened</span>
+                    <span class="cn-activity-date">6/9/2026</span>
                 </div>
             </div>
 
@@ -630,7 +803,7 @@
 
         </div><!-- /candidateDetailView -->
 
-        </div><!-- /page-scroll -->
+        </div><!-- /cn-page-scroll -->
 
     <!-- Modal -->
     <div class="cn-dashboard-modal-backdrop-layer" id="candidateDetailsModal">
@@ -640,7 +813,7 @@
                     <span class="cn-metric-modal-title" id="metricModalTitle">All Candidates</span>
                 </div>
                 <div class="cn-modal-window-controls-group">
-                    <button class="cn-modal-close-window-trigger" id="closeModalWindowBtn"><i data-lucide="x"></i></button>
+                    <button class="cn-modal-close-window-trigger" id="closeModalWindowBtn"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
             <div class="cn-metric-modal-body">
@@ -651,24 +824,10 @@
         </div>
     </div>
 
-    <!-- FAB -->
-    <div class="fab">
-        <svg data-lucide="message-circle"></svg>
+    <!-- cn-fab -->
+    <div class="cn-fab">
+        <i class="fa-solid fa-comment-dots"></i>
     </div>
-
-<div id="addCandidateModalContainer"></div>
-
-<script src="js/script.js"></script>
-<script src="modals/js/app.js"></script>
-<script>
-    fetch('modals/add-candidate-modal.html')
-        .then(function(r) { return r.text(); })
-        .then(function(html) {
-            document.getElementById('addCandidateModalContainer').innerHTML = html;
-            if (window.lucide) lucide.createIcons();
-            if (window.initAddCandidateModal) initAddCandidateModal();
-        });
-</script>
 
 </body>
 </html>
