@@ -1,0 +1,108 @@
+:root {
+    --comp-primary-color: #ec4899;
+    --comp-bg-body: #fafafa;
+    --comp-text-main: #111827;
+    --comp-text-muted: #6b7280;
+    --comp-border-color: #e5e7eb;
+    --comp-card-radius: 12px;
+    --comp-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.comp-body {
+    font-family: var(--comp-font-stack);
+    background-color: var(--comp-bg-body);
+    color: var(--comp-text-main);
+    display: flex;
+    min-height: 100vh;
+}
+
+.comp-sidebar {
+    width: 88px;
+    background-color: #ffffff;
+    border-right: 1px solid var(--comp-border-color);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 100vh;
+}
+
+.comp-sidebar-item {
+    width: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.comp-sidebar-item span {
+    font-size: 11px;
+    font-weight: 500;
+    color: #4b5563;
+    line-height: 1.2;
+    word-break: break-word;
+}
+.comp-sidebar-item span span {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+}
+
+.comp-sidebar-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #4b5563;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.comp-sidebar-item:hover .comp-sidebar-icon {
+    background-color: #f3f4f6;
+    color: var(--comp-text-main);
+}
+
+.comp-sidebar-item.active .comp-sidebar-icon {
+    background-color: var(--comp-primary-color);
+    color: #ffffff;
+}
+
+.comp-sidebar-item.active span {
+    color: var(--comp-primary-color);
+    font-weight: 600;
+}
+
+.comp-sidebar-subitem {
+    margin-top: -4px;
+    padding: 2px 0;
+}
+
+.comp-sidebar-subitem span {
+    font-size: 11px;
+    color: var(--comp-text-muted);
+    font-weight: 400;
+}
+
+.comp-sidebar-subitem:hover span {
+    color: var(--comp-text-main);
+    text-decoration: underline;
+}
+
+.comp-sidebar-divider {
+    width: 56px;
+    height: 1px;
+    background-color: var(--comp-border-color);
+    margin: 4px 0;
+}

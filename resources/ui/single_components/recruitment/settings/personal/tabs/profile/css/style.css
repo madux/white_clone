@@ -1,0 +1,148 @@
+:root {
+    --cfg-primary-color: #e52577;
+    --cfg-primary-hover: #c41860;
+    --cfg-bg-main: #ffffff;
+    --cfg-bg-body: #fafafa;
+    --cfg-text-main: #111827;
+    --cfg-text-muted: #6b7280;
+    --cfg-border-color: #e5e7eb;
+    --cfg-card-radius: 8px;
+    --cfg-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.cfg-body {
+    font-family: var(--cfg-font-stack);
+    background-color: var(--cfg-bg-body);
+    color: var(--cfg-text-main);
+    padding: 24px;
+}
+
+.cfg-tab-container {
+    max-width: 640px;
+}
+
+.cfg-card {
+    background-color: #ffffff;
+    border: 1px solid var(--cfg-border-color);
+    border-radius: var(--cfg-card-radius);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.cfg-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--cfg-text-main);
+}
+.cfg-card-title span {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+.cfg-avatar-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.cfg-avatar-large {
+    width: 80px;
+    height: 80px;
+    background-color: var(--cfg-primary-color);
+    color: white;
+    font-size: 28px;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.cfg-avatar-large span {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+}
+
+.cfg-avatar-overlay-icon {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: #ffffff;
+    border: 1px solid var(--cfg-border-color);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cfg-text-muted);
+    font-size: 11px;
+}
+
+.cfg-upload-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cfg-upload-btn {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cfg-text-main);
+    text-decoration: underline;
+}
+.cfg-upload-btn span {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+
+.cfg-upload-hint {
+    font-size: 12px;
+    color: var(--cfg-text-muted);
+}
+.cfg-upload-hint span {
+    font-size: 12px !important;
+}
+
+.cfg-form-group {
+    margin-bottom: 18px;
+}
+
+.cfg-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--cfg-text-main);
+}
+.cfg-form-label span {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+.cfg-required {
+    color: var(--cfg-primary-color);
+}
+
+.cfg-form-input, .cfg-form-select {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: var(--cfg-font-stack);
+    font-size: 13px;
+    border: 1px solid var(--cfg-border-color);
+    border-radius: 6px;
+    color: var(--cfg-text-main);
+    outline: none;
+    background-color: #ffffff;
+}
+
+.cfg-form-input:focus, .cfg-form-select:focus {
+    border-color: var(--cfg-primary-color);
+}

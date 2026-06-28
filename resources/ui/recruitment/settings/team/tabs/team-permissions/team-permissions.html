@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Permissions</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="tm-workspace-container">
+    <aside class="tm-roles-sidebar">
+      <div class="tm-sidebar-header">
+        <h3 class="tm-sidebar-title">Team Members</h3>
+      </div>
+      <div class="tm-search-wrapper">
+        <i class="fa fa-search tm-search-icon"></i>
+        <input type="text" class="tm-search-input" placeholder="Search employees...">
+      </div>
+      <div class="tm-perm-member-list" id="permMemberList">
+        <div class="tm-perm-member-item" data-member="sarah-chen">
+          <div class="tm-avatar" style="background-color: #FCE7F3; color: #BE185D;">SC</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Sarah Chen</span>
+            <span class="tm-perm-member-role">Senior Recruiter</span>
+          </div>
+          <span class="tm-access-badge tm-access-standard">Standard</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="michael-rodriguez">
+          <div class="tm-avatar" style="background-color: #FEF3C7; color: #D97706;">MR</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Michael Rodriguez</span>
+            <span class="tm-perm-member-role">Recruiter</span>
+          </div>
+          <span class="tm-access-badge tm-access-standard">Standard</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="emily-thompson">
+          <div class="tm-avatar" style="background-color: #D1FAE5; color: #059669;">ET</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Emily Thompson</span>
+            <span class="tm-perm-member-role">VP of People Operations</span>
+          </div>
+          <span class="tm-access-badge tm-access-full">Full</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="david-kim">
+          <div class="tm-avatar" style="background-color: #E0E7FF; color: #4338CA;">DK</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">David Kim</span>
+            <span class="tm-perm-member-role">HR Coordinator</span>
+          </div>
+          <span class="tm-access-badge tm-access-limited">Limited</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="jessica-park">
+          <div class="tm-avatar" style="background-color: #FCE7F3; color: #BE185D;">JP</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Jessica Park</span>
+            <span class="tm-perm-member-role">Engineering Manager</span>
+          </div>
+          <span class="tm-access-badge tm-access-minimal">Minimal</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="alex-johnson">
+          <div class="tm-avatar" style="background-color: #F3F4F6; color: #6B7280;">AJ</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Alex Johnson</span>
+            <span class="tm-perm-member-role">Senior Software Engineer</span>
+          </div>
+          <span class="tm-access-badge tm-access-none">None</span>
+        </div>
+        <div class="tm-perm-member-item" data-member="maria-garcia">
+          <div class="tm-avatar" style="background-color: #F3F4F6; color: #6B7280;">MG</div>
+          <div class="tm-perm-member-info">
+            <span class="tm-perm-member-name">Maria Garcia</span>
+            <span class="tm-perm-member-role">Software Engineer</span>
+          </div>
+          <span class="tm-access-badge tm-access-none">None</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="tm-content-panel" id="permDetailPanel">
+      <div class="tm-perm-empty-state" id="permEmptyState">
+        <i class="fa fa-shield tm-perm-empty-icon"></i>
+        <h2 class="tm-perm-empty-title">Select a Team Member</h2>
+        <p class="tm-perm-empty-desc">Choose an employee from the list to view and manage their permissions.</p>
+      </div>
+
+      <div class="tm-perm-detail-content" id="permDetailContent" style="display:none;">
+        <div class="tm-permissions-topbar">
+          <span class="tm-configuring-label" id="permDetailName">Configuring permissions for: <strong>Sarah Chen</strong></span>
+          <div class="tm-permissions-topbar-actions">
+            <button class="tm-btn-link" id="btnPermDiscard"><i class="fa fa-undo"></i> Discard Changes</button>
+            <button class="tm-btn-primary" id="btnPermSave"><i class="fa fa-save"></i> Save Permissions</button>
+          </div>
+        </div>
+
+        <div class="tm-perm-modules-container">
+          <div class="tm-perm-module-card" data-module="jobs">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128188;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Jobs</h4>
+                  <p class="tm-perm-card-desc">Manage job postings and hiring workflows</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-jobs">2/5</span>
+            </div>
+<div class="tm-perm-card-body tm-open">
+  <div class="tm-perm-card-body-inner">
+    <label class="tm-perm-card-row">
+      <input type="checkbox" class="tm-perm-checkbox" data-module="jobs" checked>
+      <div class="tm-perm-row-text">
+        <span class="tm-perm-row-label">View Jobs</span>
+        <span class="tm-perm-row-desc">See all job postings</span>
+      </div>
+    </label>
+    <label class="tm-perm-card-row">
+      <input type="checkbox" class="tm-perm-checkbox" data-module="jobs" checked>
+      <div class="tm-perm-row-text">
+        <span class="tm-perm-row-label">Create Jobs</span>
+        <span class="tm-perm-row-desc">Post new job openings</span>
+      </div>
+    </label>
+    <label class="tm-perm-card-row">
+      <input type="checkbox" class="tm-perm-checkbox" data-module="jobs">
+      <div class="tm-perm-row-text">
+        <span class="tm-perm-row-label">Edit Jobs</span>
+        <span class="tm-perm-row-desc">Modify existing job postings</span>
+      </div>
+    </label>
+    <label class="tm-perm-card-row">
+      <input type="checkbox" class="tm-perm-checkbox" data-module="jobs">
+      <div class="tm-perm-row-text">
+        <span class="tm-perm-row-label">Delete Jobs</span>
+        <span class="tm-perm-row-desc">Remove job postings</span>
+      </div>
+    </label>
+    <label class="tm-perm-card-row">
+      <input type="checkbox" class="tm-perm-checkbox" data-module="jobs">
+      <div class="tm-perm-row-text">
+        <span class="tm-perm-row-label">Publish Jobs</span>
+        <span class="tm-perm-row-desc">Control job visibility</span>
+      </div>
+    </label>
+  </div>
+</div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="candidates">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128101;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Candidates</h4>
+                  <p class="tm-perm-card-desc">Access candidate profiles and pipelines</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-candidates">4/5</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="candidates" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Candidates</span><span class="tm-perm-row-desc">See candidate profiles</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="candidates" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Add Candidates</span><span class="tm-perm-row-desc">Create new candidate records</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="candidates" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Edit Candidates</span><span class="tm-perm-row-desc">Update candidate information</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="candidates" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Delete Candidates</span><span class="tm-perm-row-desc">Remove candidate records</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="candidates"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Move Stages</span><span class="tm-perm-row-desc">Change candidate pipeline stages</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="reports">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128202;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Reports &amp; Analytics</h4>
+                  <p class="tm-perm-card-desc">View recruitment metrics and insights</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-reports">1/2</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="reports" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Reports</span><span class="tm-perm-row-desc">Access recruitment reports</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="reports"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Export Reports</span><span class="tm-perm-row-desc">Download report data</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="offers">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#127873;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Offers</h4>
+                  <p class="tm-perm-card-desc">Manage job offers and compensation</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-offers">3/5</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="offers" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Offers</span><span class="tm-perm-row-desc">See offer details</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="offers" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Create Offers</span><span class="tm-perm-row-desc">Generate new offers</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="offers" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Edit Offers</span><span class="tm-perm-row-desc">Modify offer terms</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="offers"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Send Offers</span><span class="tm-perm-row-desc">Send offers to candidates</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="offers"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Approve Offers</span><span class="tm-perm-row-desc">Approve offer submissions</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="tasks">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#10004;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Tasks</h4>
+                  <p class="tm-perm-card-desc">Task management and tracking</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-tasks">4/4</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="tasks" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Tasks</span><span class="tm-perm-row-desc">See assigned tasks</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="tasks" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Create Tasks</span><span class="tm-perm-row-desc">Create new tasks</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="tasks" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Edit Tasks</span><span class="tm-perm-row-desc">Modify task details</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="tasks" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Delete Tasks</span><span class="tm-perm-row-desc">Remove tasks</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="inbox">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128172;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Inbox</h4>
+                  <p class="tm-perm-card-desc">Messaging and notifications</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-inbox">2/2</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="inbox" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Messages</span><span class="tm-perm-row-desc">Read inbox messages</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="inbox" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Send Messages</span><span class="tm-perm-row-desc">Compose and send messages</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="calendar">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128197;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Calendar</h4>
+                  <p class="tm-perm-card-desc">Schedule interviews and events</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-calendar">3/3</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="calendar" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Calendar</span><span class="tm-perm-row-desc">See scheduled events</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="calendar" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Create Events</span><span class="tm-perm-row-desc">Schedule new events</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="calendar" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Edit Events</span><span class="tm-perm-row-desc">Modify existing events</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="teams">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128101;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Teams</h4>
+                  <p class="tm-perm-card-desc">Manage team membership</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-teams">1/1</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="teams" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">Manage Teams</span><span class="tm-perm-row-desc">Create and configure teams</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="settings">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#9881;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Settings</h4>
+                  <p class="tm-perm-card-desc">Platform configuration</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-settings">0/2</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="settings"><div class="tm-perm-row-text"><span class="tm-perm-row-label">General Settings</span><span class="tm-perm-row-desc">Modify platform settings</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="settings"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Security Settings</span><span class="tm-perm-row-desc">Manage security preferences</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="departments">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#127970;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Departments</h4>
+                  <p class="tm-perm-card-desc">Organizational structure</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-departments">1/2</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="departments" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Departments</span><span class="tm-perm-row-desc">See department structure</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="departments"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Manage Departments</span><span class="tm-perm-row-desc">Create and edit departments</span></div></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="tm-perm-module-card" data-module="workflows">
+            <div class="tm-perm-card-header" data-toggle="perm-card">
+              <div class="tm-perm-card-left">
+                <span class="tm-perm-card-emoji">&#128736;</span>
+                <div>
+                  <h4 class="tm-perm-card-title">Workflows</h4>
+                  <p class="tm-perm-card-desc">Automation and approval flows</p>
+                </div>
+              </div>
+              <span class="tm-perm-card-count" id="count-workflows">1/2</span>
+            </div>
+            <div class="tm-perm-card-body">
+              <div class="tm-perm-card-body-inner">
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="workflows" checked><div class="tm-perm-row-text"><span class="tm-perm-row-label">View Workflows</span><span class="tm-perm-row-desc">See workflow configurations</span></div></label>
+                <label class="tm-perm-card-row"><input type="checkbox" class="tm-perm-checkbox" data-module="workflows"><div class="tm-perm-row-text"><span class="tm-perm-row-label">Edit Workflows</span><span class="tm-perm-row-desc">Modify workflow rules</span></div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tm-perm-unsaved-footer" id="permUnsavedFooter" style="display:none;">
+          <div class="tm-unsaved-left">
+            <i class="fa fa-exclamation-triangle"></i>
+            <span>You have unsaved changes. Review before leaving.</span>
+          </div>
+          <div class="tm-unsaved-right">
+            <button class="tm-btn-secondary" id="btnPermDiscardFooter">Discard</button>
+            <button class="tm-btn-primary" id="btnPermSaveFooter">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/script.js"></script>
+</body>
+</html>

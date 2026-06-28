@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Themes - Secondary Sidebar</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../../../recruitment/settings/themes/css/style.css">
+    <style>
+        body.thm-body { margin: 0; min-height: 100vh; background: #fafafa; font-family: 'DM Sans', sans-serif; }
+        .ssb-demo-layout { display: flex; min-height: 100vh; }
+        .ssb-demo-content { flex: 1; padding: 40px; color: #111827; }
+        .ssb-demo-content h1 { font-size: 22px; margin-bottom: 8px; }
+        .ssb-demo-content p { font-size: 14px; color: #6b7280; }
+    </style>
+</head>
+<body class="thm-body">
+
+<div class="ssb-demo-layout">
+    <aside class="comp-sidebar">
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <span>Personal</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-building-user"></i>
+            </div>
+            <span>Company</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-users-gear"></i>
+            </div>
+            <span>Team</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-globe"></i>
+            </div>
+            <span>Career Site</span>
+        </div>
+
+        <div class="comp-sidebar-divider"></div>
+
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <span>Appearance</span>
+        </div>
+        <div class="comp-sidebar-item comp-sidebar-subitem active">
+            <span>Themes</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-briefcase"></i>
+            </div>
+            <span>Recruiting</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-diagram-project"></i>
+            </div>
+            <span>Workflow &amp; Approvals</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-file-invoice"></i>
+            </div>
+            <span>Templates</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-link"></i>
+            </div>
+            <span>Integrations</span>
+        </div>
+        <div class="comp-sidebar-item">
+            <div class="comp-sidebar-icon">
+                <i class="fa-solid fa-code"></i>
+            </div>
+            <span>Developer Tools</span>
+        </div>
+    </aside>
+
+    <main class="ssb-demo-content">
+        <h1>Themes Configuration</h1>
+        <p>Secondary sidebar with Themes active (sub-item under Appearance). Copy this <code>&lt;aside class="comp-sidebar"&gt;</code> block into your Odoo QWeb template.</p>
+    </main>
+</div>
+
+</body>
+</html>

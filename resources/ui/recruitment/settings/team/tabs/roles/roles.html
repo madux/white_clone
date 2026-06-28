@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roles & Access</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="tm-workspace-container">
+
+    <aside class="tm-roles-sidebar">
+      <div class="tm-sidebar-header">
+        <h3 class="tm-sidebar-title">Roles</h3>
+        <button class="tm-btn-primary tm-trigger-create-role">
+          <i class="fa fa-plus"></i> Create Role
+        </button>
+      </div>
+      <div class="tm-search-wrapper">
+        <i class="fa fa-search tm-search-icon"></i>
+        <input type="text" placeholder="Search roles..." class="tm-search-input" id="roleSearch">
+      </div>
+      <div class="tm-role-group">
+        <div class="tm-group-label">System Roles</div>
+        <div class="tm-role-item" data-role-id="super-admin">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #EF4444;"></span>
+              <span class="tm-role-title">Super Admin <i class="fa fa-lock tm-lock-icon"></i></span>
+            </div>
+            <p class="tm-role-desc">Full access to everything</p>
+          </div>
+          <span class="tm-role-badge">2 users</span>
+        </div>
+        <div class="tm-role-item" data-role-id="admin">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #F59E0B;"></span>
+              <span class="tm-role-title">Admin</span>
+            </div>
+            <p class="tm-role-desc">Manage team, jobs and s...</p>
+          </div>
+          <span class="tm-role-badge">4 users</span>
+        </div>
+        <div class="tm-role-item tm-active" data-role-id="recruiter">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #8B5CF6;"></span>
+              <span class="tm-role-title">Recruiter</span>
+            </div>
+            <p class="tm-role-desc">Create jobs, manage can...</p>
+          </div>
+          <span class="tm-role-badge">8 users</span>
+        </div>
+        <div class="tm-role-item" data-role-id="hiring-manager">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #06B6D4;"></span>
+              <span class="tm-role-title">Hiring Manager</span>
+            </div>
+            <p class="tm-role-desc">View jobs, review candid...</p>
+          </div>
+          <span class="tm-role-badge">3 users</span>
+        </div>
+        <div class="tm-role-item" data-role-id="viewer">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #6B7280;"></span>
+              <span class="tm-role-title">Viewer</span>
+            </div>
+            <p class="tm-role-desc">Read-only access</p>
+          </div>
+          <span class="tm-role-badge">2 users</span>
+        </div>
+      </div>
+      <div class="tm-role-group" style="margin-top: 24px;">
+        <div class="tm-group-label">Custom Roles</div>
+        <div class="tm-role-item" data-role-id="agency-partner">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #10B981;"></span>
+              <span class="tm-role-title">Agency Partner</span>
+            </div>
+            <p class="tm-role-desc">External recruiter acc...</p>
+          </div>
+          <span class="tm-role-badge">1 user</span>
+        </div>
+        <div class="tm-role-item" data-role-id="finance-reviewer">
+          <div class="tm-role-item-info">
+            <div class="tm-role-name-row">
+              <span class="tm-role-dot" style="background-color: #8B5CF6;"></span>
+              <span class="tm-role-title">Finance Reviewer</span>
+            </div>
+            <p class="tm-role-desc">Reports and billing o...</p>
+          </div>
+          <span class="tm-role-badge">2 users</span>
+        </div>
+      </div>
+      <div class="tm-sidebar-cta-block">
+        <button class="tm-btn-primary tm-btn-block tm-trigger-create-role" style="background: linear-gradient(135deg, #E11D48 0%, #9333EA 100%); border-color: transparent;">
+          <i class="fa fa-plus"></i> Create Custom Role
+        </button>
+      </div>
+    </aside>
+
+    <main class="tm-content-panel">
+      <div class="tm-panel-header">
+        <div class="tm-header-left">
+          <div class="tm-active-title-row">
+            <span class="tm-active-dot" id="activeRoleDot" style="background-color: #8B5CF6;"></span>
+            <h2 class="tm-active-role-name" id="activeRoleName">Recruiter</h2>
+            <span class="tm-system-pill">System</span>
+          </div>
+          <p class="tm-active-role-desc" id="activeRoleDesc">Create jobs, manage candidates, moving stages, schedules, and workflows setup.</p>
+        </div>
+      </div>
+      <div class="tm-tabs-navigation">
+        <button class="tm-tab-btn tm-active" data-tab-target="users-in-this-role-tab">Users in this Role</button>
+        <button class="tm-tab-btn" data-tab-target="permission-tab">Permissions</button>
+      </div>
+      <div class="tm-tab-content-wrapper">
+        <div class="tm-tab-pane tm-active" id="tabContentUsers">
+          <div class="tm-table-control-strip">
+            <span class="tm-counter-text">6 users with this role</span>
+            <div class="tm-action-button-group">
+              <button class="tm-btn-secondary" id="btnInviteNewUser">Invite New User</button>
+              <button class="tm-btn-primary" id="btnAddUserToRole"><i class="fa fa-user-plus"></i> Add User to Role</button>
+            </div>
+          </div>
+          <div class="tm-table-card">
+            <table class="tm-users-table">
+              <thead>
+                <tr>
+                  <th>USER</th>
+                  <th>EMAIL</th>
+                  <th>LAST ACTIVE</th>
+                  <th>STATUS</th>
+                  <th style="text-align: right; padding-right: 24px;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="tm-user-row">
+                  <td>
+                    <div class="tm-user-cell-info">
+                      <div class="tm-avatar" style="background-color: #E0E7FF; color: #4338CA;">SJ</div>
+                      <div>
+                        <div class="tm-user-fullname">Sarah Johnson</div>
+                        <div style="font-size:12px; color:#6B7280;">Senior Recruiter</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="tm-text-muted">sarah.johnson@company.com</span></td>
+                  <td><span class="tm-text-secondary">3 hours ago</span></td>
+                  <td><span class="tm-status-tag tm-status-active">Active</span></td>
+                  <td class="tm-actions-cell">
+                    <span class="tm-placeholder-dash">&mdash;</span>
+                    <div class="tm-hover-actions-wrapper">
+                      <select class="tm-row-role-select">
+                        <option value="recruiter" selected>Recruiter</option>
+                        <option value="admin">Admin</option>
+                        <option value="hiring-manager">Hiring Manager</option>
+                      </select>
+                      <button class="tm-row-action-btn tm-btn-suspend" title="Suspend User">Suspend</button>
+                      <button class="tm-row-action-btn tm-btn-delete" title="Remove"><i class="fa fa-trash-o"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tm-user-row">
+                  <td>
+                    <div class="tm-user-cell-info">
+                      <div class="tm-avatar" style="background-color: #FEF3C7; color: #D97706;">JW</div>
+                      <div>
+                        <div class="tm-user-fullname">James Wilson</div>
+                        <div style="font-size:12px; color:#6B7280;">Junior Recruiter</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="tm-text-muted">james.wilson@company.com</span></td>
+                  <td><span class="tm-text-secondary">1 day ago</span></td>
+                  <td><span class="tm-status-tag tm-status-invited">Invited</span></td>
+                  <td class="tm-actions-cell">
+                    <span class="tm-placeholder-dash">&mdash;</span>
+                    <div class="tm-hover-actions-wrapper">
+                      <select class="tm-row-role-select">
+                        <option value="recruiter" selected>Recruiter</option>
+                        <option value="admin">Admin</option>
+                        <option value="hiring-manager">Hiring Manager</option>
+                      </select>
+                      <button class="tm-row-action-btn tm-btn-suspend" title="Suspend User">Suspend</button>
+                      <button class="tm-row-action-btn tm-btn-delete" title="Remove"><i class="fa fa-trash-o"></i></button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tm-user-row">
+                  <td>
+                    <div class="tm-user-cell-info">
+                      <div class="tm-avatar" style="background-color: #D1FAE5; color: #059669;">DM</div>
+                      <div>
+                        <div class="tm-user-fullname">David Martinez</div>
+                        <div style="font-size:12px; color:#6B7280;">Recruitment Specialist</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span class="tm-text-muted">david.martinez@company.com</span></td>
+                  <td><span class="tm-text-secondary">4 hours ago</span></td>
+                  <td><span class="tm-status-tag tm-status-active">Active</span></td>
+                  <td class="tm-actions-cell">
+                    <span class="tm-placeholder-dash">&mdash;</span>
+                    <div class="tm-hover-actions-wrapper">
+                      <select class="tm-row-role-select">
+                        <option value="recruiter" selected>Recruiter</option>
+                        <option value="admin">Admin</option>
+                        <option value="hiring-manager">Hiring Manager</option>
+                      </select>
+                      <button class="tm-row-action-btn tm-btn-suspend" title="Suspend User">Suspend</button>
+                      <button class="tm-row-action-btn tm-btn-delete" title="Remove"><i class="fa fa-trash-o"></i></button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="tm-tab-pane" id="tabContentPermissions">
+          <div class="tm-permissions-topbar">
+            <span class="tm-configuring-label">Configuring permissions for: <strong>Recruiter</strong></span>
+            <div class="tm-permissions-topbar-actions">
+              <button class="tm-btn-link" id="btnResetPermissions"><i class="fa fa-refresh"></i> Reset to Defaults</button>
+              <button class="tm-btn-primary" id="btnSavePermissions">Save Changes</button>
+            </div>
+          </div>
+          <div class="tm-alert-banner">
+            <i class="fa fa-warning tm-alert-icon"></i>
+            <div class="tm-alert-body">
+              <p class="tm-alert-text">&#9888; This is a system role. Editing permissions will affect all Recruiters. Consider duplicating it first to create a custom role. <span class="tm-inline-trigger-create-custom text-underline" style="cursor: pointer; font-weight: 600; color: #E11D48;">Duplicate &amp; Edit &rarr;</span></p>
+            </div>
+          </div>
+          <div class="tm-quick-set-strip">
+            <span class="tm-quick-set-label">Quick set all to:</span>
+            <div class="tm-quick-set-options">
+              <button class="tm-quick-set-btn" data-action="full">Full Access</button>
+              <button class="tm-quick-set-btn" data-action="view">View Only</button>
+              <button class="tm-quick-set-btn" data-action="none">No Access</button>
+            </div>
+          </div>
+          <div class="tm-accordion-stack">
+            <div class="tm-accordion-node">
+              <div class="tm-accordion-trigger">
+                <div class="tm-accordion-trigger-left">
+                  <div class="tm-icon-box"><i class="fa fa-file-text-o"></i></div>
+                  <div>
+                    <h4 class="tm-module-title">Jobs Module</h4>
+                    <p class="tm-module-desc">Job postings and management</p>
+                  </div>
+                </div>
+                <div class="tm-accordion-trigger-right">
+                  <span class="tm-indicator-pill">Limited Access</span>
+                  <i class="fa fa-chevron-down tm-arrow-indicator"></i>
+                </div>
+              </div>
+              <div class="tm-accordion-drawer">
+                <div class="tm-drawer-inner-stack">
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info">
+                      <span class="tm-perm-label">View Jobs</span>
+                      <p class="tm-perm-desc">See all job postings and listings</p>
+                    </div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info">
+                      <span class="tm-perm-label">Create Jobs</span>
+                      <p class="tm-perm-desc">Post new job requisitions</p>
+                    </div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info">
+                      <span class="tm-perm-label">Edit Jobs</span>
+                      <p class="tm-perm-desc">Modify existing job postings</p>
+                    </div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info">
+                      <span class="tm-perm-label">Delete Jobs</span>
+                      <p class="tm-perm-desc">Remove job postings permanently</p>
+                    </div>
+                    <button class="tm-toggle-switch" aria-checked="false"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tm-accordion-node tm-expanded">
+              <div class="tm-accordion-trigger">
+                <div class="tm-accordion-trigger-left">
+                  <div class="tm-icon-box"><i class="fa fa-users"></i></div>
+                  <div>
+                    <h4 class="tm-module-title">Candidates Module</h4>
+                    <p class="tm-module-desc">Candidate profiles and tracking</p>
+                  </div>
+                </div>
+                <div class="tm-accordion-trigger-right">
+                  <span class="tm-indicator-pill">Limited Access</span>
+                  <i class="fa fa-chevron-up tm-arrow-indicator"></i>
+                </div>
+              </div>
+              <div class="tm-accordion-drawer">
+                <div class="tm-drawer-inner-stack">
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">View Candidates</span><p class="tm-perm-desc">See candidate profiles</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Add Candidates</span><p class="tm-perm-desc">Create new candidate records</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Edit Candidate Profiles</span><p class="tm-perm-desc">Update candidate information</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Delete Candidates</span><p class="tm-perm-desc">Remove candidate records</p></div>
+                    <button class="tm-toggle-switch" aria-checked="false"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Move Pipeline Stages</span><p class="tm-perm-desc">Change candidate stages</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Leave Comments &amp; Notes</span><p class="tm-perm-desc">Add feedback and notes</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">View Candidate Salary Info</span><p class="tm-perm-desc">Access compensation data</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Export Candidate Data</span><p class="tm-perm-desc">Download candidate information</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                  <div class="tm-permission-row">
+                    <div class="tm-permission-row-info"><span class="tm-perm-label">Bulk Actions on Candidates</span><p class="tm-perm-desc">Perform mass operations</p></div>
+                    <button class="tm-toggle-switch tm-checked" aria-checked="true"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+.rct-cf-rec-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-cf-rec-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.rct-cf-rec-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.rct-cf-rec-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-cf-rec-btn--primary {
+  background: #ee59a3;
+  color: #fff;
+}
+.rct-cf-rec-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.rct-cf-rec-list-row:last-child {
+  border-bottom: none;
+}
+.rct-cf-rec-list-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rct-cf-rec-list-row-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+.rct-cf-rec-list-row-meta {
+  font-size: 13px;
+  color: #888;
+}
+.rct-cf-rec-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.rct-cf-rec-tag--finance {
+  background: #fff0f6;
+  color: #ee59a3;
+}
+.rct-cf-rec-tag--general {
+  background: #f0f0ff;
+  color: #6c63ff;
+}
+
+.dynamic-content span {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: 'DM Sans', sans-serif !important;
+}

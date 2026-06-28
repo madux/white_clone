@@ -1,0 +1,1851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR - Create Job Modal (Standalone)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: GATEWAY MODAL (Method Selection)                  -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay cleon-modal-visible">
+    <div class="cleon-modal-wrapper">
+
+        <!-- VIEW: GATEWAY -->
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <h2>Create New Position</h2>
+                    <span>Choose how you'd like to create your job posting</span>
+                </div>
+                <button class="cleon-close-x"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="cleon-modal-body gateway-center">
+                <div class="cleon-gateway-cards-grid">
+
+                    <!-- Quick Post Card -->
+                    <div class="cleon-gateway-card cleon-gateway-card--quick" data-mode="quick">
+                        <div class="cleon-gateway-card-icon-row">
+                            <div class="cleon-gateway-card-icon-box cleon-gw-icon-orange">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <span class="cleon-gateway-badge cleon-gw-badge-fastest">FASTEST</span>
+                        </div>
+                        <h3>Quick Post</h3>
+                        <p class="cleon-gateway-card-desc">Publish in minutes with just the essential details. Perfect for urgent hiring needs.</p>
+                        <ul class="cleon-gateway-card-bullets">
+                            <li><span class="cleon-bullet-dot cleon-dot-orange"></span> 5 required fields only</li>
+                            <li><span class="cleon-bullet-dot cleon-dot-orange"></span> Goes live immediately</li>
+                            <li><span class="cleon-bullet-dot cleon-dot-orange"></span> ~2 minutes to complete</li>
+                        </ul>
+                        <a class="cleon-gateway-card-link cleon-gw-link-orange">Start Quick Post <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+
+                    <!-- Full Job Creation Card -->
+                    <div class="cleon-gateway-card cleon-gateway-card--full" data-mode="full">
+                        <div class="cleon-gateway-card-icon-row">
+                            <div class="cleon-gateway-card-icon-box cleon-gw-icon-pink">
+                                <i class="fa-solid fa-file-lines"></i>
+                            </div>
+                            <span class="cleon-gateway-badge cleon-gw-badge-recommended">RECOMMENDED</span>
+                        </div>
+                        <h3>Full Job Creation</h3>
+                        <p class="cleon-gateway-card-desc">Create a comprehensive job posting with all details, templates, and AI assistance.</p>
+                        <ul class="cleon-gateway-card-bullets">
+                            <li><span class="cleon-bullet-dot cleon-dot-pink"></span> Multiple creation methods</li>
+                            <li><span class="cleon-bullet-dot cleon-dot-pink"></span> AI-powered assistance</li>
+                            <li><span class="cleon-bullet-dot cleon-dot-pink"></span> Full customization</li>
+                        </ul>
+                        <a class="cleon-gateway-card-link cleon-gw-link-pink">Continue to Options <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+
+                </div>
+
+                <p class="cleon-gateway-helper-text">You can enhance Quick Post jobs with more details anytime after publishing</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: QUICK POST FORM                                    -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <!-- VIEW: QUICK POST FORM -->
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block cleon-quick-header">
+                    <div class="cleon-quick-header-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div>
+                        <h2>Quick Post — Publish in Minutes</h2>
+                        <span>Perfect for urgent hiring needs</span>
+                    </div>
+                </div>
+                <button class="cleon-close-x"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="cleon-modal-body">
+                <div class="cleon-quick-form-wrapper">
+                    <div class="cleon-quick-tip-box">
+                        <i class="fa-solid fa-lightbulb"></i>
+                        <span><strong>Quick Tip:</strong> Fill in just the essentials to get your job live immediately. You can always add more details later to improve candidate quality.</span>
+                    </div>
+
+                    <div class="cleon-form-group">
+                        <label>Job Title <span class="cleon-required">*</span></label>
+                        <input type="text" placeholder="e.g., Senior Software Engineer">
+                    </div>
+                    <div class="cleon-form-group">
+                        <label>Department <span class="cleon-required">*</span></label>
+                        <div class="cleon-select-wrapper">
+                            <select class="cleon-select-full">
+                                <option value="" disabled selected>Select department...</option>
+                                <option>Engineering</option>
+                                <option>Marketing</option>
+                                <option>Sales</option>
+                                <option>Human Resources</option>
+                                <option>Operations</option>
+                                <option>Finance</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down cleon-select-icon"></i>
+                        </div>
+                    </div>
+                    <div class="cleon-form-group">
+                        <label>Location <span class="cleon-required">*</span></label>
+                        <input type="text" placeholder="e.g., New York, NY or Remote">
+                    </div>
+                    <div class="cleon-form-group">
+                        <label>Experience Level <span class="cleon-required">*</span></label>
+                        <div class="cleon-select-wrapper">
+                            <select class="cleon-select-full">
+                                <option value="" disabled selected>Select experience level...</option>
+                                <option>Entry Level</option>
+                                <option>Mid Level</option>
+                                <option>Senior Level</option>
+                                <option>Lead</option>
+                                <option>Executive</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down cleon-select-icon"></i>
+                        </div>
+                    </div>
+                    <div class="cleon-form-group">
+                        <label>Work Arrangement <span class="cleon-required">*</span></label>
+                        <div class="cleon-pill-buttons-group">
+                            <button class="cleon-pill-btn active" data-value="remote">Remote</button>
+                            <button class="cleon-pill-btn" data-value="onsite">On-site</button>
+                            <button class="cleon-pill-btn" data-value="hybrid">Hybrid</button>
+                        </div>
+                    </div>
+                    <div class="cleon-form-group">
+                        <label>Days Open (Job Expiration)</label>
+                        <p class="cleon-field-hint">Job will automatically stop accepting applications after this period</p>
+                        <div class="cleon-days-open-row">
+                            <input type="number" value="30" min="1" class="cleon-days-input">
+                            <span>days</span>
+                            <div class="cleon-days-quick-btns">
+                                <button class="cleon-days-btn">7d</button>
+                                <button class="cleon-days-btn">14d</button>
+                                <button class="cleon-days-btn active">30d</button>
+                                <button class="cleon-days-btn">60d</button>
+                                <button class="cleon-days-btn">90d</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="cleon-modal-footer">
+                <span class="cleon-footer-helper-text">Fill all required fields to publish</span>
+                <div class="cleon-footer-actions">
+                    <button class="cleon-btn-text">Cancel</button>
+                    <button class="cleon-btn-primary-pink"><i class="fa-solid fa-paper-plane"></i> Publish Job</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: GATEWAY 2 (Creation Method Selection)              -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <h2>How would you like to create this job?</h2>
+                    <span>Choose the best method for your needs</span>
+                </div>
+                <button class="cleon-close-x"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="cleon-modal-body gateway-center">
+                <div class="cleon-gateway-cards-grid" style="grid-template-columns: repeat(3, 1fr);">
+
+                    <!-- Build from Scratch Card -->
+                    <div class="cleon-gw-card cleon-gw-card--blue" data-action="build">
+                        <div class="cleon-gw-icon-box cleon-gw-icon-blue">
+                            <i class="fa-solid fa-pen-ruler"></i>
+                        </div>
+                        <h3>Build from Scratch</h3>
+                        <p>Start with a blank canvas and build every section yourself.</p>
+                        <div class="cleon-gateway-card-time">
+                            <i class="fa-regular fa-clock"></i> ~15 minutes
+                        </div>
+                    </div>
+
+                    <!-- Use Template Card -->
+                    <div class="cleon-gw-card cleon-gw-card--purple" data-action="template">
+                        <div class="cleon-gw-icon-box cleon-gw-icon-purple">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h3>Use Template</h3>
+                        <span class="cleon-gw-badge-popular">Popular</span>
+                        <p>Choose from 100+ pre-built job templates.</p>
+                        <div class="cleon-gateway-card-time">
+                            <i class="fa-regular fa-clock"></i> ~5 minutes
+                        </div>
+                    </div>
+
+                    <!-- AI-Assisted Card -->
+                    <div class="cleon-gw-card cleon-gw-card--indigo" data-action="ai">
+                        <div class="cleon-gw-icon-box cleon-gw-icon-indigo">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h3>AI-Assisted Creation</h3>
+                        <p>Describe the role, and AI generates the full posting.</p>
+                        <div class="cleon-gateway-card-time">
+                            <i class="fa-regular fa-clock"></i> ~3 minutes
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="cleon-gateway-info-box">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <div>
+                        <strong>Which option is right for you?</strong>
+                        <span>Use <strong>Build from Scratch</strong> for full control. Pick <strong>Use Template</strong> for common roles. Try <strong>AI-Assisted</strong> for quick generation that you can refine.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: TEMPLATE GATEWAY                                   -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper" style="max-width: 840px;">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible" style="padding: 0;">
+
+            <div class="cleon-template-header">
+                <div class="cleon-ai-header">
+                    <div class="cleon-ai-header-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div>
+                        <h2 style="color: #fff; margin-bottom: 0;">Select a Template</h2>
+                        <span style="color: rgba(255,255,255,0.85); font-size: 13px;">Pre-built templates with industry-standard descriptions and requirements</span>
+                    </div>
+                </div>
+                <button class="cleon-close-x"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="cleon-template-filter-bar">
+                <div class="cleon-template-filter-scroll">
+                    <button class="cleon-filter-chip active">All Roles</button>
+                    <button class="cleon-filter-chip">Engineering</button>
+                    <button class="cleon-filter-chip">Product</button>
+                    <button class="cleon-filter-chip">Design</button>
+                    <button class="cleon-filter-chip">Marketing</button>
+                    <button class="cleon-filter-chip">Sales</button>
+                    <button class="cleon-filter-chip">Finance</button>
+                    <button class="cleon-filter-chip">Human Resources</button>
+                    <button class="cleon-filter-chip">Operations</button>
+                    <button class="cleon-filter-chip">Customer Success</button>
+                    <button class="cleon-filter-chip">Legal</button>
+                    <button class="cleon-filter-chip">Data & Analytics</button>
+                    <button class="cleon-filter-chip">Executive</button>
+                </div>
+            </div>
+
+            <div class="cleon-template-search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Search templates by title or keyword...">
+            </div>
+
+            <div class="cleon-template-catalog-body">
+
+                <!-- Engineering Group -->
+                <div class="cleon-template-category-group">
+                    <div class="cleon-category-heading">
+                        Engineering & Development <span class="cleon-category-count">(3)</span>
+                    </div>
+                    <div class="cleon-template-cards-scroll">
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-code"></i></div>
+                            <h5>Full Stack Developer</h5>
+                            <p>End-to-end web application development with modern frameworks and databases.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag popular">Popular</span>
+                                <span class="cleon-tag">React</span>
+                                <span class="cleon-tag">Node.js</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$90,000 - $140,000</div>
+                        </div>
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-microchip"></i></div>
+                            <h5>Machine Learning Engineer</h5>
+                            <p>Design and implement ML models, data pipelines, and production AI systems.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">Python</span>
+                                <span class="cleon-tag">TensorFlow</span>
+                                <span class="cleon-tag">AWS</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$130,000 - $190,000</div>
+                        </div>
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-cloud"></i></div>
+                            <h5>DevOps Engineer</h5>
+                            <p>Build and maintain CI/CD pipelines, infrastructure, and cloud deployment.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">Docker</span>
+                                <span class="cleon-tag">Kubernetes</span>
+                                <span class="cleon-tag">GCP</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$100,000 - $155,000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Group -->
+                <div class="cleon-template-category-group">
+                    <div class="cleon-category-heading">
+                        Product Management <span class="cleon-category-count">(2)</span>
+                    </div>
+                    <div class="cleon-template-cards-scroll">
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-bullseye"></i></div>
+                            <h5>Senior Product Manager</h5>
+                            <p>Lead product strategy, roadmap, and cross-functional delivery for B2B SaaS.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag popular">Popular</span>
+                                <span class="cleon-tag">Strategy</span>
+                                <span class="cleon-tag">Agile</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$120,000 - $170,000</div>
+                        </div>
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-flask"></i></div>
+                            <h5>Product Analyst</h5>
+                            <p>Data-driven insights to inform product decisions and feature prioritization.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">SQL</span>
+                                <span class="cleon-tag">Analytics</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$70,000 - $110,000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Marketing Group -->
+                <div class="cleon-template-category-group">
+                    <div class="cleon-category-heading">
+                        Marketing & Growth <span class="cleon-category-count">(2)</span>
+                    </div>
+                    <div class="cleon-template-cards-scroll">
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                            <h5>Growth Marketing Manager</h5>
+                            <p>Drive user acquisition, activation, and retention through data-driven campaigns.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">SEO</span>
+                                <span class="cleon-tag">Paid Ads</span>
+                                <span class="cleon-tag">Analytics</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$85,000 - $130,000</div>
+                        </div>
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-share-nodes"></i></div>
+                            <h5>Content Marketing Specialist</h5>
+                            <p>Create and distribute valuable content to attract and convert target audiences.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">Copywriting</span>
+                                <span class="cleon-tag">SEO</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$60,000 - $95,000</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sales Group -->
+                <div class="cleon-template-category-group">
+                    <div class="cleon-category-heading">
+                        Sales <span class="cleon-category-count">(2)</span>
+                    </div>
+                    <div class="cleon-template-cards-scroll">
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-handshake"></i></div>
+                            <h5>Account Executive</h5>
+                            <p>Manage full sales cycle from prospecting to closing enterprise deals.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag popular">Popular</span>
+                                <span class="cleon-tag">B2B</span>
+                                <span class="cleon-tag">SaaS</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$80,000 - $150,000</div>
+                        </div>
+                        <div class="cleon-template-card">
+                            <div class="cleon-template-card-icon"><i class="fa-solid fa-phone-volume"></i></div>
+                            <h5>Sales Development Rep</h5>
+                            <p>Generate qualified leads through outbound prospecting and outreach.</p>
+                            <div class="cleon-template-card-tags">
+                                <span class="cleon-tag">Outbound</span>
+                                <span class="cleon-tag">Lead Gen</span>
+                            </div>
+                            <div class="cleon-template-card-salary">$50,000 - $80,000</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="cleon-template-footer">
+                <span class="cleon-template-count-text">Showing <strong>9</strong> templates</span>
+                <button class="cleon-btn-secondary modal-close-trigger">Close</button>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: AI-ASSISTED INPUT                                  -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper" style="max-width: 800px;">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-ai-header">
+                    <div class="cleon-ai-header-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div>
+                        <h2>AI-Assisted Job Creation</h2>
+                        <span>Describe the role and AI will generate a complete job posting</span>
+                    </div>
+                </div>
+                <button class="cleon-close-x"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-ai-input-wrapper">
+                    <div class="cleon-ai-input-card">
+                        <h3>Describe the Position</h3>
+                        <p>Include key responsibilities, requirements, and any specific skills or experience you're looking for. The more detail you provide, the better the generated content will be.</p>
+                        <textarea class="cleon-ai-textarea" rows="5" placeholder="e.g., Senior React Developer with 5+ years experience, responsible for building and maintaining our customer-facing web application..."></textarea>
+                    </div>
+
+                    <div class="cleon-ai-feature-cards">
+                        <div class="cleon-ai-feature-card">
+                            <div class="cleon-ai-feature-icon cleon-ai-feat-pink"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            <div>
+                                <strong>AI-Powered</strong>
+                                <span>Generates complete job descriptions, requirements, and benefits</span>
+                            </div>
+                        </div>
+                        <div class="cleon-ai-feature-card">
+                            <div class="cleon-ai-feature-icon cleon-ai-feat-green"><i class="fa-solid fa-scale-balanced"></i></div>
+                            <div>
+                                <strong>Inclusive Language</strong>
+                                <span>Ensures job posting uses inclusive, bias-free language</span>
+                            </div>
+                        </div>
+                        <div class="cleon-ai-feature-card">
+                            <div class="cleon-ai-feature-icon cleon-ai-feat-blue"><i class="fa-solid fa-pen"></i></div>
+                            <div>
+                                <strong>Fully Editable</strong>
+                                <span>Review and modify every section before publishing</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="cleon-ai-generate-btn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Job Posting
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: AI-ASSISTED LOADING                                 -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper" style="max-width: 800px;">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-ai-header">
+                    <div class="cleon-ai-header-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div>
+                        <h2>AI-Assisted Job Creation</h2>
+                        <span>Generating your job posting</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-ai-loading-content">
+                    <div class="cleon-ai-loading-icon">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h3>Generating your job posting...</h3>
+                    <p>AI is analyzing your description and creating a comprehensive job posting</p>
+                    <div class="cleon-ai-loading-bar">
+                        <div class="cleon-ai-loading-bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: AI-ASSISTED OUTPUT                                 -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper" style="max-width: 800px;">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-ai-header">
+                    <div class="cleon-ai-header-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <div>
+                        <h2>AI-Assisted Job Creation</h2>
+                        <span>Generated job posting</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-ai-output-wrapper">
+
+                    <!-- Inclusivity Score -->
+                    <div class="cleon-ai-score-card">
+                        <div class="cleon-ai-score-meta">
+                            <h4>Inclusivity Score</h4>
+                            <span>Your job posting uses inclusive, bias-free language</span>
+                        </div>
+                        <div class="cleon-ai-score-value">
+                            <span class="cleon-score-number">87</span>
+                            <span class="cleon-score-label">out of 100</span>
+                        </div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Summary</h4>
+                            <span class="cleon-ai-generated-label">AI Generated</span>
+                        </div>
+                        <p>We are seeking a skilled Senior React Developer to join our engineering team. You will be responsible for building and maintaining our customer-facing web application, working closely with product designers and backend engineers to deliver high-quality user experiences. This role requires strong proficiency in React, TypeScript, and modern web development practices.</p>
+                    </div>
+
+                    <!-- Responsibilities -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Responsibilities</h4>
+                            <span class="cleon-ai-generated-label">AI Generated</span>
+                        </div>
+                        <ul class="cleon-ai-check-list">
+                            <li><i class="fa-solid fa-check"></i> Design and implement scalable, maintainable front-end architectures using React and TypeScript</li>
+                            <li><i class="fa-solid fa-check"></i> Collaborate with product managers and designers to translate wireframes and prototypes into high-quality code</li>
+                            <li><i class="fa-solid fa-check"></i> Write clean, testable, and well-documented code following team coding standards</li>
+                            <li><i class="fa-solid fa-check"></i> Optimize applications for maximum speed, scalability, and accessibility</li>
+                            <li><i class="fa-solid fa-check"></i> Participate in code reviews, providing and receiving constructive feedback</li>
+                            <li><i class="fa-solid fa-check"></i> Mentor junior developers and contribute to engineering best practices</li>
+                        </ul>
+                    </div>
+
+                    <!-- Required Qualifications -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Required Qualifications</h4>
+                            <span class="cleon-ai-generated-label">AI Generated</span>
+                        </div>
+                        <ul class="cleon-ai-check-list cleon-check-pink">
+                            <li><i class="fa-solid fa-xmark"></i> 5+ years of professional experience in front-end development</li>
+                            <li><i class="fa-solid fa-xmark"></i> Strong proficiency in React, TypeScript, and modern JavaScript (ES6+)</li>
+                            <li><i class="fa-solid fa-xmark"></i> Experience with state management libraries (Redux, Zustand, or Context API)</li>
+                            <li><i class="fa-solid fa-xmark"></i> Familiarity with RESTful APIs, GraphQL, and modern build tools (Webpack, Vite)</li>
+                            <li><i class="fa-solid fa-xmark"></i> Understanding of web accessibility standards (WCAG 2.1)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Preferred Qualifications -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Preferred Qualifications</h4>
+                            <span class="cleon-ai-generated-label">AI Generated</span>
+                        </div>
+                        <ul class="cleon-ai-check-list">
+                            <li><i class="fa-solid fa-star"></i> Experience with Next.js or server-side rendering frameworks</li>
+                            <li><i class="fa-solid fa-star"></i> Familiarity with CI/CD pipelines and automated testing frameworks (Jest, Cypress)</li>
+                            <li><i class="fa-solid fa-star"></i> Experience with design systems and component libraries</li>
+                            <li><i class="fa-solid fa-star"></i> Contributions to open-source projects or technical blog posts</li>
+                        </ul>
+                    </div>
+
+                    <!-- Benefits -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Benefits</h4>
+                            <span class="cleon-ai-generated-label">AI Generated</span>
+                        </div>
+                        <ul class="cleon-ai-check-list">
+                            <li><i class="fa-solid fa-check"></i> Competitive salary with annual performance bonuses</li>
+                            <li><i class="fa-solid fa-check"></i> Comprehensive health, dental, and vision insurance</li>
+                            <li><i class="fa-solid fa-check"></i> Flexible remote work arrangements with home office stipend</li>
+                            <li><i class="fa-solid fa-check"></i> 401(k) plan with company match</li>
+                            <li><i class="fa-solid fa-check"></i> Unlimited PTO policy</li>
+                            <li><i class="fa-solid fa-check"></i> Annual learning and development budget</li>
+                        </ul>
+                    </div>
+
+                    <!-- Suggested Salary Range -->
+                    <div class="cleon-ai-output-section">
+                        <div class="cleon-ai-section-header">
+                            <h4>Suggested Salary Range</h4>
+                        </div>
+                        <div class="cleon-ai-salary-range">
+                            <div class="cleon-ai-salary-field">
+                                <label>Minimum</label>
+                                <div class="cleon-ai-salary-input-wrap">
+                                    <span>$</span>
+                                    <input type="text" value="120,000">
+                                </div>
+                            </div>
+                            <div class="cleon-ai-salary-field">
+                                <label>Maximum</label>
+                                <div class="cleon-ai-salary-input-wrap">
+                                    <span>$</span>
+                                    <input type="text" value="160,000">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="cleon-ai-output-footer">
+                <div class="cleon-footer-left">
+                    <button class="cleon-btn-text" id="cleon-ai-start-over-btn"><i class="fa-solid fa-rotate-left"></i> Start Over</button>
+                    <button class="cleon-btn-text" id="cleon-ai-cancel-btn">Cancel</button>
+                </div>
+                <div class="cleon-footer-right">
+                    <button class="cleon-btn-secondary">Save as Draft</button>
+                    <button class="cleon-btn-primary" id="cleon-ai-use-content-btn"><i class="fa-solid fa-check"></i> Use This Content</button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 1: Basic Details               -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 1 of 8: Basic Details</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <!-- Stepper Track -->
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-active" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-1">
+                    <div class="cleon-form-center-card">
+                        <h3>Basic Details</h3>
+                        <p class="cleon-section-desc">Essential job information</p>
+                        <div class="cleon-form-group">
+                            <label>Job Title <span class="cleon-required">*</span></label>
+                            <input type="text" placeholder="e.g., Senior Software Engineer">
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Department <span class="cleon-required">*</span></label>
+                            <div class="cleon-select-wrapper">
+                                <select class="cleon-select-full">
+                                    <option value="" disabled selected>Select department...</option>
+                                    <option>Engineering</option>
+                                    <option>Marketing</option>
+                                    <option>Sales</option>
+                                    <option>Human Resources</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down cleon-select-icon"></i>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Location <span class="cleon-required">*</span></label>
+                            <input type="text" placeholder="e.g., San Francisco, CA or Remote">
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Employment Type <span class="cleon-required">*</span></label>
+                            <div class="cleon-pill-buttons-group">
+                                <button class="cleon-pill-btn active" data-value="full-time">Full-time</button>
+                                <button class="cleon-pill-btn" data-value="part-time">Part Time</button>
+                                <button class="cleon-pill-btn" data-value="contract">Contract</button>
+                                <button class="cleon-pill-btn" data-value="internship">Internship</button>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Experience Level <span class="cleon-required">*</span></label>
+                            <div class="cleon-pill-buttons-group">
+                                <button class="cleon-pill-btn" data-value="entry">Entry Level</button>
+                                <button class="cleon-pill-btn active" data-value="mid">Mid-Level</button>
+                                <button class="cleon-pill-btn" data-value="senior">Senior</button>
+                                <button class="cleon-pill-btn" data-value="lead">Lead</button>
+                                <button class="cleon-pill-btn" data-value="executive">Executive</button>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Work Arrangement</label>
+                            <div class="cleon-pill-buttons-group">
+                                <button class="cleon-pill-btn active" data-value="remote">Remote</button>
+                                <button class="cleon-pill-btn" data-value="onsite">Onsite</button>
+                                <button class="cleon-pill-btn" data-value="hybrid">Hybrid</button>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <label>Number of Openings</label>
+                            <input type="number" value="1" min="1" class="cleon-input-small">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 2: Job Description             -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 2 of 8: Job Description</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-active" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-2">
+                    <div class="cleon-form-center-card">
+                        <h3>Job Description</h3>
+                        <p class="cleon-section-desc">Roles and requirements</p>
+                        <div class="cleon-form-group">
+                            <div class="cleon-label-row">
+                                <label>Job Description <span class="cleon-required">*</span></label>
+                                <button class="cleon-btn-generate-ai"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate with AI</button>
+                            </div>
+                            <textarea rows="8" placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."></textarea>
+                            <div class="cleon-char-counter">
+                                <span class="cleon-char-warning">50 more characters needed</span>
+                                <span>0 characters</span>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <div class="cleon-label-row">
+                                <label>Key Responsibilities</label>
+                                <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Responsibility</button>
+                            </div>
+                            <div class="cleon-dynamic-items-list">
+                                <div class="cleon-dynamic-item-row">
+                                    <input type="text" value="Design and implement new features">
+                                    <button class="cleon-btn-delete-item"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-dynamic-item-row">
+                                    <input type="text" value="Collaborate with cross-functional teams">
+                                    <button class="cleon-btn-delete-item"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <div class="cleon-label-row">
+                                <label>Required Qualifications</label>
+                                <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Requirement</button>
+                            </div>
+                            <div class="cleon-dynamic-items-list">
+                                <div class="cleon-dynamic-item-row">
+                                    <input type="text" value="5+ years of experience with React">
+                                    <button class="cleon-btn-delete-item"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-dynamic-item-row">
+                                    <input type="text" value="Strong TypeScript skills">
+                                    <button class="cleon-btn-delete-item"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group">
+                            <div class="cleon-label-row">
+                                <label>Preferred Qualifications (Nice to Have)</label>
+                                <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Preferred</button>
+                            </div>
+                            <div class="cleon-dynamic-items-list">
+                                <div class="cleon-dynamic-item-row">
+                                    <input type="text" value="Experience with TypeScript">
+                                    <button class="cleon-btn-delete-item"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 3: Pipeline Setup              -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 3 of 8: Pipeline Setup</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-active" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-3">
+                    <div class="cleon-form-center-card">
+                        <h3>Pipeline Setup</h3>
+                        <p class="cleon-section-desc">Candidate workflow stages</p>
+                        <div class="cleon-card-box">
+                            <div class="cleon-label-row">
+                                <label>Pipeline Stages</label>
+                                <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Stage</button>
+                            </div>
+                            <div class="cleon-pipeline-stages-list">
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Applied">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Screening">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Interview">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Offer">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Hired">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="New Stage">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-pipeline-item-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="New Stage">
+                                    <button class="cleon-row-delete-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="cleon-form-group" style="margin-top: 16px;">
+                            <label>Default Stage for New Applicants</label>
+                            <div class="cleon-select-wrapper">
+                                <select class="cleon-select-full">
+                                    <option>Applied</option>
+                                    <option>Screening</option>
+                                    <option>Interview</option>
+                                </select>
+                                <i class="fa-solid fa-chevron-down cleon-select-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 4: AI Interview                -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 4 of 8: AI Interview</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node cleon-active" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-4">
+                    <div class="cleon-ai-split-layout">
+                        <div class="cleon-ai-control-panel">
+                            <div class="cleon-ai-header">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <div>
+                                    <h3>AI Interview Setup</h3>
+                                    <p>Set up an automated AI interview for this role. Candidates moved to the Screening stage will automatically receive an invitation to complete it.</p>
+                                </div>
+                            </div>
+
+                            <div class="cleon-ai-toggle-card">
+                                <div class="cleon-toggle-header-row">
+                                    <div class="cleon-ai-title-wrap">
+                                        <h4>AI Interview</h4>
+                                        <p>Candidates will not be automatically interviewed</p>
+                                    </div>
+                                    <label class="cleon-switch-toggle">
+                                        <input type="checkbox" checked>
+                                        <span class="cleon-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Interview Format -->
+                            <div class="cleon-format-selection-block">
+                                <h5>Interview Format</h5>
+                                <div class="cleon-format-option-row cleon-format-active">
+                                    <input type="radio" name="int-fmt" checked>
+                                    <label>
+                                        <strong>Text-Based Interactive Prompt <span class="cleon-pill-green">Recommended</span></strong>
+                                        <span>Evaluates semantic expressions, structure, and direct coding syntax.</span>
+                                    </label>
+                                </div>
+                                <div class="cleon-format-option-row">
+                                    <input type="radio" name="int-fmt">
+                                    <label>
+                                        <strong>Verbal Voice Interface</strong>
+                                        <span>Tracks auditory communication skills and verbal phrasing logic.</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Screening Prompts -->
+                            <div class="cleon-accordion-question-wrapper">
+                                <div class="cleon-label-row">
+                                    <h5>Screening Prompts</h5>
+                                    <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Question</button>
+                                </div>
+
+                                <div class="cleon-accordion-card cleon-expanded">
+                                    <div class="cleon-accordion-summary-bar">
+                                        <span class="cleon-question-badge">Paragraph</span>
+                                        <p class="cleon-summary-truncate-text">Tell me about your experience with React.js. What is the most complex component...</p>
+                                        <div class="cleon-action-icon-group">
+                                            <button class="cleon-card-trash-trigger"><i class="fa-solid fa-trash"></i></button>
+                                            <i class="fa-solid fa-chevron-down cleon-chevron-indicator"></i>
+                                        </div>
+                                    </div>
+                                    <div class="cleon-accordion-details-expanded">
+                                        <textarea class="cleon-inline-edit-area">Tell me about your experience with React.js. What is the most complex component you have built and what challenges did you face?</textarea>
+                                        <div class="cleon-meta-parameter-row">
+                                            <div><i class="fa-regular fa-clock"></i> Time limit: <strong>5 min</strong></div>
+                                            <div><i class="fa-solid fa-square-check"></i> Required</div>
+                                            <div><i class="fa-solid fa-wand-magic-sparkles"></i> AI evaluates</div>
+                                            <div>Weight: <strong class="cleon-weight-high">High</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cleon-accordion-card">
+                                    <div class="cleon-accordion-summary-bar">
+                                        <span class="cleon-question-badge">Paragraph</span>
+                                        <p class="cleon-summary-truncate-text">Describe a time you had to debug a critical production issue...</p>
+                                        <div class="cleon-action-icon-group">
+                                            <button class="cleon-card-trash-trigger"><i class="fa-solid fa-trash"></i></button>
+                                            <i class="fa-solid fa-chevron-down cleon-chevron-indicator"></i>
+                                        </div>
+                                    </div>
+                                    <div class="cleon-accordion-details-expanded">
+                                        <textarea class="cleon-inline-edit-area">Describe a time you had to debug a critical production issue. What was your approach and what did you learn?</textarea>
+                                        <div class="cleon-meta-parameter-row">
+                                            <div><i class="fa-regular fa-clock"></i> Time limit: <strong>5 min</strong></div>
+                                            <div><i class="fa-solid fa-square-check"></i> Required</div>
+                                            <div><i class="fa-solid fa-wand-magic-sparkles"></i> AI evaluates</div>
+                                            <div>Weight: <strong class="cleon-weight-high">High</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cleon-accordion-card">
+                                    <div class="cleon-accordion-summary-bar">
+                                        <span class="cleon-question-badge">Short Answer</span>
+                                        <p class="cleon-summary-truncate-text">What is your experience with microservices architecture?</p>
+                                        <div class="cleon-action-icon-group">
+                                            <button class="cleon-card-trash-trigger"><i class="fa-solid fa-trash"></i></button>
+                                            <i class="fa-solid fa-chevron-down cleon-chevron-indicator"></i>
+                                        </div>
+                                    </div>
+                                    <div class="cleon-accordion-details-expanded">
+                                        <textarea class="cleon-inline-edit-area">What is your experience with microservices architecture?</textarea>
+                                        <div class="cleon-meta-parameter-row">
+                                            <div><i class="fa-regular fa-clock"></i> Time limit: <strong>3 min</strong></div>
+                                            <div><i class="fa-solid fa-square-check"></i> Required</div>
+                                            <div><i class="fa-solid fa-wand-magic-sparkles"></i> AI evaluates</div>
+                                            <div>Weight: <strong>Medium</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cleon-accordion-card">
+                                    <div class="cleon-accordion-summary-bar">
+                                        <span class="cleon-question-badge">Yes/No</span>
+                                        <p class="cleon-summary-truncate-text">Do you have experience with AWS or cloud infrastructure?</p>
+                                        <div class="cleon-action-icon-group">
+                                            <button class="cleon-card-trash-trigger"><i class="fa-solid fa-trash"></i></button>
+                                            <i class="fa-solid fa-chevron-down cleon-chevron-indicator"></i>
+                                        </div>
+                                    </div>
+                                    <div class="cleon-accordion-details-expanded">
+                                        <textarea class="cleon-inline-edit-area">Do you have experience with AWS or cloud infrastructure?</textarea>
+                                        <div class="cleon-meta-parameter-row">
+                                            <div><i class="fa-regular fa-clock"></i> Time limit: <strong>1 min</strong></div>
+                                            <div><i class="fa-solid fa-square-check"></i> Required</div>
+                                            <div><i class="fa-solid fa-wand-magic-sparkles"></i> AI evaluates</div>
+                                            <div>Weight: <strong>Medium</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="cleon-accordion-card">
+                                    <div class="cleon-accordion-summary-bar">
+                                        <span class="cleon-question-badge">Short Answer</span>
+                                        <p class="cleon-summary-truncate-text">What is your expected salary range?</p>
+                                        <div class="cleon-action-icon-group">
+                                            <button class="cleon-card-trash-trigger"><i class="fa-solid fa-trash"></i></button>
+                                            <i class="fa-solid fa-chevron-down cleon-chevron-indicator"></i>
+                                        </div>
+                                    </div>
+                                    <div class="cleon-accordion-details-expanded">
+                                        <textarea class="cleon-inline-edit-area">What is your expected salary range?</textarea>
+                                        <div class="cleon-meta-parameter-row">
+                                            <div><i class="fa-regular fa-clock"></i> Time limit: <strong>2 min</strong></div>
+                                            <div><i class="fa-solid fa-square-check"></i> Required</div>
+                                            <div><i class="fa-solid fa-wand-magic-sparkles"></i> AI evaluates</div>
+                                            <div>Weight: <strong>Low</strong></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI-Generated Score Weights -->
+                            <div class="cleon-ai-weight-sliders-section">
+                                <h5>AI-Generated score weights</h5>
+                                <div class="cleon-weight-bar-item">
+                                    <div class="cleon-weight-bar-label">
+                                        <span>Technical Knowledge</span>
+                                        <strong>45%</strong>
+                                    </div>
+                                    <div class="cleon-weight-bar-track">
+                                        <div class="cleon-weight-bar-fill" style="width: 45%"></div>
+                                    </div>
+                                </div>
+                                <div class="cleon-weight-bar-item">
+                                    <div class="cleon-weight-bar-label">
+                                        <span>Communication Clarity</span>
+                                        <strong>30%</strong>
+                                    </div>
+                                    <div class="cleon-weight-bar-track">
+                                        <div class="cleon-weight-bar-fill" style="width: 30%"></div>
+                                    </div>
+                                </div>
+                                <div class="cleon-weight-bar-item">
+                                    <div class="cleon-weight-bar-label">
+                                        <span>Problem Solving Approach</span>
+                                        <strong>25%</strong>
+                                    </div>
+                                    <div class="cleon-weight-bar-track">
+                                        <div class="cleon-weight-bar-fill" style="width: 25%"></div>
+                                    </div>
+                                </div>
+                                <div class="cleon-weight-bar-item">
+                                    <div class="cleon-weight-bar-label">
+                                        <span>Cultural & Values Fit</span>
+                                        <strong>15%</strong>
+                                    </div>
+                                    <div class="cleon-weight-bar-track">
+                                        <div class="cleon-weight-bar-fill" style="width: 15%"></div>
+                                    </div>
+                                </div>
+                                <div class="cleon-weight-bar-item">
+                                    <div class="cleon-weight-bar-label">
+                                        <span>Minimum score to pass AI Interview</span>
+                                        <strong>70%</strong>
+                                    </div>
+                                    <div class="cleon-weight-bar-track">
+                                        <div class="cleon-weight-bar-fill cleon-fill-green" style="width: 70%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- After Interview Completion -->
+                            <div class="cleon-after-interview-section">
+                                <h5>After interview, after the interview is completed</h5>
+                                <div class="cleon-radio-option-card cleon-radio-active">
+                                    <input type="radio" name="after-interview" checked>
+                                    <label>
+                                        <strong><i class="fa-solid fa-circle-check"></i> Automatically advance candidates who pass <span class="cleon-pill-green">Recommended</span></strong>
+                                        <span>Candidates meeting the minimum score move to the next stage</span>
+                                    </label>
+                                </div>
+                                <div class="cleon-radio-option-card">
+                                    <input type="radio" name="after-interview">
+                                    <label>
+                                        <strong><i class="fa-regular fa-circle"></i> Manually review all candidates</strong>
+                                        <span>All interview results go to your review queue</span>
+                                    </label>
+                                </div>
+                                <div class="cleon-radio-option-card">
+                                    <input type="radio" name="after-interview">
+                                    <label>
+                                        <strong><i class="fa-regular fa-circle"></i> Automatically reject candidates who fail</strong>
+                                        <span>Candidates below minimum score are auto-rejected</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Preview Panel -->
+                        <div class="cleon-ai-live-preview-panel">
+                            <div class="cleon-preview-sticky-wrap">
+                                <div class="cleon-preview-badge-row">
+                                    <span>Candidate Preview</span>
+                                    <span class="cleon-pill-pink">LIVE</span>
+                                </div>
+                                <p class="cleon-preview-subtext">This is what candidates see</p>
+
+                                <div class="cleon-preview-email-card">
+                                    <div class="cleon-email-header">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> CleonHR AI Interview
+                                    </div>
+                                    <div class="cleon-email-body">
+                                        <p><strong>From:</strong> TechCorp Ltd via CleonHR</p>
+                                        <h4>Your AI Interview is ready — Senior Software Engineer</h4>
+                                        <p>Hi Aisha,</p>
+                                        <p>Congratulations on progressing to the next stage! You've been invited to complete a short AI-powered interview.</p>
+                                        <div class="cleon-email-meta">
+                                            <div><i class="fa-solid fa-list"></i> 5 Questions</div>
+                                            <div><i class="fa-regular fa-clock"></i> ~15 minutes</div>
+                                            <div><i class="fa-regular fa-calendar"></i> Complete by: 29 June 2026</div>
+                                        </div>
+                                        <button class="cleon-btn-email-cta">Start My Interview <i class="fa-solid fa-arrow-right"></i></button>
+                                    </div>
+                                </div>
+
+                                <div class="cleon-preview-terminal-frame">
+                                    <div class="cleon-terminal-header">
+                                        <span>AI Interview · Senior Software Engineer</span>
+                                        <span>Q1 of 5 <i class="fa-solid fa-arrow-right"></i></span>
+                                    </div>
+                                    <div class="cleon-terminal-body">
+                                        <span class="cleon-term-tag">PARAGRAPH</span>
+                                        <p>Tell me about your experience with React.js. What is the most complex component you have built and what challenges did you face?</p>
+                                        <div class="cleon-terminal-input-mock">Start typing your answer here...</div>
+                                        <div class="cleon-terminal-footer">
+                                            <button class="cleon-btn-prev"><i class="fa-solid fa-arrow-left"></i> Prev</button>
+                                            <div class="cleon-progress-dots">
+                                                <span class="cleon-dot-active"></span>
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                            <button class="cleon-btn-next">Next <i class="fa-solid fa-arrow-right"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 5: Job Checklist               -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 5 of 8: Job Checklist</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node cleon-active" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-5">
+                    <div class="cleon-form-center-card">
+                        <h3>Job Checklist</h3>
+                        <p class="cleon-section-desc">Create a task checklist specific to this job. Tasks will be automatically assigned and tracked.</p>
+
+                        <!-- AI Suggested Card -->
+                        <div class="cleon-ai-suggested-card">
+                            <div class="cleon-ai-suggested-header">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <div>
+                                    <strong>AI Suggested This Checklist</strong>
+                                    <span>Based on: , Dept</span>
+                                </div>
+                            </div>
+                            <button class="cleon-btn-regenerate">Regenerate suggestions</button>
+                        </div>
+
+                        <!-- Template Suggestions -->
+                        <div class="cleon-templates-section">
+                            <span class="cleon-template-label">OR START FROM A TEMPLATE</span>
+                            <div class="cleon-template-card">
+                                <div class="cleon-template-icon"><i class="fa-solid fa-laptop-code"></i></div>
+                                <div class="cleon-template-info">
+                                    <strong>Software Engineering Hire</strong>
+                                    <span>9 tasks · Used 12+</span>
+                                </div>
+                                <button class="cleon-btn-use-template">Use <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="cleon-template-card">
+                                <div class="cleon-template-icon"><i class="fa-solid fa-chart-line"></i></div>
+                                <div class="cleon-template-info">
+                                    <strong>Marketing Hire</strong>
+                                    <span>6 tasks · Used 5+</span>
+                                </div>
+                                <button class="cleon-btn-use-template">Use <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="cleon-template-card">
+                                <div class="cleon-template-icon"><i class="fa-solid fa-handshake"></i></div>
+                                <div class="cleon-template-info">
+                                    <strong>Sales Representative</strong>
+                                    <span>7 tasks · Used 9+</span>
+                                </div>
+                                <button class="cleon-btn-use-template">Use <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                            <div class="cleon-template-card">
+                                <div class="cleon-template-icon"><i class="fa-solid fa-user-tie"></i></div>
+                                <div class="cleon-template-info">
+                                    <strong>Executive Hire</strong>
+                                    <span>10 tasks · Used 3+</span>
+                                </div>
+                                <button class="cleon-btn-use-template">Use <i class="fa-solid fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Checklist Items -->
+                        <div class="cleon-checklist-phase">
+                            <h5>SOURCING PHASE</h5>
+                            <div class="cleon-checklist-flow-stack">
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Post job to Jobberman & LinkedIn">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 1</span>
+                                </div>
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Review incoming CVs (target: 50)">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 7</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cleon-checklist-phase">
+                            <h5>SCREENING PHASE</h5>
+                            <div class="cleon-checklist-flow-stack">
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Shortlist top 10 candidates">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 10</span>
+                                </div>
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Send screening call invitation">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 11</span>
+                                </div>
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Conduct phone screenings">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 14</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cleon-checklist-phase">
+                            <h5>INTERVIEW PHASE</h5>
+                            <div class="cleon-checklist-flow-stack">
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Schedule technical interviews">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 17</span>
+                                </div>
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Collect hiring manager scorecards">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option selected>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 21</span>
+                                    <span class="cleon-auto-badge"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="cleon-checklist-phase">
+                            <h5>DECISION PHASE</h5>
+                            <div class="cleon-checklist-flow-stack">
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Make hiring decision">
+                                    <select class="cleon-select-sm"><option>Recruiter</option><option selected>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 25</span>
+                                </div>
+                                <div class="cleon-checklist-row">
+                                    <div class="cleon-drag-handle"><i class="fa-solid fa-grip-vertical"></i></div>
+                                    <input type="text" value="Send offer letter">
+                                    <select class="cleon-select-sm"><option selected>Recruiter</option><option>Hiring Manager</option></select>
+                                    <span class="cleon-day-badge">Day 28</span>
+                                    <span class="cleon-auto-badge"><i class="fa-solid fa-bolt"></i> Auto</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="cleon-btn-add-task"><i class="fa-solid fa-plus"></i> Add Task</button>
+                        <button class="cleon-btn-save-template"><i class="fa-solid fa-floppy-disk"></i> Save this checklist as a template</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 6: Application Form            -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 6 of 8: Application Form</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node cleon-completed" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node cleon-active" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-6">
+                    <div class="cleon-form-center-card">
+                        <h3>Application Form</h3>
+                        <p class="cleon-section-desc">Required information from candidates</p>
+
+                        <!-- Standard Fields -->
+                        <div class="cleon-card-box">
+                            <h5>Standard Fields</h5>
+                            <div class="cleon-standard-fields-list">
+                                <div class="cleon-field-row">
+                                    <div class="cleon-field-left">
+                                        <input type="checkbox" checked>
+                                        <label>Resume</label>
+                                    </div>
+                                    <div class="cleon-field-right">
+                                        <input type="checkbox" checked>
+                                        <label>Required</label>
+                                    </div>
+                                </div>
+                                <div class="cleon-field-row">
+                                    <div class="cleon-field-left">
+                                        <input type="checkbox" checked>
+                                        <label>Cover Letter</label>
+                                    </div>
+                                    <div class="cleon-field-right">
+                                        <input type="checkbox" checked>
+                                        <label>Required</label>
+                                    </div>
+                                </div>
+                                <div class="cleon-field-row">
+                                    <div class="cleon-field-left">
+                                        <input type="checkbox">
+                                        <label>LinkedIn Profile</label>
+                                    </div>
+                                </div>
+                                <div class="cleon-field-row">
+                                    <div class="cleon-field-left">
+                                        <input type="checkbox">
+                                        <label>Portfolio Website</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Questions -->
+                        <div class="cleon-custom-questions-section" style="margin-top: 20px;">
+                            <div class="cleon-label-row">
+                                <h5>Custom Questions</h5>
+                                <button class="cleon-btn-add-item"><i class="fa-solid fa-plus"></i> Add Question</button>
+                            </div>
+
+                            <div class="cleon-question-form-card">
+                                <div class="cleon-q-form-top">
+                                    <input type="text" class="cleon-question-input-field" value="Years of experience using advanced cloud patterns?">
+                                    <button class="cleon-delete-q-btn"><i class="fa-solid fa-trash"></i></button>
+                                </div>
+                                <div class="cleon-q-form-meta">
+                                    <select class="cleon-select-sm">
+                                        <option>Short Text</option>
+                                        <option>Long Text</option>
+                                        <option>Yes/No</option>
+                                        <option>Number</option>
+                                    </select>
+                                    <label class="cleon-checkbox-label">
+                                        <input type="checkbox" checked> Required
+                                    </label>
+                                </div>
+                                <div class="cleon-routing-rules-inner-box">
+                                    <div class="cleon-section-header-row">
+                                        <span class="cleon-purple-lbl"><i class="fa-solid fa-bolt"></i> Pipeline Impact Rules (Optional)</span>
+                                        <button class="cleon-btn-purple-sm"><i class="fa-solid fa-plus"></i> Add Rule</button>
+                                    </div>
+                                    <p class="cleon-routing-desc">Auto-route candidates to specific pipeline stages based on their answer</p>
+                                    <div class="cleon-rule-expression-row">
+                                        <span class="cleon-if-tag">IF</span>
+                                        <input type="text" placeholder="answer value" class="cleon-rule-input">
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                        <select class="cleon-select-sm"><option>Select stage...</option><option>Applied</option><option>Screening</option><option>Interview</option></select>
+                                        <button class="cleon-delete-rule-btn"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 7: Posting & Visibility        -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 7 of 8: Posting & Visibility</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node cleon-completed" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node cleon-active" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-7">
+                    <div class="cleon-form-center-card">
+                        <h3>Posting & Visibility</h3>
+                        <p class="cleon-section-desc">Where this job will appear</p>
+
+                        <div class="cleon-card-box">
+                            <div class="cleon-toggle-row-card">
+                                <div>
+                                    <strong>Publish to Career Site</strong>
+                                    <p>Make this job visible on your company career page</p>
+                                </div>
+                                <label class="cleon-switch-toggle"><input type="checkbox" checked><span class="cleon-slider"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="cleon-card-box" style="margin-top: 16px;">
+                            <h5>Job Board Distribution</h5>
+                            <div class="cleon-checkbox-grid">
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> WhyteCleon
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> LinkedIn
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> Indeed
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> Glassdoor
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> ZipRecruiter
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> Monster
+                                </label>
+                                <label class="cleon-checkbox-card">
+                                    <input type="checkbox"> AngelList
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cleon-card-box" style="margin-top: 16px;">
+                            <h5>Visibility</h5>
+                            <div class="cleon-visibility-options">
+                                <label class="cleon-radio-card cleon-radio-active">
+                                    <input type="radio" name="visibility" value="public" checked>
+                                    <div class="cleon-radio-content">
+                                        <strong>Public</strong>
+                                        <span>Anyone can view and apply</span>
+                                    </div>
+                                </label>
+                                <label class="cleon-radio-card">
+                                    <input type="radio" name="visibility" value="internal">
+                                    <div class="cleon-radio-content">
+                                        <strong>Internal Only</strong>
+                                        <span>Only employees can view</span>
+                                    </div>
+                                </label>
+                                <label class="cleon-radio-card">
+                                    <input type="radio" name="visibility" value="private">
+                                    <div class="cleon-radio-content">
+                                        <strong>Private</strong>
+                                        <span>Only people with the link can view</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="cleon-card-box" style="margin-top: 16px;">
+                            <h5>Days Open (Job Expiration)</h5>
+                            <p class="cleon-section-desc">Job will automatically stop accepting applications after this period. Leave blank for no expiration.</p>
+                            <div class="cleon-days-open-row">
+                                <input type="number" value="30" min="1" class="cleon-days-input">
+                                <span>days</span>
+                                <div class="cleon-days-quick-btns">
+                                    <button class="cleon-days-btn">7d</button>
+                                    <button class="cleon-days-btn">14d</button>
+                                    <button class="cleon-days-btn active">30d</button>
+                                    <button class="cleon-days-btn">60d</button>
+                                    <button class="cleon-days-btn">90d</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink">Next <i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STANDALONE: FULL WIZARD - STEP 8: Review & Publish            -->
+<!-- ============================================================ -->
+<div class="cleon-modal-overlay" style="display:none;">
+    <div class="cleon-modal-wrapper">
+
+        <div class="cleon-modal-view-panel cleon-panel-visible">
+            <div class="cleon-modal-header">
+                <div class="cleon-header-title-block">
+                    <div class="cleon-header-with-back">
+                        <button class="cleon-back-link"><i class="fa-solid fa-xmark"></i></button>
+                        <div>
+                            <h2>Build from Scratch</h2>
+                            <span>Step 8 of 8: Review & Publish</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-floppy-disk"></i> Save Draft</button>
+            </div>
+
+            <div class="cleon-stepper-track">
+                <div class="cleon-step-node cleon-completed" data-step="1"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Basic Details</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="2"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Description</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="3"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Pipeline Setup</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="4"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>AI Interview <i class="fa-solid fa-wand-magic-sparkles"></i></span></div>
+                <div class="cleon-step-node cleon-completed" data-step="5"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Job Checklist</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="6"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Application Form</span></div>
+                <div class="cleon-step-node cleon-completed" data-step="7"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Posting & Visibility</span></div>
+                <div class="cleon-step-node cleon-active" data-step="8"><div class="cleon-indicator"><i class="fa-solid fa-check"></i></div><span>Review & Publish</span></div>
+            </div>
+
+            <div class="cleon-modal-body">
+                <div class="cleon-step-content-pane cleon-visible" id="pane-8">
+                    <div class="cleon-form-center-card">
+                        <h3>Review & Publish</h3>
+                        <p class="cleon-section-desc">Final review before going live</p>
+
+                        <div class="cleon-review-summary-box">
+                            <div class="cleon-review-section-group">
+                                <h5>Job Details</h5>
+                                <div class="cleon-review-details-grid">
+                                    <div>
+                                        <span>Title</span>
+                                        <strong>Senior Software Engineer</strong>
+                                    </div>
+                                    <div>
+                                        <span>Department</span>
+                                        <strong>Engineering</strong>
+                                    </div>
+                                    <div>
+                                        <span>Location</span>
+                                        <strong>Lagos, Nigeria</strong>
+                                    </div>
+                                    <div>
+                                        <span>Employment Type</span>
+                                        <strong>Full Time</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cleon-review-section-group">
+                                <h5>Pipeline</h5>
+                                <div class="cleon-review-pipeline-pills-row">
+                                    <span class="cleon-review-stage-pill">Applied</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">Screening</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">Interview</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">Offer</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">Hired</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">New Stage</span>
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                    <span class="cleon-review-stage-pill">New Stage</span>
+                                </div>
+                            </div>
+
+                            <div class="cleon-review-section-group">
+                                <h5>Application Form</h5>
+                                <p>2 standard fields enabled</p>
+                                <p>1 custom questions</p>
+                                <p>1 questions with pipeline impact rules</p>
+                            </div>
+
+                            <div class="cleon-review-section-group">
+                                <h5>Publishing</h5>
+                                <p><i class="fa-solid fa-circle" style="color: #22c55e; font-size: 8px;"></i> Will publish to career site</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cleon-modal-footer">
+                <button class="cleon-btn-secondary"><i class="fa-solid fa-chevron-left"></i> Back</button>
+                <button class="cleon-btn-primary-pink"><i class="fa-solid fa-paper-plane"></i> Publish</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

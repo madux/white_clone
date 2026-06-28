@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Checklist Template</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="rec-modal-overlay rec-modal--open">
+    <div class="rec-modal rec-modal--narrow">
+      <div class="rec-modal-header">
+        <span class="rec-modal-title">Edit Checklist Template</span>
+        <button class="rec-modal-close">&times;</button>
+      </div>
+      <div class="rec-modal-body">
+        <div class="rec-form-group">
+          <label class="rec-label">Template Name</label>
+          <input class="rec-input rcm-ett-input" type="text" value="Customer Support Agent" />
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label">Checklist Tasks</label>
+          <div id="editTemplateTasks"></div>
+          <a class="rec-add-task-link rcm-ett-add-link"><i class="fa-solid fa-plus"></i> Add Task</a>
+        </div>
+      </div>
+      <div class="rec-modal-footer">
+        <button class="rec-btn rec-btn--ghost">Cancel</button>
+        <button class="rec-btn rec-btn--primary">Save Template</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+.rct-sl-rec-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-sl-rec-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.rct-sl-rec-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.rct-sl-rec-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-sl-rec-btn--primary {
+  background: #ee59a3;
+  color: #fff;
+}
+.rct-sl-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.rct-sl-link-row:last-child {
+  border-bottom: none;
+}
+.rct-sl-link-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rct-sl-link-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+.rct-sl-link-url {
+  font-size: 13px;
+  color: #888;
+}
+.rct-sl-link-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rct-sl-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f0f0f0;
+  color: #555;
+}
+.rct-sl-btn-copy {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: #666;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-sl-btn-copy:hover {
+  border-color: #ee59a3;
+  color: #ee59a3;
+}
+
+.dynamic-content span {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
