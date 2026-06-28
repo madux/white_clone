@@ -5,11 +5,15 @@ from odoo.exceptions import ValidationError
 class HrApplicantDocuments(models.Model):
 	_name = 'hr.applicant.documentation'
 
+	name = fields.Char('documentation.type')
+	day = fields.Integer('Day')
 	document_type = fields.Many2one('documentation.type')
+	responsible_user_id = fields.Many2one('res.users')
 	document_file = fields.Many2one('ir.attachment', string='Document File')
 	select = fields.Boolean("Confirmed", default=False)
 	applicant_submitted_document_file = fields.Many2one('ir.attachment', string='Applicant Document')
 	applicant_id = fields.Many2one('hr.applicant', string='Applicant')
+	job_id = fields.Many2one('hr.job', string='JOB')
 	is_compulsory = fields.Boolean("Is Compulsory", default=False)
 	hr_comment = fields.Text("HR comment")
 

@@ -5,6 +5,65 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 
+class Hrwork_Skills(models.Model):
+    _name = 'hr.work_skills'
+ 
+    name = fields.Char(string="Skills Name")
+    proficiency_rate = fields.Integer(string="Proficiency Rate", placeholder="e.g 1 - 5")
+    years_experience = fields.Integer(string="Years of Experience", placeholder="e.g 5 years")
+    proficiency = fields.Selection([
+        ('Excellent',   'Excellent'),
+        ('Average',   'Average'),
+        ('Medium',   'Medium'),
+        ('Good',   'Good'),
+        ('Poor',   'Poor'),
+    ], default='Average')
+    applicant_id = fields.Many2one(
+        'hr.applicant',
+        string="Candidate",
+        required=False,
+    )
+
+
+class Hrwork_education(models.Model):
+    _name = 'hr.work_education'
+ 
+    qualification_name = fields.Char(string="Qualification Name")
+    session = fields.Char(string="Session")
+    institution_name = fields.Char(string="School Name")
+    certificate = fields.Char()
+    reference_name = fields.Char()
+    reference_phone = fields.Char()
+    location = fields.Char()
+    applicant_id = fields.Many2one(
+        'hr.applicant',
+        string="Candidate",
+        required=False,
+    )
+
+class Hrwork_experience(models.Model):
+    _name = 'hr.work_experience'
+ 
+    company_name = fields.Char()
+    duration_years = fields.Char()
+    job_title = fields.Char()
+    location = fields.Char()
+    reference_name = fields.Char()
+    computed_display_name = fields.Char(compute="compute_computed_display_name")
+    reference_phone = fields.Char()
+    applicant_id = fields.Many2one(
+        'hr.applicant',
+        string="Candidate",
+        required=False,
+    )
+
+    @api.depends('duration_years', 'job_title')
+    def compute_computed_display_name(self):
+        self.ensure_one
+        for rec in self:
+            rec.computed_display_name = rec.duration_years +'-' +rec.job_title 
+
+
 class Applicant(models.Model):
     _inherit = "hr.applicant"
     _order = "id asc"
@@ -111,7 +170,7 @@ class Applicant(models.Model):
     is_graduate = fields.Boolean(string="Are you a graduate?") #  Do not choose "yes" if you do not have your NYSC certificate available
     is_external_staff = fields.Boolean(string="Are you a External staff?")
     skills = fields.Char(string="Relevant Skills")
-    prefered_district = fields.Char("Which district do you prefer")
+    prefered_district = fields.Char("Which location do you prefer")
     nysc_certificate_number = fields.Char(string="NYSC Certificate Number")
     date_of_birth = fields.Date("Date of Birth")
     age = fields.Char(string="Age")
@@ -121,6 +180,27 @@ class Applicant(models.Model):
         default=False)
     mode_of_exit_at_organisation = fields.Char(string="How did you leave?")
     why_do_you_leave = fields.Char(string="Why you leave Our Company?")
+    
+    # Candidate overview 
+    candidate_location = fields.Char(string="Candidate location")
+    candidate_source = fields.Char(string="Candidate Sourced by")
+    number_of_interviews = fields.Integer(store=False)
+    days_in_pipeline = fields.Integer(computed="_compute_days_in_pipeline")
+    date_of_stage_changed = fields.Date(store=True)
+    work_experience_ids = fields.One2many('hr.work_experience', 'applicant_id', string="Work experiences")
+    work_education_ids = fields.One2many('hr.work_education', 'applicant_id', string="Work education")
+    work_skill_ids = fields.One2many('hr.work_skills', 'applicant_id', string="Work Skills")
+
+    @api.depends('date_of_stage_changed')
+    def _compute_days_in_pipeline(self):
+        today = fields.Date.today()
+        for rec in self:
+            if rec.date_of_stage_changed:
+                rec.days_in_pipeline = (
+                    today - rec.date_of_stage_changed
+                ).days
+            else:
+                rec.days_in_pipeline = 0
     
     request_id = fields.Many2one('hr.job.recruitment.request', string="Recruitment Request", compute='_compute_request_id', store=True, index=True)
     is_panelist_added = fields.Boolean(
@@ -145,6 +225,8 @@ class Applicant(models.Model):
         'applicant_id', 
         string='Checklists'
         ) 
+
+        
     
     # sign_request_ids = fields.One2many(
 	# 	'sign.request', 
@@ -319,3 +401,8 @@ class Applicant(models.Model):
         return self.get_filtered_function(mydomain = [('id', 'in', [rec.id for rec in audit_applicants])] if audit_applicants else [('id', '=', 0)]) 
 
 
+    def write(self, vals):
+        if 'stage_id' in vals:
+            """Anytime stage changes, the change date will changes """
+            vals['date_of_stage_changed'] = fields.Date.today()
+        return super().write(vals)

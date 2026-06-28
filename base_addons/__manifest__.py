@@ -2,7 +2,7 @@
 # Part of App*. See LICENSE file for full copyright and licensing details.
 
 {
-    'name': 'CLEON BASE SETUP',
+    'name': 'CLEONHR BASE SETUP',
     'version': '1.6',
     'category': 'CLEONHR',
     'sequence': 85,

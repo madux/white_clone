@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem
+        id="hr_admin_company_calendar"
+        name="Company Calendar"
+        action="calendar.action_calendar_event"
+        sequence="130" 
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_company_calendar.hr_admin_company_calendar" model="ir.ui.menu">
+            <field name="icon_class">fa fa-calendar</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+
+</odoo>

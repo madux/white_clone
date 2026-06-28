@@ -72,6 +72,7 @@
             <tree string="Candidate" js_class="myrecruitment_dashboard_list">
                 <!-- <div class="cn-view-content-pane active" id="viewPaneList">
                     <div class="cn-data-table-scroll-outer-frame"> -->
+                        <field name="application_code" string="#" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
                         <field name="name" string="CANDIDATE" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
                         <field name="partner_phone" string="PHONE" class="overwrite-field cn-col-phone cn-cell-pinned-left-3"/>
                         <field name="email_from" string="EMAIL" class="overwrite-field cn-col-email cn-cell-pinned-left-4"/>
@@ -85,6 +86,7 @@
                         <field name="create_date" string="APPLIED DATE" class="overwrite-field cn-col-date"/>
                         <field name="stage_id" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
                         <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
+                        <field name="number_of_interviews" string="Interviews" optional="hide"/>
 
                     <!-- </div>
                 </div> -->
@@ -102,6 +104,10 @@
             (0, 0, {
                 'view_mode': 'tree',
                 'view_id': ref('hr_applicant_custom_tree_view'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_cleon_recruitment.view_hr_applicant_customized_form'),
             }),
             
         ]"/> 

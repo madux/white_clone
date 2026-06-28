@@ -26,30 +26,54 @@ button { cursor: pointer; border: none; background: none; font-family: var(--fon
 ul { list-style: none; }
 svg { display: block; flex-shrink: 0; }
 
+// .dynamicsidebar {
+//     width: 250px;
+//     background: var(--bg-sidebar);
+//     border-right: 1px solid var(--border-light);
+//     display: flex;
+//     flex-direction: column;
+//     flex-shrink: 0;
+//     // overflow-y: auto;
+//     padding-bottom: 16px;
+//     min-height: 100vh;
+//     position: fixed;
+//     left: 0;
+//     top: 52px;
+//     height: 100vh;
+//     z-index: 250;
+//     overflow: hidden;
+//     transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+// }
+
 .dynamicsidebar {
-    width: 250px;
+    width: 200px;
     background: var(--bg-sidebar);
     border-right: 1px solid var(--border-light);
+    display: -webkit-box;
+    display: -webkit-flex;
     display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -webkit-flex-direction: column;
     flex-direction: column;
     flex-shrink: 0;
-    // overflow-y: auto;
     padding-bottom: 16px;
     min-height: 100vh;
     position: fixed;
     left: 0;
-    top: 52px;
+    top: 110px;
     height: 100vh;
-    width: 18px;
+    /* width: 18px; */
     z-index: 250;
-    overflow: hidden;
-  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-
+    overflow-y: auto;
+    /* transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1); */
+    border-top: #000000 solid 2px;
 }
 
 .dynamicsidebar * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.dynamicsidebar:hover { width: 200px; }
+// .dynamicsidebar:hover { width: 200px; }
 
 // .dynamic-sidebar {
 //   position: fixed;

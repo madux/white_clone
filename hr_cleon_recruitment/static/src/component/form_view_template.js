@@ -83,6 +83,13 @@ export class RecruitmentSidebarController extends FormController {
             { target: "new", name: "Add Candidate" }
         );
     }
+    async openJobWizard(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_recruitment_add_custom_job",
+            { target: "new", name: "Add Job" }
+        );
+    }
 
     async openApplicantImportWizard(ev) {
         ev.preventDefault();
@@ -123,13 +130,13 @@ export class RecruitmentSidebarController extends FormController {
             target: 'new',
         });
     }
-    async openJobWizard(ev) {
-        ev.preventDefault();
-        await this.actionService.doAction(
-            "hr_cleon_recruitment.action_hr_add_job",
-            { target: "new", name: "Add Job positions"}
-        );
-    }
+    // async openJobWizard(ev) {
+    //     ev.preventDefault();
+    //     await this.actionService.doAction(
+    //         "hr_cleon_recruitment.action_hr_add_job",
+    //         { target: "new", name: "Add Job positions"}
+    //     );
+    // }
 
     async openOfferWizard(ev) {
         ev.preventDefault();

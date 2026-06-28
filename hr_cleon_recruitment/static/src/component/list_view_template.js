@@ -2,6 +2,7 @@
 
 import { registry } from "@web/core/registry";
 import { listView } from "@web/views/list/list_view";
+
 import { ListRenderer } from "@web/views/list/list_renderer";
 import { useService } from "@web/core/utils/hooks";
 import { onMounted, onWillUpdateProps } from "@odoo/owl";
@@ -110,6 +111,13 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
             { target: "new", name: "Add Candidate" }
         );
     }
+    async openJobWizard(ev) {
+        ev.preventDefault();
+        await this.actionService.doAction(
+            "hr_cleon_recruitment.action_hr_recruitment_add_custom_job",
+            { target: "new", name: "Add Job" }
+        );
+    }
 
     async openApplicantImportWizard(ev) {
         ev.preventDefault();
@@ -150,13 +158,13 @@ export class CustomRecruitmentListRenderer extends ListRenderer {
             target: 'new',
         });
     }
-    async openJobWizard(ev) {
-        ev.preventDefault();
-        await this.actionService.doAction(
-            "hr_cleon_recruitment.action_hr_add_job",
-            { target: "new", name: "Add Job positions"}
-        );
-    }
+    // async openJobWizard(ev) {
+    //     ev.preventDefault();
+    //     await this.actionService.doAction(
+    //         "hr_cleon_recruitment.action_hr_add_job",
+    //         { target: "new", name: "Add Job positions"}
+    //     );
+    // }
 
     async openOfferWizard(ev) {
         ev.preventDefault();

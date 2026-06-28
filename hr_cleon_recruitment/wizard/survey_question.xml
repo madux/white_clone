@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="hr_recruitment_surveywithanswer_form_view" model="ir.ui.view">
+            <field name="name">survey.question.view.form</field>
+            <field name="model">survey.question</field>
+            <field name="arch" type="xml">
+                <form string="Question">
+                    <div class="rc_modal_wrapper">
+                        <div class="rc_modal_header">
+                            <h2 class="rc_modal_title">Add Answers</h2>
+                        </div> 
+                        <div class="rc_section">
+                            <h3 class="rc_section_title">Question &amp; Answers</h3>
+                            <div class="rc_row_2col">
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="title">Name</label>
+                                    <field name="title" placeholder="What is your name" nolabel="1" class="rc_input"/>
+                                </div>
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="question_type">Question type</label>
+                                    <field name="question_type" nolabel="1" class="rc_input" required="1"/>
+                                </div>
+                            </div>
+                            <div class="rc_row_2col">
+                                
+                                <div class="rc_field_group">
+                                    <label class="rc_label" for="survey_id">Interview Template</label>
+                                    <field name="survey_id" nolabel="1" class="rc_input"/>
+                                </div>
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="scoring_type">Score type</label>
+                                    <field name="scoring_type" nolabel="1" class="rc_input"/>
+                                </div>
+                                
+                            </div>
+                            <div class="rc_row_2col">
+                                <div class="rc_field_group">
+                                    <label class="rc_label" for="time_limit">Time limit</label>
+                                    <field name="time_limit" nolabel="1" class="rc_input"/>
+                                </div> 
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="constr_mandatory">Mandatory</label>
+                                    <field name="constr_mandatory" nolabel="1" class="rc_input"/>
+                                </div> 
+                            </div>
+                            <div class="rc_field_group" invisible="not constr_mandatory">
+                                <label class="rc_label rc_required" for="constr_error_msg">Error Description</label>
+                                <field name="constr_error_msg" placeholder="Describe the Error message candidate will see.." nolabel="1" class="rc_input"/>
+                            </div>
+
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="description">Description</label>
+                                <field name="description" placeholder="Describe the question you wanted to ask..." nolabel="1" class="rc_input"/>
+                            </div> 
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="suggested_answer_ids">Answers</label>
+                                <field name="suggested_answer_ids" context="{'default_question_id': id}" invisible="question_type not in ['simple_choice', 'multiple_choice', 'matrix']">
+                                    <tree editable="bottom">
+                                        <control>
+                                            <create string="Add Answers" class="rc_red"/>
+                                        </control>
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="value" string="Choices"/>
+                                        <field name="is_correct" column_invisible="parent.scoring_type == 'no_scoring' or parent.question_type == 'matrix'"/>
+                                        <field name="answer_score" column_invisible="parent.scoring_type == 'no_scoring' or parent.question_type == 'matrix'"/>
+                                        <field name="value_image_filename" column_invisible="True"/>
+                                        <field name="value_image" width="200px" filename="value_image_filename" options="{'accepted_file_extensions': 'image/*'}" column_invisible="parent.question_type == 'matrix'"/>
+                                    </tree>
+                                </field>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <footer>
+                        <button type="object" name="confirm"
+                            string="Confirm" class="oe_highlight"/>
+                        <button special="cancel" string="Cancel"/>
+                    </footer> -->
+                </form>
+            </field>
+        </record> 
+
+    </data>
+</odoo>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <menuitem
+        id="hr_admin_disciplinary"
+        name="Disciplinary"
+        action="hr_warning.action_hr_warning"
+        sequence="50"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_warning.hr_admin_disciplinary" model="ir.ui.menu">
+        <field name="icon_class">fa fa-warning</field>
+        <field name="category_name">CleonHR-HR Admin</field>
+    </record>
+ 
+
+</odoo>

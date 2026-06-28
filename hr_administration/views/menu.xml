@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>  
+    <menuitem
+        id="hr_admin_exployee_experience"
+        name="Employee Experience"
+        parent="hr_administration.hr_administration_dashboard"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="10" />
+        <record id="hr_administration.hr_admin_exployee_experience" model="ir.ui.menu">
+            <field name="icon_class">fa fa-building</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+
+    <menuitem
+        id="hr_admin_workforce_lifecycle"
+        name="Workforce Life Cycle"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="20"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_workforce_lifecycle" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+
+    <menuitem
+        id="hr_admin_staff_directory"
+        name="Staff Directory"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="30"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_staff_directory" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+    <menuitem
+        id="hr_admin_time_mgt"
+        name="Time Managment"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="40"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_time_mgt" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+
+    <menuitem
+        id="hr_admin_document_management"
+        name="Document Management"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="80"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_document_management" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+
+    <menuitem
+        id="hr_admin_company_documentary"
+        name="Company documentary"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="90"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_company_documentary" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+    <menuitem
+        id="hr_admin_asset_management"
+        name="Asset management"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="100"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_asset_management" model="ir.ui.menu">
+            <field name="icon_class">fa fa-money</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+    <menuitem
+        id="hr_admin_compensation"
+        name="Compensation"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="110"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_compensation" model="ir.ui.menu">
+            <field name="icon_class">fa fa-card</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+    <menuitem
+        id="hr_admin_social_gallery"
+        name="Social Gallery"
+        action="hr_employee.action_view_employee_kanban_custom"
+        sequence="120"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_administration.hr_admin_social_gallery" model="ir.ui.menu">
+            <field name="icon_class">fa fa-card</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+    
+</odoo>

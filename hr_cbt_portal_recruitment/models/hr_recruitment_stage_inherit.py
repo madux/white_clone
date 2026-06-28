@@ -3,6 +3,7 @@ from odoo import models, fields, api, _
 class hrRecruitmentStageInherit(models.Model):
     _inherit = "hr.recruitment.stage"
 
+    job_id = fields.Many2one('hr.job')
     group_ids = fields.Many2many('res.groups')
     stage_type = fields.Selection(
         selection=[

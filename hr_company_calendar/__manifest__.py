@@ -2,9 +2,9 @@
 # Part of App*. See LICENSE file for full copyright and licensing details.
 
 {
-    'name': 'CLEON COMPANY CALENDAR',
+    'name': 'CLEON Company Calendar',
     'version': '1.6',
-    'category': 'Human Resources/Time Off',
+    'category': 'HR ADMIN',
     'sequence': 85,
     'summary': 'Allocate PTOs and follow leaves requests',
     'description': """
@@ -19,6 +19,7 @@ A synchronization with an internal agenda (Meetings of the CRM module) is also p
         'views/company_activities.xml',
         'views/company_approval.xml',
         'views/calendar_event.xml',
+        'views/menu.xml',
         'security/ir.model.access.csv'
     ],
      

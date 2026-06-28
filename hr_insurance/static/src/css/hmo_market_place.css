@@ -20,12 +20,12 @@
 .qms-badge-primary  { background: var(--qms-primary-light); color: #7A4F00; border: 1px solid #FFD97D; }
 
 
-* {
+/* * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: Inter, sans-serif;
-}
+} */
 
 body {
     background: #f8f9fc;

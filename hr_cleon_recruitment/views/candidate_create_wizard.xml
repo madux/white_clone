@@ -9,9 +9,7 @@
         <field name="model">hr.applicant.candidate.wizard</field>
         <field name="arch" type="xml">
             <form string="Add Candidate" create="0" edit="1">
-
                 <field name="mode" invisible="1"/>
-
                 <!-- ══════════════════════════════
                      SCREEN 1: SELECTION GRID
                 ══════════════════════════════ -->

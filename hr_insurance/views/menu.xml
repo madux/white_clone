@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <menuitem
+        id="hr_admin_health_insurance"
+        name="Health Insurance"
+        action="hr_insurance.action_dashboard_server"
+        sequence="70"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+    <record id="hr_insurance.hr_admin_health_insurance" model="ir.ui.menu">
+            <field name="icon_class">fa fa-health</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+</odoo>

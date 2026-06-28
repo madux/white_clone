@@ -87,6 +87,8 @@ class HrApplicantMove(models.TransientModel):
 			for rec in self.mapped('applicant_ids'):#.filtered(lambda al: not al.stage_id.hired_stage):
 				rec.write({
 					'stage_id': self.stage_id.id,
+					'date_of_stage_changed': fields.Date.today(),
+					'number_of_interviews': rec.number_of_interviews + 1,
 					'is_undergoing_verification': True if self.stage_type == "is_verification_stage" else False,
 					'is_documentation_process': True if self.stage_type == "is_documentation_stage" else False,
 					})

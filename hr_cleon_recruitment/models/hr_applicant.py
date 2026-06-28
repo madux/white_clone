@@ -17,6 +17,13 @@ WEBSITE_RE = re.compile(
         re.IGNORECASE
     )
 
+
+class hrRecruitmentStageInherit(models.Model):
+    _inherit = "hr.recruitment.stage"
+
+    jobs_id = fields.Many2one('hr.job')
+
+
 class HrJob(models.Model):
     _inherit = 'hr.job'
 
@@ -54,7 +61,11 @@ class HrJob(models.Model):
     )
     deadline_date = fields.Datetime(string="Deadline")
     email_sent = fields.Boolean(string="Email sent", help="This tracks the emails sent")
-    location = fields.Char(string="Location")
+    salary_currency = fields.Many2one('res.currency', string="Currency")
+    location = fields.Char(
+        string="Location", 
+        default=lambda self: self.env.user.company_id.state_id.name or \
+            self.env.user.company_id.country_id.name or self.env.user.company_id.name)
     opened_date = fields.Date("Opened Date")
     deadline_date_char = fields.Char(
         string="Deadline Display",
@@ -67,7 +78,189 @@ class HrJob(models.Model):
         string='Templates',
         store=True,
     )
+    location_id = fields.Many2one(
+        'multi.branch',
+        string='Location',
+        store=True,
+    )
+    work_experience_ids = fields.Many2many('hr.work_experience', string="Work experiences")
+    work_education_ids = fields.Many2many('hr.work_education', string="Work education")
+    work_skill_ids = fields.Many2many('hr.work_skills', string="Work Skills")
+    
+    
+    pipeline_stage_ids = fields.One2many('hr.recruitment.stage', 'jobs_id', string="Pipelines")
+    default_stage_id = fields.Many2one('hr.recruitment.stage', string="Default Stage")
+    ai_enabled_interview = fields.Boolean()
+    text_base_interview = fields.Boolean()
+    voice_base_interview = fields.Boolean()
+    when_is_interview_sent = fields.Boolean()
+    interview_sent_time = fields.Integer(default=0)
+    send_email_expiry = fields.Boolean()
+    auto_expire = fields.Boolean()
+    auto_advance_without_interview = fields.Boolean()
+    survey_id = fields.Many2one('survey.survey')
+    survey_question_ids = fields.Many2many('survey.question')#, compute="compute_survey_questions")
+    name = fields.Char(string="Name")
+    
+    email_invite_template = fields.Many2one(
+		'mail.template',
+		string="Mail Template",
+		required=False,
+	)
+    applicant_documentation_checklist = fields.Many2many(
+        'hr.applicant.documentation', 
+        'recruitment_documentation_rel', 
+        'job_id', 
+        'recruitment_documentation_id', 
+        string='Checklists'
+        ) 
+    button_continue_show = fields.Boolean()
+    
+    min_salary_band = fields.Float(
+        string="Min Salary",
+        copy=True,
+        default=0.0
+    )
 
+    max_salary_band = fields.Float(
+        string="Max Salary",
+        copy=True,
+        default=0.0
+    )
+    @api.onchange('max_salary_band')
+    def onchange_max_salary_band(self):
+        if self.max_salary_band:
+            if self.max_salary_band < self.min_salary_band:
+                self.max_salary_band = False
+                raise UserError("Minimum salary cannot be greater than Maximum salary band")
+
+    @api.onchange('min_salary_band')
+    def onchange_min_salary_band(self):
+        if self.min_salary_band:
+            if self.max_salary_band > 0 and self.min_salary_band > self.max_salary_band:
+                self.min_salary_band = False
+                raise UserError("Minimum salary cannot be greater than Maximum salary band")
+
+
+    # manual_survey_id = fields.Many2one('survey.survey')
+    # manual_survey_question_ids = fields.One2many('custom.survey.question', 'job_id', string="Current job questions")
+     
+    workflow_setup = fields.Selection([
+        ('Basic',   'Basic'),
+        ('Description',   'Description'),
+        ('Pipeline',   'Pipeline Setup'), # job details
+        ('AI Interview',   'AI Interview'), # job details
+        ('Job Checklist',   'Job Checklist'), # job details
+        ('Application Form',   'Application Form'),
+        ('Posting and Visibility',   'Posting and Visibility'), # job details
+        ('Review',   'Review'), # job details
+    ], default='Basic')
+
+    mode = fields.Selection([
+        ('first_intro',   'Job Creation Option'),
+        ('first_intro2',   'Quick Job Creation'), # 
+        ('first_intro3',   'Job Details'), # job details
+        ('second_intro1',   'second_intro1'), # job details
+        ('second_intro2',   'second_intro2'), # job details
+        ('second_intro3',   'second_intro3'), 
+    ], default='first_intro')
+
+    def action_move_workflow(self):
+        self.ensure_one()
+        if self.workflow_setup == 'Basic':
+            self.workflow_setup = 'Description'
+        elif self.workflow_setup == 'Description':
+            self.workflow_setup = 'Pipeline'
+        elif self.workflow_setup == 'Pipeline':
+            self.workflow_setup = 'AI Interview'
+        elif self.workflow_setup == 'AI Interview':
+            self.workflow_setup = 'Job Checklist'
+        elif self.workflow_setup == 'Job Checklist':
+            self.workflow_setup = 'Application Form'
+        elif self.workflow_setup == 'Application Form':
+            self.workflow_setup = 'Posting and Visibility'
+        # elif self.workflow_setup == 'Posting and Visibility':
+        else:
+            self.workflow_setup = 'Review'
+
+    def _reopen(self, view_id=False, target='new', view_mode='form'):
+        """Return an action that re-opens this same wizard record (refreshes the view)."""
+        view_id = view_id if view_id else self.env.ref(
+                'hr_cleon_recruitment.hr_recruitment_job_process_form_view'
+            ).id
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': "hr.job",
+            'res_id': self.id,
+            'view_mode': view_mode,
+            'target': target,
+            'views': [
+                    (view_id, view_mode)
+                ], 
+            'context': self.env.context,
+            'name': "Add job",
+        }
+    
+    def action_back_mode(self):
+        if self.mode == 'first_intro2':
+            self.mode = 'first_intro'
+        return self._reopen()
+    
+    def create_job_positon(self):
+        view_id = self.env.ref(
+                'hr.view_hr_job_form'
+            ).id
+        self.mode = 'first_intro3' # go to main job details 
+        self.active = True #  
+        return self._reopen(target='current', view_id=view_id, view_mode='form')
+    
+    def first_intro_button(self):
+        self.button_continue_show = True
+        self.mode = 'first_intro2'
+        return self._reopen()
+
+    def second_intro_button(self):
+        self.button_continue_show = True
+        self.mode = 'second_intro1'
+        return self._reopen(target='fullscreen')
+
+    def second_intro2_move_to_description_button(self):
+        '''Moves to description part'''
+        self.button_continue_show = True
+        self.mode = 'second_intro2'
+
+    def second_intro3_button(self):
+        '''Moves to description part'''
+        self.button_continue_show = True
+        self.mode = 'second_intro3'
+
+    def first_intro_continue_button(self):
+        if self.mode == 'first_intro2':
+            self.mode = 'first_intro3'
+        
+        elif self.mode == 'first_intro3':
+            self.mode = 'first_intro3'
+
+    def first_intro_continue_button(self):
+        if self.mode == 'first_intro2':
+            self.mode = 'first_intro3'
+    
+    def action_generate_description_with_ai(self):
+        pass
+    def action_generate_interview_with_ai(self):
+        pass
+
+    
+
+    @api.onchange('survey_id')
+    def compute_survey_questions(self):
+        self.ensure_one()
+        for rec in self:
+            if rec.survey_id:
+                self.survey_question_ids = rec.survey_id.question_ids
+            else:
+                self.survey_question_ids = False
+    
     @api.depends('deadline_date')
     def _compute_deadline_date_char(self):
         for rec in self:
@@ -91,9 +284,64 @@ class HrApplicant(models.Model):
     
     applied_date = fields.Date("Applied Date", default=fields.Date.today())
     
+    # Candidate detail
+    application_code = fields.Char(
+        string='Reference',
+        required=True,
+        copy=False,
+        readonly=True,
+        default=lambda self: _('New'),
+        tracking=True,
+    )
+    applicant_job_location = fields.Char(related="job_id.location", default="N/A")
+    number_of_interviews = fields.Integer()
+    toggle_mode = fields.Selection([
+        ('1',   '1'),
+        ('2',   '2'),
+        ('3',   '3'),
+        ('4',   '4'),
+        ('5', '5'),
+        ('6', '6'),
+        ('7', '7'),
+    ], default='1', help="Used to dynamically change some views")
+
+
     offer_id = fields.Many2one("hr.offer", "Offer Reference", readonly="1")
     email_sent = fields.Boolean(string="Email sent", help="This tracks the emails sent")
+    
+    def button_send_message(self):
+        #TODO Send message modal to candidate
+        pass 
 
+    def buttonToggleModeAction1(self):
+        self.write({'toggle_mode': '1'})
+
+
+    def buttonToggleModeAction2(self):
+        self.write({'toggle_mode': '2'})
+
+
+    def buttonToggleModeAction3(self):
+        self.write({'toggle_mode': '3'})
+
+
+    def buttonToggleModeAction4(self):
+        self.write({'toggle_mode': '4'})
+
+
+    def buttonToggleModeAction5(self):
+        self.write({'toggle_mode': '5'})
+
+
+    def buttonToggleModeAction6(self):
+        self.write({'toggle_mode': '6'})
+
+
+    def buttonToggleModeAction7(self):
+        self.write({'toggle_mode': '7'})
+
+    # Candidate detail ends 
+        
     def addCandidateBtn(self):
         form_view_id = self.env.ref(
                 'hr_cleon_recruitment.hr_recruitment_candidate_form_view'
@@ -325,6 +573,15 @@ class HrApplicant(models.Model):
         if vals:
             self.write(vals)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('application_code', _('New')) == _('New'):
+                vals['application_code'] = self.env['ir.sequence'].next_by_code(
+                    'hr.application'
+                ) or _('New')
+        records = super().create(vals_list)
+        return records
     '''
     This my new for view for hr.applicant model
 

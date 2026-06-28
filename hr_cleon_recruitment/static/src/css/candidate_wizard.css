@@ -24,6 +24,32 @@
     margin: 0;
 }
 
+.job-card{
+    display:flex;
+    align-items:center;
+    gap:18px;
+
+    padding:20px;
+
+    border:1px solid #E5E7EB;
+    border-radius:16px;
+
+    cursor:pointer;
+
+    transition:.25s;
+    margin-bottom:18px;
+}
+
+.job-card:hover{
+    border-color:#5B7FFF;
+    box-shadow:0 8px 25px rgba(0,0,0,.05);
+}
+
+.job-card.selected{
+    border:2px solid #4F6CF7;
+    background:#F5F8FF;
+}
+
 /* ── 2×2 Options Grid ────────────────────────────────────── */
 .rc_options_grid {
     display: grid;
@@ -31,6 +57,13 @@
     gap: 14px;
     padding: 0 28px 28px;
 }
+
+/* .rc_options_grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding: 0 28px 28px;
+} */
 
 .rc_option_card {
     display: flex;
@@ -92,6 +125,137 @@
     gap: 14px;
     padding: 22px 24px 18px;
 }
+
+.hd-rc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+.rounded-xl {
+    border-radius: 12px !important;
+}
+.rounded-2xl {
+    border-radius: 16px !important;
+
+}
+.gap-2 {
+    gap: 2px;
+}
+
+.badge-rc {
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  /* text-transform: uppercase; */
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+}
+
+.badge-rc.green { background: #03a003; color: #f3f3f4; }
+.badge-rc.red { background: #c4290a; color: #ffffff; }
+.badge-rc.blue { background: #0d64cf; color: #ffffff; }
+.badge-rc.orange { background: #ffc70f; color: #ffffff; }
+
+.hd-rc-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.hd-rc-ci {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+ 
+.hd-rc-row h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.hd-rc-row p {
+    font-size: 11px;
+    margin-top: 2px;
+    opacity: .7;
+}
+
+.hd-rc-row span {
+    font-size: 22px;
+    font-weight: 700;
+}
+.hd-rc-pink {
+    background: #ffecf4;
+    color: #e90262;
+}
+
+.my-card-head-ai {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 20px 16px;
+    border: 1px solid #fdabd0;
+    border-color: 1px solid #fdabd0;
+}
+
+.my-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #e5e7eb;
+}
+.my-card-head h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.my-card-head p {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.job_workflow_button_header {
+    display: flex;
+    /* align-items: left; */
+    gap: 4px;
+    padding: 5px;
+    /* 22px 24px 18px; */
+}
+.rc_red {
+    background-color: none !important;
+    border-radius: 8px;
+    border-color: #e80950;
+    color: #e80950;
+    padding: 4px;
+
+}
+
+
+.btn_jobworkflow {
+    background: #fbfafd !important;
+    border: 1px !important;
+    border-color: #232125 !important;
+    padding: 0 !important;
+    color: #0e0d10 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    text-decoration: underline !important;
+}
+.btn_jobworkflow:hover { background-color: #0ebc28 !important; }
+.btn_jobworkflow:focus { background-color: #bc280e !important; }
+
 .rc_screen_icon_wrap {
     width: 44px;
     height: 44px;
@@ -126,11 +290,17 @@
 }
 
 /* ── Section container ───────────────────────────────────── */
-.rc_section {
+/* .rc_section {
     padding: 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 16px;
+} */
+.rc_section {
+    padding: 5px 24px 3px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 .rc_section_title {
     font-size: 16px;
@@ -159,9 +329,44 @@
     content: " *";
     color: #ef4444;
 }
+.rc_text,
+.rc_field_group .o_field_widget input, .o_field_widget text,
+.rc_field_group {
+    /* border: 1.5px solid #e5e7eb !important; */
+    /* border-radius: 8px !important; */
+    /* border-bottom: 1px solid #a3a8b3 !important;;
+    border-bottom-color: #fbb5e3 !important; */
+    padding: 9px 12px !important;
+    font-size: 14px !important;
+    color: #111827 !important;
+    background: #fff !important;
+    width: 100% !important;
+    height: 30% !important;
+    box-sizing: border-box !important;
+    transition: border-color .15s;
+}
+
+
 .rc_input,
+.rc_field_group .o_field_widget input, .o_field_widget text,
+.rc_field_group {
+    /* border: 1px solid #e5e7eb !important; */
+    /* border-radius: 8px !important; */
+    /* border-bottom: 1px solid #a3a8b3 !important;;
+    border-bottom-color: #fbb5e3 !important; */
+    padding: 9px 12px !important;
+    font-size: 14px !important;
+    color: #111827 !important;
+    background: #fff !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    transition: border-color .15s;
+}
+
+/* .rc_input,
 .rc_field_group .o_field_widget input,
-.rc_field_group .o_field_widget select {
+.rc_field_group {
     border: 1.5px solid #e5e7eb !important;
     border-radius: 8px !important;
     padding: 9px 12px !important;
@@ -171,7 +376,7 @@
     width: 100% !important;
     box-sizing: border-box !important;
     transition: border-color .15s;
-}
+} */
 .rc_field_group .o_field_widget input:focus,
 .rc_field_group .o_field_widget select:focus {
     border-color: #6366f1 !important;
@@ -366,6 +571,20 @@
 }
 .rc_btn_back:hover { background: #f9fafb !important; }
 
+.rc_ai_btn_primary {
+    background: linear-gradient(135deg, #3e1b77, #b326c9) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 9px 22px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    transition: opacity .15s;
+}
+.rc_ai_btn_primary:hover { opacity: .9; }
+
+
 .rc_btn_primary {
     background: linear-gradient(135deg, #f472b6, #ec4899) !important;
     border: none !important;
@@ -399,9 +618,10 @@
 }
 .rc_btn_purple:hover { background: #6d28d9 !important; }
 
-/* ── Odoo form chrome clean-up ───────────────────────────── */
+/* ── form chrome clean-up ───────────────────────────── */
 .o_form_view .rc_modal_wrapper .o_field_widget {
-    width: 100%;
+    width: 100% !important;
+    height: 100% !important;
 }
 .o_form_view .rc_modal_wrapper .o_statusbar_status,
 .o_form_view .rc_modal_wrapper .o_form_statusbar {

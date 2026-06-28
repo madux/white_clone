@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'CleonHR Warning & Incident Management',
+    'name': 'CleonHR Incident Mgt',
     'version': '17.0.1.0.0',
-    'category': 'Human Resources',
+    'category': 'CleonHR-HR ADMIN',
     'summary': 'Manage employee incidents, warnings, and disciplinary cases',
     'description': """
         HR Warning & Incident Management
