@@ -1,0 +1,108 @@
+:root {
+    --team-primary-color: #ec4899;
+    --team-bg-body: #fafafa;
+    --team-text-main: #111827;
+    --team-text-muted: #6b7280;
+    --team-border-color: #e5e7eb;
+    --team-card-radius: 12px;
+    --team-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.team-body {
+    font-family: var(--team-font-stack);
+    background-color: var(--team-bg-body);
+    color: var(--team-text-main);
+    display: flex;
+    min-height: 100vh;
+}
+
+.team-sidebar {
+    width: 88px;
+    background-color: #ffffff;
+    border-right: 1px solid var(--team-border-color);
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 100vh;
+}
+
+.team-sidebar-item {
+    width: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.team-sidebar-item span {
+    font-size: 11px;
+    font-weight: 500;
+    color: #4b5563;
+    line-height: 1.2;
+    word-break: break-word;
+}
+.team-sidebar-item span span {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+}
+
+.team-sidebar-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #4b5563;
+    background-color: transparent;
+    transition: all 0.2s ease;
+}
+
+.team-sidebar-item:hover .team-sidebar-icon {
+    background-color: #f3f4f6;
+    color: var(--team-text-main);
+}
+
+.team-sidebar-item.active .team-sidebar-icon {
+    background-color: var(--team-primary-color);
+    color: #ffffff;
+}
+
+.team-sidebar-item.active span {
+    color: var(--team-primary-color);
+    font-weight: 600;
+}
+
+.team-sidebar-subitem {
+    margin-top: -4px;
+    padding: 2px 0;
+}
+
+.team-sidebar-subitem span {
+    font-size: 11px;
+    color: var(--team-text-muted);
+    font-weight: 400;
+}
+
+.team-sidebar-subitem:hover span {
+    color: var(--team-text-main);
+    text-decoration: underline;
+}
+
+.team-sidebar-divider {
+    width: 56px;
+    height: 1px;
+    background-color: var(--team-border-color);
+    margin: 4px 0;
+}

@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Industries Dropdown — industries-dropdown.css
+   Extracted for Odoo QWeb | Font: DM Sans | Icons: FA 4.7
+   Primary: #E91E8C
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #F8F9FA;
+  padding: 40px;
+}
+
+/* ══ DROPDOWN ════════════════════════════════════════════════ */
+.chr-ind-dropdown {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  overflow: hidden;
+  max-height: 65vh;
+}
+
+/* ══ LEFT PANEL ══════════════════════════════════════════════ */
+.chr-ind-left {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.chr-ind-left__eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #E91E8C;
+  margin-bottom: 4px;
+}
+.chr-ind-left__eyebrow span {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2px !important;
+  text-transform: uppercase !important;
+  color: #E91E8C !important;
+}
+
+.chr-ind-left__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 20px;
+}
+.chr-ind-left__title span {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #1A1A2E !important;
+}
+
+/* ══ INDUSTRY CARDS GRID ═════════════════════════════════════ */
+.chr-ind-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.chr-ind-card {
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.chr-ind-card:hover {
+  border-color: #E91E8C;
+  background: #FFF0F7;
+}
+
+.chr-ind-card__icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.chr-ind-card__icon--pink { background: #FDF2F8; color: #E91E8C; }
+.chr-ind-card__icon--blue { background: #EFF6FF; color: #1565C0; }
+.chr-ind-card__icon--purple { background: #F5F3FF; color: #7B1FA2; }
+.chr-ind-card__icon--green { background: #F0FDF4; color: #2E7D32; }
+.chr-ind-card__icon--teal { background: #F0FDFA; color: #00796B; }
+.chr-ind-card__icon--orange { background: #FFF7ED; color: #E65100; }
+.chr-ind-card__icon--indigo { background: #EEF2FF; color: #283593; }
+.chr-ind-card__icon--red { background: #FEF2F2; color: #C62828; }
+
+.chr-ind-card__icon i {
+  color: inherit;
+  font-size: 15px;
+}
+
+.chr-ind-card__body { flex: 1; }
+
+.chr-ind-card__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1A1A2E;
+  margin-bottom: 2px;
+}
+.chr-ind-card__title span {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #1A1A2E !important;
+}
+
+.chr-ind-card__desc {
+  font-size: 11px;
+  color: #6B7280;
+  line-height: 1.4;
+}
+.chr-ind-card__desc span {
+  font-size: 11px !important;
+  color: #6B7280 !important;
+  line-height: 1.4 !important;
+}
+
+/* ══ RIGHT PROMO PANEL ═══════════════════════════════════════ */
+.chr-ind-promo {
+  width: 260px;
+  border-left: 1px solid #E5E7EB;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #111827 0%, #1F2937 100%);
+  color: #fff;
+  overflow-y: auto;
+}
+
+.chr-ind-promo__icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  margin-bottom: 18px;
+}
+.chr-ind-promo__title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.chr-ind-promo__title span {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+}
+.chr-ind-promo__desc {
+  font-size: 12px;
+  color: rgba(255,255,255,.7);
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+.chr-ind-promo__desc span {
+  font-size: 12px !important;
+  color: rgba(255,255,255,.7) !important;
+  line-height: 1.6 !important;
+}
+
+.chr-ind-promo__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .2s;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+.chr-ind-promo__btn span {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.chr-ind-promo__btn--primary {
+  background: #E91E8C;
+  color: #fff;
+  border: none;
+}
+.chr-ind-promo__btn--primary:hover { filter: brightness(1.08); }
+.chr-ind-promo__btn--outline {
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.3);
+}
+.chr-ind-promo__btn--outline:hover { background: rgba(255,255,255,.08); }
+
+.chr-ind-promo__trusted {
+  margin-top: 16px;
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  font-weight: 600;
+}
+.chr-ind-promo__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: center;
+}
+.chr-ind-promo__tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.2);
+  color: rgba(255,255,255,.7);
+}
+.chr-ind-promo__tag span {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.7) !important;
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  body { padding: 16px; }
+  .chr-ind-dropdown { flex-direction: column; max-height: none; border-radius: 14px; }
+  .chr-ind-promo { width: 100%; border-left: none; border-top: 1px solid #E5E7EB; border-radius: 0; padding: 24px; }
+  .chr-ind-grid { grid-template-columns: 1fr; }
+}

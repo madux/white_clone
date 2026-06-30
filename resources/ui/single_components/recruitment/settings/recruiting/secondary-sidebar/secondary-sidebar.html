@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recruiting — Secondary Sidebar</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f9fafb;
+    }
+    .demo-wrap {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    }
+    .demo-wrap h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .comp-sidebar {
+      width: 88px;
+      background-color: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .comp-sidebar-item {
+      width: 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+    }
+    .comp-sidebar-item span {
+      font-size: 11px;
+      font-weight: 500;
+      color: #4b5563;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+    .comp-sidebar-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #4b5563;
+      background-color: transparent;
+    }
+    .comp-sidebar-item.active .comp-sidebar-icon {
+      background-color: #ee59a3;
+      color: #ffffff;
+    }
+    .comp-sidebar-item.active span {
+      color: #ee59a3;
+      font-weight: 600;
+    }
+    .comp-sidebar-divider {
+      width: 56px;
+      height: 1px;
+      background-color: #e5e7eb;
+      margin: 4px 0;
+    }
+    .note {
+      margin-top: 16px;
+      font-size: 12px;
+      color: #9ca3af;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-wrap">
+    <h2>Secondary Sidebar</h2>
+    <aside class="comp-sidebar">
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-user-gear"></i></div>
+        <span>Personal</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-building-user"></i></div>
+        <span>Company</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-users-gear"></i></div>
+        <span>Team</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-globe"></i></div>
+        <span>Career Site</span>
+      </div>
+      <div class="comp-sidebar-divider"></div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <span>Appearance</span>
+      </div>
+      <div class="comp-sidebar-item comp-sidebar-subitem">
+        <span>Themes</span>
+      </div>
+      <div class="comp-sidebar-item active">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-briefcase"></i></div>
+        <span>Recruiting</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-diagram-project"></i></div>
+        <span>Workflow &amp; Approvals</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-file-invoice"></i></div>
+        <span>Templates</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-link"></i></div>
+        <span>Integrations</span>
+      </div>
+      <div class="comp-sidebar-item">
+        <div class="comp-sidebar-icon"><i class="fa-solid fa-code"></i></div>
+        <span>Developer Tools</span>
+      </div>
+    </aside>
+    <div class="note">Copy this &lt;aside&gt; into your QWeb template</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+.rec-admin-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #fff0f8;
+  border-bottom: 2px solid #fad4ed;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.rec-admin-banner-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fce4f0;
+  color: #ee59a3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.rec-admin-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.rcc-ab-rec-admin-banner-text > span {
+  font-weight: 400 !important;
+  color: #6b7280 !important;
+}
+
+.rec-admin-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  background: #e9d5ff;
+  color: #7c3aed;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rcc-ab-rec-admin-badge > span {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #7c3aed !important;
+}
+
+.rec-admin-banner-sub {
+  width: 100%;
+  font-size: 13px;
+  color: #6b7280;
+  font-weight: 400;
+  margin-top: -4px;
+}
+
+.rcc-ab-rec-admin-banner-sub > span {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+}

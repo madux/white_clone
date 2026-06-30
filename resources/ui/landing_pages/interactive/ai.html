@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CleonHR – AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/navbar.css" />
+  <link rel="stylesheet" href="css/ai.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <li data-dropdown="services">
+          <a href="#">Services <i class="fa fa-angle-down chr-nav__chevron"></i></a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr"><i class="fa fa-cubes"></i> Core HR Operations</button>
+                <button class="chr-svc-sidebar__item" data-category="workforce"><i class="fa fa-clock-o"></i> Workforce Management</button>
+                <button class="chr-svc-sidebar__item" data-category="talent"><i class="fa fa-trophy"></i> Talent & Performance</button>
+                <button class="chr-svc-sidebar__item" data-category="payroll"><i class="fa fa-money"></i> Payroll & Finance</button>
+                <button class="chr-svc-sidebar__item" data-category="compliance"><i class="fa fa-shield"></i> Compliance & Governance</button>
+                <button class="chr-svc-sidebar__item" data-category="client"><i class="fa fa-briefcase"></i> Client & Business Operations</button>
+                <button class="chr-svc-sidebar__item" data-category="platform"><i class="fa fa-bolt"></i> Platform & Intelligence</button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace"><i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem</button>
+              </div>
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+              </div>
+            </div>
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="all-modules/core-hr-operations/signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+        <li data-dropdown="industries">
+          <a href="#">Industries <i class="fa fa-angle-down chr-nav__chevron"></i></a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Healthcare & HMO</div><div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Financial Services</div><div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Manufacturing</div><div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Retail & E-Commerce</div><div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Logistics & Transportation</div><div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Education</div><div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Government & Public Sector</div><div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div></div></div>
+                  <div class="chr-ind-card"><div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div><div class="chr-ind-card__body"><div class="chr-ind-card__title">Oil & Gas</div><div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div></div></div>
+                </div>
+              </div>
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li><a href="ai.html" class="chr-nav__new-badge"><i class="fa fa-bolt"></i></a></li>
+        <li><a href="pricing.html">Pricing</a></li>
+      </ul>
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="all-modules/core-hr-operations/signup/signup.html" class="chr-btn--nav-signup">Get Started</a>
+      </div>
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu"><i class="fa fa-bars"></i></button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="chr-ai-hero">
+    <div class="chr-ai-hero__inner">
+      <div class="chr-ai-hero__badge">
+        <i class="fa fa-bolt"></i> CleonHR AI
+      </div>
+      <h1 class="chr-ai-hero__title">Meet CleonHR AI</h1>
+      <p class="chr-ai-hero__subtitle">Your Intelligent HR Co-Pilot</p>
+      <p class="chr-ai-hero__desc">
+        CleonHR AI works across every module — automating repetitive tasks, surfacing workforce insights, flagging risks before they escalate, and helping HR teams make smarter, faster decisions.
+      </p>
+      <a href="#chr-ai-features" class="chr-ai-hero__cta">
+        Explore AI Features <i class="fa fa-arrow-right"></i>
+      </a>
+
+      <!-- Chat mockup -->
+      <div class="chr-ai-chat-mockup">
+        <div class="chr-ai-chat-mockup__header">
+          <span class="chr-ai-chat-mockup__brand"><i class="fa fa-bolt"></i> CleonHR AI</span>
+          <span class="chr-ai-chat-mockup__live">Live</span>
+        </div>
+        <div class="chr-ai-chat-mockup__label">Example query</div>
+        <div class="chr-ai-chat-mockup__input"></div>
+        <div class="chr-ai-chat-mockup__typing">
+          <i class="fa fa-bolt"></i> AI is analyzing workforce data across all modules to generate your answer...
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ AI FEATURES ══════════════════════════════════════════════════════ -->
+  <section class="chr-ai-features" id="chr-ai-features">
+    <div class="chr-ai-features__inner">
+      <div class="chr-ai-features__eyebrow">AI-POWERED FEATURES</div>
+      <h2 class="chr-ai-features__title">Intelligent automation, built into every workflow</h2>
+      <p class="chr-ai-features__sub">CleonHR AI isn't a bolt-on. It's embedded directly into each module so your HR team gets smart suggestions right where they work.</p>
+
+      <div class="chr-ai-features__grid">
+        <!-- 1 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--pink"><i class="fa fa-clock-o"></i></div>
+          <div class="chr-ai-feature__module">Time & Attendance</div>
+          <div class="chr-ai-feature__title">Anomaly Detection</div>
+          <div class="chr-ai-feature__desc">AI flags unusual clock-in patterns, buddy punching, and overtime spikes before they become compliance issues.</div>
+        </div>
+        <!-- 2 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--blue"><i class="fa fa-calendar"></i></div>
+          <div class="chr-ai-feature__module">Leave Management</div>
+          <div class="chr-ai-feature__title">Leave Risk Scoring</div>
+          <div class="chr-ai-feature__desc">Predicts burnout risk and leave clustering trends, helping managers proactively redistribute workload.</div>
+        </div>
+        <!-- 3 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--purple"><i class="fa fa-shield"></i></div>
+          <div class="chr-ai-feature__module">Disciplinary Management</div>
+          <div class="chr-ai-feature__title">Smart Case Drafting</div>
+          <div class="chr-ai-feature__desc">Auto-generates warning letters, show-cause notices, and disciplinary reports based on case details and policy.</div>
+        </div>
+        <!-- 4 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--green"><i class="fa fa-money"></i></div>
+          <div class="chr-ai-feature__module">Payroll</div>
+          <div class="chr-ai-feature__title">Payroll Anomaly Alerts</div>
+          <div class="chr-ai-feature__desc">Detects duplicate entries, unusual deductions, and policy violations before payroll is processed.</div>
+        </div>
+        <!-- 5 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--teal"><i class="fa fa-line-chart"></i></div>
+          <div class="chr-ai-feature__module">Performance & Workforce</div>
+          <div class="chr-ai-feature__title">Flight Risk Prediction</div>
+          <div class="chr-ai-feature__desc">Surfaces employees showing disengagement signals so HR can intervene with retention actions early.</div>
+        </div>
+        <!-- 6 -->
+        <div class="chr-ai-feature">
+          <div class="chr-ai-feature__icon chr-ai-feature__icon--orange"><i class="fa fa-comments"></i></div>
+          <div class="chr-ai-feature__module">HR Administration</div>
+          <div class="chr-ai-feature__title">Policy Q&A Assistant</div>
+          <div class="chr-ai-feature__desc">Employees and managers can ask HR policy questions in plain language and get instant, accurate answers.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ASK AI ═══════════════════════════════════════════════════════════ -->
+  <section class="chr-ai-ask">
+    <div class="chr-ai-ask__inner">
+      <h2 class="chr-ai-ask__title">Ask CleonHR AI anything</h2>
+      <p class="chr-ai-ask__sub">A conversational AI layer sits across your entire HR stack. No switching tabs. No hunting for data.</p>
+
+      <div class="chr-ai-ask__card">
+        <div class="chr-ai-ask__card-header">
+          <span class="chr-ai-ask__card-brand"><i class="fa fa-bolt"></i> CleonHR AI</span>
+          <span class="chr-ai-ask__card-status">Online</span>
+        </div>
+        <div class="chr-ai-ask__suggestions">
+          <button class="chr-ai-ask__suggestion">Who hasn't submitted a timesheet this week?</button>
+          <button class="chr-ai-ask__suggestion">Draft a PIP for an underperforming employee</button>
+          <button class="chr-ai-ask__suggestion">Show leave balance summary for my team</button>
+        </div>
+        <div class="chr-ai-ask__input-wrap">
+          <input type="text" class="chr-ai-ask__input" placeholder="Ask your HR question..." />
+          <button class="chr-ai-ask__send"><i class="fa fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ TRUST BADGES ═════════════════════════════════════════════════════ -->
+  <div class="chr-ai-trust">
+    <div class="chr-ai-trust__item"><i class="fa fa-lock"></i> Enterprise-grade encryption</div>
+    <div class="chr-ai-trust__item"><i class="fa fa-bolt"></i> Powered by advanced LLMs</div>
+    <div class="chr-ai-trust__item"><i class="fa fa-globe"></i> Africa-first compliance</div>
+  </div>
+
+  <!-- ══ CTA ══════════════════════════════════════════════════════════════ -->
+  <section class="chr-ai-cta">
+    <h2 class="chr-ai-cta__title">Ready to put AI to work in your HR team?</h2>
+    <p class="chr-ai-cta__sub">Join thousands of HR professionals already using CleonHR AI to save hours every week.</p>
+    <a href="all-modules/core-hr-operations/signup/signup.html" class="chr-ai-cta__btn">Get started free <i class="fa fa-arrow-right"></i></a>
+  </section>
+
+  <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo"><span class="chr-footer__logo-dot"></span> CleonHR</div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#"><i class="fa fa-twitter"></i></a>
+            <a href="#"><i class="fa fa-facebook"></i></a>
+            <a href="#"><i class="fa fa-instagram"></i></a>
+            <a href="#"><i class="fa fa-youtube-play"></i></a>
+            <a href="#"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+            <li><a href="#">Roadmap</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Press</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+            <li><a href="#">Cookies</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo"><span class="chr-footer__logo-dot"></span> CleonHR</div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/navbar.js"></script>
+  <script src="js/ai.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+.rec-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  max-width: 500px;
+}
+
+.rec-card-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.rcc-cb-rec-card-header > span h3 {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.rec-card-header p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.rcc-cb-rec-card-header > span p {
+  font-size: 13px !important;
+  color: #6b7280 !important;
+}
+
+.rec-code-block {
+  background: #1e1e2e;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'DM Sans', 'Courier New', monospace;
+  font-size: 13px;
+  color: #a5b4fc;
+  line-height: 1.7;
+  overflow-x: auto;
+}
+
+.rcc-cb-rec-code-block > span {
+  font-family: 'DM Sans', 'Courier New', monospace !important;
+  font-size: 13px !important;
+  color: #a5b4fc !important;
+  line-height: 1.7 !important;
+}

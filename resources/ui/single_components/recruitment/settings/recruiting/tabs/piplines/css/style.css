@@ -1,0 +1,75 @@
+.rct-pl-rec-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-pl-rec-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.rct-pl-rec-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.rct-pl-rec-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-pl-rec-btn--primary {
+  background: #ee59a3;
+  color: #fff;
+}
+.rct-pl-list-row {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 0;
+  border-bottom: 1px solid #f0f0f0;
+  gap: 8px;
+}
+.rct-pl-list-row:last-child {
+  border-bottom: none;
+}
+.rct-pl-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rct-pl-list-row-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a2e;
+}
+.rct-pl-list-row-meta {
+  font-size: 13px;
+  color: #888;
+}
+.rct-pl-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rct-pl-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #f0f0f0;
+  color: #555;
+}
+
+.dynamic-content span {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: 'DM Sans', sans-serif !important;
+}

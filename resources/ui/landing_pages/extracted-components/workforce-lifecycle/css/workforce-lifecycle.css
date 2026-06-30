@@ -1,0 +1,354 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Workforce Lifecycle — extracted-components
+   Prefix: wl-  |  Font: DM Sans  |  Icons: FA 4.7
+   Primary: #e01d81  |  Gradient: #e21d84 → #e01d81 → #c81962
+   Odoo-ready: span overrides for t-field dynamic data
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --wl-primary:      #e01d81;
+  --wl-primary-dark: #c81962;
+  --wl-primary-grad: linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --wl-text:         #1e2638;
+  --wl-muted:        #626e82;
+  --wl-bg-light:     #f8fafc;
+  --wl-bg-white:     #ffffff;
+  --wl-border:       #edf1f6;
+  --wl-footer-bg:    #0b1320;
+  --wl-radius:       12px;
+  --wl-font:         'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--wl-font);
+  color: var(--wl-text);
+  background-color: var(--wl-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.wl-container {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.wl-hero {
+  background: var(--wl-primary-grad);
+  color: #ffffff;
+  text-align: center;
+  padding: 120px 0 90px;
+}
+.wl-hero-container { max-width: 760px; }
+
+.wl-hero-icon-wrapper {
+  background: rgba(255,255,255,.15);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+.wl-hero-icon { font-size: 24px; color: #fff; }
+
+.wl-hero-title {
+  font-size: clamp(2rem, 5vw, 42px);
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: -.5px;
+}
+.wl-hero-title span {
+  font-size: clamp(2rem, 5vw, 42px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -.5px !important;
+  color: inherit !important;
+}
+
+.wl-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .9;
+  margin-bottom: 16px;
+}
+.wl-hero-subtitle span {
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  opacity: .9 !important;
+  color: inherit !important;
+}
+
+.wl-hero-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: .85;
+  margin-bottom: 36px;
+}
+.wl-hero-desc span {
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+  opacity: .85 !important;
+  color: inherit !important;
+}
+
+/* ══ BUTTONS ══════════════════════════════════════════════════ */
+.wl-btn-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  color: var(--wl-primary);
+  text-decoration: none;
+  padding: 14px 28px;
+  border-radius: 28px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+  transition: transform .2s, box-shadow .2s;
+}
+.wl-btn-hero:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.15);
+}
+
+.wl-btn-cta {
+  display: inline-block;
+  background: #fff;
+  color: var(--wl-primary);
+  text-decoration: none;
+  padding: 12px 30px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: background-color .2s;
+}
+.wl-btn-cta:hover { background: #f8fafc; }
+
+/* ══ SECTIONS ════════════════════════════════════════════════ */
+.wl-section { padding: 70px 0; }
+.wl-bg-light { background: var(--wl-bg-light); }
+
+.wl-section-title {
+  font-size: 26px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 40px;
+  letter-spacing: -.3px;
+}
+.wl-section-title span {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.3px !important;
+  color: inherit !important;
+}
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.wl-grid { display: grid; gap: 24px; }
+.wl-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.wl-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ══ CARDS ════════════════════════════════════════════════════ */
+.wl-card {
+  background: var(--wl-bg-white);
+  border-radius: var(--wl-radius);
+  padding: 30px;
+  border: 1px solid var(--wl-border);
+  transition: box-shadow .2s;
+}
+.wl-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,.04); }
+
+.wl-card-icon-box {
+  color: var(--wl-primary);
+  font-size: 20px;
+  background: #fdf2f7;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.wl-card-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.wl-card-title span {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  color: inherit !important;
+}
+
+.wl-card-text {
+  color: var(--wl-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.wl-card-text span {
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  color: var(--wl-muted) !important;
+}
+
+/* ══ FEATURE ITEMS ════════════════════════════════════════════ */
+.wl-feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 16px;
+}
+
+.wl-feature-icon {
+  font-size: 18px;
+  color: var(--wl-primary);
+  background: #fdf2f7;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wl-feature-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.wl-feature-title span {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: inherit !important;
+}
+
+.wl-feature-text {
+  color: var(--wl-muted);
+  font-size: 14px;
+}
+.wl-feature-text span {
+  font-size: 14px !important;
+  color: var(--wl-muted) !important;
+}
+
+/* ══ BENEFIT CARDS ════════════════════════════════════════════ */
+.wl-benefit-card {
+  background: var(--wl-bg-white);
+  border: 1px solid var(--wl-border);
+  border-radius: var(--wl-radius);
+  padding: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.wl-benefit-check {
+  color: #10b981;
+  background: #e6f7f0;
+  font-size: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.wl-benefit-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.wl-benefit-title span {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: inherit !important;
+}
+
+.wl-benefit-text {
+  color: var(--wl-muted);
+  font-size: 14px;
+}
+.wl-benefit-text span {
+  font-size: 14px !important;
+  color: var(--wl-muted) !important;
+}
+
+/* ══ ADDITIONAL BENEFITS ══════════════════════════════════════ */
+.wl-additional-list {
+  max-width: 800px;
+  margin: 0 auto;
+  row-gap: 18px;
+  column-gap: 40px;
+}
+
+.wl-additional-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14.5px;
+  color: #334155;
+}
+.wl-additional-item span {
+  font-size: 14.5px !important;
+  color: #334155 !important;
+}
+
+.wl-additional-item i {
+  color: #10b981;
+  font-size: 13px;
+}
+
+/* ══ USE CASE CARDS ═══════════════════════════════════════════ */
+.wl-usecase-card { padding: 36px; }
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.wl-cta-banner {
+  background: var(--wl-primary-grad);
+  color: #fff;
+  text-align: center;
+  padding: 70px 0;
+}
+
+.wl-cta-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.wl-cta-title span {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+}
+
+.wl-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 28px;
+}
+.wl-cta-subtitle span {
+  font-size: 16px !important;
+  opacity: .9 !important;
+  color: inherit !important;
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .wl-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .wl-grid-3,
+  .wl-grid-2 { grid-template-columns: 1fr; }
+  .wl-hero-title { font-size: 32px; }
+  .wl-hero-title span { font-size: 32px !important; }
+  .wl-section { padding: 50px 0; }
+}

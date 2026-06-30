@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleonHR – Members</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="tm-body-root">
+
+  <div style="padding: 0;">
+    <h1 class="tm-page-title">Members</h1>
+    <div class="tm-card-panel">
+      <div class="tm-card-panel-header">
+        <h3 class="tm-card-panel-title">Team Members</h3>
+        <div class="tm-btn-primary btn-invite-member"><i class="fa fa-plus"></i> Invite Member</div>
+      </div>
+      <div class="tm-members-list">
+        <div class="tm-member-row">
+          <div class="tm-user-cell-info">
+            <div class="tm-avatar" style="background-color: #FCE7F3; color: #BE185D;">SC</div>
+            <div>
+              <div class="tm-user-fullname">Sarah Chen</div>
+              <div class="tm-text-muted" style="font-size:12px;">sarah.chen@cleonhr.com</div>
+            </div>
+          </div>
+          <div class="tm-member-row-pills">
+            <span class="tm-status-tag tm-status-active">Active</span>
+            <span class="tm-member-role-pill">Admin</span>
+          </div>
+        </div>
+        <div class="tm-member-row">
+          <div class="tm-user-cell-info">
+            <div class="tm-avatar" style="background-color: #FCE7F3; color: #BE185D;">MR</div>
+            <div>
+              <div class="tm-user-fullname">Michael Rodriguez</div>
+              <div class="tm-text-muted" style="font-size:12px;">michael.rodriguez@cleonhr.com</div>
+            </div>
+          </div>
+          <div class="tm-member-row-pills">
+            <span class="tm-status-tag tm-status-active">Active</span>
+            <span class="tm-member-role-pill">Recruiter</span>
+          </div>
+        </div>
+        <div class="tm-member-row">
+          <div class="tm-user-cell-info">
+            <div class="tm-avatar" style="background-color: #FCE7F3; color: #BE185D;">ET</div>
+            <div>
+              <div class="tm-user-fullname">Emily Thompson</div>
+              <div class="tm-text-muted" style="font-size:12px;">emily.thompson@cleonhr.com</div>
+            </div>
+          </div>
+          <div class="tm-member-row-pills">
+            <span class="tm-status-tag tm-status-active">Active</span>
+            <span class="tm-member-role-pill">Hiring Manager</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVITE MEMBER MODAL -->
+  <div class="tm-modal-backdrop tm-modal-backdrop--sc" id="modalInviteMemberBackdrop">
+    <div class="tm-modal-dialogue-window tm-modal-invite-member" id="modalInviteMember">
+      <div class="tm-modal-header">
+        <div class="tm-modal-header-titles">
+          <h3 class="tm-modal-heading">Invite Team Member</h3>
+          <p class="tm-modal-subheading">Grant platform workspace access to a new user segment.</p>
+        </div>
+        <div class="tm-modal-close-btn"><i class="fa fa-times"></i></div>
+      </div>
+      <div class="tm-modal-body-content">
+        <div class="tm-form-grid-2col">
+          <div class="tm-form-field">
+            <label class="tm-form-label">First Name <span class="tm-asterisk">*</span></label>
+            <input type="text" class="tm-form-input" placeholder="e.g., Jane" readonly>
+          </div>
+          <div class="tm-form-field">
+            <label class="tm-form-label">Last Name <span class="tm-asterisk">*</span></label>
+            <input type="text" class="tm-form-input" placeholder="e.g., Doe" readonly>
+          </div>
+        </div>
+        <div class="tm-form-field">
+          <label class="tm-form-label">Email Address <span class="tm-asterisk">*</span></label>
+          <input type="email" class="tm-form-input" placeholder="name@company.com" readonly>
+        </div>
+        <div class="tm-form-grid-2col">
+          <div class="tm-form-field">
+            <label class="tm-form-label">Primary Role Selection <span class="tm-asterisk">*</span></label>
+            <div class="tm-select-wrapper">
+              <select class="tm-form-select" disabled>
+                <option value="" disabled selected>Select baseline role...</option>
+                <option value="recruiter">Recruiter</option>
+                <option value="hiring-manager">Hiring Manager</option>
+                <option value="viewer">Viewer</option>
+              </select>
+              <i class="fa fa-chevron-down tm-select-caret"></i>
+            </div>
+          </div>
+          <div class="tm-form-field">
+            <label class="tm-form-label">Assign to Team Cluster</label>
+            <div class="tm-select-wrapper">
+              <select class="tm-form-select" disabled>
+                <option value="" disabled selected>Select structural team...</option>
+                <option value="engineering">Engineering Core</option>
+                <option value="growth">Growth Marketing</option>
+                <option value="success">Customer Success</option>
+              </select>
+              <i class="fa fa-chevron-down tm-select-caret"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tm-modal-footer-action-bar">
+        <div class="tm-modal-cancel tm-modal-close-btn-text">Cancel</div>
+        <div class="tm-btn-primary">Send Platform Invitation</div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

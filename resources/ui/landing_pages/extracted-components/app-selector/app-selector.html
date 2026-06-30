@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Choose Your Apps - CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/app-selector.css">
+</head>
+<body>
+
+  <main class="chr-selector-container">
+    <div class="chr-selector-layout">
+
+      <div class="chr-grid-column">
+        <div class="chr-suite-badge">
+          <i class="fa fa-th-large"></i> HR ADMINISTRATION SUITE
+        </div>
+        <h1 class="chr-main-heading">Choose Your Apps</h1>
+        <p class="chr-sub-heading">Select the modules your organization needs. You can always add or remove modules later.</p>
+
+        <div class="chr-grid-meta">
+          <span id="chr-selected-counter">12 of 12 apps selected</span>
+          <button id="chr-select-all-btn">Deselect All</button>
+        </div>
+
+        <div class="chr-apps-grid">
+
+          <!-- Employee Experience (selected) -->
+          <div class="chr-app-card selected" data-theme="pink">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fdf2f8; color: #ec4899;"><i class="fa fa-magic"></i></div>
+            <h4>Employee Experience</h4>
+            <p>Complete employee experience suite with self-service and engagement tools.</p>
+          </div>
+
+          <!-- Workforce Life-Cycle (selected) -->
+          <div class="chr-app-card selected" data-theme="teal">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f0fdfa; color: #14b8a6;"><i class="fa fa-refresh"></i></div>
+            <h4>Workforce Life-Cycle</h4>
+            <p>Employee onboarding, offboarding, master records and lifecycle management.</p>
+          </div>
+
+          <!-- Staff Directory (free, always included) -->
+          <div class="chr-app-card" data-theme="blue">
+            <span class="chr-free-pill-tag"><i class="fa fa-globe"></i> Free</span>
+            <div class="chr-card-icon-box" style="background-color: #f0f9ff; color: #3b82f6;"><i class="fa fa-users"></i></div>
+            <h4>Staff Directory</h4>
+            <p>Comprehensive employee directory with profiles, org charts and search.</p>
+            <span class="chr-always-free-text">Always included - Free forever</span>
+          </div>
+
+          <!-- Time Management (selected) -->
+          <div class="chr-app-card selected" data-theme="blue">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f0f9ff; color: #3b82f6;"><i class="fa fa-clock-o"></i></div>
+            <h4>Time Management</h4>
+            <p>Clock in/out, attendance tracking, schedules and timesheets.</p>
+          </div>
+
+          <!-- Leave Management (selected) -->
+          <div class="chr-app-card selected" data-theme="orange">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fff7ed; color: #f97316;"><i class="fa fa-calendar-check-o"></i></div>
+            <h4>Leave Management</h4>
+            <p>Leave requests, approvals, balances and policy management.</p>
+          </div>
+
+          <!-- Compensation Management (selected) -->
+          <div class="chr-app-card selected" data-theme="teal">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f0fdfa; color: #14b8a6;"><i class="fa fa-money"></i></div>
+            <h4>Compensation Management</h4>
+            <p>Salary management, payroll, bonuses and compensation planning.</p>
+          </div>
+
+          <!-- Company Calendar (selected) -->
+          <div class="chr-app-card selected" data-theme="purple">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f5f3ff; color: #8b5cf6;"><i class="fa fa-calendar"></i></div>
+            <h4>Company Calendar</h4>
+            <p>Company-wide events, announcements and team scheduling.</p>
+          </div>
+
+          <!-- Disciplinary Management (selected) -->
+          <div class="chr-app-card selected" data-theme="orange">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fff7ed; color: #f97316;"><i class="fa fa-shield"></i></div>
+            <h4>Disciplinary Management</h4>
+            <p>Manage disciplinary cases, warnings and compliance tracking.</p>
+          </div>
+
+          <!-- Health Insurance (selected) -->
+          <div class="chr-app-card selected" data-theme="pink">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fdf2f8; color: #ec4899;"><i class="fa fa-heart-o"></i></div>
+            <h4>Health Insurance</h4>
+            <p>HMO enrollment, provider management, claims and benefits tracking.</p>
+          </div>
+
+          <!-- Document Management (selected) -->
+          <div class="chr-app-card selected" data-theme="pink">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fdf2f8; color: #ec4899;"><i class="fa fa-file-text-o"></i></div>
+            <h4>Document Management</h4>
+            <p>Enterprise document repository with version control and e-signatures.</p>
+          </div>
+
+          <!-- Asset Management (selected) -->
+          <div class="chr-app-card selected" data-theme="teal">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f0fdfa; color: #14b8a6;"><i class="fa fa-cube"></i></div>
+            <h4>Asset Management</h4>
+            <p>Track company assets, assignments, maintenance and depreciation.</p>
+          </div>
+
+          <!-- Company Documentary (selected) -->
+          <div class="chr-app-card selected" data-theme="purple">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #f5f3ff; color: #8b5cf6;"><i class="fa fa-film"></i></div>
+            <h4>Company Documentary</h4>
+            <p>Video library showcasing company culture, events and achievements.</p>
+          </div>
+
+          <!-- Social Gallery (selected) -->
+          <div class="chr-app-card selected" data-theme="orange">
+            <div class="chr-card-check-indicator"><i class="fa fa-check"></i></div>
+            <div class="chr-card-icon-box" style="background-color: #fff7ed; color: #f97316;"><i class="fa fa-picture-o"></i></div>
+            <h4>Social Gallery</h4>
+            <p>Photo gallery and social feed for team engagement and culture.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <aside class="chr-sidebar-column">
+        <div class="chr-sticky-sidebar">
+          <div class="chr-sidebar-card">
+            <div class="chr-sidebar-header">
+              <h3>Your Apps</h3>
+              <span class="chr-sidebar-counter" id="chr-sidebar-badge-count">13</span>
+            </div>
+            <p class="chr-sidebar-sub">Selected modules</p>
+
+            <div class="chr-selected-stack-list" id="chr-stack-list">
+
+              <div class="chr-stack-item" data-theme="pink">
+                <i class="fa fa-magic"></i>
+                <span>Employee Experience</span>
+              </div>
+              <div class="chr-stack-item" data-theme="teal">
+                <i class="fa fa-refresh"></i>
+                <span>Workforce Life-Cycle</span>
+              </div>
+              <div class="chr-stack-item" data-theme="blue">
+                <i class="fa fa-users"></i>
+                <span>Staff Directory</span>
+                <span style="margin-left:auto; font-size:10px; opacity:0.8;">Free</span>
+              </div>
+              <div class="chr-stack-item" data-theme="blue">
+                <i class="fa fa-clock-o"></i>
+                <span>Time Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="orange">
+                <i class="fa fa-calendar-check-o"></i>
+                <span>Leave Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="teal">
+                <i class="fa fa-money"></i>
+                <span>Compensation Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="purple">
+                <i class="fa fa-calendar"></i>
+                <span>Company Calendar</span>
+              </div>
+              <div class="chr-stack-item" data-theme="orange">
+                <i class="fa fa-shield"></i>
+                <span>Disciplinary Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="pink">
+                <i class="fa fa-heart-o"></i>
+                <span>Health Insurance</span>
+              </div>
+              <div class="chr-stack-item" data-theme="pink">
+                <i class="fa fa-file-text-o"></i>
+                <span>Document Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="teal">
+                <i class="fa fa-cube"></i>
+                <span>Asset Management</span>
+              </div>
+              <div class="chr-stack-item" data-theme="purple">
+                <i class="fa fa-film"></i>
+                <span>Company Documentary</span>
+              </div>
+              <div class="chr-stack-item" data-theme="orange">
+                <i class="fa fa-picture-o"></i>
+                <span>Social Gallery</span>
+              </div>
+
+            </div>
+
+            <div class="chr-trial-notice-box">
+              <h4><i class="fa fa-bolt"></i> Free Trial</h4>
+              <p>Full access to all selected modules. No credit card required to start.</p>
+              <div class="chr-notice-line"><i class="fa fa-check-circle"></i> No setup fee</div>
+              <div class="chr-notice-line"><i class="fa fa-check-circle"></i> Cancel anytime</div>
+            </div>
+
+            <div class="chr-action-footer">
+              <p class="chr-validation-msg" id="chr-val-msg" style="display:none;">Select at least one app to continue</p>
+              <button class="chr-continue-btn" id="chr-continue-btn">
+                Continue <i class="fa fa-angle-right"></i>
+              </button>
+              <button class="chr-back-btn" id="chr-back-btn">Back</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+</body>
+</html>

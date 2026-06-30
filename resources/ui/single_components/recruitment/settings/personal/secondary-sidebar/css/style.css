@@ -1,0 +1,103 @@
+:root {
+    --cfg-primary-color: #ec4899;
+    --cfg-primary-hover: #c41860;
+    --cfg-bg-main: #ffffff;
+    --cfg-bg-body: #fafafa;
+    --cfg-text-main: #111827;
+    --cfg-text-muted: #6b7280;
+    --cfg-border-color: #e5e7eb;
+    --cfg-card-radius: 8px;
+    --cfg-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.cfg-body {
+    font-family: var(--cfg-font-stack);
+    background-color: var(--cfg-bg-body);
+    color: var(--cfg-text-main);
+    display: flex;
+    min-height: 100vh;
+}
+
+.cfg-sidebar {
+    width: 88px;
+    background-color: #ffffff;
+    border-right: 1px solid var(--cfg-border-color);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    overflow-y: auto;
+    min-height: 100vh;
+}
+
+.cfg-sidebar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 6px;
+    border-radius: 8px;
+    width: 72px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #4b5563;
+    text-align: center;
+    line-height: 1.3;
+}
+.cfg-sidebar-item span {
+    font-size: 11px !important;
+    font-weight: 500 !important;
+}
+
+.cfg-sidebar-item:hover .cfg-sidebar-icon {
+    background-color: #f3f4f6;
+}
+
+.cfg-sidebar-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: background-color 0.2s;
+    color: inherit;
+}
+
+.cfg-sidebar-item.active {
+    color: var(--cfg-primary-color);
+}
+
+.cfg-sidebar-item.active .cfg-sidebar-icon {
+    background-color: var(--cfg-primary-color);
+    color: #ffffff;
+}
+
+.cfg-sidebar-item.cfg-sidebar-subitem {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+    padding: 6px 8px;
+    width: 72px;
+}
+
+.cfg-sidebar-item.cfg-sidebar-subitem.active {
+    color: var(--cfg-primary-color);
+}
+
+.cfg-sidebar-divider {
+    height: 1px;
+    width: 56px;
+    background-color: var(--cfg-border-color);
+    margin: 8px 0;
+    flex-shrink: 0;
+}

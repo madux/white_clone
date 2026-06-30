@@ -1,0 +1,145 @@
+:root {
+    --cfg-primary-color: #e52577;
+    --cfg-primary-hover: #c41860;
+    --cfg-bg-main: #ffffff;
+    --cfg-bg-body: #fafafa;
+    --cfg-text-main: #111827;
+    --cfg-text-muted: #6b7280;
+    --cfg-border-color: #e5e7eb;
+    --cfg-card-radius: 8px;
+    --cfg-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.cfg-body {
+    font-family: var(--cfg-font-stack);
+    background-color: var(--cfg-bg-body);
+    color: var(--cfg-text-main);
+    padding: 24px;
+}
+
+.cfg-tab-container {
+    max-width: 640px;
+}
+
+.cfg-card {
+    background-color: #ffffff;
+    border: 1px solid var(--cfg-border-color);
+    border-radius: var(--cfg-card-radius);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.cfg-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--cfg-text-main);
+}
+.cfg-card-title span {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+.cfg-card-header-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.cfg-card-header-toggle .cfg-card-title {
+    margin-bottom: 0;
+}
+
+.cfg-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+}
+
+.cfg-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cfg-toggle-slider {
+    position: absolute;
+    cursor: default;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e5e7eb;
+    transition: .3s;
+    border-radius: 20px;
+}
+
+.cfg-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .cfg-toggle-slider {
+    background-color: var(--cfg-primary-color);
+}
+
+input:checked + .cfg-toggle-slider:before {
+    transform: translateX(16px);
+}
+
+.cfg-form-group {
+    margin-bottom: 18px;
+}
+
+.cfg-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--cfg-text-main);
+}
+.cfg-form-label span {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+.cfg-form-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: var(--cfg-font-stack);
+    font-size: 13px;
+    border: 1px solid var(--cfg-border-color);
+    border-radius: 6px;
+    color: var(--cfg-text-main);
+    outline: none;
+    background-color: #ffffff;
+    resize: vertical;
+}
+
+.cfg-form-textarea:focus {
+    border-color: var(--cfg-primary-color);
+}
+
+.cfg-field-hint {
+    font-size: 12px;
+    color: var(--cfg-text-muted);
+    margin-top: -8px;
+}
+.cfg-field-hint span {
+    font-size: 12px !important;
+}
