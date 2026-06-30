@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/signup.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <!-- Services dropdown -->
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <!-- Industries dropdown -->
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <a href="../../../ai.html" class="chr-nav__new-badge">
+            <i class="fa fa-bolt"></i>
+          </a>
+        </li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HEADER ════════════════════════════════════════════════════════════ -->
+  <section class="su-hero">
+    <div class="su-hero__inner">
+      <div class="su-hero__icon">
+        <i class="fa fa-bolt"></i>
+      </div>
+      <h1 class="su-hero__title">Start now, It's free</h1>
+      <p class="su-hero__sub">No credit card required &bull; Cancel anytime</p>
+    </div>
+  </section>
+
+  <!-- ══ FORM CARD ════════════════════════════════════════════════════════ -->
+  <section class="su-main">
+    <div class="su-container">
+      <div class="su-card">
+
+        <form class="su-form" id="su-form">
+
+          <!-- Section: Organization Setup -->
+          <div class="su-section" id="su-section-org">
+            <h2 class="su-section__title">Organization Setup</h2>
+            <p class="su-section__desc">Answer these questions to personalise your CleonHR experience.</p>
+
+            <div class="su-field-row">
+              <div class="su-field">
+                <label class="su-label" for="su-needs">What operational needs will this module address? <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <select class="su-select" id="su-needs" required>
+                    <option value="" disabled selected>Select an option...</option>
+                    <option value="onboarding">Employee Onboarding & Offboarding</option>
+                    <option value="payroll">Payroll & Compensation</option>
+                    <option value="attendance">Attendance & Time Tracking</option>
+                    <option value="performance">Performance Management</option>
+                    <option value="recruitment">Recruitment & Hiring</option>
+                    <option value="compliance">Compliance & Governance</option>
+                    <option value="all">Full HR Suite</option>
+                  </select>
+                  <i class="fa fa-angle-down su-select__chevron"></i>
+                </div>
+              </div>
+              <div class="su-field">
+                <label class="su-label" for="su-size">Company size: <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <select class="su-select" id="su-size" required>
+                    <option value="" disabled selected>Select company size...</option>
+                    <option value="1-10">1 – 10 employees</option>
+                    <option value="11-50">11 – 50 employees</option>
+                    <option value="51-200">51 – 200 employees</option>
+                    <option value="201-500">201 – 500 employees</option>
+                    <option value="501-1000">501 – 1,000 employees</option>
+                    <option value="1000+">1,000+ employees</option>
+                  </select>
+                  <i class="fa fa-angle-down su-select__chevron"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="su-divider"></div>
+
+          <!-- Section: Your Information -->
+          <div class="su-section" id="su-section-info">
+            <h2 class="su-section__title">Your Information</h2>
+
+            <!-- Row: First / Last -->
+            <div class="su-field-row">
+              <div class="su-field">
+                <label class="su-label" for="su-first">First Name <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <i class="fa fa-user su-input-icon"></i>
+                  <input type="text" class="su-input su-input--has-icon" id="su-first" placeholder="John" required />
+                </div>
+              </div>
+              <div class="su-field">
+                <label class="su-label" for="su-last">Last Name <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <i class="fa fa-user su-input-icon"></i>
+                  <input type="text" class="su-input su-input--has-icon" id="su-last" placeholder="Doe" required />
+                </div>
+              </div>
+            </div>
+
+            <!-- Row: Company / Country -->
+            <div class="su-field-row">
+              <div class="su-field">
+                <label class="su-label" for="su-company">Company Name <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <i class="fa fa-building su-input-icon"></i>
+                  <input type="text" class="su-input su-input--has-icon" id="su-company" placeholder="Acme Corporation" required />
+                </div>
+              </div>
+              <div class="su-field">
+                <label class="su-label" for="su-country">Country <span class="su-required">*</span></label>
+                <div class="su-input-wrap su-input-wrap--select">
+                  <i class="fa fa-globe su-input-icon"></i>
+                  <select class="su-select su-select--has-icon" id="su-country" required>
+                    <option value="" disabled selected>Select your country...</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="GH">Ghana</option>
+                    <option value="KE">Kenya</option>
+                    <option value="ZA">South Africa</option>
+                    <option value="EG">Egypt</option>
+                    <option value="ET">Ethiopia</option>
+                    <option value="TZ">Tanzania</option>
+                    <option value="UG">Uganda</option>
+                    <option value="RW">Rwanda</option>
+                    <option value="SN">Senegal</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                  <i class="fa fa-angle-down su-select__chevron"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row: Email / Password -->
+            <div class="su-field-row">
+              <div class="su-field">
+                <label class="su-label" for="su-email">Email Address <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <i class="fa fa-envelope su-input-icon"></i>
+                  <input type="email" class="su-input su-input--has-icon" id="su-email" placeholder="john@company.com" required />
+                </div>
+              </div>
+              <div class="su-field">
+                <label class="su-label" for="su-password">Password <span class="su-required">*</span></label>
+                <div class="su-input-wrap">
+                  <i class="fa fa-lock su-input-icon"></i>
+                  <input type="password" class="su-input su-input--has-icon su-input--has-toggle" id="su-password" placeholder="Min. 8 characters" required minlength="8" />
+                  <button type="button" class="su-pass-toggle" id="su-pass-toggle" aria-label="Toggle password">
+                    <i class="fa fa-eye"></i>
+                  </button>
+                </div>
+                <div class="su-pass-strength" id="su-pass-strength">
+                  <span class="su-pass-strength__bar"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row: Phone (full width) -->
+            <div class="su-field">
+              <label class="su-label" for="su-phone">Phone Number <span class="su-required">*</span></label>
+              <div class="su-phone-wrap">
+                <div class="su-phone-country">
+                  <i class="fa fa-phone su-input-icon"></i>
+                  <select class="su-select" id="su-phone-country">
+                    <option value="" disabled selected>Select a country first</option>
+                  </select>
+                  <i class="fa fa-angle-down su-select__chevron"></i>
+                </div>
+                <input type="tel" class="su-input su-input--phone" id="su-phone" placeholder="Phone number" required />
+              </div>
+            </div>
+
+            <!-- Free Trial Banner -->
+            <div class="su-trial">
+              <div class="su-trial__icon-wrap">
+                <i class="fa fa-bolt"></i>
+              </div>
+              <div class="su-trial__body">
+                <strong class="su-trial__title">Free Trial</strong>
+                <span class="su-trial__desc">Full access to all selected modules. No credit card required to start.</span>
+                <div class="su-trial__checks">
+                  <span class="su-trial__check"><i class="fa fa-check-circle"></i> No setup fee</span>
+                  <span class="su-trial__check"><i class="fa fa-check-circle"></i> Cancel anytime</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="su-terms">
+              <label class="su-checkbox">
+                <input type="checkbox" id="su-terms" required />
+                <span class="su-checkbox__mark"><i class="fa fa-check"></i></span>
+                <span class="su-checkbox__text">
+                  I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a>
+                </span>
+              </label>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="su-submit">
+              Start now, It's free
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/signup.js"></script>
+</body>
+</html>
