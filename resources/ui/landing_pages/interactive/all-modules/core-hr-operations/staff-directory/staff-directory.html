@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff Directory – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/staff-directory.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <!-- Services dropdown -->
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <!-- Industries dropdown -->
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <a href="../../../ai.html" class="chr-nav__new-badge">
+            <i class="fa fa-bolt"></i>
+          </a>
+        </li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="sd-hero">
+    <div class="sd-container sd-hero-content">
+      <div class="sd-hero-icon-wrapper">
+        <i class="fa fa-users"></i>
+      </div>
+      <h1 class="sd-hero-title">Staff Directory</h1>
+      <p class="sd-hero-subtitle">Interactive employee directory and organizational visualization</p>
+      <p class="sd-hero-desc">
+        Connect your workforce with searchable employee profiles, interactive org charts, and directory services that make finding colleagues and information effortless.
+      </p>
+      <a href="../signup/signup.html" class="sd-btn-hero-cta">Start now, it's free <i class="fa fa-arrow-right"></i></a>
+    </div>
+    <div class="sd-sun-toggle">
+      <i class="fa fa-sun-o"></i>
+    </div>
+  </section>
+
+  <!-- ══ WHO IT'S FOR ══════════════════════════════════════════════════════ -->
+  <section class="sd-section sd-bg-light">
+    <div class="sd-container">
+      <h2 class="sd-section-title">Who It's For</h2>
+      <div class="sd-grid sd-grid-3">
+        <div class="sd-card sd-center-card">
+          <div class="sd-card-icon-box">
+            <i class="fa fa-user"></i>
+          </div>
+          <h3 class="sd-card-title">All Employees</h3>
+          <p class="sd-card-text">Find colleagues and access contact information quickly.</p>
+        </div>
+        <div class="sd-card sd-center-card">
+          <div class="sd-card-icon-box">
+            <i class="fa fa-user-plus"></i>
+          </div>
+          <h3 class="sd-card-title">New Hires</h3>
+          <p class="sd-card-text">Learn organizational structure and key contacts.</p>
+        </div>
+        <div class="sd-card sd-center-card">
+          <div class="sd-card-icon-box">
+            <i class="fa fa-id-card-o"></i>
+          </div>
+          <h3 class="sd-card-title">HR Teams</h3>
+          <p class="sd-card-text">Maintain accurate organizational data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ KEY FEATURES ══════════════════════════════════════════════════════ -->
+  <section class="sd-section">
+    <div class="sd-container">
+      <h2 class="sd-section-title">Key Features</h2>
+      <div class="sd-grid sd-grid-2">
+        <div class="sd-feature-item">
+          <div class="sd-feature-icon-box">
+            <i class="fa fa-address-book"></i>
+          </div>
+          <div class="sd-feature-body">
+            <h3 class="sd-feature-title">Employee Profiles</h3>
+            <p class="sd-feature-text">Photos, contact info, skills, and reporting relationships.</p>
+          </div>
+        </div>
+        <div class="sd-feature-item">
+          <div class="sd-feature-icon-box">
+            <i class="fa fa-sitemap"></i>
+          </div>
+          <div class="sd-feature-body">
+            <h3 class="sd-feature-title">Org Chart</h3>
+            <p class="sd-feature-text">Interactive hierarchical view with zoom and navigation.</p>
+          </div>
+        </div>
+        <div class="sd-feature-item">
+          <div class="sd-feature-icon-box">
+            <i class="fa fa-search"></i>
+          </div>
+          <div class="sd-feature-body">
+            <h3 class="sd-feature-title">Advanced Search</h3>
+            <p class="sd-feature-text">Search by name, department, location, skills, and more.</p>
+          </div>
+        </div>
+        <div class="sd-feature-item">
+          <div class="sd-feature-icon-box">
+            <i class="fa fa-mobile"></i>
+          </div>
+          <div class="sd-feature-body">
+            <h3 class="sd-feature-title">Mobile Directory</h3>
+            <p class="sd-feature-text">Mobile app for on-the-go contact lookup.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOW IT HELPS ══════════════════════════════════════════════════════ -->
+  <section class="sd-section sd-bg-light">
+    <div class="sd-container">
+      <h2 class="sd-section-title">How It Helps Your Business</h2>
+      <div class="sd-grid sd-grid-2">
+        <div class="sd-benefit-card">
+          <div class="sd-benefit-header">
+            <i class="fa fa-check sd-check-icon"></i>
+            <h3 class="sd-benefit-title">Improves Collaboration</h3>
+          </div>
+          <p class="sd-benefit-text">Easy contact lookup and skill search facilitates cross-team collaboration.</p>
+        </div>
+        <div class="sd-benefit-card">
+          <div class="sd-benefit-header">
+            <i class="fa fa-check sd-check-icon"></i>
+            <h3 class="sd-benefit-title">Reduces Onboarding Time</h3>
+          </div>
+          <p class="sd-benefit-text">New hires quickly understand who's who and organizational structure.</p>
+        </div>
+        <div class="sd-benefit-card">
+          <div class="sd-benefit-header">
+            <i class="fa fa-check sd-check-icon"></i>
+            <h3 class="sd-benefit-title">Breaks Down Silos</h3>
+          </div>
+          <p class="sd-benefit-text">Directory transparency encourages connection across departments.</p>
+        </div>
+        <div class="sd-benefit-card">
+          <div class="sd-benefit-header">
+            <i class="fa fa-check sd-check-icon"></i>
+            <h3 class="sd-benefit-title">Keeps Data Current</h3>
+          </div>
+          <p class="sd-benefit-text">Self-service updates and automated sync ensure accuracy.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ADDITIONAL BENEFITS ════════════════════════════════════════════════ -->
+  <section class="sd-section">
+    <div class="sd-container">
+      <h2 class="sd-section-title">Additional Benefits</h2>
+      <div class="sd-grid sd-grid-2 sd-benefits-list-grid">
+        <ul class="sd-benefits-list">
+          <li><i class="fa fa-check"></i> Photo directory with contact details</li>
+          <li><i class="fa fa-check"></i> Reporting structure visualization</li>
+          <li><i class="fa fa-check"></i> Birthday and anniversary notifications</li>
+        </ul>
+        <ul class="sd-benefits-list">
+          <li><i class="fa fa-check"></i> Department and location filters</li>
+          <li><i class="fa fa-check"></i> Skill and expertise search</li>
+          <li><i class="fa fa-check"></i> Integration with email and chat systems</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USE CASES ═════════════════════════════════════════════════════════ -->
+  <section class="sd-section sd-bg-light">
+    <div class="sd-container">
+      <h2 class="sd-section-title">Real-World Use Cases</h2>
+      <div class="sd-grid sd-grid-2">
+        <div class="sd-card">
+          <div class="sd-card-icon-box sd-pink-light">
+            <i class="fa fa-bullhorn"></i>
+          </div>
+          <h3 class="sd-card-title-left">Remote Team Connection</h3>
+          <p class="sd-card-text-left">A distributed company increased cross-team collaboration by 40% through searchable profiles with projects, skills, and expertise.</p>
+        </div>
+        <div class="sd-card">
+          <div class="sd-card-icon-box sd-pink-light">
+            <i class="fa fa-bullhorn"></i>
+          </div>
+          <h3 class="sd-card-title-left">Matrix Organization Navigation</h3>
+          <p class="sd-card-text-left">A complex matrix organization reduced time spent finding the right person for projects by 30% using skills search and structural visualization.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA BANNER ════════════════════════════════════════════════════════ -->
+  <section class="sd-bottom-cta">
+    <div class="sd-container sd-bottom-cta-content">
+      <h2 class="sd-cta-title">Ready to Transform Your HR Operations?</h2>
+      <p class="sd-cta-subtitle">Start now for free and experience the power of Staff Directory</p>
+      <a href="../signup/signup.html" class="sd-btn-white-cta">Start Your Free Trial</a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="../../../pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/staff-directory.js"></script>
+</body>
+</html>
