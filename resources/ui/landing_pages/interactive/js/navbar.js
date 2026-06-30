@@ -17,6 +17,19 @@ function chrGetBasePath() {
   return depth > 0 ? '../'.repeat(depth) : '';
 }
 
+/* ── DETECT ACTIVE MODULE FROM URL ───────────────────────── */
+function chrDetectActiveModule() {
+  const path = window.location.pathname.replace(/\\/g, '/');
+  for (const [category, data] of Object.entries(CHR_SVC_DATA)) {
+    for (const m of data.modules) {
+      if (m.url && path.endsWith(m.url)) {
+        return { category, moduleId: m.id };
+      }
+    }
+  }
+  return null;
+}
+
 /* ── SERVICES DROPDOWN DATA ──────────────────────────────── */
 const CHR_SVC_DATA = {
   'core-hr': {
@@ -26,7 +39,7 @@ const CHR_SVC_DATA = {
     modules: [
       { id: 'hr-admin', icon: 'fa-building', iconClass: 'chr-svc-card__icon--pink', title: 'HR Administration', badge: 'core', badgeClass: 'chr-svc-card__badge--core', desc: 'Complete employee lifecycle management' },
       { id: 'workforce-lifecycle', icon: 'fa-refresh', iconClass: 'chr-svc-card__icon--blue', title: 'Workforce Lifecycle', desc: 'Onboarding, offboarding, and employee transitions', url: 'all-modules/core-hr-operations/work-force/workforce-lifecycle.html' },
-      { id: 'employee-experience', icon: 'fa-star', iconClass: 'chr-svc-card__icon--purple', title: 'Employee Experience', desc: 'Self-service portal and engagement tools' },
+      { id: 'employee-experience', icon: 'fa-star', iconClass: 'chr-svc-card__icon--purple', title: 'Employee Experience', desc: 'Self-service portal and engagement tools', url: 'all-modules/core-hr-operations/employee-experience/employee-experience.html' },
       { id: 'staff-directory', icon: 'fa-users', iconClass: 'chr-svc-card__icon--green', title: 'Staff Directory', badge: 'free', badgeClass: 'chr-svc-card__badge--free', desc: 'Employee profiles, org charts, and search' },
       { id: 'ess', icon: 'fa-th-large', iconClass: 'chr-svc-card__icon--teal', title: 'Employee Self-Service (ESS)', desc: 'Empower employees with self-service capabilities' },
       { id: 'doc-management', icon: 'fa-file-text', iconClass: 'chr-svc-card__icon--orange', title: 'Document Management', desc: 'Enterprise document repository and e-signatures' },
@@ -192,10 +205,26 @@ function initNavbar() {
         renderSvcContent(key, nav);
         svcSidebar.querySelectorAll('.chr-svc-sidebar__item').forEach(b => b.classList.remove('chr-svc--active'));
         btn.classList.add('chr-svc--active');
+        /* highlight active card if current page is in this category */
+        const detected = chrDetectActiveModule();
+        if (detected && detected.category === key) {
+          const activeCard = nav.querySelector(`.chr-svc-card[data-module="${detected.moduleId}"]`);
+          if (activeCard) activeCard.classList.add('chr-svc-card--active');
+        }
       });
     });
-    /* render default category */
-    renderSvcContent('core-hr', nav);
+    /* render default category, or auto-detect from URL */
+    const detected = chrDetectActiveModule();
+    if (detected) {
+      renderSvcContent(detected.category, nav);
+      svcSidebar.querySelectorAll('.chr-svc-sidebar__item').forEach(b => {
+        b.classList.toggle('chr-svc--active', b.dataset.category === detected.category);
+      });
+      const activeCard = nav.querySelector(`.chr-svc-card[data-module="${detected.moduleId}"]`);
+      if (activeCard) activeCard.classList.add('chr-svc-card--active');
+    } else {
+      renderSvcContent('core-hr', nav);
+    }
   }
 
   /* ── Mobile burger ── */

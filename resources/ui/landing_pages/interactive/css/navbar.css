@@ -279,6 +279,13 @@
   border-color: var(--chr-pink);
   background: var(--chr-pink-light);
 }
+.chr-svc-card--active {
+  border-color: var(--chr-pink);
+  background: var(--chr-pink-light);
+}
+.chr-svc-card--active .chr-svc-card__link {
+  color: var(--chr-pink);
+}
 
 .chr-svc-card__icon {
   width: 36px; height: 36px;
