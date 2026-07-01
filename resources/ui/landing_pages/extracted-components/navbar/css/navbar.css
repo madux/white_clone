@@ -1,0 +1,229 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Navbar — navbar.css
+   Extracted for Odoo QWeb | Font: DM Sans | Icons: FA 4.7
+   Brand gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --chr-pink:       #e01d81;
+  --chr-pink-d:     #c81962;
+  --chr-pink-light: #FFF0F7;
+  --chr-text:       #1f2937;
+  --chr-muted:      #6b7280;
+  --chr-border:     #e5e7eb;
+  --chr-max:        1200px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #fff;
+  min-height: 200vh;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ NAVBAR BASE ════════════════════════════════════════════ */
+.chr-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--chr-border);
+  transition: box-shadow .2s;
+}
+.chr-nav--scrolled { box-shadow: 0 2px 20px rgba(0,0,0,.1); }
+
+.chr-nav__inner {
+  max-width: var(--chr-max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 24px;
+  height: 58px;
+  gap: 16px;
+}
+
+/* ══ LOGO ════════════════════════════════════════════════════ */
+.chr-nav__logo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--chr-pink);
+  flex-shrink: 0;
+  justify-self: start;
+}
+.chr-nav__logo span {
+  font-weight: 800 !important;
+  font-size: 18px !important;
+  color: var(--chr-pink) !important;
+}
+.chr-nav__logo-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--chr-pink);
+  display: inline-block;
+}
+
+/* ══ NAV LINKS ═══════════════════════════════════════════════ */
+.chr-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  list-style: none;
+  justify-self: center;
+}
+.chr-nav__links li { position: relative; }
+.chr-nav__links li a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--chr-text);
+  border-radius: 7px;
+  text-decoration: none;
+  transition: background .15s, color .15s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chr-nav__links li a span {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--chr-text) !important;
+}
+.chr-nav__links li a:hover { background: #F3F4F6; color: var(--chr-pink); }
+.chr-nav__links li a:hover span { color: var(--chr-pink) !important; }
+
+.chr-nav__chevron {
+  font-size: 10px;
+  transition: transform .25s ease;
+  display: inline-block;
+}
+
+/* ══ AI BADGE — PILL ════════════════════════════════════════ */
+.chr-nav__links li a.chr-nav__new-badge {
+  background-color: #fbcfe8 !important;
+  color: #be185d !important;
+  padding: 2px 10px !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  transition: all 0.25s ease;
+}
+.chr-nav__links li a.chr-nav__new-badge span {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #be185d !important;
+}
+.chr-nav__links li a.chr-nav__new-badge:hover {
+  background: var(--chr-pink) !important;
+  color: #fff !important;
+}
+.chr-nav__links li a.chr-nav__new-badge:hover span {
+  color: #fff !important;
+}
+
+/* ══ ACTIONS (Login / Sign Up) ═══════════════════════════════ */
+.chr-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
+.chr-nav__login {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--chr-text);
+  padding: 7px 12px;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: background .15s;
+}
+.chr-nav__login span {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--chr-text) !important;
+}
+.chr-nav__login:hover { background: #F3F4F6; }
+
+.chr-btn--nav-signup {
+  background: var(--chr-pink);
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: filter .2s;
+}
+.chr-btn--nav-signup span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+.chr-btn--nav-signup:hover { filter: brightness(1.08); }
+
+/* ══ BURGER (mobile) ═════════════════════════════════════════ */
+.chr-nav__burger {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--chr-text);
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ══ DROPDOWN PANELS ═══════════════════════════════════════════ */
+.chr-nav__dropdown {
+  position: fixed;
+  top: 58px;
+  left: 0;
+  right: 0;
+  max-height: 65vh;
+  background: #fff;
+  border-bottom: 1px solid var(--chr-border);
+  box-shadow: 0 12px 40px rgba(0,0,0,.12);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s, visibility .2s, transform .2s;
+  transform: translateY(-8px);
+  z-index: 210;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .chr-nav__inner {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "burger logo actions";
+  }
+  .chr-nav__links { display: none; }
+  .chr-nav__burger { display: block; grid-area: burger; align-self: center; }
+  .chr-nav__logo  { grid-area: logo; }
+  .chr-nav__actions { grid-area: actions; }
+
+  .chr-nav__dropdown {
+    position: fixed;
+    top: 58px; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    transform: none;
+    border-radius: 0;
+    overflow-y: auto;
+    z-index: 199;
+  }
+}

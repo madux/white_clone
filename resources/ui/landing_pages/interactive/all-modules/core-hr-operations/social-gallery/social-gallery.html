@@ -3,25 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CleonHR – Enterprise HR Platform</title>
+  <title>Social Gallery – CleonHR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-  <link rel="stylesheet" href="css/main.css" />
-  <link rel="stylesheet" href="css/navbar.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/social-gallery.css" />
 </head>
 <body>
 
   <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
   <nav class="chr-nav" id="chr-nav">
     <div class="chr-nav__inner">
-      <!-- Left: logo -->
-      <a href="index.html" class="chr-nav__logo">
+      <a href="../../../index.html" class="chr-nav__logo">
         <span class="chr-nav__logo-dot"></span>CleonHR
       </a>
 
-      <!-- Centre: navigation links -->
       <ul class="chr-nav__links" id="chr-nav-links">
         <!-- Services dropdown -->
         <li data-dropdown="services">
@@ -30,7 +29,6 @@
           </a>
           <div class="chr-nav__dropdown">
             <div class="chr-svc-dropdown">
-              <!-- Left sidebar — categories -->
               <div class="chr-svc-sidebar">
                 <div class="chr-svc-sidebar__apps-label">Apps</div>
                 <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
@@ -59,25 +57,18 @@
                 </button>
               </div>
 
-              <!-- Right content area — module cards -->
               <div class="chr-svc-content">
                 <div class="chr-svc-content__header">
                   <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
                   <div class="chr-svc-content__title">Core HR Operations</div>
                   <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
                 </div>
-
-                <div class="chr-svc-cards">
-                  <!-- rendered by navbar.js -->
-                </div>
+                <div class="chr-svc-cards"></div>
               </div>
 
-              <!-- API promo panel -->
               <div class="chr-svc-api">
                 <span class="chr-svc-api__badge">New</span>
-                <div class="chr-svc-api__icon">
-                  <i class="fa fa-plug"></i>
-                </div>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
                 <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
                 <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
                 <div style="margin-top:8px;">
@@ -93,14 +84,13 @@
               </div>
             </div>
 
-            <!-- Bottom bar -->
             <div class="chr-svc-bottom">
               <div class="chr-svc-badges">
                 <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
                 <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
                 <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
               </div>
-              <a href="all-modules/core-hr-operations/signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+              <a href="../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
             </div>
           </div>
         </li>
@@ -112,7 +102,6 @@
           </a>
           <div class="chr-nav__dropdown">
             <div class="chr-ind-dropdown">
-              <!-- Left — industry cards grid -->
               <div class="chr-ind-left">
                 <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
                 <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
@@ -176,7 +165,6 @@
                 </div>
               </div>
 
-              <!-- Right — promo panel -->
               <div class="chr-ind-promo">
                 <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
                 <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
@@ -198,257 +186,187 @@
 
         <!-- AI badge -->
         <li>
-          <a href="ai.html" class="chr-nav__new-badge">
+          <a href="../../../ai.html" class="chr-nav__new-badge">
             ✦ AI
           </a>
         </li>
-
-        <!-- Pricing -->
-        <li><a href="pricing.html">Pricing</a></li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
       </ul>
 
-      <!-- Right: auth actions -->
       <div class="chr-nav__actions">
         <a href="#" class="chr-nav__login">Login</a>
-        <a href="all-modules/core-hr-operations/signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+        <a href="../signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
       </div>
 
-      <!-- Mobile burger -->
       <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
         <i class="fa fa-bars"></i>
       </button>
     </div>
   </nav>
 
-  <!-- ══ HERO ════════════════════════════════════════════════════════════ -->
-  <section class="chr-hero">
-    <div class="chr-hero__inner">
-      <div class="chr-hero__badge">
-        <i class="fa fa-star chr-hero__badge-star"></i>
-        Enterprise HR Platform
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="sg-hero">
+    <div class="sg-container sg-text-center">
+      <div class="sg-hero-icon-wrapper">
+        <i class="fa fa-camera"></i>
       </div>
-      <h1 class="chr-hero__title">
-        Welcome to CleonHR<br />Choose Your HR Modules
-      </h1>
-      <p class="chr-hero__sub">
-        Build your ideal HR ecosystem with powerful modules designed to streamline operations, automate workflows, and improve workforce productivity.
-      </p>
-      <div class="chr-hero__pills">
-        <span class="chr-pill"><i class="fa fa-bolt"></i> Lightning Fast</span>
-        <span class="chr-pill"><i class="fa fa-shield"></i> Enterprise Secure</span>
-        <span class="chr-pill"><i class="fa fa-signal"></i> Highly Scalable</span>
-      </div>
-      <a href="all-modules/core-hr-operations/app-selector/app-selector.html" class="chr-hero__cta">
-        Start now, it's free <i class="fa fa-arrow-right"></i>
-      </a>
+      <h1 class="sg-hero-title">Social Gallery</h1>
+      <p class="sg-hero-subtitle">Engaging corporate social feeds and internal photo sharing</p>
+      <p class="sg-hero-desc">Create beautiful internal social media galleries, pull employee social updates, and celebrate your company culture visually in one centralized, secure workspace.</p>
+      <a href="../signup/signup.html" class="sg-btn-primary">Start now, it's free <i class="fa fa-arrow-right"></i></a>
     </div>
   </section>
 
-  <!-- ══ STATS BAR ════════════════════════════════════════════════════════ -->
-  <div class="chr-stats">
-    <div class="chr-stats__inner">
-      <div class="chr-stat">
-        <span class="chr-stat__num">10,000+</span>
-        <span class="chr-stat__label">Active Employees Managed</span>
-      </div>
-      <div class="chr-stats__divider"></div>
-      <div class="chr-stat">
-        <span class="chr-stat__num">98.7%</span>
-        <span class="chr-stat__label">Reject Accuracy Rate</span>
-      </div>
-      <div class="chr-stats__divider"></div>
-      <div class="chr-stat">
-        <span class="chr-stat__num">4.9 <i class="fa fa-star chr-stat__star"></i></span>
-        <span class="chr-stat__label">Average Customer Rating</span>
-      </div>
-      <div class="chr-stats__divider"></div>
-      <div class="chr-stat">
-        <span class="chr-stat__num">60+</span>
-        <span class="chr-stat__label">Integrations Available</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ MODULES SECTION ══════════════════════════════════════════════════ -->
-  <section class="chr-modules-wrap">
-    <div class="chr-modules-section">
-      <h2 class="chr-section-title">Choose Your Modules</h2>
-      <p class="chr-section-sub">Select and install the modules your organization needs. Each module is packed with powerful features designed to streamline your HR operations.</p>
-
-      <div class="chr-modules-meta">
-        <div class="chr-modules-counter">
-          <div class="chr-counter-icon">
-            <i class="fa fa-cubes"></i>
-          </div>
-          <div class="chr-counter-body">
-            <div class="chr-counter-top">
-              <strong><span id="chr-installed-count">0</span> / 15 Modules Selected</strong>
-            </div>
-            <div class="chr-progress-wrap">
-              <div class="chr-progress-bar" id="chr-progress-bar"></div>
-            </div>
-          </div>
+  <!-- ══ WHO IT'S FOR ══════════════════════════════════════════════════════ -->
+  <section class="sg-section sg-bg-light">
+    <div class="sg-container">
+      <h2 class="sg-section-title sg-text-center">Who It's For</h2>
+      <div class="sg-grid-3">
+        <div class="sg-card sg-text-center">
+          <div class="sg-card-icon-pink"><i class="fa fa-bullhorn"></i></div>
+          <h3 class="sg-card-title-sm">Internal Comms</h3>
+          <p class="sg-card-text">Drive company-wide engagement with social highlights.</p>
         </div>
-        <button class="chr-btn-install-all" id="chr-install-all-btn">
-          <i class="fa fa-download"></i> Install All Modules
-        </button>
-      </div>
-
-      <div class="chr-modules-grid" id="chr-modules-grid"></div>
-
-      <p class="chr-modules-footer-note">Select the modules your organization needs to get started.</p>
-    </div>
-  </section>
-
-  <!-- ══ PRODUCTIVITY SECTION ═════════════════════════════════════════════ -->
-  <section class="chr-productivity">
-    <div class="chr-productivity__inner">
-      <h2 class="chr-prod__title">Designed to enhance productivity</h2>
-
-      <div class="chr-prod__placeholder">
-        <div class="chr-prod__placeholder-left">
-          <div class="chr-prod__blob"></div>
-          <div class="chr-prod__person">
-            <div class="chr-prod__head"></div>
-            <div class="chr-prod__body">
-              <div class="chr-prod__phone-in-hand">
-                <i class="fa fa-mobile"></i>
-              </div>
-            </div>
-          </div>
-          <div class="chr-prod__float">
-            <i class="fa fa-check-circle chr-prod__float-icon"></i>
-            <div>
-              <span class="chr-prod__float-label">Checked In</span>
-              <span class="chr-prod__float-time">9:02 AM</span>
-            </div>
-          </div>
+        <div class="sg-card sg-text-center">
+          <div class="sg-card-icon-pink"><i class="fa fa-heart"></i></div>
+          <h3 class="sg-card-title-sm">Culture Teams</h3>
+          <p class="sg-card-text">Build and preserve dynamic culture scrapbooks.</p>
         </div>
-
-        <div class="chr-prod__placeholder-right">
-          <div class="chr-att-card">
-            <div class="chr-att-card__header">
-              <span class="chr-att-card__title">Attendance Overview</span>
-              <span class="chr-att-card__date">Today, May 20, 2024</span>
-            </div>
-            <div class="chr-att-stats">
-              <div class="chr-att-stat">
-                <span class="chr-att-stat__num chr-att--green">1128</span>
-                <span class="chr-att-stat__lbl">Present</span>
-              </div>
-              <div class="chr-att-stat">
-                <span class="chr-att-stat__num chr-att--red">14</span>
-                <span class="chr-att-stat__lbl">Absent</span>
-              </div>
-              <div class="chr-att-stat">
-                <span class="chr-att-stat__num chr-att--orange">16</span>
-                <span class="chr-att-stat__lbl">Late</span>
-              </div>
-            </div>
-            <div class="chr-att-trend">
-              <span class="chr-att-trend__label">Attendance Trend</span>
-              <canvas id="chr-att-chart" height="70"></canvas>
-            </div>
-            <div class="chr-att-card__banner">
-              <span class="chr-att-card__banner-num">3</span>
-              <span>Track attendance and working hours effortlessly</span>
-            </div>
-            <div class="chr-att-card__footer">
-              <span class="chr-att-card__brand">
-                <span class="chr-att-brand-dot"></span> CleonHR
-              </span>
-              <span class="chr-att-card__welcome">Welcome back, HR Admin!</span>
-            </div>
-          </div>
+        <div class="sg-card sg-text-center">
+          <div class="sg-card-icon-pink"><i class="fa fa-globe"></i></div>
+          <h3 class="sg-card-title-sm">Remote Teams</h3>
+          <p class="sg-card-text">Keep distributed workspaces visually connected.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ══ TRUSTED BY ════════════════════════════════════════════════════════ -->
-  <section class="chr-trusted">
-    <p class="chr-trusted__label">Trusted by HR Teams Across Africa</p>
-    <div class="chr-trusted__track-wrap">
-      <div class="chr-trusted__track" id="chr-trusted-track">
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Clinix Co.</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Naicera</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Harpora</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Brightseed</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Stokes</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Avir</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Clinix Co.</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Naicera</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Harpora</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Brightseed</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Stokes</span>
-        <span class="chr-trusted__logo"><i class="fa fa-circle chr-logo-dot"></i> Avir</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ══ TESTIMONIALS ══════════════════════════════════════════════════════ -->
-  <section class="chr-testimonials">
-    <p class="chr-testimonials__eyebrow">LOVED BY HR TEAMS</p>
-    <h2 class="chr-section-title">What Our Customers Say</h2>
-    <div class="chr-testimonials__grid">
-
-      <div class="chr-tcard">
-        <div class="chr-tcard__stars">
-          <i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>
-        </div>
-        <p class="chr-tcard__body">"CleonHR transformed how we manage our 600-person workforce. Payroll that used to take 7 days now runs in 20 minutes."</p>
-        <div class="chr-tcard__author">
-          <div class="chr-tcard__avatar chr-avatar--purple">AO</div>
+  <!-- ══ KEY FEATURES ══════════════════════════════════════════════════════ -->
+  <section class="sg-section">
+    <div class="sg-container">
+      <h2 class="sg-section-title sg-text-center">Key Features</h2>
+      <div class="sg-grid-2">
+        <div class="sg-feature-item">
+          <div class="sg-feature-icon"><i class="fa fa-th-large"></i></div>
           <div>
-            <strong>Adaeze Okonkwo</strong>
-            <span>Head of People at Ranker (NIG)</span>
+            <h4 class="sg-feature-name">Visual Feeds</h4>
+            <p class="sg-feature-desc">Beautiful Pinterest-style masonry grids displaying team moments and social snapshots.</p>
           </div>
         </div>
-      </div>
-
-      <div class="chr-tcard">
-        <div class="chr-tcard__stars">
-          <i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>
-        </div>
-        <p class="chr-tcard__body">"The time and leave management modules are incredibly effective. Our managers love the real-time visibility they provide."</p>
-        <div class="chr-tcard__author">
-          <div class="chr-tcard__avatar chr-avatar--teal">AN</div>
+        <div class="sg-feature-item">
+          <div class="sg-feature-icon"><i class="fa fa-hashtag"></i></div>
           <div>
-            <strong>Amaka Nwosu</strong>
-            <span>HR Consultant at Novaflow</span>
+            <h4 class="sg-feature-name">Hashtag Campaigns</h4>
+            <p class="sg-feature-desc">Aggregate internal or external updates via specialized custom culture tags.</p>
           </div>
         </div>
-      </div>
-
-      <div class="chr-tcard">
-        <div class="chr-tcard__stars">
-          <i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star-half-o"></i>
-        </div>
-        <p class="chr-tcard__body">"From onboarding to offboarding, CleonHR handles it all. Our HR team feels self-served and empowered every single day."</p>
-        <div class="chr-tcard__author">
-          <div class="chr-tcard__avatar chr-avatar--blue">FH</div>
+        <div class="sg-feature-item">
+          <div class="sg-feature-icon"><i class="fa fa-shield"></i></div>
           <div>
-            <strong>Fatima Al-Hassan</strong>
-            <span>Group HR at BeaconTrust</span>
+            <h4 class="sg-feature-name">Smart Moderation</h4>
+            <p class="sg-feature-desc">Admin dashboards and permissions to review, approve, and curate internal content safely.</p>
+          </div>
+        </div>
+        <div class="sg-feature-item">
+          <div class="sg-feature-icon"><i class="fa fa-comment-o"></i></div>
+          <div>
+            <h4 class="sg-feature-name">Social Engagements</h4>
+            <p class="sg-feature-desc">Enrich employee connection with interactive reactions, comments, and post shares.</p>
           </div>
         </div>
       </div>
-
     </div>
   </section>
 
-  <!-- ══ CTA BANNER ═══════════════════════════════════════════════════════ -->
-  <section class="chr-cta">
-    <h2 class="chr-cta__title">Ready to transform your HR operations?</h2>
-    <p class="chr-cta__sub">Join thousands of companies that trust CleonHR to manage their most important asset — their people.</p>
-    <a href="#" class="chr-cta__btn">Start for Free</a>
+  <!-- ══ HOW IT HELPS ══════════════════════════════════════════════════════ -->
+  <section class="sg-section sg-bg-light">
+    <div class="sg-container">
+      <h2 class="sg-section-title sg-text-center">How It Helps Your Business</h2>
+      <div class="sg-grid-2">
+        <div class="sg-card sg-flex-row">
+          <div class="sg-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="sg-card-title-sm">Amplifies Inclusion</h3>
+            <p class="sg-card-text">Visually includes cross-functional and remote teams in dynamic everyday moments.</p>
+          </div>
+        </div>
+        <div class="sg-card sg-flex-row">
+          <div class="sg-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="sg-card-title-sm">Boosts Engagement</h3>
+            <p class="sg-card-text">Interactive image-centric walls increase routine communication by up to 150%.</p>
+          </div>
+        </div>
+        <div class="sg-card sg-flex-row">
+          <div class="sg-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="sg-card-title-sm">Strengthens Employer Brand</h3>
+            <p class="sg-card-text">Export safely curated cultural timelines directly onto career registration endpoints.</p>
+          </div>
+        </div>
+        <div class="sg-card sg-flex-row">
+          <div class="sg-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="sg-card-title-sm">Retains Top Talent</h3>
+            <p class="sg-card-text">Build psychological safety and strong emotional foundations through culture recognition.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <!-- ══ FOOTER ════════════════════════════════════════════════════════════ -->
+  <!-- ══ ADDITIONAL BENEFITS ════════════════════════════════════════════════ -->
+  <section class="sg-section">
+    <div class="sg-container">
+      <h2 class="sg-section-title sg-text-center">Additional Benefits</h2>
+      <div class="sg-grid-2 sg-benefits-list">
+        <div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Unlimited image uploads and storage hosting</div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Live external platform sync capabilities</div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Advanced engagement analytics</div>
+        </div>
+        <div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Native custom mobile viewing optimization</div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Smart enterprise user SSO access controls</div>
+          <div class="sg-benefit-item"><i class="fa fa-check sg-pink-check"></i> Secure role configuration frameworks</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USE CASES ═════════════════════════════════════════════════════════ -->
+  <section class="sg-section sg-bg-light">
+    <div class="sg-container">
+      <h2 class="sg-section-title sg-text-center">Real-World Use Cases</h2>
+      <div class="sg-grid-2">
+        <div class="sg-card">
+          <div class="sg-share-icon-circle"><i class="fa fa-asterisk"></i></div>
+          <h3 class="sg-card-title-md">Culture Alignment Across Continents</h3>
+          <p class="sg-card-text">A multi-regional cloud organization implemented unified #LifeAtHome channels, helping remote personnel generate 20,000 interactions and dramatically strengthening cross-border alignment.</p>
+        </div>
+        <div class="sg-card">
+          <div class="sg-share-icon-circle"><i class="fa fa-asterisk"></i></div>
+          <h3 class="sg-card-title-md">Streamlined Event Scrapbooking</h3>
+          <p class="sg-card-text">An enterprise organization transformed annual retreat planning and recap cycles, using automated hashtag streams to archive 1,500 event snapshots without internal comms overhead.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA BANNER ════════════════════════════════════════════════════════ -->
+  <section class="sg-cta-section">
+    <div class="sg-container sg-text-center">
+      <h2 class="sg-cta-title">Ready to Transform Your HR Operations?</h2>
+      <p class="sg-cta-subtitle">Start now for free and experience the power of Social Gallery</p>
+      <a href="../signup/signup.html" class="sg-btn-secondary">Start Your Free Trial</a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
   <footer class="chr-footer">
     <div class="chr-footer__inner">
       <div class="chr-footer__top">
-
         <div class="chr-footer__brand">
           <div class="chr-footer__logo">
             <span class="chr-footer__logo-dot"></span> CleonHR
@@ -462,39 +380,32 @@
             <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
           </div>
         </div>
-
         <div class="chr-footer__col">
           <h4>Product</h4>
           <ul>
             <li><a href="#">Features</a></li>
-            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="../../../pricing.html">Pricing</a></li>
             <li><a href="#">Integrations</a></li>
             <li><a href="#">Changelog</a></li>
-            <li><a href="#">Roadmap</a></li>
           </ul>
         </div>
-
         <div class="chr-footer__col">
           <h4>Company</h4>
           <ul>
             <li><a href="#">About Us</a></li>
             <li><a href="#">Blog</a></li>
             <li><a href="#">Careers</a></li>
-            <li><a href="#">Press</a></li>
             <li><a href="#">Contact</a></li>
           </ul>
         </div>
-
         <div class="chr-footer__col">
           <h4>Legal</h4>
           <ul>
             <li><a href="#">Privacy Policy</a></li>
             <li><a href="#">Terms of Service</a></li>
             <li><a href="#">Security</a></li>
-            <li><a href="#">Cookies</a></li>
           </ul>
         </div>
-
       </div>
       <div class="chr-footer__bottom">
         <div class="chr-footer__bottom-logo">
@@ -509,14 +420,7 @@
     </div>
   </footer>
 
-  <!-- ══ TOAST ════════════════════════════════════════════════════════════ -->
-  <div class="chr-toast" id="chr-toast">
-    <span class="chr-toast__dot"></span>
-    <span id="chr-toast-msg"></span>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="js/navbar.js"></script>
-  <script src="js/main.js"></script>
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/social-gallery.js"></script>
 </body>
 </html>

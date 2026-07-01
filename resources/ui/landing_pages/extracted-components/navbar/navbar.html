@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Navbar - CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/navbar.css">
+</head>
+<body>
+
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="#" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span><span>CleonHR</span>
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <!-- Services dropdown -->
+        <li data-dropdown="services">
+          <a href="#">
+            <span>Services</span> <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <!-- Dropdown panels loaded separately (services-dropdown + industries-dropdown) -->
+          </div>
+        </li>
+
+        <!-- Industries dropdown -->
+        <li data-dropdown="industries">
+          <a href="#">
+            <span>Industries</span> <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <!-- Dropdown panels loaded separately -->
+          </div>
+        </li>
+
+        <!-- AI badge -->
+        <li>
+          <a href="#" class="chr-nav__new-badge">
+            <span>✦ AI</span>
+          </a>
+        </li>
+        <li><a href="#"><span>Pricing</span></a></li>
+        <li><a href="#"><span>Contact</span></a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login"><span>Login</span></a>
+        <a href="#" class="chr-btn--nav-signup"><span>Sign Up</span></a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div style="padding:120px 24px;text-align:center;color:#6B7280;font-family:'DM Sans',sans-serif;">
+    <p style="font-size:18px;">Scroll down to see the scroll effect on the navbar.</p>
+  </div>
+
+  <script>
+    /* Scroll effect for demo */
+    var nav = document.querySelector('.chr-nav');
+    window.addEventListener('scroll', function() {
+      nav.classList.toggle('chr-nav--scrolled', window.scrollY > 20);
+    }, { passive: true });
+  </script>
+</body>
+</html>

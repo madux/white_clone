@@ -5,9 +5,9 @@
 ═══════════════════════════════════════════════════════════ */
 
 :root {
-  --sd-primary:     #d91b5c;
-  --sd-primary-d:   #be123c;
-  --sd-grad:        linear-gradient(135deg, #d91b5c 0%, #a21caf 100%);
+  --sd-primary:     #e01d81;
+  --sd-primary-d:   #c81962;
+  --sd-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
   --sd-text:        #1e293b;
   --sd-muted:       #64748b;
   --sd-bg-light:    #f8fafc;

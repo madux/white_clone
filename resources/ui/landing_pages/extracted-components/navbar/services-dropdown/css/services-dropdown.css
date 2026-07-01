@@ -36,7 +36,7 @@ body {
 .chr-svc-sidebar__apps-label {
   font-size: 14px;
   font-weight: 700;
-  color: #E91E8C;
+  color: #e01d81;
   padding: 10px 14px 8px;
   border-bottom: 2px solid #E91E8C;
   margin-bottom: 6px;
@@ -75,7 +75,7 @@ body {
 .chr-svc-sidebar__item:hover { background: #F3F4F6; }
 .chr-svc-sidebar__item.chr-svc--active {
   background: #FFF0F7;
-  color: #E91E8C;
+  color: #e01d81;
   font-weight: 600;
 }
 .chr-svc-sidebar__item.chr-svc--active span {
@@ -107,7 +107,7 @@ body {
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: #E91E8C;
+  color: #e01d81;
   margin-bottom: 4px;
 }
 .chr-svc-content__eyebrow span {
@@ -239,7 +239,7 @@ body {
 .chr-svc-card__link {
   font-size: 12px;
   font-weight: 600;
-  color: #E91E8C;
+  color: #e01d81;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -288,7 +288,7 @@ body {
   border-radius: 12px;
   background: #FDF2F8;
   display: flex; align-items: center; justify-content: center;
-  color: #E91E8C;
+  color: #e01d81;
   font-size: 20px;
   margin-bottom: 14px;
 }
