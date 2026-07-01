@@ -41,11 +41,11 @@ const CHR_SVC_DATA = {
       { id: 'workforce-lifecycle', icon: 'fa-refresh', iconClass: 'chr-svc-card__icon--blue', title: 'Workforce Lifecycle', desc: 'Onboarding, offboarding, and employee transitions', url: 'all-modules/core-hr-operations/work-force/workforce-lifecycle.html' },
       { id: 'employee-experience', icon: 'fa-star', iconClass: 'chr-svc-card__icon--purple', title: 'Employee Experience', desc: 'Self-service portal and engagement tools', url: 'all-modules/core-hr-operations/employee-experience/employee-experience.html' },
       { id: 'staff-directory', icon: 'fa-users', iconClass: 'chr-svc-card__icon--green', title: 'Staff Directory', badge: 'free', badgeClass: 'chr-svc-card__badge--free', desc: 'Employee profiles, org charts, and search', url: 'all-modules/core-hr-operations/staff-directory/staff-directory.html' },
-      { id: 'ess', icon: 'fa-th-large', iconClass: 'chr-svc-card__icon--teal', title: 'Employee Self-Service (ESS)', desc: 'Empower employees with self-service capabilities' },
-      { id: 'doc-management', icon: 'fa-file-text', iconClass: 'chr-svc-card__icon--orange', title: 'Document Management', desc: 'Enterprise document repository and e-signatures' },
-      { id: 'company-calendar', icon: 'fa-calendar', iconClass: 'chr-svc-card__icon--pink', title: 'Company Calendar', desc: 'Company-wide events and team scheduling' },
-      { id: 'company-documentary', icon: 'fa-film', iconClass: 'chr-svc-card__icon--blue', title: 'Company Documentary', desc: 'Video library for company culture and events' },
-      { id: 'social-gallery', icon: 'fa-camera', iconClass: 'chr-svc-card__icon--purple', title: 'Social Gallery', desc: 'Photo gallery and social feed for engagement' }
+      { id: 'ess', icon: 'fa-th-large', iconClass: 'chr-svc-card__icon--teal', title: 'Employee Self-Service (ESS)', desc: 'Empower employees with self-service capabilities', url: 'all-modules/core-hr-operations/employee-self-service/employee-self-service.html' },
+      { id: 'doc-management', icon: 'fa-file-text', iconClass: 'chr-svc-card__icon--orange', title: 'Document Management', desc: 'Enterprise document repository and e-signatures', url: 'all-modules/core-hr-operations/document-management/document-management.html' },
+      { id: 'company-calendar', icon: 'fa-calendar', iconClass: 'chr-svc-card__icon--pink', title: 'Company Calendar', desc: 'Company-wide events and team scheduling', url: 'all-modules/core-hr-operations/company-calendar/company-calendar.html' },
+      { id: 'company-documentary', icon: 'fa-film', iconClass: 'chr-svc-card__icon--blue', title: 'Company Documentary', desc: 'Video library for company culture and events', url: 'all-modules/core-hr-operations/company-documentary/company-documentary.html' },
+      { id: 'social-gallery', icon: 'fa-camera', iconClass: 'chr-svc-card__icon--purple', title: 'Social Gallery', desc: 'Photo gallery and social feed for engagement', url: 'all-modules/core-hr-operations/social-gallery/social-gallery.html' }
     ]
   },
   'workforce': {

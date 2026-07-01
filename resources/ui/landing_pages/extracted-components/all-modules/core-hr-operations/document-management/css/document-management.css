@@ -1,0 +1,350 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Document Management — document-management.css
+   Prefix: dm-  |  Font: DM Sans  |  Icons: FA 4.7
+   Brand gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --dm-primary:     #e01d81;
+  --dm-primary-d:   #c81962;
+  --dm-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --dm-text-dark:   #1f2937;
+  --dm-text-muted:  #4b5563;
+  --dm-bg-light:    #f9fafb;
+  --dm-border:      #e5e7eb;
+  --dm-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--dm-font);
+  color: var(--dm-text-dark);
+  background-color: #ffffff;
+  line-height: 1.5;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.dm-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.dm-text-center { text-align: center; }
+
+/* ══ SECTION ═════════════════════════════════════════════════ */
+.dm-section { padding: 70px 0; }
+.dm-bg-light { background-color: var(--dm-bg-light); }
+.dm-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 45px;
+}
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.dm-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+.dm-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+}
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.dm-hero {
+  background: var(--dm-grad);
+  color: white;
+  padding: 80px 0;
+}
+.dm-hero-icon-wrapper {
+  background: rgba(255,255,255,.2);
+  width: 60px; height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 24px;
+}
+.dm-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.dm-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.dm-hero-desc {
+  max-width: 700px;
+  margin: 0 auto 40px;
+  font-size: 16px;
+  opacity: .85;
+  line-height: 1.6;
+}
+.dm-btn-primary {
+  display: inline-block;
+  background: white;
+  color: var(--dm-primary);
+  padding: 12px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.05);
+}
+.dm-btn-primary i { margin-left: 8px; }
+.dm-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,.1);
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.dm-card {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--dm-border);
+}
+.dm-card-center { text-align: center; }
+.dm-card-icon-pink {
+  color: var(--dm-primary);
+  background-color: #fce7f3;
+  width: 45px; height: 45px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 18px;
+}
+.dm-card-title-sm {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.dm-card-title-md {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.dm-card-text {
+  font-size: 14px;
+  color: var(--dm-text-muted);
+  line-height: 1.6;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.dm-feature-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+.dm-feature-icon {
+  color: var(--dm-primary);
+  font-size: 20px;
+  margin-top: 2px;
+}
+.dm-feature-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.dm-feature-desc {
+  font-size: 14px;
+  color: var(--dm-text-muted);
+}
+
+/* ══ DASHBOARD MOCKUP ════════════════════════════════════════ */
+.dm-dashboard-mockup {
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,.03);
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  overflow: hidden;
+  margin-top: 40px;
+}
+.dm-db-sidebar {
+  background-color: #ffffff;
+  border-right: 1px solid var(--dm-border);
+  padding: 20px 10px;
+}
+.dm-db-menu-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dm-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+.dm-db-menu-item.active {
+  background-color: #fce7f3;
+  color: var(--dm-primary);
+}
+.dm-db-menu-header {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #9ca3af;
+  margin-top: 15px;
+  margin-bottom: 5px;
+  cursor: default;
+}
+.dm-db-content {
+  background-color: #fafafa;
+  padding: 25px;
+}
+.dm-db-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.dm-db-stat-card {
+  background: white;
+  padding: 15px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--dm-border);
+  display: flex;
+  flex-direction: column;
+}
+.dm-db-stat-num {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.dm-db-stat-lbl {
+  font-size: 11px;
+  color: #6b7280;
+}
+.dm-border-blue { border-top: 4px solid #3b82f6; }
+.dm-border-green { border-top: 4px solid #10b981; }
+.dm-border-orange { border-top: 4px solid #f59e0b; }
+.dm-border-purple { border-top: 4px solid #8b5cf6; }
+.dm-border-pink { border-top: 4px solid #ec4899; }
+
+.dm-db-secondary-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--dm-border);
+}
+.dm-db-charts-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 20px;
+}
+.dm-chart-container {
+  background: white;
+  border: 1px solid var(--dm-border);
+  border-radius: 8px;
+  padding: 20px;
+}
+.dm-chart-container h5 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--dm-text-muted);
+}
+.dm-pie-wrapper { max-width: 160px; margin: 0 auto; }
+
+/* ══ BENEFITS ════════════════════════════════════════════════ */
+.dm-flex-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.dm-check-icon {
+  color: #10b981;
+  background: #e6f4ea;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ══ ADDITIONAL BENEFITS ════════════════════════════════════ */
+.dm-benefits-list { max-width: 850px; margin: 0 auto; }
+.dm-benefit-item {
+  font-size: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dm-pink-check { color: var(--dm-primary); }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.dm-share-icon-circle {
+  background-color: #fce7f3;
+  color: var(--dm-primary);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.dm-cta-section {
+  background: var(--dm-grad);
+  color: white;
+  padding: 70px 0;
+}
+.dm-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.dm-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.dm-btn-secondary {
+  display: inline-block;
+  background: white;
+  color: var(--dm-primary);
+  padding: 12px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.dm-btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .dm-dashboard-mockup { grid-template-columns: 1fr; }
+  .dm-db-sidebar { display: none; }
+  .dm-grid-3, .dm-grid-2 { grid-template-columns: 1fr; }
+  .dm-db-stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .dm-db-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dm-db-charts-grid { grid-template-columns: 1fr; }
+  .dm-hero-title { font-size: 32px; }
+}
