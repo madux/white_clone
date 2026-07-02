@@ -50,7 +50,7 @@
                                 <input type="text" id="company_name" name="company_name"
                                        class="hc-input"
                                        t-att-value="form_data.get('company_name','') if form_data else company_name if company_name else ''"
-                                       placeholder="Hope Children Foundation"
+                                       placeholder="MAACHERP LIMITED"
                                        readonly="true"/>
                                 <t t-if="errors and errors.get('company_name')">
                                     <span class="hc-field-error">
@@ -66,7 +66,7 @@
                                 <input type="text" id="database_name" name="database_name"
                                        class="hc-input"
                                        t-att-value="form_data.get('database_name','') if form_data else db_name if db_name else ''"
-                                       placeholder="hope_children"
+                                       placeholder="MAACH SOFTWARE"
                                        required="required"
                                        readonly="true"/>
                                 <t t-if="errors and errors.get('database_name')">

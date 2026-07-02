@@ -19,6 +19,7 @@ class SubscriptionRequest(models.Model):
     _order = 'id desc'
 
     name = fields.Char(string='Company Name', required=True)
+    active = fields.Boolean(string='Active', default=True)
     database_name = fields.Char(string='Database Name', required=True)
     admin_user = fields.Char(string='Admin Username', required=True)
     admin_password = fields.Char(string='Admin password', required=True)

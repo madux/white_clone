@@ -91,7 +91,7 @@ class subscriptionModel(models.Model):
         for rec in self:
             if rec.licensed_subscription_ids and rec.amount_per_user: # 40 * 2 = 80
                 charge = len(rec.licensed_subscription_ids.ids) * rec.amount_per_user # 80 * 2 = 160
-                amount_to_pay = charge - amount_paid  # 160 -80= 80 
+                amount_to_pay = charge - self.amount_paid  # 160 -80= 80 
                 rec.amount_to_pay = str(amount_to_pay)
             else:
                 rec.amount_to_pay = '0' # or keep existing/default
@@ -220,7 +220,7 @@ class subscriptionModel(models.Model):
                 rec.database_name_created = True
                 _logger.info("Database %s created successfully", database_name)
                 
-                with registry(database_name).cursor() as cr:
+                with Registry(database_name).cursor() as cr:
                     env_new = api.Environment(cr, SUPERUSER_ID, {})
                     api_key = self._generate_token()
                     # ✅ Set API Key

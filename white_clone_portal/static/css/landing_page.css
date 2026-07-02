@@ -54,13 +54,16 @@
         padding: 12px 28px;
         pointer-events: none;
       }
+      .a-white {
+        color: #fff !important;
+      }
 
       .btn-skip {
         pointer-events: all;
         background: rgba(255, 255, 255, .18);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, .35);
-        color: #fff;
+        color: #fff !important;
         padding: 8px 18px;
         border-radius: 30px;
         font-family: 'DM Sans', sans-serif;

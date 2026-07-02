@@ -24,11 +24,11 @@ _logger = logging.getLogger(__name__)
 # Configuration – adjust to match your licence server
 # ─────────────────────────────────────────────────────────────────────────────
 LICENSE_SERVER_URL = "http://localhost:8072"   # URL of the Odoo instance that holds my_license_db
-LICENSE_DB         = "hope_children"
+LICENSE_DB         = "whiteclone"
 LICENSE_DB_USER    = "admin"
 LICENSE_DB_PASSWORD = "admin"
 
-TARGET_DB          = "hope_children"           # the client database this portal serves
+TARGET_DB          = "whiteclone"           # the client database this portal serves
 TARGET_DB_URL      = f"/web?db={TARGET_DB}"
 
 
@@ -120,35 +120,41 @@ class LicensePortal(http.Controller):
 
         # 🔥 STEP 3: lock DB in session
         request.session.db = db_name
-
-        subscription = _fetch_subscription(db_name)
-
-        if not subscription:
-            return request.redirect('/maacherp/register')
-
-        end_date_raw = subscription.get('subscription_end_date')
-
-        if end_date_raw:
-            end_date = (
-                datetime.strptime(end_date_raw, '%Y-%m-%d').date()
-                if isinstance(end_date_raw, str)
-                else end_date_raw
-            )
-            expired = end_date < date.today()
+        if db_name in [LICENSE_DB]:
+            return request.render('cleon_license.maacherp_login_page', {
+                'db_name': db_name,
+                'company_name': LICENSE_DB, # subscription.get('company_name')
+            })
         else:
-            expired = True
+            subscription = _fetch_subscription(db_name)
+            
+            if not subscription:
+                return request.redirect('/maacherp/register')
 
-        if expired or not subscription.get('active'):
-            return request.redirect('/maacherp/expired')
 
-        # 🔥 if already logged in → go to Odoo web
-        if request.session.uid:
-            return request.redirect(f"/web")
+            end_date_raw = subscription.get('subscription_end_date')
 
-        return request.render('cleon_license.maacherp_login_page', {
-            'db_name': db_name,
-            'company_name': subscription.get('company_name')
-        })
+            if end_date_raw:
+                end_date = (
+                    datetime.strptime(end_date_raw, '%Y-%m-%d').date()
+                    if isinstance(end_date_raw, str)
+                    else end_date_raw
+                )
+                expired = end_date < date.today()
+            else:
+                expired = True
+
+            if expired or not subscription.get('active'):
+                return request.redirect('/maacherp/expired')
+
+            # 🔥 if already logged in → go to Odoo web
+            if request.session.uid:
+                return request.redirect(f"/maacherp/landing")
+
+            return request.render('cleon_license.maacherp_login_page', {
+                'db_name': db_name,
+                'company_name': subscription.get('company_name')
+            })
         
     @http.route('/maacherp/autologin', type='http', auth='public', csrf=False)
     def autologin(self, **post):
@@ -416,7 +422,7 @@ class LicensePortal(http.Controller):
     
 
     # ── Custom landing page (replaces home) ───────────────────────────────
-    @http.route('/maacherp/landing', type='http', auth='user', website=False)
+    @http.route('/maacherp/landing', type='http', auth='none', website=False)
     def custom_landing_page(self, **kwargs):
         user = request.env.user
  
