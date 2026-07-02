@@ -1,0 +1,81 @@
+:root {
+    --comp-primary-color: #e52577;
+    --comp-bg-body: #fafafa;
+    --comp-text-main: #111827;
+    --comp-text-muted: #6b7280;
+    --comp-border-color: #e5e7eb;
+    --comp-card-radius: 12px;
+    --comp-font-stack: 'DM Sans', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.comp-body {
+    font-family: var(--comp-font-stack);
+    background-color: var(--comp-bg-body);
+    color: var(--comp-text-main);
+    padding: 24px;
+}
+
+.comp-tab-container {
+    max-width: 640px;
+}
+
+.comp-card {
+    background-color: #ffffff;
+    border: 1px solid var(--comp-border-color);
+    border-radius: var(--comp-card-radius);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.comp-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--comp-text-main);
+}
+.comp-card-title span {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+}
+
+.comp-form-group {
+    margin-bottom: 18px;
+}
+
+.comp-form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--comp-text-main);
+}
+.comp-form-label span {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+}
+
+.comp-required {
+    color: var(--comp-primary-color);
+}
+
+.comp-form-input, .comp-form-select {
+    width: 100%;
+    padding: 10px 14px;
+    font-family: var(--comp-font-stack);
+    font-size: 13px;
+    border: 1px solid var(--comp-border-color);
+    border-radius: 6px;
+    color: var(--comp-text-main);
+    outline: none;
+    background-color: #ffffff;
+}
+
+.comp-form-input:focus, .comp-form-select:focus {
+    border-color: var(--comp-primary-color);
+}

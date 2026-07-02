@@ -1,0 +1,447 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Pricing Page — pricing.css
+   Prefix: chr-pr-
+   Font: DM Sans | Icons: Font Awesome 4.7
+   Primary: #e01d81
+═══════════════════════════════════════════════════════════ */
+
+/* ── PAGE HERO ═════════════════════════════════════════════ */
+.chr-pr-hero {
+  background: var(--chr-pink-grad);
+  padding: 120px 24px 60px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.chr-pr-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,255,255,.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.chr-pr-hero__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.chr-pr-hero__title {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 14px;
+}
+.chr-pr-hero__sub {
+  color: rgba(255,255,255,.88);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+/* ── MODULE TABS ═══════════════════════════════════════════ */
+.chr-pr-tabs-wrap {
+  background: #fff;
+  border-bottom: 1px solid var(--chr-border);
+  padding: 0 24px;
+}
+.chr-pr-tabs {
+  max-width: var(--chr-max);
+  margin: 0 auto;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chr-pr-tabs::-webkit-scrollbar { display: none; }
+
+.chr-pr-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 14px 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--chr-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s;
+}
+.chr-pr-tab:hover { color: var(--chr-text); }
+.chr-pr-tab.chr-pr--active {
+  color: #fff;
+  background: var(--chr-pink);
+  border-radius: 8px 8px 0 0;
+  border-bottom-color: var(--chr-pink);
+  font-weight: 600;
+}
+.chr-pr-tab .fa { font-size: 12px; }
+
+/* ── BILLING TOGGLE ════════════════════════════════════════ */
+.chr-pr-billing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px 8px;
+}
+.chr-pr-billing__label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--chr-muted);
+  cursor: pointer;
+  transition: color .2s;
+}
+.chr-pr-billing__label.chr-pr--active { color: var(--chr-text); font-weight: 600; }
+
+.chr-pr-billing__toggle {
+  width: 44px; height: 24px;
+  border-radius: 12px;
+  background: #D1D5DB;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background .2s;
+  padding: 0;
+}
+.chr-pr-billing__toggle.chr-pr--yearly { background: var(--chr-pink); }
+.chr-pr-billing__toggle-knob {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+.chr-pr-billing__toggle.chr-pr--yearly .chr-pr-billing__toggle-knob {
+  transform: translateX(20px);
+}
+
+.chr-pr-billing__save {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10B981;
+  background: #ECFDF5;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* ── PRICING SECTION ═══════════════════════════════════════ */
+.chr-pr-section {
+  background: var(--chr-body);
+  padding: 48px 24px 72px;
+}
+.chr-pr-section__inner {
+  max-width: var(--chr-max);
+  margin: 0 auto;
+}
+.chr-pr-section__title {
+  text-align: center;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 800;
+  color: var(--chr-text);
+  margin-bottom: 6px;
+}
+.chr-pr-section__sub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--chr-muted);
+  margin-bottom: 36px;
+}
+
+/* tier grid */
+.chr-pr-tiers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 72px;
+}
+
+/* tier card */
+.chr-pr-tier {
+  background: #fff;
+  border: 1px solid var(--chr-border);
+  border-radius: var(--chr-radius);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--chr-shadow);
+  transition: transform .2s, box-shadow .2s;
+  position: relative;
+}
+.chr-pr-tier:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.12); }
+
+.chr-pr-tier--popular {
+  border-color: var(--chr-pink);
+  box-shadow: 0 0 0 2px rgba(233,30,140,.12), 0 8px 32px rgba(0,0,0,.1);
+}
+
+.chr-pr-tier__badge {
+  position: absolute;
+  top: -1px; right: 24px;
+  background: var(--chr-pink);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 0 0 8px 8px;
+  letter-spacing: .3px;
+}
+
+.chr-pr-tier__name {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--chr-text);
+  margin-bottom: 2px;
+}
+.chr-pr-tier__subtitle {
+  font-size: 12px;
+  color: var(--chr-muted);
+  margin-bottom: 16px;
+}
+.chr-pr-tier__price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--chr-text);
+  margin-bottom: 2px;
+}
+.chr-pr-tier__period {
+  font-size: 12px;
+  color: var(--chr-muted);
+  margin-bottom: 20px;
+}
+
+.chr-pr-tier__btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  transition: filter .2s, transform .15s;
+  letter-spacing: .5px;
+}
+.chr-pr-tier__btn:hover { filter: brightness(1.06); }
+.chr-pr-tier__btn:active { transform: scale(.98); }
+
+.chr-pr-tier__btn--outline {
+  background: #fff;
+  color: var(--chr-text);
+  border: 1.5px solid var(--chr-border);
+}
+.chr-pr-tier__btn--primary {
+  background: var(--chr-pink);
+  color: #fff;
+  border: none;
+}
+
+.chr-pr-tier__divider {
+  width: 100%;
+  height: 1px;
+  background: var(--chr-border);
+  margin: 20px 0;
+}
+
+.chr-pr-tier__features-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--chr-text);
+  margin-bottom: 12px;
+}
+.chr-pr-tier__features-label span {
+  color: var(--chr-muted);
+  font-weight: 400;
+}
+
+.chr-pr-tier__features {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+.chr-pr-tier__features li {
+  font-size: 12.5px;
+  color: #374151;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+.chr-pr-tier__features li .fa {
+  color: var(--chr-pink);
+  font-size: 11px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+.chr-pr-tier__features--extra {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--chr-border);
+}
+.chr-pr-tier__features--extra .fa { color: var(--chr-pink); }
+
+.chr-pr-tier__note {
+  font-size: 11px;
+  color: var(--chr-pink);
+  font-style: italic;
+  margin-top: 14px;
+}
+
+/* ── FAQ SECTION ═══════════════════════════════════════════ */
+.chr-pr-faq {
+  background: #fff;
+  padding: 72px 24px;
+}
+.chr-pr-faq__inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.chr-pr-faq__icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--chr-pink-light);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+}
+.chr-pr-faq__icon .fa { font-size: 18px; color: var(--chr-pink); }
+
+.chr-pr-faq__title {
+  text-align: center;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--chr-text);
+  margin-bottom: 6px;
+}
+.chr-pr-faq__sub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--chr-muted);
+  margin-bottom: 36px;
+}
+
+/* accordion */
+.chr-pr-faq__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 48px;
+}
+
+.chr-pr-faq-item {
+  border: 1px solid var(--chr-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.chr-pr-faq-item.chr-pr--open { border-color: #D1D5DB; }
+
+.chr-pr-faq-item__question {
+  width: 100%;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--chr-text);
+  text-align: left;
+}
+.chr-pr-faq-item__question:hover { background: #FAFAFA; }
+
+.chr-pr-faq-item__chevron {
+  font-size: 12px;
+  color: var(--chr-muted);
+  transition: transform .25s ease;
+  flex-shrink: 0;
+}
+.chr-pr-faq-item.chr-pr--open .chr-pr-faq-item__chevron {
+  transform: rotate(180deg);
+}
+
+.chr-pr-faq-item__answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease, padding .3s ease;
+}
+.chr-pr-faq-item.chr-pr--open .chr-pr-faq-item__answer {
+  max-height: 200px;
+  padding: 0 20px 16px;
+}
+.chr-pr-faq-item__answer p {
+  font-size: 13px;
+  color: var(--chr-muted);
+  line-height: 1.7;
+}
+
+/* ── CTA SECTION ═══════════════════════════════════════════ */
+.chr-pr-cta {
+  background: var(--chr-pink-light);
+  border-radius: 16px;
+  padding: 40px 28px;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.chr-pr-cta__title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--chr-text);
+  margin-bottom: 8px;
+}
+.chr-pr-cta__sub {
+  font-size: 13px;
+  color: var(--chr-muted);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.chr-pr-cta__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.chr-pr-cta__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter .2s;
+}
+.chr-pr-cta__btn--primary {
+  background: var(--chr-pink);
+  color: #fff;
+  border: none;
+}
+.chr-pr-cta__btn--primary:hover { filter: brightness(1.08); }
+.chr-pr-cta__btn--outline {
+  background: #fff;
+  color: var(--chr-text);
+  border: 1px solid var(--chr-border);
+}
+.chr-pr-cta__btn--outline:hover { background: #F9FAFB; }
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .chr-pr-tiers { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+}

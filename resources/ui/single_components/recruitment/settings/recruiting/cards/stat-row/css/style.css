@@ -1,0 +1,52 @@
+.rec-stats-row {
+  display: flex;
+  font-family: 'DM Sans', sans-serif;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 500px;
+}
+
+.rec-stat-cell {
+  flex: 1;
+  padding: 16px 12px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+}
+
+.rec-stat-cell:last-child {
+  border-right: none;
+}
+
+.rec-stat-cell:first-child {
+  border-radius: 10px 0 0 10px;
+}
+
+.rec-stat-cell:last-child {
+  border-radius: 0 10px 10px 0;
+}
+
+.rec-stat-num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 2px;
+}
+
+.rcc-sr-rec-stat-num > span {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.rec-stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.rcc-sr-rec-stat-label > span {
+  font-size: 12px !important;
+  color: #6b7280 !important;
+  font-weight: 500 !important;
+}

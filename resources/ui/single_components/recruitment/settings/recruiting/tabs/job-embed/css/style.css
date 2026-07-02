@@ -1,0 +1,37 @@
+.rct-je-rec-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-je-rec-card-header {
+  margin-bottom: 16px;
+}
+.rct-je-rec-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.rct-je-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.rct-je-code-block {
+  background: #1a1a2e;
+  padding: 20px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.8;
+  color: #e8e8e8;
+  overflow-x: auto;
+}
+
+.dynamic-content span {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: 'DM Sans', sans-serif !important;
+}

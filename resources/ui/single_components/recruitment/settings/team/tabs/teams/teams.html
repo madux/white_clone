@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleonHR – Teams</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="tm-body-root">
+
+  <div style="padding: 0;">
+    <h1 class="tm-page-title">Teams</h1>
+    <div class="tm-content-toolbar">
+      <div class="tm-toolbar-left">
+        <div class="tm-search-wrapper">
+          <i class="fa fa-search tm-search-icon"></i>
+          <input type="text" class="tm-search-input" placeholder="Search teams or descriptions..." readonly>
+        </div>
+      </div>
+      <div class="tm-toolbar-right">
+        <div class="tm-btn-secondary" id="btnOpenCreateTeam"><i class="fa fa-plus-circle"></i> Create Team</div>
+        <div class="tm-btn-primary btn-invite-member"><i class="fa fa-user-plus"></i> Invite Member</div>
+      </div>
+    </div>
+    <div class="tm-table-responsive-container">
+      <table class="tm-data-table">
+        <thead>
+          <tr>
+            <th style="width: 250px;">Team Name</th>
+            <th>Description</th>
+            <th style="width: 140px;">Members Count</th>
+            <th style="width: 120px;">Created Date</th>
+            <th style="width: 80px; text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="teamsTableBody">
+          <tr>
+            <td>
+              <div class="tm-team-identity">
+                <span class="tm-team-color-badge" style="background-color: #8B5CF6;"></span>
+                <span class="tm-team-name-text">Engineering Core</span>
+              </div>
+            </td>
+            <td><span class="tm-text-muted-desc">Primary product development engineers, infrastructure owners, and system architects.</span></td>
+            <td>
+              <div class="tm-avatar-pile">
+                <span class="tm-pile-count">14 Members</span>
+              </div>
+            </td>
+            <td><span class="tm-date-stamp">May 12, 2025</span></td>
+            <td style="text-align: center;">
+              <div class="tm-row-action-trigger"><i class="fa fa-ellipsis-v"></i></div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="tm-team-identity">
+                <span class="tm-team-color-badge" style="background-color: #EF4444;"></span>
+                <span class="tm-team-name-text">Growth Marketing</span>
+              </div>
+            </td>
+            <td><span class="tm-text-muted-desc">Acquisition funnels execution, analytics monitoring, SEO updates, and pipeline optimization squads.</span></td>
+            <td>
+              <div class="tm-avatar-pile">
+                <span class="tm-pile-count">6 Members</span>
+              </div>
+            </td>
+            <td><span class="tm-date-stamp">Feb 18, 2026</span></td>
+            <td style="text-align: center;">
+              <div class="tm-row-action-trigger"><i class="fa fa-ellipsis-v"></i></div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="tm-team-identity">
+                <span class="tm-team-color-badge" style="background-color: #10B981;"></span>
+                <span class="tm-team-name-text">Customer Success</span>
+              </div>
+            </td>
+            <td><span class="tm-text-muted-desc">Enterprise client account management, direct escalation response, and global tier support ops.</span></td>
+            <td>
+              <div class="tm-avatar-pile">
+                <span class="tm-pile-count">9 Members</span>
+              </div>
+            </td>
+            <td><span class="tm-date-stamp">Jun 04, 2026</span></td>
+            <td style="text-align: center;">
+              <div class="tm-row-action-trigger"><i class="fa fa-ellipsis-v"></i></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</body>
+</html>

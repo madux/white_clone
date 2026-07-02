@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Scheduling Link</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="rec-modal-overlay rec-modal--open">
+    <div class="rec-modal rec-modal--narrow">
+      <div class="rec-modal-header rec-modal-header--pink">
+        <span class="rec-modal-title">Create Scheduling Link</span>
+        <button class="rec-modal-close">&times;</button>
+      </div>
+      <div class="rec-modal-body">
+        <div class="rec-form-group">
+          <label class="rec-label rec-label-required">Link Name</label>
+          <input class="rec-input rcm-csl-input" type="text" placeholder="e.g., Technical Interview" />
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label rec-label-required">URL</label>
+          <input class="rec-input rcm-csl-input" type="text" placeholder="e.g., https://cal.com/company/tech-interview" />
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label">Duration</label>
+          <div class="rec-select-wrap">
+            <select class="rec-select rcm-csl-select">
+              <option>30 minutes</option>
+              <option>45 minutes</option>
+              <option>60 minutes</option>
+              <option>90 minutes</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="rec-modal-footer">
+        <button class="rec-btn rec-btn--ghost">Cancel</button>
+        <button class="rec-btn rec-btn--primary">Create Link</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

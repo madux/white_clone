@@ -1,0 +1,410 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR App Selector — extracted-components
+   Prefix: chr-  |  Font: DM Sans  |  Icons: FA 4.7
+   Odoo-ready: span overrides for t-field dynamic data
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ APP SELECTOR LAYOUT ═════════════════════════════════════ */
+.chr-selector-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 120px 40px 80px;
+}
+
+.chr-selector-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 48px;
+  align-items: start;
+}
+
+/* ══ BADGE / HEADINGS ════════════════════════════════════════ */
+.chr-suite-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fce7f3;
+  color: #d92174;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+.chr-suite-badge span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  color: #d92174 !important;
+}
+.chr-main-heading {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+.chr-main-heading span {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+.chr-sub-heading {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 32px;
+}
+.chr-sub-heading span {
+  font-size: 14px !important;
+  color: #64748b !important;
+}
+
+/* ══ GRID META ROW ═══════════════════════════════════════════ */
+.chr-grid-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+#chr-selected-counter {
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+}
+#chr-selected-counter span {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+#chr-select-all-btn {
+  background: none;
+  border: none;
+  color: #d92174;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#chr-select-all-btn:hover { text-decoration: underline; }
+
+/* ══ APP CARDS GRID ══════════════════════════════════════════ */
+.chr-apps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.chr-app-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  min-height: 165px;
+}
+.chr-app-card:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+/* ══ CHECK INDICATOR ═════════════════════════════════════════ */
+.chr-card-check-indicator {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: transparent;
+  transition: all 0.15s ease;
+}
+
+.chr-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.chr-app-card h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+.chr-app-card h4 span {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+.chr-app-card p {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+.chr-app-card p span {
+  font-size: 12px !important;
+  color: #64748b !important;
+  line-height: 1.5 !important;
+}
+
+/* ══ FREE PILL ═══════════════════════════════════════════════ */
+.chr-free-pill-tag {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background-color: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.chr-free-pill-tag span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #15803d !important;
+}
+.chr-always-free-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.chr-always-free-text span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #16a34a !important;
+}
+
+/* ══ SELECTED STATES (per theme) ═════════════════════════════ */
+.chr-app-card.selected[data-theme="pink"]   { border-color: #ec4899; background-color: #fffafc; }
+.chr-app-card.selected[data-theme="pink"]   .chr-card-check-indicator { background-color: #ec4899; color: #fff; border-color: #ec4899; }
+
+.chr-app-card.selected[data-theme="teal"]   { border-color: #14b8a6; background-color: #f0fdfa; }
+.chr-app-card.selected[data-theme="teal"]   .chr-card-check-indicator { background-color: #14b8a6; color: #fff; border-color: #14b8a6; }
+
+.chr-app-card.selected[data-theme="blue"]   { border-color: #3b82f6; background-color: #f0f9ff; }
+.chr-app-card.selected[data-theme="blue"]   .chr-card-check-indicator { background-color: #3b82f6; color: #fff; border-color: #3b82f6; }
+
+.chr-app-card.selected[data-theme="orange"] { border-color: #f97316; background-color: #fff7ed; }
+.chr-app-card.selected[data-theme="orange"] .chr-card-check-indicator { background-color: #f97316; color: #fff; border-color: #f97316; }
+
+.chr-app-card.selected[data-theme="purple"] { border-color: #8b5cf6; background-color: #f5f3ff; }
+.chr-app-card.selected[data-theme="purple"] .chr-card-check-indicator { background-color: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+
+/* ══ RIGHT SIDEBAR ═══════════════════════════════════════════ */
+.chr-sticky-sidebar {
+  position: sticky;
+  top: 144px;
+}
+.chr-sidebar-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+.chr-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.chr-sidebar-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+.chr-sidebar-header h3 span {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+.chr-sidebar-counter {
+  background-color: #d92174;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.chr-sidebar-counter span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+.chr-sidebar-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 20px;
+}
+.chr-sidebar-sub span {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+}
+
+/* ══ STACK LIST ══════════════════════════════════════════════ */
+.chr-selected-stack-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.chr-stack-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.chr-stack-item span {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+/* Stack item theme backgrounds */
+.chr-stack-item[data-theme="pink"]   { background-color: #fdf2f8; color: #9d174d; }
+.chr-stack-item[data-theme="teal"]   { background-color: #f0fdfa; color: #115e59; }
+.chr-stack-item[data-theme="blue"]   { background-color: #f0f9ff; color: #1e40af; }
+.chr-stack-item[data-theme="orange"] { background-color: #fff7ed; color: #9a3412; }
+.chr-stack-item[data-theme="purple"] { background-color: #f5f3ff; color: #5b21b6; }
+
+/* ══ TRIAL NOTICE ════════════════════════════════════════════ */
+.chr-trial-notice-box {
+  background-color: #fdf2f8;
+  border: 1px dashed #fbcfe8;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.chr-trial-notice-box h4 {
+  font-size: 12px;
+  font-weight: 700;
+  color: #d92174;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chr-trial-notice-box h4 span {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: #d92174 !important;
+}
+.chr-trial-notice-box p {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+.chr-trial-notice-box p span {
+  font-size: 11px !important;
+  color: #64748b !important;
+  line-height: 1.4 !important;
+}
+.chr-notice-line {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.chr-notice-line span {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+}
+.chr-notice-line i { color: #ec4899; }
+
+/* ══ ACTION FOOTER ═══════════════════════════════════════════ */
+.chr-action-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+.chr-validation-msg {
+  font-size: 11px;
+  color: #64748b;
+  display: block;
+}
+.chr-continue-btn {
+  width: 100%;
+  background-color: #d92174;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+.chr-continue-btn:hover:not(:disabled) { background-color: #bc1661; }
+.chr-continue-btn:disabled {
+  background-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.chr-back-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.chr-back-btn:hover { color: #1e293b; }
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .chr-selector-layout { grid-template-columns: 1fr; gap: 32px; }
+  .chr-apps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .chr-apps-grid { grid-template-columns: 1fr; }
+}

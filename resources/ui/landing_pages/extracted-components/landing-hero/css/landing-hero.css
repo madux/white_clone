@@ -1,0 +1,166 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Landing Hero — landing-hero.css
+   Extracted for Odoo QWeb | Font: DM Sans | Icons: FA 4.7
+   Primary: #E91E8C
+═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #F8F9FA;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.chr-hero {
+  position: relative;
+  background: linear-gradient(135deg, #E91E8C 0%, #f06292 55%, #ff8a65 100%);
+  padding: 140px 24px 80px;
+  text-align: center;
+  overflow: hidden;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chr-hero__inner {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* badge */
+.chr-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 24px;
+  margin-bottom: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.chr-hero__badge span {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+.chr-hero__badge-star {
+  font-size: 12px;
+  color: #FFD700;
+}
+
+/* title */
+.chr-hero__title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 18px;
+}
+.chr-hero__title span {
+  font-size: clamp(2rem, 5vw, 3.2rem) !important;
+  font-weight: 800 !important;
+  color: #fff !important;
+  line-height: 1.15 !important;
+}
+
+/* subtitle */
+.chr-hero__sub {
+  font-size: clamp(15px, 2vw, 17px);
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 540px;
+  margin: 0 auto 28px;
+  line-height: 1.7;
+}
+.chr-hero__sub span {
+  font-size: clamp(15px, 2vw, 17px) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  line-height: 1.7 !important;
+}
+
+/* pills */
+.chr-hero__pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.chr-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 24px;
+}
+.chr-pill span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #fff !important;
+}
+.chr-pill .fa {
+  font-size: 12px;
+  color: #FFD700;
+}
+
+/* CTA */
+.chr-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: #E91E8C;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 16px 32px;
+  border-radius: 10px;
+  text-decoration: none;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+.chr-hero__cta span {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #E91E8C !important;
+}
+.chr-hero__cta:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  transform: translateY(-2px);
+}
+.chr-hero__cta .fa {
+  font-size: 13px;
+  transition: transform 0.2s;
+}
+.chr-hero__cta:hover .fa {
+  transform: translateX(3px);
+}
+
+/* ══ RESPONSIVE ════════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .chr-hero {
+    padding: 100px 20px 60px;
+    min-height: auto;
+  }
+  .chr-hero__pills { gap: 10px; }
+  .chr-hero__cta { padding: 14px 24px; font-size: 14px; }
+}

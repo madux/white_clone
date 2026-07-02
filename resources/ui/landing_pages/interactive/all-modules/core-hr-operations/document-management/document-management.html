@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Management – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/document-management.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <!-- Services dropdown -->
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <!-- Industries dropdown -->
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <!-- AI badge -->
+        <li>
+          <a href="../../../ai.html" class="chr-nav__new-badge">
+            ✦ AI
+          </a>
+        </li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="dm-hero">
+    <div class="dm-container dm-text-center">
+      <div class="dm-hero-icon-wrapper">
+        <i class="fa fa-file-text"></i>
+      </div>
+      <h1 class="dm-hero-title">Document Management</h1>
+      <p class="dm-hero-subtitle">Enterprise document repository with intelligent organization</p>
+      <p class="dm-hero-desc">Centralize all HR documents with secure storage, version control, and intelligent search that makes finding and managing documents effortless.</p>
+      <a href="../signup/signup.html" class="dm-btn-primary">Start now, it's free <i class="fa fa-arrow-right"></i></a>
+    </div>
+  </section>
+
+  <!-- ══ WHO IT'S FOR ══════════════════════════════════════════════════════ -->
+  <section class="dm-section dm-bg-light">
+    <div class="dm-container">
+      <h2 class="dm-section-title dm-text-center">Who It's For</h2>
+      <div class="dm-grid-3">
+        <div class="dm-card dm-card-center">
+          <div class="dm-card-icon-pink"><i class="fa fa-users"></i></div>
+          <h3 class="dm-card-title-sm">HR Teams</h3>
+          <p class="dm-card-text">Store and manage employee files and company documents.</p>
+        </div>
+        <div class="dm-card dm-card-center">
+          <div class="dm-card-icon-pink"><i class="fa fa-user"></i></div>
+          <h3 class="dm-card-title-sm">Employees</h3>
+          <p class="dm-card-text">Access personal documents and clear paper cluttered systems.</p>
+        </div>
+        <div class="dm-card dm-card-center">
+          <div class="dm-card-icon-pink"><i class="fa fa-shield"></i></div>
+          <h3 class="dm-card-title-sm">Compliance Officers</h3>
+          <p class="dm-card-text">Maintain security controls and audit trails effortlessly.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ KEY FEATURES + DASHBOARD ══════════════════════════════════════════ -->
+  <section class="dm-section">
+    <div class="dm-container">
+      <h2 class="dm-section-title dm-text-center">Key Features</h2>
+      <div class="dm-grid-2" style="margin-bottom:40px;">
+        <div class="dm-feature-item">
+          <div class="dm-feature-icon"><i class="fa fa-circle-o-notch"></i></div>
+          <div>
+            <h4 class="dm-feature-name">Secure Storage</h4>
+            <p class="dm-feature-desc">Encryption driven storage with role-based access control.</p>
+          </div>
+        </div>
+        <div class="dm-feature-item">
+          <div class="dm-feature-icon"><i class="fa fa-refresh"></i></div>
+          <div>
+            <h4 class="dm-feature-name">Version Control</h4>
+            <p class="dm-feature-desc">Track document changes with complete version history.</p>
+          </div>
+        </div>
+        <div class="dm-feature-item">
+          <div class="dm-feature-icon"><i class="fa fa-check-square-o"></i></div>
+          <div>
+            <h4 class="dm-feature-name">E-Signatures</h4>
+            <p class="dm-feature-desc">Built-in e-signature workflows for agreements and forms.</p>
+          </div>
+        </div>
+        <div class="dm-feature-item">
+          <div class="dm-feature-icon"><i class="fa fa-search"></i></div>
+          <div>
+            <h4 class="dm-feature-name">Smart Search</h4>
+            <p class="dm-feature-desc">Fast text search with AI-powered document categorization.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dm-dashboard-mockup">
+        <div class="dm-db-sidebar">
+          <div class="dm-db-menu-item active"><i class="fa fa-th-large"></i> Dashboard</div>
+          <div class="dm-db-menu-item"><i class="fa fa-folder-open"></i> All Files</div>
+          <div class="dm-db-menu-item"><i class="fa fa-clock-o"></i> Recent Docs</div>
+          <div class="dm-db-menu-item"><i class="fa fa-star"></i> Favorites</div>
+          <div class="dm-db-menu-header">Manage Analytics</div>
+          <div class="dm-db-menu-item"><i class="fa fa-bar-chart"></i> Document Analytics</div>
+          <div class="dm-db-menu-header">Controls</div>
+          <div class="dm-db-menu-item"><i class="fa fa-user-secret"></i> Audit Logs</div>
+          <div class="dm-db-menu-item"><i class="fa fa-cog"></i> Settings</div>
+        </div>
+        <div class="dm-db-content">
+          <div class="dm-db-stats-grid">
+            <div class="dm-db-stat-card dm-border-blue">
+              <span class="dm-db-stat-num">79</span>
+              <span class="dm-db-stat-lbl">Total Documents</span>
+            </div>
+            <div class="dm-db-stat-card dm-border-green">
+              <span class="dm-db-stat-num">43.0%</span>
+              <span class="dm-db-stat-lbl">Completion Rate</span>
+            </div>
+            <div class="dm-db-stat-card dm-border-orange">
+              <span class="dm-db-stat-num">17</span>
+              <span class="dm-db-stat-lbl">Pending Review</span>
+            </div>
+            <div class="dm-db-stat-card dm-border-purple">
+              <span class="dm-db-stat-num">0</span>
+              <span class="dm-db-stat-lbl">Expired Docs</span>
+            </div>
+            <div class="dm-db-stat-card dm-border-pink">
+              <span class="dm-db-stat-num">22.1 MB</span>
+              <span class="dm-db-stat-lbl">Storage Used</span>
+            </div>
+          </div>
+          <div class="dm-db-secondary-stats">
+            <span><strong>15</strong> Approved</span>
+            <span><strong>16</strong> Sent</span>
+            <span><strong>11</strong> Expired</span>
+            <span><strong>12</strong> Voided</span>
+          </div>
+          <div class="dm-db-charts-grid">
+            <div class="dm-chart-container">
+              <h5>Document Activity Trends</h5>
+              <canvas id="trendsChart"></canvas>
+            </div>
+            <div class="dm-chart-container">
+              <h5>Status Distribution</h5>
+              <div class="dm-pie-wrapper">
+                <canvas id="distributionChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOW IT HELPS ══════════════════════════════════════════════════════ -->
+  <section class="dm-section dm-bg-light">
+    <div class="dm-container">
+      <h2 class="dm-section-title dm-text-center">How It Helps Your Business</h2>
+      <div class="dm-grid-2">
+        <div class="dm-card dm-flex-row">
+          <div class="dm-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="dm-card-title-sm">Eliminates Paper</h3>
+            <p class="dm-card-text">Digitize documents, reduce storage costs, and increase accessibility.</p>
+          </div>
+        </div>
+        <div class="dm-card dm-flex-row">
+          <div class="dm-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="dm-card-title-sm">Improves Security</h3>
+            <p class="dm-card-text">Encrypted storage and secure controls protect sensitive information.</p>
+          </div>
+        </div>
+        <div class="dm-card dm-flex-row">
+          <div class="dm-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="dm-card-title-sm">Ensures Compliance</h3>
+            <p class="dm-card-text">Retention policies and audit trails meet regulatory requirements.</p>
+          </div>
+        </div>
+        <div class="dm-card dm-flex-row">
+          <div class="dm-check-icon"><i class="fa fa-check"></i></div>
+          <div>
+            <h3 class="dm-card-title-sm">Saves Time</h3>
+            <p class="dm-card-text">Quick search and retrieval reduces time finding documents by 50%.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ADDITIONAL BENEFITS ════════════════════════════════════════════════ -->
+  <section class="dm-section">
+    <div class="dm-container">
+      <h2 class="dm-section-title dm-text-center">Additional Benefits</h2>
+      <div class="dm-grid-2 dm-benefits-list">
+        <div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Unlimited document storage</div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Document templates and forms</div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Automated retention and archival</div>
+        </div>
+        <div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Folder structure with tagging and metadata</div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Bulk upload and import</div>
+          <div class="dm-benefit-item"><i class="fa fa-check dm-pink-check"></i> Secure document share link generation</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USE CASES ═════════════════════════════════════════════════════════ -->
+  <section class="dm-section dm-bg-light">
+    <div class="dm-container">
+      <h2 class="dm-section-title dm-text-center">Real-World Use Cases</h2>
+      <div class="dm-grid-2">
+        <div class="dm-card">
+          <div class="dm-share-icon-circle"><i class="fa fa-share-alt"></i></div>
+          <h3 class="dm-card-title-md">Employee File Management</h3>
+          <p class="dm-card-text">A company goes completely paperless by digitalizing all employee files, reducing filing cabinet costs and improving document retrieval times from hours to seconds.</p>
+        </div>
+        <div class="dm-card">
+          <div class="dm-share-icon-circle"><i class="fa fa-share-alt"></i></div>
+          <h3 class="dm-card-title-md">Policy Management</h3>
+          <p class="dm-card-text">An HR team ensures all employees acknowledge a updated policy through automated distribution, e-signatures, and compliance tracking.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA BANNER ════════════════════════════════════════════════════════ -->
+  <section class="dm-cta-section">
+    <div class="dm-container dm-text-center">
+      <h2 class="dm-cta-title">Ready to Transform Your HR Operations?</h2>
+      <p class="dm-cta-subtitle">Start now for free and experience the power of Document Management</p>
+      <a href="../signup/signup.html" class="dm-btn-secondary">Start Your Free Trial</a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="../../../pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/document-management.js"></script>
+</body>
+</html>

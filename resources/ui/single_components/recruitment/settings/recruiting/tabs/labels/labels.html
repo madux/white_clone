@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Labels</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="rct-lb-rec-card">
+    <div class="rct-lb-rec-card-header">
+      <span class="rct-lb-rec-card-title">Candidate Labels</span>
+    </div>
+    <p class="rct-lb-subtitle">Organize and categorize candidates with custom labels</p>
+
+    <div class="rct-lb-stats-row">
+      <div class="rct-lb-stat-cell">
+        <div class="rct-lb-stat-value">6</div>
+        <div class="rct-lb-stat-label">Total Labels</div>
+      </div>
+      <div class="rct-lb-stat-cell">
+        <div class="rct-lb-stat-value">3</div>
+        <div class="rct-lb-stat-label">Labeled Candidates</div>
+      </div>
+      <div class="rct-lb-stat-cell">
+        <div class="rct-lb-stat-value">0</div>
+        <div class="rct-lb-stat-label">Unlabeled Candidates</div>
+      </div>
+    </div>
+
+    <div class="rct-lb-search-row">
+      <input type="text" class="rct-lb-search-input" placeholder="Search labels...">
+      <button class="rct-lb-btn rct-lb-btn--primary"><i class="fas fa-plus"></i> Create Label</button>
+    </div>
+
+    <div class="rct-lb-panel rct-lb-panel--open">
+      <div class="rct-lb-panel-title">Create New Label</div>
+      <div class="rct-lb-form-group">
+        <label class="rct-lb-form-label">Label Name</label>
+        <input type="text" class="rct-lb-form-input" placeholder="Enter label name">
+      </div>
+      <div class="rct-lb-form-group">
+        <label class="rct-lb-form-label">Color</label>
+        <div class="rct-lb-color-swatches">
+          <span class="rct-lb-color-swatch" style="background:#4caf50"></span>
+          <span class="rct-lb-color-swatch" style="background:#2196f3"></span>
+          <span class="rct-lb-color-swatch" style="background:#9c27b0"></span>
+          <span class="rct-lb-color-swatch" style="background:#f44336"></span>
+          <span class="rct-lb-color-swatch" style="background:#ff9800"></span>
+          <span class="rct-lb-color-swatch rct-lb-color-swatch--active" style="background:#ee59a3"></span>
+          <span class="rct-lb-color-swatch" style="background:#00bcd4"></span>
+          <span class="rct-lb-color-swatch" style="background:#607d8b"></span>
+          <span class="rct-lb-color-swatch" style="background:#795548"></span>
+          <span class="rct-lb-color-swatch" style="background:#ffeb3b"></span>
+        </div>
+      </div>
+      <div class="rct-lb-form-group">
+        <label class="rct-lb-form-label">Description</label>
+        <textarea class="rct-lb-form-textarea" placeholder="Enter description (optional)"></textarea>
+      </div>
+      <div class="rct-lb-panel-actions">
+        <button class="rct-lb-btn rct-lb-btn--primary">Create</button>
+        <button class="rct-lb-btn rct-lb-btn--outline">Cancel</button>
+      </div>
+    </div>
+
+    <div class="rct-lb-label-list">
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#4caf50"></span>
+          <span class="rct-lb-label-name">Top Performer</span>
+          <span class="rct-lb-label-count">3</span>
+        </div>
+        <span class="rct-lb-label-desc">High-performing candidates</span>
+        <span class="rct-lb-label-date">Created Mar 20</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#2196f3"></span>
+          <span class="rct-lb-label-name">Culture Fit</span>
+          <span class="rct-lb-label-count">2</span>
+        </div>
+        <span class="rct-lb-label-desc">Great cultural alignment</span>
+        <span class="rct-lb-label-date">Created Mar 18</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#9c27b0"></span>
+          <span class="rct-lb-label-name">Remote Only</span>
+          <span class="rct-lb-label-count">1</span>
+        </div>
+        <span class="rct-lb-label-desc">Remote candidates only</span>
+        <span class="rct-lb-label-date">Created Mar 15</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#f44336"></span>
+          <span class="rct-lb-label-name">Urgent</span>
+          <span class="rct-lb-label-count">2</span>
+        </div>
+        <span class="rct-lb-label-desc">Urgent hiring need</span>
+        <span class="rct-lb-label-date">Created Mar 12</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#ff9800"></span>
+          <span class="rct-lb-label-name">Needs Follow-up</span>
+          <span class="rct-lb-label-count">1</span>
+        </div>
+        <span class="rct-lb-label-desc">Requires follow-up contact</span>
+        <span class="rct-lb-label-date">Created Mar 10</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+      <div class="rct-lb-label-row">
+        <div class="rct-lb-label-row-left">
+          <span class="rct-lb-color-dot" style="background:#ee59a3"></span>
+          <span class="rct-lb-label-name">Referral</span>
+          <span class="rct-lb-label-count">0</span>
+        </div>
+        <span class="rct-lb-label-desc">Referred by employee</span>
+        <span class="rct-lb-label-date">Created Mar 8</span>
+        <div class="rct-lb-label-actions">
+          <button class="rct-lb-icon-btn"><i class="fas fa-pencil-alt"></i></button>
+          <button class="rct-lb-icon-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="rct-lb-info-box">
+      <div class="rct-lb-info-title">How to use labels</div>
+      <ul class="rct-lb-info-list">
+        <li>Create labels to categorize candidates by skill, seniority, or status</li>
+        <li>Assign labels from any candidate's profile page</li>
+        <li>Filter candidates by label in your candidate pipeline</li>
+        <li>Labels are visible to all team members with access</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

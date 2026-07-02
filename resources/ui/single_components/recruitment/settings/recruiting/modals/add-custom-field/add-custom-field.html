@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Custom Field</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="rec-modal-overlay rec-modal--open">
+    <div class="rec-modal rec-modal--narrow">
+      <div class="rec-modal-header rec-modal-header--pink">
+        <span class="rec-modal-title">Create Custom Field</span>
+        <button class="rec-modal-close">&times;</button>
+      </div>
+      <div class="rec-modal-body">
+        <div class="rec-form-group">
+          <label class="rec-label rec-label-required">Field Name</label>
+          <input class="rec-input rcm-acf-input" type="text" placeholder="e.g., Years of Experience" />
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label">Applies To</label>
+          <div class="rec-select-wrap">
+            <select class="rec-select rcm-acf-select">
+              <option>Position</option>
+              <option>Candidate</option>
+            </select>
+          </div>
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label">Field Type</label>
+          <div class="rec-select-wrap">
+            <select class="rec-select rcm-acf-select">
+              <option>Text</option>
+              <option>Number</option>
+              <option>Date</option>
+              <option>Dropdown</option>
+            </select>
+          </div>
+        </div>
+        <div class="rec-form-group">
+          <label class="rec-label">Folder</label>
+          <input class="rec-input rcm-acf-input" type="text" value="General" />
+        </div>
+      </div>
+      <div class="rec-modal-footer">
+        <button class="rec-btn rec-btn--ghost">Cancel</button>
+        <button class="rec-btn rec-btn--primary">Create Field</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

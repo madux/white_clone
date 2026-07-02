@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auto-Join Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="tm-card-panel tm-card-panel--autojoin">
+    <div class="tm-autojoin-header-row">
+      <h3 class="tm-card-panel-title">Auto-Join Settings</h3>
+      <button class="tm-toggle-switch" aria-checked="false" id="autojoinToggle"></button>
+    </div>
+    <div class="tm-autojoin-field">
+      <label class="tm-form-label">Auto-Join URL</label>
+      <div class="tm-autojoin-url-row">
+        <input type="text" class="tm-form-input tm-autojoin-url-input" value="cleonhr.com/join/abc123" readonly>
+        <button class="tm-btn-secondary tm-copy-btn" id="copyUrlBtn"><i class="fa fa-clone"></i> Copy</button>
+      </div>
+    </div>
+    <div class="tm-autojoin-field">
+      <label class="tm-form-label">Allowed Domains</label>
+      <div class="tm-domain-chip-row">
+        <span class="tm-domain-chip">company.com</span>
+      </div>
+    </div>
+    <div class="tm-autojoin-field">
+      <label class="tm-form-label">Default Role</label>
+      <div class="tm-custom-select-wrapper">
+        <select class="tm-form-select">
+          <option>Viewer</option>
+          <option>Recruiter</option>
+          <option>Admin</option>
+        </select>
+        <i class="fa fa-chevron-down tm-select-caret"></i>
+      </div>
+    </div>
+  </div>
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Social Gallery — social-gallery.css
+   Prefix: sg-  |  Font: DM Sans  |  Icons: FA 4.7
+   Brand gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --sg-primary:     #e01d81;
+  --sg-primary-d:   #c81962;
+  --sg-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --sg-text-dark:   #1f2937;
+  --sg-text-muted:  #4b5563;
+  --sg-bg-light:    #f9fafb;
+  --sg-border:      #e5e7eb;
+  --sg-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--sg-font);
+  color: var(--sg-text-dark);
+  background-color: #ffffff;
+  line-height: 1.5;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.sg-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.sg-text-center { text-align: center; }
+
+/* ══ SECTION ═════════════════════════════════════════════════ */
+.sg-section { padding: 70px 0; }
+.sg-bg-light { background-color: var(--sg-bg-light); }
+.sg-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 45px;
+}
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.sg-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+.sg-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+}
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.sg-hero {
+  background: var(--sg-grad);
+  color: white;
+  padding: 80px 0;
+}
+.sg-hero-icon-wrapper {
+  background: rgba(255,255,255,.2);
+  width: 60px; height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 24px;
+}
+.sg-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.sg-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.sg-hero-desc {
+  max-width: 700px;
+  margin: 0 auto 40px;
+  font-size: 16px;
+  opacity: .85;
+  line-height: 1.6;
+}
+.sg-btn-primary {
+  display: inline-block;
+  background: white;
+  color: var(--sg-primary);
+  padding: 12px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.05);
+}
+.sg-btn-primary i { margin-left: 8px; }
+.sg-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,.1);
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.sg-card {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--sg-border);
+}
+.sg-card-icon-pink {
+  color: var(--sg-primary);
+  background-color: #fce7f3;
+  width: 45px; height: 45px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 18px;
+}
+.sg-card-title-sm {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.sg-card-title-md {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.sg-card-text {
+  font-size: 14px;
+  color: var(--sg-text-muted);
+  line-height: 1.6;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.sg-feature-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+.sg-feature-icon {
+  color: var(--sg-primary);
+  font-size: 20px;
+  margin-top: 2px;
+}
+.sg-feature-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.sg-feature-desc {
+  font-size: 14px;
+  color: var(--sg-text-muted);
+}
+
+/* ══ CHECK ICON ═══════════════════════════════════════════════ */
+.sg-flex-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.sg-check-icon {
+  color: #10b981;
+  background: #e6f4ea;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ══ ADDITIONAL BENEFITS ═════════════════════════════════════ */
+.sg-benefits-list { max-width: 850px; margin: 0 auto; }
+.sg-benefit-item {
+  font-size: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sg-pink-check { color: var(--sg-primary); }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.sg-share-icon-circle {
+  background-color: #fce7f3;
+  color: var(--sg-primary);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.sg-cta-section {
+  background: var(--sg-grad);
+  color: white;
+  padding: 70px 0;
+}
+.sg-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.sg-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.sg-btn-secondary {
+  display: inline-block;
+  background: white;
+  color: var(--sg-primary);
+  padding: 12px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.sg-btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .sg-grid-3, .sg-grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .sg-hero-title { font-size: 32px; }
+}

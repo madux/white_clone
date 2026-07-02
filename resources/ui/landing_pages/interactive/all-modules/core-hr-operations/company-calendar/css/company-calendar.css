@@ -1,0 +1,242 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Company Calendar — company-calendar.css
+   Prefix: cc-  |  Font: DM Sans  |  Icons: FA 4.7
+   Brand gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --cc-primary:     #e01d81;
+  --cc-primary-d:   #c81962;
+  --cc-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --cc-text-dark:   #1f2937;
+  --cc-text-muted:  #4b5563;
+  --cc-bg-light:    #f9fafb;
+  --cc-border:      #e5e7eb;
+  --cc-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--cc-font);
+  color: var(--cc-text-dark);
+  background-color: #ffffff;
+  line-height: 1.5;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.cc-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.cc-text-center { text-align: center; }
+
+/* ══ SECTION ═════════════════════════════════════════════════ */
+.cc-section { padding: 70px 0; }
+.cc-bg-light { background-color: var(--cc-bg-light); }
+.cc-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 45px;
+}
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.cc-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+.cc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 25px;
+}
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.cc-hero {
+  background: var(--cc-grad);
+  color: white;
+  padding: 80px 0;
+}
+.cc-hero-icon-wrapper {
+  background: rgba(255,255,255,.2);
+  width: 60px; height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 24px;
+}
+.cc-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.cc-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.cc-hero-desc {
+  max-width: 700px;
+  margin: 0 auto 40px;
+  font-size: 16px;
+  opacity: .85;
+  line-height: 1.6;
+}
+.cc-btn-primary {
+  display: inline-block;
+  background: white;
+  color: var(--cc-primary);
+  padding: 12px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 6px rgba(0,0,0,.05);
+}
+.cc-btn-primary i { margin-left: 8px; }
+.cc-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,.1);
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.cc-card {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--cc-border);
+}
+.cc-card-icon-pink {
+  color: var(--cc-primary);
+  background-color: #fce7f3;
+  width: 45px; height: 45px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 18px;
+}
+.cc-card-title-sm {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.cc-card-title-md {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.cc-card-text {
+  font-size: 14px;
+  color: var(--cc-text-muted);
+  line-height: 1.6;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.cc-feature-item {
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+}
+.cc-feature-icon {
+  color: var(--cc-primary);
+  font-size: 20px;
+  margin-top: 2px;
+}
+.cc-feature-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.cc-feature-desc {
+  font-size: 14px;
+  color: var(--cc-text-muted);
+}
+
+/* ══ CHECK ICON ═══════════════════════════════════════════════ */
+.cc-flex-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+.cc-check-icon {
+  color: #10b981;
+  background: #e6f4ea;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+/* ══ ADDITIONAL BENEFITS ═════════════════════════════════════ */
+.cc-benefits-list { max-width: 850px; margin: 0 auto; }
+.cc-benefit-item {
+  font-size: 15px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cc-pink-check { color: var(--cc-primary); }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.cc-share-icon-circle {
+  background-color: #fce7f3;
+  color: var(--cc-primary);
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.cc-cta-section {
+  background: var(--cc-grad);
+  color: white;
+  padding: 70px 0;
+}
+.cc-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.cc-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 30px;
+}
+.cc-btn-secondary {
+  display: inline-block;
+  background: white;
+  color: var(--cc-primary);
+  padding: 12px 32px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.cc-btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .cc-grid-3, .cc-grid-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .cc-hero-title { font-size: 32px; }
+}

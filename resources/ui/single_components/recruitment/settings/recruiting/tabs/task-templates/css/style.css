@@ -1,0 +1,149 @@
+.rct-tt-section {
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-tt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.rct-tt-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+.rct-tt-subtitle {
+  font-size: 14px;
+  color: #888;
+  margin: 2px 0 0;
+}
+.rct-tt-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-tt-btn--primary {
+  background: #ee59a3;
+  color: #fff;
+}
+.rct-tt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.rct-tt-card {
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.rct-tt-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.rct-tt-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.rct-tt-card-icon--blue { background: #e3f2fd; color: #1565c0; }
+.rct-tt-card-icon--pink { background: #fce4ec; color: #ee59a3; }
+.rct-tt-card-icon--green { background: #e8f5e9; color: #2e7d32; }
+.rct-tt-card-icon--purple { background: #f3e5f5; color: #7b1fa2; }
+.rct-tt-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.rct-tt-card-meta {
+  font-size: 12px;
+  color: #888;
+}
+.rct-tt-card-body {
+  padding: 14px 16px;
+}
+.rct-tt-task-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #555;
+}
+.rct-tt-task-item i {
+  color: #aaa;
+  font-size: 12px;
+  width: 16px;
+}
+.rct-tt-more {
+  font-size: 12px;
+  color: #ee59a3;
+  font-weight: 500;
+  margin-top: 4px;
+}
+.rct-tt-card-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+}
+.rct-tt-card-btn {
+  background: transparent;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #666;
+  font-family: 'DM Sans', sans-serif;
+}
+.rct-tt-card-btn:hover {
+  border-color: #ee59a3;
+  color: #ee59a3;
+}
+.rct-tt-create-card {
+  background: #ee59a3;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  cursor: pointer;
+  text-align: center;
+}
+.rct-tt-create-card i {
+  font-size: 36px;
+  color: #fff;
+  margin-bottom: 12px;
+}
+.rct-tt-create-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+.rct-tt-create-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  margin-top: 4px;
+}
+
+.dynamic-content span {
+  background: transparent !important;
+  color: inherit !important;
+  font-family: 'DM Sans', sans-serif !important;
+}
