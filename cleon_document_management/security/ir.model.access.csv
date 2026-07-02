@@ -1,0 +1,30 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_doc_folder_user,doc.folder user,model_doc_folder,base.group_user,1,1,1,0
+access_doc_folder_admin,doc.folder admin,model_doc_folder,base.group_system,1,1,1,1
+
+access_doc_document_user,doc.document user,model_doc_document,base.group_user,1,1,1,0
+access_doc_document_admin,doc.document admin,model_doc_document,base.group_system,1,1,1,1
+
+access_doc_document_type_user,doc.document.type user,model_doc_document_type,base.group_user,1,1,1,0
+access_doc_document_type_admin,doc.document.type admin,model_doc_document_type,base.group_system,1,1,1,1
+
+access_doc_retention_policy_user,doc.retention.policy user,model_doc_retention_policy,base.group_user,1,1,1,0
+access_doc_retention_policy_admin,doc.retention.policy admin,model_doc_retention_policy,base.group_system,1,1,1,1
+
+access_doc_share_link_user,doc.share.link user,model_doc_share_link,base.group_user,1,1,1,0
+access_doc_share_link_admin,doc.share.link admin,model_doc_share_link,base.group_system,1,1,1,1
+
+access_doc_document_version_user,doc.document.version user,model_doc_document_version,base.group_user,1,1,1,0
+access_doc_document_version_admin,doc.document.version admin,model_doc_document_version,base.group_system,1,1,1,1
+
+access_doc_compliance_requirement_user,doc.compliance.requirement user,model_doc_compliance_requirement,base.group_user,1,1,1,0
+access_doc_compliance_requirement_admin,doc.compliance.requirement admin,model_doc_compliance_requirement,base.group_system,1,1,1,1
+
+access_doc_compliance_record_user,doc.compliance.record user,model_doc_compliance_record,base.group_user,1,1,1,0
+access_doc_compliance_record_admin,doc.compliance.record admin,model_doc_compliance_record,base.group_system,1,1,1,1
+
+access_hr_document_template_user,hr.document.template user,model_hr_document_template,base.group_user,1,1,1,0
+access_hr_document_template_admin,hr.document.template admin,model_hr_document_template,base.group_system,1,1,1,1
+
+access_hr_document_checklist_user,hr.document.checklist user,model_hr_document_checklist,base.group_user,1,1,1,0
+access_hr_document_checklist_admin,hr.document.checklist admin,model_hr_document_checklist,base.group_system,1,1,1,1

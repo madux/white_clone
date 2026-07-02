@@ -2,7 +2,7 @@
 <odoo> 
     <menuitem
         id="hr_recruitment_base"
-        name="recruitment"
+        name="Recruitment"
         sequence="1" 
     />
 
@@ -18,6 +18,4 @@
             <field name="icon_class">fa fa-users</field>
             <field name="category_name">CleonHR-Recruitment</field>
         </record>
- 
-
 </odoo>
