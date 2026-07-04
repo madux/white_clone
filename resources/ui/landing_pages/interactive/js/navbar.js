@@ -53,12 +53,12 @@ const CHR_SVC_DATA = {
     title: 'Workforce Management',
     desc: 'Manage attendance, scheduling, compensation, and employee operations.',
     modules: [
-      { id: 'attendance', icon: 'fa-clock-o', iconClass: 'chr-svc-card__icon--pink', title: 'Attendance & Shift Management', desc: 'Clock-in/out and shift scheduling' },
-      { id: 'time-management', icon: 'fa-calendar-check-o', iconClass: 'chr-svc-card__icon--blue', title: 'Time Management', desc: 'Attendance tracking, schedules, and timesheets' },
-      { id: 'leave', icon: 'fa-calendar-o', iconClass: 'chr-svc-card__icon--green', title: 'Leave Management', desc: 'Leave requests, approvals, and balances' },
-      { id: 'compensation', icon: 'fa-money', iconClass: 'chr-svc-card__icon--teal', title: 'Compensation Management', desc: 'Salary management, payroll, and bonuses' },
-      { id: 'hmo', icon: 'fa-heartbeat', iconClass: 'chr-svc-card__icon--orange', title: 'Health Insurance (HMO)', desc: 'HMO enrollment, provider management, and claims' },
-      { id: 'asset-mgmt', icon: 'fa-laptop', iconClass: 'chr-svc-card__icon--purple', title: 'Asset Management', desc: 'Track company assets and assignments' }
+      { id: 'attendance', icon: 'fa-clock-o', iconClass: 'chr-svc-card__icon--pink', title: 'Attendance & Shift Management', desc: 'Clock-in/out and shift scheduling', url: 'all-modules/work-force-management/attendance-shift-management.html' },
+      { id: 'time-management', icon: 'fa-calendar-check-o', iconClass: 'chr-svc-card__icon--blue', title: 'Time Management', desc: 'Attendance tracking, schedules, and timesheets', url: 'all-modules/work-force-management/time-management.html' },
+      { id: 'leave', icon: 'fa-calendar-o', iconClass: 'chr-svc-card__icon--green', title: 'Leave Management', desc: 'Leave requests, approvals, and balances', url: 'all-modules/work-force-management/leave-management.html' },
+      { id: 'compensation', icon: 'fa-money', iconClass: 'chr-svc-card__icon--teal', title: 'Compensation Management', desc: 'Salary management, payroll, and bonuses', url: 'all-modules/work-force-management/compensation-management.html' },
+      { id: 'hmo', icon: 'fa-heartbeat', iconClass: 'chr-svc-card__icon--orange', title: 'Health Insurance (HMO)', desc: 'HMO enrollment, provider management, and claims', url: 'all-modules/work-force-management/health-insurance.html' },
+      { id: 'asset-mgmt', icon: 'fa-laptop', iconClass: 'chr-svc-card__icon--purple', title: 'Asset Management', desc: 'Track company assets and assignments', url: 'all-modules/work-force-management/asset-management.html' }
     ]
   },
   'talent': {
@@ -66,10 +66,10 @@ const CHR_SVC_DATA = {
     title: 'Talent & Performance',
     desc: 'Manage hiring, employee growth, learning, and performance.',
     modules: [
-      { id: 'recruitment', icon: 'fa-users', iconClass: 'chr-svc-card__icon--pink', title: 'Recruitment', desc: 'End-to-end hiring and applicant tracking' },
-      { id: 'performance', icon: 'fa-trophy', iconClass: 'chr-svc-card__icon--blue', title: 'Performance Appraisal', desc: 'KPI management and 360° reviews' },
-      { id: 'elearning', icon: 'fa-graduation-cap', iconClass: 'chr-svc-card__icon--green', title: 'E-Learning & Knowledge Management', desc: 'Training, courses, and certifications' },
-      { id: 'hr-advisory', icon: 'fa-comments', iconClass: 'chr-svc-card__icon--teal', title: 'HR Advisory & Knowledge Base', desc: 'HR consulting and policy guidance' }
+      { id: 'recruitment', icon: 'fa-users', iconClass: 'chr-svc-card__icon--pink', title: 'Recruitment', desc: 'End-to-end hiring and applicant tracking', url: 'all-modules/talent-and-performance/recruitment/recruitment.html' },
+      { id: 'performance', icon: 'fa-trophy', iconClass: 'chr-svc-card__icon--blue', title: 'Performance Appraisal', desc: 'KPI management and 360° reviews', url: 'all-modules/talent-and-performance/performance-appraisal/performance-appraisal.html' },
+      { id: 'elearning', icon: 'fa-graduation-cap', iconClass: 'chr-svc-card__icon--green', title: 'E-Learning & Knowledge Management', desc: 'Training, courses, and certifications', url: 'all-modules/talent-and-performance/elearning/elearning.html' },
+      { id: 'hr-advisory', icon: 'fa-comments', iconClass: 'chr-svc-card__icon--teal', title: 'HR Advisory & Knowledge Base', desc: 'HR consulting and policy guidance', url: 'all-modules/talent-and-performance/hr-advisory/hr-advisory.html' }
     ]
   },
   'payroll': {

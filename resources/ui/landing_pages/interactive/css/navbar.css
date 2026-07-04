@@ -317,10 +317,9 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--chr-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   min-width: 0;
+  flex: 1;
+  overflow-wrap: break-word;
 }
 .chr-svc-card__badge {
   font-size: 9px;
