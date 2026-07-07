@@ -1,0 +1,265 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Cleon Time (Claims) — cleon-time-claims.css
+   Prefix: clt-  |  Font: DM Sans  |  Icons: FA 4.7
+   Primary: #e01d81  |  Gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --clt-primary:     #e01d81;
+  --clt-primary-d:   #c81962;
+  --clt-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --clt-text:        #1e293b;
+  --clt-muted:       #64748b;
+  --clt-bg-light:    #f8fafc;
+  --clt-bg-white:    #ffffff;
+  --clt-border:      #edf2f7;
+  --clt-radius:      12px;
+  --clt-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--clt-font);
+  color: var(--clt-text);
+  background-color: var(--clt-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; transition: all .2s ease; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.clt-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.clt-section { padding: 80px 0; }
+.clt-bg-light { background-color: var(--clt-bg-light); }
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.clt-grid { display: grid; gap: 24px; }
+.clt-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.clt-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.clt-hero {
+  background: var(--clt-grad);
+  color: #ffffff;
+  padding: 80px 0 90px;
+  text-align: center;
+}
+.clt-hero-content { max-width: 800px; }
+.clt-hero-icon-wrapper {
+  background-color: rgba(255,255,255,.15);
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 24px;
+}
+.clt-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+.clt-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .95;
+  margin-bottom: 28px;
+}
+.clt-hero-desc {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  opacity: .85;
+  max-width: 700px;
+  margin: 0 auto 36px;
+}
+.clt-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: var(--clt-primary);
+  padding: 14px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+}
+
+/* ══ SECTION TITLE ═══════════════════════════════════════════ */
+.clt-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+  color: #0f172a;
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.clt-card {
+  background-color: var(--clt-bg-white);
+  border-radius: var(--clt-radius);
+  padding: 32px;
+  border: 1px solid var(--clt-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,.01);
+}
+.clt-card-icon-pink {
+  background-color: #fff1f6;
+  color: var(--clt-primary);
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* Target cards */
+.clt-target-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--clt-text);
+}
+.clt-target-card p {
+  font-size: 14px;
+  color: var(--clt-muted);
+  line-height: 1.6;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.clt-feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 16px 0;
+}
+.clt-feature-icon {
+  color: var(--clt-primary);
+  background-color: #fff1f6;
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.clt-feature-text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--clt-text);
+}
+.clt-feature-text p {
+  font-size: 14px;
+  color: var(--clt-muted);
+  line-height: 1.6;
+}
+
+/* ══ BENEFITS ════════════════════════════════════════════════ */
+.clt-benefit-card { padding: 24px 32px; }
+.clt-benefit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.clt-check-icon {
+  color: var(--clt-primary);
+  background-color: #fff1f6;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.clt-benefit-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--clt-text);
+}
+.clt-benefit-card p {
+  font-size: 14px;
+  color: var(--clt-muted);
+  padding-left: 34px;
+}
+
+/* ══ ADDITIONAL BENEFITS LIST ════════════════════════════════ */
+.clt-additional-list {
+  row-gap: 20px;
+  column-gap: 48px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.clt-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  color: #334155;
+}
+.clt-list-item i { color: var(--clt-primary); font-size: 14px; }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.clt-usecase-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--clt-text);
+}
+.clt-usecase-card p {
+  font-size: 14px;
+  color: var(--clt-muted);
+  line-height: 1.65;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.clt-cta {
+  background: var(--clt-grad);
+  color: #ffffff;
+  text-align: center;
+  padding: 72px 0;
+}
+.clt-cta-content { max-width: 700px; }
+.clt-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.clt-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 28px;
+}
+.clt-btn-white {
+  display: inline-block;
+  background-color: #ffffff;
+  color: var(--clt-primary);
+  padding: 14px 32px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .clt-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .clt-grid-2, .clt-grid-3 { grid-template-columns: 1fr; }
+  .clt-hero-title { font-size: 32px; }
+  .clt-cta-title { font-size: 26px; }
+}

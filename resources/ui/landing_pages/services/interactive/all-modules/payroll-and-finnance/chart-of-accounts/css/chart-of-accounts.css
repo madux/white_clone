@@ -1,0 +1,271 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Chart of Accounts — interactive
+   Prefix: coa-  |  Font: DM Sans  |  Icons: FA 4.7
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --coa-primary:     #e01d81;
+  --coa-primary-d:   #c81962;
+  --coa-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --coa-text:        #1e293b;
+  --coa-muted:       #64748b;
+  --coa-bg-light:    #f8fafc;
+  --coa-bg-white:    #ffffff;
+  --coa-border:      #edf2f7;
+  --coa-radius:      12px;
+  --coa-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--coa-font);
+  color: var(--coa-text);
+  background-color: var(--coa-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; transition: all .2s ease; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.coa-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.coa-section { padding: 80px 0; }
+.coa-bg-light { background-color: var(--coa-bg-light); }
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.coa-grid { display: grid; gap: 24px; }
+.coa-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.coa-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.coa-hero {
+  background: var(--coa-grad);
+  color: #ffffff;
+  padding: 80px 0 90px;
+  text-align: center;
+}
+.coa-hero-content { max-width: 800px; }
+.coa-hero-icon-wrapper {
+  background-color: rgba(255,255,255,.15);
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 24px;
+}
+.coa-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+.coa-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .95;
+  margin-bottom: 28px;
+}
+.coa-hero-desc {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  opacity: .85;
+  max-width: 720px;
+  margin: 0 auto 36px;
+}
+.coa-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: var(--coa-primary);
+  padding: 14px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+}
+
+/* ══ SECTION TITLE ═══════════════════════════════════════════ */
+.coa-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+  color: #0f172a;
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.coa-card {
+  background-color: var(--coa-bg-white);
+  border-radius: var(--coa-radius);
+  padding: 32px;
+  border: 1px solid var(--coa-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,.01);
+}
+.coa-card-icon-pink {
+  background-color: #fff1f6;
+  color: var(--coa-primary);
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* Target cards */
+.coa-target-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--coa-text);
+}
+.coa-target-card p {
+  font-size: 14px;
+  color: var(--coa-muted);
+  line-height: 1.6;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.coa-feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 16px 0;
+}
+.coa-feature-icon {
+  color: var(--coa-primary);
+  background-color: #fff1f6;
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.coa-feature-text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--coa-text);
+}
+.coa-feature-text p {
+  font-size: 14px;
+  color: var(--coa-muted);
+  line-height: 1.6;
+}
+
+/* ══ BENEFITS ════════════════════════════════════════════════ */
+.coa-benefit-card { padding: 24px 32px; }
+.coa-benefit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.coa-check-icon {
+  color: var(--coa-primary);
+  background-color: #fff1f6;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.coa-benefit-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--coa-text);
+}
+.coa-benefit-card p {
+  font-size: 14px;
+  color: var(--coa-muted);
+  padding-left: 34px;
+}
+
+/* ══ ADDITIONAL BENEFITS LIST ════════════════════════════════ */
+.coa-bullets-grid {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.coa-bullet-list {
+  list-style: none;
+}
+.coa-bullet-list li {
+  font-size: 15px;
+  color: #334155;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.coa-check-pink {
+  color: var(--coa-primary);
+  margin-top: 4px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.coa-usecase-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--coa-text);
+}
+.coa-usecase-card p {
+  font-size: 14px;
+  color: var(--coa-muted);
+  line-height: 1.65;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.coa-cta {
+  background: var(--coa-grad);
+  color: #ffffff;
+  text-align: center;
+  padding: 72px 0;
+}
+.coa-cta-content { max-width: 700px; }
+.coa-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.coa-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 28px;
+}
+.coa-btn-white {
+  display: inline-block;
+  background-color: #ffffff;
+  color: var(--coa-primary);
+  padding: 14px 32px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .coa-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .coa-grid-2, .coa-grid-3 { grid-template-columns: 1fr; }
+  .coa-hero-title { font-size: 32px; }
+  .coa-cta-title { font-size: 26px; }
+}
