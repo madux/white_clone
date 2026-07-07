@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing – Healthcare & HMO – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="../../../../services/interactive/css/main.css" />
+  <link rel="stylesheet" href="../../../../services/interactive/css/navbar.css" />
+  <link rel="stylesheet" href="css/pricing.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../../services/interactive/index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <!-- Services dropdown -->
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <!-- Industries dropdown -->
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="../../signup/signup.html" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <a href="../../../../services/interactive/ai.html" class="chr-nav__new-badge">
+            &#10022; AI
+          </a>
+        </li>
+        <li><a href="../../../../services/interactive/pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../../signup/signup.html" class="chr-btn--nav-signup">Book Demo</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <section class="cpr-hero">
+    <div class="cpr-container">
+      <h1 class="cpr-hero-title">Simple, Transparent Pricing</h1>
+      <p class="cpr-hero-subtitle">Choose the right plan for your organization. Scale as you grow.</p>
+    </div>
+  </section>
+
+  <div class="cpr-modules-nav-bar">
+    <div class="cpr-container cpr-modules-wrapper">
+      <button class="cpr-mod-tab cpr-mod-active"><i class="fa fa-building-o"></i> HR Administration</button>
+      <button class="cpr-mod-tab"><i class="fa fa-user-plus"></i> Recruitment</button>
+      <button class="cpr-mod-tab"><i class="fa fa-money"></i> Payroll & Remittance</button>
+      <button class="cpr-mod-tab"><i class="fa fa-pie-chart"></i> Finance</button>
+      <button class="cpr-mod-tab cpr-btn-trigger-more" id="cprBtnMoreModules">More <i class="fa fa-angle-right"></i></button>
+    </div>
+  </div>
+
+  <section class="cpr-section cpr-bg-light">
+    <div class="cpr-container">
+      <div class="cpr-pricing-header-block">
+        <h2>HR Administration Pricing</h2>
+        <p>Select the plan that best fits your organization's needs</p>
+
+        <div class="cpr-cycle-toggle-wrapper">
+          <span class="cpr-cycle-label cpr-cycle-active">Monthly</span>
+          <div class="cpr-toggle-switch" id="cprCycleSwitch">
+            <div class="cpr-toggle-knob"></div>
+          </div>
+          <span class="cpr-cycle-label">Yearly <span class="cpr-save-badge">Save 15%</span></span>
+        </div>
+      </div>
+
+      <div class="cpr-pricing-grid">
+        <div class="cpr-pricing-card">
+          <h3 class="cpr-tier-name">Standard</h3>
+          <p class="cpr-tier-desc">Best for small teams</p>
+          <div class="cpr-price-display">
+            <span class="cpr-currency">&#8358;</span><span class="cpr-amount" data-monthly="10,780" data-yearly="9,160">10,780</span>
+            <span class="cpr-period">/user/month</span>
+          </div>
+          <button class="cpr-btn-plan-outline">START FREE TRIAL</button>
+          <div class="cpr-feature-group">
+            <div class="cpr-group-title">All the essentials:</div>
+            <ul class="cpr-feature-list">
+              <li><i class="fa fa-check"></i> Access to selected modules only</li>
+              <li><i class="fa fa-check"></i> Core HR workflows</li>
+              <li><i class="fa fa-check"></i> Limited integrations</li>
+              <li><i class="fa fa-check"></i> Up to 50 employees</li>
+              <li><i class="fa fa-check"></i> Email support</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cpr-pricing-card cpr-card-featured">
+          <span class="cpr-popular-tag">Most Popular</span>
+          <h3 class="cpr-tier-name">Professional</h3>
+          <p class="cpr-tier-desc">Automation and AI</p>
+          <div class="cpr-price-display">
+            <span class="cpr-currency">&#8358;</span><span class="cpr-amount" data-monthly="17,710" data-yearly="15,050">17,710</span>
+            <span class="cpr-period">/user/month</span>
+          </div>
+          <button class="cpr-btn-plan-solid">START FREE TRIAL</button>
+          <div class="cpr-feature-group">
+            <div class="cpr-group-title">Everything in Standard +</div>
+            <ul class="cpr-feature-list">
+              <li><i class="fa fa-check"></i> All features inside selected modules</li>
+              <li><i class="fa fa-check"></i> Advanced workflows</li>
+              <li><i class="fa fa-check"></i> Custom dynamic workflows</li>
+              <li><i class="fa fa-check"></i> Payroll & compliance tools</li>
+              <li><i class="fa fa-check"></i> API integrations</li>
+              <li><i class="fa fa-check"></i> Multi-department support</li>
+            </ul>
+          </div>
+          <div class="cpr-card-notice">*Additional profiles can be purchased dynamically at any time from your billing page.</div>
+        </div>
+
+        <div class="cpr-pricing-card">
+          <h3 class="cpr-tier-name">Enterprise</h3>
+          <p class="cpr-tier-desc">Tailored parameters</p>
+          <div class="cpr-price-display">
+            <span class="cpr-currency">&#8358;</span><span class="cpr-amount" data-monthly="30,800" data-yearly="26,180">30,800</span>
+            <span class="cpr-period">/user/month</span>
+          </div>
+          <button class="cpr-btn-plan-outline">START FREE TRIAL</button>
+          <div class="cpr-feature-group">
+            <div class="cpr-group-title">Everything in Professional +</div>
+            <ul class="cpr-feature-list">
+              <li><i class="fa fa-check"></i> Full platform access</li>
+              <li><i class="fa fa-check"></i> Advanced security frameworks</li>
+              <li><i class="fa fa-check"></i> Dedicated onboarding</li>
+              <li><i class="fa fa-check"></i> Multi-company management</li>
+              <li><i class="fa fa-check"></i> Audit logs</li>
+              <li><i class="fa fa-check"></i> Custom workflow</li>
+              <li><i class="fa fa-check"></i> Priority support</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cpr-section cpr-bg-white">
+    <div class="cpr-container cpr-faq-container">
+      <div class="cpr-faq-icon-header">
+        <i class="fa fa-question-circle"></i>
+      </div>
+      <h2 class="cpr-faq-main-title">Frequently Asked Questions</h2>
+      <p class="cpr-faq-subtitle">Everything you need to know about CleonHR pricing and plans</p>
+
+      <div class="cpr-accordion-wrapper">
+        <div class="cpr-faq-item cpr-faq-active">
+          <div class="cpr-faq-trigger">
+            <span>Is my data safe?</span>
+            <i class="fa fa-angle-down"></i>
+          </div>
+          <div class="cpr-faq-content">
+            <p>Absolutely. We prioritize security globally across all calculations and configurations. Our platform is built on enterprise-grade cloud servers with SOC 2 compliance, regular external audits, and continuous monitoring. We offer high-fidelity database backing layers, custom storage options for your organizations, and strict zero-data leakage parameters without validation access.</p>
+          </div>
+        </div>
+
+        <div class="cpr-faq-item">
+          <div class="cpr-faq-trigger">
+            <span>What types of payment do you accept?</span>
+            <i class="fa fa-angle-down"></i>
+          </div>
+          <div class="cpr-faq-content">
+            <p>We accept all major credit cards, bank transfers, and direct corporate wire deposits tailored to local deployment regions.</p>
+          </div>
+        </div>
+
+        <div class="cpr-faq-item">
+          <div class="cpr-faq-trigger">
+            <span>Does CleonHR support multiple languages?</span>
+            <i class="fa fa-angle-down"></i>
+          </div>
+          <div class="cpr-faq-content">
+            <p>Yes, the platform interface configuration can be toggled across standard multi-language locales for global team coverage.</p>
+          </div>
+        </div>
+
+        <div class="cpr-faq-item">
+          <div class="cpr-faq-trigger">
+            <span>How flexible are your contracts?</span>
+            <i class="fa fa-angle-down"></i>
+          </div>
+          <div class="cpr-faq-content">
+            <p>You can choose month-to-month cycles or annual commitments. There are no locking provisions beyond your active cycle parameters.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="cpr-more-questions-box">
+        <h4>Have more questions?</h4>
+        <p>Our team is here to help you find the perfect plan for your organization.</p>
+        <div class="cpr-more-box-actions">
+          <a href="../../signup/signup.html" class="cpr-btn-pink-action">Start Free Trial</a>
+          <button class="cpr-btn-white-action">Contact Sales</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MORE MODULES MODAL ══════════════════════════════════════════════ -->
+  <div class="cpr-modal-overlay" id="cprMoreModulesModal">
+    <div class="cpr-modal-card animate-fade-in">
+      <div class="cpr-modal-header">
+        <h3>More Modules</h3>
+        <button class="cpr-modal-close-btn" id="cprCloseModalBtn"><i class="fa fa-times"></i></button>
+      </div>
+      <div class="cpr-modal-grid">
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-clock-o"></i></div>
+          <span class="cpr-mod-title-text">Cleon Time (Claims)</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-calendar-times-o"></i></div>
+          <span class="cpr-mod-title-text">Leave & Absence</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-bullseye"></i></div>
+          <span class="cpr-mod-title-text">Performance Appraisal</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-id-card-o"></i></div>
+          <span class="cpr-mod-title-text">Verification & KYC</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-check-square-o"></i></div>
+          <span class="cpr-mod-title-text">Internal Control</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-shopping-bag"></i></div>
+          <span class="cpr-mod-title-text">Cleon Market Place</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-heartbeat"></i></div>
+          <span class="cpr-mod-title-text">Health & HMO</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-calendar-check-o"></i></div>
+          <span class="cpr-mod-title-text">Attendance & Shift Management</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-graduation-cap"></i></div>
+          <span class="cpr-mod-title-text">e-Learning</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-comments-o"></i></div>
+          <span class="cpr-mod-title-text">HR Advisory</span>
+        </div>
+        <div class="cpr-modal-selection-card">
+          <div class="cpr-mod-icon-box"><i class="fa fa-briefcase"></i></div>
+          <span class="cpr-mod-title-text">Client & Contract Management</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../../services/interactive/js/navbar.js"></script>
+  <script src="js/pricing.js"></script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marketplace – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/marketplace.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../../../all-modules/marketplace-ecosystem/signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <a href="../../../ai.html" class="chr-nav__new-badge">
+            ✦ AI
+          </a>
+        </li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../../../all-modules/marketplace-ecosystem/signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="mp-hero">
+    <div class="mp-container mp-hero-content">
+      <div class="mp-hero-icon-wrap">
+        <i class="fa fa-shopping-bag"></i>
+      </div>
+      <h1 class="mp-hero-title">Marketplace</h1>
+      <p class="mp-hero-subtitle">Integrated HR services and vendor ecosystem</p>
+      <p class="mp-hero-description">
+        Access a trusted marketplace of HR services, tools, and vendors with seamless integrations that extend your HR capabilities without additional IT overhead.
+      </p>
+      <a href="../signup/signup.html" class="mp-btn-white">Start now, it's free <i class="fa fa-arrow-right"></i></a>
+    </div>
+  </section>
+
+  <!-- ══ WHO IT'S FOR ═════════════════════════════════════════════════════ -->
+  <section class="mp-section mp-bg-light">
+    <div class="mp-container">
+      <h2 class="mp-section-title">Who It's For</h2>
+      <div class="mp-grid-3">
+        <div class="mp-card">
+          <div class="mp-card-icon"><i class="fa fa-users"></i></div>
+          <h3 class="mp-card-title">HR Teams</h3>
+          <p class="mp-card-text">Discover, compare, and instantly deploy vetted third-party HR service bundles and software integrations without tedious contract processes.</p>
+        </div>
+        <div class="mp-card">
+          <div class="mp-card-icon"><i class="fa fa-code"></i></div>
+          <h3 class="mp-card-title">IT Teams</h3>
+          <p class="mp-card-text">Manage integrated party tools in a secure, unified ecosystem, reducing customs integration workloads and security review cycles.</p>
+        </div>
+        <div class="mp-card">
+          <div class="mp-card-icon"><i class="fa fa-user-circle-o"></i></div>
+          <h3 class="mp-card-title">Employees</h3>
+          <p class="mp-card-text">Access perks, optional perks programs, and professional health or workspace benefits natively through their existing corporate portal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ KEY FEATURES ══════════════════════════════════════════════════════ -->
+  <section class="mp-section">
+    <div class="mp-container">
+      <h2 class="mp-section-title">Key Features</h2>
+      <div class="mp-grid-2">
+        <div class="mp-feature-item">
+          <div class="mp-feature-icon"><i class="fa fa-folder-open-o"></i></div>
+          <div class="mp-feature-body">
+            <h4 class="mp-feature-title">Service Directory</h4>
+            <p class="mp-feature-desc">Curated catalog of vetted third-party providers specializing in global health benefits, background vetting, localized compliance legal aids, and operational training tasks.</p>
+          </div>
+        </div>
+        <div class="mp-feature-item">
+          <div class="mp-feature-icon"><i class="fa fa-bolt"></i></div>
+          <div class="mp-feature-body">
+            <h4 class="mp-feature-title">One-Click Integration</h4>
+            <p class="mp-feature-desc">Pre-built configurations connect popular performance management layers, learning modules, or time tracking apps with one single system click.</p>
+          </div>
+        </div>
+        <div class="mp-feature-item">
+          <div class="mp-feature-icon"><i class="fa fa-address-book-o"></i></div>
+          <div class="mp-feature-body">
+            <h4 class="mp-feature-title">Vendor Management</h4>
+            <p class="mp-feature-desc">Centralized interface to track status tokens, manage contract renewals, configure access constraints, and monitor organizational vendor spending trends metrics.</p>
+          </div>
+        </div>
+        <div class="mp-feature-item">
+          <div class="mp-feature-icon"><i class="fa fa-gift"></i></div>
+          <div class="mp-feature-body">
+            <h4 class="mp-feature-title">Employee Perks</h4>
+            <p class="mp-feature-desc">Discover, customize, and deliver marketplace-derived exclusive partner discounts, health memberships, and workspace setup benefits allocations cleanly.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOW IT HELPS ══════════════════════════════════════════════════════ -->
+  <section class="mp-section mp-bg-light">
+    <div class="mp-container">
+      <h2 class="mp-section-title">How It Helps Your Business</h2>
+      <div class="mp-grid-2">
+        <div class="mp-benefit-card">
+          <i class="fa fa-check mp-check-icon"></i>
+          <div>
+            <h4 class="mp-benefit-title">Extends Capabilities</h4>
+            <p class="mp-benefit-desc">Deploy specialized third-party global HR services instantly without having to hire internal teams or manage fragmented disconnected software ecosystems manually.</p>
+          </div>
+        </div>
+        <div class="mp-benefit-card">
+          <i class="fa fa-check mp-check-icon"></i>
+          <div>
+            <h4 class="mp-benefit-title">Saves Time</h4>
+            <p class="mp-benefit-desc">Pre-negotiated contract layers and instant integration adapters drastically reduce standard legal reviews, structural scoping, and procurement timing bottlenecks.</p>
+          </div>
+        </div>
+        <div class="mp-benefit-card">
+          <i class="fa fa-check mp-check-icon"></i>
+          <div>
+            <h4 class="mp-benefit-title">Reduces IT Burden</h4>
+            <p class="mp-benefit-desc">Standardized API mappings and sandboxed partner components completely eliminate the need for engineering teams to write and maintain brittle custom integrations.</p>
+          </div>
+        </div>
+        <div class="mp-benefit-card">
+          <i class="fa fa-check mp-check-icon"></i>
+          <div>
+            <h4 class="mp-benefit-title">Increases Employee Value</h4>
+            <p class="mp-benefit-desc">Boost your total compensation framework by offering premium, curated benefits and corporate partner savings programs that scale up employee satisfaction.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ADDITIONAL BENEFITS ═══════════════════════════════════════════════ -->
+  <section class="mp-section">
+    <div class="mp-container">
+      <h2 class="mp-section-title">Additional Benefits</h2>
+      <div class="mp-grid-2 mp-additional-list">
+        <div class="mp-list-item"><i class="fa fa-check"></i> Background check and verification review</div>
+        <div class="mp-list-item"><i class="fa fa-check"></i> Benefits administration partners</div>
+        <div class="mp-list-item"><i class="fa fa-check"></i> Learning content and course providers</div>
+        <div class="mp-list-item"><i class="fa fa-check"></i> Recruitment marketing and job boards</div>
+        <div class="mp-list-item"><i class="fa fa-check"></i> Employee assistance programs (EAP)</div>
+        <div class="mp-list-item"><i class="fa fa-check"></i> Employee discount programs</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USE CASES ════════════════════════════════════════════════════════ -->
+  <section class="mp-section mp-bg-light">
+    <div class="mp-container">
+      <h2 class="mp-section-title">Real-World Use Cases</h2>
+      <div class="mp-grid-2">
+        <div class="mp-usecase-card">
+          <div class="mp-usecase-icon"><i class="fa fa-line-chart"></i></div>
+          <h3 class="mp-usecase-title">Benefits Enhancement</h3>
+          <p class="mp-usecase-desc">A mid-sized company improved employee retention metrics by 15% through marketplace partners using corporate gym discounts, financial wellness sessions, and mental health services.</p>
+        </div>
+        <div class="mp-usecase-card">
+          <div class="mp-usecase-icon"><i class="fa fa-cubes"></i></div>
+          <h3 class="mp-usecase-title">Specialized Services</h3>
+          <p class="mp-usecase-desc">A startup expanded capabilities by integrating marketplace ecosystem partners for automated background checks, localized benefits administration, and EAP services without hiring specialists.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA ═══════════════════════════════════════════════════════════════ -->
+  <section class="mp-cta">
+    <div class="mp-container mp-cta-content">
+      <h2 class="mp-cta-title">Ready to Transform Your HR Operations?</h2>
+      <p class="mp-cta-subtitle">Start now for free and experience the power of Marketplace</p>
+      <a href="../signup/signup.html" class="mp-btn-white">Start Your Free Trial</a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="../../../pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/marketplace.js"></script>
+</body>
+</html>
