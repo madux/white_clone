@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Petty Cash – CleonHR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <link rel="stylesheet" href="../../../css/main.css" />
+  <link rel="stylesheet" href="../../../css/navbar.css" />
+  <link rel="stylesheet" href="css/petty-cash.css" />
+</head>
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════════════════ -->
+  <nav class="chr-nav" id="chr-nav">
+    <div class="chr-nav__inner">
+      <a href="../../../index.html" class="chr-nav__logo">
+        <span class="chr-nav__logo-dot"></span>CleonHR
+      </a>
+
+      <ul class="chr-nav__links" id="chr-nav-links">
+        <li data-dropdown="services">
+          <a href="#">
+            Services <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-svc-dropdown">
+              <div class="chr-svc-sidebar">
+                <div class="chr-svc-sidebar__apps-label">Apps</div>
+                <button class="chr-svc-sidebar__item chr-svc--active" data-category="core-hr">
+                  <i class="fa fa-cubes"></i> Core HR Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="workforce">
+                  <i class="fa fa-clock-o"></i> Workforce Management
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="talent">
+                  <i class="fa fa-trophy"></i> Talent & Performance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="payroll">
+                  <i class="fa fa-money"></i> Payroll & Finance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="compliance">
+                  <i class="fa fa-shield"></i> Compliance & Governance
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="client">
+                  <i class="fa fa-briefcase"></i> Client & Business Operations
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="platform">
+                  <i class="fa fa-bolt"></i> Platform & Intelligence
+                </button>
+                <button class="chr-svc-sidebar__item" data-category="marketplace">
+                  <i class="fa fa-shopping-cart"></i> Marketplace & Ecosystem
+                </button>
+              </div>
+
+              <div class="chr-svc-content">
+                <div class="chr-svc-content__header">
+                  <div class="chr-svc-content__eyebrow">CORE HR OPERATIONS</div>
+                  <div class="chr-svc-content__title">Core HR Operations</div>
+                  <div class="chr-svc-content__desc">Manage employee records, organizational structure, and core HR operations.</div>
+                </div>
+                <div class="chr-svc-cards"></div>
+              </div>
+
+              <div class="chr-svc-api">
+                <span class="chr-svc-api__badge">New</span>
+                <div class="chr-svc-api__icon"><i class="fa fa-plug"></i></div>
+                <div class="chr-svc-api__title">CleonHR API & Integration Platform</div>
+                <div class="chr-svc-api__desc">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</div>
+                <div style="margin-top:8px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">99.9%</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Uptime</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;">
+                    <span style="font-size:20px;font-weight:800;color:var(--chr-text);">Enterprise</span>
+                    <span style="font-size:11px;color:var(--chr-muted);">Secure</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chr-svc-bottom">
+              <div class="chr-svc-badges">
+                <span class="chr-svc-badge"><i class="fa fa-bolt"></i> Lightning Fast</span>
+                <span class="chr-svc-badge"><i class="fa fa-shield"></i> Enterprise Secure</span>
+                <span class="chr-svc-badge"><i class="fa fa-signal"></i> Highly Scalable</span>
+              </div>
+              <a href="../signup/signup.html" class="chr-svc-cta">Start now, it's free</a>
+            </div>
+          </div>
+        </li>
+
+        <li data-dropdown="industries">
+          <a href="#">
+            Industries <i class="fa fa-angle-down chr-nav__chevron"></i>
+          </a>
+          <div class="chr-nav__dropdown">
+            <div class="chr-ind-dropdown">
+              <div class="chr-ind-left">
+                <div class="chr-ind-left__eyebrow">INDUSTRY SOLUTIONS</div>
+                <div class="chr-ind-left__title">Purpose-built workflows tailored for different industries and workforce structures.</div>
+                <div class="chr-ind-grid">
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--pink"><i class="fa fa-heartbeat"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Healthcare & HMO</div>
+                      <div class="chr-ind-card__desc">Manage hospitals, HMOs, medical staff, compliance, shift scheduling, and healthcare payroll.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--blue"><i class="fa fa-university"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Financial Services</div>
+                      <div class="chr-ind-card__desc">Support regulated workforce operations, KYC verification, internal controls, and payroll automation.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--purple"><i class="fa fa-industry"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Manufacturing</div>
+                      <div class="chr-ind-card__desc">Track workforce attendance, shift operations, compliance, and employee productivity across factories.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--green"><i class="fa fa-shopping-bag"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Retail & E-Commerce</div>
+                      <div class="chr-ind-card__desc">Simplify scheduling, payroll, contract staff management, and workforce performance.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--teal"><i class="fa fa-truck"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Logistics & Transportation</div>
+                      <div class="chr-ind-card__desc">Manage mobile teams, attendance, claims, contracts, and operational workforce tracking.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--orange"><i class="fa fa-graduation-cap"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Education</div>
+                      <div class="chr-ind-card__desc">Digitize staff management, payroll, e-learning, leave management, and institutional HR operations.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--indigo"><i class="fa fa-shield"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Government & Public Sector</div>
+                      <div class="chr-ind-card__desc">Enterprise workforce governance, payroll compliance, approvals, and employee lifecycle management.</div>
+                    </div>
+                  </div>
+                  <div class="chr-ind-card">
+                    <div class="chr-ind-card__icon chr-ind-card__icon--red"><i class="fa fa-fire"></i></div>
+                    <div class="chr-ind-card__body">
+                      <div class="chr-ind-card__title">Oil & Gas</div>
+                      <div class="chr-ind-card__desc">Support complex workforce structures, offshore scheduling, compliance, and contractor management.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="chr-ind-promo">
+                <div class="chr-ind-promo__icon"><i class="fa fa-building"></i></div>
+                <div class="chr-ind-promo__title">Built for Enterprise Workforce Management</div>
+                <div class="chr-ind-promo__desc">CleonHR adapts to the operational, compliance, payroll, and workforce requirements of your industry.</div>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--primary">Explore All Industries <i class="fa fa-arrow-right"></i></a>
+                <a href="#" class="chr-ind-promo__btn chr-ind-promo__btn--outline">Book Enterprise Demo</a>
+                <div class="chr-ind-promo__trusted">Trusted by:</div>
+                <div class="chr-ind-promo__tags">
+                  <span class="chr-ind-promo__tag">Healthcare</span>
+                  <span class="chr-ind-promo__tag">Finance</span>
+                  <span class="chr-ind-promo__tag">Logistics</span>
+                  <span class="chr-ind-promo__tag">Manufacturing</span>
+                  <span class="chr-ind-promo__tag">Government</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+        <li>
+          <a href="../../../ai.html" class="chr-nav__new-badge">
+            <i class="fa fa-bolt"></i> AI
+          </a>
+        </li>
+        <li><a href="../../../pricing.html">Pricing</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+
+      <div class="chr-nav__actions">
+        <a href="#" class="chr-nav__login">Login</a>
+        <a href="../signup/signup.html" class="chr-btn--nav-signup">Sign Up</a>
+      </div>
+
+      <button class="chr-nav__burger" id="chr-burger" aria-label="Toggle menu">
+        <i class="fa fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════════ -->
+  <section class="pc-hero">
+    <div class="pc-container pc-hero-content">
+      <div class="pc-hero-icon-wrapper">
+        <i class="fa fa-exchange"></i>
+      </div>
+      <h1 class="pc-hero-title">Petty Cash</h1>
+      <p class="pc-hero-subtitle">Complete control over petty cash funds, disbursements, and reconciliation</p>
+      <p class="pc-hero-desc">
+        Manage petty cash across all departments and locations with full transparency — from fund replenishment requests and disbursement tracking to receipt matching, custodian accountability, and automated month-end reconciliation.
+      </p>
+      <a href="../signup/signup.html" class="pc-btn-primary">Start now, it's free <i class="fa fa-arrow-right"></i></a>
+    </div>
+  </section>
+
+  <!-- ══ WHO IT'S FOR ══════════════════════════════════════════════════════ -->
+  <section class="pc-section pc-bg-light">
+    <div class="pc-container">
+      <h2 class="pc-section-title">Who It's For</h2>
+      <div class="pc-grid pc-grid-3">
+        <div class="pc-card pc-target-card">
+          <div class="pc-card-icon-pink"><i class="fa fa-calculator"></i></div>
+          <h3>Finance & Accounts Teams</h3>
+          <p>Monitor petty cash balances, review disbursements, and reconcile fund usage across departments.</p>
+        </div>
+        <div class="pc-card pc-target-card">
+          <div class="pc-card-icon-pink"><i class="fa fa-user"></i></div>
+          <h3>Petty Cash Custodians</h3>
+          <p>Record disbursements, attach receipts, and request fund replenishment with a simple digital workflow.</p>
+        </div>
+        <div class="pc-card pc-target-card">
+          <div class="pc-card-icon-pink"><i class="fa fa-shield"></i></div>
+          <h3>Department Managers & Auditors</h3>
+          <p>Approve expenditures, review transaction history, and ensure policy compliance across all funds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ KEY FEATURES ══════════════════════════════════════════════════════ -->
+  <section class="pc-section">
+    <div class="pc-container">
+      <h2 class="pc-section-title">Key Features</h2>
+      <div class="pc-grid pc-grid-2">
+        <div class="pc-feature-item">
+          <div class="pc-feature-icon"><i class="fa fa-sliders"></i></div>
+          <div class="pc-feature-text">
+            <h3>Fund Setup & Custodian Management</h3>
+            <p>Create multiple petty cash funds by department or location, assign custodians, and set spending limits and categories.</p>
+          </div>
+        </div>
+        <div class="pc-feature-item">
+          <div class="pc-feature-icon"><i class="fa fa-file-text-o"></i></div>
+          <div class="pc-feature-text">
+            <h3>Disbursement Recording</h3>
+            <p>Log every cash payment with purpose, category, receipt attachments, and approval in real-time from any device.</p>
+          </div>
+        </div>
+        <div class="pc-feature-item">
+          <div class="pc-feature-icon"><i class="fa fa-refresh"></i></div>
+          <div class="pc-feature-text">
+            <h3>Replenishment Workflow</h3>
+            <p>Custodians submit replenishment requests when the fund falls below the threshold; finance approves and records the top-up digitally.</p>
+          </div>
+        </div>
+        <div class="pc-feature-item">
+          <div class="pc-feature-icon"><i class="fa fa-bar-chart"></i></div>
+          <div class="pc-feature-text">
+            <h3>Reconciliation & Reporting</h3>
+            <p>Automated period-end reconciliation comparing physical cash balance against recorded disbursements, with downloadable reports for audit.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ HOW IT HELPS ══════════════════════════════════════════════════════ -->
+  <section class="pc-section pc-bg-light">
+    <div class="pc-container">
+      <h2 class="pc-section-title">How It Helps Your Business</h2>
+      <div class="pc-grid pc-grid-2">
+        <div class="pc-card pc-benefit-card">
+          <div class="pc-benefit-header">
+            <i class="fa fa-check pc-check-icon"></i>
+            <h3>Eliminates Cash Leakage</h3>
+          </div>
+          <p>Every disbursement is logged and receipt-matched, closing the gaps that allow undocumented spending and petty pilferage.</p>
+        </div>
+        <div class="pc-card pc-benefit-card">
+          <div class="pc-benefit-header">
+            <i class="fa fa-check pc-check-icon"></i>
+            <h3>Simplifies Reconciliation</h3>
+          </div>
+          <p>Automated running balance and end-of-period reconciliation reports replace manual spreadsheet tallies, saving hours every month.</p>
+        </div>
+        <div class="pc-card pc-benefit-card">
+          <div class="pc-benefit-header">
+            <i class="fa fa-check pc-check-icon"></i>
+            <h3>Improves Audit Readiness</h3>
+          </div>
+          <p>A complete, searchable transaction trail with attached receipts means petty cash audits are completed in minutes, not hours.</p>
+        </div>
+        <div class="pc-card pc-benefit-card">
+          <div class="pc-benefit-header">
+            <i class="fa fa-check pc-check-icon"></i>
+            <h3>Enforces Spending Policies</h3>
+          </div>
+          <p>Category limits and approval workflows prevent unauthorized spending before disbursements are made, not after the fact.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ ADDITIONAL BENEFITS ════════════════════════════════════════════════ -->
+  <section class="pc-section">
+    <div class="pc-container">
+      <h2 class="pc-section-title">Additional Benefits</h2>
+      <div class="pc-grid pc-grid-2 pc-bullets-grid">
+        <ul class="pc-bullet-list">
+          <li><i class="fa fa-check pc-check-pink"></i> Support for multiple petty cash funds across locations</li>
+          <li><i class="fa fa-check pc-check-pink"></i> Mobile receipt capture with automatic balance update</li>
+          <li><i class="fa fa-check pc-check-pink"></i> Integration with Chart of Accounts for automatic journal posting</li>
+        </ul>
+        <ul class="pc-bullet-list">
+          <li><i class="fa fa-check pc-check-pink"></i> Configurable per-transaction and daily spending limits</li>
+          <li><i class="fa fa-check pc-check-pink"></i> Role-based access for custodians, approvers, and auditors</li>
+          <li><i class="fa fa-check pc-check-pink"></i> Trend reports showing spend patterns by category and department</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USE CASES ═════════════════════════════════════════════════════════ -->
+  <section class="pc-section pc-bg-light">
+    <div class="pc-container">
+      <h2 class="pc-section-title">Real-World Use Cases</h2>
+      <div class="pc-grid pc-grid-2">
+        <div class="pc-card pc-usecase-card">
+          <div class="pc-card-icon-pink"><i class="fa fa-building-o"></i></div>
+          <h3>Multi-Branch Retail Chain</h3>
+          <p>A retail chain with 20 branches replaced paper-based petty cash registers with digital funds per location. Monthly reconciliation time dropped from 2 hours per branch to under 15 minutes, and unaccounted disbursements fell to zero within the first quarter.</p>
+        </div>
+        <div class="pc-card pc-usecase-card">
+          <div class="pc-card-icon-pink"><i class="fa fa-globe"></i></div>
+          <h3>NGO Field Operations</h3>
+          <p>A non-profit managing field programs across 6 states gave each state coordinator a capped petty cash fund. Real-time visibility into balances and spending enabled the finance team to spot a reporting anomaly and prevent a ₦450,000 loss.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CTA BANNER ════════════════════════════════════════════════════════ -->
+  <section class="pc-cta">
+    <div class="pc-container pc-cta-content">
+      <h2 class="pc-cta-title">Ready to Transform Your HR Operations?</h2>
+      <p class="pc-cta-subtitle">Start now for free and experience the power of Petty Cash</p>
+      <a href="../signup/signup.html" class="pc-btn-white">Start Your Free Trial</a>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════════ -->
+  <footer class="chr-footer">
+    <div class="chr-footer__inner">
+      <div class="chr-footer__top">
+        <div class="chr-footer__brand">
+          <div class="chr-footer__logo">
+            <span class="chr-footer__logo-dot"></span> CleonHR
+          </div>
+          <p class="chr-footer__desc">Transforming people management for modern enterprises across Africa and beyond.</p>
+          <div class="chr-footer__socials">
+            <a href="#" aria-label="X / Twitter"><i class="fa fa-twitter"></i></a>
+            <a href="#" aria-label="Facebook"><i class="fa fa-facebook"></i></a>
+            <a href="#" aria-label="Instagram"><i class="fa fa-instagram"></i></a>
+            <a href="#" aria-label="YouTube"><i class="fa fa-youtube-play"></i></a>
+            <a href="#" aria-label="LinkedIn"><i class="fa fa-linkedin"></i></a>
+          </div>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#">Features</a></li>
+            <li><a href="../../../pricing.html">Pricing</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Changelog</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="#">About Us</a></li>
+            <li><a href="#">Blog</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="chr-footer__col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="chr-footer__bottom">
+        <div class="chr-footer__bottom-logo">
+          <span class="chr-footer__logo-dot"></span> CleonHR
+        </div>
+        <p>&copy; 2026 CleonHR. All rights reserved.</p>
+        <div class="chr-footer__bottom-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../../../js/navbar.js"></script>
+  <script src="js/petty-cash.js"></script>
+</body>
+</html>

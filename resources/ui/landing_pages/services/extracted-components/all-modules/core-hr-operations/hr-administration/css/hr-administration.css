@@ -1,0 +1,380 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR HR Administration (Extracted) — hr-administration.css
+   Prefix: hra-  |  Font: DM Sans  |  Icons: FA 4.7
+   Primary: #e01d81  |  Gradient: #e21d84 → #e01d81 → #c81962
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --hra-primary:     #e01d81;
+  --hra-primary-d:   #c81962;
+  --hra-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --hra-text:        #1e293b;
+  --hra-muted:       #64748b;
+  --hra-bg-light:    #f8fafc;
+  --hra-bg-white:    #ffffff;
+  --hra-border:      #edf2f7;
+  --hra-radius:      12px;
+  --hra-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--hra-font);
+  color: var(--hra-text);
+  background-color: var(--hra-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hra-container {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── HERO ─────────────────────────────────────────────────── */
+.hra-hero {
+  background: var(--hra-grad);
+  color: #fff;
+  text-align: center;
+  padding: 80px 20px 100px;
+}
+
+.hra-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hra-hero-icon-wrapper {
+  background: rgba(255,255,255,.15);
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  backdrop-filter: blur(4px);
+}
+
+.hra-hero-icon { font-size: 28px; color: #fff; }
+
+.hra-hero-title {
+  font-size: 44px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+
+.hra-hero-subtitle {
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 24px;
+  opacity: .95;
+}
+
+.hra-hero-desc {
+  font-size: 16px;
+  max-width: 680px;
+  margin-bottom: 36px;
+  opacity: .85;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.hra-hero-desc span {
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  opacity: .85;
+  line-height: 1.7 !important;
+}
+
+/* ── BUTTONS ──────────────────────────────────────────────── */
+.hra-btn-primary {
+  background: #fff;
+  color: var(--hra-primary);
+  border: none;
+  padding: 14px 28px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+  transition: transform .2s, box-shadow .2s;
+  text-decoration: none;
+}
+
+.hra-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+
+.hra-btn-white {
+  background: #fff;
+  color: var(--hra-primary);
+  border: none;
+  padding: 14px 32px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  transition: transform .2s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hra-btn-white:hover { transform: translateY(-1px); }
+
+/* ── SECTIONS ─────────────────────────────────────────────── */
+.hra-section {
+  padding: 80px 0;
+}
+
+.hra-bg-light { background: var(--hra-bg-light); }
+.hra-bg-white { background: var(--hra-bg-white); }
+
+.hra-section-title {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 48px;
+  color: var(--hra-text);
+}
+
+.hra-section-title span {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: var(--hra-text) !important;
+}
+
+/* ── GRIDS ────────────────────────────────────────────────── */
+.hra-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.hra-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 32px;
+}
+
+/* ── CARDS ────────────────────────────────────────────────── */
+.hra-card {
+  background: var(--hra-bg-white);
+  border-radius: var(--hra-radius);
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -1px rgba(0,0,0,.03);
+  border: 1px solid var(--hra-border);
+}
+
+.hra-card-icon-pink {
+  background: #fdf2f8;
+  color: var(--hra-primary);
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+
+.hra-card-icon-pink span {
+  background: #fdf2f8 !important;
+  color: var(--hra-primary) !important;
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px !important;
+}
+
+.hra-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.hra-card-title span {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.hra-card-text {
+  color: var(--hra-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.hra-card-text span {
+  font-size: 14px !important;
+  color: var(--hra-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* ── FEATURES ─────────────────────────────────────────────── */
+.hra-feature-item {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.hra-feature-icon {
+  color: var(--hra-primary);
+  font-size: 22px;
+  margin-top: 2px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.hra-feature-content h4 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.hra-feature-content h4 span {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.hra-feature-content p {
+  color: var(--hra-muted);
+  font-size: 15px;
+}
+
+.hra-feature-content p span {
+  color: var(--hra-muted) !important;
+  font-size: 15px !important;
+}
+
+/* ── BUSINESS BENEFITS ────────────────────────────────────── */
+.hra-business-card { padding: 28px; }
+
+.hra-business-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hra-business-header h4 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.hra-business-header h4 span {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.hra-check-icon {
+  color: #10b981;
+  font-size: 16px;
+}
+
+.hra-business-card p {
+  color: var(--hra-muted);
+  font-size: 15px;
+  padding-left: 28px;
+}
+
+.hra-business-card p span {
+  color: var(--hra-muted) !important;
+  font-size: 15px !important;
+}
+
+/* ── BENEFITS LIST ────────────────────────────────────────── */
+.hra-benefits-list {
+  row-gap: 24px;
+  column-gap: 48px;
+}
+
+.hra-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.hra-benefit-item span {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+}
+
+.hra-pink-check {
+  color: var(--hra-primary);
+  font-size: 14px;
+}
+
+/* ── USE CASES ────────────────────────────────────────────── */
+.hra-usecase-card h4 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.hra-usecase-card h4 span {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+}
+
+.hra-usecase-card p {
+  color: var(--hra-muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.hra-usecase-card p span {
+  color: var(--hra-muted) !important;
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+
+/* ── CTA BOTTOM ───────────────────────────────────────────── */
+.hra-cta {
+  background: var(--hra-grad);
+  color: #fff;
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.hra-cta-content h2 {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+
+.hra-cta-content h2 span {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+}
+
+.hra-cta-content p {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 32px;
+}
+
+.hra-cta-content p span {
+  font-size: 16px !important;
+  opacity: .9;
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 968px) {
+  .hra-grid-3, .hra-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .hra-hero-title { font-size: 32px; }
+  .hra-section-title { font-size: 26px; }
+}

@@ -1,0 +1,342 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Attendance & Shift Management — extracted-components
+   Prefix: asm-  |  Font: DM Sans  |  Icons: FA 4.7
+   Odoo-ready: span overrides for t-field dynamic data
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --asm-primary:     #e01d81;
+  --asm-primary-d:   #c81962;
+  --asm-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --asm-text:        #1e293b;
+  --asm-muted:       #64748b;
+  --asm-bg-light:    #f8fafc;
+  --asm-bg-white:    #ffffff;
+  --asm-border:      #edf2f7;
+  --asm-radius:      12px;
+  --asm-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--asm-font);
+  color: var(--asm-text);
+  background-color: var(--asm-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; transition: all .2s ease; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.asm-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.asm-section { padding: 80px 0; }
+.asm-bg-light { background-color: var(--asm-bg-light); }
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.asm-grid { display: grid; gap: 24px; }
+.asm-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.asm-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.asm-hero {
+  background: var(--asm-grad);
+  color: #ffffff;
+  padding: 80px 0 90px;
+  text-align: center;
+}
+.asm-hero-content { max-width: 800px; }
+.asm-hero-icon-wrapper {
+  background-color: rgba(255,255,255,.15);
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 24px;
+}
+.asm-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+.asm-hero-title span {
+  font-size: 42px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.5px !important;
+  color: inherit !important;
+}
+.asm-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .95;
+  margin-bottom: 28px;
+}
+.asm-hero-subtitle span {
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  opacity: .95 !important;
+  color: inherit !important;
+}
+.asm-hero-desc {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  opacity: .85;
+  max-width: 700px;
+  margin: 0 auto 36px;
+}
+.asm-hero-desc span {
+  font-size: 15px !important;
+  font-weight: 300 !important;
+  line-height: 1.7 !important;
+  opacity: .85 !important;
+  color: inherit !important;
+}
+.asm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: var(--asm-primary);
+  padding: 14px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+}
+
+/* ══ SECTION TITLE ═══════════════════════════════════════════ */
+.asm-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+  color: #0f172a;
+}
+.asm-section-title span {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.asm-card {
+  background-color: var(--asm-bg-white);
+  border-radius: var(--asm-radius);
+  padding: 32px;
+  border: 1px solid var(--asm-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,.01);
+}
+.asm-card-icon-pink {
+  background-color: #fff1f6;
+  color: var(--asm-primary);
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* Target cards */
+.asm-target-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--asm-text);
+}
+.asm-target-card h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--asm-text) !important;
+}
+.asm-target-card p {
+  font-size: 14px;
+  color: var(--asm-muted);
+  line-height: 1.6;
+}
+.asm-target-card p span {
+  font-size: 14px !important;
+  color: var(--asm-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.asm-feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 16px 0;
+}
+.asm-feature-icon {
+  color: var(--asm-primary);
+  background-color: #fff1f6;
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.asm-feature-text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--asm-text);
+}
+.asm-feature-text h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--asm-text) !important;
+}
+.asm-feature-text p {
+  font-size: 14px;
+  color: var(--asm-muted);
+  line-height: 1.6;
+}
+.asm-feature-text p span {
+  font-size: 14px !important;
+  color: var(--asm-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* ══ BENEFITS ════════════════════════════════════════════════ */
+.asm-benefit-card { padding: 24px 32px; }
+.asm-benefit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.asm-check-icon {
+  color: var(--asm-primary);
+  background-color: #fff1f6;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.asm-benefit-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--asm-text);
+}
+.asm-benefit-header h3 span {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--asm-text) !important;
+}
+.asm-benefit-card p {
+  font-size: 14px;
+  color: var(--asm-muted);
+  padding-left: 34px;
+}
+.asm-benefit-card p span {
+  font-size: 14px !important;
+  color: var(--asm-muted) !important;
+}
+
+/* ══ ADDITIONAL BENEFITS LIST ════════════════════════════════ */
+.asm-additional-list {
+  row-gap: 20px;
+  column-gap: 48px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.asm-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  color: #334155;
+}
+.asm-list-item span {
+  font-size: 15px !important;
+  color: #334155 !important;
+}
+.asm-list-item i { color: var(--asm-primary); font-size: 14px; }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.asm-usecase-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--asm-text);
+}
+.asm-usecase-card h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--asm-text) !important;
+}
+.asm-usecase-card p {
+  font-size: 14px;
+  color: var(--asm-muted);
+  line-height: 1.65;
+}
+.asm-usecase-card p span {
+  font-size: 14px !important;
+  color: var(--asm-muted) !important;
+  line-height: 1.65 !important;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.asm-cta {
+  background: var(--asm-grad);
+  color: #ffffff;
+  text-align: center;
+  padding: 72px 0;
+}
+.asm-cta-content { max-width: 700px; }
+.asm-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.asm-cta-title span {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+}
+.asm-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 28px;
+}
+.asm-cta-subtitle span {
+  font-size: 16px !important;
+  opacity: .9 !important;
+  color: inherit !important;
+}
+.asm-btn-white {
+  display: inline-block;
+  background-color: #ffffff;
+  color: var(--asm-primary);
+  padding: 14px 32px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .asm-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .asm-grid-2, .asm-grid-3 { grid-template-columns: 1fr; }
+  .asm-hero-title { font-size: 32px; }
+  .asm-cta-title { font-size: 26px; }
+}

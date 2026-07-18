@@ -1,0 +1,342 @@
+/* ═══════════════════════════════════════════════════════════
+   CleonHR Compensation Management — extracted-components
+   Prefix: cm-  |  Font: DM Sans  |  Icons: FA 4.7
+   Odoo-ready: span overrides for t-field dynamic data
+═══════════════════════════════════════════════════════════ */
+
+:root {
+  --cm-primary:     #e01d81;
+  --cm-primary-d:   #c81962;
+  --cm-grad:        linear-gradient(135deg, #e21d84 0%, #e01d81 55%, #c81962 100%);
+  --cm-text:        #1e293b;
+  --cm-muted:       #64748b;
+  --cm-bg-light:    #f8fafc;
+  --cm-bg-white:    #ffffff;
+  --cm-border:      #edf2f7;
+  --cm-radius:      12px;
+  --cm-font:        'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--cm-font);
+  color: var(--cm-text);
+  background-color: var(--cm-bg-white);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; transition: all .2s ease; }
+
+/* ══ CONTAINER ═══════════════════════════════════════════════ */
+.cm-container {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.cm-section { padding: 80px 0; }
+.cm-bg-light { background-color: var(--cm-bg-light); }
+
+/* ══ GRIDS ════════════════════════════════════════════════════ */
+.cm-grid { display: grid; gap: 24px; }
+.cm-grid-3 { grid-template-columns: repeat(3, 1fr); }
+.cm-grid-2 { grid-template-columns: repeat(2, 1fr); }
+
+/* ══ HERO ════════════════════════════════════════════════════ */
+.cm-hero {
+  background: var(--cm-grad);
+  color: #ffffff;
+  padding: 80px 0 90px;
+  text-align: center;
+}
+.cm-hero-content { max-width: 800px; }
+.cm-hero-icon-wrapper {
+  background-color: rgba(255,255,255,.15);
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 24px;
+}
+.cm-hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  letter-spacing: -.5px;
+}
+.cm-hero-title span {
+  font-size: 42px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.5px !important;
+  color: inherit !important;
+}
+.cm-hero-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  opacity: .95;
+  margin-bottom: 28px;
+}
+.cm-hero-subtitle span {
+  font-size: 18px !important;
+  font-weight: 400 !important;
+  opacity: .95 !important;
+  color: inherit !important;
+}
+.cm-hero-desc {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  opacity: .85;
+  max-width: 700px;
+  margin: 0 auto 36px;
+}
+.cm-hero-desc span {
+  font-size: 15px !important;
+  font-weight: 300 !important;
+  line-height: 1.7 !important;
+  opacity: .85 !important;
+  color: inherit !important;
+}
+.cm-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: var(--cm-primary);
+  padding: 14px 28px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+}
+
+/* ══ SECTION TITLE ═══════════════════════════════════════════ */
+.cm-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 48px;
+  color: #0f172a;
+}
+.cm-section-title span {
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+/* ══ CARDS ═══════════════════════════════════════════════════ */
+.cm-card {
+  background-color: var(--cm-bg-white);
+  border-radius: var(--cm-radius);
+  padding: 32px;
+  border: 1px solid var(--cm-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,.01);
+}
+.cm-card-icon-pink {
+  background-color: #fff1f6;
+  color: var(--cm-primary);
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+/* Target cards */
+.cm-target-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--cm-text);
+}
+.cm-target-card h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--cm-text) !important;
+}
+.cm-target-card p {
+  font-size: 14px;
+  color: var(--cm-muted);
+  line-height: 1.6;
+}
+.cm-target-card p span {
+  font-size: 14px !important;
+  color: var(--cm-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* ══ FEATURES ════════════════════════════════════════════════ */
+.cm-feature-item {
+  display: flex;
+  gap: 20px;
+  padding: 16px 0;
+}
+.cm-feature-icon {
+  color: var(--cm-primary);
+  background-color: #fff1f6;
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.cm-feature-text h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--cm-text);
+}
+.cm-feature-text h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--cm-text) !important;
+}
+.cm-feature-text p {
+  font-size: 14px;
+  color: var(--cm-muted);
+  line-height: 1.6;
+}
+.cm-feature-text p span {
+  font-size: 14px !important;
+  color: var(--cm-muted) !important;
+  line-height: 1.6 !important;
+}
+
+/* ══ BENEFITS ════════════════════════════════════════════════ */
+.cm-benefit-card { padding: 24px 32px; }
+.cm-benefit-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.cm-check-icon {
+  color: var(--cm-primary);
+  background-color: #fff1f6;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+.cm-benefit-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+.cm-benefit-header h3 span {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--cm-text) !important;
+}
+.cm-benefit-card p {
+  font-size: 14px;
+  color: var(--cm-muted);
+  padding-left: 34px;
+}
+.cm-benefit-card p span {
+  font-size: 14px !important;
+  color: var(--cm-muted) !important;
+}
+
+/* ══ ADDITIONAL BENEFITS LIST ════════════════════════════════ */
+.cm-additional-list {
+  row-gap: 20px;
+  column-gap: 48px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.cm-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  color: #334155;
+}
+.cm-list-item span {
+  font-size: 15px !important;
+  color: #334155 !important;
+}
+.cm-list-item i { color: var(--cm-primary); font-size: 14px; }
+
+/* ══ USE CASES ═══════════════════════════════════════════════ */
+.cm-usecase-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--cm-text);
+}
+.cm-usecase-card h3 span {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--cm-text) !important;
+}
+.cm-usecase-card p {
+  font-size: 14px;
+  color: var(--cm-muted);
+  line-height: 1.65;
+}
+.cm-usecase-card p span {
+  font-size: 14px !important;
+  color: var(--cm-muted) !important;
+  line-height: 1.65 !important;
+}
+
+/* ══ CTA BANNER ══════════════════════════════════════════════ */
+.cm-cta {
+  background: var(--cm-grad);
+  color: #ffffff;
+  text-align: center;
+  padding: 72px 0;
+}
+.cm-cta-content { max-width: 700px; }
+.cm-cta-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.cm-cta-title span {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: inherit !important;
+}
+.cm-cta-subtitle {
+  font-size: 16px;
+  opacity: .9;
+  margin-bottom: 28px;
+}
+.cm-cta-subtitle span {
+  font-size: 16px !important;
+  opacity: .9 !important;
+  color: inherit !important;
+}
+.cm-btn-white {
+  display: inline-block;
+  background-color: #ffffff;
+  color: var(--cm-primary);
+  padding: 14px 32px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+/* ══ RESPONSIVE ══════════════════════════════════════════════ */
+@media (max-width: 992px) {
+  .cm-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .cm-grid-2, .cm-grid-3 { grid-template-columns: 1fr; }
+  .cm-hero-title { font-size: 32px; }
+  .cm-cta-title { font-size: 26px; }
+}
