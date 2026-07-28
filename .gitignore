@@ -1,6 +1,42 @@
+# Project-specific local files
 resources/ui/AGENTS.md
-.opencode/plans/recruitment-alerts-triggers.md
-.opencode/plans/recruitment-jobs.md
-.opencode/plans/recruitment-schedule-tasks.md
-.opencode/plans/create-job-modal-comprehensive.md
-.opencode/plans/create-job-modal.md
+.opencode/plans/
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.mypy_cache/
+coverage/
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# Odoo local runtime data
+filestore/
+sessions/
+db.sqlite3
+odoo.conf
+*.pid
