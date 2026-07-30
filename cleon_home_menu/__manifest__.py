@@ -24,7 +24,9 @@ Features
     'author': 'Custom',
     'license': 'LGPL-3',
     'depends': ['web'],
-    'data': [],
+    'data': [
+        'views/views.xml'
+    ],
     'assets': {
         'web.assets_backend': [
             'cleon_home_menu/static/src/css/home_menu_overlay.css',
