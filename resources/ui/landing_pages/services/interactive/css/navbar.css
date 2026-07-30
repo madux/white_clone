@@ -451,7 +451,6 @@
 /* ══ INDUSTRIES DROPDOWN ════════════════════════════════════ */
 .chr-ind-dropdown {
   width: 100%;
-  max-width: var(--chr-max);
   margin: 0 auto;
   display: flex;
   flex: 1;
