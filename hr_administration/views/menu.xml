@@ -50,17 +50,7 @@
         </record>
 
 
-    <menuitem
-        id="hr_admin_document_management"
-        name="Document Management"
-        action="hr_employee.action_view_employee_kanban_custom"
-        sequence="80"
-        parent="hr_administration.hr_administration_dashboard"
-    />
-    <record id="hr_administration.hr_admin_document_management" model="ir.ui.menu">
-            <field name="icon_class">fa fa-users</field>
-            <field name="category_name">CleonHR-HR Admin</field>
-        </record>
+    
 
 
     <menuitem
