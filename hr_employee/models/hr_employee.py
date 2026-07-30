@@ -17,7 +17,7 @@ class HrEmployee(models.Model):
     @api.model
     def get_employee_profile_dashboard(self):
         view_id = self.env.ref(
-                'hr_employee.action_view_employee_kanban_custom'
+                'hr_administration.action_view_employee_kanban_custom'
             ).id
         staff_directory = {
                 'type': 'ir.actions.act_window',

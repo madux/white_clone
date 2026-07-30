@@ -324,7 +324,7 @@ body {
 
 .hero-btns { display: flex; gap: 10px; flex-shrink: 0; }
 
-/* .btn {
+.btn {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -337,7 +337,7 @@ body {
   text-decoration: none;
   border: none;
   transition: all .15s;
-} */
+}
 .btn-ghost {
   background: var(--surface);
   border: 1px solid var(--border);

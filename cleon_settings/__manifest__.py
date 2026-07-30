@@ -11,19 +11,26 @@
     'author': 'Maach Software',
     'website': '',
     'depends': [
-        'base', 'hr', 'white_clone_portal'
-    ],
+        'base', 'hr', 'calendar', 'resource', 'hr_employee',
+        'base_addons', 
+        'mail', 
+        'ik_multi_branch', 
+        'hr_company_calendar',  
+        'hr_contract', 
+        'hr_attendance',
+        'hr_recruitment',
+        'hr_warning',
+        'hr_leave_dashboard',
+        'cleon_home_menu',
+        'cleon_license',
+        'hr_cleon_recruitment',
+        ],
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
         'views/favicon.xml',
-        'views/cleon_login.xml',
-        'views/homepage.xml',
     ],
     'assets': {
-        'web.assets_frontend': [
-            'cleon_settings/static/src/css/cleon_login.css',
-        ],
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
             'cleon_settings/static/src/xml/status_widget.xml',
@@ -38,7 +45,7 @@
         ],
     },
     'installable': True,
-    'auto_install': True,
+    'auto_install': False,
     'application': False,
     'license': 'LGPL-3',
 }

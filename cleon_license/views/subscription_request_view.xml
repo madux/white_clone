@@ -171,8 +171,4 @@
         action="action_hope_subscription_request"
         sequence="30"/>
 
-         <record id="cleon_license.menu_hope_subscription_request" model="ir.ui.menu">
-            <field name="icon_class">fa fa-credit-card</field>
-            <field name="category_name">CleonHR-License</field>
-        </record>
 </odoo>

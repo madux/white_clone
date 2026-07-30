@@ -53,7 +53,7 @@ class HrJob(models.Model):
                 }
             
 
-    job_section_descriptions = fields.Many2many('description.sections', string="Key responsibilities") # Table objects for storing different sections of descriptions
+    job_section_descriptions = fields.Many2many('description.sections') # Table objects for storing different sections of descriptions
 
     job_section_proficiency_scale = fields.Many2many('skill.proficiency.scale', string='Proficiency Scale')
 

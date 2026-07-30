@@ -53,7 +53,7 @@ class HrJob(models.Model):
         ('remote', 'Remote'),
         ('hybrid', 'Hybrid'),
         ('full_time', 'Full Time'),
-    ], string="Work Arrangement")
+    ], string="Job Nature")
     hiring_team_ids = fields.Many2many(
         'hr.employee',
         string='Hiring team',
@@ -83,7 +83,7 @@ class HrJob(models.Model):
         string='Location',
         store=True,
     )
-    work_experience_ids = fields.Many2many('hr.work_experience', string="Required Qualification")
+    work_experience_ids = fields.Many2many('hr.work_experience', string="Work experiences")
     work_education_ids = fields.Many2many('hr.work_education', string="Work education")
     work_skill_ids = fields.Many2many('hr.work_skills', string="Work Skills")
     

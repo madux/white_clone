@@ -25,8 +25,8 @@
     ],
     'assets': {
         'web.assets_frontend': [
-            'cleon_license/static/src/css/portal.css',
-            'cleon_license/static/src/js/portal.js',
+            'license/static/src/css/portal.css',
+            'license/static/src/js/portal.js',
         ],
         'web.assets_backend': [
             'https://cdn.jsdelivr.net/npm/chart.js',
