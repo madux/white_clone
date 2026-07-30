@@ -11,6 +11,7 @@
 """,
     'depends': ['base'],
     'data': [
+        'views/views.xml'
     ],
      
     'installable': True,
