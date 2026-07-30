@@ -11,8 +11,20 @@
     'author': 'Maach Software',
     'website': '',
     'depends': [
-        'base', 'hr', 'white_clone_portal'
-    ],
+        'base', 'hr', 'calendar', 'resource', 'hr_employee',
+        'base_addons', 
+        'mail', 
+        'ik_multi_branch', 
+        'hr_company_calendar',  
+        'hr_contract', 
+        'hr_attendance',
+        'hr_recruitment',
+        'hr_warning',
+        'hr_leave_dashboard',
+        'cleon_home_menu',
+        'cleon_license',
+        'hr_cleon_recruitment',
+        ],
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
