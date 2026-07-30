@@ -249,31 +249,6 @@
         <field name="target">current</field>
     </record>
 
-    <record id="action_core_view_hr_core_employee" model="ir.actions.act_window">
-        <field name="name">Employee</field>
-        <field name="res_model">hr.employee</field>
-        <field name="view_mode">tree,kanban,form</field>
-        <field name="view_id" ref="view_hr_core_employee_tree"/>
-        <field name="search_view_id" ref="view_hr_core_employee_search"/>
-        <field name="view_ids" eval="[
-            (5, 0, 0),
-            (0, 0, {
-                'view_mode': 'tree',
-                'view_id': ref('view_hr_core_employee_tree'),
-            }),
-            (0, 0, {
-                'view_mode': 'kanban',
-                'view_id': ref('hr_employee.view_employee_kanban_without_custom'),
-            }),
-        ]"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                No recorded yet.
-            </p>
-            <p>Create a New record.</p>
-        </field>
-    </record>
-
     <record id="action_organisationchart_dashboard" model="ir.actions.act_url">
         <field name="name">Organisation chart</field>
         <field name="url">/organisation-chart</field>
