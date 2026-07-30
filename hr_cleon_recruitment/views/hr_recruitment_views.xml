@@ -39,6 +39,8 @@
         </search>
         </field>
     </record>
+
+    
     <record id="hr_job_recruitment_custom_tree_view" model="ir.ui.view">
         <field name="name">hr.job.candidate.tree</field>
         <field name="model">hr.job</field>
@@ -62,6 +64,11 @@
                 <field name="expected_employees" optional="hide"/>
                 <field name="no_of_hired_employee" optional="hide"/>
                 <field name="company_id" column_invisible="True" on_change="1"/>
+                <button name="%(hr_job_dashboard.action_hr_job_dashboardx)d"
+                        type="action"
+                        class="btn-sm btn-success"
+                        icon="fa-eye"
+                        string="Dashboard"/>
             </tree>
         </field>
     </record>
