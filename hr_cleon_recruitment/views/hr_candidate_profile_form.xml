@@ -9,207 +9,164 @@
                 </header>
                 <!-- <sheet> -->
                     <!-- ===== DETAIL VIEW (from index.html reference) ===== -->
-                <div id="candidateDetailView" class="rc_recruitment_form">
-                    <div class="candidate-hero">
-                        <a class="hero-back-link" type="object" name="hideCandidateDashboard">
-                            <i class="fa fa-arrow-left"></i>
-                            Back to Candidates
-                        </a>
+                    <div id="candidateDetailView">
+                        <div class="candidate-hero">
+                            <a class="hero-back-link" type="object" name="hideCandidateDashboard">
+                                <i class="fa fa-arrow-left"></i>
+                                Back to Candidates
+                            </a>
 
-                        <div class="hero-profile-row">
-                            <div class="hero-avatar-wrap">
-                                <div class="hero-avatar" id="detailDisplayAvatar">TW</div>
-                                <div class="hero-avatar-badge" id="detailDisplayStatus"><field name="stage_id" nolabel="1" readonly="1"/></div>
-                            </div>
-
-                            <div class="hero-info">
-                                <h1 class="hero-name" id="detailDisplayName"><field name="partner_name" nolabel="1" readonly="1"/></h1>
-
-                                <div class="hero-meta-chips">
-                                    <span class="hero-chip">
-                                        <i class="fa fa-briefcase"></i>
-                                        <field name="job_id" nolabel="1" readonly="1"/>
-                                    </span>
-                                    <span class="hero-chip">
-                                        <i class="fa fa-map-pin"></i>
-                                        <span id="detailDisplayLocation"><field name="department_id" nolabel="1" readonly="1"/></span>
-                                    </span>
-                                    <!-- <span class="hero-chip">
-                                        <i class="fa fa-clock"></i>
-                                        <span id="detailDisplayExperience">Exp</span>
-                                    </span>--> 
-                                    <span class="hero-chip">
-                                        <i class="fa fa-building"></i>
-                                        <span id="detailDisplaySource"><field name="applicant_job_location" nolabel="1" readonly="1"/></span>
-                                    </span>  
+                            <div class="hero-profile-row">
+                                <div class="hero-avatar-wrap">
+                                    <div class="hero-avatar" id="detailDisplayAvatar">TW</div>
+                                    <div class="hero-avatar-badge" id="detailDisplayStatus"><field name="stage_id" nolabel="1" readonly="1"/></div>
                                 </div>
 
-                                <div>
-                                    <span class="hero-star-badge" id="detailDisplayRating">★ <field name="priority" nolabel="1" readonly="1" widget="priority"/> Star Candidate</span>
-                                </div>
+                                <div class="hero-info">
+                                    <h1 class="hero-name" id="detailDisplayName"><field name="partner_name" nolabel="1" readonly="1"/></h1>
 
-                                <div class="hero-contacts">
-                                    <div class="hero-contact-item">
-                                        <i class="fa fa-mail"></i>
-                                        <span><field name="email_from" nolabel="1" readonly="1"/></span>
-                                        <div class="hero-contact-copy">
-                                            <i class="fa fa-copy"></i>
+                                    <div class="hero-meta-chips">
+                                        <span class="hero-chip">
+                                            <i class="fa fa-briefcase"></i>
+                                            <field name="job_id" nolabel="1" readonly="1"/>
+                                        </span>
+                                        <span class="hero-chip">
+                                            <i class="fa fa-map-pin"></i>
+                                            <span id="detailDisplayLocation"><field name="department_id" nolabel="1" readonly="1"/></span>
+                                        </span>
+                                        <!-- <span class="hero-chip">
+                                            <i class="fa fa-clock"></i>
+                                            <span id="detailDisplayExperience">Exp</span>
+                                        </span>--> 
+                                        <span class="hero-chip">
+                                            <i class="fa fa-building"></i>
+                                            <span id="detailDisplaySource"><field name="applicant_job_location" nolabel="1" readonly="1"/></span>
+                                        </span>  
+                                    </div>
+
+                                    <div>
+                                        <span class="hero-star-badge" id="detailDisplayRating">★ <field name="priority" nolabel="1" readonly="1" widget="priority"/> Star Candidate</span>
+                                    </div>
+
+                                    <div class="hero-contacts">
+                                        <div class="hero-contact-item">
+                                            <i class="fa fa-mail"></i>
+                                            <span><field name="email_from" nolabel="1" readonly="1"/></span>
+                                            <div class="hero-contact-copy">
+                                                <i class="fa fa-copy"></i>
+                                            </div>
+                                        </div>
+                                        <div class="hero-contact-item">
+                                            <i class="fa fa-phone"></i>
+                                            <span><field name="partner_phone" nolabel="1" readonly="1" placeholder="+1 000 0000"/></span>
                                         </div>
                                     </div>
-                                    <div class="hero-contact-item">
-                                        <i class="fa fa-phone"></i>
-                                        <span><field name="partner_phone" nolabel="1" readonly="1" placeholder="+1 000 0000"/></span>
+                                </div>
+
+                                <div class="hero-actions">
+                                    <button class="btn-send-message" name="button_send_message" type="object">
+                                        <i class="fa fa-send"></i>
+                                        Send Message
+                                    </button>
+                                    <div class="hero-icon-actions">
+                                        <div class="hero-icon-btn"><i class="fa fa-video"></i></div>
+                                        <div class="hero-icon-btn"><i class="fa fa-user-plus"></i></div>
+                                        <div class="hero-icon-btn"><i class="fa fa-share-2"></i></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="hero-actions">
-                                <button class="btn-send-message" name="button_send_message" type="object">
-                                    <i class="fa fa-send"></i>
-                                    Send Message
-                                </button>
-                                <div class="hero-icon-actions">
-                                    <div class="hero-icon-btn"><i class="fa fa-video"></i></div>
-                                    <div class="hero-icon-btn"><i class="fa fa-user-plus"></i></div>
-                                    <div class="hero-icon-btn"><i class="fa fa-share-2"></i></div>
+                            <div class="hero-stats-row">
+                                <div class="hero-stat-card">
+                                    <div class="hero-stat-label">Applications</div>
+                                    <div class="hero-stat-value">1</div>
+                                </div>
+                                <div class="hero-stat-card">
+                                    <div class="hero-stat-label">Interviews</div>
+                                    <div class="hero-stat-value"><field name="number_of_interviews" nolabel="1" readonly="1"/></div>
+                                </div>
+                                <div class="hero-stat-card">
+                                    <div class="hero-stat-label">Response Rate</div>
+                                    <div class="hero-stat-value">34%</div>
+                                </div>
+                                <div class="hero-stat-card">
+                                    <div class="hero-stat-label">Days in Pipeline</div>
+                                    <div class="hero-stat-value"><field name="days_in_pipeline" nolabel="1" readonly="1"/></div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="hero-stats-row">
-                            <div class="hero-stat-card">
-                                <div class="hero-stat-label">Applications</div>
-                                <div class="hero-stat-value">1</div>
-                            </div>
-                            <div class="hero-stat-card">
-                                <div class="hero-stat-label">Interviews</div>
-                                <div class="hero-stat-value"><field name="number_of_interviews" nolabel="1" readonly="1"/></div>
-                            </div>
-                            <div class="hero-stat-card">
-                                <div class="hero-stat-label">Response Rate</div>
-                                <div class="hero-stat-value">34%</div>
-                            </div>
-                            <div class="hero-stat-card">
-                                <div class="hero-stat-label">Days in Pipeline</div>
-                                <div class="hero-stat-value"><field name="days_in_pipeline" nolabel="1" readonly="1"/></div>
-                            </div>
-                        </div>
-                    </div>
-                    <notebook>
-                    
-                        <page class="fa fa-layout-grid" string="Overview">
-                            <!-- <div class="tab-item active" type="object" action="buttonToggleModeAction1">
+                        <nav class="tab-nav">
+                            <div class="tab-item active" type="object" action="buttonToggleModeAction1">
                                 <i class="fa fa-layout-grid"></i>
                                 Overview
-                            </div> -->
-                            <div class="content-body">
-                                <div class="left-col">
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-clipboard"></i>
-                                                Professional Summary
-                                            </div>
-                                            <span class="card-action-link"></span>
-                                        </div>
-                                        <p class="summary-text">
-                                            <field name="experience_text" nolabel="1" readonly="0"/>
-                                        </p>
-                                    </div>
+                            </div>
+                            <div class="tab-item" type="object" action="buttonToggleModeAction2">
+                                <i class="fa fa-file-text"></i>
+                                Resume
+                            </div>
+                            <div class="tab-item" type="object" action="buttonToggleModeAction3">
+                                <i class="fa fa-activity"></i>
+                                Activities
+                            </div>
+                            <div class="tab-item" type="object" action="buttonToggleModeAction4">
+                                <i class="fa fa-folder-open"></i>
+                                Documents
+                            </div>
+                            <div class="tab-item" type="object" action="buttonToggleModeAction5">
+                                <i class="fa fa-briefcase"></i>
+                                Jobs
+                            </div>
+                            <div class="tab-item" action="buttonToggleModeAction6">
+                                <i class="fa fa-message-square"></i>
+                                Messages
+                            </div>
+                            <div class="tab-item" action="buttonToggleModeAction7">
+                                <i class="fa fa-video"></i>
+                                Meeting
+                            </div>
+                        </nav>
 
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-briefcase"></i>
-                                                Work Experience
-                                            </div>
-                                            <span class="card-action-link"></span>
+                        <div class="content-body">
+                            <div class="left-col">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-clipboard"></i>
+                                            Professional Summary
                                         </div>
-                                        <div class="entry-block">
-                                            <field name="work_experience_ids" nolabel="1">
-                                                <kanban editable="bottom">
-                                                    <field name="job_title"/>
-                                                    <field name="company_name"/>
-                                                    <field name="duration_years"/>
-                                                    <field name="location"/>
-                                                    <templates>
-                                                        <t t-name="kanban-box"> 
-                                                            <div class="o_work_exp_card oe_kanban_global_click entry-block">
-
-                                                                <div class="entry-title"><field name="company_name"/></div>
-                                                                <div class="entry-subtitle"><field name="job_title"/> | <field name="duration_years"/> (Years)</div>
-                                                                <div class="entry-meta">
-                                                                    <i class="fa fa-map-pin"></i>
-                                                                    <field name="location"/>
-                                                                </div>
-                                                                <div class="entry-actions">
-                                                                    <span class="entry-action-btn">[Edit]</span>
-                                                                    <span class="entry-action-btn" type="object" name="unlink" confirm="Are you sure you want to delete?">[Delete]</span>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </templates>
-                                                </kanban>
-                                            </field>
-                                        </div>
+                                        <span class="card-action-link"></span>
                                     </div>
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-graduation-cap"></i>
-                                                Education
-                                            </div>
-                                            <span class="card-action-link">+</span>
-                                        </div>
-                                        <div class="entry-block">
-                                            <field name="work_education_ids" nolabel="1">
-                                                <kanban editable="bottom">
-                                                    <field name="qualification_name"/>
-                                                    <field name="institution_name"/>
-                                                    <field name="session"/>
-                                                    <field name="certificate"/>
-                                                    <field name="reference_name"/>
-                                                    <field name="reference_phone"/>
-                                                    <templates>
-                                                        <t t-name="kanban-box"> 
-                                                            <div class="o_work_exp_card oe_kanban_global_click entry-block">
-                                                                <div class="entry-title"><field name="qualification_name"/></div>
-                                                                <div class="entry-subtitle"><field name="institution_name"/> | <field name="session"/> (Years)</div>
-                                                                <div class="entry-meta">
-                                                                    <i class="fa fa-map-pin"></i>
-                                                                    <field name="location"/>
-                                                                </div>
-                                                                <div class="entry-actions">
-                                                                    <span class="entry-action-btn">[Edit]</span>
-                                                                    <span class="entry-action-btn" type="object" name="unlink" confirm="Are you sure you want to delete?">[Delete]</span>
-                                                                </div>
-                                                            </div>
-                                                        </t>
-                                                    </templates>
-                                                </kanban>
-                                            </field>
-                                        </div>
-                                    </div>
+                                    <p class="summary-text">
+                                        <field name="experience_text" nolabel="1" readonly="0"/>
+                                    </p>
+                                </div>
 
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-activity"></i>
-                                                Skills &amp; Competencies
-                                            </div>
-                                            <span class="card-action-link">[Edit]</span>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-briefcase"></i>
+                                            Work Experience
                                         </div>
-                                        <field name="work_skill_ids" nolabel="1">
+                                        <span class="card-action-link"></span>
+                                    </div>
+                                    <div class="entry-block">
+                                        <field name="work_experience_ids" nolabel="1">
                                             <kanban editable="bottom">
-                                                <field name="name"/>
-                                                <field name="proficiency_rate"/>
-                                                <field name="proficiency"/>
-                                                <field name="applicant_id"/>
+                                                <field name="job_title"/>
+                                                <field name="company_name"/>
+                                                <field name="duration_years"/>
+                                                <field name="location"/>
                                                 <templates>
                                                     <t t-name="kanban-box"> 
                                                         <div class="o_work_exp_card oe_kanban_global_click entry-block">
-                                                            <div class="entry-title"><field name="name"/></div>
-                                                            <div class="entry-subtitle"><field name="proficiency" widget="badge"/> | <field name="years_experience"/> (Years)</div>
+
+                                                            <div class="entry-title"><field name="company_name"/></div>
+                                                            <div class="entry-subtitle"><field name="job_title"/> | <field name="duration_years"/> (Years)</div>
+                                                            <div class="entry-meta">
+                                                                <i class="fa fa-map-pin"></i>
+                                                                <field name="location"/>
+                                                            </div>
                                                             <div class="entry-actions">
                                                                 <span class="entry-action-btn">[Edit]</span>
                                                                 <span class="entry-action-btn" type="object" name="unlink" confirm="Are you sure you want to delete?">[Delete]</span>
@@ -219,269 +176,267 @@
                                                 </templates>
                                             </kanban>
                                         </field>
-
-                                        <!-- <div class="skills-section-label">Technical Skills:</div>
-
-                                        <div class="skill-row">
-                                            <span class="skill-label">JavaScript</span>
-                                            <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:75%"></div></div>
-                                            <span class="skill-pct">75%</span>
-                                        </div>
-                                        <div class="skill-row">
-                                            <span class="skill-label">React</span>
-                                            <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:85%"></div></div>
-                                            <span class="skill-pct">85%</span>
-                                        </div>
-                                        <div class="skill-row">
-                                            <span class="skill-label">Node.js</span>
-                                            <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:73%"></div></div>
-                                            <span class="skill-pct">73%</span>
-                                        </div>
-                                        <div class="skill-row">
-                                            <span class="skill-label">TypeScript</span>
-                                            <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:97%"></div></div>
-                                            <span class="skill-pct">97%</span>
-                                        </div>
-                                        <div class="skill-row">
-                                            <span class="skill-label">AWS</span>
-                                            <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:76%"></div></div>
-                                            <span class="skill-pct">76%</span>
-                                        </div> -->
-
-                                        <div class="skills-section-label" style="margin-top:12px;">Soft Skills:</div>
-                                        <div class="soft-skills-wrap">
-                                            <span class="soft-skill-chip">Leadership</span>
-                                            <span class="soft-skill-chip">Communication</span>
-                                            <span class="soft-skill-chip">Problem Solving</span>
-                                            <span class="soft-skill-chip">Teamwork</span>
-                                        </div>
                                     </div>
-
+                                </div>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-graduation-cap"></i>
+                                            Education
+                                        </div>
+                                        <span class="card-action-link">+</span>
+                                    </div>
+                                    <div class="entry-block">
+                                        <field name="work_education_ids" nolabel="1">
+                                            <kanban editable="bottom">
+                                                <field name="qualification_name"/>
+                                                <field name="institution_name"/>
+                                                <field name="session"/>
+                                                <field name="certificate"/>
+                                                <field name="reference_name"/>
+                                                <field name="reference_phone"/>
+                                                <templates>
+                                                    <t t-name="kanban-box"> 
+                                                        <div class="o_work_exp_card oe_kanban_global_click entry-block">
+                                                            <div class="entry-title"><field name="qualification_name"/></div>
+                                                            <div class="entry-subtitle"><field name="institution_name"/> | <field name="session"/> (Years)</div>
+                                                            <div class="entry-meta">
+                                                                <i class="fa fa-map-pin"></i>
+                                                                <field name="location"/>
+                                                            </div>
+                                                            <div class="entry-actions">
+                                                                <span class="entry-action-btn">[Edit]</span>
+                                                                <span class="entry-action-btn" type="object" name="unlink" confirm="Are you sure you want to delete?">[Delete]</span>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </templates>
+                                            </kanban>
+                                        </field>
+                                    </div>
                                 </div>
 
-                                <div class="right-col">
-
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-file-text"></i>
-                                                Quick Info
-                                            </div>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-activity"></i>
+                                            Skills &amp; Competencies
                                         </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-mail"></i>
-                                            <span class="quick-info-text" id="detailDisplayEmail"><field name="email_from" nolabel="1" readonly="1"/></span>
-                                            <div class="quick-info-copy" data-copy="email"><i class="fa fa-copy"></i></div>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-phone"></i>
-                                            <span class="quick-info-text" id="detailDisplayPhone"><field name="partner_phone" nolabel="1" readonly="1" placeholder="+1 000 0000"/></span>
-                                            <div class="quick-info-copy" data-copy="phone"><i class="fa fa-copy"></i></div>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-map-pin"></i>
-                                            <span class="quick-info-text" id="detailDisplayLocation"><field name="candidate_location" nolabel="1" readonly="0"/></span>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-globe"></i>
-                                            <span class="quick-info-text" id="detailDisplaySource">—</span>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-user"></i>
-                                            <span class="quick-info-text" id="detailDisplaySourcedBy"><field name="candidate_source" nolabel="1" readonly="0"/></span>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-calendar"></i>
-                                            <span class="quick-info-text" id="detailDisplayAppliedDate"><field name="applied_date" nolabel="1" readonly="0"/></span>
-                                        </div>
-                                        <div class="quick-info-row">
-                                            <i class="quick-info-icon fa fa-hash"></i>
-                                            <span class="quick-info-text" id="detailDisplayId"><field name="applicant_code" nolabel="1" readonly="1"/></span>
-                                        </div>
+                                        <span class="card-action-link">[Edit]</span>
                                     </div>
+                                    <field name="work_skill_ids" nolabel="1">
+                                        <kanban editable="bottom">
+                                            <field name="name"/>
+                                            <field name="proficiency_rate"/>
+                                            <field name="proficiency"/>
+                                            <field name="applicant_id"/>
+                                            <templates>
+                                                <t t-name="kanban-box"> 
+                                                    <div class="o_work_exp_card oe_kanban_global_click entry-block">
+                                                        <div class="entry-title"><field name="name"/></div>
+                                                        <div class="entry-subtitle"><field name="proficiency" widget="badge"/> | <field name="years_experience"/> (Years)</div>
+                                                        <div class="entry-actions">
+                                                            <span class="entry-action-btn">[Edit]</span>
+                                                            <span class="entry-action-btn" type="object" name="unlink" confirm="Are you sure you want to delete?">[Delete]</span>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </templates>
+                                        </kanban>
+                                    </field>
 
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-map-pin"></i>
-                                                Application Journey
-                                            </div>
-                                        </div>
-                                        <div style="font-size:11.5px; color:#6B7280; margin-bottom:8px; font-weight:500;">Applied Jobs:</div>
-                                        <div class="journey-item">
-                                            <div class="journey-job-title" id="detailDisplayAppliedJob">Administrative Assistant</div>
-                                            <div class="journey-status-row">
-                                                <div class="journey-dot"></div>
-                                                <span class="journey-status-label">Technical Interview</span>
-                                                <span class="journey-days" style="margin-left:auto;">17 days ago</span>
-                                            </div>
-                                        </div>
-                                        <div class="journey-item">
-                                            <div class="journey-job-title">Chief Executive Officer</div>
-                                            <div class="journey-status-row">
-                                                <div class="journey-dot"></div>
-                                                <span class="journey-status-label">Technical Interview</span>
-                                                <span class="journey-days" style="margin-left:auto;">17 days ago</span>
-                                            </div>
-                                        </div>
-                                        <a href="#" class="view-all-link">
-                                            View All Applications
-                                            <i class="fa fa-arrow-right"></i>
-                                        </a>
+                                    <!-- <div class="skills-section-label">Technical Skills:</div>
+
+                                    <div class="skill-row">
+                                        <span class="skill-label">JavaScript</span>
+                                        <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:75%"></div></div>
+                                        <span class="skill-pct">75%</span>
                                     </div>
-
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-trending-up"></i>
-                                                Engagement Metrics
-                                            </div>
-                                        </div>
-                                        <div class="metric-row">
-                                            <span class="metric-label">Response Rate:</span>
-                                            <span class="metric-value green">85% <span class="metric-up-arrow">↑</span></span>
-                                        </div>
-                                        <div class="metric-row">
-                                            <span class="metric-label">Avg. Response Time:</span>
-                                            <span class="metric-value">4 hours</span>
-                                        </div>
-                                        <div class="metric-row">
-                                            <span class="metric-label">Last Active:</span>
-                                            <span class="metric-value">2 hours ago</span>
-                                        </div>
-                                        <div class="metric-row">
-                                            <span class="metric-label">Email Opens:</span>
-                                            <span class="metric-value">12/15 (80%)</span>
-                                        </div>
-                                        <div class="metric-row">
-                                            <span class="metric-label">Link Clicks:</span>
-                                            <span class="metric-value">8</span>
-                                        </div>
+                                    <div class="skill-row">
+                                        <span class="skill-label">React</span>
+                                        <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:85%"></div></div>
+                                        <span class="skill-pct">85%</span>
                                     </div>
-
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-message-circle"></i>
-                                                Recent Notes
-                                            </div>
-                                            <span class="card-action-link">[View All]</span>
-                                        </div>
-                                        <div class="note-item">
-                                            <div class="note-meta">
-                                                <i class="note-meta-icon fa fa-user"></i>
-                                                <span class="note-author">Sarah M.</span>
-                                                <span class="note-time">• 2 hours ago</span>
-                                            </div>
-                                            <p class="note-text">Strong technical background, good communication</p>
-                                        </div>
-                                        <div class="note-item">
-                                            <div class="note-meta">
-                                                <i class="note-meta-icon fa fa-user"></i>
-                                                <span class="note-author">John D.</span>
-                                                <span class="note-time">• 1 day ago</span>
-                                            </div>
-                                            <p class="note-text">Great cultural fit for the team</p>
-                                        </div>
-                                        <button class="btn-add-note">[Add Quick Note]</button>
+                                    <div class="skill-row">
+                                        <span class="skill-label">Node.js</span>
+                                        <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:73%"></div></div>
+                                        <span class="skill-pct">73%</span>
                                     </div>
-
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <div class="card-title">
-                                                <i class="fa fa-clock"></i>
-                                                Recent Activity
-                                            </div>
-                                            <span class="card-action-link">[View All]</span>
-                                        </div>
-                                        <div class="activity-item">
-                                            <span class="activity-text">• Applied to Senior Software Engineer</span>
-                                            <span class="activity-date">5/24/2026</span>
-                                        </div>
-                                        <div class="activity-item">
-                                            <span class="activity-text">• Resume viewed</span>
-                                            <span class="activity-date">6/8/2026</span>
-                                        </div>
-                                        <div class="activity-item">
-                                            <span class="activity-text">• Email opened</span>
-                                            <span class="activity-date">6/9/2026</span>
-                                        </div>
+                                    <div class="skill-row">
+                                        <span class="skill-label">TypeScript</span>
+                                        <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:97%"></div></div>
+                                        <span class="skill-pct">97%</span>
                                     </div>
+                                    <div class="skill-row">
+                                        <span class="skill-label">AWS</span>
+                                        <div class="skill-bar-wrap"><div class="skill-bar-fill" style="width:76%"></div></div>
+                                        <span class="skill-pct">76%</span>
+                                    </div> -->
 
-                                </div>
-                            </div>
-                        </page>
-                        <page class="fa fa-file-text" string="Resume">
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction2">
-                                <i class="fa fa-file-text"></i>
-                                Resume
-                            </div> -->
-                            <div class="rc_section">
-                                <!-- Drop Zone -->
-                                <div class="rc_dropzone rc_dropzone_green">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                        <polyline points="17 8 12 3 7 8"/>
-                                        <line x1="12" x2="12" y1="3" y2="15"/>
-                                    </svg>
-                                    <!-- <field name="resume_file_name" invisible="1"/>
-                                    <field name="resume_file" widget="binary" nolabel="1" invisible="0" filename="resume_file_name"/> -->
-                                    <p class="rc_dropzone_title">Drop your resume here</p>
-                                    <p class="rc_dropzone_sub">or click to browse files</p>
-                                    <p class="rc_dropzone_hint">Supports PDF, DOC, DOCX, TXT up to 10MB</p>
-                                </div>
-
-                                <!-- How it works -->
-                                <div class="rc_info_box rc_info_green">
-                                    <p class="rc_info_title">How it works:</p>
-                                    <ul class="rc_info_list">
-                                        <li>Upload a resume in PDF, DOC, DOCX, or TXT format</li>
-                                        <li>Our AI extracts name, email, phone, experience, and skills</li>
-                                        <li>Review and edit the information before adding</li>
-                                        <li>Candidate will be added to your pipeline</li>
-                                    </ul>
+                                    <div class="skills-section-label" style="margin-top:12px;">Soft Skills:</div>
+                                    <div class="soft-skills-wrap">
+                                        <span class="soft-skill-chip">Leadership</span>
+                                        <span class="soft-skill-chip">Communication</span>
+                                        <span class="soft-skill-chip">Problem Solving</span>
+                                        <span class="soft-skill-chip">Teamwork</span>
+                                    </div>
                                 </div>
 
                             </div>
-                        </page>
-                        <page class="tab-nav fa fa-activity" string="Activities">
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction3">
-                                <i class="fa fa-activity"></i>
-                                Activities
-                            </div> -->
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction4">
-                                <i class="fa fa-folder-open"></i>
-                                Documents
-                            </div> -->
-                        </page>
-                        <page class="tab-nav fa fa-folder-open" string="Documents">
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction3">
-                                <i class="fa fa-activity"></i>
-                                Activities
-                            </div> -->
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction4">
-                                <i class="fa fa-folder-open"></i>
-                                Documents
-                            </div> -->
-                        </page>
-                        <page class="tab-nav fa fa-message-square" string="Messages">
-                            <!-- <div class="tab-item" type="object" action="buttonToggleModeAction5">
-                                <i class="fa fa-briefcase"></i>
-                                Jobs
-                            </div> -->
-                            <!-- <div class="tab-item" action="buttonToggleModeAction6">
-                                <i class="fa fa-message-square"></i>
-                                Messages
-                            </div> -->
-                        </page>
-                        <page class="tab-nav fa fa-video" string="Meeting">
-                            <!-- <div class="tab-item" action="buttonToggleModeAction7">
-                                <i class="fa fa-video"></i>
-                                Meeting
-                            </div> -->
-                        </page>
-                    </notebook>
-                </div><!-- /candidateDetailView -->
+
+                            <div class="right-col">
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-file-text"></i>
+                                            Quick Info
+                                        </div>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-mail"></i>
+                                        <span class="quick-info-text" id="detailDisplayEmail"><field name="email_from" nolabel="1" readonly="1"/></span>
+                                        <div class="quick-info-copy" data-copy="email"><i class="fa fa-copy"></i></div>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-phone"></i>
+                                        <span class="quick-info-text" id="detailDisplayPhone"><field name="partner_phone" nolabel="1" readonly="1" placeholder="+1 000 0000"/></span>
+                                        <div class="quick-info-copy" data-copy="phone"><i class="fa fa-copy"></i></div>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-map-pin"></i>
+                                        <span class="quick-info-text" id="detailDisplayLocation"><field name="candidate_location" nolabel="1" readonly="0"/></span>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-globe"></i>
+                                        <span class="quick-info-text" id="detailDisplaySource">—</span>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-user"></i>
+                                        <span class="quick-info-text" id="detailDisplaySourcedBy"><field name="candidate_source" nolabel="1" readonly="0"/></span>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-calendar"></i>
+                                        <span class="quick-info-text" id="detailDisplayAppliedDate"><field name="applied_date" nolabel="1" readonly="0"/></span>
+                                    </div>
+                                    <div class="quick-info-row">
+                                        <i class="quick-info-icon fa fa-hash"></i>
+                                        <span class="quick-info-text" id="detailDisplayId"><field name="applicant_code" nolabel="1" readonly="1"/></span>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-map-pin"></i>
+                                            Application Journey
+                                        </div>
+                                    </div>
+                                    <div style="font-size:11.5px; color:#6B7280; margin-bottom:8px; font-weight:500;">Applied Jobs:</div>
+                                    <div class="journey-item">
+                                        <div class="journey-job-title" id="detailDisplayAppliedJob">Administrative Assistant</div>
+                                        <div class="journey-status-row">
+                                            <div class="journey-dot"></div>
+                                            <span class="journey-status-label">Technical Interview</span>
+                                            <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                                        </div>
+                                    </div>
+                                    <div class="journey-item">
+                                        <div class="journey-job-title">Chief Executive Officer</div>
+                                        <div class="journey-status-row">
+                                            <div class="journey-dot"></div>
+                                            <span class="journey-status-label">Technical Interview</span>
+                                            <span class="journey-days" style="margin-left:auto;">17 days ago</span>
+                                        </div>
+                                    </div>
+                                    <a href="#" class="view-all-link">
+                                        View All Applications
+                                        <i class="fa fa-arrow-right"></i>
+                                    </a>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-trending-up"></i>
+                                            Engagement Metrics
+                                        </div>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">Response Rate:</span>
+                                        <span class="metric-value green">85% <span class="metric-up-arrow">↑</span></span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">Avg. Response Time:</span>
+                                        <span class="metric-value">4 hours</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">Last Active:</span>
+                                        <span class="metric-value">2 hours ago</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">Email Opens:</span>
+                                        <span class="metric-value">12/15 (80%)</span>
+                                    </div>
+                                    <div class="metric-row">
+                                        <span class="metric-label">Link Clicks:</span>
+                                        <span class="metric-value">8</span>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-message-circle"></i>
+                                            Recent Notes
+                                        </div>
+                                        <span class="card-action-link">[View All]</span>
+                                    </div>
+                                    <div class="note-item">
+                                        <div class="note-meta">
+                                            <i class="note-meta-icon fa fa-user"></i>
+                                            <span class="note-author">Sarah M.</span>
+                                            <span class="note-time">• 2 hours ago</span>
+                                        </div>
+                                        <p class="note-text">Strong technical background, good communication</p>
+                                    </div>
+                                    <div class="note-item">
+                                        <div class="note-meta">
+                                            <i class="note-meta-icon fa fa-user"></i>
+                                            <span class="note-author">John D.</span>
+                                            <span class="note-time">• 1 day ago</span>
+                                        </div>
+                                        <p class="note-text">Great cultural fit for the team</p>
+                                    </div>
+                                    <button class="btn-add-note">[Add Quick Note]</button>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <i class="fa fa-clock"></i>
+                                            Recent Activity
+                                        </div>
+                                        <span class="card-action-link">[View All]</span>
+                                    </div>
+                                    <div class="activity-item">
+                                        <span class="activity-text">• Applied to Senior Software Engineer</span>
+                                        <span class="activity-date">5/24/2026</span>
+                                    </div>
+                                    <div class="activity-item">
+                                        <span class="activity-text">• Resume viewed</span>
+                                        <span class="activity-date">6/8/2026</span>
+                                    </div>
+                                    <div class="activity-item">
+                                        <span class="activity-text">• Email opened</span>
+                                        <span class="activity-date">6/9/2026</span>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div><!-- /candidateDetailView -->
                 <!-- </sheet> -->
             </form>
         </field>

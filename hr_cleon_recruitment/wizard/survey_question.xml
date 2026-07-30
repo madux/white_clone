@@ -30,7 +30,7 @@
                                 </div>
                                 <div class="rc_field_group">
                                     <label class="rc_label rc_required" for="scoring_type">Score type</label>
-                                    <field name="scoring_type" nolabel="1" class="rc_input" readonly="0"/>
+                                    <field name="scoring_type" nolabel="1" class="rc_input"/>
                                 </div>
                                 
                             </div>
