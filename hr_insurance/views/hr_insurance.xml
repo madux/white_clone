@@ -328,7 +328,7 @@
          SERVER ACTION + MENU
     ══════════════════════════════════════════════════ -->
     <record id="action_dashboard_server" model="ir.actions.server">
-        <field name="name">Open HMO</field>
+        <field name="name">Health Insurance HMO</field>
         <field name="model_id" ref="model_hr_insurance"/>
         <field name="state">code</field>
         <field name="code">
@@ -338,7 +338,7 @@
 
     <menuitem
         id="menu_hr_insurance_hmo"
-        name="HMO-"
+        name="Health Insurance"
         action="action_dashboard_server"
         sequence="2"
         />

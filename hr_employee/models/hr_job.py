@@ -32,6 +32,12 @@ class HrJob(models.Model):
         'hr.grade',
         string='Grade', 
     )
+    @api.onchange('grade_id')
+    def onchange_grade_id(self):
+        self.ensure_one()
+        self.min_salary_band = self.grade_id.min_salary_band 
+        self.max_salary_band = self.grade_id.max_salary_band 
+        self.salary_band = self.grade_id.salary_band 
 
     @api.onchange('max_salary_band')
     def onchange_max_salary_band(self):
@@ -48,7 +54,7 @@ class HrJob(models.Model):
             return f"{amount / 1_000:.1f}K".rstrip('0').rstrip('.')
         return str(int(amount))
 
-    @api.depends('min_salary_band', 'max_salary_band')
+    @api.depends('grade_id','min_salary_band', 'max_salary_band')
     def _compute_salary_band(self):
         for rec in self:
             if rec.min_salary_band and rec.max_salary_band:

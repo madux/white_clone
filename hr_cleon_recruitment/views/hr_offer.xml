@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_offer_custom_search_view" model="ir.ui.view">
+        <field name="name">hr.offer.search</field>
+        <field name="model">hr.offer</field>
+        <field name="arch" type="xml">
+        <search string="Job offer">
+            <field name="candidate_id" string="Candidate"/>
+            <field name="proposed_salary" string="Salary"/>
+            <field name="job_id"/>
+            <field name="department_id"/>
+            <separator/>
+            <filter name="message_needaction" string="Unread Messages" domain="[('message_needaction', '=', True)]" groups="mail.group_mail_notification_type_inbox"/>
+            <separator/>
+            <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            <group expand="0" string="Group By">
+                <filter string="Department" name="department" domain="[]" context="{'group_by': 'department_id'}"/>
+                <filter string="Company" name="company" domain="[]" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                <filter string="Stage" name="offer_stage" domain="[]" context="{'group_by': 'offer_stage'}"/>
+            </group>
+        </search>
+        </field>
+    </record>
+    <record id="hr_offer_recruitment_tree_view" model="ir.ui.view">
+        <field name="name">hr.offer.candidate.tree</field>
+        <field name="model">hr.offer</field>
+        <field name="arch" type="xml">
+            <tree string="Job Offer" js_class="myrecruitment_dashboard_list">
+                <field name="candidate_id"/>
+                <field name="job_id" string="JOB TITLE"/>
+                <field name="department_id" string="DEPARTMENT"/>
+                <field name="details" string="DETAILS" optional="show"/>
+                <field name="proposed_salary" string="SALARY" optional="hide"/>
+                <field name="sent_by" string="SENT BY" widget="badge" optional="show"/>
+                <field name="offer_stage" string="SENT BY" widget="badge" optional="show"/>
+                <field name="vendor_id" string="VENDOR" optional="hide"/>
+                <field name="date_expiry" string="EXPIRY"/>
+                <field name="company_id" column_invisible="True" on_change="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="hr_offer_form_view" model="ir.ui.view">
+        <field name="name">hr.offer.form</field>
+        <field name="model">hr.offer</field><field name="arch" type="xml">
+            <form string="Offer letter" create="0" edit="0" js_class="recruitment_sidebar_items">
+                <div class="rc_modal_wrapper">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="rc_screen_title">Offer</h2>
+                            <p class="rc_screen_subtitle">Enter candidate offer </p>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Information</h3>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="candidate_id">Candidate</label>
+                                <field name="candidate_id" required="1" placeholder="John" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="job_id">Job</label>
+                                <field name="job_id" required="1" placeholder="ICT" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="proposed_salary">Proposed salary</label>
+                                <field name="proposed_salary" required="1" placeholder="800,000" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="contract_type_id">Employment type</label>
+                                <field name="contract_type_id" required="1" placeholder="Remote" nolabel="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Professional Information -->
+                    <div class="rc_section">
+                        <h3 class="rc_section_title">Offer Summary</h3>
+
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="candidate_id">Candidate</label>
+                            <field name="candidate_id" placeholder="e.g. Maduka Sopulu" nolabel="1" class="rc_input"/>
+                        </div>
+
+                        <div class="rc_row_2col">
+                            
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="proposed_salary">Proposed Salary (Optional)</label>
+                                <field name="proposed_salary" nolabel="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="salary_currency">Currency</label>
+                                <field name="salary_currency" nolabel="1" required="proposed_salary != False" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="approved_date">Approved Date</label>
+                                <field name="approved_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="create_date">Create Date</label>
+                                <field name="create_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="approved_date">Approved Date</label>
+                                <field name="approved_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="response_date">Response Date</label>
+                                <field name="response_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="viewed_date">Viewed Date</label>
+                                <field name="viewed_date" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="date_char">Sent Date</label>
+                                <field name="date_char" placeholder="05/05/2026" nolabel="1" readonly="1" class="rc_input"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- <div class="ods-demo-layout">
+                    <div class="ods-overlay open"></div>
+                    <aside class="ods-drawer-sheet open">
+                        <div class="ods-sheet-content">
+                            <div class="ods-sheet-header">
+                                <button class="ods-close-btn" special="cancel"><i class="fa fa-close"></i></button>
+                                
+                                <span class="ods-status-pill accepted"><field name="offer_stage" readonly="1" nolabel="1"/></span>
+                                <h2><field name="candidate_id"/></h2>
+                                <p><field name="job_id" nolabel="1"/></p>
+                            </div>
+
+                            <div class="ods-action-row">
+                                <button class="ods-btn ods-btn-primary" type="object" name="action_create_placement" style="width:100%; background:#E60067; border-color:#E60067;"><i class="fa fa-briefcase"></i> Create Placement</button>
+                            </div>
+
+                            <div class="ods-timeline-card">
+                                <h4 class="ods-section-title">Offer Timeline</h4>
+                                <div class="ods-timeline-stream">
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Created</h5><p><field name="create_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot"><i class="fa fa-circle"></i></div>
+                                        <div class="ods-node-text"><h5>Approved</h5><p><field name="approved_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Sent</h5><p><field name="date_char" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Viewed</h5><p><field name="viewed_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                    <div class="ods-timeline-node">
+                                        <div class="ods-node-dot completed"><i class="fa fa-check"></i></div>
+                                        <div class="ods-node-text"><h5>Response</h5><p><field name="response_date" readonly="1" nolabel="1"/></p></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ods-summary-section">
+                                <h4 class="ods-section-title">Offer Summary</h4>
+                                <div class="ods-attributes">
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Candidate</span>
+                                        <span class="ods-attr-value"><field name="candidate_id" nolabel="1" readonly="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Job</span>
+                                        <span class="ods-attr-value"><field name="job_id" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Base Salary</span>
+                                        <span class="ods-attr-value"><field name="proposed_salary" nolabel="1"/>/<field name="salary_period" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Contract</span>
+                                        <span class="ods-attr-value"><field name="contract_type_id" nolabel="1"/></span>
+                                    </div>
+                                    <div class="ods-attr-row">
+                                        <span class="ods-attr-label">Start Date</span>
+                                        <span class="ods-attr-value"><field name="start_date" nolabel="1"/></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                </div> -->
+            </form>
+        </field>
+    </record>
+
+    
+     
+    <record id="action_hr_offer_recruitment" model="ir.actions.act_window">
+        <field name="name">Offer:</field>
+        <field name="res_model">hr.offer</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_recruitment_tree_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_offer_recruitment_tree_view'),
+            }),
+            
+        ]"/> 
+    </record>
+
+    <record id="action_hr_add_offer" model="ir.actions.act_window">
+        <field name="name">Add offer</field>
+        <field name="res_model">hr.offer</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_form_view"/>
+        <field name="target">new</field>
+        <!-- <field name="context">{'default_mode': 'select'}</field> -->
+    </record>
+
+    <record id="action_hr_offer_hired_recruitment" model="ir.actions.act_window">
+        <field name="name">Offer:</field>
+        <field name="res_model">hr.offer</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('offer_stage','=','hired')]</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_offer_recruitment_tree_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_offer_recruitment_tree_view'),
+            }),
+            
+        ]"/> 
+    </record>
+ 
+    <menuitem id="menu_hr_offer_recruitment_root"
+              name="Offer Management"
+              sequence="2"
+              parent="hr_cleon_recruitment.menu_hr_applicant_recruitment_root"
+              action="action_hr_offer_recruitment"
+              groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
+    <menuitem id="menu_hr_offers_recruitment_root"
+              name="Offers"
+              sequence="3"
+              parent="hr_cleon_recruitment.menu_hr_offer_recruitment_root"
+              action="action_hr_offer_recruitment"
+              groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
+    <menuitem id="menu_hr_offers_hired_recruitment_root"
+              name="Hired"
+              sequence="6"
+              parent="hr_cleon_recruitment.menu_hr_offer_recruitment_root"
+              action="action_hr_offer_hired_recruitment"
+              />
+ 
+</odoo>
+
+              <!-- web_icon="hr_cleon_recruitment,static/description/icon.png" -->

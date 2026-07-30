@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_leave_dashboard.CalendarRenderer"
+       t-inherit="hr_holidays.CalendarRenderer"
+       t-inherit-mode="primary">
+
+        <xpath expr="//div[hasclass('o_timeoff_calendar')]" position="replace">
+            <div class="o_leave_dashboard_layout d-flex flex-row h-100">
+
+                <div class="leavesidebar">
+                    <div class="o_cc_sidebar_header">
+                        <span class="o_cc_header_dot"/>
+                        <span class="o_cc_header_title">Leave Management</span>
+                        <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                            <i class="fa fa-th-large"/>
+                        </button>
+                    </div>
+
+                    <nav class="o_cc_nav">
+                        <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openRecord">
+                            <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
+                            <span class="o_cc_nav_label">Dashboard</span>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                            <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                            <span class="o_cc_nav_label">Get Started</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                            <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                            <span class="o_cc_nav_label">Leave Calendar</span>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openMeasures">
+                            <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
+                            <span class="o_cc_nav_label">Leave Request</span>
+                            <span class="o_cc_nav_badge">2</span>
+                            <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                        </a>
+
+                        <p class="sidebar-section-label">Leave Configuration</p>
+                        <ul>
+                            <li>
+                                <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                                    <span class="o_cc_nav_icon"><i class="fa fa-clipboard-list"/></span>
+                                    <span class="o_cc_nav_label">Leave types</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                                    <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                                    <span class="o_cc_nav_label">Leave Balances</span>
+                                </a>
+                            </li>
+                        </ul>
+
+                        <p class="sidebar-section-label">Reports</p>
+                        <ul>
+                            <a class="o_cc_nav_item" href="/incident-reporting">
+                                <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
+                                <span class="o_cc_nav_label">Leave Analytics</span>
+                            </a>
+                            <a class="o_cc_nav_item" t-on-click="openRecord">
+                                <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
+                                <span class="o_cc_nav_label">Audit Logs</span>
+                            </a>
+                            <a class="o_cc_nav_item" t-on-click="openRecord">
+                                <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
+                                <span class="o_cc_nav_label">Settings</span>
+                            </a>
+                        </ul>
+                    </nav>
+
+                    <div class="o_cc_sidebar_footer">
+                        <span class="o_cc_footer_label">Solution By MaachSoft</span>
+                        <div class="o_cc_footer_status">
+                            <span class="o_cc_status_dot o_cc_status_green"/>
+                            All integrations active
+                        </div>
+                    </div>
+                </div>
+
+                <div class="o_timeoff_calendar d-flex flex-column flex-grow-1">
+                    <TimeOffDashboard t-if="showDashboard" employeeId="employeeId"/>
+                    <t t-call="web.CalendarRenderer"/>
+                </div>
+
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>

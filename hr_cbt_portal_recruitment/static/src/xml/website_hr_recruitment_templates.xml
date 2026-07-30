@@ -1,0 +1,211 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    
+    <!-- <template id="custom_website_description" inherit_id="website_hr_recruitment.default_website_description">
+        <xpath expr="//section[@data-snippet='s_comparisons']" position="replace">
+            <section class="s_comparisons pt24 pb24 bg-200" data-snippet="s_comparisons">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-lg-4 s_col_no_bgcolor pt16 pb16" t-if="job_section_descriptions">
+                            <t t-foreach="job_section_descriptions" t-as="section">
+                                <div class="card text-bg-primary">
+                                    <h4 class="card-header"><t t-esc="section.title"/></h4>
+                                    <ul class="list-group list-group-flush">
+                                        <t t-foreach="section.job_descriptions" t-as="description">
+                                            <li class="list-group-item"><t t-esc="description.description"/></li>
+                                        </t>
+                                    </ul>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </xpath>
+    </template> -->
+
+
+    <template id="hr_cbt_hr_job_detail" inherit_id="website_hr_recruitment.detail">
+        <xpath expr="//div[@id='wrap']" position="replace">
+            <div id="wrap" class="js_hr_recruitment">
+
+                <!-- Breadcrumb -->
+                <section class="bg-200">
+                    <div class="container">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb ps-0">
+                                <li class="breadcrumb-item"><a href="/jobs" class="text-secondary fw-bold">Jobs</a></li>
+                                <li class="breadcrumb-item active" aria-current="page"><span t-field="job.name"/></li>
+                            </ol>
+                        </nav>
+                    </div>
+                </section>
+                <!-- Job name -->
+                <section class="pb32">
+                    <div class="container">
+                        <div class="mt32">
+                            <div class="float-end">
+                                <a role="button" t-attf-href="/jobs/apply/#{job.id}" class="btn btn-primary btn-lg float-end">Apply Now</a>
+                            </div>
+                            <h1 t-field="job.name"/>
+                            <h5 class="fw-light" t-field="job.address_id" t-options='{
+                                "widget": "contact",
+                                "fields": ["city"],
+                                "no_tag_br": True
+                            }'/>
+                        </div>
+                    </div>
+                </section>
+                <t t-if="job.job_section_descriptions">
+                    <!-- Description text and ratings -->
+                    <section class="pt32">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-lg-8 pb32">
+                                    <p class="lead">
+                                        <b>
+                                            <div t-field="job.description"/>
+                                        </b>
+                                    </p>
+                                </div>
+                                <div class="col-lg-3 offset-lg-1 pb32">
+                                    <t t-if="job.job_section_proficiency_scale">
+                                        <t t-foreach="job.job_section_proficiency_scale" t-as="line">
+                                            <div class="s_rating pb8" data-vcss="001" data-icon="fa-star" data-snippet="s_rating">
+                                                <h6 class="s_rating_title"><t t-esc="line.skill"/></h6>
+                                                <div class="s_rating_icons o_not_editable">
+                                                    <span class="s_rating_active_icons text-primary">
+                                                        <t t-foreach="range(int(line.scale_selection))" t-as="i">
+                                                            <i class="fa fa-star"/>
+                                                        </t>
+                                                    </span>
+                                                    <span class="s_rating_inactive_icons text-primary">
+                                                        <t t-foreach="range(5 - int(line.scale_selection))" t-as="i">
+                                                            <i class="fa fa-star-o"/>
+                                                        </t>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </t>                    
+                                    </t>
+                                </div>                
+                                <!-- <div class="col-lg-3 offset-lg-1 pb32">
+                                    <div class="s_rating pb8" data-vcss="001" data-icon="fa-star" data-snippet="s_rating">
+                                        <h6 class="s_rating_title">Customer Relationship</h6>
+                                        <div class="s_rating_icons o_not_editable">
+                                            <span class="s_rating_active_icons text-primary">
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                            </span>
+                                            <span class="s_rating_inactive_icons text-primary">
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="s_rating pb8" data-vcss="001" data-icon="fa-star" data-snippet="s_rating">
+                                        <h6 class="s_rating_title">Administrative Work</h6>
+                                        <div class="s_rating_icons o_not_editable">
+                                            <span class="s_rating_active_icons text-primary">
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                            </span>
+                                            <span class="s_rating_inactive_icons text-primary">
+                                                <i class="fa fa-star-star"/>
+                                                <i class="fa fa-star-star"/>
+                                                <i class="fa fa-star-star"/>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="s_rating pb8" data-vcss="001" data-icon="fa-star" data-snippet="s_rating">
+                                        <h6 class="s_rating_title">Expertise</h6>
+                                        <div class="s_rating_icons o_not_editable">
+                                            <span class="s_rating_active_icons text-primary">
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                                <i class="fa fa-star"/>
+                                            </span>
+                                            <span class="s_rating_inactive_icons text-primary">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div> -->
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Responsabilities, Must Have and Nice to have -->
+                    <section class="s_comparisons pt24 pb24 bg-200" data-snippet="s_comparisons">
+                        <div class="container">
+                            <div class="row">
+                                <t t-foreach="job.job_section_descriptions" t-as="section">
+                                    <div class="col-lg-4 s_col_no_bgcolor pt16 pb16" t-if="job.job_section_descriptions">
+                                        <div class="card text-bg-primary">
+                                            <h4 class="card-header"><t t-esc="section.title"/></h4>
+                                            <ul class="list-group list-group-flush">
+                                                <t t-foreach="section.job_descriptions" t-as="description">
+                                                    <li class="list-group-item"><t t-esc="description.description"/></li>
+                                                </t>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Photos -->
+                    <section class="pt24 pb16">
+                        <style>
+                            .row2 img {
+                                height: 100%; /* Set the height to 100% of the container */
+                                width: auto; /* Maintain the aspect ratio */
+                                object-fit: cover; /* Ensure the entire image is visible, maintaining aspect ratio */
+                            }
+                        </style>
+                        <!-- <div class="container">
+                            <div class="row">
+                                <div class="col-md-12 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img1.jpg"/>
+                                </div>
+                                <div class="col-md-6 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img2.jpg"/>
+                                </div>
+                                <div class="col-md-6 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img3.jpg"/>
+                                </div>
+                            </div>
+                            <div class="row row2">
+                                <div class="col-md-12 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img5.jpg"/>
+                                </div>
+                                <div class="col-md-6 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img4.jpg"/>
+                                </div>
+                                <div class="col-md-6 col-lg-4 mt16 mb16">
+                                    <img alt="" class="img img-fluid" src="/hr_cbt_portal_recruitment/static/src/img/job_page_img8.jpg"/>
+                                </div>
+                            </div>
+                        </div> -->
+                    </section>
+                    <!-- <t t-call="hr_cbt_portal_recruitment.dynamic_website_job_description"/> -->
+                </t>
+                <t t-else="job.job_section_descriptions">
+                    <div t-field="job.website_description"/>
+                </t>
+
+                <div class="oe_structure">
+                    <section class="o_job_bottom_bar mt32 mb32">
+                        <div class="text-center">
+                            <a role="button" t-attf-href="/jobs/apply/#{job.id}" class="btn btn-primary btn-lg">Apply Now!</a>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </xpath>
+    </template>
+    
+</odoo>

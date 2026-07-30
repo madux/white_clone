@@ -8,7 +8,7 @@
         <field name="name">hr.applicant.profile.form</field>
         <field name="model">hr.applicant</field>
         <field name="arch" type="xml">
-            <form string="Candidate" class="o_warning_form">
+            <form string="Candidate" class="o_warning_form" js_class="recruitment_sidebar_items">
                 <div class="modal-content">
                     <!-- Header -->
                     <div class="modal-header">

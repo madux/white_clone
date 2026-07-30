@@ -13,7 +13,7 @@
             </attribute>
         </xpath>
 
-        <!-- Change button label -->
+        <!-- Replace button label with dynamic value from JS patch -->
         <xpath expr="//button[contains(@class, 'o_list_button_add')]" position="replace">
             <button
                 type="button"
@@ -22,7 +22,13 @@
                 t-on-click="onClickCreate"
                 data-bounce-button=""
             >
-                New Record
+                <!--
+                    createButtonLabel is a getter on ListController (patched in JS).
+                    - Action name has NO dot  →  "Create Recruitment"
+                    - Action name HAS a dot   →  "New Record"
+                    - No action name at all   →  "New Record"
+                -->
+                <t t-esc="createButtonLabel"/>
             </button>
         </xpath>
 

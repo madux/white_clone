@@ -5,7 +5,7 @@ $(function () {
   var C = {
     rose:   '#FF2D78', cobalt: '#3D5AFE', emerald: '#00C48C',
     amber:  '#FF8F00', slate:  '#FF5252', lavender:'#7C4DFF',
-    teal:   '#00BCD4', ink:    '#0D0F1C', ink2:    '#3D4263',
+    teal:   '#00BCD4', ink:    '#fafbfd', ink2:    '#3D4263',
     ink3:   '#7B82A3', ink4:   '#B0B7D0', border:  '#E8EAF2', bg: '#F4F5FB'
   };
   var DEPT_COLORS = [C.cobalt, C.rose, C.amber, C.emerald, C.lavender, C.teal, '#FF8C42', '#FFD166'];

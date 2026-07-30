@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         MAIN CANDIDATE WIZARD FORM VIEW
+    ════════════════════════════════════════════ -->
+    <record id="hr_recruitment_job_process_form_view" model="ir.ui.view">
+        <field name="name">hr.job.process.form</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+            <form string="Create a Job posting" create="0" edit="1">
+
+                <field name="mode" invisible="1"/>
+                <field name="name" invisible="1" default="/" />
+                <field name="active" invisible="1" default="0" />
+                <field name="workflow_setup" invisible="1" default="0" />
+
+                <!-- ══════════════════════════════
+                     SCREEN 1: SELECTION GRID
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'first_intro'">
+                    <div class="rc_modal_header"> 
+                        <p class="rc_modal_subtitle">Select to add jobs</p>
+                    </div>
+                    <div class="rc_options_grid">
+                        <!-- <div class="job-card" data-type="quick"> -->
+                        <button class="job-card" name="first_intro_button" type="object">
+                            <div class="icon quick">
+                                <i class="fa fa-bolt"/>
+                            </div>
+
+                            <div class="content">
+                                <h4>Quick Post</h4>
+                                <p>5 required fields · Live in 2 minutes</p>
+                            </div>
+
+                            <div class="badge fastest">
+                                Fastest
+                            </div>
+                        </button>
+                        <button class="job-card" name="second_intro_button" type="object">
+                            <div class="icon quick">
+                                <i class="fa fa-book"/>
+                            </div>
+
+                            <div class="content">
+                                <h4>Full Job Creation</h4>
+                                <p>Complete wizard with AI Assistance + template</p>
+                            </div>
+
+                            <div class="badge fastest">
+                                Recommended
+                            </div>
+                        </button>
+                        <button class="job-card" name="second_intro_button" type="object">
+                            <div class="icon quick">
+                                <i class="fa fa-bolt"/>
+                            </div>
+
+                            <div class="content">
+                                <h4>AI Assisted</h4>
+                                <p>Describe the role and CleonAI Writes everything</p>
+                            </div>
+
+                            <div class="badge fastest">
+                                AI
+                            </div>
+                        </button>
+                        <button class="job-card" name="second_intro_button" type="object">
+                            <div class="icon quick">
+                                <i class="fa fa-bolt"/>
+                            </div>
+
+                            <div class="content">
+                                <h4>From Template</h4>
+                                <p>Start from a saved job role or previous role</p>
+                            </div>
+
+                            <div class="badge fastest">
+                                <a href="http://www.google.com">See templates</a>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+
+                <!-- ══════════════════════════════
+                     SCREEN 2: first_intro 2
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'first_intro2'">
+
+                    <div class="rc_screen_header">
+                        <div class="rc_screen_icon_wrap rc_icon_bg_pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e91e8c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+                                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                <path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="rc_divider"/>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section" invisible="mode not in ['first_intro1', 'first_intro2']">
+                        <h3 class="rc_section_title">Basic Information</h3>
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="name">Job title</label>
+                            <field name="name" placeholder="Software Engineering" required="1" nolabel="1" class="rc_input"/>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="department_id">Department</label>
+                                <field name="department_id" placeholder="ICT" nolabel="1" class="rc_input" required="1"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="location_id">Location</label>
+                                <field name="location_id" placeholder="Abuja" nolabel="1" class="rc_input" required="1"/>
+                            </div>
+                        </div>
+                        <div class="rc_section">
+                            <h3 class="rc_section_title">Details</h3>
+
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="contract_type_id">Employment type*</label>
+                                <field name="contract_type_id" placeholder="Part time" nolabel="1" class="rc_input" required="1" />
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="salary_currency">Salary Currency*</label>
+                                <field name="salary_currency" placeholder="Part time" nolabel="1" class="rc_input" required="1" />
+                            </div>
+                            <div class="rc_row_2col">
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="min_salary_band">Salary Range</label>
+                                    <field name="min_salary_band" placeholder="200,000" nolabel="1" class="rc_input" required="1"/>
+                                </div>-
+                                <div class="rc_field_group">
+                                    <field name="max_salary_band" placeholder="600,000" nolabel="1" class="rc_input"/>
+                                </div>
+                            </div>
+                        </div> 
+                        <div class="rc_divider"/>
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="description">Description</label>
+                            <field name="description" placeholder="Add a description... you can enhance this later" nolabel="1" class="rc_input"/>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer Buttons -->
+                    <div class="rc_footer">
+                        <button class="rc_btn_back" name="action_back_mode" type="object">Back</button>
+                    </div>
+                </div>
+                <!-- ══════════════════════════════
+                     SCREEN 2 FULL JOB CREATION
+                ══════════════════════════════ -->
+                <div class="rc_modal_wrapper" invisible="mode != 'second_intro1'">
+                    <div class="job_workflow_button_header">
+                        <field name="workflow_setup" widget="statusbar" readonly="0" options="{'clickable': '1'}"/>
+                    </div>
+
+                    <!-- Basic Information -->
+                    <div class="rc_section" invisible="workflow_setup != 'Basic'">
+                        <h3 class="rc_section_title">Basic Information</h3>
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="name">Job title</label>
+                            <field name="name" placeholder="Software Engineering" required="1" nolabel="1" class="rc_input"/>
+                        </div>
+                        <div class="rc_row_2col">
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="department_id">Department</label>
+                                <field name="department_id" placeholder="ICT" nolabel="1" class="rc_input" required="1"/>
+                                <field name="company_id" placeholder="Commm ltd" nolabel="1" class="rc_input" invisible="1"/>
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label rc_required" for="location_id">Location</label>
+                                <field name="location_id" placeholder="Abuja" nolabel="1" class="rc_input" required="1"/>
+                            </div>
+                        </div>
+                        <div class="rc_section">
+                            <h3 class="rc_section_title">Details</h3>
+
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="contract_type_id">Employment type*</label>
+                                <field name="contract_type_id" placeholder="Part time" nolabel="1" class="rc_input" required="1" />
+                            </div>
+                            <div class="rc_field_group">
+                                <label class="rc_label" for="job_nature">Job Nature*</label>
+                                <field name="job_nature" placeholder="Hybrid" nolabel="1" class="rc_input" required="mode == 'second_intro1'" 
+                                options="{'horizontal': true}" widget="radio"/>
+                            </div>
+                             
+                            <div class="rc_row_2col">
+                                <div class="rc_field_group">
+                                    <label class="rc_label rc_required" for="no_of_recruitment">Number of recruitment*</label>
+                                    <field name="no_of_recruitment" placeholder="eg. 1" nolabel="1" class="rc_input" required="1"/>
+                                </div>
+                                <div class="rc_field_group">
+                                    <label class="rc_label" for="website_published">Publish on Job Board</label>
+                                    <field name="website_published" nolabel="1" class="rc_input" required="0"/>
+                                </div>
+                            </div>
+                            <div class="rc_row_2col">
+                                <div class="rc_field_group">
+                                    <label class="rc_label" for="deadline_date">Deadline Date</label>
+                                    <field name="deadline_date" nolabel="1" class="rc_input" required="0"/>
+                                </div>
+                                <div class="rc_field_group">
+                                    <label class="rc_label" for="close_date">Closing Date</label>
+                                    <field name="close_date" nolabel="1" class="rc_input" required="0"/>
+                                </div>
+                            </div> 
+                        </div>  
+                    </div>
+
+                    <!-- Second intro description part -->
+                    <div class="rc_section" invisible="workflow_setup != 'Description'">
+                        <h3 class="rc_section_title">Job Description</h3>
+                        <p class="rc_modal_subtitle">Roles and Requirements</p>
+
+                        <div class="rc_field_group">
+                            <div class="rc_footer">
+                                <button class="rc_btn_back" name="action_back_mode" type="object">Back</button>
+                                <button class="rc_ai_btn_primary" name="action_generate_description_with_ai" type="object">Generate using AI</button>
+                            </div>
+                            <label class="rc_label" for="description">Description</label>
+                            <field name="description" placeholder="Describe the roles, responsibilities and what makes this opportunity exciting... you can enhance this later"
+                             nolabel="1" class="rc_text"/>
+                        </div> 
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="job_section_descriptions">Key responsibilities</label>
+                            <field name="job_section_descriptions" nolabel="1" class="rc_input">
+                                <tree string="" editable="bottom">
+                                    <control>
+                                        <create string="Add" class="rc_red"/>
+                                    </control>
+                                    <field name="title" string="Title"/>
+                                    <field name="job_descriptions" nolabel="1" string="Description" />
+
+                                </tree>
+                            </field>
+                        </div>
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="work_experience_ids">Required Qualification</label>
+                            <field name="work_experience_ids" nolabel="1" class="rc_input" >
+                                <tree string="">
+                                    <control>
+                                        <create string="Add" class="rc_red"/>
+                                    </control>
+                                    <field name="computed_display_name" nolabel="1" string=""/>
+                                </tree>
+                            </field>
+                        </div>
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="work_experience_ids">Prefered Qualification</label>
+                            <field name="work_experience_ids" nolabel="1" class="rc_input" >
+                                <tree string="">
+                                    <field name="computed_display_name" nolabel="1" string=""/>
+                                </tree>
+                            </field>
+                        </div>
+                    </div>
+
+                    <!-- third workflow Pipeline part -->
+                    <div class="rc_section" invisible="workflow_setup != 'Pipeline'">
+                        <h3 class="rc_section_title">Pipeline Setup</h3>
+                        <p class="rc_modal_subtitle">Candidate workflow stages</p>
+ 
+                        <div class="rc_field_group">
+                            <label class="rc_label rc_required" for="pipeline_stage_ids">Pipeline Stages</label>
+                            <field name="pipeline_stage_ids" nolabel="1" class="rc_input" required="workflow_setup != 'Pipeline'" widget="many2many_tags">
+                                <tree string="">
+                                    <control>
+                                        <create string="Add Stages" class="rc_red"/>
+                                    </control>
+                                    <field name="sequence" nolabel="1" string=""/>
+                                    <field name="name" nolabel="1" string=""/>
+                                </tree>
+                            </field>
+                        </div>
+                        <div class="rc_field_group">
+                            <label class="rc_label" for="work_experience_ids">Default stage</label>
+                            <field name="default_stage_id" nolabel="1" class="rc_input" domain="[('id', 'in', pipeline_stage_ids)]" required="workflow_setup != 'Pipeline'"/>
+                        </div>
+                    </div> 
+
+                    <!-- fourth workflow AI part -->
+                    <div class="rc_section" invisible="workflow_setup != 'AI Interview'">
+                        <h3 class="rc_section_title">AI Interview Setup</h3>
+                        <p class="rc_modal_subtitle">Set up an automated AI interview for this role. Candidates moved to the Screening stage will automatically receive an invitation to complete it.</p>
+                        <div class="my-card-head">
+                            <div>
+                                <h3>AI Interview</h3>
+                                <p class="rc_modal_subtitle">Candidates will not be automatically interviewed</p>
+                            </div>
+                            <strong><field name="ai_enabled_interview" readonly="0" nolabel="1"/></strong>
+                        </div>
+
+                        <div class="my-card-head-ai" invisible="ai_enabled_interview != False">
+                            <div>
+                                <h3>AI Interview is Disabled</h3>
+                                <p class="rc_modal_subtitle">Toggle it ON above to configure automated AI interviews for this role. </p>
+                            </div>
+                        </div>
+                        <div class="my-card-head-ai" invisible="ai_enabled_interview != False">
+                            <div>
+                                <h3>AI Interview is Disabled</h3>
+                                <p class="rc_modal_subtitle">Toggle it ON above to configure automated AI interviews for this role. </p>
+                            </div>
+                        </div>
+                        <div class="hd-rc-card">
+                            <div class="hd-rc-row hd-rc-pink">
+                                <div class="hd-rc-ci">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square" style="color: rgb(233, 30, 140);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+
+                                    <div>
+                                        <h4>Text Based Interview</h4>
+                                        <div class="badge fastest">
+                                            Recommended
+                                        </div>
+                                        <p>Candidate Read Questions and type answers. Best for remote friendly Screening</p>
+                                    </div>
+                                    <span>
+                                        <field name="text_base_interview" readonly="0" nolabel="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="hd-rc-row hd-rc-pink">
+                                <div class="hd-rc-ci">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square" style="color: rgb(233, 30, 140);"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+
+                                    <div>
+                                        <h4>Voice Interview</h4> 
+                                        <p>Candidate Answer Questions verbally. AI transcribes and analyze responses</p>
+                                        <span class="text-xs text-gray-600">✓ Evaluates communication clarity</span>
+                                        <span class="text-xs text-gray-600">✓ Detects confidence signals</span>
+                                        <span class="text-xs text-gray-600">✓ Feels more natural</span>
+                                        <p class="text-xs mt-1" style="color: rgb(245, 158, 11);">⚠ Requires candidate microphone access</p>
+                                    </div>
+                                    <span>
+                                        <field name="voice_base_interview" readonly="0" nolabel="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <label for="when_is_interview_sent" class="flex items-start gap-3 cursor-pointer p-3 rounded-xl border" style="border-color: rgb(233, 30, 140); background-color: rgb(253, 242, 248);">
+                                <field name="when_is_interview_sent" readonly="0" nolabel="1" widget="radio" style="accent-color: rgb(233, 30, 140); margin-top: 2px;"/>
+                                <div>
+                                    <span class="text-sm text-gray-800">When candidate moves to Screening stage</span><span class="ml-2 px-1.5 py-0.5 text-xs rounded text-white" style="background-color: rgb(16, 185, 129); font-size: 9px;">Recommended</span>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <span class="text-xs text-gray-500">
+                                        Send after</span><field name="interview_sent_time" nolabel="1" class="w-16 border rounded px-2 py-1 text-xs" style="border-color: rgb(229, 231, 235);"/>
+                                        <span class="text-xs text-gray-500">hours delay (0 = immediately)
+                                        </span>
+                                    </div>
+                                </div>
+                            </label>
+                            <div class="p-3 rounded-xl border" style="border-color: rgb(229, 231, 235);">
+                                <p class="text-xs font-semibold text-gray-700 mb-2">Interview link expires after:</p>
+                                <div class="flex gap-2 mb-3">
+                                    <button class="px-3 py-1.5 rounded-lg text-xs font-medium" style="background-color: rgb(243, 244, 246); color: rgb(55, 65, 81);">
+                                        24h
+                                    </button>
+                                    <button class="px-3 py-1.5 rounded-lg text-xs font-medium" style="background-color: rgb(233, 30, 140); color: white;">
+                                        3 days
+                                    </button>
+                                    <button class="px-3 py-1.5 rounded-lg text-xs font-medium" style="background-color: rgb(243, 244, 246); color: rgb(55, 65, 81);">
+                                        7 days</button>
+                                    <button class="px-3 py-1.5 rounded-lg text-xs font-medium" style="background-color: rgb(243, 244, 246); color: rgb(55, 65, 81);">
+                                        Never
+                                    </button>
+                                </div>
+                                <p class="text-xs font-semibold text-gray-700 mb-2">
+                                    If not completed by expiry:
+                                </p>
+                                <div class="space-y-1">
+                                    <label for="send_email_expiry" class="flex items-center gap-2 cursor-pointer">
+                                        <field name="send_email_expiry" nolabel="1" style="accent-color: rgb(233, 30, 140);"/>
+                                        <span class="text-xs text-gray-700">
+                                        Send one reminder email</span>
+                                    </label>
+                                    <label for="auto_expire" class="flex items-center gap-2 cursor-pointer">
+                                        <field name="auto_expire" nolabel="1" style="accent-color: rgb(233, 30, 140);"/>
+                                        <span class="text-xs text-gray-700">Auto-expire and notify recruiter</span>
+                                    </label>
+                                    <label for="auto_advance_without_interview" class="flex items-center gap-2 cursor-pointer">
+                                        <field name="auto_advance_without_interview" nolabel="1" style="accent-color: rgb(233, 30, 140);"/>
+                                        <span class="text-xs text-gray-700">
+                                        Automatically advance without interview
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div invisible="not text_base_interview">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h3 class="font-semibold text-gray-900" style="font-size: 14px;">
+                                    Interview Questions
+                                    </h3>
+                                </div>
+                                <div class="flex gap-2 mb-4">
+                                    <button type="object" name="action_generate_interview_with_ai" class="flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm" style="background-color: rgb(233, 30, 140);">
+                                        <!-- <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg> -->
+                                        ✨ Generate with AI
+                                    </button>
+                                    <button type="object" name="action_generate_interview_with_ai"  class="flex items-center gap-2 px-4 py-2 rounded-xl border font-semibold text-sm" style="border-color: rgb(229, 231, 235); color: rgb(55, 65, 81);">
+                                        📋 Use Template
+                                    </button>
+                                    <field name="survey_id" string="Select Template" required="text_base_interview" style="accent-color: rgb(233, 30, 140);"/>
+
+                                </div>
+                                 <div class="flex gap-2 mb-4">
+                                    <field name="email_invite_template" string="Select Mail Template" style="accent-color: rgb(233, 30, 140);"/>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="bg-white border rounded-2xl p-4 group" style="border-color: rgb(229, 231, 235);">
+                                        <div class="flex items-start gap-3">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-grip-vertical text-gray-300 mt-1 cursor-grab flex-shrink-0">
+                                                <circle cx="9" cy="12" r="1"></circle>
+                                                <circle cx="9" cy="5" r="1"></circle>
+                                                <circle cx="9" cy="19" r="1"></circle>
+                                                <circle cx="15" cy="12" r="1"></circle>
+                                                <circle cx="15" cy="5" r="1"></circle>
+                                                <circle cx="15" cy="19" r="1"></circle
+                                                >
+                                            </svg>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="rc_field_group">
+                                                    <label class="rc_label rc_required" for="survey_question_ids">Question</label>
+                                                    <field name="survey_question_ids" nolabel="1" class="rc_input" required="survey_id" invisible="not survey_id" widget="many2many_tags">
+                                                        <tree string="" no_open="0">
+                                                            <control>
+                                                                <create string="Add Questions" class="rc_red"/>
+                                                            </control>
+                                                            <field name="title" string="Question"/>
+                                                            <field name="question_type" string="Question type"/>
+                                                            <field name="scoring_type" string="Score method"/>
+                                                            <field name="description" string="Description"/>
+                                                            <field name="constr_mandatory" nolabel="1" string="Is Mandatory"/>
+                                                            <field name="time_limit" nolabel="1" string="Time limit"/>
+
+                                                        </tree>
+                                                    </field>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> 
+                        </div> 
+                    </div> 
+                </div>
+
+                <!-- 5 fifth workflow Job checklist part -->
+                <div class="rc_section" invisible="workflow_setup != 'Job Checklist'">
+                    <h3 class="rc_section_title">Job checklist</h3>
+                    <p class="rc_modal_subtitle">Create a task checklist specific to this job. Tasks will be automatically assigned and tracked.</p>
+
+                    <div class="rc_field_group">
+                        <label class="rc_label rc_required" for="applicant_documentation_checklist">Checklist</label>
+                        <field name="applicant_documentation_checklist" nolabel="1" class="rc_input" required="workflow_setup != 'Job Checklist'">
+                            <tree string="" editable="bottom" no_open="1">
+                                <control>
+                                    <create string="Add Checklist" class="rc_red"/>
+                                </control>
+                                <field name="name" string="Description"/>
+                                <field name="document_type" string="Type"/>
+                                <field name="document_file" nolabel="1" string="Attach file"/>
+                                <field name="is_compulsory" nolabel="1" string="Is compulsory?"/>
+                                <field name="responsible_user_id" nolabel="1" string="Recruiter"/>
+                                <field name="day" nolabel="1" string="Day" placeholder="e.g 5"/>
+                            </tree>
+                        </field>
+                    </div>
+                </div> 
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         ACTION TO OPEN THE WIZARD
+    ════════════════════════════════════════════ -->
+    <record id="action_hr_recruitment_add_custom_job" model="ir.actions.act_window">
+        <field name="name">Add job</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_recruitment_job_process_form_view"/>
+        <field name="target">new</field>
+        <field name="context">{'default_mode': 'first_intro'}</field>
+    </record>
+
+</odoo>

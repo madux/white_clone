@@ -54,7 +54,8 @@ body, .hr-admin-app {
 .sidebar {
   width: var(--sidebar-w);
   min-height: 100vh;
-  background: var(--surface);
+  background: #EDEEF2;
+  /* var(--surface); */
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;

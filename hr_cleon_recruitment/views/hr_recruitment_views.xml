@@ -4,6 +4,67 @@
     <!-- ═══════════════════════════════════════════
          FORM VIEW
     ════════════════════════════════════════════ -->
+    <record id="hr_department_recruitment_custom_tree_view" model="ir.ui.view">
+        <field name="name">hr.department.candidate.tree</field>
+        <field name="model">hr.department</field>
+        <field name="arch" type="xml">
+            <tree string="Jobs" js_class="myrecruitment_dashboard_list">
+                <field name="name"/>
+                <field name="manager_id" string="Department Owner"/>
+                <field name="total_employee" nolabel="0"/>
+                <field name="expected_employee" nolabel="0"/>
+                <field name="new_hired_employee" nolabel="0" readonly="1"/>
+                <field name="absence_of_today" nolabel="0"/>
+                <field name="active" widget ="boolean_toogle" nolabel="0"/>
+
+            </tree>
+        </field>
+    </record>
+    <record id="hr_job_recruitment_custom_search_view" model="ir.ui.view">
+        <field name="name">hr.job.candidate.search</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+        <search string="Jobs">
+            <field name="name" string="Job Position"/>
+            <field name="department_id" operator="child_of"/>
+            <separator/>
+            <filter name="message_needaction" string="Unread Messages" domain="[('message_needaction', '=', True)]" groups="mail.group_mail_notification_type_inbox"/>
+            <separator/>
+            <filter name="archived" string="Archived" domain="[('active', '=', False)]"/>
+            <group expand="0" string="Group By">
+                <filter string="Department" name="department" domain="[]" context="{'group_by': 'department_id'}"/>
+                <filter string="Company" name="company" domain="[]" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
+                <filter string="Employment Type" name="employment_type" domain="[]" context="{'group_by': 'contract_type_id'}"/>
+            </group>
+        </search>
+        </field>
+    </record>
+    <record id="hr_job_recruitment_custom_tree_view" model="ir.ui.view">
+        <field name="name">hr.job.candidate.tree</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+            <tree string="Jobs" js_class="myrecruitment_dashboard_list">
+                <field name="sequence" widget="handle" optional="hide"/>
+                <field name="name" string="JOB TITLE"/>
+                <field name="department_id" string="DEPARTMENT"/>
+                <field name="deadline_date" string="TIMELINE"/>
+                <field name="contract_type_id" string="TYPE" widget="badge" optional="hide"/>
+                <field name="job_nature" string="NATURE" widget="badge"/>
+                <!-- <field name="is_published" string="Published"/> -->
+                <field name="application_count" string="Applications"/>
+                <field name="job_stage" optional="hide"/>
+                <field name="priority" optional="hide"/>
+                <field name="hiring_team_ids" widget="many2many_tags_avatar" string="HIRE TEAM"/>
+
+                <field name="applicant_hired" string="Hired"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="hide"/>
+                <field name="no_of_employee" optional="hide"/>
+                <field name="expected_employees" optional="hide"/>
+                <field name="no_of_hired_employee" optional="hide"/>
+                <field name="company_id" column_invisible="True" on_change="1"/>
+            </tree>
+        </field>
+    </record>
     <record id="hr_applicant_custom_tree_view" model="ir.ui.view">
         <field name="name">hr.applicant.tree</field>
         <field name="model">hr.applicant</field>
@@ -11,19 +72,21 @@
             <tree string="Candidate" js_class="myrecruitment_dashboard_list">
                 <!-- <div class="cn-view-content-pane active" id="viewPaneList">
                     <div class="cn-data-table-scroll-outer-frame"> -->
+                        <field name="application_code" string="#" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
                         <field name="name" string="CANDIDATE" class="overwrite-field cn-col-candidate cn-cell-pinned-left-2"/>
                         <field name="partner_phone" string="PHONE" class="overwrite-field cn-col-phone cn-cell-pinned-left-3"/>
                         <field name="email_from" string="EMAIL" class="overwrite-field cn-col-email cn-cell-pinned-left-4"/>
-                        <field name="job_id" string="TARGET ROLE" class="overwrite-field cn-col-role"/>
+                        <field name="job_id" string="ROLE" class="overwrite-field cn-col-role"/>
                         <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role" optional="hide"/>
                         <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
                         <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
                         <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
                         <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating" optional="hide"/>
-                        <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
+                        <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
                         <field name="create_date" string="APPLIED DATE" class="overwrite-field cn-col-date"/>
                         <field name="stage_id" string="STATUS" class="overwrite-field cn-col-status" widget="badge"/>
                         <field name="source_id" string="SOURCE" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
+                        <field name="number_of_interviews" string="Interviews" optional="hide"/>
 
                     <!-- </div>
                 </div> -->
@@ -42,14 +105,12 @@
                 'view_mode': 'tree',
                 'view_id': ref('hr_applicant_custom_tree_view'),
             }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_cleon_recruitment.view_hr_applicant_customized_form'),
+            }),
             
-        ]"/>
-        <!-- <field name="help" type="html">
-            <p>
-                No recorded yet.
-            </p>
-            <p>Create a New record.</p>
-        </field> -->
+        ]"/> 
     </record>
 
     <!-- (0, 0, {
@@ -62,6 +123,52 @@
               sequence="3"
               action="action_hr_applicant_recruitment"
               groups="hr_cleon_recruitment.group_hr_Recruitment_officer,hr_cleon_recruitment.group_hr_Recruitment_user,base.group_user"/>
+
+    <record id="ir_action_server_cleon_recruiment_offer" model="ir.actions.server">
+        <field name="name">Generate Offer</field>
+        <field name="type">ir.actions.server</field>
+        <field name="model_id" ref="hr_recruitment.model_hr_applicant" />
+        <field name="binding_model_id" ref="hr_recruitment.model_hr_applicant" />
+        <field name="state">code</field>
+        <field name="sequence" eval="100"/>
+        <!-- <field name="context">{'default_candidate_ids': active_ids}</field> -->
+        <field name="groups_id" eval="[(6, 0, [
+        ref('base.group_system'), 
+        ref('hr.group_hr_manager')
+        ])]"/>
+        <field name="code">action=model.sudo().generate_offers()</field>
+    </record>
+    <record id="action_hr_job_recruitment" model="ir.actions.act_window">
+        <field name="name">JOBS:</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_tree_view"/>
+        <field name="search_view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_search_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_job_recruitment_custom_tree_view'),
+            }),
+            
+        ]"/> 
+    </record>
+
+    <record id="action_hr_department_recruitment" model="ir.actions.act_window">
+        <field name="name">DEPARTMENT:</field>
+        <field name="res_model">hr.department</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_department_recruitment_custom_tree_view"/>
+        <!-- <field name="search_view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_search_view"/> -->
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_department_recruitment_custom_tree_view'),
+            }),
+            
+        ]"/> 
+    </record>
 </odoo>
 
               <!-- web_icon="hr_cleon_recruitment,static/description/icon.png" -->

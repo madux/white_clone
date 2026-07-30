@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_leave_dashboard.Dashboard">
+        <div class="leaveapp">
+            <div class="leavesidebar">
+                <div class="o_cc_sidebar_header">
+                    <span class="o_cc_header_dot"/>
+                    <span class="o_cc_header_title">
+                    Leave Management</span>
+                    <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                        <i class="fa fa-th-large"/>
+                    </button>
+                </div>
+
+                <nav class="o_cc_nav">
+                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openRecord">
+                        <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
+                        <span class="o_cc_nav_label">Dashboard</span>
+                        <!-- <span class="o_cc_nav_badge">2</span> -->
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                        <span class="o_cc_nav_label">Get Started</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                        <span class="o_cc_nav_label">Leave Calendar</span>
+                        <!-- <i class="fa fa-chevron-right o_cc_nav_arrow"/> -->
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openMeasures">
+                        <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
+                        <span class="o_cc_nav_label">Leave Request</span>
+                        <span class="o_cc_nav_badge">2</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a> 
+                    <p class="sidebar-section-label">Leave Configuration</p>
+                    <ul>
+                        <li>
+                            <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                                <span class="o_cc_nav_icon"><i class="fa-clipboard-list"/></span>
+                                <span class="o_cc_nav_label">Leave types</span>
+                            </a>
+                        </li>
+                        <li>
+                             <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                                <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                                <span class="o_cc_nav_label">Leave Balances</span>
+                            </a>
+                             
+                        </li>
+                    </ul>
+                    <p class="sidebar-section-label">Reports</p>
+                    <ul>
+                        <a class="o_cc_nav_item" href="/incident-reporting">
+                            <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
+                            <span class="o_cc_nav_label">Leave Analytics</span>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openRecord">
+                            <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
+                            <span class="o_cc_nav_label">Audit Logs</span>
+                        </a>
+
+                        <a class="o_cc_nav_item" t-on-click="openRecord">
+                            <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
+                            <span class="o_cc_nav_label">Settings</span>
+                        </a>
+                         
+                    </ul>
+                </nav>
+
+                <div class="o_cc_sidebar_footer">
+                    <span class="o_cc_footer_label">Solution By MaachSoft</span>
+                    <div class="o_cc_footer_status">
+                        <span class="o_cc_status_dot o_cc_status_green"/>
+                        All integrations active
+                    </div>
+                </div>
+            </div>
+            <div class="o_leave_dashboard">
+                <!-- KPI ROW -->
+                <div class="kpi-row">
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">TOTAL EMPLOYEES</span><span class="kpi-icon blue">👥</span></div>
+                        <div class="kpi-value" data-kpi="total_employees"><t t-esc="state.kpis.total_employees"/></div>
+                        <div class="kpi-sub">0 on leave today</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">PENDING APPROVALS</span><span class="kpi-icon orange">⏱</span></div>
+                        <div class="kpi-value" data-kpi="pending_approvals"><t t-esc="state.kpis.pending_approvals"/></div>
+                        <div class="kpi-sub">Awaiting review</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">ON LEAVE TODAY</span><span class="kpi-icon purple">📅</span></div>
+                        <div class="kpi-value" data-kpi="on_leave_today"><t t-esc="state.kpis.on_leave_today"/></div>
+                        <div class="kpi-sub">0% of workforce</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">UPCOMING (7 DAYS)</span><span class="kpi-icon teal">📈</span></div>
+                        <div class="kpi-value" data-kpi="upcoming"><t t-esc="state.kpis.upcoming_7_days"/></div>
+                        <div class="kpi-sub">Approved upcoming leave</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">UTILISATION RATE</span><span class="kpi-icon pink">📊</span></div>
+                        <div class="kpi-value" data-kpi="utilisation"><t t-esc="state.kpis.utilisation_rate"/></div>
+                        <div class="kpi-sub">Leave days consumed</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top"><span class="kpi-label">COVERAGE ALERTS</span><span class="kpi-icon green">⚠</span></div>
+                        <div class="kpi-value" data-kpi="coverage"><t t-esc="state.kpis.coverage_alerts"/></div>
+                        <div class="kpi-sub">Coverage healthy</div>
+                    </div>
+                </div>
+
+                <!-- TRENDS + BY TYPE -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div>
+                                <h5>Leave Trends</h5>
+                                <small>Monthly request volume and outcomes</small>
+                            </div>
+                            <div class="range-toggle">
+                                <button class="range-btn active" data-months="6">6 months</button>
+                                <button class="range-btn" data-months="12">12 months</button>
+                            </div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="stat-box"><div class="stat-value pink" data-summary="total">-</div><div class="stat-label">Total</div></div>
+                            <div class="stat-box"><div class="stat-value green" data-summary="approved">-</div><div class="stat-label">Approved</div></div>
+                            <div class="stat-box"><div class="stat-value orange" data-summary="pending">-</div><div class="stat-label">Pending</div></div>
+                            <div class="stat-box"><div class="stat-value red" data-summary="rejected">-</div><div class="stat-label">Rejected</div></div>
+                        </div>
+                        <canvas t-ref="trendsChart" height="90"/>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div><h5>By Leave Type</h5><small>All-time request distribution</small></div>
+                        </div>
+                        <div class="donut-wrap">
+                            <canvas t-ref="byTypeChart" width="160" height="160"/>
+                        </div>
+                        <div id="byTypeLegend" class="legend-list"/>
+                    </div>
+                </div>
+
+                <!-- BALANCE + APPROVAL -->
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div><h5>Leave Balance by Type</h5><small>Allocation vs utilisation across all employees</small></div>
+                        </div>
+                        <div id="balanceList" class="balance-list"/>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div><h5>Approval Overview</h5><small>Request resolution summary</small></div>
+                        </div>
+                        <div class="approval-wrap">
+                            <div class="approval-chart-box">
+                                <canvas t-ref="approvalChart" width="140" height="140"/>
+                                <div class="approval-center">
+                                    <div class="approval-rate" data-approval="rate">-</div>
+                                    <small>Approval</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="approval-rows">
+                            <div class="approval-row approved"><span>✓ Approved</span><span data-approval="approved">-</span></div>
+                            <div class="approval-row pending"><span>⏱ Pending</span><span data-approval="pending">-</span></div>
+                            <div class="approval-row rejected"><span>✕ Rejected</span><span data-approval="rejected">-</span></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </t>
+</templates>

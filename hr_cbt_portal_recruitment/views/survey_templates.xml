@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    
+        <!-- Survey not opened page -->
+        <template id="survey_not_opened" name="Survey: Not Opened">
+            <t t-call="survey.layout">
+                <div class="wrap" style="background-color: #f5f5f5; padding: 20px; border-radius: 10px;">
+                    <div class="container">
+                        <div class="jumbotron mt32" style="background-color: #fff; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); padding: 20px;">
+                            <h1 style="font-size: 28px; font-weight: bold; text-align: center; border-bottom: 2px solid #ddd; padding-bottom: 10px; font-family: 'Arial', sans-serif;">
+                                <span t-field="survey.title"/> - Test Not Yet Opened
+                            </h1>
+                            <div style="font-size: 20px; margin-top: 20px; text-align: center; font-family: 'Georgia', serif;">
+                                <p style="margin-bottom: 20px;">
+                                    This test will start at 
+                                    <span style="color: #2c3e50; font-weight: bold; font-size: 22px;">
+                                        <t t-esc="start_time"/>
+                                    </span>.
+                                </p>
+                                <p>The current time is 
+                                    <span style="color: #e74c3c; font-weight: bold; font-size: 22px;">
+                                        <t t-esc="current_time"/>
+                                    </span>.
+                                </p>
+                                <p>Please check back or refresh at the exact time.</p>
+                                <br/>
+                                <p style="color: red; font-weight: bold; font-size: 18px;">
+                                    Note that you must start immediately at the dot before it expires.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+</odoo>

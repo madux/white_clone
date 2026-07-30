@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'CLEONHR Administration Dashboard',
+    'name': 'CLEONHR HR ADMIN',
     'version': '17.0.1.0.0',
-    'category': 'Human Resources',
+    'category': 'CleonHR-HR ADMIN',
     'summary': 'Comprehensive HR Administration Dashboard with analytics and workforce management',
     'description': """
         HR Administration Dashboard for App 17
@@ -28,6 +28,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/hr_administration_menu.xml',
+        'views/menu.xml',
     ],
     # 'assets': {
     #     'web.assets_backend': [

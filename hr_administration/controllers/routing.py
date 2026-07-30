@@ -16,7 +16,7 @@ class OpenActionController(http.Controller):
                 view_mode,
             )
         )
-
+   
     @http.route('/app/employees', type='http', auth='user')
     def open_employees(self, **kwargs):
         main_action = request.env.ref('hr.open_view_employee_list_my').sudo().read()[0]
@@ -26,14 +26,31 @@ class OpenActionController(http.Controller):
 
     @http.route('/app/leave', type='http', auth='user')
     def open_leave(self, **kwargs):
-        action = request.env.ref('hr_holidays.hr_leave_action_new_request').sudo().read()[0]
-        return self.redirect_to_page(action,'kanban', 'kanban')
+        action = False
+        # http://whiteclone.localhost:8072/web#action=1070
+        # try:
+        old_action = request.env.ref('hr_holidays.hr_leave_action_new_request').sudo().read()[0]
+        new_action = request.env.ref('hr_leave_dashboard.action_hr_leave_dashboard').sudo().read()[0]
+    
+        if new_action:
+            return request.redirect(
+                '/web#action=%s' % (new_action.get('id'))
+            )
+        else:
+            return self.redirect_to_page(old_action,'calendar', 'calendar')
+        # except Exception as e:
+        #     pass 
 
     @http.route('/app/calendar', type='http', auth='user')
     def open_calendar(self, **kwargs):
         action = request.env.ref('calendar.action_calendar_event').sudo().read()[0]
         return self.redirect_to_page(action,'kanban', 'kanban')
 
+    @http.route('/app/recruitment', type='http', auth='user')
+    def open_recruitment(self, **kwargs):
+        action = request.env.ref('hr_cleon_recruitment.action_hr_applicant_recruitment').sudo().read()[0]
+        return self.redirect_to_page(action,'tree', 'tree')
+    
     @http.route('/app/insurance', type='http', auth='user')
     def open_hmo_insurance_dashboard(self, **kwargs):
         action = request.env['hr.insurance'].sudo().get_dashboard()

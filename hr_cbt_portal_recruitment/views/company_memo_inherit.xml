@@ -1,0 +1,44 @@
+<odoo>
+  <data>
+    <record id="cbt_company_memo_form_inherit_view" model="ir.ui.view">
+        <field name="name">company_memo_form_inherit_view</field>
+        <field name="model">memo.model</field>
+        <field name="inherit_id" ref="company_memo.memo_model_form_view_3"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='approve_memo']" position="attributes">
+                <!-- <attribute name="attrs">{'invisible': ['|', '|', ('memo_type_key','not in',['recruitment_request', 'loan', 'Payment', 'server_access', 'material_request', 'procurement_request', 'vehicle_request']),('state','in',['submit', 'Approve','Done','Refuse']), ('user_is_approver','!=',True)]}</attribute> -->
+                <attribute name="invisible">"memo_type_key not in ['recruitment_request', 'loan', 'Payment', 'server_access', 'material_request', 'procurement_request', 'vehicle_request'] or state in ['submit', 'Approve','Done','Refuse'] or user_is_approver != True"</attribute>
+            </xpath>
+            <xpath expr="//button[@name='complete_memo_transactions']" position="attributes">
+                <attribute name="attrs">{'invisible':['|','|','|',('state','not in',['Done']),('is_request_completed','=', True), ('memo_type_key','not in',['recruitment_request', 'material_request', 'procurement_request', 'vehicle_request']),('user_is_approver','=', False)]}</attribute>
+            </xpath>
+            <xpath expr="//page[@name='Products']" position="before">
+                <page name='rr_form' string='Recruitment Request form' attrs="{'invisible':[('memo_type_key','not in',['recruitment_request'])]}">
+                    <form string="Items" editable="bottom"> 
+                        <sheet>
+                            <group>
+                                <group>
+                                    <field name="requested_department_id" string="Job Position"/> 
+                                    <field name="job_id" string="Job Position"/> 
+                                    <field name="job_tmp"/> 
+                                    <field name="established_position"/> 
+                                    <field name="recruitment_mode" string="Recruitment Mode"/> 
+                                    <field name="qualification" string="Qualification"/> 
+                                    <field name="age_required" string="Required Age"/> 
+                                </group>
+                                <group>
+                                    <field name="years_of_experience"/> 
+                                    <field name="expected_employees"/> 
+                                    <field name="recommended_by"/> 
+                                    <field name="date_expected"/> 
+                                </group>
+                            </group>
+                        </sheet>
+                    </form>
+                </page>
+            </xpath> 
+        </field>
+    </record>
+ 
+  </data>
+</odoo>

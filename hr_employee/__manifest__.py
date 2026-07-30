@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'CLEONHR Employee Directory',
+    'name': 'CLEONHR Core HR',
     'version': '17.0.1.0.0',
-    'category': 'Human Resources',
-    'summary': 'Manage employee incidents, warnings, and disciplinary cases',
+    'category': 'CleonHR-Core HR',
+    'summary': 'Manage incidents, warnings, activities, documentary, leave, time and disciplinary cases',
     'description': """
         Employee Directory & Management
         =================================

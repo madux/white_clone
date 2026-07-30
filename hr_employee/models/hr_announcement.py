@@ -92,7 +92,7 @@ class Hr_announcement(models.Model):
     active = fields.Boolean(string="Active", default=True)
     mail_template_id = fields.Many2one(
         'mail.template',
-        string='Target Employees',
+        string='Mail Templates',
         domain=[('model', '=', 'hr.core_announcement')],
         # lambda self: self.get_mail_templates()
     )

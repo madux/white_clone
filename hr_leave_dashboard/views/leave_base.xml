@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_leave_view_calendar_custom" model="ir.ui.view">
+        <field name="name">hr.leave.report.calendar.custom</field>
+        <field name="model">hr.leave.report.calendar</field>
+        <field name="inherit_id" ref="hr_holidays.hr_leave_report_calendar_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//calendar" position="attributes">
+                <attribute name="js_class">time_off_calendar_with_sidebar</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>

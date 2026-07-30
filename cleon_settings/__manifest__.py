@@ -11,7 +11,7 @@
     'author': 'Maach Software',
     'website': '',
     'depends': [
-        'base',
+        'base', 'hr'
     ],
     'data': [
         'security/ir.model.access.csv',
@@ -24,6 +24,7 @@
             'cleon_settings/static/src/xml/status_widget.xml',
             'cleon_settings/static/src/css/status_widget.scss',
             'cleon_settings/static/src/js/status_widget.js',
+            'cleon_settings/static/src/js/system_override.js',
             # 'hr_insurance/static/src/css/hr_insurance.css',
             # 'hr_insurance/static/src/css/hmo_market_place.css',
             # 'hr_insurance/static/src/css/qms_css.css',

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="cbt_recruitment_sign_wizard_view" model="ir.ui.view">
+        <field name="name">hr_recruitment_sign</field>
+        <field name="model">cbt.recruitment.sign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Signature Request">
+                <field name="applicant_ids" widget="many2many_tags" invisible="1"/>
+                <!-- <field name="sign_template_responsible_ids" invisible="1"/> -->
+                <field name="possible_template_ids" invisible="1"/>
+                <group class="o_label_nowrap">
+                    <field name="sign_template_ids"
+                        options="{'no_create': True}"
+                        widget="many2many_tags"
+                        force_save="1"/> 
+                </group>
+                <!-- <group attrs="{'invisible': [('sign_template_ids', '=', [])]}" string="Sign Request Options"> -->
+                    <!-- <field name="applicant_role_id" options="{'no_create': True}"/> -->
+                <!-- </group> -->
+                <group class="o_label_nowrap" string="Mail Options">
+                    <field name="subject" placeholder="Signature Request"/>
+                    <field name="cc_partner_ids" widget="many2many_tags"
+                        placeholder="Write email or search contact..."/>
+                </group>
+                <field name="message" placeholder="Optional Message..." widget="html"/>
+                <field name="attachment_ids" widget="many2many_binary" string="Attach a file"/>
+                <footer>
+                    <button name="send_signature" string="Send" type="object" class="oe_highlight" data-hotkey="q"/>
+                    <button string="Discard" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="cbt_recruitment_wizard_action" model="ir.actions.act_window">
+        <field name="name">6. Send Signature Document</field>
+        <field name="res_model">cbt.recruitment.sign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_applicant_ids': active_ids}</field>
+        <field name="binding_model_id" ref="hr_recruitment.model_hr_applicant" />
+    </record>
+</odoo>

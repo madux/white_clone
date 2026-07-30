@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <menuitem
+        id="hr_recruitment_base"
+        name="recruitment"
+        sequence="1" 
+    />
+
+    
+    <menuitem
+        id="hr_recruitment_custom_menu"
+        name="Recruitment"
+        action="hr_cleon_recruitment.action_hr_job_recruitment"
+        sequence="10"
+        parent="hr_recruitment_base"
+    />
+    <record id="hr_cleon_recruitment.hr_recruitment_custom_menu" model="ir.ui.menu">
+            <field name="icon_class">fa fa-users</field>
+            <field name="category_name">CleonHR-Recruitment</field>
+        </record>
+ 
+
+</odoo>

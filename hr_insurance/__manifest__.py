@@ -2,7 +2,7 @@
 {
     'name': 'CLEONHR Insurance (HMO)',
     'version': '17.0.1.0.0',
-    'category': 'Human Resources',
+    'category': 'CleonHR-HR ADMIN',
     'summary': 'Comprehensive HR Administration Dashboard with analytics and workforce management',
     'description': """
         HR Insurance HMO for App* 17
@@ -36,6 +36,7 @@
         'views/hmo_enrollment.xml',
         'views/hmo_checklist.xml',
         'views/hmo_setting.xml',
+        'views/menu.xml',
     ],
     'assets': {
         'web.assets_backend': [

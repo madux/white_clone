@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         CUSTOM LANDING PAGE — "Explore Modules"
+         Stat cards + category sections of app cards, matching the
+         reference screenshot. Search filters cards live and the stat
+         cards re-compute against whatever is currently visible.
+         ══════════════════════════════════════════════════════════════════════ -->
+    <template id="landing_page" name="Cleon – Application">
+        <t t-call="web.layout">
+            <t t-set="head">
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Explore Modules – Cleon</title>
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+                <link rel="stylesheet" href="/cleon_license/static/src/css/landing.css"/>
+            </t>
+
+            <div id="hc-launcher">
+
+                <!-- ── Page header ─────────────────────────────────────── -->
+                <header class="hc-page-header">
+                    <a href="#" class="hc-back-btn" id="hc-back-btn" onclick="history.back(); return false;">
+                        <i class="fa fa-arrow-left"/> Back
+                    </a>
+                    <div class="hc-page-title-row">
+                        <span class="hc-page-icon"><i class="fa fa-magic"/></span>
+                        <h1 class="hc-page-title">Explore Modules</h1>
+                    </div>
+                    <p class="hc-page-subtitle">
+                        Discover and explore all the powerful modules in your CleonHR platform.
+                        Click on any module to dive deep with a guided tour.
+                    </p>
+
+                    <div class="hc-search-wrap">
+                        <i class="fa fa-search hc-search-icon"/>
+                        <input type="search" id="hc-app-search"
+                               class="hc-search-input"
+                               placeholder="Search modules…"
+                               autocomplete="off"/>
+                    </div>
+                </header>
+
+                <!-- ── Stat cards (auto-recomputed on search) ───────────── -->
+                <section class="hc-stats-row">
+                    <div class="hc-stat-card hc-stat-pink">
+                        <span class="hc-stat-number" id="hc-stat-modules" t-att-data-total="total_modules">
+                            <t t-esc="total_modules"/>
+                        </span>
+                        <span class="hc-stat-label">Total Modules</span>
+                    </div>
+                    <div class="hc-stat-card hc-stat-purple">
+                        <span class="hc-stat-number" id="hc-stat-features" t-att-data-total="total_features">
+                            <t t-esc="total_features"/>
+                        </span>
+                        <span class="hc-stat-label">Features</span>
+                    </div>
+                    <div class="hc-stat-card hc-stat-blue">
+                        <span class="hc-stat-number">All-in-One</span>
+                        <span class="hc-stat-label">HR Platform</span>
+                    </div>
+                </section>
+
+                <!-- ── Category sections ─────────────────────────────────── -->
+                <main id="hc-app-sections">
+                    <t t-foreach="categories" t-as="cat">
+                        <section class="hc-category-section"
+                                 t-att-data-category="cat['name'].lower()">
+                            <h2 class="hc-category-title"><t t-esc="cat['name']"/></h2>
+
+                            <div class="hc-app-grid" id="hc-app-grid">
+                                <t t-foreach="cat['app_items']" t-as="app">
+                                    <a t-att-href="app['url']"
+                                       class="hc-app-card"
+                                       t-att-data-name="app['name'].lower()"
+                                       t-att-data-desc="app['description'].lower()"
+                                       t-att-data-features="len(app['children']) or 1"
+                                       t-att-data-id="app['id']">
+                                        <div class="hc-app-icon-wrap"
+                                             t-attf-style="background-color:#{cat['color']}1A;">
+                                            <t t-if="app['icon']">
+                                                <img t-att-src="app['icon']"
+                                                     t-att-alt="app['name']"
+                                                     class="hc-app-icon"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"/>
+                                            </t>
+                                            <div class="hc-app-icon-fallback"
+                                                 t-attf-style="color:#{cat['color']};#{'' if app['icon'] else 'display:flex;'}">
+                                                <i class="fa fa-th-large"/>
+                                            </div>
+                                        </div>
+                                        <div class="hc-app-info">
+                                            <span class="hc-app-name" t-esc="app['name']"/>
+                                            <span class="hc-app-desc" t-esc="app['description']"/>
+                                            <span class="hc-app-explore">
+                                                Explore Module <i class="fa fa-arrow-right"/>
+                                            </span>
+                                        </div>
+                                    </a>
+                                </t>
+                            </div>
+                        </section>
+                    </t>
+
+                    <!-- No-results state, toggled by JS during search -->
+                    <div class="hc-no-results d-none" id="hc-no-results">
+                        <i class="fa fa-search-minus"/>
+                        <p>No modules found</p>
+                    </div>
+                </main>
+
+                <!-- ── Footer ─────────────────────────────────────────────
+                     Placeholder support/help footer. Replace with the
+                     exact content once the second reference screenshot
+                     is shared — structure is ready to swap straight in. -->
+                <footer class="hc-footer">
+                    <div class="hc-footer-inner">
+                        <div class="hc-footer-brand">
+                            <span class="hc-footer-logo">CleonHR</span>
+                            <p class="hc-footer-tagline">All-in-one HR platform for growing teams.</p>
+                        </div>
+                        <div class="hc-footer-links">
+                            <a href="#">Help Center</a>
+                            <a href="#">Contact Support</a>
+                            <a href="#">What's New</a>
+                        </div>
+                    </div>
+                </footer>
+
+            </div><!-- /#hc-launcher -->
+
+            <script src="/cleon_license/static/src/js/landing.js"/>
+        </t>
+    </template>
+
+</odoo>

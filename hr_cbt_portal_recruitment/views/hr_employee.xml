@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <record model="ir.ui.view" id="hr_view_employee_inherited_form_for_cbt" >
+            <field name="name">hr.employee</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_form" />
+            <field name="arch" type="xml"> 
+                <!-- <div name="button_box" position="inside">
+                    <button name="action_related_contacts" class="oe_stat_button" groups="hr.group_hr_user" icon="fa-group" type="object">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value">
+                                <button name="action_related_signatures" readonly="1"/>
+                            </span>
+                            <span class="o_stat_text">
+                                Signatures
+                            </span>
+                        </div>
+                    </button>
+                    <button groups="hr.group_hr_user" name="action_related_signatures" type="object" class="oe_stat_button" icon="fa-pencil">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value"><field name="employee_signature_count"/></span>
+                            <span class="o_stat_text">Signatures</span>
+                        </div>
+                    </button>
+                </div> -->
+
+                <xpath expr="//notebook[last()]">
+                    <page string="Qualifications &amp; Skills" groups="hr.group_hr_user">
+                        <group string="Extracted Qualification">
+                            <field name="qualifications_text" readonly="0" widget="text" placeholder="Enter Qualification"/>
+                        </group>
+                        <group string="Extracted Skills">
+                            <field name="skills_text" readonly="0" widget="text" placeholder="Enter Skills"/>
+                        </group>
+                        <group string="Extracted Experience">
+                            <field name="experience_text" readonly="0" widget="text" placeholder="Enter experience"/>
+                        </group>
+                    </page>
+                    <page string='Application Documents' groups="hr.group_hr_user">
+                        <field name="applicant_documentation_checklist" options="{'no_open': True}" readonly="1">
+                            <tree>
+                                <field name="document_type" readonly="1"/>
+                                <field name="applicant_submitted_document_file" string="Applicant Submitted document" readonly="1"/>
+                                <field name="select" string="Is verified?" readonly="1"/>
+                            </tree>
+                        </field>
+                    </page>
+                    
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

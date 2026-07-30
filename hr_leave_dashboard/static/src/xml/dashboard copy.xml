@@ -1,0 +1,50 @@
+<t t-name="hr_leave_dashboard.Dashboard">
+    <div class="o_leave_dashboard">
+
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-label">TOTAL EMPLOYEES</div>
+                <div class="kpi-value"><t t-esc="state.kpis.total_employees"/></div>
+            </div>
+            <!-- repeat for other KPIs, all via t-esc, no jQuery -->
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <h5>Leave Trends</h5>
+                <div class="range-toggle">
+                    <button t-att-class="state.months === 6 ? 'range-btn active' : 'range-btn'"
+                            t-on-click="() => this.setRange(6)">6 months</button>
+                    <button t-att-class="state.months === 12 ? 'range-btn active' : 'range-btn'"
+                            t-on-click="() => this.setRange(12)">12 months</button>
+                </div>
+            </div>
+            <div class="stat-row">
+                <div class="stat-box"><div class="stat-value pink" t-esc="state.trends.summary.total"/></div>
+                <div class="stat-box"><div class="stat-value green" t-esc="state.trends.summary.approved"/></div>
+                <div class="stat-box"><div class="stat-value orange" t-esc="state.trends.summary.pending"/></div>
+                <div class="stat-box"><div class="stat-value red" t-esc="state.trends.summary.rejected"/></div>
+            </div>
+            <canvas t-ref="trendsCanvas" height="90"/>
+        </div>
+
+        <div class="panel">
+            <canvas t-ref="byTypeCanvas" width="160" height="160"/>
+            <div class="legend-list">
+                <t t-foreach="state.byType" t-as="item" t-key="item.name">
+                    <div class="legend-row">
+                        <span t-esc="item.name"/>
+                        <span t-esc="item.count"/>
+                        <span t-esc="item.percent"/>%
+                    </div>
+                </t>
+            </div>
+        </div>
+
+        <div class="panel">
+            <canvas t-ref="approvalCanvas" width="140" height="140"/>
+            <div class="approval-rate" t-esc="state.approval.approval_rate"/>%
+        </div>
+
+    </div>
+</t>

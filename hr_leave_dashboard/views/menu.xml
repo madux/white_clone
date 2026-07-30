@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <menuitem
+        id="hr_admin_leave_management"
+        name="Leave Management"
+        action="hr_leave_dashboard.action_hr_leave_dashboard"
+        sequence="60"
+        parent="hr_administration.hr_administration_dashboard"
+    />
+
+    <record id="hr_leave_dashboard.hr_admin_leave_management" model="ir.ui.menu">
+            <field name="icon_class">fa fa-plane</field>
+            <field name="category_name">CleonHR-HR Admin</field>
+        </record>
+
+</odoo>

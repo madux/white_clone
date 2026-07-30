@@ -1,0 +1,202 @@
+<templates xml:space="preserve">
+       <t
+            t-name="hr_cleon_recruitment.RecruitmentSidebarController"
+            t-inherit="web.FormView"
+            owl="1"
+        >
+            <!-- <xpath expr="//div[hasclass('o_form_view_container')]" position="inside"> -->
+                <!-- <div class="o_form_view_container o_cc_layout_wrapper d-flex"> -->
+            <xpath expr="//div[@t-ref='root']" position="before">
+                <!-- <div class="dynamic-sidebar"> -->
+                <aside class="dynamicsidebar">
+                    <div class="sidebar-logo">
+                        <div class="sidebar-logo-mark">C</div>
+                        <span class="sidebar-logo-text">CleonHR</span>
+                    </div>
+
+                    <p class="sidebar-section-label">Recruiting</p>
+                    <ul>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openJob">
+                                <i class="sidebar-nav-icon fa fa-briefcase"></i>
+                                Jobs
+                                <span class="sidebar-badge">2</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item active" t-on-click="openCandidate">
+                                <i class="sidebar-nav-icon fa fa-users"></i>
+                                Candidates
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openOffers">
+                                <i class="sidebar-nav-icon fa fa-check-circle"></i>
+                                Offers and Hired
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openCandidate">
+                                <i class="sidebar-nav-icon fa fa-store"></i>
+                                Vendors
+                            </a>
+                        </li>
+                    </ul>
+
+                    <p class="sidebar-section-label">Workflow</p>
+                    <ul>
+                        
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openRecruitmentRequest">
+                                <i class="sidebar-nav-icon fa fa-shirtsinbulk"></i>
+                                Requisition
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openCandidate">
+                                <i class="sidebar-nav-icon fa fa-clipboard-list"></i>
+                                Tasks
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openDepartment">
+                                <i class="sidebar-nav-icon fa fa-university"></i>
+                                Department
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="sidebar-section-label">Processes</p>
+                    <ul style="margin-top: 12px;">
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openCBT">
+                                <i class="sidebar-nav-icon fa fa-mortar-board"></i>
+                                CBT Test
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openRecruitmentStages">
+                                <i class="sidebar-nav-icon fa fa-line-chart"></i>
+                                Stages
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openTalentMobility">
+                                <i class="sidebar-nav-icon fa fa-grav"></i>
+                                Talent Mobility
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openRecruitmentScoreSheet">
+                                <i class="sidebar-nav-icon fa fa fa-table"></i>
+                                Score Sheet
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openRecruitmentDocumentType">
+                                <i class="sidebar-nav-icon fa fa-book"></i>
+                                Documentation
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openApplicantImportWizard">
+                                <i class="sidebar-nav-icon fa fa-download"></i>
+                                Import Applicant
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openCandidate">
+                                <i class="sidebar-nav-icon fa fa-layout-grid"></i>
+                                ATS
+                            </a>
+                        </li>
+                        <li>
+                            <a class="sidebar-nav-item" t-on-click="openCandidate">
+                                <i class="sidebar-nav-icon fa fa-settings"></i>
+                                Settings
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div style="flex:1;"></div>
+                    <div class="sidebar-user">
+                        <div class="sidebar-user-avatar">J</div>
+                        <div class="sidebar-user-info">
+                            <div class="sidebar-user-name">CleonHR</div>
+                            <div class="sidebar-user-email">by Maachsolutions</div>
+                        </div>
+                    </div>
+                </aside>
+                <!-- </div> -->
+            </xpath>
+
+    </t>
+
+</templates>
+
+
+<!-- 
+<xpath expr="//div[hasclass('o_form_view_container')]" position="replace">
+            <div class="o_form_view_container o_cc_layout_wrapper d-flex">
+                <div class="o_cc_admin_sidebar">
+                    <div class="o_cc_sidebar_header">
+                        <span class="o_cc_header_dot"/>
+                        <span class="o_cc_header_title">ADMIN CONTROLS</span>
+                        <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                            <i class="fa fa-th-large"/>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-grow-1 overflow-auto">
+                    <Layout className="model.useSampleModel ? 'o_view_sample_data' : ''" display="display">
+                        <t t-set-slot="control-panel-create-button">
+                            <t t-if="canCreate">
+                                <button type="button" class="btn btn-secondary o_form_button_create" data-hotkey="c" t-on-click.stop="create">Add New</button>
+                            </t>
+                        </t>
+
+                        <t t-set-slot="layout-buttons">
+                            <t t-if="env.inDialog">
+                                <t t-if="footerArchInfo">
+                                    <t t-component="props.Renderer" record="model.root" Compiler="props.Compiler" archInfo="footerArchInfo"/>
+                                </t>
+                                <t t-else="">
+                                    <t t-call="{{ props.buttonTemplate }}"/>
+                                </t>
+                            </t>
+                        </t>
+
+                        <t t-set-slot="layout-actions">
+                            <t t-if="buttonBoxTemplate">
+                                <t t-call="{{ buttonBoxTemplate }}" t-call-context="{ __comp__: Object.assign(Object.create(this), { this, props: { ...this.props, record: this.model.root } }) }"/>
+                            </t>
+                        </t>
+
+                        <t t-set-slot="control-panel-additional-actions">
+                            <CogMenu
+                                getActiveIds="() => model.root.isNew ? [] : [model.root.resId]"
+                                context="props.context"
+                                items="props.info.actionMenus ? this.actionMenuItems : {}"
+                                isDomainSelected="model.root.isDomainSelected"
+                                resModel="model.root.resModel"
+                                domain="props.domain"
+                                onActionExecuted="() => model.load({ resId: model.root.resId, resIds: model.root.resIds })"
+                                shouldExecuteAction.bind="shouldExecuteAction"
+                            />
+                        </t>
+
+                        <t t-set-slot="control-panel-status-indicator">
+                            <t t-if="canEdit">
+                                <FormStatusIndicator model="model" discard.bind="discard" save.bind="saveButtonClicked" />
+                            </t>
+                        </t>
+                        <t t-set-slot="control-panel-create-button">
+                            <t t-if="canCreate">
+                                <button type="button" class="btn btn-outline-primary o_form_button_create" data-hotkey="c" t-on-click.stop="create">Add Record</button>
+                            </t>
+                        </t>
+                        <t t-component="props.Renderer" record="model.root" Compiler="props.Compiler" archInfo="archInfo" translateAlert="translateAlert" onNotebookPageChange.bind="onNotebookPageChange" activeNotebookPages="props.state and props.state.activeNotebookPages"/>
+                    </Layout>
+                </div>
+            </div>
+        </xpath> -->

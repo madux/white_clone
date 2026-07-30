@@ -1,0 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- This is recruitment main menu. Include new group you want to see Recruitment module -->
+        <record id="hr_recruitment.menu_hr_recruitment_root" model="ir.ui.menu">
+            <field name="name">Recruitment</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_system'),ref('hr_recruitment.group_hr_recruitment_user'), ref('hr_recruitment.group_hr_recruitment_interviewer'), ref('hr_cbt_portal_recruitment.group_hr_recruitment_audit_id'), ref('base.group_user')])]"/>
+        </record>
+
+        <record id="hr_recruitment.menu_hr_recruitment_stage" model="ir.ui.menu">
+            <field name="name">Recruitment Stage</field>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_system'), ref('hr_recruitment.group_hr_recruitment_user'), ref('hr_recruitment.group_hr_recruitment_interviewer'), ref('hr_cbt_portal_recruitment.group_hr_recruitment_audit_id'), ref('base.group_user')])]"/>
+        </record>
+    
+        <menuitem
+            id="menu_hr_cbt_survey"
+            name="Computer Base Test"
+            sequence="10"
+            groups="hr_cbt_portal_recruitment.group_hr_recruitment_officer_id,hr_cbt_portal_recruitment.group_hr_recruitment_admin_id,base.group_system"
+            parent="hr_recruitment.menu_hr_recruitment_root"
+            />
+            
+
+        <menuitem
+            id="menu_hr_cbt_setup"
+            name="Setup CBT"
+            sequence="1"
+            action="survey.action_survey_form"
+            parent="menu_hr_cbt_survey"
+            />
+
+        <menuitem
+            id="menu_hr_cbt_participant"
+            name="Participant"
+            sequence="2"
+            action="survey.action_survey_user_input"
+            parent="menu_hr_cbt_survey"
+            />
+
+        <menuitem
+        id="menu_cbt_qa"
+        name="Questions &amp; Answers"
+        sequence="3"
+        parent="menu_hr_cbt_survey"
+        />
+
+
+        <menuitem name="Questions"
+            id="menu_cbt_survey_question_form1"
+            action="survey.action_survey_question_form"
+            parent="menu_cbt_qa"
+            sequence="1"/>
+        <menuitem name="Suggested Values"
+            id="cbt_menu_survey_label_form1"
+            action="survey.survey_question_answer_action"
+            parent="menu_cbt_qa"
+            sequence="2"/>
+
+        <menuitem name="Detailed Answers"
+            id="menu_cbt_survey_response_line_form"
+            action="survey.survey_user_input_line_action"
+            parent="menu_cbt_qa"
+            sequence="3"/>
+
+            <menuitem name="Surveys &amp; Test"
+            id="survey.menu_surveys"
+            sequence="130"
+            groups="survey.group_survey_user"
+            web_icon="survey,static/description/icon.svg"/>
+
+        <record id="hr_recruitment.menu_hr_recruitment_configuration" model="ir.ui.menu">
+            <field name="name">Configuration</field>
+            <field name="groups_id" eval="[(6, 0, [ref('hr_cbt_portal_recruitment.group_hr_recruitment_admin_id')])]"/>
+        </record>
+
+        <record id="hr_recruitment.report_hr_recruitment" model="ir.ui.menu">
+            <field name="name">Reporting</field>
+            <field name="groups_id" eval="[(6, 0, [ref('hr_cbt_portal_recruitment.group_hr_recruitment_officer_id')])]"/>
+        </record>
+
+        <record id="hr_recruitment.menu_crm_case_categ_all_app" model="ir.ui.menu">
+            <field name="name">All Applications</field>
+            <field name="groups_id" eval="[(6, 0, [ref('hr_cbt_portal_recruitment.group_hr_recruitment_officer_id'), ref('hr_cbt_portal_recruitment.group_hr_recruitment_admin_id'), ref('base.group_user')])]"/>
+        </record>
+
+        <record id="hr_recruitment.menu_hr_job_position" model="ir.ui.menu">
+            <field name="name">By Job Positions</field>
+            <field name="groups_id" eval="[(6, 0, [ref('hr_cbt_portal_recruitment.group_hr_recruitment_officer_id'), ref('hr_cbt_portal_recruitment.group_hr_recruitment_admin_id'), ref('base.group_user')])]"/>
+        </record>
+
+    </data>
+    
+</odoo>

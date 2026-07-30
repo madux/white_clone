@@ -33,7 +33,9 @@ export class CustomListRenderer extends ListRenderer {
             );
 
         if (lastRecordId) {
-
+            // if system complains are map undefined
+            //  : ensure to add views: [[false, 'list'], [false, 'form']]
+        
             this.action.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'hr.warning',

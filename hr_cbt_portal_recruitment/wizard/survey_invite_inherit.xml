@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record model="ir.ui.view" id="survey_invite_inherit_view_form">
+        <field name="name">survey.invite.inherit</field>
+        <field name="model">survey.invite</field>
+        <field name="inherit_id" ref="survey.survey_invite_view_form"/>
+        <field name="arch" type="xml">
+            <field name="emails" position="after">
+                <field name="applicant_ids" widget="many2many_tags"/>
+            </field>
+        </field>
+    </record>
+</odoo>
