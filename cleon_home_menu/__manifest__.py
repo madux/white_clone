@@ -25,7 +25,6 @@ Features
     'license': 'LGPL-3',
     'depends': ['web'],
     'data': [
-        'views/views.xml'
     ],
     'assets': {
         'web.assets_backend': [
