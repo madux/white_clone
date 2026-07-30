@@ -5,7 +5,7 @@
     <menuitem id="menu_hr_core_root"
               name="HR Core"
               sequence="5"
-              action="action_view_employee_kanban_custom"
+              action="hr_administration.action_view_employee_kanban_custom"
               web_icon="hr_employee,static/description/icon.png"/>
 
         <!-- org chart -->

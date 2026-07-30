@@ -733,7 +733,7 @@
         <field name="view_mode">form</field>
 		<field name="context">{'default_is_employee_dashboard': True, 'form_view_ref': 'hr_employee.hr_employee_profile_form_view',}</field>
 		<field name="view_id"
-            ref="hr_employee.view_employee_kanban_custom"/>
+            ref="hr_administration.view_employee_kanban_custom"/>
         <field name="view_ids" eval="[
             (5, 0, 0),
             (0, 0, {
