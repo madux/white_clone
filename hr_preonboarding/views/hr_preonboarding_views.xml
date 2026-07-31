@@ -52,7 +52,7 @@
                     <notebook>
                         <page string="Documents">
                             <field name="document_ids">
-                                <list editable="bottom">
+                                <tree editable="bottom">
                                     <field name="document_name"/>
                                     <field name="document" filename="document_filename"/>
                                     <field name="document_filename" column_invisible="1"/>
@@ -60,7 +60,7 @@
                                     <button name="action_send_request" type="object"
                                             string="Send Request" icon="fa-envelope"
                                             invisible="state != 'draft'"/>
-                                </list>
+                                </tree>
                             </field>
                         </page>
                     </notebook>
@@ -78,7 +78,7 @@
         <field name="name">hr.preonboarding.list</field>
         <field name="model">hr.preonboarding</field>
         <field name="arch" type="xml">
-            <list string="Pre-Onboarding">
+            <tree string="Pre-Onboarding">
                 <field name="candidate_id"/>
                 <field name="job_id"/>
                 <field name="department_id"/>
@@ -86,7 +86,7 @@
                        decoration-success="state == 'converted_to_employee'"
                        decoration-danger="state in ('rejected','cancelled')"
                        decoration-info="state not in ('converted_to_employee','rejected','cancelled')"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -115,7 +115,7 @@
     <record id="action_hr_preonboarding" model="ir.actions.act_window">
         <field name="name">Pre-Onboarding</field>
         <field name="res_model">hr.preonboarding</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="context">{'search_default_incomplete': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -127,7 +127,7 @@
     <record id="action_hr_preonboarding_incomplete" model="ir.actions.act_window">
         <field name="name">Incomplete Pre-Onboardings</field>
         <field name="res_model">hr.preonboarding</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="domain">[('state','not in',['converted_to_employee','rejected','cancelled'])]</field>
     </record>
 
@@ -136,5 +136,9 @@
               parent="menu_hr_preonboarding_root" action="action_hr_preonboarding" sequence="10"/>
     <menuitem id="menu_hr_preonboarding_incomplete" name="Incomplete"
               parent="menu_hr_preonboarding_root" action="action_hr_preonboarding_incomplete" sequence="20"/>
-
+    
+    <record id="hr_preonboarding.menu_hr_preonboarding_all" model="ir.ui.menu">
+        <field name="icon_class">fa fa-user</field>
+        <field name="category_name">CleonHR-HR Pre-Onboarding</field>
+    </record>
 </odoo>
