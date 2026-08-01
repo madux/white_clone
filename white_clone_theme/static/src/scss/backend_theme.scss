@@ -17,6 +17,29 @@ $o-brand-odoo: #e83e8c;
     box-shadow: 0 8px 25px rgba(232, 62, 140, 0.08);
 }
 
+.o_field_widget .o_input_dropdown .o_input, .o_field_widget .o_input_dropdown > input, .o_field_widget .o_datepicker .o_input, .o_field_widget .o_datepicker > input
+ {
+    padding-right: 14px !important;
+    height: 35px !important;
+}
+
+.o_field_widget.o_field_many2many_tags .o_field_many2many_selection .o_input
+ {
+    height: 35px;
+    border: none;
+}
+
+.o_list_renderer .o_list_table
+ {
+    margin-top: 10px !important;
+}
+
+// newly- to add border below each field
+.o_form_view .o_group .o_field_widget, .o_form_view .o_inner_group .o_field_widget {
+    // width: 100%;
+    border-bottom: 0.8px solid;
+    border-bottom-color: #ccd3cc
+}
 // Input Fields
 .o_form_view input,
 .o_form_view textarea,

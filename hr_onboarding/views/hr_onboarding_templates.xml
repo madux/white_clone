@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="layout" name="Onboarding Layout">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Onboarding</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+                <style>
+                    :root { --accent: #E8175D; --accent-light: #FDE7EE; }
+                    body { background:#F7F7F9; font-family:-apple-system,Segoe UI,Roboto,sans-serif; }
+                    .ob-topbar { background:#fff; border-bottom:1px solid #eee; padding:12px 24px;
+                                 display:flex; align-items:center; justify-content:space-between; }
+                    .ob-brand { font-weight:700; color:#222; }
+                    .ob-tabs { background:#fff; border-bottom:1px solid #eee; padding:0 24px; display:flex; gap:24px; }
+                    .ob-tab { padding:14px 4px; color:#666; text-decoration:none; border-bottom:2px solid transparent; font-weight:500; }
+                    .ob-tab.active { color:var(--accent); border-color:var(--accent); }
+                    .ob-tab.disabled { color:#ccc; cursor:not-allowed; }
+                    .ob-container { padding:24px; }
+                    .ob-card { background:#fff; border-radius:10px; padding:16px 20px; border:1px solid #eee; }
+                    .ob-stat-num { font-size:28px; font-weight:700; }
+                    .badge-pink { background:var(--accent-light); color:var(--accent); }
+                    .btn-accent { background:var(--accent); border-color:var(--accent); color:#fff; }
+                    .btn-accent:hover { background:#c9134f; color:#fff; }
+                    table.ob-table th { color:#888; font-size:12px; text-transform:uppercase; font-weight:600; border-bottom:1px solid #eee; }
+                    table.ob-table td { vertical-align:middle; padding:14px 8px; border-bottom:1px solid #f2f2f2; }
+                    .status-done { color:#1a9c5c; }
+                    .status-overdue { color:#e0a800; }
+                    .status-pending { color:#999; }
+                </style>
+            </head>
+            <body>
+                <div class="ob-topbar">
+                    <div class="ob-brand">👥 Onboarding</div>
+                    <div class="text-muted small">Signed in as <t t-esc="request.env.user.name"/></div>
+                </div>
+                <div class="ob-tabs">
+                    <a class="ob-tab" t-attf-class="ob-tab #{active_tab == 'all' and 'active' or ''}" href="/onboarding">All Onboarding</a>
+                    <a class="ob-tab disabled" href="/onboarding/tasks" title="Not implemented in this build">Tasks Checklist</a>
+                    <a class="ob-tab" t-attf-class="ob-tab #{active_tab == 'probation' and 'active' or ''}" href="/onboarding/probation">Probation Tracking</a>
+                    <a class="ob-tab disabled" title="Not implemented in this build">Analytics</a>
+                </div>
+                <div class="ob-container">
+                    <t t-out="0"/>
+                </div>
+            </body>
+        </html>
+    </template>
+
+    <template id="dashboard_template" name="Onboarding Dashboard">
+        <t t-call="hr_onboarding.layout">
+            <t t-set="active_tab" t-value="'all'"/>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-0">Onboarding <span class="badge badge-pink"><t t-esc="len(records)"/> employees</span></h4>
+                </div>
+                <a class="btn btn-accent" href="/onboarding/new">+ Add New Joiner</a>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="ob-card"><div class="ob-stat-num" t-esc="stats['total']"/><div class="text-muted small">TOTAL ONBOARDING</div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ob-card"><div class="ob-stat-num text-success" t-esc="stats['on_track']"/><div class="text-muted small">ON TRACK</div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ob-card"><div class="ob-stat-num text-warning" t-esc="stats['has_overdue']"/><div class="text-muted small">HAS OVERDUE</div></div>
+                </div>
+                <div class="col-md-3">
+                    <div class="ob-card"><div class="ob-stat-num" t-esc="stats['completed_this_month']"/><div class="text-muted small">COMPLETED THIS MONTH</div></div>
+                </div>
+            </div>
+
+            <div class="ob-card p-0">
+                <div class="d-flex gap-2 p-3 border-bottom">
+                    <a class="btn btn-sm btn-outline-secondary" href="/onboarding">All Status</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/onboarding?status=on_track">On Track</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/onboarding?status=has_overdue">Has Overdue</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="/onboarding?status=completed">Completed</a>
+                </div>
+                <table class="table ob-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Grade</th>
+                            <th>Start Date</th>
+                            <th>Day #</th>
+                            <th>Progress</th>
+                            <th t-foreach="categories" t-as="cat" t-key="cat[0]"><t t-esc="cat[1]"/></th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="records" t-as="rec">
+                            <td>
+                                <strong t-esc="rec.employee_id.name"/><br/>
+                                <span class="text-muted small" t-esc="rec.employee_id.job_title or (rec.job_id and rec.job_id.name) or ''"/>
+                            </td>
+                            <td t-esc="rec.department_id.name or '-'"/>
+                            <td t-esc="(rec.grade_level or '-').upper()"/>
+                            <td t-esc="rec.start_date"/>
+                            <td>
+                                Day <t t-esc="rec.day_number"/><br/>
+                                <span class="text-muted small">of <t t-esc="rec.duration_days"/></span>
+                            </td>
+                            <td>
+                                <t t-esc="rec.progress_percent"/>% (<t t-esc="rec.tasks_done"/>/<t t-esc="rec.task_count"/>)
+                            </td>
+                            <t t-foreach="categories" t-as="cat" t-key="cat[0]">
+                                <t t-set="cat_status" t-value="rec.get_category_status(cat[0])"/>
+                                <td>
+                                    <span t-if="cat_status[0] == 'done'" class="status-done">Done</span>
+                                    <span t-elif="cat_status[0] == 'overdue'" class="status-overdue"><t t-esc="cat_status[1]"/> overdue</span>
+                                    <span t-elif="cat_status[0] == 'pending'" class="status-pending">Pending</span>
+                                    <span t-else="" class="text-muted">—</span>
+                                </td>
+                            </t>
+                            <td>
+                                <span t-if="rec.state == 'completed'" class="badge bg-success">Completed</span>
+                                <span t-elif="rec.state == 'has_overdue'" class="badge bg-warning text-dark">Has Overdue</span>
+                                <span t-else="" class="badge bg-info text-dark">On Track</span>
+                            </td>
+                        </tr>
+                        <tr t-if="not records">
+                            <td colspan="10" class="text-center text-muted py-4">No onboarding records yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <template id="tasks_placeholder_template" name="Tasks Checklist Placeholder">
+        <t t-call="hr_onboarding.layout">
+            <t t-set="active_tab" t-value="'tasks'"/>
+            <div class="ob-card text-center py-5">
+                <h5>Tasks Checklist library isn't built yet</h5>
+                <p class="text-muted">
+                    This tab needs a separate reusable-template subsystem
+                    (versioned checklists, per-department assignment,
+                    usage counters, analytics) beyond the per-onboarding
+                    task list already included on each employee's record.
+                </p>
+                <a class="btn btn-accent" href="/onboarding">Back to Onboarding</a>
+            </div>
+        </t>
+    </template>
+
+</odoo>
