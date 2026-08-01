@@ -128,6 +128,18 @@ class HrPreonboarding(models.Model):
         under_verification -> cleared -> converted_to_employee).
         """
         for rec in self:
+            if rec.state == 'document_request' and not rec.document_ids.ids:
+                # raise UserError(_("Cannot advance from the current stage."))
+                return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': _('Document Issue'),
+                            'message': _(f'Kindly add a document at this stage'),
+                            'type': 'success',
+                            'sticky': False,
+                        }
+                    } 
             if rec.state not in rec.STATE_SEQUENCE:
                 raise UserError(_("Cannot advance from the current stage."))
             idx = rec.STATE_SEQUENCE.index(rec.state)
