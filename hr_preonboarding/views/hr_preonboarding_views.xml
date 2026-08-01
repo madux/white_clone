@@ -139,6 +139,6 @@
     
     <record id="hr_preonboarding.menu_hr_preonboarding_all" model="ir.ui.menu">
         <field name="icon_class">fa fa-user</field>
-        <field name="category_name">CleonHR-HR Pre-Onboarding</field>
+        <field name="category_name">CleonHR-HR Worklife cycle</field>
     </record>
 </odoo>
