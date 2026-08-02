@@ -9,7 +9,7 @@
         icon_class are left unchanged.
     -->
     <record id="hr_administration.hr_admin_staff_directory" model="ir.ui.menu">
-        <field name="action" ref="hr_staff_directory.action_staff_directory"/>
+        <field name="action" ref="hr_staff_directory.action_staff_directory_dashboard"/>
     </record>
 
 </odoo>

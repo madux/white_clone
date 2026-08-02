@@ -25,12 +25,21 @@
         'hr_holidays',
         'hr_contract',
         'mail',
+        'web',
         'hr_administration',
     ],
     'data': [
+        'views/assets.xml',
         'views/staff_directory_actions.xml',
         'views/menu.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
+            'hr_staff_directory/static/src/css/staff_directory.css',
+            'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
+        ],
+    },
     'installable': True,
     'auto_install': False,
     'application': False,

@@ -1,16 +1,26 @@
 /* ─── Staff Directory — CleonHR Design System ──────────────────────────────
    Brand tokens: Pink #ec4899 · Cobalt #3D5AFE · Emerald #00C48C · Amber #FF8F00
    Font: DM Sans (Google Fonts)
-   Pattern: Standalone HTML page (Pattern A) — no Odoo asset pipeline
+   Pattern: OWL client action (Pattern B) — loaded via web.assets_backend.
+   All rules are scoped to .sdir-* so they never leak into the Odoo shell.
    ─────────────────────────────────────────────────────────────────────────── */
 
-*, *::before, *::after {
+.sdir-app, .sdir-app *, .sdir-app *::before, .sdir-app *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-:root {
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP SHELL + DESIGN TOKENS (scoped to .sdir-app — NEVER on :root)
+   All CSS custom properties live here so they cannot leak into the Odoo
+   backend shell. Previously declared on :root which overrode Odoo's own
+   Bootstrap variables and distorted the whole backend UI.
+   Renders inside the Odoo backend content area, filling 100% of the
+   action container instead of the full viewport.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.sdir-app {
+  /* ─ Brand palette ────────────────────────────────────────────────────────── */
   --pink:          #ec4899;
   --pink-dark:     #e80c6b;
   --pink-light:    rgba(236, 72, 153, 0.10);
@@ -24,6 +34,7 @@
   --purple:        #8B5CF6;
   --purple-light:  rgba(139, 92, 246, 0.10);
 
+  /* ─ Neutral palette ──────────────────────────────────────────────────── */
   --bg:            #F7F8FC;
   --border:        #EDEEF2;
   --white:         #ffffff;
@@ -31,140 +42,28 @@
   --text-2:        #5A6172;
   --text-m:        #9AA0B2;
 
+  /* ─ Elevation ────────────────────────────────────────────────────────── */
   --shadow-xs: 0 1px 3px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.04);
   --shadow-sm: 0 2px 8px rgba(0,0,0,.07), 0 0 0 1px rgba(0,0,0,.04);
   --shadow-md: 0 4px 20px rgba(0,0,0,.10);
 
+  /* ─ Geometry ─────────────────────────────────────────────────────────── */
   --radius:    12px;
   --radius-sm: 8px;
   --radius-xs: 6px;
   --sidebar-w: 222px;
   --topbar-h:  62px;
-}
 
-html, body {
+  /* ─ Layout ───────────────────────────────────────────────────────────── */
+  display: flex;
   height: 100%;
+  width:  100%;
+  overflow: hidden;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text-1);
   line-height: 1.5;
   font-size: 14px;
-  overflow: hidden;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   ODOO NAVBAR  —  o_navbar
-   Visually matches Odoo 17’s default navbar (46 px, brand purple).
-   All selectors scoped to #sdirOdooNavbar to avoid conflicts.
-   ═══════════════════════════════════════════════════════════════════════════ */
-#sdirOdooNavbar {
-  --nav-h:  46px;
-  --nav-bg: #714B67;          /* Odoo’s $o-brand-primary default */
-  --nav-txt: rgba(255,255,255,.87);
-  --nav-hover: rgba(0,0,0,.14);
-
-  height:          var(--nav-h);
-  background:      var(--nav-bg);
-  position:        sticky;
-  top:             0;
-  z-index:         1050;
-  flex-shrink:     0;
-  display:         flex;
-  align-items:     center;
-  box-shadow:      0 1px 3px rgba(0,0,0,.25);
-}
-
-#sdirOdooNavbar .sdir-onav-inner {
-  display:        flex;
-  align-items:    center;
-  width:          100%;
-  height:         100%;
-  padding:        0;
-  gap:            0;
-}
-
-/* Square grid icon (app-switcher / home) */
-#sdirOdooNavbar .sdir-onav-toggle {
-  width:           46px;
-  height:          46px;
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  color:           var(--nav-txt);
-  font-size:       16px;
-  text-decoration: none;
-  flex-shrink:     0;
-  transition:      background .12s, color .12s;
-}
-#sdirOdooNavbar .sdir-onav-toggle:hover {
-  background: var(--nav-hover);
-  color: #fff;
-}
-
-/* Thin separator line between grid icon and app name */
-#sdirOdooNavbar .sdir-onav-sep {
-  width:  1px;
-  height: 22px;
-  background: rgba(255,255,255,.25);
-  flex-shrink: 0;
-  margin: 0 8px;
-}
-
-/* App name */
-#sdirOdooNavbar .sdir-onav-brand {
-  color:       #fff;
-  font-size:   14px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  letter-spacing: .01em;
-  white-space: nowrap;
-  user-select: none;
-}
-
-/* Takes remaining horizontal space */
-#sdirOdooNavbar .sdir-onav-flex { flex: 1; }
-
-/* Right-hand systray area */
-#sdirOdooNavbar .sdir-onav-systray {
-  display:     flex;
-  align-items: center;
-}
-
-/* Each systray entry (icon or user) */
-#sdirOdooNavbar .sdir-onav-entry {
-  height:          46px;
-  display:         inline-flex;
-  align-items:     center;
-  gap:             7px;
-  padding:         0 12px;
-  color:           var(--nav-txt);
-  font-size:       13px;
-  font-family:     'DM Sans', sans-serif;
-  text-decoration: none;
-  cursor:          pointer;
-  transition:      background .12s, color .12s;
-  white-space:     nowrap;
-}
-#sdirOdooNavbar .sdir-onav-entry:hover {
-  background: var(--nav-hover);
-  color: #fff;
-}
-#sdirOdooNavbar .sdir-onav-entry .fa {
-  font-size: 14px;
-}
-/* Compact icon-only entries */
-#sdirOdooNavbar .sdir-onav-icon {
-  padding: 0 10px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   APP SHELL
-   ═══════════════════════════════════════════════════════════════════════════ */
-.sdir-app {
-  display: flex;
-  height: calc(100vh - 46px);  /* 46px = Odoo navbar height */
-  width:  100vw;
-  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -575,10 +474,10 @@ html, body {
   opacity: .85;
 }
 
-.at-blue   { background: rgba(61,90,254,.07);    border-color: rgba(61,90,254,.15);    color: var(--cobalt);  }
-.at-purple { background: rgba(139,92,246,.07);   border-color: rgba(139,92,246,.15);   color: var(--purple);  }
-.at-amber  { background: rgba(255,143,0,.07);    border-color: rgba(255,143,0,.15);    color: var(--amber);   }
-.at-green  { background: rgba(0,196,140,.07);    border-color: rgba(0,196,140,.15);    color: var(--emerald); }
+.sdir-at-blue   { background: rgba(61,90,254,.07);    border-color: rgba(61,90,254,.15);    color: var(--cobalt);  }
+.sdir-at-purple { background: rgba(139,92,246,.07);   border-color: rgba(139,92,246,.15);   color: var(--purple);  }
+.sdir-at-amber  { background: rgba(255,143,0,.07);    border-color: rgba(255,143,0,.15);    color: var(--amber);   }
+.sdir-at-green  { background: rgba(0,196,140,.07);    border-color: rgba(0,196,140,.15);    color: var(--emerald); }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    LAYOUT GRIDS
@@ -695,11 +594,11 @@ html, body {
   white-space: nowrap;
 }
 
-.pill-pink   { background: var(--pink-mid);      color: var(--pink);    }
-.pill-green  { background: var(--emerald-light);  color: var(--emerald); }
-.pill-amber  { background: var(--amber-light);    color: var(--amber);   }
-.pill-blue   { background: var(--cobalt-light);   color: var(--cobalt);  }
-.pill-purple { background: var(--purple-light);   color: var(--purple);  }
+.sdir-pill-pink   { background: var(--pink-mid);      color: var(--pink);    }
+.sdir-pill-green  { background: var(--emerald-light);  color: var(--emerald); }
+.sdir-pill-amber  { background: var(--amber-light);    color: var(--amber);   }
+.sdir-pill-blue   { background: var(--cobalt-light);   color: var(--cobalt);  }
+.sdir-pill-purple { background: var(--purple-light);   color: var(--purple);  }
 
 .sdir-date-badge {
   padding: 2px 9px;
@@ -752,11 +651,11 @@ html, body {
    INDICATOR DOTS
    ═══════════════════════════════════════════════════════════════════════════ */
 .sdir-ind { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.ind-green  { background: var(--emerald); }
-.ind-blue   { background: var(--cobalt);  }
-.ind-amber  { background: var(--amber);   }
-.ind-pink   { background: var(--pink);    }
-.ind-purple { background: var(--purple);  }
+.sdir-ind-green  { background: var(--emerald); }
+.sdir-ind-blue   { background: var(--cobalt);  }
+.sdir-ind-amber  { background: var(--amber);   }
+.sdir-ind-pink   { background: var(--pink);    }
+.sdir-ind-purple { background: var(--purple);  }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    COMPLIANCE PROGRESS BARS
