@@ -4,3 +4,25 @@ resources/ui/AGENTS.md
 .opencode/plans/recruitment-schedule-tasks.md
 .opencode/plans/create-job-modal-comprehensive.md
 .opencode/plans/create-job-modal.md
+
+# Python / Odoo generated files
+__pycache__/
+*.py[cod]
+*.pyo
+*.log
+*.pot
+*.mo
+
+# Local runtime/state
+.env
+.venv/
+venv/
+sessions/
+filestore/
+.odoo/
+conf/
+
+# Editor/runtime noise
+.vscode/
+.DS_Store
+.idea/
