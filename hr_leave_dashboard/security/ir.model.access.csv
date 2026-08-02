@@ -1,3 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hr_insurance_user,hr_insurance.line.user,model_cleon_setting,,1,1,0,0
-access_hr_insurance_manager,cleon_setting.user,model_cleon_setting,base.group_system,1,1,1,1
+access_hr_leave_setup_manager,hr.leave.setup.progress.manager,model_hr_leave_setup_progress,hr_holidays.group_hr_holidays_manager,1,1,1,0
+access_hr_leave_setup_system,hr.leave.setup.progress.system,model_hr_leave_setup_progress,base.group_system,1,1,1,1

@@ -136,7 +136,8 @@ class HrLeave(models.Model):
         LeaveType = self.env['hr.leave.type']
         types = LeaveType.search([])
         result = []
-        for lt in types:
+        palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"]
+        for index, lt in enumerate(types):
             allocated = sum(self.env['hr.leave.allocation'].search([
                 ('holiday_status_id', '=', lt.id), ('state', '=', 'validate'),
             ]).mapped('number_of_days'))
@@ -147,10 +148,10 @@ class HrLeave(models.Model):
                 continue
             result.append({
                 "name": lt.name,
-                "color": lt.color or '#999',
+                "color": palette[index % len(palette)],
                 "used": round(used),
                 "allocated": round(allocated),
-                "percent": round((used / allocated) * 100) if allocated else 0,
+                "percent": min(100, max(0, round((used / allocated) * 100))) if allocated else 0,
             })
         return result
 

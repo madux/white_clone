@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="rule_hr_leave_setup_progress_company" model="ir.rule">
+        <field name="name">Leave setup progress: allowed companies</field>
+        <field name="model_id" ref="model_hr_leave_setup_progress"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_holidays.group_hr_holidays_manager')), (4, ref('base.group_system'))]"/>
+    </record>
+</odoo>

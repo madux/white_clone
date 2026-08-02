@@ -1,37 +1,376 @@
-/* ══════════════════════════════════════════════════
-   SETRACO PAYROLL — MATERIAL DESIGN CSS
-   Covers: Dashboard + Payroll Register
-   ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CLEONHR LEAVE MANAGEMENT — DASHBOARD CSS
+   Covers: Dashboard layout + Welcome Modal (Screen 1)
+   ══════════════════════════════════════════════════════════════ */
 
 
-/* ══ SIDEBAR ═════════════════════════════════ */
+/* ══ LAYOUT ═════════════════════════════════════════════════ */
+
 .leaveapp {
-    display: flex; 
-    min-height: 100vh; 
+    display: flex;
+    min-height: 100vh;
 }
+
 .leavesidebar {
-  width: 230px;
-  background: #f8faff;
-  min-height: 100vh;
-  position: fixed;
-  left: 0; top: 50px; bottom: 0;
-  display: flex;
-  flex-direction: column;
-  z-index: 200;
-  transition: transform .3s cubic-bezier(.4,0,.2,1);
-  overflow-y: auto;
-  scrollbar-width: none;
+    width: 230px;
+    background: #f8faff;
+    min-height: 100vh;
+    position: fixed;
+    left: 0; top: 50px; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+    scrollbar-width: none;
 }
 
 .o_leave_dashboard {
     padding: 16px;
     background: #f5f6fa;
     margin-left: 220px;
+    flex: 1;
 }
 
 .o_timeoff_calendar {
     margin-left: 235px !important;
 }
+
+.o_web_client > .o_action_manager {
+    overflow: auto !important;
+}
+
+
+/* ══ DASHBOARD HEADER (with re-open icons — FR-008) ══════════ */
+
+.cleon-dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eaecf0;
+}
+
+.cleon-dash-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+
+.cleon-dash-subtitle {
+    font-size: 12px;
+    color: #9aa0ac;
+    margin-top: 2px;
+    display: block;
+}
+
+.cleon-dash-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* FR-008: Wizard (✦) and Help (?) icon buttons */
+.cleon-header-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.cleon-wizard-btn {
+    background: linear-gradient(135deg, #e91e8c, #ff6b9d);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.35);
+}
+
+.cleon-wizard-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-help-btn {
+    background: #fff;
+    color: #6b7280;
+    border: 1.5px solid #e0e3ea;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.cleon-help-btn:hover {
+    background: #f8faff;
+    border-color: #e91e8c;
+    color: #e91e8c;
+    transform: scale(1.08);
+}
+
+
+/* ══ WELCOME MODAL — BACKDROP (FR-009) ══════════════════════ */
+
+.cleon-welcome-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 17, 25, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1050;
+    animation: cleon-fade-in 0.25s ease;
+}
+
+
+/* ══ WELCOME MODAL — CARD ════════════════════════════════════ */
+
+.cleon-welcome-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1060;
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18),
+        0 4px 16px rgba(233, 30, 140, 0.12);
+    padding: 28px 28px 20px;
+    animation: cleon-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* FR-006: X close button */
+.cleon-welcome-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f3f6;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-welcome-close:hover {
+    background: #ffe4f0;
+    color: #e91e8c;
+    transform: scale(1.1);
+}
+
+
+/* ══ WELCOME MODAL — HEADER (FR-002) ════════════════════════ */
+
+.cleon-welcome-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+/* Branded gradient icon */
+.cleon-welcome-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 4px 14px rgba(233, 30, 140, 0.35);
+}
+
+.cleon-welcome-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1d23;
+    line-height: 1.3;
+}
+
+.cleon-welcome-desc {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+
+/* ══ WELCOME MODAL — FEATURE GRID (FR-003) ══════════════════ */
+
+.cleon-welcome-features {
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 22px;
+}
+
+.cleon-features-label {
+    margin: 0 0 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa0ac;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.cleon-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.cleon-feature-tile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.cleon-feature-tile:hover {
+    border-color: #e91e8c;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.1);
+}
+
+.cleon-feature-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.cleon-fi-orange  { background: linear-gradient(135deg, #f97316, #fb923c); }
+.cleon-fi-blue    { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+.cleon-fi-teal    { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.cleon-fi-green   { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cleon-fi-purple  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.cleon-fi-pink    { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+
+.cleon-feature-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+}
+
+
+/* ══ WELCOME MODAL — ACTION BUTTONS (FR-004 + FR-005) ═══════ */
+
+.cleon-welcome-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* FR-005: Secondary "Explore on my own" */
+.cleon-btn-secondary {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1.5px solid #e0e3ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.cleon-btn-secondary:hover {
+    border-color: #e91e8c;
+    color: #e91e8c;
+    background: #fff5fa;
+}
+
+/* FR-004: Primary "Start Setup Guide (5 steps)" */
+.cleon-btn-primary {
+    flex: 2;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: 0 3px 12px rgba(233, 30, 140, 0.35);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.cleon-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-btn-primary:active {
+    transform: translateY(0);
+}
+
+
+/* FR-007: Time estimate hint label */
+.cleon-welcome-hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11.5px;
+    color: #b0b7c3;
+}
+
+
+/* ══ ANIMATIONS ══════════════════════════════════════════════ */
+
+@keyframes cleon-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes cleon-slide-up {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 28px)) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+
+/* ══ KPI ROW ═════════════════════════════════════════════════ */
 
 .kpi-row {
     display: grid;
@@ -45,9 +384,6 @@
     border-radius: 10px;
     padding: 14px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-.o_web_client > .o_action_manager {
-    overflow: auto !important;
 }
 
 .kpi-top {
@@ -71,15 +407,19 @@
     font-size: 13px;
     color: #fff;
 }
-.kpi-icon.blue { background: #4e73df; }
+
+.kpi-icon.blue   { background: #4e73df; }
 .kpi-icon.orange { background: #f0ad4e; }
 .kpi-icon.purple { background: #6f42c1; }
-.kpi-icon.teal { background: #36b9cc; }
-.kpi-icon.pink { background: #e91e8c; }
-.kpi-icon.green { background: #1cc88a; }
+.kpi-icon.teal   { background: #36b9cc; }
+.kpi-icon.pink   { background: #e91e8c; }
+.kpi-icon.green  { background: #1cc88a; }
 
 .kpi-value { font-size: 26px; font-weight: 700; color: #2b2d33; }
-.kpi-sub { font-size: 12px; color: #9aa0ac; margin-top: 2px; }
+.kpi-sub   { font-size: 12px; color: #9aa0ac; margin-top: 2px; }
+
+
+/* ══ PANELS + GRIDS ══════════════════════════════════════════ */
 
 .grid-2 {
     display: grid;
@@ -101,7 +441,8 @@
     align-items: flex-start;
     margin-bottom: 14px;
 }
-.panel-head h5 { margin: 0; font-weight: 700; }
+
+.panel-head h5    { margin: 0; font-weight: 700; }
 .panel-head small { color: #9aa0ac; }
 
 .range-toggle {
@@ -110,6 +451,7 @@
     padding: 3px;
     display: flex;
 }
+
 .range-btn {
     border: none;
     background: transparent;
@@ -119,7 +461,15 @@
     cursor: pointer;
     color: #6b7280;
 }
-.range-btn.active { background: #fff; color: #e91e8c; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+.range-btn.active {
+    background: #fff;
+    color: #e91e8c;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+
+/* ══ STAT ROW ════════════════════════════════════════════════ */
 
 .stat-row {
     display: grid;
@@ -127,46 +477,61 @@
     gap: 10px;
     margin-bottom: 16px;
 }
-.stat-box { background: #f8f9fb; border-radius: 8px; padding: 10px; text-align: center; }
-.stat-value { font-size: 20px; font-weight: 700; }
-.stat-value.pink { color: #e91e8c; }
-.stat-value.green { color: #1cc88a; }
-.stat-value.orange { color: #f0ad4e; }
-.stat-value.red { color: #e74a3b; }
-.stat-label { font-size: 11px; color: #9aa0ac; }
 
-.donut-wrap { display: flex; justify-content: center; margin-bottom: 12px; }
+.stat-box        { background: #f8f9fb; border-radius: 8px; padding: 10px; text-align: center; }
+.stat-value      { font-size: 20px; font-weight: 700; }
+.stat-value.pink { color: #e91e8c; }
+.stat-value.green  { color: #1cc88a; }
+.stat-value.orange { color: #f0ad4e; }
+.stat-value.red    { color: #e74a3b; }
+.stat-label      { font-size: 11px; color: #9aa0ac; }
+
+
+/* ══ DONUT / LEGEND ══════════════════════════════════════════ */
+
+.donut-wrap  { display: flex; justify-content: center; margin-bottom: 12px; }
 
 .legend-list { display: flex; flex-direction: column; gap: 6px; }
-.legend-row { display: flex; align-items: center; font-size: 12px; gap: 8px; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.legend-row  { display: flex; align-items: center; font-size: 12px; gap: 8px; }
+.legend-dot  { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .legend-name { flex: 1; color: #4b4f58; }
 .legend-count { font-weight: 600; margin-right: 8px; }
-.legend-pct { color: #9aa0ac; width: 32px; text-align: right; }
+.legend-pct  { color: #9aa0ac; width: 32px; text-align: right; }
 
-.balance-list { display: flex; flex-direction: column; gap: 16px; }
-.balance-header { display: flex; align-items: center; font-size: 12px; margin-bottom: 6px; gap: 8px; }
-.balance-name { font-weight: 600; flex: 1; }
+
+/* ══ BALANCE LIST ════════════════════════════════════════════ */
+
+.balance-list    { display: flex; flex-direction: column; gap: 16px; }
+.balance-header  { display: flex; align-items: center; font-size: 12px; margin-bottom: 6px; gap: 8px; }
+.balance-name    { font-weight: 600; flex: 1; }
 .balance-figures { color: #9aa0ac; }
-.balance-track { background: #eef0f3; border-radius: 6px; height: 6px; overflow: hidden; }
-.balance-fill { height: 100%; border-radius: 6px; }
+.balance-track   { background: #eef0f3; border-radius: 6px; height: 6px; overflow: hidden; }
+.balance-fill    { height: 100%; border-radius: 6px; }
 
-.approval-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+
+/* ══ APPROVAL ════════════════════════════════════════════════ */
+
+.approval-wrap      { display: flex; justify-content: center; margin-bottom: 16px; }
 .approval-chart-box { position: relative; width: 140px; height: 140px; }
+
 .approval-center {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
 }
+
 .approval-rate { font-size: 22px; font-weight: 700; }
 
 .approval-rows { display: flex; flex-direction: column; gap: 8px; }
+
 .approval-row {
-    display: flex; 
+    display: flex;
     justify-content: space-between;
-    padding: 8px 12px; 
-    border-radius: 6px; font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
 }
+
 .approval-row.approved { background: #eafaf1; color: #1cc88a; }
-.approval-row.pending { background: #fdf6e3; color: #b8860b; }
+.approval-row.pending  { background: #fdf6e3; color: #b8860b; }
 .approval-row.rejected { background: #fdecec; color: #e74a3b; }

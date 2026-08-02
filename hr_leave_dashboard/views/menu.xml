@@ -8,6 +8,7 @@
         action="hr_leave_dashboard.action_hr_leave_dashboard"
         sequence="60"
         parent="hr_administration.hr_administration_dashboard"
+        groups="hr_holidays.group_hr_holidays_manager,base.group_system"
     />
 
     <record id="hr_leave_dashboard.hr_admin_leave_management" model="ir.ui.menu">

@@ -4,6 +4,8 @@
     'category': 'CleonHR-HR ADMIN',
     'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration'],
     'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
         'views/dashboard_action.xml',
         'views/leave_base.xml',
         'views/menu.xml',

@@ -2,70 +2,170 @@
 <templates xml:space="preserve">
     <t t-name="hr_leave_dashboard.Dashboard">
         <div class="leaveapp">
+
+            <!-- ══════════════════════════════════════════════
+                 WELCOME MODAL (FR-001 to FR-009)
+                 Shown on first-time access; re-openable via
+                 Help (?) and Setup Wizard (✦) header icons.
+                 ══════════════════════════════════════════════ -->
+            <t t-if="state.showWelcomeModal">
+                <!-- FR-009: Blurred backdrop overlay -->
+                <div class="cleon-welcome-backdrop" t-on-click="closeWelcomeModal"/>
+
+                <!-- Modal Card -->
+                <div class="cleon-welcome-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-welcome-title">
+
+                    <!-- FR-006: Dismiss X button -->
+                    <button class="cleon-welcome-close" t-on-click="closeWelcomeModal" aria-label="Close welcome modal">
+                        <i class="fa fa-times"/>
+                    </button>
+
+                    <!-- FR-002: Branded icon + title + description -->
+                    <div class="cleon-welcome-header">
+                        <div class="cleon-welcome-icon">
+                            <i class="fa fa-random"/>
+                        </div>
+                        <div class="cleon-welcome-intro">
+                            <h2 id="cleon-welcome-title" class="cleon-welcome-title">Welcome to Leave Management</h2>
+                            <p class="cleon-welcome-desc">
+                                CleonHR's Leave Management module gives you everything you need to define
+                                policies, process requests, track balances, and generate reports — all in one place.
+                                This wizard will walk you through the essentials.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- FR-003: "What's Included" feature overview grid -->
+                    <div class="cleon-welcome-features">
+                        <p class="cleon-features-label">WHAT'S INCLUDED</p>
+                        <div class="cleon-features-grid">
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveTypes">
+                                <div class="cleon-feature-icon cleon-fi-orange">
+                                    <i class="fa fa-tags"/>
+                                </div>
+                                <span class="cleon-feature-name">Leave Types</span>
+                            </button>
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveRequests">
+                                <div class="cleon-feature-icon cleon-fi-blue">
+                                    <i class="fa fa-file-text-o"/>
+                                </div>
+                                <span class="cleon-feature-name">Leave Requests</span>
+                            </button>
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveCalendar">
+                                <div class="cleon-feature-icon cleon-fi-teal">
+                                    <i class="fa fa-calendar"/>
+                                </div>
+                                <span class="cleon-feature-name">Leave Calendar</span>
+                            </button>
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveBalances">
+                                <div class="cleon-feature-icon cleon-fi-green">
+                                    <i class="fa fa-globe"/>
+                                </div>
+                                <span class="cleon-feature-name">Balance Management</span>
+                            </button>
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openReports">
+                                <div class="cleon-feature-icon cleon-fi-purple">
+                                    <i class="fa fa-bar-chart"/>
+                                </div>
+                                <span class="cleon-feature-name">Reports</span>
+                            </button>
+
+                            <button type="button" class="cleon-feature-tile" t-on-click="openSettings">
+                                <div class="cleon-feature-icon cleon-fi-pink">
+                                    <i class="fa fa-cog"/>
+                                </div>
+                                <span class="cleon-feature-name">Settings</span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <!-- FR-004 + FR-005: Action buttons -->
+                    <div class="cleon-welcome-actions">
+                        <!-- FR-005: Explore independently (secondary) -->
+                        <button class="cleon-btn-secondary" t-on-click="exploreOnMyOwn">
+                            Explore on my own
+                        </button>
+                        <!-- FR-004: Start Setup Guide (primary) -->
+                        <button class="cleon-btn-primary" t-on-click="startSetupGuide">
+                            <i class="fa fa-play-circle"/> Start Setup Guide (5 steps)
+                        </button>
+                    </div>
+
+                    <!-- FR-007: Time estimate label -->
+                    <p class="cleon-welcome-hint">
+                        Takes about 2 minutes · You can re-open this guide any time
+                    </p>
+
+                </div>
+            </t>
+            <!-- ══ END WELCOME MODAL ══════════════════════════ -->
+
+
+            <!-- ══ SIDEBAR ═══════════════════════════════════ -->
             <div class="leavesidebar">
                 <div class="o_cc_sidebar_header">
                     <span class="o_cc_header_dot"/>
-                    <span class="o_cc_header_title">
-                    Leave Management</span>
+                    <span class="o_cc_header_title">Leave Management</span>
                     <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
                         <i class="fa fa-th-large"/>
                     </button>
                 </div>
 
                 <nav class="o_cc_nav">
-                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openRecord">
+                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openDashboard">
                         <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                         <span class="o_cc_nav_label">Dashboard</span>
-                        <!-- <span class="o_cc_nav_badge">2</span> -->
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                    <a class="o_cc_nav_item" t-on-click="openWelcomeModal">
                         <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
                         <span class="o_cc_nav_label">Get Started</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
+                    <a class="o_cc_nav_item" t-on-click="openLeaveCalendar">
                         <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
                         <span class="o_cc_nav_label">Leave Calendar</span>
-                        <!-- <i class="fa fa-chevron-right o_cc_nav_arrow"/> -->
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openMeasures">
+                    <a class="o_cc_nav_item" t-on-click="openLeaveRequests">
                         <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
                         <span class="o_cc_nav_label">Leave Request</span>
                         <span class="o_cc_nav_badge">2</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                    </a> 
+                    </a>
                     <p class="sidebar-section-label">Leave Configuration</p>
                     <ul>
                         <li>
-                            <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                            <a class="o_cc_nav_item" t-on-click="openLeaveTypes">
                                 <span class="o_cc_nav_icon"><i class="fa-clipboard-list"/></span>
                                 <span class="o_cc_nav_label">Leave types</span>
                             </a>
                         </li>
                         <li>
-                             <a class="o_cc_nav_item" t-on-click="openInvestigations">
+                            <a class="o_cc_nav_item" t-on-click="openLeaveBalances">
                                 <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
                                 <span class="o_cc_nav_label">Leave Balances</span>
                             </a>
-                             
                         </li>
                     </ul>
                     <p class="sidebar-section-label">Reports</p>
                     <ul>
-                        <a class="o_cc_nav_item" href="/incident-reporting">
+                        <a class="o_cc_nav_item" t-on-click="openReports">
                             <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
                             <span class="o_cc_nav_label">Leave Analytics</span>
                         </a>
-                        <a class="o_cc_nav_item" t-on-click="openRecord">
+                        <a class="o_cc_nav_item" t-on-click="openReports">
                             <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
                             <span class="o_cc_nav_label">Audit Logs</span>
                         </a>
-
-                        <a class="o_cc_nav_item" t-on-click="openRecord">
+                        <a class="o_cc_nav_item" t-on-click="openSettings">
                             <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
                             <span class="o_cc_nav_label">Settings</span>
                         </a>
-                         
                     </ul>
                 </nav>
 
@@ -77,7 +177,32 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ══ MAIN DASHBOARD AREA ════════════════════════ -->
             <div class="o_leave_dashboard">
+
+                <!-- Dashboard header with FR-008 re-open icons -->
+                <div class="cleon-dash-header">
+                    <div class="cleon-dash-header-left">
+                        <h4 class="cleon-dash-title">Leave Management</h4>
+                        <span class="cleon-dash-subtitle">Overview and analytics</span>
+                    </div>
+                    <div class="cleon-dash-header-right">
+                        <!-- FR-008: Setup Wizard (✦) icon -->
+                        <button class="cleon-header-icon-btn cleon-wizard-btn"
+                                t-on-click="openWelcomeModal"
+                                title="Open Setup Wizard">
+                            <i class="fa fa-magic"/>
+                        </button>
+                        <!-- FR-008: Help (?) icon -->
+                        <button class="cleon-header-icon-btn cleon-help-btn"
+                                t-on-click="openWelcomeModal"
+                                title="Help — Re-open Setup Guide">
+                            ?
+                        </button>
+                    </div>
+                </div>
+
                 <!-- KPI ROW -->
                 <div class="kpi-row">
                     <div class="kpi-card">
@@ -141,7 +266,14 @@
                         <div class="donut-wrap">
                             <canvas t-ref="byTypeChart" width="160" height="160"/>
                         </div>
-                        <div id="byTypeLegend" class="legend-list"/>
+                        <div class="legend-list">
+                            <div class="legend-row" t-foreach="state.byType" t-as="item" t-key="item.name">
+                                <span class="legend-dot" t-att-style="'background:' + this.getPaletteColor(item_index)"/>
+                                <span class="legend-name"><t t-esc="item.name"/></span>
+                                <span class="legend-count"><t t-esc="item.count"/></span>
+                                <span class="legend-pct"><t t-esc="item.percent"/>%</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -151,7 +283,20 @@
                         <div class="panel-head">
                             <div><h5>Leave Balance by Type</h5><small>Allocation vs utilisation across all employees</small></div>
                         </div>
-                        <div id="balanceList" class="balance-list"/>
+                        <div class="balance-list">
+                            <div class="balance-row" t-foreach="state.balance" t-as="item" t-key="item.name">
+                                <div class="balance-header">
+                                    <span class="legend-dot" t-att-style="'background:' + item.color"/>
+                                    <span class="balance-name"><t t-esc="item.name"/></span>
+                                    <span class="balance-figures">
+                                        <t t-esc="item.used"/> used / <t t-esc="item.allocated"/> allocated · <t t-esc="item.percent"/>%
+                                    </span>
+                                </div>
+                                <div class="balance-track">
+                                    <div class="balance-fill" t-att-style="'width:' + item.percent + '%;background:' + item.color"/>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="panel">
