@@ -234,21 +234,68 @@
                     </t>
                     <!-- ── END STEP 2 ─────────────────────────────────────── -->
 
+                    <!-- ── STEP 3: Manage Leave Balances ──────────────────── -->
                     <t t-if="state.wizardStep === 3">
+
+                        <!-- FR-025: Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
                             <div class="cleon-wizard-icon cleon-wiz-icon-teal">
-                                <i class="fa fa-users"/>
+                                <i class="fa fa-balance-scale"/>
                             </div>
                             <div class="cleon-wizard-step-meta">
                                 <span class="cleon-wiz-step-label">STEP 3 OF 5</span>
-                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Approvals</h2>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Manage Leave Balances</h2>
                             </div>
                         </div>
-                        <div class="cleon-wiz-placeholder">
-                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
-                            <p>Approval workflow setup — coming in the next screen.</p>
+
+                        <!-- FR-025: Step description -->
+                        <p class="cleon-wizard-desc">
+                            Allocate leave balances to employees individually or in bulk. Adjust entitlements
+                            mid-cycle, carry forward unused days, and keep a full audit trail of every balance
+                            change. Employees see their live balances in real time.
+                        </p>
+
+                        <!-- FR-026 / FR-027 / FR-028: Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <!-- FR-026: Bulk allocate -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-bulk">
+                                    <i class="fa fa-users"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Use <strong>"Bulk Allocate"</strong> to set balances for an entire
+                                    department at once.
+                                </span>
+                            </div>
+
+                            <!-- FR-027: Individual override -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-override">
+                                    <i class="fa fa-user-plus"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Individual overrides</strong> let you top-up or deduct
+                                    a single employee's balance.
+                                </span>
+                            </div>
+
+                            <!-- FR-028: Balance export -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-export">
+                                    <i class="fa fa-download"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Export <strong>balance snapshots</strong> for payroll or compliance
+                                    reporting at any time.
+                                </span>
+                            </div>
+
                         </div>
+
                     </t>
+                    <!-- ── END STEP 3 ─────────────────────────────────────── -->
 
                     <t t-if="state.wizardStep === 4">
                         <div class="cleon-wizard-step-header">
@@ -294,14 +341,22 @@
                             <t t-else="">Previous</t>
                         </button>
 
-                        <!-- FR-014 / FR-022: Go to Leave Types shortcut (Steps 1 and 2) -->
+                        <!-- FR-014/FR-022/FR-029: Step-specific shortcut buttons -->
+                        <!-- Steps 1 + 2: Go to Leave Types -->
                         <t t-if="state.wizardStep === 1 || state.wizardStep === 2">
                             <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
                                 <i class="fa fa-arrow-right"/> Go to Leave Types
                             </button>
                         </t>
+                        <!-- Step 3: Go to Balance Management (FR-029) -->
+                        <t t-elif="state.wizardStep === 3">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openLeaveBalances">
+                                <i class="fa fa-arrow-right"/> Go to Balance Management
+                            </button>
+                        </t>
+                        <!-- Steps 4+: spacer to keep Next aligned right -->
                         <t t-else="">
-                            <div/><!-- spacer to keep Next aligned right -->
+                            <div/>
                         </t>
 
                         <!-- FR-016: Next button -->
