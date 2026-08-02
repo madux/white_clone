@@ -651,6 +651,7 @@
 
 /* Step-specific icon colour variants */
 .cleon-wiz-icon-green  { background: linear-gradient(135deg, #16a34a, #4ade80);  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28); }
+.cleon-wiz-icon-blue   { background: linear-gradient(135deg, #2563eb, #60a5fa);  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28); }
 .cleon-wiz-icon-teal   { background: linear-gradient(135deg, #0d9488, #2dd4bf);  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28); }
 .cleon-wiz-icon-orange { background: linear-gradient(135deg, #f97316, #fb923c);  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.28); }
 .cleon-wiz-icon-pink   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); box-shadow: 0 4px 12px rgba(233, 30, 140, 0.28); }
@@ -731,9 +732,13 @@
     margin-top: 1px;
 }
 
-.cleon-ka-add    { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
-.cleon-ka-check  { background: linear-gradient(135deg, #16a34a, #4ade80); }
-.cleon-ka-accrual { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.cleon-ka-add      { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+.cleon-ka-check    { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cleon-ka-accrual  { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+/* Step 2 action icon colours */
+.cleon-ka-single     { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.cleon-ka-multi      { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.cleon-ka-escalation { background: linear-gradient(135deg, #f97316, #fb923c); }
 
 .cleon-ka-text {
     font-size: 13px;

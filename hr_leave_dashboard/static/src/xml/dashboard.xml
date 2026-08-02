@@ -95,9 +95,11 @@
                     <!-- FR-010: Step Progress Bar ─────────────────────── -->
                     <div class="cleon-wizard-progress" aria-label="Setup progress">
                         <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
-                            <div t-attf-class="cleon-wiz-step
-                                {{ state.wizardStep === s ? ' cleon-wiz-step-active' : '' }}
-                                {{ state.wizardStep > s  ? ' cleon-wiz-step-done'   : '' }}">
+                            <div t-att-class="{
+                                'cleon-wiz-step': true,
+                                'cleon-wiz-step-active': state.wizardStep === s,
+                                'cleon-wiz-step-done': state.wizardStep > s
+                            }">
                                 <div class="cleon-wiz-dot">
                                     <t t-if="state.wizardStep > s">
                                         <i class="fa fa-check"/>
@@ -169,21 +171,68 @@
 
 
                     <!-- ── STEPS 2–5 placeholders (implemented per screen) -->
+                    <!-- ── STEP 2: Set Up Approval Workflows ──────────────── -->
                     <t t-if="state.wizardStep === 2">
+
+                        <!-- FR-018: Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
-                            <div class="cleon-wizard-icon cleon-wiz-icon-green">
-                                <i class="fa fa-calendar-check-o"/>
+                            <div class="cleon-wizard-icon cleon-wiz-icon-blue">
+                                <i class="fa fa-shield"/>
                             </div>
                             <div class="cleon-wizard-step-meta">
                                 <span class="cleon-wiz-step-label">STEP 2 OF 5</span>
-                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Set Up Leave Policies</h2>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Set Up Approval Workflows</h2>
                             </div>
                         </div>
-                        <div class="cleon-wiz-placeholder">
-                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
-                            <p>Leave Policy configuration — coming in the next screen.</p>
+
+                        <!-- FR-018: Step description -->
+                        <p class="cleon-wizard-desc">
+                            Control how leave requests are reviewed and authorised. Choose between
+                            single-level (direct manager only) or multi-level approval chains. Configure
+                            escalation timers so requests are never left waiting.
+                        </p>
+
+                        <!-- FR-019 / FR-020 / FR-021: Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <!-- FR-019: Single-level approval -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-single">
+                                    <i class="fa fa-user-circle-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Single-level</strong>: one approver
+                                    (e.g., <strong>Direct Manager</strong>) signs off the request.
+                                </span>
+                            </div>
+
+                            <!-- FR-020: Multi-level chain -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-multi">
+                                    <i class="fa fa-sitemap"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Multi-level chain</strong> approvers
+                                    (<strong>Manager → HR → Director</strong>) for strict governance.
+                                </span>
+                            </div>
+
+                            <!-- FR-021: Escalation timers -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-escalation">
+                                    <i class="fa fa-clock-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Set <strong>escalation timers</strong> — requests auto-escalate
+                                    if not actioned within your chosen window.
+                                </span>
+                            </div>
+
                         </div>
+
                     </t>
+                    <!-- ── END STEP 2 ─────────────────────────────────────── -->
 
                     <t t-if="state.wizardStep === 3">
                         <div class="cleon-wizard-step-header">
@@ -238,13 +287,15 @@
                     <!-- ── WIZARD FOOTER ──────────────────────────────── -->
                     <div class="cleon-wizard-footer">
 
-                        <!-- FR-015: Back button -->
+                        <!-- FR-015 / FR-023: Back / Previous button -->
                         <button class="cleon-wiz-btn-back" t-on-click="goBackFromWizard">
-                            <i class="fa fa-arrow-left"/> Back
+                            <i class="fa fa-arrow-left"/>
+                            <t t-if="state.wizardStep === 1">Back</t>
+                            <t t-else="">Previous</t>
                         </button>
 
-                        <!-- FR-014: Go to Leave Types shortcut (only Step 1) -->
-                        <t t-if="state.wizardStep === 1">
+                        <!-- FR-014 / FR-022: Go to Leave Types shortcut (Steps 1 and 2) -->
+                        <t t-if="state.wizardStep === 1 || state.wizardStep === 2">
                             <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
                                 <i class="fa fa-arrow-right"/> Go to Leave Types
                             </button>
