@@ -15,7 +15,6 @@ export class HrLeaveDashboard extends Component {
         this.charts = {};
         this.isDestroyed = false;
         this.currentRequest = null;
-        this.charts_trends = null;
         this.canvasRef = useRef("trendsChart");
         this.byTypeChart = useRef("byTypeChart");
         this.approvalChart = useRef("approvalChart");
@@ -23,15 +22,18 @@ export class HrLeaveDashboard extends Component {
         this.state = useState({
             months: 6,
             kpis: {},
-            trends: {labels: [], total: [], approved: [], pending: [], rejected: [], summary: {} },
+            trends: { labels: [], total: [], approved: [], pending: [], rejected: [], summary: {} },
             byType: [],
             balance: [],
             approval: { approved: 0, pending: 0, rejected: 0, approval_rate: 0 },
             loading: true,
-            // Welcome Modal state
+            // ── Welcome Modal ──────────────────────────
             showWelcomeModal: false,
+            // ── Setup Wizard ───────────────────────────
+            showWizard: false,
+            wizardStep: 1,       // 1–5, which step is currently displayed
             setupState: "not_started",
-            setupStep: 0,
+            setupStep: 0,        // highest step reached (from DB)
         });
 
         onWillStart(async () => {
@@ -40,9 +42,17 @@ export class HrLeaveDashboard extends Component {
                 loadBundle("web.chartjs_lib"),
                 this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force }),
             ]);
-            this.state.showWelcomeModal = setup.show_welcome;
             this.state.setupState = setup.state;
             this.state.setupStep = setup.current_step;
+
+            if (force || setup.state === "in_progress") {
+                // Resume wizard at the last saved step
+                this.state.wizardStep = setup.current_step || 1;
+                this.state.showWizard = true;
+            } else {
+                // Show welcome modal only if setup has not been dismissed/completed
+                this.state.showWelcomeModal = setup.show_welcome;
+            }
         });
 
         onWillUnmount(() => {
@@ -64,43 +74,111 @@ export class HrLeaveDashboard extends Component {
         );
     }
 
-    // ── Welcome Modal Methods ──────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  WELCOME MODAL METHODS
+    // ═══════════════════════════════════════════════════════════════
 
-    /**
-     * FR-008: Re-open the welcome modal from the Help (?) or Setup Wizard (✦) icon.
-     */
+    /** FR-008: Re-open the welcome modal from the header icons. */
     openWelcomeModal() {
+        this.state.showWizard = false;
         this.state.showWelcomeModal = true;
     }
 
-    /**
-     * FR-006: Dismiss modal via X button — marks as shown, does NOT launch wizard.
-     */
+    /** FR-006: Dismiss modal via X button — marks user as dismissed. */
     async closeWelcomeModal() {
         this.state.showWelcomeModal = false;
         await this.orm.call("hr.leave.setup.progress", "dismiss_welcome", []);
     }
 
-    /**
-     * FR-005: "Explore on my own" — dismisses modal, takes user to dashboard.
-     */
+    /** FR-005: "Explore on my own" — dismiss modal, show dashboard. */
     async exploreOnMyOwn() {
         await this.closeWelcomeModal();
     }
 
     /**
-     * FR-004: "Start Setup Guide (5 steps)" — dismisses modal and launches wizard.
+     * FR-004: "Start Setup Guide (5 steps)".
+     * Persists state=in_progress, step=1 to DB, then opens the wizard.
      */
     async startSetupGuide() {
         const setup = await this.orm.call("hr.leave.setup.progress", "start_setup", []);
         this.state.setupState = setup.state;
         this.state.setupStep = setup.current_step;
+        this.state.wizardStep = setup.current_step;
         this.state.showWelcomeModal = false;
-        this.notification.add(
-            "Setup started and saved. Step 1 of the guided wizard is the next screen to implement.",
-            { title: "Leave setup", type: "info" }
-        );
+        this.state.showWizard = true;
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SETUP WIZARD METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * FR-015: "← Back" in the wizard.
+     * From Step 1 → closes wizard and re-shows the Welcome Modal.
+     * From Step 2+ → goes to the previous step.
+     */
+    goBackFromWizard() {
+        if (this.state.wizardStep <= 1) {
+            this.state.showWizard = false;
+            this.state.showWelcomeModal = true;
+        } else {
+            this.state.wizardStep -= 1;
+        }
+    }
+
+    /**
+     * FR-016: "Next →" in the wizard.
+     * Persists the next step to the DB, then advances the UI.
+     */
+    async nextWizardStep() {
+        const nextStep = this.state.wizardStep + 1;
+        if (nextStep > 5) {
+            // Complete setup
+            const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
+            this.state.setupState = result.state;
+            this.state.showWizard = false;
+            this.notification.add("Setup complete! Leave Management is ready.", {
+                title: "Setup Complete", type: "success",
+            });
+            return;
+        }
+        const saved = await this.orm.call(
+            "hr.leave.setup.progress", "advance_step", [], { step: nextStep }
+        );
+        this.state.setupStep = saved.current_step;
+        this.state.wizardStep = nextStep;
+    }
+
+    /**
+     * FR-017: "Skip and explore on my own" text link.
+     * Dismisses the wizard for the current user without completing setup.
+     * The wizard can be re-opened at any time via the ✦ or ? header icons.
+     */
+    async skipWizard() {
+        await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
+        this.state.showWizard = false;
+    }
+
+    /**
+     * Closes the wizard via backdrop click (does not dismiss — admin can
+     * reopen it by clicking the ✦ or ? buttons).
+     */
+    closeWizard() {
+        this.state.showWizard = false;
+    }
+
+    /**
+     * FR-014: "→ Go to Leave Types" inside the wizard.
+     * Navigates to the Leave Types list view. The wizard's DB state is already
+     * saved, so returning to Leave Management will resume at the current step.
+     */
+    goToLeaveTypesFromWizard() {
+        return this.openLeaveTypes();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NAVIGATION ACTIONS (used by wizard tiles + sidebar)
+    // ═══════════════════════════════════════════════════════════════
 
     openDashboard() {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
@@ -133,12 +211,12 @@ export class HrLeaveDashboard extends Component {
         return this.action.doAction("base_setup.action_general_configuration");
     }
 
-    // ── Dashboard Data Methods ─────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    //  DASHBOARD DATA
+    // ═══════════════════════════════════════════════════════════════
 
     fetchAndRender(months) {
-        if (this.currentRequest) {
-            this.currentRequest.abort();
-        }
+        if (this.currentRequest) this.currentRequest.abort();
 
         this.currentRequest = $.ajax({
             url: "/hr_leave_dashboard/data",
@@ -147,13 +225,9 @@ export class HrLeaveDashboard extends Component {
             data: JSON.stringify({ jsonrpc: "2.0", params: { months } }),
             dataType: "json",
         }).done((res) => {
-            if (this.isDestroyed || !$(this.el)) {
-                return;
-            }
+            if (this.isDestroyed || !$(this.el)) return;
 
             const data = res.result;
-
-            console.log(`logger22-3 ${JSON.stringify(data)}`);
             this.state.kpis = data.kpis;
             this.state.trends = data.trends;
             this.state.byType = data.by_type;
@@ -180,9 +254,9 @@ export class HrLeaveDashboard extends Component {
             data: {
                 labels: d.labels,
                 datasets: [
-                    { label: "Total", data: d.total, borderColor: "#e91e8c", tension: 0.4, fill: true, backgroundColor: "rgba(233,30,140,0.08)" },
+                    { label: "Total",    data: d.total,    borderColor: "#e91e8c", tension: 0.4, fill: true, backgroundColor: "rgba(233,30,140,0.08)" },
                     { label: "Approved", data: d.approved, borderColor: "#17a673", tension: 0.4 },
-                    { label: "Pending", data: d.pending, borderColor: "#f0ad4e", tension: 0.4 },
+                    { label: "Pending",  data: d.pending,  borderColor: "#f0ad4e", tension: 0.4 },
                     { label: "Rejected", data: d.rejected, borderColor: "#dc3545", tension: 0.4 },
                 ],
             },
@@ -217,7 +291,6 @@ export class HrLeaveDashboard extends Component {
             },
             options: { plugins: { legend: { display: false } }, cutout: "70%" },
         });
-
     }
 
     getPaletteColor(index) {

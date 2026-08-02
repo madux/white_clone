@@ -67,3 +67,35 @@ class HrLeaveSetupProgress(models.Model):
             "dismissed_user_ids": [Command.unlink(self.env.user.id)],
         })
         return {"state": progress.state, "current_step": progress.current_step}
+
+    @api.model
+    def advance_step(self, step):
+        """Save wizard progress to the given step number (1–5).
+        Only advances forward — never overwrites a higher step with a lower one."""
+        progress = self._company_progress()
+        progress.write({
+            "state": "in_progress",
+            "current_step": max(progress.current_step, int(step)),
+        })
+        return {"state": progress.state, "current_step": progress.current_step}
+
+    @api.model
+    def skip_wizard(self):
+        """FR-017: User skips the wizard without completing setup.
+        Dismisses the wizard for the current user without marking the company
+        setup as completed. The wizard can still be re-opened via the header icons."""
+        progress = self._company_progress()
+        progress.write({"dismissed_user_ids": [Command.link(self.env.user.id)]})
+        return True
+
+    @api.model
+    def complete_setup(self):
+        """Mark setup as fully completed for this company."""
+        progress = self._company_progress()
+        progress.write({
+            "state": "completed",
+            "current_step": 5,
+            "completed_by_id": self.env.user.id,
+            "completed_at": fields.Datetime.now(),
+        })
+        return {"state": progress.state}

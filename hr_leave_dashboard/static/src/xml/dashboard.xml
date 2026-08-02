@@ -3,24 +3,21 @@
     <t t-name="hr_leave_dashboard.Dashboard">
         <div class="leaveapp">
 
-            <!-- ══════════════════════════════════════════════
-                 WELCOME MODAL (FR-001 to FR-009)
-                 Shown on first-time access; re-openable via
-                 Help (?) and Setup Wizard (✦) header icons.
-                 ══════════════════════════════════════════════ -->
+            <!-- ════════════════════════════════════════════════════
+                 WELCOME MODAL  (Screen 1 — FR-001 to FR-009)
+                 ════════════════════════════════════════════════════ -->
             <t t-if="state.showWelcomeModal">
-                <!-- FR-009: Blurred backdrop overlay -->
+                <!-- FR-009: Blurred backdrop -->
                 <div class="cleon-welcome-backdrop" t-on-click="closeWelcomeModal"/>
 
-                <!-- Modal Card -->
                 <div class="cleon-welcome-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-welcome-title">
 
-                    <!-- FR-006: Dismiss X button -->
+                    <!-- FR-006: X close -->
                     <button class="cleon-welcome-close" t-on-click="closeWelcomeModal" aria-label="Close welcome modal">
                         <i class="fa fa-times"/>
                     </button>
 
-                    <!-- FR-002: Branded icon + title + description -->
+                    <!-- FR-002: Icon + title + description -->
                     <div class="cleon-welcome-header">
                         <div class="cleon-welcome-icon">
                             <i class="fa fa-random"/>
@@ -35,79 +32,254 @@
                         </div>
                     </div>
 
-                    <!-- FR-003: "What's Included" feature overview grid -->
+                    <!-- FR-003: Feature grid -->
                     <div class="cleon-welcome-features">
                         <p class="cleon-features-label">WHAT'S INCLUDED</p>
                         <div class="cleon-features-grid">
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openLeaveTypes">
-                                <div class="cleon-feature-icon cleon-fi-orange">
-                                    <i class="fa fa-tags"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-orange"><i class="fa fa-tags"/></div>
                                 <span class="cleon-feature-name">Leave Types</span>
                             </button>
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openLeaveRequests">
-                                <div class="cleon-feature-icon cleon-fi-blue">
-                                    <i class="fa fa-file-text-o"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-blue"><i class="fa fa-file-text-o"/></div>
                                 <span class="cleon-feature-name">Leave Requests</span>
                             </button>
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openLeaveCalendar">
-                                <div class="cleon-feature-icon cleon-fi-teal">
-                                    <i class="fa fa-calendar"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-teal"><i class="fa fa-calendar"/></div>
                                 <span class="cleon-feature-name">Leave Calendar</span>
                             </button>
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openLeaveBalances">
-                                <div class="cleon-feature-icon cleon-fi-green">
-                                    <i class="fa fa-globe"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-green"><i class="fa fa-globe"/></div>
                                 <span class="cleon-feature-name">Balance Management</span>
                             </button>
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openReports">
-                                <div class="cleon-feature-icon cleon-fi-purple">
-                                    <i class="fa fa-bar-chart"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-purple"><i class="fa fa-bar-chart"/></div>
                                 <span class="cleon-feature-name">Reports</span>
                             </button>
-
                             <button type="button" class="cleon-feature-tile" t-on-click="openSettings">
-                                <div class="cleon-feature-icon cleon-fi-pink">
-                                    <i class="fa fa-cog"/>
-                                </div>
+                                <div class="cleon-feature-icon cleon-fi-pink"><i class="fa fa-cog"/></div>
                                 <span class="cleon-feature-name">Settings</span>
                             </button>
-
                         </div>
                     </div>
 
                     <!-- FR-004 + FR-005: Action buttons -->
                     <div class="cleon-welcome-actions">
-                        <!-- FR-005: Explore independently (secondary) -->
-                        <button class="cleon-btn-secondary" t-on-click="exploreOnMyOwn">
-                            Explore on my own
-                        </button>
-                        <!-- FR-004: Start Setup Guide (primary) -->
+                        <button class="cleon-btn-secondary" t-on-click="exploreOnMyOwn">Explore on my own</button>
                         <button class="cleon-btn-primary" t-on-click="startSetupGuide">
                             <i class="fa fa-play-circle"/> Start Setup Guide (5 steps)
                         </button>
                     </div>
 
-                    <!-- FR-007: Time estimate label -->
+                    <!-- FR-007: Time estimate -->
                     <p class="cleon-welcome-hint">
                         Takes about 2 minutes · You can re-open this guide any time
                     </p>
 
                 </div>
             </t>
-            <!-- ══ END WELCOME MODAL ══════════════════════════ -->
+            <!-- ════ END WELCOME MODAL ════════════════════════════ -->
 
 
-            <!-- ══ SIDEBAR ═══════════════════════════════════ -->
+            <!-- ════════════════════════════════════════════════════
+                 SETUP WIZARD  (Screen 2 — FR-010 to FR-017)
+                 Steps 1–5 rendered inside one modal; content swapped
+                 by wizardStep state. Backdrop shared with welcome modal.
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.showWizard">
+                <!-- Blurred backdrop — click closes without dismissing -->
+                <div class="cleon-welcome-backdrop" t-on-click="closeWizard"/>
+
+                <div class="cleon-wizard-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-wizard-title">
+
+                    <!-- FR-010: Step Progress Bar ─────────────────────── -->
+                    <div class="cleon-wizard-progress" aria-label="Setup progress">
+                        <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
+                            <div t-attf-class="cleon-wiz-step
+                                {{ state.wizardStep === s ? ' cleon-wiz-step-active' : '' }}
+                                {{ state.wizardStep > s  ? ' cleon-wiz-step-done'   : '' }}">
+                                <div class="cleon-wiz-dot">
+                                    <t t-if="state.wizardStep > s">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                    <t t-else="">
+                                        <t t-esc="s"/>
+                                    </t>
+                                </div>
+                                <t t-if="s_index lt 4">
+                                    <div class="cleon-wiz-connector"/>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- ── STEP 1: Configure Leave Types ─────────────── -->
+                    <t t-if="state.wizardStep === 1">
+
+                        <!-- FR-011: Step label + icon + title -->
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon">
+                                <i class="fa fa-tags"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 1 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Leave Types</h2>
+                            </div>
+                        </div>
+
+                        <!-- FR-012: Step description -->
+                        <p class="cleon-wizard-desc">
+                            Define every leave category your organisation offers — Annual Leave, Sick Leave,
+                            Maternity/Paternity, Compassionate, and any custom types. Each type carries its
+                            own entitlement, carry-over rules, accrual method, and approval workflow.
+                        </p>
+
+                        <!-- FR-013: Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-add">
+                                    <i class="fa fa-plus-circle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Click <strong>"Add Leave Type"</strong> on the Leave Types page to create your first policy.
+                                </span>
+                            </div>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-check">
+                                    <i class="fa fa-check-circle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Set entitlements (days per year) and whether days can be carried forward.
+                                </span>
+                            </div>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-accrual">
+                                    <i class="fa fa-refresh"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Choose an accrual method: <strong>Monthly</strong>, <strong>Pro-rated</strong>,
+                                    or <strong>Full Allocation at year start</strong>.
+                                </span>
+                            </div>
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 1 ─────────────────────────────────── -->
+
+
+                    <!-- ── STEPS 2–5 placeholders (implemented per screen) -->
+                    <t t-if="state.wizardStep === 2">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-green">
+                                <i class="fa fa-calendar-check-o"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 2 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Set Up Leave Policies</h2>
+                            </div>
+                        </div>
+                        <div class="cleon-wiz-placeholder">
+                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
+                            <p>Leave Policy configuration — coming in the next screen.</p>
+                        </div>
+                    </t>
+
+                    <t t-if="state.wizardStep === 3">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-teal">
+                                <i class="fa fa-users"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 3 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Approvals</h2>
+                            </div>
+                        </div>
+                        <div class="cleon-wiz-placeholder">
+                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
+                            <p>Approval workflow setup — coming in the next screen.</p>
+                        </div>
+                    </t>
+
+                    <t t-if="state.wizardStep === 4">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-orange">
+                                <i class="fa fa-balance-scale"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 4 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Import Leave Balances</h2>
+                            </div>
+                        </div>
+                        <div class="cleon-wiz-placeholder">
+                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
+                            <p>Balance import — coming in the next screen.</p>
+                        </div>
+                    </t>
+
+                    <t t-if="state.wizardStep === 5">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-pink">
+                                <i class="fa fa-flag-checkered"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 5 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Review &amp; Finish</h2>
+                            </div>
+                        </div>
+                        <div class="cleon-wiz-placeholder">
+                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
+                            <p>Final review — coming in the next screen.</p>
+                        </div>
+                    </t>
+                    <!-- ── END STEP PLACEHOLDERS ──────────────────────── -->
+
+
+                    <!-- ── WIZARD FOOTER ──────────────────────────────── -->
+                    <div class="cleon-wizard-footer">
+
+                        <!-- FR-015: Back button -->
+                        <button class="cleon-wiz-btn-back" t-on-click="goBackFromWizard">
+                            <i class="fa fa-arrow-left"/> Back
+                        </button>
+
+                        <!-- FR-014: Go to Leave Types shortcut (only Step 1) -->
+                        <t t-if="state.wizardStep === 1">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
+                                <i class="fa fa-arrow-right"/> Go to Leave Types
+                            </button>
+                        </t>
+                        <t t-else="">
+                            <div/><!-- spacer to keep Next aligned right -->
+                        </t>
+
+                        <!-- FR-016: Next button -->
+                        <button class="cleon-wiz-btn-next" t-on-click="nextWizardStep">
+                            <t t-if="state.wizardStep lt 5">
+                                Next <i class="fa fa-arrow-right"/>
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-check"/> Finish Setup
+                            </t>
+                        </button>
+
+                    </div>
+
+                    <!-- FR-017: Skip link -->
+                    <div class="cleon-wiz-skip-row">
+                        <button class="cleon-skip-link" t-on-click="skipWizard">
+                            Skip and explore on my own
+                        </button>
+                    </div>
+
+                </div>
+            </t>
+            <!-- ════ END SETUP WIZARD ════════════════════════════ -->
+
+
+            <!-- ════════════════════════════════════════════════════
+                 SIDEBAR
+                 ════════════════════════════════════════════════════ -->
             <div class="leavesidebar">
                 <div class="o_cc_sidebar_header">
                     <span class="o_cc_header_dot"/>
@@ -123,26 +295,25 @@
                         <span class="o_cc_nav_label">Dashboard</span>
                     </a>
                     <a class="o_cc_nav_item" t-on-click="openWelcomeModal">
-                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                        <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
                         <span class="o_cc_nav_label">Get Started</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
                     </a>
                     <a class="o_cc_nav_item" t-on-click="openLeaveCalendar">
-                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
+                        <span class="o_cc_nav_icon"><i class="fa fa-calendar-o"/></span>
                         <span class="o_cc_nav_label">Leave Calendar</span>
                     </a>
                     <a class="o_cc_nav_item" t-on-click="openLeaveRequests">
                         <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
                         <span class="o_cc_nav_label">Leave Request</span>
-                        <span class="o_cc_nav_badge">2</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
                     </a>
                     <p class="sidebar-section-label">Leave Configuration</p>
                     <ul>
                         <li>
                             <a class="o_cc_nav_item" t-on-click="openLeaveTypes">
-                                <span class="o_cc_nav_icon"><i class="fa-clipboard-list"/></span>
-                                <span class="o_cc_nav_label">Leave types</span>
+                                <span class="o_cc_nav_icon"><i class="fa fa-tags"/></span>
+                                <span class="o_cc_nav_label">Leave Types</span>
                             </a>
                         </li>
                         <li>
@@ -157,10 +328,6 @@
                         <a class="o_cc_nav_item" t-on-click="openReports">
                             <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
                             <span class="o_cc_nav_label">Leave Analytics</span>
-                        </a>
-                        <a class="o_cc_nav_item" t-on-click="openReports">
-                            <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
-                            <span class="o_cc_nav_label">Audit Logs</span>
                         </a>
                         <a class="o_cc_nav_item" t-on-click="openSettings">
                             <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
@@ -178,23 +345,25 @@
                 </div>
             </div>
 
-            <!-- ══ MAIN DASHBOARD AREA ════════════════════════ -->
+            <!-- ════════════════════════════════════════════════════
+                 MAIN DASHBOARD AREA
+                 ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
 
-                <!-- Dashboard header with FR-008 re-open icons -->
+                <!-- Header with FR-008 re-open icons -->
                 <div class="cleon-dash-header">
                     <div class="cleon-dash-header-left">
                         <h4 class="cleon-dash-title">Leave Management</h4>
                         <span class="cleon-dash-subtitle">Overview and analytics</span>
                     </div>
                     <div class="cleon-dash-header-right">
-                        <!-- FR-008: Setup Wizard (✦) icon -->
+                        <!-- Setup Wizard icon (✦) -->
                         <button class="cleon-header-icon-btn cleon-wizard-btn"
-                                t-on-click="openWelcomeModal"
+                                t-on-click="startSetupGuide"
                                 title="Open Setup Wizard">
                             <i class="fa fa-magic"/>
                         </button>
-                        <!-- FR-008: Help (?) icon -->
+                        <!-- Help (?) icon -->
                         <button class="cleon-header-icon-btn cleon-help-btn"
                                 t-on-click="openWelcomeModal"
                                 title="Help — Re-open Setup Guide">
@@ -258,7 +427,6 @@
                         </div>
                         <canvas t-ref="trendsChart" height="90"/>
                     </div>
-
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>By Leave Type</h5><small>All-time request distribution</small></div>
@@ -298,7 +466,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>Approval Overview</h5><small>Request resolution summary</small></div>
