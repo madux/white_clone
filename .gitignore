@@ -9,6 +9,7 @@ resources/ui/AGENTS.md
 __pycache__/
 *.py[cod]
 *.pyo
+*$py.class
 *.log
 *.pot
 *.mo
@@ -22,7 +23,14 @@ filestore/
 .odoo/
 conf/
 
-# Editor/runtime noise
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editors and operating-system noise
 .vscode/
-.DS_Store
 .idea/
+*.swp
+*.swo
+.DS_Store

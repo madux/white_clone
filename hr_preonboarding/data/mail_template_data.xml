@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="mail_template_offer_document_request" model="mail.template">
+        <field name="name">Offer Document: Request</field>
+        <field name="model_id" ref="model_offer_document"/>
+        <field name="subject">Document Requested: {{ object.document_name }}</field>
+        <field name="email_to">{{ object.candidate_id.email_from }}</field>
+        <field name="body_html" type="html">
+            <div>
+                <p>Hello <t t-out="object.candidate_id.partner_name or ''"/>,</p>
+                <p>
+                    As part of your onboarding, please upload the following
+                    document: <b t-out="object.document_name"/>.
+                </p>
+                <p>
+                    <a t-att-href="object._get_portal_url()"
+                       style="background-color:#875A7B;color:#fff;padding:10px 20px;
+                              text-decoration:none;border-radius:4px;">
+                        Upload Document
+                    </a>
+                </p>
+                <p>Thank you,<br/>HR Team</p>
+            </div>
+        </field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+</odoo>

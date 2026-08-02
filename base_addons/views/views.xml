@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="base.menu_module_tree" model="ir.ui.menu">
+        <field name="icon_class">fa fa-building</field>
+        <field name="category_name">CleonHR-HR Setting</field>
+    </record>
+
+    <record id="base.menu_administration" model="ir.ui.menu">
+        <field name="icon_class">fa fa-building</field>
+        <field name="category_name">CleonHR-HR Setting</field>
+    </record>
+    <record id="view_ir_ui_menu_inherited" model="ir.ui.view">
+        <field name="name">ir.ui.menu.inherited</field>
+        <field name="model">ir.ui.menu</field>
+        <field name="inherit_id" ref="base.edit_menu_access"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='sequence']" position="after">
+                <field name="category_name"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- <record id="view_hr_core_employee_tree" model="ir.ui.view">
+        <field name="name">HR CORE.employee.tree</field>
+        <field name="model">hr.employee</field>
+        <field name="arch" type="xml">
+            <tree string="Employee">
+                <field name="name" string="Name"/>
+                <field name="work_email" string="Email"/>
+                <field name="work_phone" string="Phone"/>
+                <field name="department_id" string="Department"/>
+                <field name="parent_id" string="Manager"/>
+            </tree>
+        </field>
+    </record> -->
+
+    <!-- <record id="action_core_view_hr_core_employee" model="ir.actions.act_window">
+        <field name="name">Employee</field>
+        <field name="res_model">hr.employee</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="view_id" ref="view_hr_core_employee_tree"/>
+        
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No recorded yet.
+            </p>
+            <p>Create a New record.</p>
+        </field>
+    </record> -->
+
+
+</odoo>

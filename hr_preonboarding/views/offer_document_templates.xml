@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="offer_document_upload_page" name="Offer Document Upload">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Document Upload</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+            </head>
+            <body>
+                <div class="container" style="max-width:600px;margin-top:60px;margin-bottom:60px;">
+                    <div class="card p-4">
+                        <h3 class="mb-3">Document Upload</h3>
+                        <p>
+                            Please upload: <strong t-out="document.document_name"/>
+                        </p>
+                        <p t-if="document.preboarding_id.candidate_id">
+                            Candidate: <strong t-out="document.preboarding_id.candidate_id.partner_name"/>
+                        </p>
+
+                        <div t-if="error" class="alert alert-danger" role="alert">
+                            <t t-out="error"/>
+                        </div>
+
+                        <form t-attf-action="/offer-document/#{document.id}/submit"
+                              method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="access_token" t-att-value="access_token"/>
+
+                            <div class="mb-3">
+                                <label for="document_name" class="form-label">Document Name</label>
+                                <input type="text" class="form-control" id="document_name"
+                                       t-att-value="document.document_name" disabled="disabled"/>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="document" class="form-label">Attach File</label>
+                                <input type="file" class="form-control" id="document"
+                                       name="document" required="required"/>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Send Back</button>
+                        </form>
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+    <template id="offer_document_thank_you" name="Offer Document Thank You">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Thank You</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+            </head>
+            <body>
+                <div class="container" style="max-width:600px;margin-top:60px;margin-bottom:60px;">
+                    <div class="card p-4 text-center">
+                        <h3 class="mb-3">Thank you!</h3>
+                        <p>
+                            Your document "<t t-out="document.document_name"/>" has been
+                            received. Our HR team has been notified.
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+    <template id="offer_document_invalid_link" name="Offer Document Invalid Link">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <title>Invalid Link</title>
+                <link rel="stylesheet"
+                      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+            </head>
+            <body>
+                <div class="container" style="max-width:600px;margin-top:60px;margin-bottom:60px;">
+                    <div class="card p-4 text-center">
+                        <h3 class="mb-3">Link Invalid or Expired</h3>
+                        <p>
+                            This document request link is no longer valid.
+                            Please contact HR for assistance.
+                        </p>
+                    </div>
+                </div>
+            </body>
+        </html>
+    </template>
+
+</odoo>
