@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- URL action that opens the Staff Directory standalone page -->
+    <record id="action_staff_directory" model="ir.actions.act_url">
+        <field name="name">Staff Directory Dashboard</field>
+        <field name="url">/staff-directory</field>
+        <field name="target">self</field>
+    </record>
+
+</odoo>
