@@ -297,23 +297,73 @@
                     </t>
                     <!-- ── END STEP 3 ─────────────────────────────────────── -->
 
+                    <!-- ── STEP 4: Configure Calendar &amp; Holidays ────────────── -->
                     <t t-if="state.wizardStep === 4">
+
+                        <!-- FR-031: Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
                             <div class="cleon-wizard-icon cleon-wiz-icon-orange">
-                                <i class="fa fa-balance-scale"/>
+                                <i class="fa fa-calendar"/>
                             </div>
                             <div class="cleon-wizard-step-meta">
                                 <span class="cleon-wiz-step-label">STEP 4 OF 5</span>
-                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Import Leave Balances</h2>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Calendar &amp; Holidays</h2>
                             </div>
                         </div>
-                        <div class="cleon-wiz-placeholder">
-                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
-                            <p>Balance import — coming in the next screen.</p>
-                        </div>
-                    </t>
 
+                        <!-- FR-031 + FR-035: Step description (includes auto-exclusion note) -->
+                        <p class="cleon-wizard-desc">
+                            Link your regional public holiday schedule to the leave calendar so that national
+                            holidays are automatically excluded from leave counts. View who is out on any given
+                            day to manage team coverage proactively.
+                        </p>
+
+                        <!-- FR-032 / FR-033 / FR-034: Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <!-- FR-032: Country &amp; region selection -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-region">
+                                    <i class="fa fa-globe"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Choose your <strong>country &amp; region</strong> in
+                                    Settings &#8594; Calendar &amp; Working Days.
+                                </span>
+                            </div>
+
+                            <!-- FR-033: Calendar view modes -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-calview">
+                                    <i class="fa fa-calendar-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Switch between <strong>Day, Week, Month,</strong> and
+                                    <strong>Year</strong> calendar views.
+                                </span>
+                            </div>
+
+                            <!-- FR-034: Coverage alerts -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-coverage">
+                                    <i class="fa fa-exclamation-triangle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Coverage alerts</strong> highlight days when a department
+                                    is critically understaffed.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 4 ─────────────────────────────────────── -->
+
+                    <!-- ── STEP 5: Review &amp; Finish ────────────────────────── -->
                     <t t-if="state.wizardStep === 5">
+
+                        <!-- Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
                             <div class="cleon-wizard-icon cleon-wiz-icon-pink">
                                 <i class="fa fa-flag-checkered"/>
@@ -323,11 +373,54 @@
                                 <h2 id="cleon-wizard-title" class="cleon-wizard-title">Review &amp; Finish</h2>
                             </div>
                         </div>
-                        <div class="cleon-wiz-placeholder">
-                            <i class="fa fa-cogs cleon-wiz-placeholder-icon"/>
-                            <p>Final review — coming in the next screen.</p>
+
+                        <!-- Step description -->
+                        <p class="cleon-wizard-desc">
+                            Review your setup choices, send welcome notifications to managers and employees, and
+                            activate Leave Management across your organisation.
+                        </p>
+
+                        <!-- Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <!-- Policy Review -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-review">
+                                    <i class="fa fa-check-square-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Policy Review</strong>: Verify configured leave types, entitlement rules,
+                                    and approval hierarchies.
+                                </span>
+                            </div>
+
+                            <!-- Team Onboarding -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-onboard">
+                                    <i class="fa fa-paper-plane"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Team Onboarding</strong>: Automated welcome notifications invite
+                                    employees to check their live balances.
+                                </span>
+                            </div>
+
+                            <!-- Go Live -->
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-golive">
+                                    <i class="fa fa-rocket"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Go Live</strong>: Click <strong>"Finish Setup"</strong> to complete setup
+                                    and activate the Leave Management suite.
+                                </span>
+                            </div>
+
                         </div>
+
                     </t>
+                    <!-- ── END STEP 5 ─────────────────────────────────────── -->
                     <!-- ── END STEP PLACEHOLDERS ──────────────────────── -->
 
 
@@ -341,7 +434,7 @@
                             <t t-else="">Previous</t>
                         </button>
 
-                        <!-- FR-014/FR-022/FR-029: Step-specific shortcut buttons -->
+                        <!-- FR-014/FR-022/FR-029/FR-036: Step-specific shortcut buttons -->
                         <!-- Steps 1 + 2: Go to Leave Types -->
                         <t t-if="state.wizardStep === 1 || state.wizardStep === 2">
                             <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
@@ -354,7 +447,13 @@
                                 <i class="fa fa-arrow-right"/> Go to Balance Management
                             </button>
                         </t>
-                        <!-- Steps 4+: spacer to keep Next aligned right -->
+                        <!-- Step 4: Go to Settings (FR-036) -->
+                        <t t-elif="state.wizardStep === 4">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openSettings">
+                                <i class="fa fa-arrow-right"/> Go to Settings
+                            </button>
+                        </t>
+                        <!-- Step 5: spacer -->
                         <t t-else="">
                             <div/>
                         </t>
