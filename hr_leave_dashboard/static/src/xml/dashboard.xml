@@ -360,60 +360,61 @@
                     </t>
                     <!-- ── END STEP 4 ─────────────────────────────────────── -->
 
-                    <!-- ── STEP 5: Review &amp; Finish ────────────────────────── -->
+                    <!-- ── STEP 5: Process Leave Requests (Screen 6) ────────── -->
                     <t t-if="state.wizardStep === 5">
 
-                        <!-- Step label + icon + title -->
+                        <!-- FR-038: Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
                             <div class="cleon-wizard-icon cleon-wiz-icon-pink">
-                                <i class="fa fa-flag-checkered"/>
+                                <i class="fa fa-file-text-o"/>
                             </div>
                             <div class="cleon-wizard-step-meta">
                                 <span class="cleon-wiz-step-label">STEP 5 OF 5</span>
-                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Review &amp; Finish</h2>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Process Leave Requests</h2>
                             </div>
                         </div>
 
-                        <!-- Step description -->
+                        <!-- FR-038: Step description -->
                         <p class="cleon-wizard-desc">
-                            Review your setup choices, send welcome notifications to managers and employees, and
-                            activate Leave Management across your organisation.
+                            Once your leave types and balances are configured, employees can submit requests
+                            instantly. As an admin you'll review requests, check balance impacts, approve or
+                            reject with comments, and generate reports — all from one place.
                         </p>
 
-                        <!-- Key Actions -->
+                        <!-- FR-039 / FR-040 / FR-041: Key Actions -->
                         <div class="cleon-key-actions">
                             <p class="cleon-key-actions-label">KEY ACTIONS</p>
 
-                            <!-- Policy Review -->
+                            <!-- FR-039: One-click approve/reject -->
                             <div class="cleon-key-action-item">
-                                <div class="cleon-ka-icon cleon-ka-review">
-                                    <i class="fa fa-check-square-o"/>
+                                <div class="cleon-ka-icon cleon-ka-approve">
+                                    <i class="fa fa-check-circle-o"/>
                                 </div>
                                 <span class="cleon-ka-text">
-                                    <strong>Policy Review</strong>: Verify configured leave types, entitlement rules,
-                                    and approval hierarchies.
+                                    <strong>Approve or reject requests</strong> with a single click;
+                                    employees are notified immediately.
                                 </span>
                             </div>
 
-                            <!-- Team Onboarding -->
+                            <!-- FR-040: Reports action -->
                             <div class="cleon-key-action-item">
-                                <div class="cleon-ka-icon cleon-ka-onboard">
-                                    <i class="fa fa-paper-plane"/>
+                                <div class="cleon-ka-icon cleon-ka-reports">
+                                    <i class="fa fa-bar-chart"/>
                                 </div>
                                 <span class="cleon-ka-text">
-                                    <strong>Team Onboarding</strong>: Automated welcome notifications invite
-                                    employees to check their live balances.
+                                    Use <strong>Reports</strong> to analyse leave trends, utilisation rates,
+                                    and departmental coverage.
                                 </span>
                             </div>
 
-                            <!-- Go Live -->
+                            <!-- FR-041: Audit log action -->
                             <div class="cleon-key-action-item">
-                                <div class="cleon-ka-icon cleon-ka-golive">
-                                    <i class="fa fa-rocket"/>
+                                <div class="cleon-ka-icon cleon-ka-audit">
+                                    <i class="fa fa-shield"/>
                                 </div>
                                 <span class="cleon-ka-text">
-                                    <strong>Go Live</strong>: Click <strong>"Finish Setup"</strong> to complete setup
-                                    and activate the Leave Management suite.
+                                    The <strong>Audit Log</strong> records every action for full compliance
+                                    and accountability.
                                 </span>
                             </div>
 
@@ -434,7 +435,7 @@
                             <t t-else="">Previous</t>
                         </button>
 
-                        <!-- FR-014/FR-022/FR-029/FR-036: Step-specific shortcut buttons -->
+                        <!-- FR-014/FR-022/FR-029/FR-036/FR-042: Step-specific shortcut buttons -->
                         <!-- Steps 1 + 2: Go to Leave Types -->
                         <t t-if="state.wizardStep === 1 || state.wizardStep === 2">
                             <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
@@ -453,7 +454,12 @@
                                 <i class="fa fa-arrow-right"/> Go to Settings
                             </button>
                         </t>
-                        <!-- Step 5: spacer -->
+                        <!-- Step 5: Go to Leave Requests (FR-042) -->
+                        <t t-elif="state.wizardStep === 5">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openLeaveRequests">
+                                <i class="fa fa-arrow-right"/> Go to Leave Requests
+                            </button>
+                        </t>
                         <t t-else="">
                             <div/>
                         </t>

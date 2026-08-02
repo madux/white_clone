@@ -747,10 +747,10 @@
 .cleon-ka-region   { background: linear-gradient(135deg, #2563eb, #60a5fa); }
 .cleon-ka-calview  { background: linear-gradient(135deg, #f97316, #fb923c); }
 .cleon-ka-coverage { background: linear-gradient(135deg, #dc2626, #f87171); }
-/* Step 5 action icon colours */
-.cleon-ka-review   { background: linear-gradient(135deg, #16a34a, #4ade80); }
-.cleon-ka-onboard  { background: linear-gradient(135deg, #2563eb, #60a5fa); }
-.cleon-ka-golive   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+/* Step 5 action icon colours (Screen 6) */
+.cleon-ka-approve   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+.cleon-ka-reports   { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.cleon-ka-audit     { background: linear-gradient(135deg, #2563eb, #60a5fa); }
 
 .cleon-ka-text {
     font-size: 13px;
