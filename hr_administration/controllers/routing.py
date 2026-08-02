@@ -48,8 +48,23 @@ class OpenActionController(http.Controller):
 
     @http.route('/app/recruitment', type='http', auth='user')
     def open_recruitment(self, **kwargs):
-        action = request.env.ref('hr_cleon_recruitment.action_hr_applicant_recruitment').sudo().read()[0]
-        return self.redirect_to_page(action,'tree', 'tree')
+        # The administration dashboard can be installed without the optional
+        # Cleon recruitment module.  In that case, open Odoo Community's
+        # recruitment application instead of failing on a missing XML ID.
+        action_record = request.env.ref(
+            'hr_cleon_recruitment.action_hr_applicant_recruitment',
+            raise_if_not_found=False,
+        )
+        if not action_record:
+            action_record = request.env.ref(
+                'hr_recruitment.crm_case_categ0_act_job',
+                raise_if_not_found=False,
+            )
+        if not action_record:
+            return request.redirect('/hr-employee-admin')
+
+        action = action_record.sudo().read()[0]
+        return self.redirect_to_page(action, 'kanban', 'kanban')
     
     @http.route('/app/insurance', type='http', auth='user')
     def open_hmo_insurance_dashboard(self, **kwargs):
