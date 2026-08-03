@@ -4,419 +4,482 @@
     <t t-name="hr_staff_directory.StaffDirectoryDashboard">
         <div class="sdir-app" t-ref="root">
 
-            <!-- ═══ SIDEBAR ══════════════════════════════════════════════════ -->
-            <aside id="sdirSidebar" t-att-class="state.sidebarCollapsed ? 'sdir-sidebar collapsed' : 'sdir-sidebar'">
+            <!-- ═══ TAB BAR ═════════════════════════════════════════════════ -->
+            <div class="sdir-tab-bar">
+                <button type="button"
+                        t-att-class="state.activeTab === 'people' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabPeople"
+                        t-on-click="() => this.toggleTab('people')">
+                    <!-- People icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    People
+                </button>
+                <button type="button"
+                        t-att-class="state.activeTab === 'org' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabOrgStructure"
+                        t-on-click="() => this.toggleTab('org')">
+                    <!-- Stacked squares icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2"/>
+                        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                        <line x1="12" y1="12" x2="12" y2="16"/>
+                        <line x1="8" y1="14" x2="16" y2="14"/>
+                    </svg>
+                    Organizational Structure
+                </button>
+                <button type="button"
+                        t-att-class="state.activeTab === 'network' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabRelNetwork"
+                        t-on-click="() => this.toggleTab('network')">
+                    <!-- Connected nodes icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="18" cy="5" r="3"/>
+                        <circle cx="6" cy="12" r="3"/>
+                        <circle cx="18" cy="19" r="3"/>
+                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                    </svg>
+                    Relationship Network
+                </button>
+            </div>
 
-                <!-- Title Section -->
-                <div class="sdir-brand">
-                    <div class="sdir-brand-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users size-4 text-white"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                        </svg>
+            <!-- ═══ MAIN CONTENT (People Tab) ════════════════════════════════ -->
+            <div class="sdir-people-content" t-if="state.activeTab === 'people'">
+
+                <!-- ── STAT CARDS ROW ──────────────────────────────────────── -->
+                <div class="sdir-stat-row">
+
+                    <!-- Total People -->
+                    <div class="sdir-stat-card sdir-stat-neutral" id="statTotal">
+                        <div class="sdir-stat-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                            </svg>
+                        </div>
+                        <div class="sdir-stat-body">
+                            <div class="sdir-stat-val" t-esc="num(state.stats.total)"/>
+                            <div class="sdir-stat-lbl">Total People</div>
+                        </div>
                     </div>
-                    <span class="sdir-brand-name">Staff Directory</span>
-                    <button type="button" class="sdir-collapse-btn" id="sdirCollapseBtn" title="Toggle sidebar" t-on-click="toggleSidebar">
-                        <svg class="sdir-chevron-icon" viewBox="0 0 20 20" fill="none">
-                            <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                </div>
 
-                <!-- Navigation -->
-                <nav class="sdir-nav">
-                    <a href="#" class="sdir-nav-item active" id="navDashboard">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layout-dashboard size-5 transition-colors text-[#EC4899]"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
-                        <span class="sdir-nav-label">Dashboard</span>
-                    </a>
-                    <a href="#" class="sdir-nav-item" id="navGetStarted">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-play size-5 transition-colors text-gray-500 group-hover:text-gray-700"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></svg>
-                        <span class="sdir-nav-label">Get Started</span>
-                    </a>
-                    <a href="#" class="sdir-nav-item" id="navEmployees">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users size-5 transition-colors text-gray-500 group-hover:text-gray-700"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                        <span class="sdir-nav-label">Employees</span>
-                    </a>
-                    <a href="#" class="sdir-nav-item" id="navSettings">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings size-5 transition-colors text-gray-500 group-hover:text-gray-700"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                        <span class="sdir-nav-label">Settings</span>
-                    </a>
-                </nav>
-
-                <!-- Bottom Footer -->
-                <div class="sdir-sidebar-footer">
-                    <div class="sdir-sidebar-footer-name">Staff Directory</div>
-                    <div class="sdir-sidebar-footer-tagline">Manage your workforce</div>
-                </div>
-            </aside>
-
-            <!-- ═══ MAIN ═════════════════════════════════════════════════════ -->
-            <main class="sdir-main">
-
-                <!-- Top Bar -->
-                <header class="sdir-topbar">
-                    <div>
-                        <h1 class="sdir-topbar-title">Staff Directory Dashboard</h1>
-                        <p class="sdir-topbar-sub">Discover and connect with your organisation's workforce</p>
+                    <!-- Active -->
+                    <div class="sdir-stat-card sdir-stat-green" id="statActive">
+                        <div class="sdir-stat-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="sdir-stat-body">
+                            <div class="sdir-stat-val sdir-stat-val-green" t-esc="num(state.stats.active)"/>
+                            <div class="sdir-stat-lbl">Active</div>
+                        </div>
                     </div>
-                    <div class="sdir-topbar-actions">
+
+                    <!-- On Leave -->
+                    <div class="sdir-stat-card sdir-stat-blue" id="statOnLeave">
+                        <div class="sdir-stat-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2c-.5.1-.9.6-.6 1l4.4 4.4c.4.4 1 .6 1.5.4l2.8-1.2 4.5 4.5-1.2 2.8c-.2.5 0 1.1.4 1.5l4.4 4.4c.4.4.9 0 1-.6z"/>
+                            </svg>
+                        </div>
+                        <div class="sdir-stat-body">
+                            <div class="sdir-stat-val sdir-stat-val-blue" t-esc="num(state.stats.on_leave)"/>
+                            <div class="sdir-stat-lbl">On Leave</div>
+                        </div>
+                    </div>
+
+                    <!-- Retention Priority -->
+                    <div class="sdir-stat-card sdir-stat-red" id="statRetention">
+                        <div class="sdir-stat-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                        </div>
+                        <div class="sdir-stat-body">
+                            <div class="sdir-stat-val sdir-stat-val-red" t-esc="num(state.stats.retention_priority)"/>
+                            <div class="sdir-stat-lbl">Retention Priority</div>
+                        </div>
+                    </div>
+
+                    <!-- Probation -->
+                    <div class="sdir-stat-card sdir-stat-amber" id="statProbation">
+                        <div class="sdir-stat-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                        </div>
+                        <div class="sdir-stat-body">
+                            <div class="sdir-stat-val sdir-stat-val-amber" t-esc="num(state.stats.probation)"/>
+                            <div class="sdir-stat-lbl">Probation</div>
+                        </div>
+                    </div>
+
+                </div><!-- /.sdir-stat-row -->
+
+                <!-- ── TOOLBAR ─────────────────────────────────────────────── -->
+                <div class="sdir-toolbar">
+
+                    <!-- Search -->
+                    <div class="sdir-search-wrap">
+                        <svg class="sdir-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input id="sdirSearch"
+                               class="sdir-search-input"
+                               type="text"
+                               placeholder="Search name, role, dept, location... (fuzzy match enabled)"
+                               t-on-input="onSearch"
+                               t-att-value="state.searchQuery"/>
+                    </div>
+
+                    <!-- Right-side controls -->
+                    <div class="sdir-toolbar-right">
+
+                        <!-- Record counter -->
+                        <span class="sdir-rec-count" id="sdirRecCount">
+                            <t t-esc="filteredPeople().length"/> / <t t-esc="num(state.stats.total)"/>
+                        </span>
+
+                        <!-- Admin / ESS toggle -->
+                        <div class="sdir-toggle-pill" id="sdirAdminEssToggle">
+                            <button type="button"
+                                    t-att-class="state.adminMode ? 'sdir-toggle-opt sdir-toggle-active' : 'sdir-toggle-opt'"
+                                    id="toggleAdmin"
+                                    t-on-click="() => this.toggleAdminMode(true)">
+                                <span class="sdir-toggle-dot"/>
+                                Admin
+                            </button>
+                            <button type="button"
+                                    t-att-class="state.adminMode ? 'sdir-toggle-opt' : 'sdir-toggle-opt sdir-toggle-active'"
+                                    id="toggleEss"
+                                    t-on-click="() => this.toggleAdminMode(false)">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="4" y1="4" x2="20" y2="20"/>
+                                    <line x1="20" y1="4" x2="4" y2="20"/>
+                                </svg>
+                                ESS
+                            </button>
+                        </div>
+
+                        <!-- List / Grid view toggle -->
+                        <div class="sdir-view-btns" id="sdirViewToggle">
+                            <button type="button"
+                                    t-att-class="state.activeView === 'list' ? 'sdir-view-btn sdir-view-active' : 'sdir-view-btn'"
+                                    id="viewList"
+                                    t-on-click="() => this.toggleView('list')"
+                                    title="List view">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"/>
+                                    <line x1="8" y1="12" x2="21" y2="12"/>
+                                    <line x1="8" y1="18" x2="21" y2="18"/>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"/>
+                                </svg>
+                            </button>
+                            <button type="button"
+                                    t-att-class="state.activeView === 'grid' ? 'sdir-view-btn sdir-view-active' : 'sdir-view-btn'"
+                                    id="viewGrid"
+                                    t-on-click="() => this.toggleView('grid')"
+                                    title="Grid view">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="14" y="14" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Columns button -->
+                        <button type="button" class="sdir-btn sdir-btn-ghost" id="btnColumns">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <line x1="9" y1="3" x2="9" y2="21"/>
+                                <line x1="15" y1="3" x2="15" y2="21"/>
+                            </svg>
+                            Columns
+                        </button>
+
+                        <!-- Saved Views button -->
+                        <button type="button" class="sdir-btn sdir-btn-ghost" id="btnSavedViews">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                            </svg>
+                            Saved Views
+                        </button>
+
+                        <!-- Filter icon-only button -->
+                        <button type="button" class="sdir-btn sdir-btn-icon" id="btnFilter">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                            </svg>
+                        </button>
+
+                        <!-- Export button -->
                         <button type="button" class="sdir-btn sdir-btn-ghost" id="btnExport">
-                            <svg viewBox="0 0 16 16" fill="none">
-                                <rect x="2" y="2" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                                <path d="M5 12v2h6v-2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
                             </svg>
                             Export
                         </button>
-                        <button type="button" class="sdir-btn sdir-btn-ghost" id="btnFilters">
-                            <svg viewBox="0 0 16 16" fill="none">
-                                <path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                            </svg>
-                            Filters
-                        </button>
-                        <a href="#" class="sdir-btn sdir-btn-primary" id="btnAddEmployee">
-                            <svg viewBox="0 0 16 16" fill="none">
-                                <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            Add Employee
-                        </a>
-                    </div>
-                </header>
 
-                <!-- Scrollable Content -->
-                <div class="sdir-content" id="sdirContent">
+                    </div><!-- /.sdir-toolbar-right -->
+                </div><!-- /.sdir-toolbar -->
 
-                    <!-- ── KPI Row ─────────────────────────────────────────── -->
-                    <div class="sdir-kpi-row">
+                <!-- ── DATA TABLE ──────────────────────────────────────────── -->
+                <div class="sdir-table-wrap">
+                    <table class="sdir-table" id="sdirPeopleTable">
 
-                        <div class="sdir-kpi-card">
-                            <div class="sdir-kpi-icon" style="background:rgba(236,72,153,.11);color:#ec4899;">
-                                <svg viewBox="0 0 22 22" fill="none">
-                                    <circle cx="8" cy="6.5" r="2.5" stroke="currentColor" stroke-width="1.6"/>
-                                    <path d="M2 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                    <circle cx="15.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.4"/>
-                                    <path d="M13 17c0-2.21 1.343-4 3-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="sdir-kpi-body">
-                                <div class="sdir-kpi-val" id="kpiTotalVal" t-esc="num(state.overview.total)"/>
-                                <div class="sdir-kpi-lbl">Total Employees</div>
-                                <div class="sdir-kpi-trend" id="kpiTotalTrend">
-                                    <span t-att-class="state.kpiTrends.total.cls" t-out="state.kpiTrends.total.label"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Table header -->
+                        <thead class="sdir-thead">
+                            <tr>
+                                <th class="sdir-th sdir-th-check">
+                                    <input type="checkbox" class="sdir-checkbox" id="checkAll"/>
+                                </th>
+                                <th class="sdir-th sdir-th-name">
+                                    NAME
+                                    <svg class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="19" x2="12" y2="5"/>
+                                        <polyline points="5 12 12 5 19 12"/>
+                                    </svg>
+                                </th>
+                                <th class="sdir-th">ROLE</th>
+                                <th class="sdir-th">DEPARTMENT</th>
+                                <th class="sdir-th">LIFECYCLE STATE</th>
+                                <th class="sdir-th">WORK MODE</th>
+                                <th class="sdir-th">LOCATION</th>
+                                <th class="sdir-th" t-if="state.adminMode">MANAGER</th>
+                                <th class="sdir-th">TENURE</th>
+                                <th class="sdir-th sdir-th-actions" t-if="state.adminMode">ACTIONS</th>
+                            </tr>
+                        </thead>
 
-                        <div class="sdir-kpi-card">
-                            <div class="sdir-kpi-icon" style="background:rgba(0,196,140,.11);color:#00C48C;">
-                                <svg viewBox="0 0 22 22" fill="none">
-                                    <circle cx="11" cy="7" r="2.8" stroke="currentColor" stroke-width="1.6"/>
-                                    <path d="M4.5 18c0-3.590 2.910-6.5 6.5-6.5s6.5 2.910 6.5 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                    <path d="M14.5 11.5l2 2 3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                            </div>
-                            <div class="sdir-kpi-body">
-                                <div class="sdir-kpi-val" id="kpiActiveVal" t-esc="num(state.overview.active)"/>
-                                <div class="sdir-kpi-lbl">Active Employees</div>
-                                <div class="sdir-kpi-trend" id="kpiActiveTrend">
-                                    <span t-att-class="state.kpiTrends.active.cls" t-out="state.kpiTrends.active.label"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Table body -->
+                        <tbody>
+                            <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
+                                <tr t-att-class="'sdir-tr' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '')"
+                                    t-att-data-id="person.id">
 
-                        <div class="sdir-kpi-card">
-                            <div class="sdir-kpi-icon" style="background:rgba(61,90,254,.11);color:#3D5AFE;">
-                                <svg viewBox="0 0 22 22" fill="none">
-                                    <circle cx="11" cy="7" r="2.8" stroke="currentColor" stroke-width="1.6"/>
-                                    <path d="M4.5 18c0-3.590 2.910-6.5 6.5-6.5s6.5 2.910 6.5 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                    <path d="M19 4v6M16.5 7h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="sdir-kpi-body">
-                                <div class="sdir-kpi-val" id="kpiNewHiresVal" t-esc="num(state.overview.new_hires)"/>
-                                <div class="sdir-kpi-lbl">New Hires</div>
-                                <div class="sdir-kpi-trend" id="kpiNewHiresTrend">
-                                    <span class="sdir-trend-flat">Last 30 days</span>
-                                </div>
-                            </div>
-                        </div>
+                                    <!-- Checkbox -->
+                                    <td class="sdir-td sdir-td-check">
+                                        <input type="checkbox" class="sdir-checkbox" t-att-id="'row-chk-' + person.id"/>
+                                    </td>
 
-                        <div class="sdir-kpi-card">
-                            <div class="sdir-kpi-icon" style="background:rgba(255,143,0,.11);color:#FF8F00;">
-                                <svg viewBox="0 0 22 22" fill="none">
-                                    <circle cx="11" cy="7" r="2.8" stroke="currentColor" stroke-width="1.6"/>
-                                    <path d="M4.5 18c0-3.590 2.910-6.5 6.5-6.5s6.5 2.910 6.5 6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-                                    <path d="M11 2l.6 1.8H13.5l-1.5 1 .6 1.8L11 5.5l-1.6.8.6-1.8-1.5-1H10.4z" fill="currentColor"/>
-                                </svg>
-                            </div>
-                            <div class="sdir-kpi-body">
-                                <div class="sdir-kpi-val" id="kpiExecVal" t-esc="num(state.overview.executives)"/>
-                                <div class="sdir-kpi-lbl">Executives</div>
-                                <div class="sdir-kpi-trend" id="kpiExecTrend">
-                                    <span class="sdir-trend-flat">Senior leadership</span>
-                                </div>
-                            </div>
-                        </div>
+                                    <!-- Name + Avatar -->
+                                    <td class="sdir-td sdir-td-name">
+                                        <div class="sdir-name-cell">
+                                            <!-- Star icon -->
+                                            <div class="sdir-star-icon">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                                </svg>
+                                            </div>
+                                            <!-- Avatar with lifecycle-state ring -->
+                                            <div t-att-class="'sdir-avatar sdir-ring-' + person.lifecycle_state"
+                                                 t-att-style="'background:' + avatarColor(person.name) + ';'"
+                                                 t-att-title="person.name">
+                                                <t t-esc="initials(person.name)"/>
+                                            </div>
+                                            <!-- Name block -->
+                                            <div class="sdir-name-block">
+                                                <div class="sdir-name-text" t-esc="person.name"/>
+                                                <div class="sdir-emp-id" t-esc="person.emp_ref"/>
+                                            </div>
+                                            <!-- Hover-revealed contact icons -->
+                                            <div class="sdir-contact-icons">
+                                                <button type="button" class="sdir-contact-btn sdir-contact-email" t-att-title="'Email ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                                        <polyline points="22,6 12,13 2,6"/>
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="sdir-contact-btn sdir-contact-phone" t-att-title="'Call ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="sdir-contact-btn sdir-contact-chat" t-att-title="'Message ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </td>
 
-                    </div><!-- /.sdir-kpi-row -->
+                                    <!-- Role -->
+                                    <td class="sdir-td">
+                                        <span class="sdir-role-text" t-esc="person.job_title or '—'"/>
+                                    </td>
 
-                    <!-- ── Pending Approvals Banner ─────────────────────────── -->
-                    <div class="sdir-pending" id="pendingBanner" t-if="state.overview.pending_approvals &gt; 0">
-                        <div>
-                            <div class="sdir-pending-title">Pending Approvals</div>
-                            <div class="sdir-pending-sub" id="pendingDesc" t-esc="state.pendingDesc"/>
-                        </div>
-                        <div class="sdir-pending-right">
-                            <span class="sdir-pending-num" id="pendingCount" t-esc="num(state.overview.pending_approvals)"/>
-                            <div class="sdir-pending-clock">
-                                <svg viewBox="0 0 20 20" fill="none">
-                                    <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.8"/>
-                                    <path d="M10 6v4l2.5 2.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
+                                    <!-- Department pill -->
+                                    <td class="sdir-td">
+                                        <t t-if="person.department">
+                                            <span t-att-class="'sdir-dept-pill sdir-dept-' + deptKey(person.department)"
+                                                  t-esc="person.department"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="sdir-text-muted">—</span>
+                                        </t>
+                                    </td>
 
-                    <!-- ── Alert Tiles ─────────────────────────────────────── -->
-                    <div class="sdir-alert-row">
-                        <div class="sdir-alert-tile sdir-at-blue">
-                            <div class="sdir-alert-num" id="alertBirthdays" t-esc="num(state.alerts.birthdays_this_week)"/>
-                            <div class="sdir-alert-lbl">Birthdays this week</div>
-                        </div>
-                        <div class="sdir-alert-tile sdir-at-purple">
-                            <div class="sdir-alert-num" id="alertAnniversaries" t-esc="num(state.alerts.work_anniversaries)"/>
-                            <div class="sdir-alert-lbl">Work anniversaries</div>
-                        </div>
-                        <div class="sdir-alert-tile sdir-at-amber">
-                            <div class="sdir-alert-num" id="alertExpiring" t-esc="num(state.alerts.contracts_expiring)"/>
-                            <div class="sdir-alert-lbl">Contracts expiring</div>
-                        </div>
-                        <div class="sdir-alert-tile sdir-at-green">
-                            <div class="sdir-alert-num" id="alertPending" t-esc="num(state.alerts.pending_approvals)"/>
-                            <div class="sdir-alert-lbl">Pending approvals</div>
-                        </div>
-                    </div>
+                                    <!-- Lifecycle State pill -->
+                                    <td class="sdir-td">
+                                        <span t-att-class="'sdir-state-pill sdir-state-' + person.lifecycle_state">
+                                            <span class="sdir-state-dot"/>
+                                            <t t-esc="lifecycleLabel(person.lifecycle_state)"/>
+                                        </span>
+                                    </td>
 
-                    <!-- ── Headcount Trend + Dept Distribution ─────────────── -->
-                    <div class="sdir-charts-main">
+                                    <!-- Work Mode -->
+                                    <td class="sdir-td">
+                                        <span t-att-class="'sdir-workmode sdir-workmode-' + (person.work_mode or 'hybrid').toLowerCase()"
+                                              t-esc="person.work_mode or '—'"/>
+                                    </td>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Headcount Growth Trend</span>
-                                <span class="sdir-card-meta">Last 6 months</span>
-                            </div>
-                            <div class="sdir-chart-wrap" style="height:180px;">
-                                <canvas t-ref="chartHeadcount"></canvas>
-                            </div>
-                            <div class="sdir-hc-stats">
-                                <div>
-                                    <div class="sdir-hc-stat-lbl">Over Hires</div>
-                                    <div class="sdir-hc-stat-val pink" id="statOverHires" t-esc="num(state.headcount.over_hires)"/>
-                                </div>
-                                <div>
-                                    <div class="sdir-hc-stat-lbl">New Hires</div>
-                                    <div class="sdir-hc-stat-val green" id="statNewHires" t-esc="num(state.headcount.new_hires)"/>
-                                </div>
-                            </div>
-                        </div>
+                                    <!-- Location -->
+                                    <td class="sdir-td">
+                                        <span class="sdir-location-text" t-esc="person.work_location or '—'"/>
+                                    </td>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Department Distribution</span>
-                                <a href="#" class="sdir-card-link">View All</a>
-                            </div>
-                            <div class="sdir-chart-wrap" style="height:230px;">
-                                <canvas t-ref="chartDept"></canvas>
-                            </div>
-                        </div>
+                                    <!-- Manager (Admin only) -->
+                                    <td class="sdir-td" t-if="state.adminMode">
+                                        <span class="sdir-manager-text" t-esc="person.manager_name or '—'"/>
+                                    </td>
 
-                    </div><!-- /.sdir-charts-main -->
+                                    <!-- Tenure pill -->
+                                    <td class="sdir-td">
+                                        <t t-if="person.tenure">
+                                            <span class="sdir-tenure-pill" t-esc="person.tenure"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="sdir-text-muted">—</span>
+                                        </t>
+                                    </td>
 
-                    <!-- ── Employment Type + Gender ─────────────────────────── -->
-                    <div class="sdir-duo">
+                                    <!-- Actions (Admin only) -->
+                                    <td class="sdir-td sdir-td-actions" t-if="state.adminMode">
+                                        <div class="sdir-action-cell">
+                                            <!-- Hover-revealed action buttons -->
+                                            <div class="sdir-action-hover-btns">
+                                                <button type="button" class="sdir-action-btn" t-att-title="'Preview ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                        <circle cx="12" cy="12" r="3"/>
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="sdir-action-btn" t-att-title="'Transfer ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <polyline points="16 3 21 8 16 13"/>
+                                                        <line x1="21" y1="8" x2="9" y2="8"/>
+                                                        <polyline points="8 21 3 16 8 11"/>
+                                                        <line x1="3" y1="16" x2="15" y2="16"/>
+                                                    </svg>
+                                                </button>
+                                                <button type="button" class="sdir-action-btn" t-att-title="'Flag ' + person.name">
+                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                                        <line x1="4" y1="22" x2="4" y2="15"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            <!-- Always-visible 3-dot menu -->
+                                            <button type="button" class="sdir-action-btn sdir-action-more" t-att-title="'More options for ' + person.name">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                                    <circle cx="12" cy="5"  r="1.5"/>
+                                                    <circle cx="12" cy="12" r="1.5"/>
+                                                    <circle cx="12" cy="19" r="1.5"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </td>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Employment Type</span>
-                                <span class="sdir-card-meta">Full workforce</span>
-                            </div>
-                            <div class="sdir-donut-wrap">
-                                <canvas t-ref="chartEmpType" width="140" height="140"></canvas>
-                                <div class="sdir-donut-legend" id="legendEmpType" t-out="etLegendHTML()"/>
-                            </div>
-                        </div>
+                                </tr>
+                            </t>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Gender Distribution</span>
-                                <span class="sdir-card-meta">Full workforce</span>
-                            </div>
-                            <div class="sdir-donut-wrap">
-                                <canvas t-ref="chartGender" width="140" height="140"></canvas>
-                                <div class="sdir-donut-legend" id="legendGender" t-out="genderLegendHTML()"/>
-                            </div>
-                        </div>
+                            <!-- Empty state -->
+                            <t t-if="filteredPeople().length === 0">
+                                <tr>
+                                    <td t-att-colspan="state.adminMode ? 10 : 8" class="sdir-empty-row">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:#9AA0B2;">
+                                            <circle cx="11" cy="11" r="8"/>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                        </svg>
+                                        <div>No people match your search</div>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
 
-                    </div>
+                    </table>
+                </div><!-- /.sdir-table-wrap -->
 
-                    <!-- ── Activities · Birthdays · Anniversaries ───────────── -->
-                    <div class="sdir-tri">
+            </div><!-- /.sdir-people-content -->
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Recent Activities</span>
-                                <a href="#" class="sdir-card-link">View All</a>
-                            </div>
-                            <div class="sdir-list" id="listActivities" t-out="activitiesHTML()"/>
-                        </div>
+            <!-- Placeholder for other tabs -->
+            <div class="sdir-tab-placeholder" t-if="state.activeTab !== 'people'">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#9AA0B2;">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                </svg>
+                <div class="sdir-tab-placeholder-title">
+                    <t t-if="state.activeTab === 'org'">Organizational Structure</t>
+                    <t t-if="state.activeTab === 'network'">Relationship Network</t>
+                </div>
+                <div class="sdir-tab-placeholder-sub">This view is coming soon.</div>
+            </div>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Upcoming Birthdays</span>
-                                <span class="sdir-count-pill" id="bdayBadge" t-esc="num(state.bdayAnniv.birthdays.length)"/>
-                            </div>
-                            <div class="sdir-list" id="listBirthdays" t-out="birthdaysHTML()"/>
-                        </div>
+            <!-- ═══ FOOTER ═════════════════════════════════════════════════ -->
+            <footer class="sdir-footer" id="sdirFooter">
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Work Anniversaries</span>
-                                <span class="sdir-count-pill" id="annivBadge" t-esc="num(state.bdayAnniv.anniversaries.length)"/>
-                            </div>
-                            <div class="sdir-list" id="listAnniversaries" t-out="anniversariesHTML()"/>
-                        </div>
+                <!-- Left: page info -->
+                <span class="sdir-page-info" id="sdirPageInfo">
+                    1–<t t-esc="filteredPeople().length"/> of <t t-esc="num(state.stats.total)"/>
+                </span>
 
-                    </div>
+                <!-- Center: legend -->
+                <div class="sdir-legend" id="sdirLegend">
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-active"/>Active</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-probation"/>Probation</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-on-leave"/>On Leave</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-exiting"/>Exiting</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-suspended"/>Suspended</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-terminated"/>Terminated</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-alumni"/>Alumni</span>
+                </div>
 
-                    <!-- ── Compliance · Training · Work Location ────────────── -->
-                    <div class="sdir-tri">
+                <!-- Right: pagination -->
+                <div class="sdir-pagination" id="sdirPagination">
+                    <button type="button" class="sdir-page-btn sdir-page-disabled" disabled="disabled" id="btnPrev">← Prev</button>
+                    <button type="button" class="sdir-page-btn sdir-page-num sdir-page-active" id="pageNum1">1</button>
+                    <button type="button" class="sdir-page-btn sdir-page-disabled" disabled="disabled" id="btnNext">Next →</button>
+                </div>
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-green"></span>
-                                    Compliance Status
-                                </span>
-                                <span class="sdir-card-meta">Active tracking</span>
-                            </div>
-                            <div id="complianceList" t-out="complianceHTML()"/>
-                        </div>
+            </footer><!-- /.sdir-footer -->
 
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-blue"></span>
-                                    Training Progress
-                                </span>
-                                <span class="sdir-card-meta">Across all modules</span>
-                            </div>
-                            <div class="sdir-chart-wrap" style="height:210px;">
-                                <canvas t-ref="chartTraining"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">Work Location</span>
-                                <span class="sdir-card-meta">Where employees work</span>
-                            </div>
-                            <div class="sdir-donut-wrap">
-                                <canvas t-ref="chartWorkLoc" width="130" height="130"></canvas>
-                                <div class="sdir-donut-legend" id="legendWorkLoc" t-out="workLocLegendHTML()"/>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- ── Probation Periods · Contract Renewals ───────────── -->
-                    <div class="sdir-duo">
-
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-amber"></span>
-                                    Probation Periods
-                                </span>
-                                <span class="sdir-cnt-circle" id="probationCount" t-esc="num(state.probContracts.probation.length)"/>
-                            </div>
-                            <div id="probationList" t-out="probationHTML()"/>
-                        </div>
-
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-pink"></span>
-                                    Contract Renewals
-                                </span>
-                                <span class="sdir-cnt-circle" id="contractCount" t-esc="num(state.probContracts.renewals.length)"/>
-                            </div>
-                            <div id="contractList" t-out="renewalsHTML()"/>
-                            <div class="sdir-card-ft">
-                                <a href="#" class="sdir-btn sdir-btn-cobalt sdir-btn-full" id="btnAllContracts">
-                                    Browse All Contracts
-                                </a>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- ── Performance Ratings · Skills Overview ────────────── -->
-                    <div class="sdir-duo">
-
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-green"></span>
-                                    Performance Ratings
-                                </span>
-                                <span class="sdir-card-meta">Last performance cycle</span>
-                            </div>
-                            <div class="sdir-chart-wrap" style="height:160px;">
-                                <canvas t-ref="chartPerformance"></canvas>
-                            </div>
-                            <div class="sdir-perf-stats">
-                                <div class="sdir-perf-stat">
-                                    <span class="sdir-perf-num" id="perfScorecard" t-esc="perfScorecard()"/>
-                                    <span class="sdir-perf-lbl">Scorecard Achieved</span>
-                                </div>
-                                <div class="sdir-perf-stat">
-                                    <span class="sdir-perf-num blue" id="perfImprovement" t-esc="perfImprovement()"/>
-                                    <span class="sdir-perf-lbl">Improvement Rate</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="sdir-card">
-                            <div class="sdir-card-hd">
-                                <span class="sdir-card-title">
-                                    <span class="sdir-ind sdir-ind-pink"></span>
-                                    Skills Overview
-                                </span>
-                                <span class="sdir-card-meta">Team capabilities at a glance</span>
-                            </div>
-                            <div id="skillsList" t-out="skillsHTML()"/>
-                            <div class="sdir-card-ft">
-                                <button type="button" class="sdir-btn sdir-btn-pink-outline sdir-btn-full" id="btnSkillsMap">
-                                    View Skills Map
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <!-- ── Diversity & Inclusion Metrics ────────────────────── -->
-                    <div class="sdir-card">
-                        <div class="sdir-card-hd">
-                            <span class="sdir-card-title">Diversity &amp; Inclusion Metrics</span>
-                            <span class="sdir-card-meta">Across all individuals</span>
-                        </div>
-                        <div class="sdir-diversity" id="diversityRow" t-out="diversityHTML()"/>
-                    </div>
-
-                    <!-- Bottom breathing room -->
-                    <div style="height:20px;"></div>
-
-                </div><!-- /.sdir-content -->
-            </main><!-- /.sdir-main -->
+            <!-- Floating help button (outside footer, fixed bottom-right) -->
+            <button type="button" class="sdir-fab" id="sdirFab" title="Help">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </button>
 
         </div><!-- /.sdir-app -->
     </t>

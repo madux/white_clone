@@ -611,3 +611,185 @@ class HrEmployeeStaffDirectory(models.Model):
             'nationalities': nationalities,
             'disabled':     disabled,
         }
+
+    # ─── People Tab: Entry Point ──────────────────────────────────────────────
+
+    @api.model
+    def get_staff_directory_people_data(self):
+        return {
+            'stats':  self._sd_people_stats(),
+            'people': self._sd_people_list(),
+        }
+
+    # ─── People Tab: Stat Cards ───────────────────────────────────────────────
+
+    @api.model
+    def _sd_people_stats(self):
+        today = Date.context_today(self)
+        base = [('active', '=', True)]
+        total = self.search_count(base)
+
+        # On leave today
+        on_leave_ids = set(self.env['hr.leave'].search([
+            ('state', '=', 'validate'),
+            ('date_from', '<=', today.strftime('%Y-%m-%d 23:59:59')),
+            ('date_to',   '>=', today.strftime('%Y-%m-%d 00:00:00')),
+        ]).mapped('employee_id').ids)
+        on_leave = len(on_leave_ids)
+        active   = total - on_leave
+
+        # Probation: open contract with trial_date_end in future
+        probation = 0
+        try:
+            probation = self.env['hr.contract'].search_count([
+                ('state', '=', 'open'),
+                ('trial_date_end', '!=', False),
+                ('trial_date_end', '>=', today.strftime('%Y-%m-%d')),
+                ('employee_id.active', '=', True),
+            ])
+        except Exception:
+            pass
+
+        # Retention priority: active employees whose contract ends within 60 days
+        retention_priority = 0
+        try:
+            in_60 = today + __import__('datetime').timedelta(days=60)
+            retention_priority = self.env['hr.contract'].search_count([
+                ('state', '=', 'open'),
+                ('date_end', '!=', False),
+                ('date_end', '>=', today.strftime('%Y-%m-%d')),
+                ('date_end', '<=', in_60.strftime('%Y-%m-%d')),
+                ('employee_id.active', '=', True),
+            ])
+        except Exception:
+            pass
+
+        return {
+            'total':              total,
+            'active':             active,
+            'on_leave':           on_leave,
+            'retention_priority': retention_priority,
+            'probation':          probation,
+        }
+
+    # ─── People Tab: Per-Row Table Data ──────────────────────────────────────
+
+    @api.model
+    def _sd_people_list(self):
+        """Return one dict per active employee for the People Tab table."""
+        today = Date.context_today(self)
+
+        # Pre-compute who is on leave today (avoid per-emp query)
+        on_leave_ids = set(self.env['hr.leave'].search([
+            ('state', '=', 'validate'),
+            ('date_from', '<=', today.strftime('%Y-%m-%d 23:59:59')),
+            ('date_to',   '>=', today.strftime('%Y-%m-%d 00:00:00')),
+        ]).mapped('employee_id').ids)
+
+        # Pre-compute probation employee IDs
+        probation_emp_ids = set()
+        try:
+            contracts = self.env['hr.contract'].search([
+                ('state', '=', 'open'),
+                ('trial_date_end', '!=', False),
+                ('trial_date_end', '>=', today.strftime('%Y-%m-%d')),
+                ('employee_id.active', '=', True),
+            ])
+            probation_emp_ids = set(contracts.mapped('employee_id').ids)
+        except Exception:
+            pass
+
+        # Pre-compute exiting employee IDs (contract ends within 60 days)
+        exiting_emp_ids = set()
+        try:
+            in_60 = today + __import__('datetime').timedelta(days=60)
+            ex_contracts = self.env['hr.contract'].search([
+                ('state', '=', 'open'),
+                ('date_end', '!=', False),
+                ('date_end', '>=', today.strftime('%Y-%m-%d')),
+                ('date_end', '<=', in_60.strftime('%Y-%m-%d')),
+                ('employee_id.active', '=', True),
+            ])
+            exiting_emp_ids = set(ex_contracts.mapped('employee_id').ids)
+        except Exception:
+            pass
+
+        employees = self.search([('active', '=', True)], order='name asc')
+        result = []
+        for emp in employees:
+            # ── Lifecycle State ──────────────────────────────────────────────
+            if emp.id in on_leave_ids:
+                lifecycle_state = 'on_leave'
+            elif emp.id in probation_emp_ids:
+                lifecycle_state = 'probation'
+            elif emp.id in exiting_emp_ids:
+                lifecycle_state = 'exiting'
+            else:
+                lifecycle_state = 'active'
+
+            # ── Work Mode ────────────────────────────────────────────────────
+            work_mode = 'Hybrid'
+            try:
+                loc_type = emp.work_location_id.location_type if emp.work_location_id else None
+                if loc_type == 'office':
+                    work_mode = 'Office'
+                elif loc_type == 'home':
+                    work_mode = 'Remote'
+            except Exception:
+                pass
+
+            # ── Work Location label ──────────────────────────────────────────
+            work_location = ''
+            try:
+                if emp.work_location_id:
+                    work_location = emp.work_location_id.name or ''
+            except Exception:
+                pass
+
+            # ── Tenure ───────────────────────────────────────────────────────
+            tenure_label = ''
+            try:
+                hire_date = None
+                if emp.contract_id and emp.contract_id.date_start:
+                    hire_date = emp.contract_id.date_start
+                if not hire_date and emp.create_date:
+                    hire_date = emp.create_date.date()
+                if hire_date:
+                    delta_days = (today - hire_date).days
+                    years  = delta_days // 365
+                    months = (delta_days % 365) // 30
+                    if years and months:
+                        tenure_label = f'{years}y {months}m'
+                    elif years:
+                        tenure_label = f'{years}y'
+                    elif months:
+                        tenure_label = f'{months}m'
+                    else:
+                        tenure_label = '< 1m'
+            except Exception:
+                pass
+
+            # ── Employee reference ID ────────────────────────────────────────
+            # Use barcode / employee_code if available, otherwise generate one
+            emp_ref = ''
+            try:
+                emp_ref = (getattr(emp, 'barcode', None) or
+                           getattr(emp, 'employee_code', None) or
+                           f'EMP-{emp.id:04d}')
+            except Exception:
+                emp_ref = f'EMP-{emp.id:04d}'
+
+            result.append({
+                'id':              emp.id,
+                'name':            emp.name or '',
+                'emp_ref':         emp_ref,
+                'job_title':       emp.job_title or '',
+                'department':      emp.department_id.name if emp.department_id else '',
+                'lifecycle_state': lifecycle_state,
+                'work_mode':       work_mode,
+                'work_location':   work_location,
+                'manager_name':    emp.parent_id.name if emp.parent_id else 'CEO',
+                'tenure':          tenure_label,
+            })
+        return result
+
