@@ -52,8 +52,10 @@ export class StaffDirectoryDashboard extends Component {
                 active: { cls: 'sdir-trend-flat', label: '—' },
             },
             pendingDesc: '',
+            sidebarCollapsed: sessionStorage.getItem('sdirSidebarCollapsed') === '1',
         });
 
+        this.rootRef = useRef('root');
         this.chartRefs = {
             headcount:   useRef('chartHeadcount'),
             dept:        useRef('chartDept'),
@@ -103,7 +105,7 @@ export class StaffDirectoryDashboard extends Component {
                 return;
             }
             requestAnimationFrame(() => requestAnimationFrame(() => {
-                const root = this.el;
+                const root = this.rootRef.el;
                 if (!root) {
                     return;
                 }
@@ -112,6 +114,13 @@ export class StaffDirectoryDashboard extends Component {
                 });
             }));
         }, () => [this.state.loading]);
+    }
+
+    // ─── Sidebar Collapse ─────────────────────────────────────────────────────
+
+    toggleSidebar() {
+        this.state.sidebarCollapsed = !this.state.sidebarCollapsed;
+        sessionStorage.setItem('sdirSidebarCollapsed', this.state.sidebarCollapsed ? '1' : '0');
     }
 
     // ─── Data Loading ────────────────────────────────────────────────────────
