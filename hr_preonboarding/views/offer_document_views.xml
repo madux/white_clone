@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_offer_document_form" model="ir.ui.view">
+        <field name="name">offer.document.form</field>
+        <field name="model">offer.document</field>
+        <field name="arch" type="xml">
+            <form string="Offer Document">
+                <header>
+                    <button name="action_send_request" type="object"
+                            string="Send Request" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,requested,uploaded"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="preboarding_id"/>
+                        <field name="candidate_id"/>
+                        <field name="document_name"/>
+                        <field name="document" filename="document_filename"/>
+                        <field name="document_filename" invisible="1"/>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_offer_document_list" model="ir.ui.view">
+        <field name="name">offer.document.list</field>
+        <field name="model">offer.document</field>
+        <field name="arch" type="xml">
+            <tree string="Offer Documents">
+                <field name="preboarding_id"/>
+                <field name="candidate_id"/>
+                <field name="document_name"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="action_offer_document" model="ir.actions.act_window">
+        <field name="name">Offer Documents</field>
+        <field name="res_model">offer.document</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="menu_offer_document" name="Documents"
+              parent="menu_hr_preonboarding_root" action="action_offer_document" sequence="30"/>
+
+</odoo>
