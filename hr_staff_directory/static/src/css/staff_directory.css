@@ -21,28 +21,30 @@
   --pink-dark:    #C2185B;
   --pink-light:   rgba(233, 30, 99, 0.08);
   --pink-mid:     rgba(233, 30, 99, 0.15);
-  --magenta-hd:   #D6295E;      /* table header background */
+  --magenta-hd:   rgb(233, 30, 99);      /* table header background */
 
   /* ─ Stat-card theme colors ───────────────────────────────────────────── */
+  --purple-border: rgb(199, 210, 254);
+
   --green:        #22C55E;
   --green-light:  rgba(34, 197, 94, 0.10);
-  --green-border: rgba(34, 197, 94, 0.30);
+  --green-border: rgb(167, 243, 208);
 
   --blue:         #3B82F6;
   --blue-light:   rgba(59, 130, 246, 0.10);
-  --blue-border:  rgba(59, 130, 246, 0.30);
+  --blue-border:  rgb(191, 219, 254);
 
   --red:          #EF4444;
   --red-light:    rgba(239, 68, 68, 0.10);
-  --red-border:   rgba(239, 68, 68, 0.30);
+  --red-border:   rgb(254, 202, 202);
 
   --amber:        #F59E0B;
   --amber-light:  rgba(245, 158, 11, 0.10);
-  --amber-border: rgba(245, 158, 11, 0.30);
+  --amber-border: rgb(253, 230, 138);
 
   --purple:       #8B5CF6;
   --teal:         #0D9488;      /* tenure pill */
-  --orange:       #F97316;      /* exiting state */
+  --orange:       #fb710d;      /* exiting state */
 
   /* ─ Neutral palette ──────────────────────────────────────────────────── */
   --bg:           #F7F8FC;
@@ -127,6 +129,7 @@
   color: var(--pink);
   font-weight: 700;
   border-bottom-color: var(--pink);
+  background-color: rgb(255, 247, 250);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -145,9 +148,9 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 .sdir-stat-row {
   display: flex;
-  gap: 14px;
-  padding: 14px 20px;
-  background: var(--bg);
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgb(255, 255, 255);
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
 }
@@ -158,42 +161,38 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 16px;
-  background: var(--white);
+  padding: 8px 10px;
+  background: rgb(250, 250, 250);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-xs);
   transition: box-shadow 0.18s, transform 0.18s;
   cursor: default;
 }
-.sdir-stat-card:hover {
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
 
 .sdir-stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.sdir-stat-icon svg { width: 22px; height: 22px; }
+.sdir-stat-icon svg { width: 16px; height: 16px; }
 
 .sdir-stat-body { flex: 1; min-width: 0; }
 
 .sdir-stat-val {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   color: var(--text-1);
   line-height: 1;
   margin-bottom: 2px;
 }
 
 .sdir-stat-lbl {
-  font-size: 11.5px;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-m);
   white-space: nowrap;
   overflow: hidden;
@@ -201,8 +200,9 @@
 }
 
 /* ── Card theme variants ──────────────────────────────────────────────────── */
-.sdir-stat-neutral .sdir-stat-icon { background: #F3F4F6; color: #374151; }
-.sdir-stat-neutral { border-color: var(--border); }
+.sdir-stat-purple .sdir-stat-icon { background: rgb(238, 242, 255); color: #6366F1; }
+.sdir-stat-purple { border-color: var(--purple-border); }
+.sdir-stat-val-purple { color: rgb(99, 102, 241); }
 
 .sdir-stat-green .sdir-stat-icon { background: var(--green-light); color: var(--green); }
 .sdir-stat-green  { border-color: var(--green-border); }
@@ -258,7 +258,7 @@
   font-family: inherit;
   font-size: 12.5px;
   color: var(--text-1);
-  background: var(--white);
+  background: rgb(248, 248, 252);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -287,8 +287,8 @@
 /* Admin / ESS pill toggle */
 .sdir-toggle-pill {
   display: flex;
-  border: 1px solid var(--border);
-  border-radius: 20px;
+  border: 1.5px solid rgb(16, 185, 129);
+  border-radius: var(--radius-xs);
   overflow: hidden;
   background: var(--white);
   height: 30px;
@@ -313,7 +313,7 @@
 .sdir-toggle-opt svg { width: 11px; height: 11px; flex-shrink: 0; }
 
 .sdir-toggle-active {
-  background: var(--green);
+  background: rgb(16, 185, 129);
   color: #fff;
 }
 
@@ -324,6 +324,15 @@
   background: rgba(255,255,255,0.7);
   display: inline-block;
   flex-shrink: 0;
+}
+
+/* ── ESS active state: amber border on pill + amber fill on active option ── */
+.sdir-toggle-pill--ess {
+  border-color: rgb(245, 158, 11);
+}
+
+.sdir-toggle-pill--ess .sdir-toggle-active {
+  background: rgb(245, 158, 11);
 }
 
 /* List / Grid view toggle */
@@ -790,16 +799,21 @@
 
 /* ── Legend ──────────────────────────────────────────────────────────────── */
 .sdir-legend {
-  display: flex;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
-  justify-content: center;
-  background: #F9FAFB;
-  border: 1px solid var(--border);
-  border-radius: 20px;
   padding: 4px 14px;
   flex-wrap: wrap;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 9px;
+  background-color: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgb(232, 232, 238);
+  box-shadow: rgba(0, 0, 0, 0.07) 0px 2px 10px;
 }
 
 .sdir-legend-item {
@@ -834,6 +848,7 @@
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sdir-page-btn {
