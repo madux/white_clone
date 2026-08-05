@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="new_employee_template" name="Add New Employee">
+        <t t-call="hr_onboarding.layout">
+            <t t-set="active_tab" t-value="'all'"/>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">Add New Employee</h4>
+                <a href="/onboarding" class="btn btn-outline-secondary btn-sm">&#8592; Back</a>
+            </div>
+
+            <div t-if="error" class="alert alert-danger" t-esc="error"/>
+
+            <form method="post" action="/onboarding/new" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Personal Information</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">First Name *</label>
+                            <input class="form-control" name="first_name" required="required"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Last Name *</label>
+                            <input class="form-control" name="last_name" required="required"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email Address *</label>
+                            <input class="form-control" type="email" name="email" required="required"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Phone Number</label>
+                            <input class="form-control" name="phone" placeholder="+234 800 000 0000"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Date of Birth</label>
+                            <input class="form-control" type="date" name="date_of_birth"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Gender</label>
+                            <select class="form-select" name="gender">
+                                <option value="">Select gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nationality</label>
+                            <select class="form-select" name="nationality_id">
+                                <option value="">Select country</option>
+                                <t t-foreach="request.env['res.country'].search([])" t-as="country">
+                                    <option t-att-value="country.id" t-esc="country.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Home Address</label>
+                            <textarea class="form-control" name="home_address" rows="2"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Work Information</h6>
+                    <div class="alert alert-light border small">
+                        Department, Job Title and Work Location are sourced from existing
+                        Odoo master data (hr.department, hr.job, hr.work.location).
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Department *</label>
+                            <select class="form-select" name="department_id" required="required">
+                                <option value="">Select department</option>
+                                <t t-foreach="departments" t-as="dept">
+                                    <option t-att-value="dept.id" t-esc="dept.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Job Title</label>
+                            <select class="form-select" name="job_id">
+                                <option value="">Select job title</option>
+                                <t t-foreach="jobs" t-as="job">
+                                    <option t-att-value="job.id" t-esc="job.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Position (free text)</label>
+                            <input class="form-control" name="position" placeholder="e.g. Senior Product Manager"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Grade Level</label>
+                            <select class="form-select" name="grade_level">
+                                <option value="">Select grade</option>
+                                <option value="l1">L1</option>
+                                <option value="l2">L2</option>
+                                <option value="l3">L3</option>
+                                <option value="l4">L4</option>
+                                <option value="l5">L5</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Employment Type *</label>
+                            <select class="form-select" name="employment_type" required="required">
+                                <option value="">Select type</option>
+                                <option value="employee">Employee</option>
+                                <option value="student">Student</option>
+                                <option value="trainee">Trainee</option>
+                                <option value="contractor">Contractor</option>
+                                <option value="freelance">Freelancer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Work Location</label>
+                            <select class="form-select" name="work_location_id">
+                                <option value="">Select location</option>
+                                <t t-foreach="work_locations" t-as="loc">
+                                    <option t-att-value="loc.id" t-esc="loc.name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Date *</label>
+                            <input class="form-control" type="date" name="start_date" required="required"/>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Reports To</label>
+                            <select class="form-select" name="reports_to_id">
+                                <option value="">Search manager…</option>
+                                <t t-foreach="managers" t-as="mgr">
+                                    <option t-att-value="mgr.id" t-esc="mgr.name"/>
+                                </t>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Work Experience (most recent)</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Company Name</label>
+                            <input class="form-control" name="exp_company"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Job Title</label>
+                            <input class="form-control" name="exp_job_title"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">From</label>
+                            <input class="form-control" type="date" name="exp_from"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">To</label>
+                            <input class="form-control" type="date" name="exp_to"/>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="exp_current" value="1" id="exp_current"/>
+                                <label class="form-check-label" for="exp_current">Currently working here</label>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        Saved as an "Experience" line on the employee's Resume tab
+                        (hr.resume.line). Only one entry supported in this build —
+                        add more later directly on the employee record.
+                    </p>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Education Details</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Institution</label>
+                            <input class="form-control" name="edu_institution"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Degree / Certificate</label>
+                            <input class="form-control" name="edu_degree"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Specialisation / Field of Study</label>
+                            <input class="form-control" name="edu_field"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Year of Completion</label>
+                            <input class="form-control" name="edu_year" placeholder="e.g. 2020"/>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        Saved as an "Education" line on hr.resume.line (same field as above).
+                    </p>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Emergency Contact (primary)</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name</label>
+                            <input class="form-control" name="emergency_name" placeholder="e.g. Adaeze Johnson"/>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone Number</label>
+                            <input class="form-control" name="emergency_phone" placeholder="+234 800 000 0000"/>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        Stored on core hr.employee's emergency_contact /
+                        emergency_phone fields — single primary contact only.
+                    </p>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">System Access &amp; Permissions</h6>
+                    <p class="text-muted small">
+                        Checked items become IT Access tasks on the onboarding
+                        record, due 2 days before the start date.
+                    </p>
+                    <div class="row g-2">
+                        <t t-foreach="system_access_items" t-as="item">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox"
+                                           t-att-name="'system_' + item[0].lower().replace(' / ', '_').replace(' ', '_')"
+                                           value="1"
+                                           t-att-checked="item[1] and 'checked' or None"/>
+                                    <label class="form-check-label">
+                                        <t t-esc="item[0]"/>
+                                        <span t-if="item[1]" class="text-danger small"> Required</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+
+                <div class="ob-card mb-3">
+                    <h6 class="text-uppercase text-muted small mb-3">Compensation &amp; Banking</h6>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Base Salary</label>
+                            <input class="form-control" type="number" step="0.01" name="base_salary"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bank Name</label>
+                            <input class="form-control" name="bank_name"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Account Number</label>
+                            <input class="form-control" name="account_number"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Pension PIN</label>
+                            <input class="form-control" name="pension_pin"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tax ID (TIN)</label>
+                            <input class="form-control" name="tax_id"/>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">
+                        Base Salary / Start Date create an hr.contract record, which
+                        also drives Probation Tracking (trial end = start + 6 months).
+                        Bank details use res.partner.bank; Tax ID uses the private
+                        address partner's "vat" field.
+                    </p>
+                </div>
+
+                <div class="text-end">
+                    <button type="submit" class="btn btn-accent btn-lg">Save Employee</button>
+                </div>
+            </form>
+        </t>
+    </template>
+
+</odoo>
