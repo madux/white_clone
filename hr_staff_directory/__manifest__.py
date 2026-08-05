@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'CLEONHR Staff Directory',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0.1',
     'category': 'CleonHR-HR ADMIN',
     'summary': 'Comprehensive Staff Directory Dashboard with workforce analytics',
     'description': """
@@ -36,7 +36,6 @@
     'assets': {
         'web.assets_backend': [
             'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
-            'hr_staff_directory/static/src/js/cleonhr_title.js',
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
         ],

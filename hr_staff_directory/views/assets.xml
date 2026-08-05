@@ -19,21 +19,4 @@
         </xpath>
     </template>
 
-    <template id="assets_backend_favicon"
-              inherit_id="web.layout"
-              name="CleonHR Favicon">
-        <xpath expr="//link[@rel='shortcut icon']" position="replace">
-            <link type="image/x-icon" rel="shortcut icon"
-                  href="/hr_staff_directory/static/src/img/favicon.png"/>
-        </xpath>
-    </template>
-
-    <template id="assets_backend_layout_title"
-              inherit_id="web.layout"
-              name="CleonHR Layout Title">
-        <xpath expr="//title" position="replace">
-            <title t-esc="title or 'CleonHR'"/>
-        </xpath>
-    </template>
-
 </odoo>
