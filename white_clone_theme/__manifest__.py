@@ -16,6 +16,7 @@
     """,
    'data': [
 
+    'views/branding.xml',
     # 'views/webclient_template_extend.xml',
 
     ],
@@ -28,6 +29,7 @@
     'assets': {
         "web.assets_backend": [
             "/white_clone_theme/static/src/scss/backend_theme.scss",
+            "/white_clone_theme/static/src/js/cleonhr_title.js",
             # "/white_clone_theme/static/src/status_bar.xml",
         ],
         'web._assets_primary_variables': [
