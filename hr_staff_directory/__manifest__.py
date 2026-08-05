@@ -36,6 +36,7 @@
     'assets': {
         'web.assets_backend': [
             'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
+            'hr_staff_directory/static/src/js/cleonhr_title.js',
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
         ],
