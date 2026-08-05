@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="branding_favicon"
+              inherit_id="web.layout"
+              name="CleonHR Favicon">
+        <xpath expr="//link[@rel='shortcut icon']" position="replace">
+            <link type="image/x-icon" rel="shortcut icon"
+                  href="/white_clone_theme/static/src/img/favicon.png"/>
+        </xpath>
+    </template>
+
+    <template id="branding_layout_title"
+              inherit_id="web.layout"
+              name="CleonHR Layout Title">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or 'CleonHR'"/>
+        </xpath>
+    </template>
+
+</odoo>
