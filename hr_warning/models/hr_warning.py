@@ -284,7 +284,7 @@ class HrWarning(models.Model):
         ondelete='restrict',
     )
     employee_code = fields.Char(
-        related='employee_id.barcode',
+        related='employee_id.employee_number',
         string='Employee Code',
         readonly=True,
     )
