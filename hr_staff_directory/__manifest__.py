@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'CLEONHR Staff Directory',
-    'version': '17.0.1.0.1',
+    'version': '17.0.1.0.2',
     'category': 'CleonHR-HR ADMIN',
     'summary': 'Comprehensive Staff Directory Dashboard with workforce analytics',
     'description': """

@@ -21,3 +21,9 @@ htmlcov/
 *.py[cod]
 *$py.class
 
+# Dev-only staff seed data (not needed in production)
+hr_staff_directory/dev_seed_people.sql
+hr_staff_directory/dev_generate_seed_all.py
+hr_staff_directory/dev_seed_all.sql
+hr_staff_directory/staff-export-2026-08-05.csv
+

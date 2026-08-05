@@ -2,7 +2,7 @@
 import logging
 from datetime import timedelta
 
-from odoo import api, models
+from odoo import api, fields, models
 from odoo.fields import Date
 
 _logger = logging.getLogger(__name__)
@@ -13,6 +13,22 @@ class HrEmployeeStaffDirectory(models.Model):
     All data aggregation lives here as @api.model methods, exposed
     through a single JSON controller route (Pattern B, OWL client action)."""
     _inherit = 'hr.employee'
+
+    grade = fields.Selection([
+        ('L1 · Junior Associate', 'L1 · Junior Associate'),
+        ('L2 · Associate', 'L2 · Associate'),
+        ('L3 · Senior Associate', 'L3 · Senior Associate'),
+        ('L4 · Associate', 'L4 · Associate'),
+        ('L4 · Manager', 'L4 · Manager'),
+        ('L5 · Senior Manager', 'L5 · Senior Manager'),
+        ('L6 · Director', 'L6 · Director'),
+        ('L7 · Executive', 'L7 · Executive'),
+    ])
+    work_mode = fields.Selection([
+        ('office', 'Office'),
+        ('hybrid', 'Hybrid'),
+        ('remote', 'Remote'),
+    ])
 
     # ─── Entry point ─────────────────────────────────────────────────────────
 
@@ -397,9 +413,9 @@ class HrEmployeeStaffDirectory(models.Model):
         total = self.search_count(base)
         office = home = field = 0
         try:
-            office = self.search_count(base + [('work_location_id.location_type', '=', 'office')])
-            home   = self.search_count(base + [('work_location_id.location_type', '=', 'home')])
-            field  = self.search_count(base + [('work_location_id.location_type', '=', 'other')])
+            office = self.search_count(base + [('work_mode', '=', 'office')])
+            home   = self.search_count(base + [('work_mode', '=', 'remote')])
+            field  = self.search_count(base + [('work_mode', '=', 'hybrid')])
         except Exception:
             pass
         unset = max(0, total - office - home - field)
@@ -730,11 +746,17 @@ class HrEmployeeStaffDirectory(models.Model):
             # ── Work Mode ────────────────────────────────────────────────────
             work_mode = 'Hybrid'
             try:
-                loc_type = emp.work_location_id.location_type if emp.work_location_id else None
-                if loc_type == 'office':
-                    work_mode = 'Office'
-                elif loc_type == 'home':
-                    work_mode = 'Remote'
+                if emp.work_mode:
+                    work_mode = dict(
+                        self.env['hr.employee'].fields_get(['work_mode'], 'selection')
+                        ['work_mode']['selection']
+                    ).get(emp.work_mode, 'Hybrid')
+                else:
+                    loc_type = emp.work_location_id.location_type if emp.work_location_id else None
+                    if loc_type == 'office':
+                        work_mode = 'Office'
+                    elif loc_type == 'home':
+                        work_mode = 'Remote'
             except Exception:
                 pass
 
