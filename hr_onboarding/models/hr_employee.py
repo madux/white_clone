@@ -14,7 +14,7 @@ class HrEmployee(models.Model):
     """
     _inherit = "hr.employee"
 
-    employee_code = fields.Char(
+    employee_number = fields.Char(
         string="Employee ID",
         copy=False,
         readonly=True,
@@ -40,12 +40,15 @@ class HrEmployee(models.Model):
         help="Regulatory pension identifier (e.g. Nigerian PenCom PIN). "
              "No equivalent field exists in core Odoo.",
     )
-
+    work_experience_ids = fields.Many2many('hr.work_experience', string="Work experiences")
+    work_education_ids = fields.Many2many('hr.work_education', string="Work education")
+    work_skill_ids = fields.Many2many('hr.work_skills', string="Work Skills")
+    
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("employee_code", "New") == "New":
-                vals["employee_code"] = (
+            if vals.get("employee_number", "New") == "New":
+                vals["employee_number"] = (
                     self.env["ir.sequence"].next_by_code("hr.employee.code")
                     or "New"
                 )

@@ -5,7 +5,7 @@
     "summary": "Onboarding dashboard, new-joiner intake form, and probation "
                 "tracking built on core Odoo HR models.",
     "category": "Human Resources",
-    "depends": ["hr", "hr_contract", "mail", "web"],
+    "depends": ["hr", "hr_contract", "mail", "web", "hr_preonboarding"],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence_data.xml",

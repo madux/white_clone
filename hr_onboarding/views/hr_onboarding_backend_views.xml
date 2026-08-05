@@ -8,7 +8,7 @@
         <field name="name">hr.onboarding.list</field>
         <field name="model">hr.onboarding</field>
         <field name="arch" type="xml">
-            <list string="Onboarding">
+            <tree string="Onboarding">
                 <field name="employee_id"/>
                 <field name="department_id"/>
                 <field name="job_id"/>
@@ -16,7 +16,7 @@
                 <field name="day_number"/>
                 <field name="progress_percent"/>
                 <field name="state" widget="badge"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -37,12 +37,12 @@
                     <notebook>
                         <page string="Tasks">
                             <field name="task_ids">
-                                <list editable="bottom">
+                                <tree editable="bottom">
                                     <field name="name"/>
                                     <field name="category"/>
                                     <field name="due_date"/>
                                     <field name="is_done"/>
-                                </list>
+                                </tree>
                             </field>
                         </page>
                     </notebook>
@@ -54,7 +54,7 @@
     <record id="action_hr_onboarding_backend" model="ir.actions.act_window">
         <field name="name">Onboarding Records (Admin)</field>
         <field name="res_model">hr.onboarding</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
     </record>
 
     <!-- Act_url entries open the custom QWeb dashboard pages -->
@@ -76,19 +76,23 @@
         <field name="target">self</field>
     </record>
 
-    <menuitem id="menu_hr_onboarding_root" name="Onboarding" sequence="25"/>
+    <!-- <menuitem id="menu_hr_onboarding_root" name="Onboarding" sequence="25"/> -->
     <menuitem id="menu_hr_onboarding_dashboard" name="All Onboarding"
-              parent="menu_hr_onboarding_root"
+              parent="hr_preonboarding.menu_hr_preonboarding_root"
               action="action_open_onboarding_dashboard" sequence="10"/>
     <menuitem id="menu_hr_onboarding_new" name="Add New Employee"
-              parent="menu_hr_onboarding_root"
+              parent="menu_hr_onboarding_dashboard"
               action="action_open_new_employee" sequence="20"/>
     <menuitem id="menu_hr_onboarding_probation" name="Probation Tracking"
-              parent="menu_hr_onboarding_root"
+              parent="menu_hr_onboarding_dashboard"
               action="action_open_probation_tracking" sequence="30"/>
     <menuitem id="menu_hr_onboarding_admin" name="Onboarding Records (Admin)"
-              parent="menu_hr_onboarding_root"
+              parent="menu_hr_onboarding_dashboard"
               action="action_hr_onboarding_backend" sequence="90"
               groups="base.group_system"/>
+    <!-- <record id="hr_onboarding.menu_hr_onboarding_dashboard" model="ir.ui.menu">
+        <field name="icon_class">fa fa-user</field>
+        <field name="category_name">CleonHR-HR Worklife cycle</field>
+    </record> -->
 
 </odoo>

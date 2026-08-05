@@ -95,7 +95,7 @@ class HrOnboardingController(http.Controller):
                 "name": "%s %s" % (first_name, last_name),
                 "street": home_address,
                 "vat": tax_id,
-                "type": "private",
+                # "type": "private",
             })
 
         # --- employee -----------------------------------------------
@@ -118,15 +118,17 @@ class HrOnboardingController(http.Controller):
             "pension_pin": post.get("pension_pin") or False,
         }
         if address_partner:
-            employee_vals["address_home_id"] = address_partner.id
+            employee_vals["address_id"] = address_partner.id
 
         employee = env["hr.employee"].sudo().create(employee_vals)
 
         # --- resume lines: Work Experience / Education (hr.resume.line) --
         ResumeLine = env["hr.resume.line"].sudo()
-        exp_type = env.ref("hr.resume_type_experience", raise_if_not_found=False)
-        edu_type = env.ref("hr.resume_type_education", raise_if_not_found=False)
-
+        # exp_type = env.ref("hr.resume_type_experience", raise_if_not_found=False)
+        # edu_type = env.ref("hr.resume_type_education", raise_if_not_found=False)
+        work_experience = request.env['hr.work_experience'].sudo()
+        work_education = request.env['hr.work_education'].sudo()
+        work_skills = request.env['hr.work_skills'].sudo()
         if post.get("exp_company"):
             ResumeLine.create({
                 "employee_id": employee.id,
@@ -134,9 +136,14 @@ class HrOnboardingController(http.Controller):
                 "description": post.get("exp_job_title") or "",
                 "date_start": post.get("exp_from") or fields.Date.today(),
                 "date_end": None if post.get("exp_current") else (post.get("exp_to") or None),
-                "line_type_id": exp_type.id if exp_type else False,
+                # "line_type_id": exp_type.id if exp_type else False,
             })
+            work_experience = work_experience.create({
+                            "company_name": post.get("exp_company"),
+                            "job_title": post.get("exp_job_title"),
+                        })
 
+            
         if post.get("edu_institution"):
             ResumeLine.create({
                 "employee_id": employee.id,
@@ -147,7 +154,15 @@ class HrOnboardingController(http.Controller):
                 ),
                 "date_start": None,
                 "date_end": None,
-                "line_type_id": edu_type.id if edu_type else False,
+                # "line_type_id": edu_type.id if edu_type else False,
+            })
+
+            
+            work_education = work_education.create({
+                ''
+            })
+            work_skills = work_skills.create({
+                ''
             })
 
         # --- bank account ---------------------------------------------
