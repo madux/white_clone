@@ -792,10 +792,12 @@ class HrEmployeeStaffDirectory(models.Model):
                 pass
 
             # ── Employee reference ID ────────────────────────────────────────
-            # Use barcode / employee_code if available, otherwise generate one
+            # Single source of truth: employee_number (Staff Number). Fall back
+            # to barcode / employee_code / generated only for legacy records.
             emp_ref = ''
             try:
-                emp_ref = (getattr(emp, 'barcode', None) or
+                emp_ref = (getattr(emp, 'employee_number', None) or
+                           getattr(emp, 'barcode', None) or
                            getattr(emp, 'employee_code', None) or
                            f'EMP-{emp.id:04d}')
             except Exception:
