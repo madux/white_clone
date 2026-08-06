@@ -14,7 +14,7 @@
         - Full audit trail via chatter
     """,
     'author': 'Your Company',
-    'depends': ['hr', 'mail', 'hr_administration', 'ik_multi_branch', 'hr_company_calendar', 'cleon_settings', ],
+    'depends': ['hr', 'mail', 'hr_administration', 'ik_multi_branch', 'hr_company_calendar', ],
     'data': [
         'security/hr_warning_security.xml',
         'security/ir.model.access.csv',
