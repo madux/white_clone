@@ -920,3 +920,240 @@
   box-shadow: 0 6px 20px rgba(233,30,99,.50);
 }
 .sdir-fab svg { width: 20px; height: 20px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GRID VIEW (Employee Directory Card Grid)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.sd-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: #f0f0f5;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.sd-grid-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-m);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sd-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  position: relative;
+  padding: 16px 20px 20px 20px;
+  border-top: 4px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sd-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.sd-border-active { border-top-color: #10b981; }
+.sd-border-on_leave { border-top-color: #3b82f6; }
+.sd-border-exiting { border-top-color: #f97316; }
+.sd-border-probation { border-top-color: #f59e0b; }
+.sd-border-suspended { border-top-color: #ef4444; }
+.sd-border-terminated { border-top-color: #6b7280; }
+.sd-border-alumni { border-top-color: #8b5cf6; }
+
+/* Header: Avatar + Name/Title */
+.sd-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px; /* Space for accent bar */
+}
+
+.sd-avatar-wrap {
+  position: relative;
+}
+
+.sd-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.sd-avatar-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sd-bg-blue {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.sd-ring-active { border-color: #10b981; }
+.sd-ring-on_leave { border-color: #3b82f6; }
+.sd-ring-exiting { border-color: #f97316; }
+.sd-ring-probation { border-color: #f59e0b; }
+.sd-ring-suspended { border-color: #ef4444; }
+.sd-ring-terminated { border-color: #6b7280; }
+.sd-ring-alumni { border-color: #8b5cf6; }
+
+.sd-header-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sd-name {
+  font-weight: 700;
+  color: #1a1a2e;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sd-title {
+  color: #9ca4b2;
+  font-size: 12px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status Badge */
+.sd-card-status {
+  display: flex;
+}
+
+.sd-badge {
+  display: inline-flex;
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sd-badge-active { background: #dff6ee; color: #10b981; }
+.sd-badge-on_leave { background: #e5eefe; color: #3b82f6; }
+.sd-badge-exiting { background: #feece0; color: #f97316; }
+.sd-badge-probation { background: rgba(245,158,11,0.12); color: #92400e; }
+.sd-badge-suspended { background: rgba(239,68,68,0.12); color: #991b1b; }
+.sd-badge-terminated { background: rgba(107,114,128,0.12); color: #374151; }
+.sd-badge-alumni { background: rgba(139,92,246,0.12); color: #5b21b6; }
+
+/* Rows layout */
+.sd-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Department & Work Mode */
+.sd-dept {
+  font-weight: 700;
+  color: #374151;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.sd-workmode-pill {
+  border-radius: 16px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sd-wm-office { background: #eff6ff; color: #3b82f6; }
+.sd-wm-hybrid { background: #f5f3ff; color: #7c3aed; }
+.sd-wm-remote { background: #f0fdf4; color: #059669; }
+
+/* Location & Tenure */
+.sd-loc, .sd-tenure {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Progress bar */
+.sd-progress-row {
+  gap: 12px;
+}
+
+.sd-progress-wrap {
+  flex: 1;
+  height: 6px;
+  background: #f0f0f5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.sd-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.sd-progress-green { background: #10b981; }
+.sd-progress-amber { background: #f59e0b; }
+
+.sd-progress-val {
+  font-weight: 700;
+  font-size: 13.5px;
+  width: 20px;
+  text-align: right;
+}
+
+.sd-text-green { color: #10b981; }
+.sd-text-amber { color: #f59e0b; }
+
+/* Divider */
+.sd-card-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 2px 0;
+}
+
+/* Contact Block */
+.sd-contact-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sd-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}

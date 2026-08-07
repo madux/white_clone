@@ -24,6 +24,7 @@ htmlcov/
 
 # Michael's personal feature TODO (pending fix, see file)
 .opencode/plans/feature-todo-hr-job-dashboard-dep.md
+hr_staff_directory/hr_staff_directory_study.md
 
 # Dev-only staff seed data (not needed in production)
 hr_staff_directory/dev_seed.sql

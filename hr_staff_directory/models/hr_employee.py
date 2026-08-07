@@ -803,6 +803,10 @@ class HrEmployeeStaffDirectory(models.Model):
             except Exception:
                 emp_ref = f'EMP-{emp.id:04d}'
 
+            # ── Progress Score (Mock) ────────────────────────────────────────
+            # TODO: Wire up `progress_score` with the actual performance/completion field when available
+            mock_score = 60 + ((emp.id * 17) % 41)
+
             result.append({
                 'id':              emp.id,
                 'name':            emp.name or '',
@@ -814,6 +818,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 'work_location':   work_location,
                 'manager_name':    emp.parent_id.name if emp.parent_id else 'CEO',
                 'tenure':          tenure_label,
+                'work_email':      emp.work_email or '',
+                'work_phone':      emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',
+                'progress_score':  mock_score,
             })
         return result
 
