@@ -57,6 +57,32 @@ export class StaffDirectoryDashboard extends Component {
             alumni:     'Alumni',
         };
 
+        // ─── Column Definitions ─────────────────────────────────────────────
+        this.ALL_COLUMNS = [
+            { id: 'name', label: 'Name' },
+            { id: 'role', label: 'Role' },
+            { id: 'department', label: 'Department' },
+            { id: 'lifecycle', label: 'Lifecycle State' },
+            { id: 'work_mode', label: 'Work Mode' },
+            { id: 'location', label: 'Location' },
+            { id: 'manager', label: 'Manager' },
+            { id: 'tenure', label: 'Tenure' },
+            { id: 'grade', label: 'Grade' },
+            { id: 'employment_type', label: 'Employment Type' },
+            { id: 'retention_priority', label: 'Retention Priority' },
+            { id: 'performance_score', label: 'Performance Score' },
+            { id: 'start_date', label: 'Start Date' },
+            { id: 'employee_id', label: 'Employee ID' },
+            { id: 'email', label: 'Email' },
+            { id: 'phone', label: 'Phone' },
+            { id: 'reports_to', label: 'Reports To' },
+            { id: 'direct_reports', label: 'Direct Reports' },
+            { id: 'languages', label: 'Languages' },
+            { id: 'availability', label: 'Availability' },
+            { id: 'flight_risk', label: 'Flight Risk' },
+            { id: 'last_active', label: 'Last Active' }
+        ];
+
         // ─── Reactive State ──────────────────────────────────────────────────
         this.state = useState({
             loading:     true,
@@ -65,6 +91,9 @@ export class StaffDirectoryDashboard extends Component {
             adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
             searchQuery: '',
             selectedPeople: [],
+            activeColumns: ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'],
+            showColumnsModal: false,
+            showMoreColumns: false,
             people:      [],
             stats: {
                 total:              0,
@@ -206,6 +235,52 @@ export class StaffDirectoryDashboard extends Component {
 
     toggleAdminMode(isAdmin) {
         this.state.adminMode = isAdmin;
+    }
+
+    // ─── Columns Modal Handlers ─────────────────────────────────────────────
+
+    get inactiveColumns() {
+        return this.ALL_COLUMNS.filter(col => !this.state.activeColumns.includes(col.id));
+    }
+
+    get activeColumnObjects() {
+        return this.state.activeColumns.map(id => this.ALL_COLUMNS.find(col => col.id === id)).filter(Boolean);
+    }
+
+    toggleColumnsModal() {
+        this.state.showColumnsModal = !this.state.showColumnsModal;
+        if (!this.state.showColumnsModal) {
+            this.state.showMoreColumns = false;
+        }
+    }
+
+    addColumn(colId) {
+        if (!this.state.activeColumns.includes(colId)) {
+            this.state.activeColumns.push(colId);
+        }
+    }
+
+    removeColumn(colId) {
+        this.state.activeColumns = this.state.activeColumns.filter(c => c !== colId);
+    }
+
+    moveColumn(colId, direction) {
+        const idx = this.state.activeColumns.indexOf(colId);
+        if (idx === -1) return;
+        const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (newIdx >= 0 && newIdx < this.state.activeColumns.length) {
+            const temp = this.state.activeColumns[idx];
+            this.state.activeColumns[idx] = this.state.activeColumns[newIdx];
+            this.state.activeColumns[newIdx] = temp;
+        }
+    }
+
+    resetColumns() {
+        this.state.activeColumns = ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'];
+    }
+
+    toggleMoreColumns() {
+        this.state.showMoreColumns = !this.state.showMoreColumns;
     }
 }
 

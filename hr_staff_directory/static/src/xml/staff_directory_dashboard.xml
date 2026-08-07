@@ -211,12 +211,78 @@
                         </div>
 
                         <!-- Columns button (admin only) -->
-                        <button type="button" class="sdir-btn sdir-btn-ghost" id="btnColumns" t-if="state.adminMode">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" 
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
-                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                            Columns
-                        </button>
+                        <div class="sdir-cols-wrap" t-if="state.adminMode">
+                            <button type="button" 
+                                    t-att-class="state.showColumnsModal ? 'sdir-btn sdir-btn-active sdir-btn-columns' : 'sdir-btn sdir-btn-ghost sdir-btn-columns'" 
+                                    id="btnColumns"
+                                    t-on-click="() => this.toggleColumnsModal()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
+                                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                Columns
+                            </button>
+
+                            <!-- Columns Dropdown Modal -->
+                            <div class="sdir-cols-modal" t-if="state.showColumnsModal">
+                                <!-- Pointer/Caret -->
+                                <div class="sdir-cols-caret"></div>
+
+                                <!-- Header -->
+                                <div class="sdir-cols-header">
+                                    <span class="sdir-cols-title">ACTIVE COLUMNS</span>
+                                    <div class="sdir-cols-header-right">
+                                        <a href="#" class="sdir-cols-reset" t-on-click.prevent="() => this.resetColumns()">Reset</a>
+                                        <button type="button" class="sdir-cols-close" t-on-click="() => this.toggleColumnsModal()">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Active Columns List -->
+                                <div class="sdir-cols-active-list">
+                                    <t t-foreach="activeColumnObjects" t-as="col" t-key="col.id">
+                                        <div class="sdir-col-row">
+                                            <div class="sdir-col-sort">
+                                                <button type="button" class="sdir-col-sort-up" t-on-click="() => this.moveColumn(col.id, 'up')">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                                </button>
+                                                <button type="button" class="sdir-col-sort-down" t-on-click="() => this.moveColumn(col.id, 'down')">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                </button>
+                                            </div>
+                                            <span class="sdir-col-name" t-esc="col.label"/>
+                                            <button type="button" class="sdir-col-remove" t-on-click="() => this.removeColumn(col.id)">
+                                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                            </button>
+                                        </div>
+                                    </t>
+                                </div>
+
+                                <!-- Add Column Section -->
+                                <div class="sdir-cols-add-sec">
+                                    <span class="sdir-cols-title">ADD COLUMN</span>
+                                    <div class="sdir-cols-pills">
+                                        <t t-set="visibleInactive" t-value="state.showMoreColumns ? inactiveColumns : inactiveColumns.slice(0, 5)"/>
+                                        <t t-foreach="visibleInactive" t-as="col" t-key="col.id">
+                                            <button type="button" class="sdir-col-pill" t-on-click="() => this.addColumn(col.id)">
+                                                + <t t-esc="col.label"/>
+                                            </button>
+                                        </t>
+                                        
+                                        <t t-if="!state.showMoreColumns and inactiveColumns.length > 5">
+                                            <button type="button" class="sdir-col-pill-toggle" t-on-click="() => this.toggleMoreColumns()">
+                                                +<t t-esc="inactiveColumns.length - 5"/> more
+                                            </button>
+                                        </t>
+                                        <t t-if="state.showMoreColumns and inactiveColumns.length > 5">
+                                            <button type="button" class="sdir-col-pill-toggle" t-on-click="() => this.toggleMoreColumns()">
+                                                Show less
+                                            </button>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Saved Views button -->
                         <button type="button" class="sdir-btn sdir-btn-ghost" id="btnSavedViews">
@@ -273,20 +339,17 @@
                                                t-att-checked="isAllSelected"
                                                t-on-change="toggleAll"/>
                                     </th>
-                                    <th class="sdir-th sdir-th-name">
-                                        NAME
-                                        <svg class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                            <line x1="12" y1="19" x2="12" y2="5"/>
-                                            <polyline points="5 12 12 5 19 12"/>
-                                        </svg>
-                                    </th>
-                                    <th class="sdir-th">ROLE</th>
-                                    <th class="sdir-th">DEPARTMENT</th>
-                                    <th class="sdir-th">LIFECYCLE STATE</th>
-                                    <th class="sdir-th">WORK MODE</th>
-                                    <th class="sdir-th">LOCATION</th>
-                                    <th class="sdir-th" t-if="state.adminMode">MANAGER</th>
-                                    <th class="sdir-th">TENURE</th>
+
+                                    <t t-foreach="activeColumnObjects" t-as="col" t-key="col.id">
+                                        <th t-att-class="'sdir-th' + (col.id === 'name' ? ' sdir-th-name' : '')" t-if="col.id !== 'manager' or state.adminMode">
+                                            <t t-esc="col.label.toUpperCase()"/>
+                                            <svg t-if="col.id === 'name'" class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="12" y1="19" x2="12" y2="5"/>
+                                                <polyline points="5 12 12 5 19 12"/>
+                                            </svg>
+                                        </th>
+                                    </t>
+
                                     <th class="sdir-th sdir-th-actions" t-if="state.adminMode">ACTIONS</th>
                                 </tr>
                             </thead>
@@ -303,100 +366,123 @@
                                                    t-att-checked="state.selectedPeople.includes(person.id)"
                                                    t-on-change="() => this.toggleSelection(person.id)"/>
                                         </td>
-
-                                        <!-- Name + Avatar -->
-                                        <td class="sdir-td sdir-td-name">
-                                            <div class="sdir-name-cell">
-                                                <!-- Star icon -->
-                                                <div class="sdir-star-icon">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
-                                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                                    </svg>
-                                                </div>
-                                                <!-- Avatar with lifecycle-state ring -->
-                                                <div t-att-class="'sdir-avatar sdir-ring-' + person.lifecycle_state"
-                                                     t-att-style="'background:' + avatarColor(person.name) + ';'"
-                                                     t-att-title="person.name">
-                                                    <t t-esc="initials(person.name)"/>
-                                                </div>
-                                                <!-- Name block -->
-                                                <div class="sdir-name-block">
-                                                    <div class="sdir-name-text" t-esc="person.name"/>
-                                                    <div class="sdir-emp-id" t-esc="person.emp_ref"/>
-                                                </div>
-                                                <!-- Hover-revealed contact icons -->
-                                                <div class="sdir-contact-icons">
-                                                    <button type="button" class="sdir-contact-btn sdir-contact-email" t-att-title="'Email ' + person.name">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                                            <polyline points="22,6 12,13 2,6"/>
-                                                        </svg>
-                                                    </button>
-                                                    <button type="button" class="sdir-contact-btn sdir-contact-phone" t-att-title="'Call ' + person.name">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-                                                        </svg>
-                                                    </button>
-                                                    <button type="button" class="sdir-contact-btn sdir-contact-chat" t-att-title="'Message ' + person.name">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </td>
-
-                                        <!-- Role -->
-                                        <td class="sdir-td">
-                                            <span class="sdir-role-text" t-esc="person.job_title or '—'"/>
-                                        </td>
-
-                                        <!-- Department pill -->
-                                        <td class="sdir-td">
-                                            <t t-if="person.department">
-                                                <span t-att-class="'sdir-dept-pill sdir-dept-' + deptKey(person.department)"
-                                                      t-esc="person.department"/>
+                                        <t t-foreach="state.activeColumns" t-as="colKey" t-key="colKey">
+                                            <!-- Name + Avatar -->
+                                            <t t-if="colKey === 'name'">
+                                                <td class="sdir-td sdir-td-name">
+                                                    <div class="sdir-name-cell">
+                                                        <!-- Star icon -->
+                                                        <div class="sdir-star-icon">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                                            </svg>
+                                                        </div>
+                                                        <!-- Avatar with lifecycle-state ring -->
+                                                        <div t-att-class="'sdir-avatar sdir-ring-' + person.lifecycle_state"
+                                                             t-att-style="'background:' + avatarColor(person.name) + ';'"
+                                                             t-att-title="person.name">
+                                                            <t t-esc="initials(person.name)"/>
+                                                        </div>
+                                                        <!-- Name block -->
+                                                        <div class="sdir-name-block">
+                                                            <div class="sdir-name-text" t-esc="person.name"/>
+                                                            <div class="sdir-emp-id" t-esc="person.emp_ref"/>
+                                                        </div>
+                                                        <!-- Hover-revealed contact icons -->
+                                                        <div class="sdir-contact-icons">
+                                                            <button type="button" class="sdir-contact-btn sdir-contact-email" t-att-title="'Email ' + person.name">
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                                                    <polyline points="22,6 12,13 2,6"/>
+                                                                </svg>
+                                                            </button>
+                                                            <button type="button" class="sdir-contact-btn sdir-contact-phone" t-att-title="'Call ' + person.name">
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                                                </svg>
+                                                            </button>
+                                                            <button type="button" class="sdir-contact-btn sdir-contact-chat" t-att-title="'Message ' + person.name">
+                                                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                                                </svg>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </td>
                                             </t>
-                                            <t t-else="">
-                                                <span class="sdir-text-muted">—</span>
+                                            
+                                            <!-- Role -->
+                                            <t t-if="colKey === 'role'">
+                                                <td class="sdir-td">
+                                                    <span class="sdir-role-text" t-esc="person.job_title or '—'"/>
+                                                </td>
                                             </t>
-                                        </td>
-
-                                        <!-- Lifecycle State pill -->
-                                        <td class="sdir-td">
-                                            <span t-att-class="'sdir-state-pill sdir-state-' + person.lifecycle_state">
-                                                <span class="sdir-state-dot"/>
-                                                <t t-esc="lifecycleLabel(person.lifecycle_state)"/>
-                                            </span>
-                                        </td>
-
-                                        <!-- Work Mode -->
-                                        <td class="sdir-td">
-                                            <span t-att-class="'sd-workmode-pill sd-wm-' + (person.work_mode or 'hybrid').toLowerCase()"
-                                                  t-esc="person.work_mode or '—'"
-                                                  style="display: inline-flex;"/>
-                                        </td>
-
-                                        <!-- Location -->
-                                        <td class="sdir-td">
-                                            <span class="sdir-location-text" t-esc="person.work_location or '—'"/>
-                                        </td>
-
-                                        <!-- Manager (Admin only) -->
-                                        <td class="sdir-td" t-if="state.adminMode">
-                                            <span class="sdir-manager-text" t-esc="person.manager_name or '—'"/>
-                                        </td>
-
-                                        <!-- Tenure pill -->
-                                        <td class="sdir-td">
-                                            <t t-if="person.tenure">
-                                                <span class="sdir-tenure-pill" t-esc="person.tenure"/>
+                                            
+                                            <!-- Department pill -->
+                                            <t t-if="colKey === 'department'">
+                                                <td class="sdir-td">
+                                                    <t t-if="person.department">
+                                                        <span t-att-class="'sdir-dept-pill sdir-dept-' + deptKey(person.department)"
+                                                              t-esc="person.department"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="sdir-text-muted">—</span>
+                                                    </t>
+                                                </td>
                                             </t>
-                                            <t t-else="">
-                                                <span class="sdir-text-muted">—</span>
+                                            
+                                            <!-- Lifecycle State pill -->
+                                            <t t-if="colKey === 'lifecycle'">
+                                                <td class="sdir-td">
+                                                    <span t-att-class="'sdir-state-pill sdir-state-' + person.lifecycle_state">
+                                                        <span class="sdir-state-dot"/>
+                                                        <t t-esc="lifecycleLabel(person.lifecycle_state)"/>
+                                                    </span>
+                                                </td>
                                             </t>
-                                        </td>
+                                            
+                                            <!-- Work Mode -->
+                                            <t t-if="colKey === 'work_mode'">
+                                                <td class="sdir-td">
+                                                    <span t-att-class="'sd-workmode-pill sd-wm-' + (person.work_mode or 'hybrid').toLowerCase()"
+                                                          t-esc="person.work_mode or '—'"
+                                                          style="display: inline-flex;"/>
+                                                </td>
+                                            </t>
+                                            
+                                            <!-- Location -->
+                                            <t t-if="colKey === 'location'">
+                                                <td class="sdir-td">
+                                                    <span class="sdir-location-text" t-esc="person.work_location or '—'"/>
+                                                </td>
+                                            </t>
+                                            
+                                            <!-- Manager (Admin only) -->
+                                            <t t-if="colKey === 'manager'">
+                                                <td class="sdir-td" t-if="state.adminMode">
+                                                    <span class="sdir-manager-text" t-esc="person.manager_name or '—'"/>
+                                                </td>
+                                            </t>
+                                            
+                                            <!-- Tenure pill -->
+                                            <t t-if="colKey === 'tenure'">
+                                                <td class="sdir-td">
+                                                    <t t-if="person.tenure">
+                                                        <span class="sdir-tenure-pill" t-esc="person.tenure"/>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <span class="sdir-text-muted">—</span>
+                                                    </t>
+                                                </td>
+                                            </t>
 
+                                            <!-- Fallback for other arbitrary columns -->
+                                            <t t-if="!['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'].includes(colKey)">
+                                                <td class="sdir-td">
+                                                    <span class="sdir-text-muted" t-esc="person[colKey] || '—'"/>
+                                                </td>
+                                            </t>
+                                        </t>
                                         <!-- Actions (Admin only) -->
                                         <td class="sdir-td sdir-td-actions" t-if="state.adminMode">
                                             <div class="sdir-action-cell">
