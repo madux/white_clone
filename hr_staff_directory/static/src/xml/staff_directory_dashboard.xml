@@ -194,7 +194,7 @@
                                     id="viewGrid"
                                     t-on-click="() => this.toggleView('grid')"
                                     title="Grid view">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" 
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-grid3x3 lucide-grid-3x3">
                                     <rect width="18" height="18" x="3" y="3" rx="2"></rect>
                                     <path d="M3 9h18"></path><path d="M3 15h18"></path>
@@ -339,8 +339,9 @@
 
                                         <!-- Work Mode -->
                                         <td class="sdir-td">
-                                            <span t-att-class="'sdir-workmode sdir-workmode-' + (person.work_mode or 'hybrid').toLowerCase()"
-                                                  t-esc="person.work_mode or '—'"/>
+                                            <span t-att-class="'sd-workmode-pill sd-wm-' + (person.work_mode or 'hybrid').toLowerCase()"
+                                                  t-esc="person.work_mode or '—'"
+                                                  style="display: inline-flex;"/>
                                         </td>
 
                                         <!-- Location -->
