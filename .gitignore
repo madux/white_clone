@@ -21,9 +21,12 @@ htmlcov/
 *.py[cod]
 *$py.class
 
-# Dev-only staff seed data (not needed in production)
-hr_staff_directory/dev_seed_people.sql
-hr_staff_directory/dev_generate_seed_all.py
-hr_staff_directory/dev_seed_all.sql
-hr_staff_directory/staff-export-2026-08-05.csv
 
+# Michael's personal feature TODO (pending fix, see file)
+.opencode/plans/feature-todo-hr-job-dashboard-dep.md
+
+# Dev-only staff seed data (not needed in production)
+hr_staff_directory/dev_seed.sql
+hr_staff_directory/dev_seed_people_block.sql
+hr_staff_directory/dev_generate_seed_all.py
+hr_staff_directory/staff-export-2026-08-05.csv
