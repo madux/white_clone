@@ -9,6 +9,9 @@ import { useService } from "@web/core/utils/hooks";
  * Fetches per-employee data from /hr_staff_directory/people and renders
  * the full People Tab UI (tab bar, stat cards, toolbar, data table, footer).
  * No Chart.js is used in this view.
+ * 
+ * - [x] Update `staff_directory_dashboard.js` to add `selectedPeople` state and selection methods.
+ * - [/] Update `staff_directory_dashboard.xml` to add the Selection Bar and bind checkboxes.
  */
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
@@ -61,6 +64,7 @@ export class StaffDirectoryDashboard extends Component {
             activeView:  'list',     // 'list' | 'grid'
             adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
             searchQuery: '',
+            selectedPeople: [],
             people:      [],
             stats: {
                 total:              0,
@@ -114,6 +118,38 @@ export class StaffDirectoryDashboard extends Component {
                 (p.emp_ref       || '').toLowerCase().includes(q)
             );
         });
+    }
+
+    // ─── Selection Logic ─────────────────────────────────────────────────────
+
+    toggleSelection(id) {
+        if (this.state.selectedPeople.includes(id)) {
+            this.state.selectedPeople = this.state.selectedPeople.filter(item => item !== id);
+        } else {
+            this.state.selectedPeople.push(id);
+        }
+    }
+
+    toggleAll() {
+        const filteredIds = this.filteredPeople().map(p => p.id);
+        if (this.isAllSelected) {
+            // Deselect all filtered
+            this.state.selectedPeople = this.state.selectedPeople.filter(id => !filteredIds.includes(id));
+        } else {
+            // Select all filtered
+            const newSet = new Set([...this.state.selectedPeople, ...filteredIds]);
+            this.state.selectedPeople = Array.from(newSet);
+        }
+    }
+
+    clearSelection() {
+        this.state.selectedPeople = [];
+    }
+
+    get isAllSelected() {
+        const filteredIds = this.filteredPeople().map(p => p.id);
+        if (filteredIds.length === 0) return false;
+        return filteredIds.every(id => this.state.selectedPeople.includes(id));
     }
 
     // ─── Format Helpers ──────────────────────────────────────────────────────
