@@ -175,18 +175,15 @@ export class HrLeaveDashboard extends Component {
 
     /**
      * FR-015: "← Back" in the wizard.
-     * From Step 1 → closes wizard and re-shows Welcome or Completion screen depending on reviewMode.
-     * From Step 2+ → goes to the previous step.
+     * From Step 1 → closes wizard and returns to the Welcome Modal.
+     * From Step 2+ → goes to the previous wizard step.
      */
     goBackFromWizard() {
         if (this.state.wizardStep <= 1) {
             this.state.showWizard = false;
-            if (this.state.reviewMode) {
-                this.state.reviewMode = false;
-                this.state.showCompletionScreen = true;
-            } else {
-                this.state.showWelcomeModal = true;
-            }
+            this.state.reviewMode = false;
+            this.state.showCompletionScreen = false;
+            this.state.showWelcomeModal = true;
         } else {
             this.state.wizardStep -= 1;
         }
