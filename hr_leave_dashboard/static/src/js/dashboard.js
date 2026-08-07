@@ -11,7 +11,6 @@ export class HrLeaveDashboard extends Component {
     setup() {
         this.action = useService("action");
         this.orm = useService("orm");
-        this.notification = useService("notification");
         this.charts = {};
         this.isDestroyed = false;
         this.currentRequest = null;
@@ -34,7 +33,30 @@ export class HrLeaveDashboard extends Component {
             wizardStep: 1,       // 1–5, which step is currently displayed
             setupState: "not_started",
             setupStep: 0,        // highest step reached (from DB)
+            reviewMode: false,   // read-only review of completed setup
+            // ── Completion Screen & Checklist (Screen 7)
+            showCompletionScreen: false,
+            checklist: {
+                check_leave_type: false,
+                check_allocate_balance: false,
+                check_set_country: false,
+                check_review_request: false,
+                check_run_report: false,
+            },
+            completedChecklistCount: 0,
         });
+
+        this.onKeyDown = (ev) => {
+            if (ev.key === "Escape") {
+                if (this.state.showCompletionScreen) {
+                    this.closeCompletionScreen();
+                } else if (this.state.showWizard) {
+                    this.closeWizard();
+                } else if (this.state.showWelcomeModal) {
+                    this.closeWelcomeModal();
+                }
+            }
+        };
 
         onWillStart(async () => {
             const force = new URLSearchParams(window.location.search).get("leave_setup") === "1";
@@ -44,8 +66,14 @@ export class HrLeaveDashboard extends Component {
             ]);
             this.state.setupState = setup.state;
             this.state.setupStep = setup.current_step;
+            if (setup.checklist) {
+                this.state.checklist = setup.checklist;
+                this.state.completedChecklistCount = setup.completed_count || 0;
+            }
 
-            if (force || setup.state === "in_progress") {
+            if (force) {
+                this.openSetupExperience();
+            } else if (setup.state === "in_progress") {
                 // Resume wizard at the last saved step
                 this.state.wizardStep = setup.current_step || 1;
                 this.state.showWizard = true;
@@ -54,6 +82,13 @@ export class HrLeaveDashboard extends Component {
                 this.state.showWelcomeModal = setup.show_welcome;
             }
         });
+
+        useEffect(() => {
+            window.addEventListener("keydown", this.onKeyDown);
+            return () => {
+                window.removeEventListener("keydown", this.onKeyDown);
+            };
+        }, () => []);
 
         onWillUnmount(() => {
             this.isDestroyed = true;
@@ -75,12 +110,36 @@ export class HrLeaveDashboard extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  CENTRAL RE-OPENING METHOD (FR-054 Fix)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * Central state-aware method for reopening setup from header icons,
+     * Help menu, Get Started menu, or dev URL parameter.
+     */
+    openSetupExperience() {
+        this.state.showWelcomeModal = false;
+        this.state.showWizard = false;
+        this.state.showCompletionScreen = false;
+
+        if (this.state.setupState === "completed") {
+            this.state.showCompletionScreen = true;
+        } else if (this.state.setupState === "in_progress") {
+            this.state.wizardStep = this.state.setupStep || 1;
+            this.state.showWizard = true;
+        } else {
+            this.state.showWelcomeModal = true;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  WELCOME MODAL METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    /** FR-008: Re-open the welcome modal from the header icons. */
+    /** Re-open welcome modal explicitly if needed. */
     openWelcomeModal() {
         this.state.showWizard = false;
+        this.state.showCompletionScreen = false;
         this.state.showWelcomeModal = true;
     }
 
@@ -104,7 +163,9 @@ export class HrLeaveDashboard extends Component {
         this.state.setupState = setup.state;
         this.state.setupStep = setup.current_step;
         this.state.wizardStep = setup.current_step;
+        this.state.reviewMode = false;
         this.state.showWelcomeModal = false;
+        this.state.showCompletionScreen = false;
         this.state.showWizard = true;
     }
 
@@ -114,32 +175,48 @@ export class HrLeaveDashboard extends Component {
 
     /**
      * FR-015: "← Back" in the wizard.
-     * From Step 1 → closes wizard and re-shows the Welcome Modal.
+     * From Step 1 → closes wizard and re-shows Welcome or Completion screen depending on reviewMode.
      * From Step 2+ → goes to the previous step.
      */
     goBackFromWizard() {
         if (this.state.wizardStep <= 1) {
             this.state.showWizard = false;
-            this.state.showWelcomeModal = true;
+            if (this.state.reviewMode) {
+                this.state.reviewMode = false;
+                this.state.showCompletionScreen = true;
+            } else {
+                this.state.showWelcomeModal = true;
+            }
         } else {
             this.state.wizardStep -= 1;
         }
     }
 
     /**
-     * FR-016: "Next →" in the wizard.
-     * Persists the next step to the DB, then advances the UI.
+     * FR-016 / FR-043: "Next →" or "Finish →" in the wizard.
+     * If in reviewMode: advances UI steps without corrupting DB state.
+     * Otherwise: persists progress to DB. Upon completing Step 5, displays Completion Screen.
      */
     async nextWizardStep() {
         const nextStep = this.state.wizardStep + 1;
+
+        if (this.state.reviewMode) {
+            if (nextStep > 5) {
+                this.state.showWizard = false;
+                this.state.reviewMode = false;
+                this.state.showCompletionScreen = true;
+            } else {
+                this.state.wizardStep = nextStep;
+            }
+            return;
+        }
+
         if (nextStep > 5) {
-            // Complete setup
+            // Complete setup and show Screen 7 (Completion Screen)
             const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
             this.state.setupState = result.state;
             this.state.showWizard = false;
-            this.notification.add("Setup complete! Leave Management is ready.", {
-                title: "Setup Complete", type: "success",
-            });
+            this.state.showCompletionScreen = true;
             return;
         }
         const saved = await this.orm.call(
@@ -151,33 +228,80 @@ export class HrLeaveDashboard extends Component {
 
     /**
      * FR-017: "Skip and explore on my own" text link.
-     * Dismisses the wizard for the current user without completing setup.
-     * The wizard can be re-opened at any time via the ✦ or ? header icons.
      */
     async skipWizard() {
-        await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
         this.state.showWizard = false;
+        if (!this.state.reviewMode) {
+            await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
+        }
+        this.state.reviewMode = false;
     }
 
     /**
-     * Closes the wizard via backdrop click (does not dismiss — admin can
-     * reopen it by clicking the ✦ or ? buttons).
+     * Closes the wizard via backdrop click or ESC key.
      */
     closeWizard() {
         this.state.showWizard = false;
+        this.state.reviewMode = false;
     }
 
     /**
      * FR-014: "→ Go to Leave Types" inside the wizard.
-     * Navigates to the Leave Types list view. The wizard's DB state is already
-     * saved, so returning to Leave Management will resume at the current step.
      */
     goToLeaveTypesFromWizard() {
         return this.openLeaveTypes();
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  NAVIGATION ACTIONS (used by wizard tiles + sidebar)
+    //  SETUP COMPLETION SCREEN & CHECKLIST METHODS (Screen 7 — FR-045 to FR-054)
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * FR-050: Explicitly set checklist item completion state and persist.
+     */
+    async toggleChecklistItem(itemKey) {
+        const targetVal = !this.state.checklist[itemKey];
+        const res = await this.orm.call(
+            "hr.leave.setup.progress", "set_checklist_item", [],
+            { item_key: itemKey, completed: targetVal }
+        );
+        if (res && res.checklist) {
+            this.state.checklist = res.checklist;
+            this.state.completedChecklistCount = res.completed_count || 0;
+        }
+    }
+
+    /** Handle keypress (Enter/Space) on accessible checklist item div. */
+    onChecklistKeydown(ev, itemKey) {
+        if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            this.toggleChecklistItem(itemKey);
+        }
+    }
+
+    /**
+     * FR-052: "← Review steps" button returns to Step 1 of wizard in read-only reviewMode.
+     * Prevents modifying DB completion status.
+     */
+    reviewWizardSteps() {
+        this.state.showCompletionScreen = false;
+        this.state.reviewMode = true;
+        this.state.wizardStep = 1;
+        this.state.showWizard = true;
+    }
+
+    /** FR-051: "Done — Go to Dashboard" CTA button. */
+    doneGoToDashboard() {
+        this.state.showCompletionScreen = false;
+    }
+
+    /** FR-053: Close (X) button on completion screen. */
+    closeCompletionScreen() {
+        this.state.showCompletionScreen = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NAVIGATION ACTIONS (used by wizard tiles + sidebar + checklist)
     // ═══════════════════════════════════════════════════════════════
 
     openDashboard() {

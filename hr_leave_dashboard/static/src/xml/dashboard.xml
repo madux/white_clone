@@ -170,7 +170,6 @@
                     <!-- ── END STEP 1 ─────────────────────────────────── -->
 
 
-                    <!-- ── STEPS 2–5 placeholders (implemented per screen) -->
                     <!-- ── STEP 2: Set Up Approval Workflows ──────────────── -->
                     <t t-if="state.wizardStep === 2">
 
@@ -489,6 +488,167 @@
 
 
             <!-- ════════════════════════════════════════════════════
+                 SETUP COMPLETION SCREEN (Screen 7 — FR-045 to FR-054)
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.showCompletionScreen">
+                <!-- Backdrop blur -->
+                <div class="cleon-welcome-backdrop" t-on-click="closeCompletionScreen"/>
+
+                <div class="cleon-completion-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-completion-title">
+
+                    <!-- FR-053: Close X button -->
+                    <button class="cleon-completion-close" t-on-click="closeCompletionScreen" aria-label="Close completion screen">
+                        <i class="fa fa-times"/>
+                    </button>
+
+                    <!-- Top Header Gradient Box -->
+                    <div class="cleon-completion-header">
+                        <div class="cleon-completion-badge">
+                            <i class="fa fa-check"/>
+                        </div>
+                        <!-- FR-045: Title -->
+                        <h2 id="cleon-completion-title" class="cleon-completion-title">You're all set! 🎉</h2>
+                        <!-- FR-046: Sub-message -->
+                        <p class="cleon-completion-sub">
+                            You've completed the Leave Management setup guide. Here's a quick checklist to get you fully up and running.
+                        </p>
+                    </div>
+
+                    <!-- Checklist Body Section -->
+                    <div class="cleon-completion-body">
+                        <!-- FR-047: Quick-Start Checklist Title -->
+                        <div class="cleon-checklist-header-row">
+                            <span class="cleon-checklist-label-title">QUICK-START CHECKLIST</span>
+                        </div>
+
+                        <div class="cleon-checklist-list">
+                            <!-- Item 1: Create at least one Leave Type -->
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_leave_type')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_leave_type')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_leave_type }">
+                                    <t t-if="state.checklist.check_leave_type">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_leave_type }">
+                                    Create at least one Leave Type
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveTypes">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <!-- Item 2: Allocate balances to employees -->
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_allocate_balance')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_allocate_balance')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_allocate_balance }">
+                                    <t t-if="state.checklist.check_allocate_balance">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_allocate_balance }">
+                                    Allocate balances to employees
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveBalances">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <!-- Item 3: Set country / region for holiday calendar -->
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_set_country')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_set_country')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_set_country }">
+                                    <t t-if="state.checklist.check_set_country">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_set_country }">
+                                    Set country / region for holiday calendar
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openSettings">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <!-- Item 4: Review your first leave request -->
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_review_request')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_review_request')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_review_request }">
+                                    <t t-if="state.checklist.check_review_request">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_review_request }">
+                                    Review your first leave request
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveRequests">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <!-- Item 5: Run a leave utilisation report -->
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_run_report')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_run_report')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_run_report }">
+                                    <t t-if="state.checklist.check_run_report">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_run_report }">
+                                    Run a leave utilisation report
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openReports">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FR-049: Progress counter -->
+                        <div class="cleon-checklist-counter-row">
+                            <span class="cleon-checklist-counter">
+                                <t t-esc="state.completedChecklistCount"/>/5 completed
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Action Buttons -->
+                    <div class="cleon-completion-footer">
+                        <!-- FR-052: Review steps button -->
+                        <button class="cleon-btn-review-steps" type="button" t-on-click="reviewWizardSteps">
+                            <i class="fa fa-arrow-left"/> Review steps
+                        </button>
+                        <!-- FR-051: Done — Go to Dashboard primary CTA -->
+                        <button class="cleon-btn-done-dash" type="button" t-on-click="doneGoToDashboard">
+                            <i class="fa fa-check-circle"/> Done — Go to Dashboard
+                        </button>
+                    </div>
+
+                    <!-- FR-054: Re-open note -->
+                    <p class="cleon-completion-hint">
+                        You can always reopen this guide from the Help menu in the navigation
+                    </p>
+
+                </div>
+            </t>
+            <!-- ════ END SETUP COMPLETION SCREEN ═════════════════ -->
+
+
+            <!-- ════════════════════════════════════════════════════
                  SIDEBAR
                  ════════════════════════════════════════════════════ -->
             <div class="leavesidebar">
@@ -505,7 +665,7 @@
                         <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                         <span class="o_cc_nav_label">Dashboard</span>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openWelcomeModal">
+                    <a class="o_cc_nav_item" t-on-click="openSetupExperience">
                         <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
                         <span class="o_cc_nav_label">Get Started</span>
                         <i class="fa fa-chevron-right o_cc_nav_arrow"/>
@@ -561,7 +721,7 @@
                  ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
 
-                <!-- Header with FR-008 re-open icons -->
+                <!-- Header with FR-008 & FR-054 state-aware re-open icons -->
                 <div class="cleon-dash-header">
                     <div class="cleon-dash-header-left">
                         <h4 class="cleon-dash-title">Leave Management</h4>
@@ -570,13 +730,13 @@
                     <div class="cleon-dash-header-right">
                         <!-- Setup Wizard icon (✦) -->
                         <button class="cleon-header-icon-btn cleon-wizard-btn"
-                                t-on-click="startSetupGuide"
-                                title="Open Setup Wizard">
+                                t-on-click="openSetupExperience"
+                                title="Open Setup Guide">
                             <i class="fa fa-magic"/>
                         </button>
                         <!-- Help (?) icon -->
                         <button class="cleon-header-icon-btn cleon-help-btn"
-                                t-on-click="openWelcomeModal"
+                                t-on-click="openSetupExperience"
                                 title="Help — Re-open Setup Guide">
                             ?
                         </button>
