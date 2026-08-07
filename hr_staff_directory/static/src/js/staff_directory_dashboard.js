@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState, useExternalListener } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -19,6 +19,7 @@ export class StaffDirectoryDashboard extends Component {
     setup() {
         this.rpc = useService("rpc");
         this.rootRef = useRef("root");
+        useExternalListener(window, "click", this.onWindowClick);
 
         // ─── Design Tokens ──────────────────────────────────────────────────
         this.AVATAR_COLORS = [
@@ -84,6 +85,9 @@ export class StaffDirectoryDashboard extends Component {
         ];
 
         // ─── Reactive State ──────────────────────────────────────────────────
+        const savedCols = localStorage.getItem('sdir_active_columns');
+        const initialCols = savedCols ? JSON.parse(savedCols) : ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'];
+
         this.state = useState({
             loading:     true,
             activeTab:   'people',   // 'people' | 'org' | 'network'
@@ -91,7 +95,7 @@ export class StaffDirectoryDashboard extends Component {
             adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
             searchQuery: '',
             selectedPeople: [],
-            activeColumns: ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'],
+            activeColumns: initialCols,
             showColumnsModal: false,
             showMoreColumns: false,
             people:      [],
@@ -239,6 +243,21 @@ export class StaffDirectoryDashboard extends Component {
 
     // ─── Columns Modal Handlers ─────────────────────────────────────────────
 
+    _saveColumns() {
+        localStorage.setItem('sdir_active_columns', JSON.stringify(this.state.activeColumns));
+    }
+
+    onWindowClick(ev) {
+        if (this.state.showColumnsModal) {
+            const colsBtn = document.getElementById('btnColumns');
+            const colsModal = document.querySelector('.sdir-cols-modal');
+            if (colsBtn && colsBtn.contains(ev.target)) return;
+            if (colsModal && colsModal.contains(ev.target)) return;
+            this.state.showColumnsModal = false;
+            this.state.showMoreColumns = false;
+        }
+    }
+
     get inactiveColumns() {
         return this.ALL_COLUMNS.filter(col => !this.state.activeColumns.includes(col.id));
     }
@@ -257,11 +276,13 @@ export class StaffDirectoryDashboard extends Component {
     addColumn(colId) {
         if (!this.state.activeColumns.includes(colId)) {
             this.state.activeColumns.push(colId);
+            this._saveColumns();
         }
     }
 
     removeColumn(colId) {
         this.state.activeColumns = this.state.activeColumns.filter(c => c !== colId);
+        this._saveColumns();
     }
 
     moveColumn(colId, direction) {
@@ -272,11 +293,13 @@ export class StaffDirectoryDashboard extends Component {
             const temp = this.state.activeColumns[idx];
             this.state.activeColumns[idx] = this.state.activeColumns[newIdx];
             this.state.activeColumns[newIdx] = temp;
+            this._saveColumns();
         }
     }
 
     resetColumns() {
         this.state.activeColumns = ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'];
+        this._saveColumns();
     }
 
     toggleMoreColumns() {
