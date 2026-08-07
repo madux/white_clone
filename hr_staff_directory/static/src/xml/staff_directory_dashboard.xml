@@ -341,12 +341,21 @@
                                     </th>
 
                                     <t t-foreach="activeColumnObjects" t-as="col" t-key="col.id">
-                                        <th t-att-class="'sdir-th' + (col.id === 'name' ? ' sdir-th-name' : '')" t-if="col.id !== 'manager' or state.adminMode">
+                                        <th t-att-class="'sdir-th' + (col.id === 'name' ? ' sdir-th-name' : '')" 
+                                            t-if="col.id !== 'manager' or state.adminMode"
+                                            t-on-click="() => this.toggleSort(col.id)"
+                                            style="cursor: pointer;">
                                             <t t-esc="col.label.toUpperCase()"/>
-                                            <svg t-if="col.id === 'name'" class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <line x1="12" y1="19" x2="12" y2="5"/>
-                                                <polyline points="5 12 12 5 19 12"/>
-                                            </svg>
+                                            <t t-if="state.sortBy === col.id">
+                                                <svg t-if="!state.sortDesc" class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="12" y1="19" x2="12" y2="5"/>
+                                                    <polyline points="5 12 12 5 19 12"/>
+                                                </svg>
+                                                <svg t-else="" class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                                    <polyline points="19 12 12 19 5 12"/>
+                                                </svg>
+                                            </t>
                                         </th>
                                     </t>
 

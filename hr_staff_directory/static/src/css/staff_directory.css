@@ -445,7 +445,7 @@
 }
 
 .sdir-th {
-  background: var(--magenta-hd);
+  background: #e91e8c;
   color: #ffffff;
   font-size: 11.5px;
   font-weight: 700;
@@ -498,11 +498,48 @@
 .sdir-td-actions { text-align: right; }
 
 /* Checkbox */
+/* Checkbox */
 .sdir-checkbox {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--pink);
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
   cursor: pointer;
+  position: relative;
+  background-color: #ffffff;
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0;
+}
+.sdir-checkbox:checked {
+  background-color: #e91e8c;
+  border-color: #e91e8c;
+}
+.sdir-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Header Checkbox */
+.sdir-th .sdir-checkbox {
+  border-color: rgba(255, 255, 255, 0.6);
+  background-color: transparent;
+}
+.sdir-th .sdir-checkbox:checked {
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+.sdir-th .sdir-checkbox:checked::after {
+  border-color: #e91e8c;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

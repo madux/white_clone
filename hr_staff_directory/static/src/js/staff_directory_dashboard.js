@@ -93,6 +93,8 @@ export class StaffDirectoryDashboard extends Component {
             activeTab:   'people',   // 'people' | 'org' | 'network'
             activeView:  'list',     // 'list' | 'grid'
             adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
+            sortBy:      'name',
+            sortDesc:    false,
             searchQuery: '',
             selectedPeople: [],
             activeColumns: initialCols,
@@ -139,21 +141,47 @@ export class StaffDirectoryDashboard extends Component {
 
     filteredPeople() {
         const q = (this.state.searchQuery || '').toLowerCase().trim();
-        if (!q) {
-            return this.state.people;
+        let result = this.state.people;
+        if (q) {
+            result = result.filter((p) => {
+                return (
+                    (p.name          || '').toLowerCase().includes(q) ||
+                    (p.job_title     || '').toLowerCase().includes(q) ||
+                    (p.department    || '').toLowerCase().includes(q) ||
+                    (p.work_location || '').toLowerCase().includes(q) ||
+                    (p.emp_ref       || '').toLowerCase().includes(q)
+                );
+            });
         }
-        return this.state.people.filter((p) => {
-            return (
-                (p.name          || '').toLowerCase().includes(q) ||
-                (p.job_title     || '').toLowerCase().includes(q) ||
-                (p.department    || '').toLowerCase().includes(q) ||
-                (p.work_location || '').toLowerCase().includes(q) ||
-                (p.emp_ref       || '').toLowerCase().includes(q)
-            );
-        });
+
+        const sortBy = this.state.sortBy;
+        const sortDesc = this.state.sortDesc;
+        if (sortBy) {
+            result = [...result].sort((a, b) => {
+                let valA = a[sortBy] || '';
+                let valB = b[sortBy] || '';
+                if (typeof valA === 'string') valA = valA.toLowerCase();
+                if (typeof valB === 'string') valB = valB.toLowerCase();
+                
+                if (valA < valB) return sortDesc ? 1 : -1;
+                if (valA > valB) return sortDesc ? -1 : 1;
+                return 0;
+            });
+        }
+        
+        return result;
     }
 
     // ─── Selection Logic ─────────────────────────────────────────────────────
+
+    toggleSort(colId) {
+        if (this.state.sortBy === colId) {
+            this.state.sortDesc = !this.state.sortDesc;
+        } else {
+            this.state.sortBy = colId;
+            this.state.sortDesc = false;
+        }
+    }
 
     toggleSelection(id) {
         if (this.state.selectedPeople.includes(id)) {
