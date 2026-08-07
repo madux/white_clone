@@ -192,6 +192,10 @@ export class StaffDirectoryDashboard extends Component {
         this.state.searchQuery = ev.target.value;
     }
 
+    clearSearch() {
+        this.state.searchQuery = '';
+    }
+
     toggleTab(tab) {
         this.state.activeTab = tab;
     }

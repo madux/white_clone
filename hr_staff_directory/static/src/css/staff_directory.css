@@ -252,7 +252,7 @@
 .sdir-search-input {
   width: 100%;
   height: 34px;
-  padding: 0 10px 0 34px;
+  padding: 0 34px 0 34px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-family: inherit;
@@ -267,6 +267,19 @@
   border-color: var(--pink);
   box-shadow: 0 0 0 2px var(--pink-light);
   background: var(--pink-light);
+}
+
+.sdir-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-m);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.sdir-search-clear:hover {
+  color: var(--text-1);
 }
 
 /* Right side */
@@ -1242,4 +1255,29 @@
 
 .sdir-tr-selected {
   background: rgba(233, 30, 140, 0.04) !important;
+}
+
+/* ── EMPTY STATE DESIGN ────────────────────────────────────────── */
+.sdir-empty-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  margin-bottom: 8px;
+}
+
+.sdir-empty-title {
+  color: #374151;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.sdir-empty-subtitle {
+  color: #9ca3af;
+  font-size: 13px;
 }

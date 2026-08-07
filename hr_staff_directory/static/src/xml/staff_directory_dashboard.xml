@@ -136,6 +136,13 @@
                                placeholder="Search name, role, dept, location... (fuzzy match enabled)"
                                t-on-input="onSearch"
                                t-att-value="state.searchQuery"/>
+                        <svg t-if="state.searchQuery" 
+                             class="sdir-search-clear" 
+                             t-on-click="clearSearch" 
+                             width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Clear Search">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
                     </div>
 
                     <!-- Right-side controls -->
@@ -435,11 +442,13 @@
                                     <tr>
                                         <td t-att-colspan="state.adminMode ? 10 : 8">
                                             <div class="sdir-empty-row">
-                                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:#9AA0B2;">
-                                                    <circle cx="11" cy="11" r="8"/>
-                                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                                </svg>
-                                                <div>No people match your search</div>
+                                                <div class="sdir-empty-icon-wrap">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                    </svg>
+                                                </div>
+                                                <div class="sdir-empty-title">No employees match</div>
+                                                <div class="sdir-empty-subtitle">Try adjusting your filters or check spelling</div>
                                             </div>
                                         </td>
                                     </tr>
@@ -534,11 +543,13 @@
                         <!-- Empty state -->
                         <t t-if="filteredPeople().length === 0">
                             <div class="sd-grid-empty">
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;color:#9AA0B2;">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                                </svg>
-                                <div>No people match your search</div>
+                                                <div class="sdir-empty-icon-wrap">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                                    </svg>
+                                                </div>
+                                                <div class="sdir-empty-title">No employees match</div>
+                                                <div class="sdir-empty-subtitle">Try adjusting your filters or check spelling</div>
                             </div>
                         </t>
                     </div><!-- /.sd-grid-container -->
