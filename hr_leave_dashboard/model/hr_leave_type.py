@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import re
 from datetime import datetime, date
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
@@ -112,11 +113,26 @@ class HrLeaveType(models.Model):
 
     visible_to_employees = fields.Boolean(string="Visible to Employees", default=True)
 
-    @api.constrains("minimum_service_months", "minimum_notice_days", "max_consecutive_days", "team_overlap_percent", "leave_code")
+    @api.constrains(
+        "minimum_service_months", "minimum_notice_days", "max_consecutive_days",
+        "team_overlap_percent", "leave_code", "cleon_color_hex", "company_id",
+    )
     def _check_policy_constraints(self):
         for rec in self:
             if not rec.leave_code or not rec.leave_code.strip():
                 raise ValidationError(_("Code / Abbreviation is required."))
+            duplicate = self.with_context(active_test=False).search_count([
+                ("id", "!=", rec.id),
+                ("company_id", "=", rec.company_id.id or False),
+                ("leave_code", "=ilike", rec.leave_code.strip()),
+            ])
+            if duplicate:
+                raise ValidationError(
+                    _("Leave Type code '%s' is already in use for this company.")
+                    % rec.leave_code.strip().upper()
+                )
+            if not re.fullmatch(r"#[0-9A-Fa-f]{6}", rec.cleon_color_hex or ""):
+                raise ValidationError(_("Colour must be a valid six-digit hex value, for example #3B82F6."))
             if rec.minimum_service_months < 0:
                 raise ValidationError(_("Minimum service period cannot be negative."))
             if rec.minimum_notice_days < 0:

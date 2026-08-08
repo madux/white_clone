@@ -288,8 +288,7 @@ class HrLeave(models.Model):
         LeaveType = self.env["hr.leave.type"]
         types = LeaveType.search([])
         result = []
-        palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"]
-        for index, lt in enumerate(types):
+        for lt in types:
             allocated = sum(self.env["hr.leave.allocation"].search([
                 ("employee_id", "in", emp_ids),
                 ("holiday_status_id", "=", lt.id),
@@ -315,7 +314,7 @@ class HrLeave(models.Model):
 
             result.append({
                 "name": lt.name,
-                "type_color": palette[index % len(palette)],
+                "type_color": lt.cleon_color_hex or "#64748B",
                 "bar_color": bar_color,
                 "used": round(used, 1),
                 "allocated": round(allocated, 1),
@@ -511,6 +510,7 @@ class HrLeave(models.Model):
                 "id": rec.holiday_status_id.id,
                 "name": rec.holiday_status_id.name or "",
                 "color": getattr(rec.holiday_status_id, "color", 0),
+                "color_hex": rec.holiday_status_id.cleon_color_hex or "#64748B",
             },
             "date_from": fields.Date.to_string(rec.request_date_from) if rec.request_date_from else "",
             "date_to": fields.Date.to_string(rec.request_date_to) if rec.request_date_to else "",
@@ -618,7 +618,12 @@ class HrLeave(models.Model):
                 "from": offset + 1 if total else 0,
                 "to": min(offset + page_size, total),
             },
-            "leave_types": [{"id": lt.id, "name": lt.name, "color": lt.color or 0} for lt in leave_types],
+            "leave_types": [{
+                "id": lt.id,
+                "name": lt.name,
+                "color": lt.color or 0,
+                "color_hex": lt.cleon_color_hex or "#64748B",
+            } for lt in leave_types],
             "departments": [{"id": dept.id, "name": dept.name} for dept in departments],
         }
 
@@ -1297,6 +1302,7 @@ class HrLeave(models.Model):
                 "leave_type_id": l.holiday_status_id.id,
                 "leave_type_name": l.holiday_status_id.name or "",
                 "color": getattr(l.holiday_status_id, "color", 0),
+                "color_hex": l.holiday_status_id.cleon_color_hex or "#64748B",
                 "date_from": fields.Date.to_string(l.request_date_from),
                 "date_to": fields.Date.to_string(l.request_date_to),
                 "duration": round(l.number_of_days or 0.0, 1),
@@ -1323,6 +1329,7 @@ class HrLeave(models.Model):
                 "id": lt.id,
                 "name": lt.name,
                 "color": getattr(lt, "color", 0),
+                "color_hex": lt.cleon_color_hex or "#64748B",
             } for lt in leave_types],
             "departments": [{
                 "id": dept.id,

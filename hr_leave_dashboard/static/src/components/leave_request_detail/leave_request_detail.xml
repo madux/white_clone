@@ -101,7 +101,7 @@
                             <div class="info-cell">
                                 <label>Leave Type</label>
                                 <strong>
-                                    <span class="leave-type-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(state.detail.leave_type.color)"/>
+                                    <span class="leave-type-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(state.detail.leave_type.color_hex)"/>
                                     <t t-esc="state.detail.leave_type.name"/>
                                 </strong>
                             </div>

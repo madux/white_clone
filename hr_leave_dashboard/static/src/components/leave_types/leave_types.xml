@@ -773,6 +773,9 @@
                                                           t-on-click="() => this.selectPresetColor(sw)"/>
                                                 </t>
                                             </div>
+                                            <t t-if="state.errors.colorHex">
+                                                <span class="text-danger micro-text d-block mt-1"><t t-esc="state.errors.colorHex"/></span>
+                                            </t>
                                         </div>
                                     </div>
                                 </t>

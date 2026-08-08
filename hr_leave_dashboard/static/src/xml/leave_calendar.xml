@@ -186,7 +186,7 @@
                                                     <!-- Render up to 3 visible leave blocks -->
                                                     <t t-foreach="dayLeaves.slice(0, 3)" t-as="leave" t-key="leave.id">
                                                         <div t-att-class="'calendar-leave-block ' + (leave.status === 'pending' ? 'pending ' : '')"
-                                                             t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"
+                                                             t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
                                                              t-on-click="() => this.openLeaveDetail(leave.id)"
                                                              t-att-title="leave.employee_name + ' (' + leave.leave_type_name + ')'">
                                                             <span class="leave-block-name"><t t-esc="leave.employee_name"/></span>
@@ -231,7 +231,7 @@
                                         <t t-else="">
                                             <t t-foreach="day.leaves" t-as="leave" t-key="leave.id">
                                                 <div t-att-class="'week-expanded-card ' + (leave.status === 'pending' ? 'pending' : '')"
-                                                     t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"
+                                                     t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
                                                      t-on-click="() => this.openLeaveDetail(leave.id)">
                                                     <strong class="card-emp-name"><t t-esc="leave.employee_name"/></strong>
                                                     <span class="card-leave-type"><t t-esc="leave.leave_type_name"/></span>
@@ -263,7 +263,7 @@
                                         <div class="day-leave-card-large p-3 border rounded d-flex align-items-center justify-content-between"
                                              t-on-click="() => this.openLeaveDetail(leave.id)">
                                             <div class="d-flex align-items-center gap-3">
-                                                <span class="leave-type-dot-lg" t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"/>
+                                                <span class="leave-type-dot-lg" t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"/>
                                                 <div>
                                                     <h5 class="mb-0 font-weight-bold text-dark"><t t-esc="leave.employee_name"/></h5>
                                                     <span class="text-muted small"><t t-esc="leave.department_name"/> · <t t-esc="leave.leave_type_name"/></span>
@@ -364,7 +364,7 @@
                         <div class="d-flex align-items-center gap-3 flex-wrap small">
                             <t t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id">
                                 <div class="legend-item d-flex align-items-center gap-1">
-                                    <span class="legend-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(leaveType.color, leaveType.name)"/>
+                                    <span class="legend-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(leaveType.color_hex)"/>
                                     <span><t t-esc="leaveType.name"/></span>
                                 </div>
                             </t>

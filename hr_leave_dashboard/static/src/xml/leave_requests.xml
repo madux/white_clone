@@ -193,7 +193,7 @@
                                         </td>
                                         <td>
                                             <span class="leave-type-cell">
-                                                <span t-att-class="'leave-type-dot o_tag_color_' + req.leave_type.color"/>
+                                                <span class="leave-type-dot" t-att-style="'background-color: ' + req.leave_type.color_hex"/>
                                                 <t t-esc="req.leave_type.name"/>
                                             </span>
                                         </td>

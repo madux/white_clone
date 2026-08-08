@@ -285,6 +285,9 @@ export class LeaveTypeFormModal extends Component {
         if (!f.code || !f.code.trim()) {
             f.code = (f.name || "LT").trim().substring(0, 3).toUpperCase();
         }
+        if (!/^#[0-9A-F]{6}$/i.test((f.colorHex || "").trim())) {
+            errors.colorHex = "Enter a valid six-digit hex colour, for example #3B82F6.";
+        }
         if (this.props.locations && this.props.locations.length > 0 && (!f.locationIds || f.locationIds.length === 0)) {
             errors.locations = "At least one applicable location is required.";
         }
