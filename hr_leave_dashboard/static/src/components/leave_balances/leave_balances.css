@@ -334,18 +334,61 @@
 .o_lb_adjust_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee}
 .o_lb_adjust_actions{display:flex;align-items:center;gap:10px}
 
-/* Leave History modal */
-.o_lb_history{width:min(960px,94vw)}
-.o_lb_history_header{background:linear-gradient(120deg,#ed1970,#9b3de0);color:white}
-.o_lb_history_header small{color:#ffe6f1}
-.o_lb_history_header img{width:46px;height:46px;border-radius:50%;object-fit:cover}
-.o_lb_history_count{color:#7e899d;margin:12px 0;font-size:13px}
-.o_lb_request_card{border:1px solid #e2e7ef;border-radius:10px;padding:14px;margin:10px 0;cursor:pointer;transition:border-color .15s,box-shadow .15s}
-.o_lb_request_card:hover{border-color:#ed1970;box-shadow:0 4px 14px #ed197018}
-.o_lb_request_top small{margin-left:8px;color:#8490a5}
-.o_lb_request_meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:#f8fafc;padding:10px;border-radius:7px;margin:10px 0}
-.o_lb_request_meta small,.o_lb_request_meta b{display:block}
-.o_lb_request_meta small{color:#8490a5;font-size:11px}
+/* ── FR-303–FR-309: Complete Leave History Modal ─────────────────── */
+.o_lb_hist_modal{width:min(760px,94vw);max-height:90vh;border-radius:16px;overflow:hidden}
+
+/* FR-303: Gradient Header */
+.o_lb_hist_header{background:linear-gradient(135deg,#d91b6c 0%,#a822b3 100%);color:white;padding:18px 24px;display:flex;align-items:flex-start;justify-content:space-between}
+.o_lb_hist_emp_info{display:flex;align-items:center;gap:14px}
+.o_lb_hist_avatar{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);object-fit:cover;flex-shrink:0}
+.o_lb_hist_emp_name{font-size:16px;font-weight:700;margin:0;color:white}
+.o_lb_hist_emp_sub{font-size:12px;color:rgba(255,255,255,0.85);display:block;margin:2px 0 6px}
+.o_lb_hist_title_badge{font-size:12px;font-weight:600;color:white;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px}
+.o_lb_hist_close_btn{border:0;background:transparent;color:white;font-size:24px;cursor:pointer;line-height:1;opacity:.8;transition:opacity .15s}
+.o_lb_hist_close_btn:hover{opacity:1}
+
+.o_lb_hist_body{padding:20px;overflow-y:auto;flex:1}
+
+/* FR-304: 4 Summary Stat Cards */
+.o_lb_hist_stats_row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.o_lb_hist_stat_card{background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;padding:12px 14px;text-align:center}
+.o_lb_hist_stat_card small{display:block;font-size:10px;font-weight:700;color:#8490a5;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
+.o_lb_hist_stat_card b{display:block;font-size:22px;font-weight:700;line-height:1.1}
+.o_lb_hist_stat_card span{display:block;font-size:11px;color:#8490a5;margin-top:4px}
+
+/* FR-305: Toolbar (Search taking majority length, filter, export in 1 row) */
+.o_lb_hist_toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.o_lb_hist_search_box{flex:1;display:flex;align-items:center;background:white;border:1px solid #dce2ec;border-radius:8px;padding:0 12px;height:38px;transition:border-color .15s,box-shadow .15s}
+.o_lb_hist_search_box:focus-within{border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+.o_lb_hist_search_icon{color:#9aa3b4;font-size:13px;margin-right:8px}
+.o_lb_hist_search_input{border:0;background:transparent;width:100%;font-size:13px;color:#172033;outline:none}
+
+.o_lb_hist_select_box{display:flex;align-items:center;background:white;border:1px solid #dce2ec;border-radius:8px;padding:0 10px;height:38px;transition:border-color .15s}
+.o_lb_hist_filter_icon{color:#8490a5;font-size:12px;margin-right:6px}
+.o_lb_hist_select{border:0;background:transparent;font-size:13px;font-weight:600;color:#172033;outline:none;cursor:pointer}
+
+.o_lb_hist_export_btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;background:white;border:1px solid #dce2ec;border-radius:8px;font-size:13px;font-weight:600;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
+.o_lb_hist_export_btn:hover{background:#f8fafc;border-color:#b0bbc9}
+
+/* FR-306–FR-308: Leave Request Cards list */
+.o_lb_hist_card_list{display:flex;flex-direction:column;gap:12px}
+.o_lb_hist_card{background:white;border:1px solid #e5e9f0;border-left:4px solid #ed1970;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.o_lb_hist_card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);border-color:#dce2ec}
+.o_lb_hist_card_header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.o_lb_hist_card_title{font-size:14px;font-weight:700;color:#172033;margin:0}
+.o_lb_hist_card_sub{font-size:12px;color:#8490a5;margin-top:2px}
+
+.o_lb_hist_card_meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;padding:10px 12px;border-radius:8px;margin-bottom:8px}
+.o_lb_hist_meta_item small{display:flex;align-items:center;gap:5px;font-size:11px;color:#8490a5;margin-bottom:2px}
+.o_lb_hist_meta_item b{font-size:12px;color:#172033;font-weight:600}
+
+.o_lb_hist_card_extra,.o_lb_hist_card_notes{font-size:12px;color:#444;margin-top:6px;display:flex;align-items:center;gap:6px}
+.o_lb_hist_card_extra i,.o_lb_hist_card_notes i{color:#8490a5}
+
+/* FR-309: Footer */
+.o_lb_hist_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee;background:white}
+.o_lb_hist_count{font-size:12px;color:#8490a5}
+
 
 /* Status badges */
 .o_lb_status{padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;text-transform:capitalize}

@@ -575,8 +575,135 @@
       </div>
 
 
-      <!-- Leave History modal -->
-      <div t-if="state.historyOpen" class="o_lb_overlay"><section class="o_lb_modal o_lb_history"><header class="o_lb_history_header"><div class="o_lb_employee"><img t-att-src="state.history.employee.avatar_url"/><span><h3>Complete Leave History</h3><b t-esc="state.history.employee.name"/><small><t t-esc="state.history.employee.code"/> · <t t-esc="state.history.employee.department"/></small></span></div><button t-on-click="() => state.historyOpen=false">&#215;</button></header><div class="o_lb_modal_body"><div class="o_lb_summary"><div><small>Total Approved</small><b t-esc="state.history.summary.approved"/><span><t t-esc="state.history.summary.approved_days"/> days</span></div><div><small>Pending</small><b t-esc="state.history.summary.pending"/></div><div><small>Rejected</small><b t-esc="state.history.summary.rejected"/></div><div><small>Total Requests</small><b t-esc="state.history.summary.total"/></div></div><div class="o_lb_tools"><input t-model="state.historySearch" placeholder="Search history..."/><select t-model="state.historyStatus"><option value="all">All statuses</option><option value="approved">Approved</option><option value="pending">Pending</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option></select><button t-on-click="exportHistory">Export CSV</button></div><div class="o_lb_history_count">Showing <t t-esc="filteredHistory.length"/> result(s)</div><article class="o_lb_request_card" t-foreach="filteredHistory" t-as="req" t-key="req.id" t-on-click="() => state.requestDetailId=req.id"><div class="o_lb_request_top"><span><i class="o_lb_dot" t-att-style="'background:'+req.color_hex"/><b t-esc="req.leave_type"/> <small t-esc="req.reference"/></span><span t-att-class="'o_lb_status '+req.status" t-esc="req.status"/></div><h4 t-esc="req.reason || 'Leave request'"/><div class="o_lb_request_meta"><span><small>Leave Dates</small><b><t t-esc="req.date_from"/> – <t t-esc="req.date_to"/></b></span><span><small>Duration</small><b><t t-esc="req.duration"/> days</b></span><span><small>Applied On</small><b t-esc="req.applied_on || '—'"/></span><span t-if="req.approved_by"><small>Approved By</small><b><t t-esc="req.approved_by"/> · <t t-esc="req.approved_on"/></b></span></div><p t-if="req.reason"><b>Notes:</b> <t t-esc="req.reason"/></p></article><p t-if="!filteredHistory.length" class="o_lb_empty">No leave requests match the selected filters.</p></div><footer><button t-on-click="() => state.historyOpen=false">Close</button></footer></section></div>
+      <!-- FR-303–FR-309: Complete Leave History modal -->
+      <div t-if="state.historyOpen" class="o_lb_overlay">
+        <section class="o_lb_modal o_lb_hist_modal">
+
+          <!-- FR-303: Gradient Header -->
+          <header class="o_lb_hist_header">
+            <div class="o_lb_hist_emp_info">
+              <img t-att-src="state.history.employee.avatar_url" class="o_lb_hist_avatar"/>
+              <div>
+                <h3 class="o_lb_hist_emp_name" t-esc="state.history.employee.name"/>
+                <small class="o_lb_hist_emp_sub"><t t-esc="state.history.employee.code"/> • <t t-esc="state.history.employee.department"/></small>
+                <div class="o_lb_hist_title_badge"><i class="fa fa-calendar"/> Complete Leave History</div>
+              </div>
+            </div>
+            <button class="o_lb_hist_close_btn" t-on-click="() => state.historyOpen = false">&#215;</button>
+          </header>
+
+          <div class="o_lb_modal_body o_lb_hist_body">
+
+            <!-- FR-304: 4 Summary Stat Cards -->
+            <div class="o_lb_hist_stats_row">
+              <div class="o_lb_hist_stat_card">
+                <small>TOTAL APPROVED</small>
+                <b class="text-success" t-esc="state.history.summary.approved"/>
+                <span><t t-esc="state.history.summary.approved_days"/> days</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>PENDING</small>
+                <b class="o_lb_text_amber" t-esc="state.history.summary.pending"/>
+                <span>Awaiting approval</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>REJECTED</small>
+                <b class="text-danger" t-esc="state.history.summary.rejected"/>
+                <span>Not approved</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>TOTAL REQUESTS</small>
+                <b class="text-dark" t-esc="state.history.summary.total"/>
+                <span>All time</span>
+              </div>
+            </div>
+
+            <!-- FR-305: Toolbar (Search field taking majority length + filter + export in 1 row) -->
+            <div class="o_lb_hist_toolbar">
+              <!-- Search box with magnifying glass icon inside -->
+              <div class="o_lb_hist_search_box">
+                <i class="fa fa-search o_lb_hist_search_icon"/>
+                <input class="o_lb_hist_search_input" t-model="state.historySearch" placeholder="Search leave requests..."/>
+              </div>
+
+              <!-- Filter dropdown with funnel icon -->
+              <div class="o_lb_hist_select_box">
+                <i class="fa fa-filter o_lb_hist_filter_icon"/>
+                <select class="o_lb_hist_select" t-model="state.historyStatus">
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <!-- Export button -->
+              <button class="o_lb_hist_export_btn" t-on-click="exportHistory">
+                <i class="fa fa-download"/> Export
+              </button>
+            </div>
+
+            <!-- FR-306–FR-308: Leave Request Cards list -->
+            <div class="o_lb_hist_card_list">
+              <article class="o_lb_hist_card" t-foreach="filteredHistory" t-as="req" t-key="req.id"
+                       t-att-style="'border-left-color:' + (req.color_hex || '#ed1970')"
+                       t-on-click="() => state.requestDetailId = req.id">
+                
+                <!-- Card Header -->
+                <div class="o_lb_hist_card_header">
+                  <div>
+                    <h4 class="o_lb_hist_card_title" t-esc="req.leave_type"/>
+                    <div class="o_lb_hist_card_sub" t-esc="req.reason || 'Leave Request'"/>
+                  </div>
+                  <span t-att-class="'o_lb_status ' + req.status">
+                    <t t-if="req.status === 'approved'"><i class="fa fa-check"/> Approved</t>
+                    <t t-elif="req.status === 'pending'"><i class="fa fa-clock-o"/> Pending</t>
+                    <t t-elif="req.status === 'rejected'"><i class="fa fa-times"/> Rejected</t>
+                    <t t-else=""><i class="fa fa-ban"/> <t t-esc="req.status"/></t>
+                  </span>
+                </div>
+
+                <!-- Meta info: Period & Applied On -->
+                <div class="o_lb_hist_card_meta">
+                  <div class="o_lb_hist_meta_item">
+                    <small><i class="fa fa-calendar-o"/> Leave Period</small>
+                    <b><t t-esc="req.date_from"/> – <t t-esc="req.date_to"/> · <t t-esc="req.duration"/> days</b>
+                  </div>
+                  <div class="o_lb_hist_meta_item">
+                    <small><i class="fa fa-clock-o"/> Applied On</small>
+                    <b><t t-esc="req.applied_on || '—'"/></b>
+                  </div>
+                </div>
+
+                <!-- FR-307: Approved By (if approved) -->
+                <div t-if="req.approved_by" class="o_lb_hist_card_extra">
+                  <small class="text-muted"><i class="fa fa-user-o"/> Approved By: </small>
+                  <b><t t-esc="req.approved_by"/><t t-if="req.approved_on"> · <t t-esc="req.approved_on"/></t></b>
+                </div>
+
+                <!-- FR-308: Notes field (if notes exist) -->
+                <div t-if="req.reason" class="o_lb_hist_card_notes">
+                  <small class="text-muted"><i class="fa fa-file-text-o"/> Notes: </small>
+                  <em t-esc="req.reason"/>
+                </div>
+
+              </article>
+
+              <p t-if="!filteredHistory.length" class="o_lb_empty">No leave requests match the selected search or filter.</p>
+            </div>
+
+          </div>
+
+          <!-- FR-309: Footer bar with count & Close button -->
+          <footer class="o_lb_hist_footer">
+            <span class="o_lb_hist_count">Showing <t t-esc="filteredHistory.length"/> of <t t-esc="state.history.requests.length"/> leave requests</span>
+            <button class="o_lb_btn_ghost" t-on-click="() => state.historyOpen = false">Close</button>
+          </footer>
+
+        </section>
+      </div>
+
 
       <LeaveRequestDetailModal t-if="state.requestDetailId" requestId="state.requestDetailId" close.bind="() => state.requestDetailId=null"/>
     </div>
