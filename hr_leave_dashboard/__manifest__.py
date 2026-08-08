@@ -15,10 +15,11 @@
             'hr_leave_dashboard/static/src/js/dashboard.js',
             'hr_leave_dashboard/static/src/css/dashboard.css',
             'hr_leave_dashboard/static/src/xml/dashboard.xml',
+            'hr_leave_dashboard/static/src/js/leave_requests.js',
+            'hr_leave_dashboard/static/src/css/leave_requests.css',
+            'hr_leave_dashboard/static/src/xml/leave_requests.xml',
             'hr_leave_dashboard/static/src/components/calendar_sidebar.xml',
             'hr_leave_dashboard/static/src/components/calendar_sidebar.js',
-
-            
         ],
     },
     'license': 'LGPL-3',

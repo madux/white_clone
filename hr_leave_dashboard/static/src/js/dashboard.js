@@ -334,7 +334,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveRequests() {
-        return this.action.doAction("hr_holidays.hr_leave_action_action_approve_department");
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
     }
 
     openLeaveCalendar() {

@@ -5,7 +5,11 @@
         <field name="tag">hr_leave_dashboard</field>
     </record>
 
-    <!-- dashboard_menu.xml -->
+    <record id="action_hr_leave_requests_custom" model="ir.actions.client">
+        <field name="name">Leave Requests</field>
+        <field name="tag">hr_leave_requests_page</field>
+    </record>
+
     <menuitem id="menu_hr_leave_dashboard"
             name="Dashboard"
             action="action_hr_leave_dashboard"

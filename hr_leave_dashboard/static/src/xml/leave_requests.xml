@@ -1,0 +1,563 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_leave_dashboard.LeaveRequestsPage">
+        <div class="leaveapp">
+
+            <!-- ════════════════════════════════════════════════════
+                 MODULE SIDEBAR (Leave Management Navigation)
+                 ════════════════════════════════════════════════════ -->
+            <div t-att-class="state.sidebarCollapsed ? 'leavesidebar collapsed' : 'leavesidebar'">
+                <div class="o_cc_sidebar_header">
+                    <span class="o_cc_header_dot"/>
+                    <span class="o_cc_header_title">Leave Management</span>
+                    <button class="btn btn-sm o_cc_collapse_btn" t-on-click="toggleLeaveSidebar" title="Collapse sidebar">
+                        <i class="fa fa-th-large"/>
+                    </button>
+                </div>
+
+                <nav class="o_cc_nav">
+                    <a class="o_cc_nav_item" t-on-click="openDashboard">
+                        <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
+                        <span class="o_cc_nav_label">Dashboard</span>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openSetupExperience">
+                        <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
+                        <span class="o_cc_nav_label">Get Started</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <a class="o_cc_nav_item" t-on-click="openLeaveCalendar">
+                        <span class="o_cc_nav_icon"><i class="fa fa-calendar-o"/></span>
+                        <span class="o_cc_nav_label">Leave Calendar</span>
+                    </a>
+                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openLeaveRequests">
+                        <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
+                        <span class="o_cc_nav_label">Leave Request</span>
+                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
+                    </a>
+                    <p class="sidebar-section-label">Leave Configuration</p>
+                    <ul>
+                        <li>
+                            <a class="o_cc_nav_item" t-on-click="openLeaveTypes">
+                                <span class="o_cc_nav_icon"><i class="fa fa-tags"/></span>
+                                <span class="o_cc_nav_label">Leave Types</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="o_cc_nav_item" t-on-click="openLeaveBalances">
+                                <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
+                                <span class="o_cc_nav_label">Leave Balance Management</span>
+                            </a>
+                        </li>
+                    </ul>
+                    <p class="sidebar-section-label">Reports</p>
+                    <ul>
+                        <a class="o_cc_nav_item" t-on-click="openReports">
+                            <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
+                            <span class="o_cc_nav_label">Reports</span>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openAuditLog">
+                            <span class="o_cc_nav_icon"><i class="fa fa-shield"/></span>
+                            <span class="o_cc_nav_label">Audit Log</span>
+                        </a>
+                        <a class="o_cc_nav_item" t-on-click="openSettings">
+                            <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
+                            <span class="o_cc_nav_label">Settings</span>
+                        </a>
+                    </ul>
+                </nav>
+
+                <div class="o_cc_sidebar_footer">
+                    <span class="o_cc_footer_label">Solution By MaachSoft</span>
+                    <div class="o_cc_footer_status">
+                        <span class="o_cc_status_dot o_cc_status_green"/>
+                        All integrations active
+                    </div>
+                </div>
+            </div>
+
+            <!-- ════════════════════════════════════════════════════
+                 MAIN CONTENT AREA (Screen 9 — FR-073 to FR-113)
+                 ════════════════════════════════════════════════════ -->
+            <div class="o_leave_dashboard">
+
+                <!-- FR-073 & FR-074 Header -->
+                <div class="cleon-dash-header">
+                    <div class="cleon-dash-header-left">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
+                            <i class="fa fa-columns"/>
+                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="cleon-page-title-icon">
+                                <i class="fa fa-file-text-o"/>
+                            </div>
+                            <div>
+                                <h4 class="cleon-dash-title">Leave Requests</h4>
+                                <span class="cleon-dash-subtitle">Review, approve, or reject employee leave requests</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cleon-dash-header-right">
+                        <!-- FR-101: Create Leave Request Button -->
+                        <button type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
+                            <i class="fa fa-plus me-1"/> Create Leave Request
+                        </button>
+
+                        <button type="button" class="cleon-header-plain-btn" title="Take a Tour">
+                            <i class="fa fa-paper-plane-o"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Help / Guide">
+                            <i class="fa fa-question-circle-o"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Setup Wizard">
+                            <i class="fa fa-magic"/>
+                        </button>
+
+                        <!-- View Switcher -->
+                        <div class="cleon-view-toggle">
+                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('admin')">
+                                <i class="fa fa-circle-o"/> Admin View
+                            </button>
+                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('employee')">
+                                <i class="fa fa-user-o"/> Employee View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATUS SUMMARY CARDS (FR-075 to FR-077) -->
+                <div class="leave-request-summary">
+                    <button type="button"
+                            t-att-class="state.status === 'all' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('all')">
+                        <strong><t t-esc="state.counts.all"/></strong>
+                        <span>All Requests</span>
+                    </button>
+
+                    <button type="button"
+                            t-att-class="state.status === 'pending' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('pending')">
+                        <strong><t t-esc="state.counts.pending"/></strong>
+                        <span>Pending</span>
+                    </button>
+
+                    <button type="button"
+                            t-att-class="state.status === 'approved' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('approved')">
+                        <strong><t t-esc="state.counts.approved"/></strong>
+                        <span>Approved</span>
+                    </button>
+
+                    <button type="button"
+                            t-att-class="state.status === 'rejected' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('rejected')">
+                        <strong><t t-esc="state.counts.rejected"/></strong>
+                        <span>Rejected</span>
+                    </button>
+                </div>
+
+                <!-- SEARCH & FILTER TOOLBAR (FR-078 to FR-081) -->
+                <div class="leave-request-toolbar">
+                    <div class="request-search">
+                        <i class="fa fa-search"/>
+                        <input type="search"
+                               placeholder="Search by employee, leave type, or reason..."
+                               t-att-value="state.search"
+                               t-on-input="onSearchInput"/>
+                    </div>
+
+                    <select class="request-filter-select" t-on-change="onLeaveTypeFilter">
+                        <option value="">All Types</option>
+                        <t t-foreach="state.leaveTypes" t-as="type" t-key="type.id">
+                            <option t-att-value="type.id" t-att-selected="state.leaveTypeId === type.id">
+                                <t t-esc="type.name"/>
+                            </option>
+                        </t>
+                    </select>
+
+                    <select class="request-filter-select" t-on-change="onDepartmentFilter">
+                        <option value="">All Departments</option>
+                        <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                            <option t-att-value="dept.id" t-att-selected="state.departmentId === dept.id">
+                                <t t-esc="dept.name"/>
+                            </option>
+                        </t>
+                    </select>
+
+                    <button type="button" class="request-export-btn" t-on-click="exportRequests">
+                        <i class="fa fa-download me-1"/> Export
+                    </button>
+                </div>
+
+                <!-- FLOATING BULK ACTIONS BAR (FR-097 to FR-100) -->
+                <t t-if="state.selectedIds.length">
+                    <div class="bulk-actions-bar">
+                        <span class="bulk-count"><strong><t t-esc="state.selectedIds.length"/></strong> selected</span>
+                        <button type="button" class="btn btn-sm btn-success bulk-approve-btn" t-on-click="bulkApprove">
+                            <i class="fa fa-check me-1"/> Approve All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger bulk-reject-btn" t-on-click="openBulkReject">
+                            <i class="fa fa-times me-1"/> Reject All
+                        </button>
+                        <button type="button" class="btn btn-sm btn-link bulk-clear-btn" t-on-click="clearSelection">
+                            Clear Selection
+                        </button>
+                    </div>
+                </t>
+
+                <!-- DATA TABLE (FR-083 to FR-092) -->
+                <div class="panel table-panel">
+                    <div class="table-responsive">
+                        <table class="leave-request-table">
+                            <thead>
+                                <tr>
+                                    <th class="th-checkbox">
+                                        <input type="checkbox"
+                                               t-att-checked="this.allVisibleSelected"
+                                               t-on-change="toggleSelectAll"/>
+                                    </th>
+                                    <th>EMPLOYEE</th>
+                                    <th>LEAVE TYPE</th>
+                                    <th>DATES</th>
+                                    <th>DURATION</th>
+                                    <th>STATUS</th>
+                                    <th>APPROVER</th>
+                                    <th>SUBMITTED</th>
+                                    <th>ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="state.loading">
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            <i class="fa fa-spinner fa-spin me-2"/> Loading leave requests...
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-elif="!state.rows.length">
+                                    <tr>
+                                        <td colspan="9" class="dashboard-empty">
+                                            No leave requests found matching your filter criteria.
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-else="">
+                                    <tr t-foreach="state.rows" t-as="req" t-key="req.id">
+                                        <td class="td-checkbox">
+                                            <input type="checkbox"
+                                                   t-att-checked="state.selectedIds.includes(req.id)"
+                                                   t-on-change="() => this.toggleRow(req.id)"/>
+                                        </td>
+                                        <td>
+                                            <div class="employee-cell">
+                                                <div>
+                                                    <strong class="employee-name"><t t-esc="req.employee.name"/></strong>
+                                                    <small class="employee-dept"><t t-esc="req.employee.department"/></small>
+                                                </div>
+                                                <t t-if="req.admin_created">
+                                                    <span class="admin-created-badge" title="Created by administrator">Admin</span>
+                                                </t>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="leave-type-cell">
+                                                <span t-att-class="'leave-type-dot o_tag_color_' + req.leave_type.color"/>
+                                                <t t-esc="req.leave_type.name"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="request-date">
+                                                <i class="fa fa-calendar-o me-1"/>
+                                                <t t-if="req.date_from === req.date_to">
+                                                    <t t-esc="req.date_from"/>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="req.date_from"/> – <t t-esc="req.date_to"/>
+                                                </t>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <t t-esc="req.duration"/>
+                                            <t t-if="req.duration === 1"> day</t>
+                                            <t t-else=""> days</t>
+                                        </td>
+                                        <td>
+                                            <span t-att-class="'request-status ' + req.status">
+                                                <t t-if="req.status === 'approved'"><i class="fa fa-check me-1"/></t>
+                                                <t t-elif="req.status === 'pending'"><i class="fa fa-clock-o me-1"/></t>
+                                                <t t-elif="req.status === 'rejected'"><i class="fa fa-times me-1"/></t>
+                                                <t t-esc="req.status"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="approver-cell">
+                                                <span class="approver-bullet">•</span> <t t-esc="req.approver"/>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted"><t t-esc="req.submitted"/></span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="review-request-btn" t-on-click="() => this.reviewRequest(req.id)">
+                                                <i class="fa fa-eye me-1"/> Review
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- SERVER PAGINATION FOOTER (FR-093 to FR-096) -->
+                    <div class="request-pagination">
+                        <div class="page-size-control">
+                            Show
+                            <select t-on-change="changePageSize">
+                                <option value="10" t-att-selected="state.pageSize === 10">10</option>
+                                <option value="25" t-att-selected="state.pageSize === 25">25</option>
+                                <option value="50" t-att-selected="state.pageSize === 50">50</option>
+                                <option value="100" t-att-selected="state.pageSize === 100">100</option>
+                            </select>
+                            entries
+                        </div>
+
+                        <div class="results-summary">
+                            Showing <t t-esc="state.from"/> to <t t-esc="state.to"/> of <t t-esc="state.total"/> results
+                        </div>
+
+                        <div class="page-controls">
+                            <button type="button" class="page-btn" t-on-click="() => this.goToPage(1)" t-att-disabled="state.page === 1">First</button>
+                            <button type="button" class="page-btn" t-on-click="() => this.goToPage(state.page - 1)" t-att-disabled="state.page === 1">‹ Previous</button>
+                            <t t-foreach="this.visiblePages" t-as="p" t-key="p">
+                                <button type="button" t-att-class="p === state.page ? 'page-number active' : 'page-number'" t-on-click="() => this.goToPage(p)">
+                                    <t t-esc="p"/>
+                                </button>
+                            </t>
+                            <button type="button" class="page-btn" t-on-click="() => this.goToPage(state.page + 1)" t-att-disabled="state.page === state.pageCount">Next ›</button>
+                            <button type="button" class="page-btn" t-on-click="() => this.goToPage(state.pageCount)" t-att-disabled="state.page === state.pageCount">Last</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════════
+             REVIEW REQUEST DETAIL MODAL (FR-089)
+             ════════════════════════════════════════════════════ -->
+        <t t-if="state.showReviewModal">
+            <div class="cleon-welcome-backdrop" t-on-click="closeReviewModal"/>
+            <div class="cleon-detail-modal" role="dialog" aria-modal="true">
+                <button type="button" class="cleon-welcome-close" t-on-click="closeReviewModal"><i class="fa fa-times"/></button>
+                <div class="cleon-detail-header">
+                    <h4>Leave Request Detail</h4>
+                    <span class="text-muted">Review full employee submission details</span>
+                </div>
+                <div class="cleon-detail-body">
+                    <t t-if="state.detailLoading">
+                        <div class="py-4 text-center text-muted"><i class="fa fa-spinner fa-spin me-2"/> Loading request details...</div>
+                    </t>
+                    <t t-elif="state.selectedRequest">
+                        <div class="detail-grid">
+                            <div class="detail-item">
+                                <label>Employee</label>
+                                <strong><t t-esc="state.selectedRequest.employee.name"/></strong>
+                                <small class="d-block text-muted"><t t-esc="state.selectedRequest.employee.department"/></small>
+                            </div>
+                            <div class="detail-item">
+                                <label>Leave Type</label>
+                                <strong><t t-esc="state.selectedRequest.leave_type.name"/></strong>
+                            </div>
+                            <div class="detail-item">
+                                <label>Date Range</label>
+                                <strong><t t-esc="state.selectedRequest.date_from"/> – <t t-esc="state.selectedRequest.date_to"/></strong>
+                            </div>
+                            <div class="detail-item">
+                                <label>Duration</label>
+                                <strong><t t-esc="state.selectedRequest.duration"/> days</strong>
+                            </div>
+                            <div class="detail-item">
+                                <label>Status</label>
+                                <div><span t-att-class="'request-status ' + state.selectedRequest.status"><t t-esc="state.selectedRequest.status"/></span></div>
+                            </div>
+                            <div class="detail-item">
+                                <label>Approver</label>
+                                <strong><t t-esc="state.selectedRequest.approver"/></strong>
+                            </div>
+                        </div>
+
+                        <div class="detail-notes-box">
+                            <label>Reason / Admin Note</label>
+                            <p><t t-esc="state.selectedRequest.notes || 'No notes provided.'"/></p>
+                        </div>
+
+                        <t t-if="state.selectedRequest.admin_created">
+                            <div class="admin-attribution-alert">
+                                <i class="fa fa-info-circle me-1"/>
+                                Applied by <strong><t t-esc="state.selectedRequest.admin_created_by"/></strong> on behalf of <strong><t t-esc="state.selectedRequest.employee.name"/></strong> on <t t-esc="state.selectedRequest.admin_created_at"/>.
+                            </div>
+                        </t>
+
+                        <!-- Request History Timeline (FR-113) -->
+                        <t t-if="state.selectedRequest.history and state.selectedRequest.history.length">
+                            <div class="mt-3 border-top pt-2">
+                                <label class="font-weight-bold text-uppercase text-muted" style="font-size: 11px;">Request History</label>
+                                <ul class="list-unstyled mb-0 ms-1 border-start ps-3" style="border-color: #e2e8f0 !important;">
+                                    <t t-foreach="state.selectedRequest.history" t-as="item" t-key="item_index">
+                                        <li class="mb-2">
+                                            <strong class="d-block text-dark" style="font-size: 12px;"><t t-esc="item.title"/></strong>
+                                            <small class="text-muted"><t t-esc="item.timestamp"/></small>
+                                            <t t-if="item.note">
+                                                <p class="mb-0 text-muted fst-italic" style="font-size: 11px;"><t t-esc="item.note"/></p>
+                                            </t>
+                                        </li>
+                                    </t>
+                                </ul>
+                            </div>
+                        </t>
+                    </t>
+                </div>
+                <div class="cleon-detail-footer">
+                    <button type="button" class="btn btn-secondary" t-on-click="closeReviewModal">Close</button>
+                    <t t-if="state.selectedRequest and state.selectedRequest.can_review">
+                        <button type="button" class="btn btn-danger me-2" t-on-click="rejectSelectedRequest">
+                            <i class="fa fa-times me-1"/> Reject Request
+                        </button>
+                        <button type="button" class="btn btn-success" t-on-click="approveSelectedRequest">
+                            <i class="fa fa-check me-1"/> Approve Request
+                        </button>
+                    </t>
+                </div>
+            </div>
+        </t>
+
+        <!-- ════════════════════════════════════════════════════
+             REJECT REASON MODAL
+             ════════════════════════════════════════════════════ -->
+        <t t-if="state.showRejectModal">
+            <div class="cleon-welcome-backdrop" t-on-click="closeRejectModal"/>
+            <div class="cleon-reject-modal" role="dialog" aria-modal="true">
+                <button type="button" class="cleon-welcome-close" t-on-click="closeRejectModal"><i class="fa fa-times"/></button>
+                <div class="cleon-detail-header">
+                    <h4 class="text-danger"><i class="fa fa-exclamation-triangle me-1"/> Reject Leave Request</h4>
+                    <span class="text-muted">Specify the reason for rejection</span>
+                </div>
+                <div class="py-3">
+                    <label class="form-label font-weight-bold">Rejection Reason *</label>
+                    <textarea class="form-control" rows="3"
+                              placeholder="Provide a clear reason for rejecting this leave request..."
+                              t-model="state.rejectReason"/>
+                </div>
+                <div class="cleon-detail-footer">
+                    <button type="button" class="btn btn-secondary" t-on-click="closeRejectModal">Cancel</button>
+                    <button type="button" class="btn btn-danger ms-2" t-on-click="confirmReject">Confirm Rejection</button>
+                </div>
+            </div>
+        </t>
+
+        <!-- ════════════════════════════════════════════════════
+             ADMIN CREATE LEAVE REQUEST MODAL (FR-101 to FR-112)
+             ════════════════════════════════════════════════════ -->
+        <t t-if="state.showCreateModal">
+            <div class="cleon-welcome-backdrop" t-on-click="closeCreateModal"/>
+            <div class="cleon-create-modal" role="dialog" aria-modal="true">
+                <button type="button" class="cleon-welcome-close" t-on-click="closeCreateModal"><i class="fa fa-times"/></button>
+                <div class="cleon-detail-header">
+                    <h4>Create Leave Request (Admin)</h4>
+                    <span class="text-muted">Submit a leave request on behalf of an employee</span>
+                </div>
+                <div class="cleon-create-body">
+
+                    <!-- Employee Select (FR-102) -->
+                    <div class="mb-3">
+                        <label class="form-label font-weight-bold">Employee *</label>
+                        <select class="form-select" t-model="state.createForm.employee_id" t-on-change="onEmployeeSelect">
+                            <option value="">Select Employee...</option>
+                            <t t-foreach="state.createEmployees" t-as="emp" t-key="emp.id">
+                                <option t-att-value="emp.id"><t t-esc="emp.label || (emp.name + ' (' + emp.department + ')')"/></option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <!-- Leave Type Select (FR-103) -->
+                    <div class="mb-3" t-if="state.createForm.employee_id">
+                        <label class="form-label font-weight-bold">Leave Type *</label>
+                        <select class="form-select" t-model="state.createForm.leave_type_id" t-on-change="onDateOrTypeChange">
+                            <option value="">Select Leave Type...</option>
+                            <t t-foreach="state.createLeaveTypes" t-as="leaveType" t-key="leaveType.id">
+                                <option t-att-value="leaveType.id">
+                                    <t t-esc="leaveType.name"/>
+                                </option>
+                            </t>
+                        </select>
+                        <t t-if="this.selectedLeaveTypeInfo">
+                            <small t-att-class="this.selectedLeaveTypeInfo.balance > 0 ? 'text-success d-block mt-1 font-weight-bold' : 'text-danger d-block mt-1 font-weight-bold'">
+                                Available balance: <t t-esc="this.selectedLeaveTypeInfo.balance"/> days
+                            </small>
+                        </t>
+                    </div>
+
+                    <!-- Date From / To (FR-104) -->
+                    <div class="row g-2 mb-3" t-if="state.createForm.leave_type_id">
+                        <div class="col-6">
+                            <label class="form-label font-weight-bold">Start Date *</label>
+                            <input type="date" class="form-control" t-model="state.createForm.date_from" t-on-change="onDateOrTypeChange"/>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label font-weight-bold">End Date *</label>
+                            <input type="date" class="form-control" t-model="state.createForm.date_to" t-on-change="onDateOrTypeChange"/>
+                        </div>
+                    </div>
+
+                    <!-- Duration Preview (FR-104) -->
+                    <t t-if="state.createPreview">
+                        <div class="alert alert-info py-2 px-3 mb-3 font-weight-bold">
+                            Calculated Duration: <t t-esc="state.createPreview.duration"/> working day(s)
+                        </div>
+                    </t>
+
+                    <!-- Half Day Option (FR-104) -->
+                    <div class="form-check mb-3" t-if="state.createForm.leave_type_id">
+                        <input type="checkbox" class="form-check-input" id="half_day_chk" t-model="state.createForm.half_day" t-on-change="onDateOrTypeChange"/>
+                        <label class="form-check-label" for="half_day_chk">Half-day Request</label>
+                        <t t-if="state.createForm.half_day">
+                            <div class="mt-2 d-flex gap-3">
+                                <label class="form-check-label"><input type="radio" name="period_radio" value="am" t-model="state.createForm.period" t-on-change="onDateOrTypeChange"/> Morning (AM)</label>
+                                <label class="form-check-label"><input type="radio" name="period_radio" value="pm" t-model="state.createForm.period" t-on-change="onDateOrTypeChange"/> Afternoon (PM)</label>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Overlap Warning & Override (FR-107) -->
+                    <t t-if="state.showOverlapWarning">
+                        <div class="alert alert-warning mb-3">
+                            <h6 class="alert-heading mb-1"><i class="fa fa-exclamation-triangle me-1"/> Overlapping Request Warning</h6>
+                            <p class="mb-2 fs-7">This employee already has an active leave request overlapping these dates.</p>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="override_chk" t-model="state.overrideConflict"/>
+                                <label class="form-check-label font-weight-bold" for="override_chk">Acknowledge &amp; Override Conflict</label>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Admin Note (min 10 chars - FR-105) -->
+                    <div class="mb-3" t-if="state.createForm.leave_type_id">
+                        <label class="form-label font-weight-bold">Admin Note / Reason * (min 10 characters)</label>
+                        <textarea class="form-control" rows="3"
+                                  placeholder="Specify administrative reason for creating this request..."
+                                  t-model="state.createForm.admin_note"/>
+                    </div>
+
+                </div>
+                <div class="cleon-detail-footer">
+                    <button type="button" class="btn btn-secondary" t-on-click="closeCreateModal">Cancel</button>
+                    <button type="button" class="btn btn-primary ms-2" t-on-click="confirmCreateRequest" t-att-disabled="!this.isCreateFormValid || state.createSubmitting">
+                        <i class="fa fa-check me-1"/> Submit Request
+                    </button>
+                </div>
+            </div>
+        </t>
+
+    </t>
+</templates>
