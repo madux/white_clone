@@ -261,6 +261,13 @@ export class StaffDirectoryDashboard extends Component {
         return this.state.people.filter(p => this.state.activeProfile.direct_report_ids.includes(p.id));
     }
 
+    get activeProfileSimilarColleagues() {
+        if (!this.state.activeProfile) return [];
+        return this.state.people
+            .filter(p => p.department === this.state.activeProfile.department && p.id !== this.state.activeProfile.id)
+            .slice(0, 4);
+    }
+
     // ─── Event Handlers ──────────────────────────────────────────────────────
 
     onSearch(ev) {
