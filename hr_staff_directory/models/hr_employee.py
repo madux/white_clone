@@ -817,6 +817,8 @@ class HrEmployeeStaffDirectory(models.Model):
                 'work_mode':       work_mode,
                 'work_location':   work_location,
                 'manager_name':    emp.parent_id.name if emp.parent_id else 'CEO',
+                'manager_id':      emp.parent_id.id if emp.parent_id else False,
+                'direct_report_ids': emp.child_ids.ids if emp.child_ids else [],
                 'tenure':          tenure_label,
                 'work_email':      emp.work_email or '',
                 'work_phone':      emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',

@@ -251,6 +251,16 @@ export class StaffDirectoryDashboard extends Component {
         return this.LIFECYCLE_LABELS[state] || 'Active';
     }
 
+    get activeProfileManager() {
+        if (!this.state.activeProfile || !this.state.activeProfile.manager_id) return null;
+        return this.state.people.find(p => p.id === this.state.activeProfile.manager_id);
+    }
+
+    get activeProfileDirectReports() {
+        if (!this.state.activeProfile || !this.state.activeProfile.direct_report_ids) return [];
+        return this.state.people.filter(p => this.state.activeProfile.direct_report_ids.includes(p.id));
+    }
+
     // ─── Event Handlers ──────────────────────────────────────────────────────
 
     onSearch(ev) {

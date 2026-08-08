@@ -874,70 +874,42 @@
                                         <!-- MANAGER -->
                                         <div class="sdir-prof-section">
                                             <h3 class="sdir-prof-sec-title">MANAGER</h3>
-                                            <div class="sdir-prof-card sdir-prof-list-card sdir-prof-clickable-row">
-                                                <div class="sdir-prof-list-avatar sdir-prof-avatar-bg1">
-                                                    CEO
+                                            <div class="sdir-prof-card sdir-prof-list-card sdir-prof-clickable-row" t-if="activeProfileManager" t-on-click="() => this.openProfile(activeProfileManager.id)">
+                                                <div t-att-class="'sdir-prof-list-avatar sdir-ring-' + activeProfileManager.lifecycle_state"
+                                                     t-att-style="'background-color:' + avatarColor(activeProfileManager.name) + ';'">
+                                                    <t t-esc="initials(activeProfileManager.name)"/>
                                                 </div>
                                                 <div class="sdir-prof-list-text">
-                                                    <div class="sdir-prof-list-name">Chief Executive Officer</div>
-                                                    <div class="sdir-prof-list-role">Chief Executive Officer</div>
+                                                    <div class="sdir-prof-list-name" t-esc="activeProfileManager.name"/>
+                                                    <div class="sdir-prof-list-role" t-esc="activeProfileManager.job_title"/>
                                                 </div>
                                                 <div class="sdir-prof-list-chevron">›</div>
+                                            </div>
+                                            <div class="sdir-prof-empty-state" t-else="">
+                                                No manager
                                             </div>
                                         </div>
                                         
                                         <!-- DIRECT REPORTS -->
                                         <div class="sdir-prof-section">
-                                            <h3 class="sdir-prof-sec-title">DIRECT REPORTS (6)</h3>
-                                            <div class="sdir-prof-card sdir-prof-list-card">
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg2">MM</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Michael Mohammed</div>
-                                                        <div class="sdir-prof-list-role">UI Designer</div>
+                                            <h3 class="sdir-prof-sec-title">DIRECT REPORTS<t t-if="activeProfileDirectReports.length > 0"> (<t t-esc="activeProfileDirectReports.length"/>)</t></h3>
+                                            <div class="sdir-prof-card sdir-prof-list-card" t-if="activeProfileDirectReports.length > 0">
+                                                <t t-foreach="activeProfileDirectReports" t-as="report" t-key="report.id">
+                                                    <div class="sdir-prof-clickable-row sdir-prof-row-item" t-on-click="() => this.openProfile(report.id)">
+                                                        <div t-att-class="'sdir-prof-list-avatar sdir-ring-' + report.lifecycle_state"
+                                                             t-att-style="'background-color:' + avatarColor(report.name) + ';'">
+                                                            <t t-esc="initials(report.name)"/>
+                                                        </div>
+                                                        <div class="sdir-prof-list-text">
+                                                            <div class="sdir-prof-list-name" t-esc="report.name"/>
+                                                            <div class="sdir-prof-list-role" t-esc="report.job_title"/>
+                                                        </div>
+                                                        <div class="sdir-prof-list-chevron">›</div>
                                                     </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg3">RJ</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Rasheed Jenkins</div>
-                                                        <div class="sdir-prof-list-role">Product Designer</div>
-                                                    </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg1">TV</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Tolu Vasser</div>
-                                                        <div class="sdir-prof-list-role">Head of Design</div>
-                                                    </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg4">EW</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Ethan Wilson</div>
-                                                        <div class="sdir-prof-list-role">Senior Product Designer</div>
-                                                    </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg2">AU</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Amina Umeh</div>
-                                                        <div class="sdir-prof-list-role">Head of Design</div>
-                                                    </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
-                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
-                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg3">LP</div>
-                                                    <div class="sdir-prof-list-text">
-                                                        <div class="sdir-prof-list-name">Lily Park</div>
-                                                        <div class="sdir-prof-list-role">UX Researcher</div>
-                                                    </div>
-                                                    <div class="sdir-prof-list-chevron">›</div>
-                                                </div>
+                                                </t>
+                                            </div>
+                                            <div class="sdir-prof-empty-state" t-else="">
+                                                No direct reports
                                             </div>
                                         </div>
                                         
