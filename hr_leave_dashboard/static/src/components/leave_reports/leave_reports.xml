@@ -11,14 +11,14 @@
             <h2>Reports</h2>
             <p>Generate and export leave management reports</p>
           </div>
-          <div class="o_lr_view_toggle">
+          <div class="o_lr_header_actions"><button title="Section Tour" t-on-click="openTour"><i class="fa fa-paper-plane-o"/></button><button title="Help / Guide" t-on-click="openHelp"><i class="fa fa-question-circle-o"/></button><button title="Setup Wizard" t-on-click="openSetup"><i class="fa fa-magic"/></button><div class="o_lr_view_toggle">
             <button t-att-class="state.viewMode === 'admin' ? 'active':''" t-on-click="() => setViewMode('admin')">
               <i class="fa fa-user-circle-o"/> Admin View
             </button>
             <button t-att-class="state.viewMode === 'employee' ? 'active':''" t-on-click="() => setViewMode('employee')">
               <i class="fa fa-user"/> Employee View
             </button>
-          </div>
+          </div></div>
         </header>
 
         <section class="o_lr_panel">

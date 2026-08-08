@@ -18,6 +18,8 @@
     'assets': {
         'web.assets_backend': [
             'hr_leave_dashboard/static/src/js/dashboard.js',
+            'hr_leave_dashboard/static/src/components/dashboard_router/dashboard_router.js',
+            'hr_leave_dashboard/static/src/components/dashboard_router/dashboard_router.xml',
             'hr_leave_dashboard/static/src/css/dashboard.css',
             'hr_leave_dashboard/static/src/xml/dashboard.xml',
             'hr_leave_dashboard/static/src/js/leave_requests.js',
@@ -45,6 +47,10 @@
             'hr_leave_dashboard/static/src/components/leave_audit/leave_audit.js',
             'hr_leave_dashboard/static/src/components/leave_audit/leave_audit.xml',
             'hr_leave_dashboard/static/src/components/leave_audit/leave_audit.css',
+            'hr_leave_dashboard/static/src/components/employee_dashboard/employee_dashboard.js',
+            'hr_leave_dashboard/static/src/components/employee_dashboard/employee_dashboard.xml',
+            'hr_leave_dashboard/static/src/components/employee_dashboard/employee_dashboard.css',
+            'hr_leave_dashboard/static/src/components/employee_dashboard/employee_dashboard_alignment.css',
         ],
     },
     'license': 'LGPL-3',

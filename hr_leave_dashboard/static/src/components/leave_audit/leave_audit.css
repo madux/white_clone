@@ -4,6 +4,9 @@
 .o_la_header h2 { margin: 0; font-size: 22px; font-weight: 700; }
 .o_la_header p { margin: 3px 0 0; color: #7d889f; }
 .o_la_view { display: flex; padding: 4px; background: #f1f3f8; border-radius: 8px; }
+.o_la_header_actions { display: flex; align-items: center; gap: 8px; }
+.o_la_header_actions > button { width: 34px; height: 34px; border: 0; border-radius: 7px; background: transparent; color: #4d5a70; font-size: 16px; }
+.o_la_header_actions > button:hover { background: #f2f4f8; color: #e91e75; }
 .o_la_view button { border: 0; background: transparent; border-radius: 6px; padding: 7px 13px; color: #69758c; }
 .o_la_view button.active { background: #fff; color: #e91e78; box-shadow: 0 1px 4px #cad0dc; }
 .o_la_toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }

@@ -74,7 +74,7 @@ export class HrLeaveDashboard extends Component {
         };
 
         onWillStart(async () => {
-            const force = new URLSearchParams(window.location.search).get("leave_setup") === "1";
+            const force = new URLSearchParams(window.location.search).get("leave_setup") === "1" || Boolean(this.props.action?.context?.open_setup_wizard);
             const [, setup] = await Promise.all([
                 loadBundle("web.chartjs_lib"),
                 this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force }),
@@ -144,10 +144,7 @@ export class HrLeaveDashboard extends Component {
         if (!["admin", "employee"].includes(mode)) return;
         this.state.viewMode = mode;
         if (mode === "employee") {
-            this.notification.add(
-                "Employee preview will use the employee-facing Leave view when that screen is implemented.",
-                { title: "Employee View", type: "info" }
-            );
+            return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
         }
     }
 

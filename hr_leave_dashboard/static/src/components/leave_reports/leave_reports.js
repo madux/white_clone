@@ -13,6 +13,7 @@ export class LeaveReportsPage extends Component {
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
+        this.action = useService("action");
         this.typeChartRef = useRef("typeChart");
         this.trendChartRef = useRef("trendChart");
         this.departmentChartRef = useRef("departmentChart");
@@ -41,6 +42,9 @@ export class LeaveReportsPage extends Component {
     }
     setTab(key) { this.state.activeTab = key; }
     setViewMode(mode) { this.state.viewMode = mode; }
+    openTour() { this.notification.add("Choose a report tab, then use the shared filters to update every report view.", { title: "Reports Tour", type: "info" }); }
+    openHelp() { this.notification.add("Refresh retrieves live data; Print and Export use the active tab and filters.", { title: "Reports Guide", type: "info" }); }
+    openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
     selectDepartment(id) { this.state.selectedDepartmentId = this.state.selectedDepartmentId === id ? null : id; }
     async viewToday() { this.state.filters.date_range = "today"; await this.refresh(); }
     destroyCharts() { Object.values(this.charts).forEach(chart => chart?.destroy()); this.charts = {}; }

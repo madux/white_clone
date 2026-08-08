@@ -133,6 +133,74 @@ class HrLeave(models.Model):
             "recent_requests": self._get_recent_requests(emp_ids),
         }
 
+    @api.model
+    def get_employee_dashboard_data(self):
+        """Return self-service leave data for the logged-in employee only."""
+        employee = self.env["hr.employee"].sudo().search([
+            ("user_id", "=", self.env.user.id),
+            ("company_id", "in", self.env.companies.ids),
+            ("active", "=", True),
+        ], limit=1)
+        if not employee:
+            raise AccessError(_("Your user is not linked to an active employee record."))
+
+        today = fields.Date.context_today(self)
+        year_start = today.replace(month=1, day=1)
+        year_end = today.replace(month=12, day=31)
+        Leave = self.sudo()
+        Allocation = self.env["hr.leave.allocation"].sudo()
+        base_domain = [("employee_id", "=", employee.id), ("is_cancelled", "=", False)]
+        allocations = Allocation.search([
+            ("employee_id", "=", employee.id), ("state", "=", "validate"),
+            "|", ("date_from", "=", False), ("date_from", "<=", today),
+            "|", ("date_to", "=", False), ("date_to", ">=", today),
+        ])
+        approved = Leave.search(base_domain + [("state", "=", "validate")])
+        pending = Leave.search(base_domain + [("state", "in", ("confirm", "validate1"))])
+        type_ids = (allocations.mapped("holiday_status_id") | approved.mapped("holiday_status_id") | pending.mapped("holiday_status_id")).ids
+        balances = []
+        for leave_type in self.env["hr.leave.type"].sudo().browse(type_ids).sorted("name"):
+            allocated_days = sum(allocations.filtered(lambda a: a.holiday_status_id == leave_type).mapped("number_of_days"))
+            used_days = sum(approved.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
+            pending_days = sum(pending.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
+            remaining = allocated_days - used_days
+            balances.append({
+                "id": leave_type.id, "name": leave_type.name,
+                "color": leave_type.cleon_color_hex or "#3B82F6",
+                "allocated": round(allocated_days, 1), "used": round(used_days, 1),
+                "pending": round(pending_days, 1), "remaining": round(remaining, 1),
+                "percent": round(min(100, max(0, remaining * 100 / allocated_days)), 1) if allocated_days else 0,
+            })
+
+        upcoming = Leave.search(base_domain + [
+            ("state", "=", "validate"), ("request_date_from", ">", today),
+        ], order="request_date_from asc", limit=1)
+        recent = Leave.search(base_domain, order="create_date desc", limit=5)
+        on_leave = Leave.search_count(base_domain + [
+            ("state", "=", "validate"), ("request_date_from", "<=", today),
+            ("request_date_to", ">=", today),
+        ])
+        holidays = self.env["resource.calendar.leaves"].sudo().search([
+            ("date_from", ">=", fields.Datetime.to_string(today)),
+            ("date_from", "<=", fields.Datetime.to_string(today + relativedelta(days=90))),
+            "|", ("calendar_id", "=", False), ("calendar_id", "=", employee.resource_calendar_id.id),
+        ], order="date_from asc", limit=5)
+        status_labels = {"draft": _("Draft"), "confirm": _("Pending"), "validate1": _("Pending"), "validate": _("Approved"), "refuse": _("Rejected"), "cancel": _("Cancelled")}
+        return {
+            "employee": {"id": employee.id, "name": employee.name},
+            "can_admin": self.env.user.has_group("hr_holidays.group_hr_holidays_manager") or self.env.user.has_group("base.group_system"),
+            "kpis": {
+                "total_balance": round(sum(item["remaining"] for item in balances), 1),
+                "pending_requests": len(pending),
+                "approved_this_year": Leave.search_count(base_domain + [("state", "=", "validate"), ("request_date_from", ">=", year_start), ("request_date_from", "<=", year_end)]),
+                "at_work": not bool(on_leave),
+            },
+            "balances": balances,
+            "upcoming_leave": [{"type": leave.holiday_status_id.name, "start": fields.Date.to_string(leave.request_date_from), "end": fields.Date.to_string(leave.request_date_to), "days": round(leave.number_of_days, 1)} for leave in upcoming],
+            "holidays": [{"name": holiday.name, "date": fields.Datetime.to_string(holiday.date_from), "days_away": max(0, (holiday.date_from.date() - today).days)} for holiday in holidays],
+            "recent": [{"id": leave.id, "type": leave.holiday_status_id.name, "start": fields.Date.to_string(leave.request_date_from), "end": fields.Date.to_string(leave.request_date_to), "days": round(leave.number_of_days, 1), "state": leave.state, "status": status_labels.get(leave.state, leave.state)} for leave in recent],
+        }
+
     # ---------------------------------------------------------
     # KPI CARDS — FR-055 to FR-060
     # ---------------------------------------------------------
