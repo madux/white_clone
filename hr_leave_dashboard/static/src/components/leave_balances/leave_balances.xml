@@ -52,9 +52,10 @@
                   <i t-att-class="'fa '+card.icon"/>
                 </span>
               </div>
-              <strong t-esc="card.displayValue"/>
-              <!-- Trend: always plain/neutral black per design -->
-              <span t-if="card.trendLabel" class="o_lb_kpi_trend neutral" t-esc="card.trendLabel"/>
+              <!-- FR-255: red count text when negative_employees > 0 -->
+              <strong t-att-class="card.redCount ? 'o_lb_kpi_red' : ''" t-esc="card.displayValue"/>
+              <!-- FR-254: green for positive trends, red for negative -->
+              <span t-if="card.trendLabel" t-att-class="'o_lb_kpi_trend ' + card.trendDirection" t-esc="card.trendLabel"/>
               <span t-else="" class="o_lb_kpi_trend neutral">Current rolling window</span>
             </article>
           </t>

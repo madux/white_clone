@@ -145,7 +145,18 @@ class HrLeaveBalanceTransaction(models.Model):
 
     @api.model
     def _pct_change(self, current, previous):
-        return round(((current - previous) / previous) * 100, 1) if previous else 0
+        """Return month-on-month % change rounded to 1 decimal.
+
+        Special cases:
+        - previous=0, current>0  → +100 (treat as full positive change)
+        - previous>0, current=0  → -100 (full drop)
+        - both 0                 → 0 (no change)
+        """
+        if previous == current:
+            return 0
+        if not previous:
+            return 100 if current > 0 else -100
+        return round(((current - previous) / previous) * 100, 1)
 
     @api.model
     def get_balance_page_data(self, filters=None, sort=None):

@@ -83,21 +83,22 @@ export class LeaveBalancesPage extends Component {
     get kpiCards() {
         const kpis = this.state.kpis;
         const format = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-        // Trend labels are always plain (no color coloring per design spec)
+        // FR-254: green for positive trends, red for negative trends
         const trend = (value, suffix = "") => {
             if (value === undefined || value === null) return {};
             return {
                 trendLabel: `${value > 0 ? "+" : ""}${value}${suffix} vs last month`,
-                trendDirection: "neutral",
+                trendDirection: value > 0 ? "up" : value < 0 ? "down" : "neutral",
             };
         };
+        const negCount = Number(kpis.negative_employees || 0);
         return [
-            // fa-user-secret gives two-silhouette look; closest FA4 "two people" icon is fa-users
-            { key: "total_employees", label: "Total Employees", icon: "fa-users", iconClass: "o_lb_kpi_two_people", color: "blue", displayValue: format(kpis.total_employees), ...trend(kpis.total_employees_trend_pct, "%") },
+            { key: "total_employees", label: "Total Employees", icon: "fa-users", color: "blue", displayValue: format(kpis.total_employees), ...trend(kpis.total_employees_trend_pct, "%") },
             { key: "allocated", label: "Total Leave Days Allocated", icon: "fa-calendar-check-o", color: "rose", displayValue: format(kpis.allocated), ...trend(kpis.allocated_trend_pct, "%") },
             { key: "used", label: "Total Leave Days Used", icon: "fa-check-circle", color: "green", displayValue: format(kpis.used), ...trend(kpis.used_trend_pct, "%") },
             { key: "remaining", label: "Total Remaining", icon: "fa-balance-scale", color: "amber", displayValue: format(kpis.remaining), highlight: true, ...trend(kpis.remaining_trend_pct, "%") },
-            { key: "negative_employees", label: "Employees with Negative Balance", icon: "fa-exclamation-triangle", color: "orange", displayValue: format(kpis.negative_employees), ...trend(kpis.negative_employees_trend) },
+            // FR-255: orange/amber alert icon, count in red when > 0
+            { key: "negative_employees", label: "Employees with Negative Balance", icon: "fa-exclamation-triangle", color: "orange", displayValue: format(negCount), redCount: negCount > 0, ...trend(kpis.negative_employees_trend) },
             { key: "expiring_employees", label: "Employees with Expiring Leave", icon: "fa-clock-o", color: "amber", displayValue: format(kpis.expiring_employees), clickable: true },
         ];
     }

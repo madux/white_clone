@@ -54,9 +54,13 @@
 .o_lb_kpi_icon.green{background:#e6faf3;color:#00b884}
 .o_lb_kpi_icon.amber{background:#fff3d6;color:#c17700}
 .o_lb_kpi_icon.orange{background:#fff0e6;color:#e8590c}
-/* Trend: ALWAYS plain dark/muted — no green/red per design */
-.o_lb_kpi_trend{font-size:11px;font-weight:500;color:#7f8ba1}
-.o_lb_kpi_trend.up,.o_lb_kpi_trend.down,.o_lb_kpi_trend.neutral{color:#7f8ba1}
+/* Trend: FR-254 — green for positive, red for negative */
+.o_lb_kpi_trend{font-size:11px;font-weight:600}
+.o_lb_kpi_trend.up{color:#16874d}
+.o_lb_kpi_trend.down{color:#cb2639}
+.o_lb_kpi_trend.neutral{color:#8490a5;font-weight:500}
+/* FR-255 — red count text on negative balance card when count > 0 */
+.o_lb_kpi_red{color:#cb2639!important}
 
 /* Table */
 .o_lb_table_wrap{background:white;border:1px solid #e1e6ef;border-radius:10px;overflow:visible;margin-top:12px}
