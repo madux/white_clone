@@ -20,20 +20,28 @@ class HrLeave(models.Model):
             raise AccessError(_("Only a Time Off Administrator can access this dashboard."))
 
     @api.model
+    def _get_company_employee_ids(self):
+        return self.env["hr.employee"].search([
+            ("active", "=", True),
+            ("company_id", "=", self.env.company.id),
+        ]).ids
+
+    @api.model
     def get_dashboard_data(self, months=6):
         self._check_leave_dashboard_access()
 
         months = int(months) if months in (6, 12) else 6
-        coverage = self._get_department_coverage()
+        emp_ids = self._get_company_employee_ids()
+        coverage = self._get_department_coverage(emp_ids)
 
         return {
-            "kpis": self._get_kpis(coverage_alerts=coverage["alert_count"]),
-            "trends": self._get_leave_trends(months),
-            "by_type": self._get_leave_type_distribution(),
-            "balance": self._get_leave_balance_by_type(),
-            "approval_overview": self._get_approval_overview(),
+            "kpis": self._get_kpis(emp_ids, coverage_alerts=coverage["alert_count"]),
+            "trends": self._get_leave_trends(emp_ids, months),
+            "by_type": self._get_leave_type_distribution(emp_ids),
+            "balance": self._get_leave_balance_by_type(emp_ids),
+            "approval_overview": self._get_approval_overview(emp_ids),
             "department_coverage": coverage["rows"],
-            "recent_requests": self._get_recent_requests(),
+            "recent_requests": self._get_recent_requests(emp_ids),
         }
 
     # ---------------------------------------------------------
@@ -41,54 +49,42 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_kpis(self, coverage_alerts=0):
-        company = self.env.company
+    def _get_kpis(self, emp_ids, coverage_alerts=0):
         today = fields.Date.context_today(self)
 
-        Employee = self.env["hr.employee"]
-        Allocation = self.env["hr.leave.allocation"]
+        total_employees = len(emp_ids)
 
-        employee_domain = [
-            ("active", "=", True),
-            ("company_id", "=", company.id),
-        ]
-        leave_company_domain = [
-            ("company_id", "=", company.id),
-        ]
-
-        total_employees = Employee.search_count(employee_domain)
-
-        on_leave_today = self.search_count(
-            leave_company_domain + [
-                ("state", "=", "validate"),
-                ("request_date_from", "<=", today),
-                ("request_date_to", ">=", today),
-            ]
-        )
-
-        pending_approvals = self.search_count(
-            leave_company_domain + [
-                ("state", "in", ("confirm", "validate1")),
-            ]
-        )
-
-        upcoming_7_days = self.search_count(
-            leave_company_domain + [
-                ("state", "=", "validate"),
-                ("request_date_from", ">", today),
-                ("request_date_from", "<=", today + relativedelta(days=7)),
-            ]
-        )
-
-        allocations = Allocation.search([
-            ("company_id", "=", company.id),
+        on_leave_today = self.search_count([
+            ("employee_id", "in", emp_ids),
             ("state", "=", "validate"),
-        ])
+            ("request_date_from", "<=", today),
+            ("request_date_to", ">=", today),
+        ]) if emp_ids else 0
+
+        pending_approvals = self.search_count([
+            ("employee_id", "in", emp_ids),
+            ("state", "in", ("confirm", "validate1")),
+        ]) if emp_ids else 0
+
+        upcoming_7_days = self.search_count([
+            ("employee_id", "in", emp_ids),
+            ("state", "=", "validate"),
+            ("request_date_from", ">", today),
+            ("request_date_from", "<=", today + relativedelta(days=7)),
+        ]) if emp_ids else 0
+
+        allocations = self.env["hr.leave.allocation"].search([
+            ("employee_id", "in", emp_ids),
+            ("state", "=", "validate"),
+        ]) if emp_ids else self.env["hr.leave.allocation"]
+
         allocated_days = sum(allocations.mapped("number_of_days"))
 
-        approved_leaves = self.search(
-            leave_company_domain + [("state", "=", "validate")]
-        )
+        approved_leaves = self.search([
+            ("employee_id", "in", emp_ids),
+            ("state", "=", "validate"),
+        ]) if emp_ids else self.env["hr.leave"]
+
         used_days = sum(approved_leaves.mapped("number_of_days"))
 
         utilisation_rate = (
@@ -116,7 +112,7 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_leave_trends(self, months=6):
+    def _get_leave_trends(self, emp_ids, months=6):
         months = int(months) if months in (6, 12) else 6
         today = fields.Date.context_today(self)
         range_start = today.replace(day=1) - relativedelta(months=months - 1)
@@ -131,10 +127,10 @@ class HrLeave(models.Model):
             cursor += relativedelta(months=1)
 
         leaves = self.search([
-            ("company_id", "=", self.env.company.id),
+            ("employee_id", "in", emp_ids),
             ("request_date_from", ">=", range_start),
             ("request_date_from", "<=", today.replace(day=1) + relativedelta(months=1, days=-1)),
-        ])
+        ]) if emp_ids else self.env["hr.leave"]
 
         for leave in leaves:
             if not leave.request_date_from:
@@ -170,9 +166,11 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_leave_type_distribution(self):
+    def _get_leave_type_distribution(self, emp_ids):
+        if not emp_ids:
+            return []
         groups = self.read_group(
-            domain=[("company_id", "=", self.env.company.id)],
+            domain=[("employee_id", "in", emp_ids)],
             fields=["id"],
             groupby=["holiday_status_id"],
         )
@@ -195,19 +193,21 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_leave_balance_by_type(self):
+    def _get_leave_balance_by_type(self, emp_ids):
+        if not emp_ids:
+            return []
         LeaveType = self.env["hr.leave.type"]
         types = LeaveType.search([])
         result = []
         palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"]
         for index, lt in enumerate(types):
             allocated = sum(self.env["hr.leave.allocation"].search([
-                ("company_id", "=", self.env.company.id),
+                ("employee_id", "in", emp_ids),
                 ("holiday_status_id", "=", lt.id),
                 ("state", "=", "validate"),
             ]).mapped("number_of_days"))
             used = sum(self.search([
-                ("company_id", "=", self.env.company.id),
+                ("employee_id", "in", emp_ids),
                 ("holiday_status_id", "=", lt.id),
                 ("state", "=", "validate"),
             ]).mapped("number_of_days"))
@@ -239,11 +239,12 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_approval_overview(self):
-        domain = [("company_id", "=", self.env.company.id)]
-        approved = self.search_count(domain + [("state", "=", "validate")])
-        pending = self.search_count(domain + [("state", "in", ("confirm", "validate1"))])
-        rejected = self.search_count(domain + [("state", "=", "refuse")])
+    def _get_approval_overview(self, emp_ids):
+        if not emp_ids:
+            return {"approved": 0, "pending": 0, "rejected": 0, "approval_rate": 0}
+        approved = self.search_count([("employee_id", "in", emp_ids), ("state", "=", "validate")])
+        pending = self.search_count([("employee_id", "in", emp_ids), ("state", "in", ("confirm", "validate1"))])
+        rejected = self.search_count([("employee_id", "in", emp_ids), ("state", "=", "refuse")])
         total = approved + pending + rejected
         rate = round((approved / total) * 100) if total else 0
         return {
@@ -258,23 +259,21 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_department_coverage(self):
+    def _get_department_coverage(self, emp_ids):
+        if not emp_ids:
+            return {"rows": [], "alert_count": 0}
+
         company = self.env.company
         today = fields.Date.context_today(self)
 
-        # Monday of current week
         monday = today - relativedelta(days=today.weekday())
         work_days = [monday + relativedelta(days=i) for i in range(5)]
 
-        employees = self.env["hr.employee"].search([
-            ("active", "=", True),
-            ("company_id", "=", company.id),
-            ("department_id", "!=", False),
-        ])
+        employees = self.env["hr.employee"].browse(emp_ids).filtered(lambda e: e.department_id)
         departments = employees.mapped("department_id")
 
         approved_leaves = self.search([
-            ("company_id", "=", company.id),
+            ("employee_id", "in", emp_ids),
             ("state", "=", "validate"),
             ("request_date_from", "<=", work_days[-1]),
             ("request_date_to", ">=", work_days[0]),
@@ -327,10 +326,13 @@ class HrLeave(models.Model):
     # ---------------------------------------------------------
 
     @api.model
-    def _get_recent_requests(self):
+    def _get_recent_requests(self, emp_ids):
+        if not emp_ids:
+            return []
+
         leaves = self.search(
             [
-                ("company_id", "=", self.env.company.id),
+                ("employee_id", "in", emp_ids),
                 ("state", "!=", "draft"),
             ],
             order="create_date desc",
