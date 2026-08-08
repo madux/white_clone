@@ -76,14 +76,39 @@
                 <th><input type="checkbox" t-on-change="toggleAll"/></th>
                 <th t-on-click="() => sortBy('employee_name')">Employee <i t-att-class="'fa '+sortIcon('employee_name')"/></th>
                 <th t-on-click="() => sortBy('department')">Department</th>
-                <th>Leave Type</th>
+                <!-- FR-262: Leave Type column header with quick-filter funnel icon -->
+                <th class="o_lb_th_filter" t-on-click.stop="">
+                  <div class="o_lb_th_wrap">
+                    <span>Leave Type</span>
+                    <button class="o_lb_lt_filter_btn" t-att-class="state.ltQuickFilter !== null ? 'active' : ''" t-on-click="toggleLtFilter" title="Filter by leave type">
+                      <i class="fa fa-filter"/>
+                    </button>
+                  </div>
+                  <!-- Quick-filter active indicator -->
+                  <div t-if="state.ltQuickFilter !== null" class="o_lb_lt_active_pill">
+                    <span t-esc="ltFilterOptions.find(o => o.id === state.ltQuickFilter)?.name || ''"/>
+                    <button t-on-click="clearLtFilter">&#215;</button>
+                  </div>
+                  <!-- Quick-filter dropdown -->
+                  <div t-if="state.ltFilterOpen" class="o_lb_lt_dropdown" t-on-click.stop="">
+                    <div class="o_lb_lt_dropdown_hdr">
+                      <span>Filter by Leave Type</span>
+                      <button t-if="state.ltQuickFilter !== null" t-on-click="clearLtFilter">Clear</button>
+                    </div>
+                    <label t-foreach="ltFilterOptions" t-as="opt" t-key="opt.id" class="o_lb_lt_opt" t-att-class="state.ltQuickFilter === opt.id ? 'selected' : ''" t-on-click="() => setLtFilter(opt.id)">
+                      <span class="o_lb_dot" t-att-style="'background:'+opt.color_hex"/>
+                      <t t-esc="opt.name"/>
+                      <i t-if="state.ltQuickFilter === opt.id" class="fa fa-check o_lb_lt_check"/>
+                    </label>
+                  </div>
+                </th>
                 <th>Allocated</th>
-                <th t-on-click="() => sortBy('used')">Used</th>
+                <th t-on-click="() => sortBy('used')">Used <i t-att-class="'fa '+sortIcon('used')"/></th>
                 <th>Pending</th>
-                <th t-on-click="() => sortBy('remaining')">Remaining</th>
+                <th t-on-click="() => sortBy('remaining')">Remaining <i t-att-class="'fa '+sortIcon('remaining')"/></th>
                 <th>Carried Fwd</th>
                 <th>Expiring</th>
-                <th t-on-click="() => sortBy('last_updated')">Last Updated</th>
+                <th t-on-click="() => sortBy('last_updated')">Last Updated <i t-att-class="'fa '+sortIcon('last_updated')"/></th>
                 <th>Actions</th>
               </tr>
             </thead>

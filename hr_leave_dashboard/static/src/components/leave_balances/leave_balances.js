@@ -21,6 +21,7 @@ export class LeaveBalancesPage extends Component {
             "sortBy", "toggleSelected", "toggleArray", "toggleEmployee",
             "toggleAllocationGroup", "setSelectionMode", "onKpiClick", "openDetails", "openAdjust", "openHistory",
             "doYearEndReset", "doCarryForward", "importBalances",
+            "toggleLtFilter", "setLtFilter", "clearLtFilter",
         ]) {
             this[methodName] = this[methodName].bind(this);
         }
@@ -36,6 +37,8 @@ export class LeaveBalancesPage extends Component {
             adjustmentOpen: false, adjustmentEmployee: null, adjustments: [], adjustmentReason: "",
             historyOpen: false, history: null, historySearch: "", historyStatus: "all",
             requestDetailId: null,
+            ltFilterOpen: false,   // FR-262: Leave Type column quick-filter dropdown open
+            ltQuickFilter: null,   // FR-262: leave_type_id of the active quick-filter (null = all)
         });
         onWillStart(() => this.refreshPage());
     }
@@ -61,7 +64,14 @@ export class LeaveBalancesPage extends Component {
 
     get visibleRows() {
         const term = this.state.search.trim().toLowerCase();
-        return term ? this.state.rows.filter(r => r.employee_name.toLowerCase().includes(term) || r.employee_code.toLowerCase().includes(term)) : this.state.rows;
+        let rows = term
+            ? this.state.rows.filter(r => r.employee_name.toLowerCase().includes(term) || r.employee_code.toLowerCase().includes(term))
+            : this.state.rows;
+        // FR-262: apply Leave Type column quick-filter if active
+        if (this.state.ltQuickFilter !== null) {
+            rows = rows.filter(r => r.leave_type_id === this.state.ltQuickFilter);
+        }
+        return rows;
     }
     get employees() {
         const seen = new Map();
@@ -148,6 +158,30 @@ export class LeaveBalancesPage extends Component {
     }
     sortIcon(field) { return this.state.sort.field === field ? (this.state.sort.direction === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort"; }
 
+    // FR-262: Leave Type column quick-filter
+    toggleLtFilter(ev) {
+        ev.stopPropagation();
+        this.state.ltFilterOpen = !this.state.ltFilterOpen;
+        this.state.moreOptionsOpen = false;
+        this.state.actionKey = null;
+    }
+    setLtFilter(id) {
+        this.state.ltQuickFilter = (this.state.ltQuickFilter === id) ? null : id;
+        this.state.ltFilterOpen = false;
+    }
+    clearLtFilter() { this.state.ltQuickFilter = null; this.state.ltFilterOpen = false; }
+
+    // Unique leave types visible in the current row set (used to build dropdown)
+    get ltFilterOptions() {
+        const seen = new Map();
+        for (const row of this.state.rows) {
+            if (!seen.has(row.leave_type_id)) {
+                seen.set(row.leave_type_id, { id: row.leave_type_id, name: row.leave_type, color_hex: row.color_hex });
+            }
+        }
+        return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+    }
+
     toggleSelected(key) { const i = this.state.selectedKeys.indexOf(key); i === -1 ? this.state.selectedKeys.push(key) : this.state.selectedKeys.splice(i, 1); }
     toggleAll() { this.state.selectedKeys = this.state.selectedKeys.length === this.visibleRows.length ? [] : this.visibleRows.map(r => r.key); }
 
@@ -220,7 +254,10 @@ export class LeaveBalancesPage extends Component {
 
     // FR-252 — More Options bulk/page-level actions
     toggleMoreOptions() { this.state.moreOptionsOpen = !this.state.moreOptionsOpen; }
-    closeMoreOptions() { this.state.moreOptionsOpen = false; }
+    closeMoreOptions() {
+        this.state.moreOptionsOpen = false;
+        this.state.ltFilterOpen = false;   // also close LT quick-filter
+    }
     async doYearEndReset() {
         this.state.moreOptionsOpen = false;
         try {

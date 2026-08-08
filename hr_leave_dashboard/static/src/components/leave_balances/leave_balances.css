@@ -65,10 +65,29 @@
 /* Table */
 .o_lb_table_wrap{background:white;border:1px solid #e1e6ef;border-radius:10px;overflow:visible;margin-top:12px}
 .o_lb_page table{width:100%;border-collapse:collapse}
-.o_lb_page th{background:#f8fafc;text-transform:uppercase;font-size:11px;text-align:left;font-weight:700;color:#6e7d92;letter-spacing:.03em}
+.o_lb_page th{background:#f8fafc;text-transform:uppercase;font-size:11px;text-align:left;font-weight:700;color:#6e7d92;letter-spacing:.03em;position:relative}
 .o_lb_page th,.o_lb_page td{padding:10px 9px;border-bottom:1px solid #edf0f5;white-space:nowrap}
 .o_lb_page tbody tr:last-child td{border-bottom:0}
 .o_lb_page tbody tr:hover{background:#fafbfd}
+
+/* FR-262: Leave Type column quick-filter */
+.o_lb_th_filter{overflow:visible!important;position:relative}
+.o_lb_th_wrap{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.o_lb_lt_filter_btn{border:0;background:transparent;cursor:pointer;padding:1px 3px;border-radius:4px;color:#b0bbc9;font-size:10px;display:inline-flex;align-items:center;transition:color .15s,background .15s;line-height:1}
+.o_lb_lt_filter_btn:hover{color:#ed1970;background:#fff0f6}
+.o_lb_lt_filter_btn.active{color:#ed1970;background:#fde4ef}
+/* Active pill shown under the header text when a filter is set */
+.o_lb_lt_active_pill{display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:#fde4ef;color:#c01257;border-radius:8px;padding:1px 6px;font-size:10px;font-weight:600;text-transform:none;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.o_lb_lt_active_pill button{border:0;background:transparent;color:#c01257;cursor:pointer;padding:0 2px;font-size:11px;line-height:1}
+/* Dropdown panel */
+.o_lb_lt_dropdown{position:absolute;left:0;top:calc(100% + 2px);z-index:300;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:210px;padding:6px;white-space:normal;text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:#172033}
+.o_lb_lt_dropdown_hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 8px;border-bottom:1px solid #f0f3f8;margin-bottom:4px;font-weight:600;font-size:12px;color:#8490a5}
+.o_lb_lt_dropdown_hdr button{border:0;background:transparent;cursor:pointer;color:#ed1970;font-size:12px;font-weight:600;padding:0}
+.o_lb_lt_opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;user-select:none}
+.o_lb_lt_opt:hover{background:#f8fafc}
+.o_lb_lt_opt.selected{background:#fff0f6;color:#c01257;font-weight:600}
+.o_lb_lt_check{margin-left:auto;color:#ed1970;font-size:11px}
+
 /* Employee column */
 .o_lb_employee{display:flex;align-items:center;gap:8px}
 .o_lb_employee img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0}
