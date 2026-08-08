@@ -346,90 +346,12 @@
         <!-- ════════════════════════════════════════════════════
              REVIEW REQUEST DETAIL MODAL (FR-089)
              ════════════════════════════════════════════════════ -->
-        <t t-if="state.showReviewModal">
-            <div class="cleon-welcome-backdrop" t-on-click="closeReviewModal"/>
-            <div class="cleon-detail-modal" role="dialog" aria-modal="true">
-                <button type="button" class="cleon-welcome-close" t-on-click="closeReviewModal"><i class="fa fa-times"/></button>
-                <div class="cleon-detail-header">
-                    <h4>Leave Request Detail</h4>
-                    <span class="text-muted">Review full employee submission details</span>
-                </div>
-                <div class="cleon-detail-body">
-                    <t t-if="state.detailLoading">
-                        <div class="py-4 text-center text-muted"><i class="fa fa-spinner fa-spin me-2"/> Loading request details...</div>
-                    </t>
-                    <t t-elif="state.selectedRequest">
-                        <div class="detail-grid">
-                            <div class="detail-item">
-                                <label>Employee</label>
-                                <strong><t t-esc="state.selectedRequest.employee.name"/></strong>
-                                <small class="d-block text-muted"><t t-esc="state.selectedRequest.employee.department"/></small>
-                            </div>
-                            <div class="detail-item">
-                                <label>Leave Type</label>
-                                <strong><t t-esc="state.selectedRequest.leave_type.name"/></strong>
-                            </div>
-                            <div class="detail-item">
-                                <label>Date Range</label>
-                                <strong><t t-esc="state.selectedRequest.date_from"/> – <t t-esc="state.selectedRequest.date_to"/></strong>
-                            </div>
-                            <div class="detail-item">
-                                <label>Duration</label>
-                                <strong><t t-esc="state.selectedRequest.duration"/> days</strong>
-                            </div>
-                            <div class="detail-item">
-                                <label>Status</label>
-                                <div><span t-att-class="'request-status ' + state.selectedRequest.status"><t t-esc="state.selectedRequest.status"/></span></div>
-                            </div>
-                            <div class="detail-item">
-                                <label>Approver</label>
-                                <strong><t t-esc="state.selectedRequest.approver"/></strong>
-                            </div>
-                        </div>
-
-                        <div class="detail-notes-box">
-                            <label>Reason / Admin Note</label>
-                            <p><t t-esc="state.selectedRequest.notes || 'No notes provided.'"/></p>
-                        </div>
-
-                        <t t-if="state.selectedRequest.admin_created">
-                            <div class="admin-attribution-alert">
-                                <i class="fa fa-info-circle me-1"/>
-                                Applied by <strong><t t-esc="state.selectedRequest.admin_created_by"/></strong> on behalf of <strong><t t-esc="state.selectedRequest.employee.name"/></strong> on <t t-esc="state.selectedRequest.admin_created_at"/>.
-                            </div>
-                        </t>
-
-                        <!-- Request History Timeline (FR-113) -->
-                        <t t-if="state.selectedRequest.history and state.selectedRequest.history.length">
-                            <div class="mt-3 border-top pt-2">
-                                <label class="font-weight-bold text-uppercase text-muted" style="font-size: 11px;">Request History</label>
-                                <ul class="list-unstyled mb-0 ms-1 border-start ps-3" style="border-color: #e2e8f0 !important;">
-                                    <t t-foreach="state.selectedRequest.history" t-as="item" t-key="item_index">
-                                        <li class="mb-2">
-                                            <strong class="d-block text-dark" style="font-size: 12px;"><t t-esc="item.title"/></strong>
-                                            <small class="text-muted"><t t-esc="item.timestamp"/></small>
-                                            <t t-if="item.note">
-                                                <p class="mb-0 text-muted fst-italic" style="font-size: 11px;"><t t-esc="item.note"/></p>
-                                            </t>
-                                        </li>
-                                    </t>
-                                </ul>
-                            </div>
-                        </t>
-                    </t>
-                </div>
-                <div class="cleon-detail-footer">
-                    <button type="button" class="btn btn-secondary" t-on-click="closeReviewModal">Close</button>
-                    <t t-if="state.selectedRequest and state.selectedRequest.can_review">
-                        <button type="button" class="btn btn-danger me-2" t-on-click="rejectSelectedRequest">
-                            <i class="fa fa-times me-1"/> Reject Request
-                        </button>
-                        <button type="button" class="btn btn-success" t-on-click="approveSelectedRequest">
-                            <i class="fa fa-check me-1"/> Approve Request
-                        </button>
-                    </t>
-                </div>
-            </div>
+        <!-- Reusable Leave Request Detail Modal (Screen 10: FR-114 to FR-137) -->
+        <t t-if="state.detailRequestId">
+            <LeaveRequestDetailModal
+                requestId="state.detailRequestId"
+                close.bind="closeDetailModal"
+                onChanged.bind="loadRequests"/>
         </t>
 
         <!-- ════════════════════════════════════════════════════

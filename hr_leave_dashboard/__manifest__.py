@@ -6,6 +6,7 @@
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
+        'data/sequence_data.xml',
         'views/dashboard_action.xml',
         'views/leave_base.xml',
         'views/menu.xml',
@@ -20,6 +21,9 @@
             'hr_leave_dashboard/static/src/xml/leave_requests.xml',
             'hr_leave_dashboard/static/src/components/calendar_sidebar.xml',
             'hr_leave_dashboard/static/src/components/calendar_sidebar.js',
+            'hr_leave_dashboard/static/src/components/leave_request_detail/leave_request_detail.js',
+            'hr_leave_dashboard/static/src/components/leave_request_detail/leave_request_detail.xml',
+            'hr_leave_dashboard/static/src/components/leave_request_detail/leave_request_detail.css',
         ],
     },
     'license': 'LGPL-3',

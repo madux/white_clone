@@ -3,9 +3,11 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { LeaveRequestDetailModal } from "../components/leave_request_detail/leave_request_detail";
 
 export class LeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.LeaveRequestsPage";
+    static components = { LeaveRequestDetailModal };
 
     setup() {
         this.orm = useService("orm");
@@ -20,6 +22,7 @@ export class LeaveRequestsPage extends Component {
             search: "",
             leaveTypeId: false,
             departmentId: false,
+            detailRequestId: null,
 
             rows: [],
             counts: { all: 0, pending: 0, approved: 0, rejected: 0 },
@@ -259,20 +262,15 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  REVIEW REQUEST DETAIL MODAL (FR-089)
+    //  REVIEW REQUEST DETAIL MODAL (FR-114 to FR-137)
     // ═══════════════════════════════════════════════════════════════
 
-    async reviewRequest(id) {
-        this.state.detailLoading = true;
-        this.state.showReviewModal = true;
-        const detail = await this.orm.call("hr.leave", "get_leave_request_detail", [], { leave_id: id });
-        this.state.selectedRequest = detail;
-        this.state.detailLoading = false;
+    reviewRequest(id) {
+        this.state.detailRequestId = id;
     }
 
-    closeReviewModal() {
-        this.state.showReviewModal = false;
-        this.state.selectedRequest = null;
+    closeDetailModal() {
+        this.state.detailRequestId = null;
     }
 
     async approveSelectedRequest() {

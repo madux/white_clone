@@ -42,6 +42,49 @@ class HrLeave(models.Model):
         copy=False,
     )
 
+    # Screen 10 — Leave Request Detail Fields (FR-115, FR-136)
+    request_ref = fields.Char(
+        string="Request ID",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    is_cancelled = fields.Boolean(
+        string="Is Cancelled",
+        readonly=True,
+        copy=False,
+        index=True,
+    )
+    cancelled_by_id = fields.Many2one(
+        "res.users",
+        string="Cancelled By",
+        readonly=True,
+        copy=False,
+    )
+    cancelled_at = fields.Datetime(
+        string="Cancelled At",
+        readonly=True,
+        copy=False,
+    )
+    cancellation_reason = fields.Text(
+        string="Cancellation Reason",
+        readonly=True,
+        copy=False,
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get("request_ref"):
+                vals["request_ref"] = (
+                    self.env["ir.sequence"].next_by_code("hr.leave.request.ref") or _("New")
+                )
+        leaves = super().create(vals_list)
+        for leave in leaves:
+            if not leave.admin_created:
+                leave._create_audit_record("submitted", note=leave.notes or "")
+        return leaves
+
     @api.model
     def _check_leave_dashboard_access(self):
         if not (
@@ -422,37 +465,51 @@ class HrLeave(models.Model):
         )
         return approver.name if approver else ""
 
-    def _serialize_leave_request(self, leave=None):
-        rec = leave or self
-        rec.ensure_one()
-        state_map = {
-            "draft": "pending",
+    def _get_cleon_leave_status(self):
+        self.ensure_one()
+        if self.is_cancelled:
+            return "cancelled"
+        return {
+            "draft": "draft",
             "confirm": "pending",
             "validate1": "pending",
             "validate": "approved",
             "refuse": "rejected",
-        }
-        status = state_map.get(rec.state, "pending")
+        }.get(self.state, "pending")
+
+    def _serialize_leave_request(self, leave=None):
+        rec = leave or self
+        rec.ensure_one()
+        status = rec._get_cleon_leave_status()
         return {
             "id": rec.id,
+            "request_ref": rec.request_ref or f"LR-{rec.id:06d}",
             "employee": {
                 "id": rec.employee_id.id,
                 "name": rec.employee_id.name or "",
-                "department": rec.department_id.name or "",
+                "employee_number": getattr(rec.employee_id, "employee_number", False) or f"EMP-{rec.employee_id.id:03d}",
+                "department": rec.department_id.name or "No Department",
+                "job_title": rec.employee_id.job_title or (rec.employee_id.job_id.name if hasattr(rec.employee_id, "job_id") and rec.employee_id.job_id else "") or "Employee",
+                "email": rec.employee_id.work_email or f"{rec.employee_id.name.lower().replace(' ', '.')}@cleonhr.com",
             },
             "leave_type": {
                 "id": rec.holiday_status_id.id,
                 "name": rec.holiday_status_id.name or "",
-                "color": rec.holiday_status_id.color or 0,
+                "color": getattr(rec.holiday_status_id, "color", 0),
             },
             "date_from": fields.Date.to_string(rec.request_date_from) if rec.request_date_from else "",
             "date_to": fields.Date.to_string(rec.request_date_to) if rec.request_date_to else "",
-            "duration": round(rec.number_of_days, 1),
+            "duration": round(rec.number_of_days or 0.0, 1),
+            "half_day": bool(rec.request_unit_half),
+            "half_day_period": rec.request_date_from_period if rec.request_unit_half else False,
             "status": status,
             "approver": self._get_leave_approver_label(rec),
             "submitted": fields.Date.to_string(rec.create_date.date()) if rec.create_date else "",
+            "submitted_at": fields.Datetime.to_string(rec.create_date) if rec.create_date else "",
             "admin_created": rec.admin_created,
-            "can_review": rec.state in ("confirm", "validate1"),
+            "admin_created_by": rec.admin_created_by_id.name if rec.admin_created else "",
+            "admin_created_at": fields.Date.to_string(rec.admin_created_at.date()) if rec.admin_created_at else "",
+            "can_review": status == "pending" and not rec.is_cancelled,
             "notes": rec.notes or rec.admin_creation_note or "",
         }
 
@@ -597,55 +654,380 @@ class HrLeave(models.Model):
             self._create_audit_record(leave, "reject", note=reason)
         return {"processed": len(leaves)}
 
+    def _create_audit_record(
+        self,
+        action,
+        note="",
+        actor_label=None,
+        actor_role=None,
+        is_system=False,
+    ):
+        self.ensure_one()
+        ip_addr = "127.0.0.1"
+        sess_ref = ""
+        try:
+            from odoo.http import request
+            if request and hasattr(request, "httprequest") and request.httprequest:
+                ip_addr = getattr(request.httprequest, "remote_addr", "127.0.0.1") or "127.0.0.1"
+            if request and hasattr(request, "session") and request.session:
+                sess_ref = getattr(request.session, "sid", "") or ""
+        except Exception:
+            pass
+
+        user = False if is_system else self.env.user
+
+        self.env["hr.leave.audit.log"].sudo().create({
+            "leave_id": self.id,
+            "action": action,
+            "actor_id": user.id if user else False,
+            "actor_label": actor_label or ("System" if is_system else (user.name if user else "System")),
+            "actor_role": actor_role or ("" if is_system else ("Super Admin" if user and user.has_group("base.group_system") else "Leave Manager")),
+            "is_system": is_system,
+            "employee_id": self.employee_id.id,
+            "leave_type_id": self.holiday_status_id.id,
+            "date_from": self.request_date_from,
+            "date_to": self.request_date_to,
+            "duration": self.number_of_days,
+            "note": note or "",
+            "occurred_at": fields.Datetime.now(),
+            "ip_address": ip_addr,
+            "session_ref": sess_ref,
+        })
+
+    def _get_leave_balance_impact(self, leave):
+        employee = leave.employee_id
+        leave_type = leave.holiday_status_id
+
+        allocations = self.env["hr.leave.allocation"].search([
+            ("employee_id", "=", employee.id),
+            ("holiday_status_id", "=", leave_type.id),
+            ("state", "=", "validate"),
+        ])
+        allocated = sum(allocations.mapped("number_of_days"))
+
+        other_used = sum(
+            self.search([
+                ("id", "!=", leave.id),
+                ("employee_id", "=", employee.id),
+                ("holiday_status_id", "=", leave_type.id),
+                ("state", "=", "validate"),
+                ("is_cancelled", "=", False),
+            ]).mapped("number_of_days")
+        )
+
+        current_balance = round(allocated - other_used, 1)
+        used = round(leave.number_of_days or 0.0, 1) if not leave.is_cancelled and leave.state != "refuse" else 0.0
+        remaining = round(current_balance - used, 1)
+
+        return {
+            "current": current_balance,
+            "used": used,
+            "remaining": remaining,
+            "has_allocation": bool(allocations),
+        }
+
+    def _get_leave_coverage_impact(self, leave):
+        dept = leave.employee_id.department_id
+        if not dept:
+            return {
+                "percentage": 100,
+                "level": "good",
+                "other_on_leave": 0,
+                "department": "Company",
+            }
+
+        dept_employees = self.env["hr.employee"].search([
+            ("department_id", "=", dept.id),
+            ("company_id", "=", self.env.company.id),
+            ("active", "=", True),
+        ])
+        total_dept = len(dept_employees) or 1
+
+        start_date = leave.request_date_from
+        end_date = leave.request_date_to
+        if not start_date or not end_date:
+            return {
+                "percentage": 100,
+                "level": "good",
+                "other_on_leave": 0,
+                "department": dept.name,
+            }
+
+        overlapping_leaves = self.search([
+            ("id", "!=", leave.id),
+            ("employee_id.department_id", "=", dept.id),
+            ("state", "in", ("confirm", "validate1", "validate")),
+            ("is_cancelled", "=", False),
+            ("request_date_from", "<=", end_date),
+            ("request_date_to", ">=", start_date),
+        ])
+
+        other_emp_ids = set(overlapping_leaves.mapped("employee_id.id"))
+        other_count = len(other_emp_ids)
+
+        # Day-by-day availability calculation
+        curr = start_date
+        lowest_available_pct = 100.0
+        while curr <= end_date:
+            absent_today = len(set(
+                overlapping_leaves.filtered(
+                    lambda l: l.request_date_from <= curr <= l.request_date_to
+                ).mapped("employee_id.id")
+            )) + 1  # Include current request employee
+            avail_pct = max(0.0, min(100.0, round(((total_dept - absent_today) / total_dept) * 100)))
+            if avail_pct < lowest_available_pct:
+                lowest_available_pct = avail_pct
+            curr += relativedelta(days=1)
+
+        available_pct = int(lowest_available_pct)
+        if available_pct >= 85:
+            level = "good"
+        elif available_pct >= 70:
+            level = "medium"
+        else:
+            level = "low"
+
+        return {
+            "percentage": available_pct,
+            "level": level,
+            "other_on_leave": other_count,
+            "department": dept.name,
+        }
+
     @api.model
     def get_leave_request_detail(self, leave_id):
         self._check_leave_dashboard_access()
         leave = self.browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id != self.env.company:
             raise ValidationError(_("Invalid leave request."))
+
         res = self._serialize_leave_request(leave)
+        status = leave._get_cleon_leave_status()
 
-        # Build timeline history for FR-113
-        history = []
-        if leave.admin_created:
-            history.append({
-                "title": f"Request created by {leave.admin_created_by_id.name or 'Admin'} on behalf of {leave.employee_id.name}",
-                "timestamp": fields.Datetime.to_string(leave.admin_created_at or leave.create_date),
-                "type": "creation",
-                "note": leave.admin_creation_note or "",
-            })
-        else:
-            history.append({
-                "title": f"Self-submitted by {leave.employee_id.name}",
-                "timestamp": fields.Datetime.to_string(leave.create_date),
-                "type": "creation",
-                "note": leave.notes or "",
-            })
+        # Attachments (FR-124)
+        attachments = self.env["ir.attachment"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+        ])
+        attachment_list = [{
+            "id": att.id,
+            "name": att.name,
+            "mimetype": att.mimetype or "application/octet-stream",
+        } for att in attachments]
 
-        audit_logs = self.env["hr.leave.audit.log"].sudo().search([("leave_id", "=", leave.id)], order="occurred_at asc")
+        # Balance & Coverage Impacts (FR-125 to FR-128)
+        balance_impact = self._get_leave_balance_impact(leave)
+        coverage_impact = self._get_leave_coverage_impact(leave)
+
+        # Fetch Audit Logs for history and timeline (FR-129 to FR-132)
+        audit_logs = self.env["hr.leave.audit.log"].sudo().search(
+            [("leave_id", "=", leave.id)], order="occurred_at asc"
+        )
+
+        workflow = []
         for log in audit_logs:
-            action_label = {
-                "admin_create": "Admin Creation",
-                "override_conflict": "Conflict Overridden & Created",
-                "first_approval": "First Approval",
-                "final_approval": "Final Approval",
-                "approve": "Approved",
-                "reject": "Rejected",
-            }.get(log.action, log.action)
+            if log.action in ("submitted", "admin_create"):
+                workflow.append({
+                    "key": "submitted",
+                    "label": "Request Submitted" if log.action == "submitted" else "Admin Created Request",
+                    "actor": log.actor_label or (log.actor_id.name if log.actor_id else "Employee"),
+                    "role": log.actor_role or ("Administrator" if log.action == "admin_create" else "Employee"),
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "done",
+                    "system": log.is_system,
+                })
+            elif log.action == "forwarded":
+                workflow.append({
+                    "key": "forwarded",
+                    "label": "Forwarded to Manager",
+                    "actor": log.actor_label or "System",
+                    "role": log.actor_role or "Automated",
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "done",
+                    "system": True,
+                })
+            elif log.action in ("first_approval", "final_approval", "approve"):
+                workflow.append({
+                    "key": log.action,
+                    "label": "Approved by Manager" if log.action in ("final_approval", "approve") else "First Approval Passed",
+                    "actor": log.actor_label or (log.actor_id.name if log.actor_id else "Manager"),
+                    "role": log.actor_role or "Line Manager",
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "done",
+                    "system": False,
+                })
+            elif log.action == "reject":
+                workflow.append({
+                    "key": "reject",
+                    "label": "Rejected by Manager",
+                    "actor": log.actor_label or (log.actor_id.name if log.actor_id else "Manager"),
+                    "role": log.actor_role or "Line Manager",
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "rejected",
+                    "system": False,
+                })
+            elif log.action == "cancelled":
+                workflow.append({
+                    "key": "cancelled",
+                    "label": "Leave Cancelled",
+                    "actor": log.actor_label or (log.actor_id.name if log.actor_id else "Manager"),
+                    "role": log.actor_role or "Manager",
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "cancelled",
+                    "system": False,
+                })
+
+        if not workflow:
+            submitted_by = leave.admin_created_by_id.name if leave.admin_created else leave.employee_id.name
+            submitted_role = "Administrator" if leave.admin_created else "Employee"
+            workflow.append({
+                "key": "submitted",
+                "label": "Request Submitted" if not leave.admin_created else "Admin Created Request",
+                "actor": submitted_by,
+                "role": submitted_role,
+                "timestamp": fields.Datetime.to_string(leave.admin_created_at or leave.create_date),
+                "state": "done",
+                "system": False,
+            })
+
+        if status == "pending":
+            workflow.append({
+                "key": "pending_approval",
+                "label": "Line Manager — Manager · Level 1",
+                "actor": "Line Manager",
+                "role": "Pending",
+                "timestamp": False,
+                "state": "pending",
+                "system": False,
+            })
+
+        # Single Canonical Request History Log (FR-132, no duplicate entries)
+        history = []
+        for log in audit_logs:
+            actor = "System" if log.is_system else (log.actor_label or (log.actor_id.name if log.actor_id else "User"))
+            role = f" ({log.actor_role})" if log.actor_role and not log.is_system else ""
+
+            if log.action == "admin_create":
+                title = f"Request created by {actor} on behalf of {leave.employee_id.name}"
+            elif log.action == "submitted":
+                title = f"Request submitted by {leave.employee_id.name}"
+            else:
+                action_label = {
+                    "forwarded": "Forwarded to Manager",
+                    "first_approval": "First Approval",
+                    "final_approval": "Final Approval",
+                    "approve": "Approved",
+                    "reject": "Rejected",
+                    "cancelled": "Cancelled",
+                    "override_conflict": "Conflict Overridden",
+                }.get(log.action, log.action)
+                title = f"{action_label} by {actor}{role}"
+
             history.append({
-                "title": f"{action_label} by {log.actor_id.name} ({log.actor_role})",
+                "title": title,
                 "timestamp": fields.Datetime.to_string(log.occurred_at),
                 "type": log.action,
                 "note": log.note or "",
             })
 
+        actions = {
+            "can_approve": status == "pending" and not leave.is_cancelled,
+            "can_reject": status == "pending" and not leave.is_cancelled,
+            "can_cancel": status == "approved" and not leave.is_cancelled,
+        }
+
         res.update({
-            "notes": leave.notes or leave.admin_creation_note or "",
-            "admin_created_by": leave.admin_created_by_id.name if leave.admin_created else "",
-            "admin_created_at": fields.Date.to_string(leave.admin_created_at.date()) if leave.admin_created_at else "",
+            "attachments": attachment_list,
+            "balance_impact": balance_impact,
+            "coverage_impact": coverage_impact,
+            "workflow": workflow,
             "history": history,
+            "actions": actions,
+            "cancellation_reason": leave.cancellation_reason or "",
+            "cancelled_by": leave.cancelled_by_id.name if leave.cancelled_by_id else "",
+            "cancelled_at": fields.Datetime.to_string(leave.cancelled_at) if leave.cancelled_at else "",
         })
         return res
+
+    @api.model
+    def approve_leave_request(self, leave_id):
+        self._check_leave_dashboard_access()
+        leave = self.browse(int(leave_id)).exists()
+        if not leave or leave.employee_id.company_id != self.env.company:
+            raise ValidationError(_("Invalid leave request."))
+        if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
+            raise ValidationError(_("This leave request is not awaiting approval."))
+
+        if leave.state == "confirm":
+            leave.action_approve()
+            event = "first_approval" if leave.state == "validate1" else "final_approval"
+        elif leave.state == "validate1":
+            leave.action_validate()
+            event = "final_approval"
+        else:
+            event = "approve"
+
+        leave._create_audit_record(event)
+
+        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
+        partner_ids = partner.ids if partner else []
+        leave.message_post(
+            body=_("Leave request approved by %s.", self.env.user.name),
+            partner_ids=partner_ids,
+        )
+        return self.get_leave_request_detail(leave.id)
+
+    @api.model
+    def reject_leave_request(self, leave_id, reason=""):
+        self._check_leave_dashboard_access()
+        reason = (reason or "").strip()
+        if len(reason) < 3:
+            raise ValidationError(_("A rejection reason is required (at least 3 characters)."))
+        leave = self.browse(int(leave_id)).exists()
+        if not leave or leave.employee_id.company_id != self.env.company:
+            raise ValidationError(_("Invalid leave request."))
+        if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
+            raise ValidationError(_("Only a pending leave request can be rejected."))
+
+        body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
+                 user=self.env.user.name, reason=reason)
+        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
+        partner_ids = partner.ids if partner else []
+        leave.message_post(body=body, partner_ids=partner_ids)
+
+        leave.action_refuse()
+        leave._create_audit_record("reject", note=reason)
+        return self.get_leave_request_detail(leave.id)
+
+    @api.model
+    def cancel_approved_leave(self, leave_id, reason=""):
+        self._check_leave_dashboard_access()
+        reason = (reason or "").strip()
+        if len(reason) < 3:
+            raise ValidationError(_("A cancellation reason is required (at least 3 characters)."))
+        leave = self.browse(int(leave_id)).exists()
+        if not leave or leave.employee_id.company_id != self.env.company:
+            raise ValidationError(_("Invalid leave request."))
+
+        if leave.state != "validate" or leave.is_cancelled:
+            raise ValidationError(_("Only active approved leave requests can be cancelled."))
+
+        leave.action_refuse()
+        leave.write({
+            "is_cancelled": True,
+            "cancelled_by_id": self.env.user.id,
+            "cancelled_at": fields.Datetime.now(),
+            "cancellation_reason": reason,
+        })
+
+        leave._create_audit_record("cancelled", note=reason)
+
+        body = _("Approved leave cancelled by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
+                 user=self.env.user.name, reason=reason)
+        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
+        partner_ids = partner.ids if partner else []
+        leave.message_post(body=body, partner_ids=partner_ids)
+        return self.get_leave_request_detail(leave.id)
 
     @api.model
     def approve_single_request(self, leave_id):
