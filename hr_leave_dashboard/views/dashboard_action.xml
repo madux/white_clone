@@ -10,11 +10,23 @@
         <field name="tag">hr_leave_requests_page</field>
     </record>
 
+    <record id="action_hr_leave_calendar" model="ir.actions.client">
+        <field name="name">Leave Calendar</field>
+        <field name="tag">hr_leave_dashboard.LeaveCalendarPage</field>
+    </record>
+
     <menuitem id="menu_hr_leave_dashboard"
             name="Dashboard"
             action="action_hr_leave_dashboard"
             parent="hr_holidays.menu_hr_holidays_root"
             sequence="0"
+            groups="hr_holidays.group_hr_holidays_manager,base.group_system"/>
+
+    <menuitem id="hr_holidays.menu_hr_holidays_dashboard"
+            name="Leave Calendar"
+            action="action_hr_leave_calendar"
+            parent="hr_holidays.menu_hr_holidays_root"
+            sequence="1"
             groups="hr_holidays.group_hr_holidays_manager,base.group_system"/>
 
 </odoo>

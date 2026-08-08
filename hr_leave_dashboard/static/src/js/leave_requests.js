@@ -3,11 +3,12 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { CalendarSidebar } from "../components/calendar_sidebar";
 import { LeaveRequestDetailModal } from "../components/leave_request_detail/leave_request_detail";
 
 export class LeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.LeaveRequestsPage";
-    static components = { LeaveRequestDetailModal };
+    static components = { CalendarSidebar, LeaveRequestDetailModal };
 
     setup() {
         this.orm = useService("orm");
@@ -493,10 +494,7 @@ export class LeaveRequestsPage extends Component {
     }
 
     openLeaveCalendar() {
-        return this.action.doAction({
-            type: "ir.actions.act_window", name: "Leave Calendar", res_model: "hr.leave",
-            views: [[false, "calendar"], [false, "list"], [false, "form"]],
-        });
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
     }
 
     openLeaveBalances() {

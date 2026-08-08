@@ -4,9 +4,11 @@ import { registry } from "@web/core/registry";
 import { Component, onWillUnmount, useState, useRef, onWillStart, useEffect } from "@odoo/owl";
 import { loadBundle } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
+import { CalendarSidebar } from "../components/calendar_sidebar";
 
 export class HrLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.Dashboard";
+    static components = { CalendarSidebar };
 
     setup() {
         this.action = useService("action");
@@ -338,10 +340,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveCalendar() {
-        return this.action.doAction({
-            type: "ir.actions.act_window", name: "Leave Calendar", res_model: "hr.leave",
-            views: [[false, "calendar"], [false, "list"], [false, "form"]],
-        });
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
     }
 
     openLeaveBalances() {

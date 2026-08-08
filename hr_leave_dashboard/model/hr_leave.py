@@ -630,7 +630,7 @@ class HrLeave(models.Model):
                 action_name = "approve"
             
             # Immutable Audit Log Entry (FR-111)
-            self._create_audit_record(leave, action_name)
+            leave._create_audit_record(action_name)
             processed += 1
         return {"processed": processed}
 
@@ -651,7 +651,7 @@ class HrLeave(models.Model):
             leave.message_post(body=body)
             leave.action_refuse()
             # Immutable Audit Log Entry (FR-111)
-            self._create_audit_record(leave, "reject", note=reason)
+            leave._create_audit_record("reject", note=reason)
         return {"processed": len(leaves)}
 
     def _create_audit_record(
@@ -1198,35 +1198,219 @@ class HrLeave(models.Model):
 
         # Create Immutable Audit Log (FR-111)
         action_type = "override_conflict" if override_conflict else "admin_create"
-        self._create_audit_record(leave, action_type, note=admin_note)
+        self._create_audit_record(action_type, note=admin_note)
 
         return {"created": True, "id": leave.id}
 
-    @api.model
-    def _create_audit_record(self, leave, action, note=""):
-        ip_addr = "127.0.0.1"
-        sess_ref = ""
-        try:
-            from odoo.http import request
-            if request and hasattr(request, "httprequest") and request.httprequest:
-                ip_addr = getattr(request.httprequest, "remote_addr", "127.0.0.1") or "127.0.0.1"
-            if request and hasattr(request, "session") and request.session:
-                sess_ref = getattr(request.session, "sid", "") or ""
-        except Exception:
-            pass
+    # ---------------------------------------------------------
+    # SCREEN 11 — LEAVE CALENDAR BACKEND API (FR-138 to FR-177)
+    # ---------------------------------------------------------
 
-        self.env["hr.leave.audit.log"].sudo().create({
-            "leave_id": leave.id,
-            "action": action,
-            "actor_id": self.env.user.id,
-            "actor_role": "Super Admin" if self.env.user.has_group("base.group_system") else "Leave Manager",
-            "employee_id": leave.employee_id.id,
-            "leave_type_id": leave.holiday_status_id.id,
-            "date_from": leave.request_date_from,
-            "date_to": leave.request_date_to,
-            "duration": leave.number_of_days,
-            "note": note or leave.notes or "",
-            "occurred_at": fields.Datetime.now(),
-            "ip_address": ip_addr,
-            "session_ref": sess_ref,
-        })
+    @api.model
+    def get_leave_calendar_data(
+        self,
+        date_from,
+        date_to,
+        department_ids=None,
+        leave_type_ids=None,
+        statuses=None,
+        employee_ids=None,
+        employee_view=False,
+    ):
+        self._check_leave_dashboard_access()
+
+        department_ids = [int(x) for x in (department_ids or []) if x]
+        leave_type_ids = [int(x) for x in (leave_type_ids or []) if x]
+        statuses = [str(s) for s in (statuses or []) if s]
+        employee_ids = [int(x) for x in (employee_ids or []) if x]
+
+        domain = [
+            ("employee_id.company_id", "=", self.env.company.id),
+            ("request_date_from", "<=", date_to),
+            ("request_date_to", ">=", date_from),
+        ]
+
+        if employee_view:
+            curr_emp = self.env.user.employee_id
+            if not curr_emp:
+                domain.append(("id", "=", False))
+            else:
+                domain.append(("employee_id", "=", curr_emp.id))
+        elif employee_ids:
+            domain.append(("employee_id", "in", employee_ids))
+
+        if department_ids:
+            domain.append(("employee_id.department_id", "in", department_ids))
+
+        if leave_type_ids:
+            domain.append(("holiday_status_id", "in", leave_type_ids))
+
+        if statuses:
+            state_conditions = []
+            if "approved" in statuses:
+                state_conditions.append(("state", "=", "validate"))
+            if "pending" in statuses:
+                state_conditions.append(("state", "in", ("confirm", "validate1")))
+            if "cancelled" in statuses:
+                state_conditions.append(("is_cancelled", "=", True))
+
+            if state_conditions:
+                or_domain = []
+                for idx, cond in enumerate(state_conditions):
+                    if idx > 0:
+                        or_domain = ["|"] + or_domain
+                    or_domain.append(cond)
+                domain.extend(or_domain)
+        else:
+            domain.extend([
+                ("state", "in", ("confirm", "validate1", "validate")),
+                ("is_cancelled", "=", False),
+            ])
+
+        leaves = self.search(domain, order="request_date_from asc")
+
+        leave_list = []
+        for l in leaves:
+            status = l._get_cleon_leave_status()
+            leave_list.append({
+                "id": l.id,
+                "request_ref": l.request_ref or f"LR-{l.id:06d}",
+                "employee_id": l.employee_id.id,
+                "employee_name": l.employee_id.name or "",
+                "department_id": l.employee_id.department_id.id if l.employee_id.department_id else False,
+                "department_name": l.employee_id.department_id.name or "No Department",
+                "leave_type_id": l.holiday_status_id.id,
+                "leave_type_name": l.holiday_status_id.name or "",
+                "color": getattr(l.holiday_status_id, "color", 0),
+                "date_from": fields.Date.to_string(l.request_date_from),
+                "date_to": fields.Date.to_string(l.request_date_to),
+                "duration": round(l.number_of_days or 0.0, 1),
+                "status": status,
+                "half_day": bool(l.request_unit_half),
+                "half_day_period": l.request_date_from_period if l.request_unit_half else False,
+                "notes": l.notes or l.admin_creation_note or "",
+            })
+
+        leave_types = self.env["hr.leave.type"].search([
+            ("company_id", "in", [False, self.env.company.id]),
+        ])
+        departments = self.env["hr.department"].search([
+            ("company_id", "=", self.env.company.id),
+        ])
+        company_employees = self.env["hr.employee"].search([
+            ("company_id", "=", self.env.company.id),
+            ("active", "=", True),
+        ])
+
+        return {
+            "leaves": leave_list,
+            "leave_types": [{
+                "id": lt.id,
+                "name": lt.name,
+                "color": getattr(lt, "color", 0),
+            } for lt in leave_types],
+            "departments": [{
+                "id": dept.id,
+                "name": dept.name,
+            } for dept in departments],
+            "employees": [{
+                "id": emp.id,
+                "name": emp.name,
+                "department": emp.department_id.name or "No Department",
+            } for emp in company_employees],
+            "total_active_employees": len(company_employees) or 1,
+        }
+
+    @api.model
+    def get_leave_calendar_year_summary(self, year):
+        self._check_leave_dashboard_access()
+        year = int(year)
+        date_from = f"{year}-01-01"
+        date_to = f"{year}-12-31"
+
+        leaves = self.search([
+            ("employee_id.company_id", "=", self.env.company.id),
+            ("request_date_from", "<=", date_to),
+            ("request_date_to", ">=", date_from),
+            ("state", "in", ("confirm", "validate1", "validate")),
+            ("is_cancelled", "=", False),
+        ])
+
+        month_summary = {m: {"approved": 0, "pending": 0, "holidays": 0} for m in range(1, 13)}
+        day_occupancy = {}
+
+        for l in leaves:
+            status = l._get_cleon_leave_status()
+
+            # FR-164: Count each request ONCE per month it spans
+            req_start_m = l.request_date_from.month if l.request_date_from else 1
+            req_end_m = l.request_date_to.month if l.request_date_to else 12
+            for m in range(req_start_m, req_end_m + 1):
+                if 1 <= m <= 12:
+                    if status == "approved":
+                        month_summary[m]["approved"] += 1
+                    elif status == "pending":
+                        month_summary[m]["pending"] += 1
+
+            # Day occupancy counts daily occupied days
+            curr = max(l.request_date_from, fields.Date.from_string(date_from))
+            end_d = min(l.request_date_to, fields.Date.from_string(date_to))
+            while curr <= end_d:
+                d_str = fields.Date.to_string(curr)
+                if d_str not in day_occupancy:
+                    day_occupancy[d_str] = {"approved": 0, "pending": 0, "total": 0}
+
+                if status == "approved":
+                    day_occupancy[d_str]["approved"] += 1
+                elif status == "pending":
+                    day_occupancy[d_str]["pending"] += 1
+                day_occupancy[d_str]["total"] += 1
+
+                curr += relativedelta(days=1)
+
+        # Dynamic Public Holidays from resource.calendar.leaves or company calendar
+        public_leaves = self.env["resource.calendar.leaves"].search([
+            ("company_id", "in", [False, self.env.company.id]),
+            ("resource_id", "=", False),
+            ("date_from", "<=", f"{year}-12-31 23:59:59"),
+            ("date_to", ">=", f"{year}-01-01 00:00:00"),
+        ])
+
+        holidays_data = []
+        if public_leaves:
+            for pl in public_leaves:
+                h_date = fields.Date.to_string(pl.date_from.date())
+                m = pl.date_from.date().month
+                holidays_data.append({
+                    "date": h_date,
+                    "name": pl.name or "Public Holiday",
+                    "month": m,
+                })
+        else:
+            holidays_data = [
+                {"date": f"{year}-01-01", "name": "New Year's Day", "month": 1},
+                {"date": f"{year}-05-01", "name": "Workers' Day", "month": 5},
+                {"date": f"{year}-10-01", "name": "Independence Day", "month": 10},
+                {"date": f"{year}-12-25", "name": "Christmas Day", "month": 12},
+                {"date": f"{year}-12-26", "name": "Boxing Day", "month": 12},
+            ]
+
+        for h in holidays_data:
+            m = h["month"]
+            if m in month_summary:
+                month_summary[m]["holidays"] += 1
+
+        company_country = self.env.company.country_id
+        country_dict = {
+            "id": company_country.id if company_country else 161,
+            "name": company_country.name if company_country else "Nigeria",
+            "code": company_country.code if company_country else "NG",
+        }
+
+        return {
+            "year": year,
+            "month_summary": month_summary,
+            "day_occupancy": day_occupancy,
+            "holidays": holidays_data,
+            "country": country_dict,
+        }

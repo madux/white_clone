@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_leave_dashboard.LeaveCalendarPage" owl="1">
+        <div class="leaveapp">
+
+            <!-- Shared Sidebar -->
+            <CalendarSidebar activeMenu="'calendar'"/>
+
+            <!-- Main Content Area -->
+            <div class="o_leave_dashboard">
+
+                <!-- ════════════════════════════════════════════════════
+                     PAGE HEADER & CONTROLS (FR-138 to FR-145)
+                     ════════════════════════════════════════════════════ -->
+                <header class="o_cc_header border-bottom pb-3 mb-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+
+                        <!-- Title & Description (FR-138) -->
+                        <div>
+                            <h1 class="h4 font-weight-bold mb-1">Leave Calendar</h1>
+                            <p class="text-muted small mb-0">Manage and visualize employee leave, coverage, and public holidays</p>
+                        </div>
+
+                        <!-- Header Right Controls -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+                            <!-- Admin / Employee View Toggle (FR-139) -->
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button"
+                                        t-att-class="'btn ' + (!state.employeeView ? 'btn-dark font-weight-bold' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.toggleAdminEmployeeView(false)">
+                                    Admin View
+                                </button>
+                                <button type="button"
+                                        t-att-class="'btn ' + (state.employeeView ? 'btn-dark font-weight-bold' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.toggleAdminEmployeeView(true)">
+                                    Employee View
+                                </button>
+                            </div>
+
+                            <!-- View Mode Icon Switcher (FR-140) -->
+                            <div class="btn-group btn-group-sm ms-2" role="group">
+                                <button type="button"
+                                        t-att-class="'btn ' + (state.viewMode === 'month' ? 'btn-primary' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.setViewMode('month')"
+                                        title="Month View">
+                                    <i class="fa fa-th-large"/>
+                                </button>
+                                <button type="button"
+                                        t-att-class="'btn ' + (state.viewMode === 'week' ? 'btn-primary' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.setViewMode('week')"
+                                        title="Week View">
+                                    <i class="fa fa-th-list"/>
+                                </button>
+                                <button type="button"
+                                        t-att-class="'btn ' + (state.viewMode === 'day' ? 'btn-primary' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.setViewMode('day')"
+                                        title="Day View">
+                                    <i class="fa fa-calendar-minus-o"/>
+                                </button>
+                                <button type="button"
+                                        t-att-class="'btn ' + (state.viewMode === 'year' ? 'btn-primary' : 'btn-outline-secondary')"
+                                        t-on-click="() => this.setViewMode('year')"
+                                        title="Year View">
+                                    <i class="fa fa-calendar"/>
+                                </button>
+                            </div>
+
+                            <!-- Coverage Analysis Toggle Button (FR-141) -->
+                            <button type="button"
+                                    t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
+                                    t-on-click="toggleCoverageMode">
+                                <i class="fa fa-line-chart me-1"/> Coverage Analysis
+                            </button>
+
+                            <!-- Filters Button (FR-142, FR-177) -->
+                            <button type="button" class="btn btn-sm btn-outline-secondary position-relative" t-on-click="openFilters">
+                                <i class="fa fa-filter me-1"/> Filters
+                                <t t-if="this.activeFilterCount > 0">
+                                    <span class="badge rounded-pill bg-danger ms-1"><t t-esc="this.activeFilterCount"/></span>
+                                </t>
+                            </button>
+
+                            <!-- Download Dropdown Button (FR-143) -->
+                            <div class="dropdown d-inline-block">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
+                                    <i class="fa fa-download me-1"/> Download
+                                </button>
+                                <ul t-att-class="'dropdown-menu dropdown-menu-end ' + (state.downloadDropdownOpen ? 'show' : '')">
+                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('pdf')"><i class="fa fa-file-pdf-o me-2 text-danger"/> Export PDF</a></li>
+                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('excel')"><i class="fa fa-file-excel-o me-2 text-success"/> Export Excel (.xlsx)</a></li>
+                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.exportCalendar('ics')"><i class="fa fa-calendar-check-o me-2 text-primary"/> Export iCal (.ics)</a></li>
+                                </ul>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Navigation Toolbar (FR-144, FR-145) -->
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(-1)" title="Previous">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <div class="position-relative">
+                            <button type="button" class="btn btn-sm btn-light border font-weight-bold dropdown-toggle" t-on-click="togglePeriodPicker">
+                                <t t-esc="this.periodLabel"/>
+                            </button>
+                            <!-- Period Month/Year Picker Dropdown (FR-145) -->
+                            <t t-if="state.periodPickerOpen">
+                                <div class="period-picker-dropdown shadow p-3 bg-white border rounded">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => this.navigate(-1)"><i class="fa fa-chevron-left"/></button>
+                                        <strong class="small"><t t-esc="state.currentDate.getFullYear()"/></strong>
+                                        <button type="button" class="btn btn-sm btn-link p-0 text-dark" t-on-click="() => this.navigate(1)"><i class="fa fa-chevron-right"/></button>
+                                    </div>
+                                    <div class="period-month-grid">
+                                        <t t-foreach="['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']" t-as="mName" t-key="mName_index">
+                                            <button type="button"
+                                                    t-att-class="'btn btn-sm period-month-btn ' + (state.currentDate.getMonth() === mName_index ? 'btn-primary' : 'btn-light')"
+                                                    t-on-click="() => this.selectMonthYear(state.currentDate.getFullYear(), mName_index)">
+                                                <t t-esc="mName"/>
+                                            </button>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(1)" title="Next">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light border font-weight-bold ms-2" t-on-click="goToToday">
+                            Today
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Loading Spinner -->
+                <t t-if="state.loading">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
+                        <p class="mb-0">Loading calendar schedules...</p>
+                    </div>
+                </t>
+
+                <t t-else="">
+
+                    <!-- ════════════════════════════════════════════════════
+                         MONTH VIEW (Fig 11.1, Fig 11.2, FR-146 to FR-157)
+                         ════════════════════════════════════════════════════ -->
+                    <t t-if="state.viewMode === 'month'">
+                        <div class="calendar-month-grid border rounded shadow-sm bg-white overflow-hidden">
+                            <!-- Days Header Row -->
+                            <div class="calendar-days-header">
+                                <div class="day-header-col">Sun</div>
+                                <div class="day-header-col">Mon</div>
+                                <div class="day-header-col">Tue</div>
+                                <div class="day-header-col">Wed</div>
+                                <div class="day-header-col">Thu</div>
+                                <div class="day-header-col">Fri</div>
+                                <div class="day-header-col">Sat</div>
+                            </div>
+
+                            <!-- 5-Week Grid Rows -->
+                            <t t-foreach="this.monthGridWeeks" t-as="week" t-key="week_index">
+                                <div class="calendar-week-row">
+                                    <t t-foreach="week" t-as="day" t-key="day.ymd">
+                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '')">
+
+                                            <!-- Day Number in Top Left (FR-146) -->
+                                            <span class="day-number-label"><t t-esc="day.dayNumber"/></span>
+
+                                            <!-- COVERAGE ANALYSIS OVERLAY MODE (Fig 11.2, FR-154 to FR-157) -->
+                                            <t t-if="state.coverageMode">
+                                                <t t-set="cov" t-value="this.getDayCoverageInfo(day.ymd)"/>
+                                                <div t-att-class="'coverage-tile-cell ' + cov.level">
+                                                    <strong class="coverage-avail-text"><t t-esc="cov.percentage"/>% Available</strong>
+                                                    <span class="coverage-absent-text"><t t-esc="cov.absentCount"/> on leave</span>
+                                                </div>
+                                            </t>
+
+                                            <!-- STANDARD LEAVE BLOCKS MODE (Fig 11.1, FR-147 to FR-151) -->
+                                            <t t-else="">
+                                                <div class="day-cell-leave-stack">
+                                                    <t t-set="dayLeaves" t-value="this.getDayLeaves(day.ymd)"/>
+                                                    <!-- Render up to 3 visible leave blocks -->
+                                                    <t t-foreach="dayLeaves.slice(0, 3)" t-as="leave" t-key="leave.id">
+                                                        <div t-att-class="'calendar-leave-block ' + (leave.status === 'pending' ? 'pending ' : '')"
+                                                             t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"
+                                                             t-on-click="() => this.openLeaveDetail(leave.id)"
+                                                             t-att-title="leave.employee_name + ' (' + leave.leave_type_name + ')'">
+                                                            <span class="leave-block-name"><t t-esc="leave.employee_name"/></span>
+                                                        </div>
+                                                    </t>
+
+                                                    <!-- Stack Overflow Indicator "+N more" (FR-149) -->
+                                                    <t t-if="dayLeaves.length > 3">
+                                                        <div class="leave-overflow-badge" t-on-click="() => this.openLeaveDetail(dayLeaves[3].id)">
+                                                            +<t t-esc="dayLeaves.length - 3"/> more
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </t>
+
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <!-- ════════════════════════════════════════════════════
+                         WEEK VIEW (Fig 11.3, FR-158 to FR-161)
+                         ════════════════════════════════════════════════════ -->
+                    <t t-if="state.viewMode === 'week'">
+                        <div class="calendar-week-grid border rounded shadow-sm bg-white overflow-hidden">
+                            <div class="calendar-week-header-row">
+                                <t t-foreach="this.weekViewDays" t-as="day" t-key="day.ymd">
+                                    <div t-att-class="'week-header-col ' + (day.isToday ? 'today-highlight' : '')">
+                                        <span class="week-day-name"><t t-esc="day.dayName"/></span>
+                                        <strong class="week-day-num"><t t-esc="day.dayNumber"/></strong>
+                                    </div>
+                                </t>
+                            </div>
+                            <div class="calendar-week-body-row">
+                                <t t-foreach="this.weekViewDays" t-as="day" t-key="day.ymd">
+                                    <div class="week-day-column">
+                                        <t t-if="day.leaves.length === 0">
+                                            <div class="no-leaves-placeholder">No leaves</div>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-foreach="day.leaves" t-as="leave" t-key="leave.id">
+                                                <div t-att-class="'week-expanded-card ' + (leave.status === 'pending' ? 'pending' : '')"
+                                                     t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"
+                                                     t-on-click="() => this.openLeaveDetail(leave.id)">
+                                                    <strong class="card-emp-name"><t t-esc="leave.employee_name"/></strong>
+                                                    <span class="card-leave-type"><t t-esc="leave.leave_type_name"/></span>
+                                                    <span class="card-dept-name"><t t-esc="leave.department_name"/></span>
+                                                </div>
+                                            </t>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- ════════════════════════════════════════════════════
+                         DAY VIEW (FR-140 minimal implementation)
+                         ════════════════════════════════════════════════════ -->
+                    <t t-if="state.viewMode === 'day'">
+                        <div class="calendar-day-view-box border rounded p-4 bg-white shadow-sm">
+                            <h4 class="h5 font-weight-bold mb-3">Schedules for <t t-esc="this.periodLabel"/></h4>
+                            <t t-if="this.dayViewLeaves.length === 0">
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fa fa-smile-o fa-2x mb-2 text-success"/>
+                                    <p class="mb-0">No employees are on leave on this day.</p>
+                                </div>
+                            </t>
+                            <t t-else="">
+                                <div class="day-leaves-list gap-3 d-flex flex-column">
+                                    <t t-foreach="this.dayViewLeaves" t-as="leave" t-key="leave.id">
+                                        <div class="day-leave-card-large p-3 border rounded d-flex align-items-center justify-content-between"
+                                             t-on-click="() => this.openLeaveDetail(leave.id)">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <span class="leave-type-dot-lg" t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color, leave.leave_type_name)"/>
+                                                <div>
+                                                    <h5 class="mb-0 font-weight-bold text-dark"><t t-esc="leave.employee_name"/></h5>
+                                                    <span class="text-muted small"><t t-esc="leave.department_name"/> · <t t-esc="leave.leave_type_name"/></span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <span t-att-class="'badge ' + (leave.status === 'approved' ? 'bg-success' : 'bg-warning text-dark')">
+                                                    <t t-esc="leave.status"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <!-- ════════════════════════════════════════════════════
+                         YEAR VIEW (Fig 11.4, FR-162 to FR-168)
+                         ════════════════════════════════════════════════════ -->
+                    <t t-if="state.viewMode === 'year'">
+                        <div class="year-view-container">
+
+                            <!-- Header Region Selector (FR-166) -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="h5 font-weight-bold mb-0"><t t-esc="state.currentDate.getFullYear()"/> Annual Leave Overview</h3>
+                                <div class="country-region-badge border rounded px-3 py-1 bg-white small font-weight-bold d-flex align-items-center gap-2">
+                                    <span><t t-esc="state.yearData and state.yearData.country ? state.yearData.country.name : 'Company Region'"/> (Public Holidays)</span>
+                                </div>
+                            </div>
+
+                            <!-- 4-Column 12-Month Grid (FR-162) -->
+                            <div class="year-grid-4col">
+                                <t t-foreach="this.yearMonths" t-as="m" t-key="m.number">
+                                    <div class="year-month-card border rounded p-3 bg-white shadow-sm">
+                                        <div class="month-card-header d-flex justify-content-between align-items-center mb-2">
+                                            <strong class="month-title"><t t-esc="m.name"/></strong>
+                                        </div>
+                                        <!-- Per-Month Leave Counter Badges (FR-164) -->
+                                        <div class="month-summary-line small text-muted mb-2">
+                                            <span class="dot-approved">• <t t-esc="m.summary.approved"/> approved</span>
+                                            <span class="dot-pending ms-2">• <t t-esc="m.summary.pending"/> pending</span>
+                                            <span class="dot-holiday ms-2">• <t t-esc="m.summary.holidays"/> holidays</span>
+                                        </div>
+
+                                        <!-- Mini-Calendar Day Grid -->
+                                        <div class="mini-calendar-grid">
+                                            <div class="mini-day-hdr">S</div>
+                                            <div class="mini-day-hdr">M</div>
+                                            <div class="mini-day-hdr">T</div>
+                                            <div class="mini-day-hdr">W</div>
+                                            <div class="mini-day-hdr">T</div>
+                                            <div class="mini-day-hdr">F</div>
+                                            <div class="mini-day-hdr">S</div>
+
+                                            <t t-foreach="m.days" t-as="d" t-key="d.ymd">
+                                                <div t-att-class="'mini-day-cell ' + this.getYearDayClass(d)">
+                                                    <t t-esc="d.dayNumber"/>
+                                                </div>
+                                            </t>
+                                        </div>
+
+                                        <!-- Public Holiday Annotations (FR-165) -->
+                                        <t t-if="m.holidays and m.holidays.length">
+                                            <div class="holiday-annotations-box mt-2 pt-2 border-top">
+                                                <t t-foreach="m.holidays" t-as="h" t-key="h.date">
+                                                    <div class="holiday-annotation-item text-muted">
+                                                        • <t t-esc="h.date.split('-')[2]"/> <t t-esc="h.name"/>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+
+                                    </div>
+                                </t>
+                            </div>
+
+                        </div>
+                    </t>
+
+                    <!-- ════════════════════════════════════════════════════
+                         CALENDAR LEGEND BAR (FR-153, FR-156)
+                         ════════════════════════════════════════════════════ -->
+                    <div class="calendar-legend-bar border rounded p-3 bg-white mt-4 shadow-sm">
+                        <div class="legend-title font-weight-bold small mb-2 text-uppercase text-muted">Legend</div>
+                        <div class="d-flex align-items-center gap-3 flex-wrap small">
+                            <t t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id">
+                                <div class="legend-item d-flex align-items-center gap-1">
+                                    <span class="legend-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(leaveType.color, leaveType.name)"/>
+                                    <span><t t-esc="leaveType.name"/></span>
+                                </div>
+                            </t>
+                            <div class="legend-item d-flex align-items-center gap-1">
+                                <span class="legend-dot pending-pattern"/>
+                                <span>Pending Request</span>
+                            </div>
+                            <div class="legend-item d-flex align-items-center gap-1">
+                                <span class="legend-dot holiday-dot"/>
+                                <span>Public Holiday</span>
+                            </div>
+                            <t t-if="state.coverageMode">
+                                <div class="legend-item d-flex align-items-center gap-1 text-danger font-weight-bold">
+                                    <i class="fa fa-exclamation-triangle me-1"/>
+                                    <span>Low Coverage (&lt;70%)</span>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                </t>
+
+            </div>
+
+            <!-- ════════════════════════════════════════════════════
+                 FILTERS SIDE PANEL (Fig 11.5, FR-169 to FR-177)
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.filterPanelOpen">
+                <div class="cleon-welcome-backdrop" style="z-index: 1060;" t-on-click="closeFilters"/>
+                <div class="filters-slide-panel shadow-lg bg-white" style="z-index: 1070;" role="dialog" aria-modal="true">
+                    <div class="filter-panel-header border-bottom p-3 d-flex justify-content-between align-items-center">
+                        <h4 class="h6 font-weight-bold mb-0"><i class="fa fa-filter me-2"/> Filters</h4>
+                        <button type="button" class="btn-close" t-on-click="closeFilters"/>
+                    </div>
+                    <div class="filter-panel-body p-3 overflow-y-auto">
+
+                        <!-- Date Range (FR-170) -->
+                        <div class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Date Range</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="date" class="form-control form-control-sm" t-model="state.filterDraft.dateFrom" placeholder="mm/dd/yyyy"/>
+                                </div>
+                                <div class="col-6">
+                                    <input type="date" class="form-control form-control-sm" t-model="state.filterDraft.dateTo" placeholder="mm/dd/yyyy"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Checkboxes (FR-171) -->
+                        <div class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Department</label>
+                            <div class="filter-checkbox-list">
+                                <t t-foreach="state.departments" t-as="dept" t-key="dept.id">
+                                    <div class="form-check small mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               t-att-id="'filter_dept_' + dept.id"
+                                               t-att-checked="state.filterDraft.departmentIds.includes(dept.id)"
+                                               t-on-change="() => this.toggleDraftDepartment(dept.id)"/>
+                                        <label class="form-check-label" t-att-for="'filter_dept_' + dept.id">
+                                            <t t-esc="dept.name"/>
+                                        </label>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Leave Type Checkboxes (FR-172) -->
+                        <div class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Leave Type</label>
+                            <div class="filter-checkbox-list">
+                                <t t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id">
+                                    <div class="form-check small mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               t-att-id="'filter_lt_' + leaveType.id"
+                                               t-att-checked="state.filterDraft.leaveTypeIds.includes(leaveType.id)"
+                                               t-on-change="() => this.toggleDraftLeaveType(leaveType.id)"/>
+                                        <label class="form-check-label" t-att-for="'filter_lt_' + leaveType.id">
+                                            <t t-esc="leaveType.name"/>
+                                        </label>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Status Checkboxes (FR-173) -->
+                        <div class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Status</label>
+                            <div class="filter-checkbox-list">
+                                <div class="form-check small mb-1">
+                                    <input class="form-check-input" type="checkbox" id="filter_st_approved"
+                                           t-att-checked="state.filterDraft.statuses.includes('approved')"
+                                           t-on-change="() => this.toggleDraftStatus('approved')"/>
+                                    <label class="form-check-label" for="filter_st_approved">Approved</label>
+                                </div>
+                                <div class="form-check small mb-1">
+                                    <input class="form-check-input" type="checkbox" id="filter_st_pending"
+                                           t-att-checked="state.filterDraft.statuses.includes('pending')"
+                                           t-on-change="() => this.toggleDraftStatus('pending')"/>
+                                    <label class="form-check-label" for="filter_st_pending">Pending</label>
+                                </div>
+                                <div class="form-check small mb-1">
+                                    <input class="form-check-input" type="checkbox" id="filter_st_cancelled"
+                                           t-att-checked="state.filterDraft.statuses.includes('cancelled')"
+                                           t-on-change="() => this.toggleDraftStatus('cancelled')"/>
+                                    <label class="form-check-label" for="filter_st_cancelled">Cancelled</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Searchable Employee List (FR-174) -->
+                        <div class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Employees</label>
+                            <input type="text" class="form-control form-control-sm mb-2"
+                                   placeholder="Search employees..."
+                                   t-model="state.filterDraft.employeeSearch"/>
+                            <div class="filter-scrollable-emp-list border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+                                <t t-foreach="this.visibleFilterEmployees" t-as="emp" t-key="emp.id">
+                                    <div class="form-check small mb-1">
+                                        <input class="form-check-input" type="checkbox"
+                                               t-att-id="'filter_emp_' + emp.id"
+                                               t-att-checked="state.filterDraft.employeeIds.includes(emp.id)"
+                                               t-on-change="() => this.toggleDraftEmployee(emp.id)"/>
+                                        <label class="form-check-label" t-att-for="'filter_emp_' + emp.id">
+                                            <t t-esc="emp.name"/> <span class="text-muted">• <t t-esc="emp.department"/></span>
+                                        </label>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="filter-panel-footer border-top p-3 d-flex justify-content-between align-items-center">
+                        <button type="button" class="btn btn-sm btn-link text-muted p-0" t-on-click="clearAllFilters">Clear All</button>
+                        <button type="button" class="btn btn-sm btn-pink-active px-4" t-on-click="applyFilters">Apply Filters</button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Reused Screen 10 Leave Request Detail Modal (FR-152, FR-114 Dual Trigger) -->
+            <t t-if="state.detailRequestId">
+                <LeaveRequestDetailModal
+                    requestId="state.detailRequestId"
+                    close.bind="closeDetailModal"
+                    onChanged.bind="loadCalendarData"/>
+            </t>
+
+        </div>
+    </t>
+
+</templates>
