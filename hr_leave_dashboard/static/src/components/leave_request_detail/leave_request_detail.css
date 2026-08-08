@@ -1,10 +1,12 @@
-/* Screen 10 — Leave Request Detail Modal Styles */
+.cleon-welcome-backdrop.leave-detail-backdrop {
+    z-index: 2040 !important;
+}
 .leave-detail-modal-box {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1050;
+    z-index: 2050 !important;
     width: min(680px, calc(100vw - 32px));
     max-height: calc(100vh - 60px);
     display: flex;

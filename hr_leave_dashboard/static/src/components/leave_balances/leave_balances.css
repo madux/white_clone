@@ -232,33 +232,67 @@
 .o_lb_alloc_footer div{display:flex;gap:8px}
 
 
-/* Detail drawer */
-.o_lb_details{width:480px}
-.o_lb_summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
-.o_lb_summary>div{background:#f5f7fb;padding:12px;border-radius:8px}
-.o_lb_summary small{display:block;font-size:11px;color:#8490a5}
-.o_lb_summary b{font-size:18px;font-weight:700}
-.o_lb_projected,.o_lb_section_title,.o_lb_request_top{display:flex;align-items:center;justify-content:space-between}
-.o_lb_projected{padding:14px;background:#fff0f6;border-radius:9px;margin:12px 0}
-.o_lb_projected small{display:block;color:#8490a5}
-.o_lb_projected strong{font-size:18px;color:#d71566}
-.o_lb_section_title button{border:0;background:transparent;color:#d71566;cursor:pointer}
-.o_lb_details dl{display:grid;grid-template-columns:1fr 1fr}
-.o_lb_details dt,.o_lb_details dd{padding:8px;border-bottom:1px solid #eee;margin:0;font-size:13px}
-.o_lb_details dt{color:#6e7d92;font-weight:500}
+/* ── FR-287–FR-295: Balance Details Side Drawer ──────────────────── */
+.o_lb_details{width:440px}
+.o_lb_details_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
+.o_lb_details_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
+.o_lb_details_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
+.o_lb_details_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
 
-/* Adjustment modal */
-.o_lb_adjust_modal{width:min(980px,94vw)}
-.o_lb_adjust_modal input{width:90px}
+.o_lb_drawer_subtitle{font-size:12px;font-weight:700;color:#8490a5;margin:16px 0 10px;letter-spacing:.02em}
+.o_lb_drawer_subtitle.uppercase{text-transform:uppercase;letter-spacing:.04em}
 
-/* Balance transaction list */
-.balance-transaction-list article{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eee}
-.balance-transaction-list article>span{font-weight:bold;width:42px;flex-shrink:0}
-.balance-transaction-list .positive{color:#14955d}
-.balance-transaction-list .negative{color:#d33447}
-.balance-transaction-list article div{flex:1}
-.balance-transaction-list small{display:block;color:#8490a5;font-size:11px}
-.balance-transaction-list em{font-size:11px;color:#8993a5}
+/* FR-288 & FR-289: Unified Balance Summary Soft Pink Container Box */
+.o_lb_summary_container{background:#fdf2f7;border-radius:12px;padding:16px;margin-bottom:18px}
+.o_lb_summary_title{font-size:13px;font-weight:700;color:#172033;margin:0 0 14px 0}
+.o_lb_summary_grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px;margin-bottom:16px}
+.o_lb_summary_cell small{display:block;font-size:11px;font-weight:600;color:#8490a5;text-transform:uppercase;letter-spacing:.02em;margin-bottom:3px}
+.o_lb_summary_cell b{font-size:22px;font-weight:700;color:#172033}
+.o_lb_text_amber{color:#d97706!important}
+.o_lb_text_green{color:#16874d!important}
+
+.o_lb_projected_row{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #f7e0ed}
+.o_lb_projected_row b{display:block;font-size:12px;font-weight:700;color:#172033}
+.o_lb_projected_row small{display:block;font-size:11px;color:#8490a5}
+.o_lb_projected_val{font-size:16px;font-weight:700;color:#16874d}
+
+/* FR-290: Linked Information Soft Neutral Container Box */
+.o_lb_linked_container{background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.o_lb_linked_row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:12px}
+.o_lb_linked_row span{color:#8490a5}
+.o_lb_linked_row b{color:#172033;font-weight:600;text-align:right}
+.o_lb_linked_expiring_row{display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-top:4px;border-top:1px solid #edf0f5;font-size:12px}
+.o_lb_expiring_lbl{color:#8490a5;display:flex;align-items:center;gap:6px}
+
+/* FR-291–FR-293: Transaction Timeline */
+.o_lb_section_title{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+.o_lb_audit_link{border:0;background:transparent;color:#ed1970;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
+.o_lb_audit_link:hover{text-decoration:underline}
+.o_lb_audit_icon{font-size:11px}
+
+.balance-transaction-list{margin-top:10px}
+.o_lb_tx_card{display:flex;align-items:flex-start;gap:12px;background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.o_lb_tx_circle{width:12px;height:12px;border-radius:50%;margin-top:4px;flex-shrink:0;box-sizing:border-box}
+.o_lb_tx_circle.positive{border:2px solid #16874d;background:white}
+.o_lb_tx_circle.negative{border:2px solid #cb2639;background:white}
+.o_lb_tx_main{flex:1}
+.o_lb_tx_top{display:flex;align-items:center;justify-content:space-between}
+.o_lb_tx_title{font-size:13px;font-weight:700;color:#172033}
+.o_lb_tx_delta{font-size:13px;font-weight:700}
+.o_lb_tx_delta.positive{color:#16874d}
+.o_lb_tx_delta.negative{color:#cb2639}
+.o_lb_tx_date{font-size:11px;color:#8490a5;margin:2px 0 6px}
+.o_lb_tx_bottom{display:flex;align-items:center;justify-content:space-between;font-size:11px}
+.o_lb_tx_req_wrap{color:#8490a5}
+.o_lb_tx_req_link{color:#ed1970!important;font-weight:600;cursor:pointer}
+.o_lb_tx_req_link:hover{text-decoration:underline}
+.o_lb_tx_bal{color:#8490a5;font-style:normal}
+
+/* FR-294–FR-295: Drawer Footer */
+.o_lb_details_footer{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid #e3e7ee}
+.o_lb_btn_block{width:100%!important;display:flex;justify-content:center;text-align:center;box-sizing:border-box;border-radius:8px;padding:10px;font-size:13px;font-weight:600}
+.o_lb_btn_ghost{background:white;border:1px solid #dce2ec;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
+.o_lb_btn_ghost:hover{background:#f8fafc;border-color:#b0bbc9}
 
 /* Leave History modal */
 .o_lb_history{width:min(960px,94vw)}

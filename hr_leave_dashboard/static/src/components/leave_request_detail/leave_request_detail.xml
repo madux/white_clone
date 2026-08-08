@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
 
     <t t-name="hr_leave_dashboard.LeaveRequestDetailModal" owl="1">
-        <div class="cleon-welcome-backdrop" t-on-click="close"/>
+        <div class="cleon-welcome-backdrop leave-detail-backdrop" t-on-click="close"/>
 
         <div class="leave-detail-modal-box" role="dialog" aria-modal="true">
 
@@ -284,8 +284,8 @@
 
             <!-- Nested Rejection Reason Modal (FR-134) -->
             <t t-if="state.showRejectModal">
-                <div class="cleon-welcome-backdrop" style="z-index: 1070;" t-on-click="closeReject"/>
-                <div class="cleon-reject-modal" style="z-index: 1080;" role="dialog" aria-modal="true">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeReject"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
                     <button type="button" class="cleon-welcome-close" t-on-click="closeReject"><i class="fa fa-times"/></button>
                     <div class="cleon-detail-header">
                         <h4 class="text-danger"><i class="fa fa-exclamation-triangle me-1"/> Reject Leave Request</h4>
@@ -308,8 +308,8 @@
 
             <!-- Nested Cancellation Reason Modal (FR-136) -->
             <t t-if="state.showCancelModal">
-                <div class="cleon-welcome-backdrop" style="z-index: 1070;" t-on-click="closeCancel"/>
-                <div class="cleon-reject-modal" style="z-index: 1080;" role="dialog" aria-modal="true">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeCancel"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
                     <button type="button" class="cleon-welcome-close" t-on-click="closeCancel"><i class="fa fa-times"/></button>
                     <div class="cleon-detail-header">
                         <h4 class="text-warning"><i class="fa fa-exclamation-triangle me-1"/> Cancel Approved Leave</h4>

@@ -139,7 +139,7 @@
                 <td class="o_lb_actions">
                   <button t-on-click="() => state.actionKey = state.actionKey === row.key ? null : row.key">&#8942;</button>
                   <div t-if="state.actionKey === row.key" class="o_lb_menu">
-                    <button t-on-click="() => openDetails(row)">View Balance Details</button>
+                    <button t-on-click="() => openDetails(row)">View Details</button>
                     <button t-on-click="() => openAdjust(row)">Adjust Balance</button>
                     <button t-on-click="() => openDetails(row, true)">View Transactions</button>
                     <button t-on-click="() => openHistory(row)">View Leave History</button>
@@ -373,8 +373,118 @@
         </section>
       </div>
 
-      <!-- Balance Detail drawer -->
-      <div t-if="state.detailsOpen" class="o_lb_overlay" t-on-click.self="() => state.detailsOpen=false"><aside class="o_lb_drawer o_lb_details"><header><div class="o_lb_employee"><img t-att-src="state.details.avatar_url"/><span><h3 t-esc="state.details.employee_name"/><small><t t-esc="state.details.employee_code"/> · <t t-esc="state.details.department"/></small></span></div><button t-on-click="() => state.detailsOpen=false">&#215;</button></header><div class="o_lb_drawer_body"><h3><span class="o_lb_dot" t-att-style="'background:'+state.details.color_hex"/> <t t-esc="state.details.leave_type"/></h3><div class="o_lb_summary"><div><small>Allocated</small><b t-esc="state.details.allocated"/></div><div><small>Used</small><b t-esc="state.details.used"/></div><div><small>Pending</small><b t-esc="state.details.pending"/></div><div><small>Remaining</small><b t-esc="state.details.remaining"/></div></div><div class="o_lb_projected"><span><b>Projected Balance</b><small>After pending requests are approved</small></span><strong><t t-esc="state.details.projected"/> days</strong></div><h4>Linked Information</h4><dl><dt>Assigned Policy</dt><dd t-esc="state.details.assigned_policy"/><dt>Accrual Plan</dt><dd t-esc="state.details.accrual_plan"/><dt>Last Accrual Date</dt><dd t-esc="state.details.last_accrual_date || '—'"/><dt>Next Accrual Date</dt><dd t-esc="state.details.next_accrual_date || '—'"/><dt>Expiring Soon</dt><dd><t t-if="state.details.expiring_days"><t t-esc="state.details.expiring_days"/> days on <t t-esc="state.details.expiry_date"/></t><t t-else="">—</t></dd></dl><div class="o_lb_section_title"><h4>Transaction Timeline</h4><button t-on-click="openBalanceAudit">View Audit Log ↗</button></div><div class="balance-transaction-list"><article t-foreach="state.details.transactions" t-as="tx" t-key="tx.id"><span t-att-class="tx.delta >= 0 ? 'positive':'negative'"><t t-esc="tx.delta >= 0 ? '+' : ''"/><t t-esc="tx.delta"/></span><div><b t-esc="tx.label"/><small><t t-esc="tx.date"/> · <t t-esc="tx.reason"/></small></div><em>Balance <t t-esc="tx.balance_after"/></em></article><p t-if="!state.details.transactions.length">No recorded balance transactions yet.</p></div></div><footer><button class="o_lb_primary" t-on-click="() => openAdjust(state.details)">Adjust Balance</button><button t-on-click="() => openHistory(state.details)">View Full History</button></footer></aside></div>
+      <!-- Balance Detail drawer (FR-287–FR-295) -->
+      <div t-if="state.detailsOpen" class="o_lb_overlay" t-on-click.self="() => state.detailsOpen=false">
+        <aside class="o_lb_drawer o_lb_details">
+          <!-- FR-287: Header with Title 'Balance Details' and sub-label 'Employee Name • Leave Type' -->
+          <header class="o_lb_details_header">
+            <div>
+              <h3>Balance Details</h3>
+              <small><t t-esc="state.details.employee_name"/> • <t t-esc="state.details.leave_type"/></small>
+            </div>
+            <button t-on-click="() => state.detailsOpen=false">&#215;</button>
+          </header>
+
+          <div class="o_lb_drawer_body">
+            <!-- FR-288 & FR-289: Unified Balance Summary Soft Pink Box (2x2 grid + Projected Balance row) -->
+            <div class="o_lb_summary_container">
+              <h4 class="o_lb_summary_title">Balance Summary</h4>
+              <div class="o_lb_summary_grid">
+                <div class="o_lb_summary_cell">
+                  <small>Allocated</small>
+                  <b t-esc="state.details.allocated"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Used</small>
+                  <b t-esc="state.details.used"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Pending</small>
+                  <b class="o_lb_text_amber" t-esc="state.details.pending"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Remaining</small>
+                  <b class="o_lb_text_green" t-esc="state.details.remaining"/>
+                </div>
+              </div>
+              <div class="o_lb_projected_row">
+                <div>
+                  <b>Projected Balance</b>
+                  <small>After pending requests are approved</small>
+                </div>
+                <strong class="o_lb_projected_val"><t t-esc="state.details.projected"/> days</strong>
+              </div>
+            </div>
+
+
+            <!-- FR-290: Linked Information inside container box matching design screenshot 2 -->
+            <h4 class="o_lb_drawer_subtitle">Linked Information</h4>
+            <div class="o_lb_linked_container">
+              <div class="o_lb_linked_row">
+                <span>Assigned Policy</span>
+                <b t-esc="state.details.assigned_policy"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Accrual Plan</span>
+                <b t-esc="state.details.accrual_plan"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Last Accrual Date</span>
+                <b t-esc="state.details.last_accrual_date || '—'"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Next Accrual Date</span>
+                <b t-esc="state.details.next_accrual_date || '—'"/>
+              </div>
+              <div class="o_lb_linked_expiring_row">
+                <span class="o_lb_expiring_lbl"><i class="fa fa-clock-o o_lb_text_amber"/> Expiring Soon</span>
+                <b t-if="state.details.expiring_days" class="o_lb_text_amber">
+                  <t t-esc="state.details.expiring_days"/> days on <t t-esc="state.details.expiry_date"/>
+                </b>
+                <b t-else="">—</b>
+              </div>
+            </div>
+
+            <!-- FR-291 to FR-293: Transaction Timeline -->
+            <div class="o_lb_section_title">
+              <h4 class="o_lb_drawer_subtitle">Transaction Timeline</h4>
+              <button class="o_lb_audit_link" t-on-click="openBalanceAudit">
+                View Audit Log <span class="o_lb_audit_icon">↗</span>
+              </button>
+            </div>
+            <div class="balance-transaction-list">
+              <article t-foreach="state.details.transactions" t-as="tx" t-key="tx.id" class="o_lb_tx_card">
+                <span t-att-class="'o_lb_tx_circle ' + (tx.delta >= 0 ? 'positive' : 'negative')"/>
+                <div class="o_lb_tx_main">
+                  <div class="o_lb_tx_top">
+                    <b class="o_lb_tx_title" t-esc="tx.label"/>
+                    <span t-att-class="'o_lb_tx_delta ' + (tx.delta >= 0 ? 'positive' : 'negative')">
+                      <t t-esc="tx.delta >= 0 ? '+' : ''"/><t t-esc="tx.delta"/> days
+                    </span>
+                  </div>
+                  <div class="o_lb_tx_date" t-esc="tx.date"/>
+                  <div class="o_lb_tx_bottom">
+                    <span t-if="tx.request_ref" class="o_lb_tx_req_wrap">
+                      Request <span class="o_lb_tx_req_link" t-on-click="() => state.requestDetailId = tx.leave_id" t-esc="tx.request_ref"/>
+                    </span>
+                    <span t-else=""/>
+                    <span class="o_lb_tx_bal">Balance: <t t-esc="tx.balance_after"/></span>
+                  </div>
+                </div>
+              </article>
+              <p t-if="!state.details.transactions.length" class="o_lb_empty">No recorded balance transactions yet.</p>
+            </div>
+
+          </div>
+
+          <!-- FR-294 & FR-295: Drawer Footer -->
+          <footer class="o_lb_details_footer">
+            <button class="o_lb_primary o_lb_btn_block" t-on-click="() => openAdjust(state.details)">Adjust Balance</button>
+            <button class="o_lb_btn_ghost o_lb_btn_block" t-on-click="() => openHistory(state.details)">View Full History</button>
+          </footer>
+        </aside>
+      </div>
+
 
       <!-- Balance Adjustment modal -->
       <div t-if="state.adjustmentOpen" class="o_lb_overlay"><section class="o_lb_modal o_lb_adjust_modal"><header><div><h3>Adjust Leave Balance</h3><small t-esc="state.adjustmentEmployee.employee_name"/></div><button t-on-click="() => state.adjustmentOpen=false">&#215;</button></header><div class="o_lb_modal_body"><table><thead><tr><th>Leave Type</th><th>Allocated</th><th>Used</th><th>Pending</th><th>Current</th><th>Adjustment</th><th>New Balance</th></tr></thead><tbody><tr t-foreach="state.adjustments" t-as="item" t-key="item.leave_type_id"><td><i class="o_lb_dot" t-att-style="'background:'+item.color_hex"/><b t-esc="item.leave_type"/></td><td t-esc="item.allocated"/><td t-esc="item.used"/><td t-esc="item.pending"/><td t-esc="item.remaining"/><td><input type="number" step="0.5" t-model.number="item.adjustment" placeholder="+ / -"/></td><td><strong t-esc="adjustedBalance(item)"/></td></tr></tbody></table><label class="o_lb_form">Reason for adjustment *<textarea t-model="state.adjustmentReason" placeholder="Required for the audit trail"/></label></div><footer><button t-on-click="() => state.adjustmentOpen=false">Cancel</button><button class="o_lb_primary" t-att-disabled="!adjustmentReady()" t-on-click="applyAdjustments">Apply Adjustments</button></footer></section></div>
