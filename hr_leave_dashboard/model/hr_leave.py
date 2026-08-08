@@ -85,6 +85,21 @@ class HrLeave(models.Model):
                 leave._create_audit_record("submitted", note=leave.notes or "")
         return leaves
 
+    @api.constrains("holiday_status_id", "employee_id", "request_date_from", "request_date_to", "number_of_days", "state")
+    def _check_leave_type_policy_enforcement(self):
+        for leave in self:
+            if leave.state in ("confirm", "validate1", "validate") and leave.holiday_status_id and leave.employee_id:
+                res = self.env["hr.leave.type"].evaluate_leave_request_policy(
+                    employee_id=leave.employee_id.id,
+                    leave_type_id=leave.holiday_status_id.id,
+                    date_from=leave.request_date_from or leave.date_from,
+                    date_to=leave.request_date_to or leave.date_to,
+                    requested_days=leave.number_of_days or 1.0,
+                    half_day=bool(getattr(leave, "request_unit_half", False)),
+                )
+                if not res.get("eligible") or res.get("errors"):
+                    raise ValidationError(_("Policy validation error for '%s':\n%s") % (leave.holiday_status_id.name, "\n".join("• " + e for e in res["errors"])))
+
     @api.model
     def _check_leave_dashboard_access(self):
         if not (

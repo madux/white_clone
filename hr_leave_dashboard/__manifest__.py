@@ -2,7 +2,7 @@
     'name': 'CLEONHR Leave',
     'version': '17.0.1.0.0',
     'category': 'CleonHR-HR ADMIN',
-    'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration'],
+    'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration', 'hr_employee'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
@@ -10,6 +10,7 @@
         'views/dashboard_action.xml',
         'views/leave_base.xml',
         'views/menu.xml',
+        'views/hr_leave_type_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -27,6 +28,11 @@
             'hr_leave_dashboard/static/src/js/leave_calendar.js',
             'hr_leave_dashboard/static/src/xml/leave_calendar.xml',
             'hr_leave_dashboard/static/src/css/leave_calendar.css',
+            'hr_leave_dashboard/static/src/components/leave_types/leave_types_page.js',
+            'hr_leave_dashboard/static/src/components/leave_types/leave_type_detail_drawer.js',
+            'hr_leave_dashboard/static/src/components/leave_types/leave_type_form_modal.js',
+            'hr_leave_dashboard/static/src/components/leave_types/leave_types.xml',
+            'hr_leave_dashboard/static/src/css/leave_types.css',
         ],
     },
     'license': 'LGPL-3',

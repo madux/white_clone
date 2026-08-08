@@ -38,12 +38,7 @@ export class CalendarSidebar extends Component {
     }
 
     openLeaveTypes() {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "hr.leave.type",
-            views: [[false, "list"], [false, "form"]],
-            name: "Leave Types",
-        });
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_types_custom");
     }
 
     openLeaveBalances() {
