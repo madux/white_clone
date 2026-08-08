@@ -11,6 +11,7 @@ export class HrLeaveDashboard extends Component {
     setup() {
         this.action = useService("action");
         this.orm = useService("orm");
+        this.notification = useService("notification");
         this.charts = {};
         this.isDestroyed = false;
         this.currentRequest = null;
@@ -20,11 +21,23 @@ export class HrLeaveDashboard extends Component {
 
         this.state = useState({
             months: 6,
-            kpis: {},
+            kpis: {
+                total_employees: 0,
+                pending_approvals: 0,
+                on_leave_today: 0,
+                on_leave_pct: 0,
+                upcoming_7_days: 0,
+                utilisation_rate: 0,
+                coverage_alerts: 0,
+            },
             trends: { labels: [], total: [], approved: [], pending: [], rejected: [], summary: {} },
             byType: [],
             balance: [],
             approval: { approved: 0, pending: 0, rejected: 0, approval_rate: 0 },
+            departmentCoverage: [],
+            recentRequests: [],
+            sidebarCollapsed: false,
+            viewMode: "admin",
             loading: true,
             // ── Welcome Modal ──────────────────────────
             showWelcomeModal: false,
@@ -110,13 +123,61 @@ export class HrLeaveDashboard extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    //  DASHBOARD CONTROLS & HELPERS
+    // ═══════════════════════════════════════════════════════════════
+
+    /** FR-062: Switch trend month range (6 or 12) and re-fetch data. */
+    setTrendMonths(months) {
+        if (months !== 6 && months !== 12 || months === this.state.months) return;
+        this.state.months = months;
+        this.fetchAndRender(months);
+    }
+
+    toggleLeaveSidebar() {
+        this.state.sidebarCollapsed = !this.state.sidebarCollapsed;
+    }
+
+    /** FR-072: Admin vs Employee View toggle. */
+    setViewMode(mode) {
+        if (!["admin", "employee"].includes(mode)) return;
+        this.state.viewMode = mode;
+        if (mode === "employee") {
+            this.notification.add(
+                "Employee preview will use the employee-facing Leave view when that screen is implemented.",
+                { title: "Employee View", type: "info" }
+            );
+        }
+    }
+
+    /** FR-067: Coverage percentage color class helper. */
+    getCoverageClass(value) {
+        if (value === null || value === undefined) return "";
+        if (value >= 85) return "coverage-good";
+        if (value >= 70) return "coverage-medium";
+        return "coverage-low";
+    }
+
+    /** FR-068: Employee initials generator. */
+    getInitials(name) {
+        return (name || "")
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0].toUpperCase())
+            .join("");
+    }
+
+    openAuditLog() {
+        this.notification.add(
+            "Leave Audit Log will be opened when that module view is implemented.",
+            { title: "Audit Log", type: "info" }
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     //  CENTRAL RE-OPENING METHOD (FR-054 Fix)
     // ═══════════════════════════════════════════════════════════════
 
-    /**
-     * Central state-aware method for reopening setup from header icons,
-     * Help menu, Get Started menu, or dev URL parameter.
-     */
     openSetupExperience() {
         this.state.showWelcomeModal = false;
         this.state.showWizard = false;
@@ -136,28 +197,21 @@ export class HrLeaveDashboard extends Component {
     //  WELCOME MODAL METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    /** Re-open welcome modal explicitly if needed. */
     openWelcomeModal() {
         this.state.showWizard = false;
         this.state.showCompletionScreen = false;
         this.state.showWelcomeModal = true;
     }
 
-    /** FR-006: Dismiss modal via X button — marks user as dismissed. */
     async closeWelcomeModal() {
         this.state.showWelcomeModal = false;
         await this.orm.call("hr.leave.setup.progress", "dismiss_welcome", []);
     }
 
-    /** FR-005: "Explore on my own" — dismiss modal, show dashboard. */
     async exploreOnMyOwn() {
         await this.closeWelcomeModal();
     }
 
-    /**
-     * FR-004: "Start Setup Guide (5 steps)".
-     * Persists state=in_progress, step=1 to DB, then opens the wizard.
-     */
     async startSetupGuide() {
         const setup = await this.orm.call("hr.leave.setup.progress", "start_setup", []);
         this.state.setupState = setup.state;
@@ -173,11 +227,6 @@ export class HrLeaveDashboard extends Component {
     //  SETUP WIZARD METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    /**
-     * FR-015: "← Back" in the wizard.
-     * From Step 1 → closes wizard and returns to the Welcome Modal.
-     * From Step 2+ → goes to the previous wizard step.
-     */
     goBackFromWizard() {
         if (this.state.wizardStep <= 1) {
             this.state.showWizard = false;
@@ -189,11 +238,6 @@ export class HrLeaveDashboard extends Component {
         }
     }
 
-    /**
-     * FR-016 / FR-043: "Next →" or "Finish →" in the wizard.
-     * If in reviewMode: advances UI steps without corrupting DB state.
-     * Otherwise: persists progress to DB. Upon completing Step 5, displays Completion Screen.
-     */
     async nextWizardStep() {
         const nextStep = this.state.wizardStep + 1;
 
@@ -209,7 +253,6 @@ export class HrLeaveDashboard extends Component {
         }
 
         if (nextStep > 5) {
-            // Complete setup and show Screen 7 (Completion Screen)
             const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
             this.state.setupState = result.state;
             this.state.showWizard = false;
@@ -223,9 +266,6 @@ export class HrLeaveDashboard extends Component {
         this.state.wizardStep = nextStep;
     }
 
-    /**
-     * FR-017: "Skip and explore on my own" text link.
-     */
     async skipWizard() {
         this.state.showWizard = false;
         if (!this.state.reviewMode) {
@@ -234,28 +274,19 @@ export class HrLeaveDashboard extends Component {
         this.state.reviewMode = false;
     }
 
-    /**
-     * Closes the wizard via backdrop click or ESC key.
-     */
     closeWizard() {
         this.state.showWizard = false;
         this.state.reviewMode = false;
     }
 
-    /**
-     * FR-014: "→ Go to Leave Types" inside the wizard.
-     */
     goToLeaveTypesFromWizard() {
         return this.openLeaveTypes();
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  SETUP COMPLETION SCREEN & CHECKLIST METHODS (Screen 7 — FR-045 to FR-054)
+    //  SETUP COMPLETION SCREEN & CHECKLIST METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    /**
-     * FR-050: Explicitly set checklist item completion state and persist.
-     */
     async toggleChecklistItem(itemKey) {
         const targetVal = !this.state.checklist[itemKey];
         const res = await this.orm.call(
@@ -268,7 +299,6 @@ export class HrLeaveDashboard extends Component {
         }
     }
 
-    /** Handle keypress (Enter/Space) on accessible checklist item div. */
     onChecklistKeydown(ev, itemKey) {
         if (ev.key === "Enter" || ev.key === " ") {
             ev.preventDefault();
@@ -276,10 +306,6 @@ export class HrLeaveDashboard extends Component {
         }
     }
 
-    /**
-     * FR-052: "← Review steps" button returns to Step 1 of wizard in read-only reviewMode.
-     * Prevents modifying DB completion status.
-     */
     reviewWizardSteps() {
         this.state.showCompletionScreen = false;
         this.state.reviewMode = true;
@@ -287,18 +313,16 @@ export class HrLeaveDashboard extends Component {
         this.state.showWizard = true;
     }
 
-    /** FR-051: "Done — Go to Dashboard" CTA button. */
     doneGoToDashboard() {
         this.state.showCompletionScreen = false;
     }
 
-    /** FR-053: Close (X) button on completion screen. */
     closeCompletionScreen() {
         this.state.showCompletionScreen = false;
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  NAVIGATION ACTIONS (used by wizard tiles + sidebar + checklist)
+    //  NAVIGATION ACTIONS
     // ═══════════════════════════════════════════════════════════════
 
     openDashboard() {
@@ -347,18 +371,25 @@ export class HrLeaveDashboard extends Component {
             dataType: "json",
         }).done((res) => {
             if (this.isDestroyed || !$(this.el)) return;
+            if (!res || !res.result) {
+                console.error("Dashboard backend returned error or empty response:", res ? res.error : "No response");
+                this.state.loading = false;
+                return;
+            }
 
             const data = res.result;
-            this.state.kpis = data.kpis;
-            this.state.trends = data.trends;
-            this.state.byType = data.by_type;
-            this.state.balance = data.balance;
-            this.state.approval = data.approval_overview;
+            this.state.kpis = data.kpis || this.state.kpis;
+            this.state.trends = data.trends || this.state.trends;
+            this.state.byType = data.by_type || [];
+            this.state.balance = data.balance || [];
+            this.state.approval = data.approval_overview || this.state.approval;
+            this.state.departmentCoverage = data.department_coverage || [];
+            this.state.recentRequests = data.recent_requests || [];
+            this.state.loading = false;
 
-            this.renderKpis(data.kpis);
-            this.renderTrends(data.trends);
-            this.renderByType(data.by_type);
-            this.renderApproval(data.approval_overview);
+            if (data.trends) this.renderTrends(data.trends);
+            if (data.by_type) this.renderByType(data.by_type);
+            if (data.approval_overview) this.renderApproval(data.approval_overview);
         }).fail((err) => {
             if (err.statusText === "abort") return;
             console.error("Dashboard load failed", err);
@@ -390,18 +421,9 @@ export class HrLeaveDashboard extends Component {
         $(this.el).find("[data-summary='rejected']").text(d.summary.rejected);
     }
 
-    renderKpis(k) {
-        const $root = $(this.el);
-        $root.find("[data-kpi='total_employees']").text(k.total_employees);
-        $root.find("[data-kpi='pending_approvals']").text(k.pending_approvals);
-        $root.find("[data-kpi='on_leave_today']").text(k.on_leave_today);
-        $root.find("[data-kpi='upcoming']").text(k.upcoming_7_days);
-        $root.find("[data-kpi='utilisation']").text(k.utilisation_rate + "%");
-        $root.find("[data-kpi='coverage']").text(k.coverage_alerts);
-    }
-
     renderByType(items) {
-        const ctx = this.byTypeChart.el.getContext("2d");
+        const ctx = this.byTypeChart.el ? this.byTypeChart.el.getContext("2d") : null;
+        if (!ctx) return;
         if (this.charts.byType) this.charts.byType.destroy();
         const palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"];
         this.charts.byType = new Chart(ctx, {
@@ -434,10 +456,6 @@ export class HrLeaveDashboard extends Component {
             },
             options: { cutout: "75%", plugins: { legend: { display: false } } },
         });
-        $(this.el).find("[data-approval='rate']").text(a.approval_rate + "%");
-        $(this.el).find("[data-approval='approved']").text(a.approved);
-        $(this.el).find("[data-approval='pending']").text(a.pending);
-        $(this.el).find("[data-approval='rejected']").text(a.rejected);
     }
 }
 

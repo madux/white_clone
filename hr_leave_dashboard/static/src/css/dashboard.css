@@ -479,12 +479,12 @@
 }
 
 .stat-box        { background: #f8f9fb; border-radius: 8px; padding: 10px; text-align: center; }
-.stat-value      { font-size: 20px; font-weight: 700; }
-.stat-value.pink { color: #e91e8c; }
-.stat-value.green  { color: #1cc88a; }
-.stat-value.orange { color: #f0ad4e; }
-.stat-value.red    { color: #e74a3b; }
-.stat-label      { font-size: 11px; color: #9aa0ac; }
+.stat-value      { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.stat-value-pink  { color: #e91e8c; font-size: 20px; font-weight: 700; }
+.stat-value-green { color: #10b981; font-size: 20px; font-weight: 700; }
+.stat-value-amber { color: #f59e0b; font-size: 20px; font-weight: 700; }
+.stat-value-red   { color: #ef4444; font-size: 20px; font-weight: 700; }
+.stat-label      { font-size: 11px; color: #9aa0ac; margin-top: 2px; }
 
 
 /* ══ DONUT / LEGEND ══════════════════════════════════════════ */
@@ -1157,3 +1157,389 @@
     font-size: 11px;
     color: #94a3b8;
 }
+
+
+/* ════════════════════════════════════════════════════════════════
+   SCREEN 8 — ADMIN DASHBOARD STYLES (FR-055 to FR-072)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Header controls & View Switcher (FR-071, FR-072) */
+.cleon-header-plain-btn {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-header-plain-btn:hover {
+    border-color: #cbd5e1;
+    color: #1e293b;
+    background: #f8fafc;
+}
+
+.cleon-view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 2px;
+}
+
+.cleon-view-option {
+    background: none;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.cleon-view-option.active {
+    background: #ffffff;
+    color: #e91e8c;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* KPI Cards & Badges (FR-055 to FR-060) */
+.kpi-card-button {
+    text-align: left;
+    background: #ffffff;
+    border: 1px solid #f0f1f5;
+    cursor: pointer;
+    position: relative;
+}
+
+.kpi-card-button:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.kpi-new-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+
+.coverage-alert-active {
+    border: 1.5px solid #fca5a5 !important;
+    background: #fff5f5 !important;
+}
+
+.kpi-icon.red {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: #ffffff;
+}
+
+.kpi-icon.green {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: #ffffff;
+}
+
+/* Panel Links & Buttons */
+.panel-link-btn {
+    background: none;
+    border: none;
+    color: #e91e8c;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.panel-link-btn:hover {
+    color: #be185d;
+    text-decoration: underline;
+}
+
+.panel-footer-btn-wrap {
+    margin-top: 16px;
+}
+
+.cleon-btn-review-all {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff529a 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.3);
+    transition: all 0.2s ease;
+}
+
+.cleon-btn-review-all:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(233, 30, 140, 0.4);
+}
+
+/* Department Coverage Heatmap (FR-067) */
+.coverage-table-wrap {
+    overflow-x: auto;
+    margin: 12px 0 16px;
+}
+
+.coverage-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.coverage-table th {
+    text-align: center;
+    padding: 8px 6px;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.coverage-table th:first-child {
+    text-align: left;
+    padding-left: 8px;
+}
+
+.coverage-table td {
+    padding: 6px 4px;
+    text-align: center;
+}
+
+.coverage-table td.coverage-department {
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    padding-left: 8px;
+}
+
+.coverage-cell {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 11px;
+    min-width: 44px;
+}
+
+.coverage-good {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.coverage-medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.coverage-low {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.coverage-weekend {
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.coverage-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.coverage-good-dot { background: #10b981; }
+.coverage-medium-dot { background: #f59e0b; }
+.coverage-low-dot { background: #ef4444; }
+
+/* Recent Requests List (FR-068) */
+.recent-request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.recent-request-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 8px;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-request-row:hover {
+    background: #f4f6fa;
+    border-color: #e2e8f0;
+}
+
+.recent-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e91e8c, #6d28d9);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.recent-request-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.recent-request-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-request-meta {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.request-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.request-status.approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.request-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.request-status.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.recent-request-date {
+    font-size: 11px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.dashboard-empty {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Quick Actions Panel (FR-069) */
+.quick-actions-panel {
+    margin-top: 20px;
+}
+
+.quick-actions-panel .panel-head h5 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+}
+
+@media (max-width: 992px) {
+    .quick-actions {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.quick-action {
+    padding: 16px 12px;
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.quick-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
+.quick-action i {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.quick-action strong {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.quick-action small {
+    font-size: 10.5px;
+    opacity: 0.88;
+}
+
+.quick-pink   { background: linear-gradient(135deg, #e91e8c, #ff529a); }
+.quick-blue   { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.quick-green  { background: linear-gradient(135deg, #10b981, #34d399); }
+.quick-purple { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.quick-orange { background: linear-gradient(135deg, #f97316, #fb923c); }
+.quick-dark   { background: linear-gradient(135deg, #334155, #475569); }
