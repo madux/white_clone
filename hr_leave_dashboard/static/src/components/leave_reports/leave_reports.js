@@ -63,7 +63,7 @@ export class LeaveReportsPage extends Component {
     renderBalanceChart() {
         const canvas = this.balanceChartRef.el, balance = this.state.data.balance || {};
         if (!canvas) return;
-        this.charts.balance = new Chart(canvas.getContext("2d"), { type: "doughnut", data: { labels: ["Used", "Pending", "Remaining"], datasets: [{ data: [balance.used || 0, balance.pending || 0, Math.max(balance.remaining || 0, 0)], backgroundColor: ["#3b82f6", "#f59e0b", "#10b981"], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: "55%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } } } } });
+        this.charts.balance = new Chart(canvas.getContext("2d"), { type: "pie", data: { labels: ["Used", "Pending", "Remaining"], datasets: [{ data: [balance.used || 0, balance.pending || 0, Math.max(balance.remaining || 0, 0)], backgroundColor: ["#3b82f6", "#f59e0b", "#10b981"], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { usePointStyle: true, boxWidth: 8 } } } } });
     }
     printReport() { window.print(); }
     exportReport(format) {
