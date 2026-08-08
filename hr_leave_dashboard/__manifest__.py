@@ -11,6 +11,7 @@
         'views/leave_base.xml',
         'views/menu.xml',
         'views/hr_leave_type_views.xml',
+        'views/leave_balance_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -33,6 +34,9 @@
             'hr_leave_dashboard/static/src/components/leave_types/leave_type_form_modal.js',
             'hr_leave_dashboard/static/src/components/leave_types/leave_types.xml',
             'hr_leave_dashboard/static/src/css/leave_types.css',
+            'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.js',
+            'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.xml',
+            'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.css',
         ],
     },
     'license': 'LGPL-3',

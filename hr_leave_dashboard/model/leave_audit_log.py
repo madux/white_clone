@@ -28,6 +28,8 @@ class HrLeaveAuditLog(models.Model):
         ("edit", "Request Edited"),
         ("comment", "Comment Added"),
         ("policy_change", "Policy Configuration Changed"),
+        ("balance_adjustment", "Leave Balance Adjusted"),
+        ("balance_allocation", "Leave Balance Allocated"),
     ], string="Action", required=True, readonly=True)
 
     actor_id = fields.Many2one("res.users", string="Actor", required=False, readonly=True)
@@ -51,9 +53,11 @@ class HrLeaveAuditLog(models.Model):
     @api.constrains("action", "leave_id", "employee_id", "leave_type_id")
     def _check_audit_references(self):
         for log in self:
-            if log.action == "policy_change":
+            if log.action in ("policy_change", "balance_adjustment", "balance_allocation"):
                 if not log.leave_type_id:
-                    raise ValidationError(_("Policy change audit logs require a valid Leave Type reference."))
+                    raise ValidationError(_("Policy and balance audit logs require a valid Leave Type reference."))
+                if log.action != "policy_change" and not log.employee_id:
+                    raise ValidationError(_("Balance audit logs require a valid Employee reference."))
             else:
                 if not log.leave_id or not log.employee_id or not log.leave_type_id:
                     raise ValidationError(_("Leave audit logs require valid Leave Request, Employee, and Leave Type references."))

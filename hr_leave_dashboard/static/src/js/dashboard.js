@@ -344,7 +344,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveBalances() {
-        return this.action.doAction("hr_holidays.hr_leave_allocation_action_all");
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
     }
 
     openReports() {

@@ -42,12 +42,7 @@ export class CalendarSidebar extends Component {
     }
 
     openLeaveBalances() {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "hr.leave.allocation",
-            views: [[false, "list"], [false, "form"]],
-            name: "Leave Balances",
-        });
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
     }
 
     openReports() {

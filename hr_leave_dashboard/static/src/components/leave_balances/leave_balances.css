@@ -1,0 +1,188 @@
+/* =========================================================
+   Screen 13 — Leave Balance Management
+   ========================================================= */
+
+/* Page shell */
+.o_lb_page{display:flex;height:100%;min-height:calc(100vh - 46px);background:#f5f7fb;color:#172033;font-size:13px}
+.o_lb_main{flex:1;padding:18px 22px;overflow:auto;min-width:0;overflow-x:auto}
+
+/* Alert banner (FR-247) */
+.o_lb_alert{display:flex;align-items:center;justify-content:space-between;background:#fff7e9;border:1px solid #f4d69f;border-radius:8px;padding:12px 16px;margin-bottom:14px;color:#965e16}
+.o_lb_alert button{border:0;background:transparent;cursor:pointer;color:#965e16;font-size:13px;padding:4px 8px}
+.o_lb_alert button:hover{text-decoration:underline}
+
+/* Header / toolbar */
+.o_lb_header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.o_lb_header h2{margin:0;font-size:20px;font-weight:700}
+.o_lb_header p{display:block;color:#8490a5;margin:3px 0;font-size:12px}
+.o_lb_info_icon{font-size:13px;color:#b0bac9;margin-left:5px;cursor:help}
+.o_lb_tools{display:flex;align-items:center;gap:8px}
+.o_lb_tools input{width:200px;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px}
+
+/* Shared button base */
+.o_lb_page button{border:1px solid #dce2ec;border-radius:7px;padding:7px 12px;background:white;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.o_lb_page button:hover{background:#f8fafc}
+.o_lb_page button:disabled{opacity:.45;cursor:not-allowed}
+.o_lb_primary{background:#ed1970!important;color:white!important;border-color:#ed1970!important;font-weight:600}
+.o_lb_primary:hover{background:#c91260!important}
+
+/* Filters button with badge */
+.o_lb_btn_filters{position:relative}
+.o_lb_filter_badge{background:#ed1970;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px;font-weight:700}
+
+/* FR-252: More Options ⋮ button + dropdown */
+.o_lb_more_wrap{position:relative}
+.o_lb_more_btn{border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;cursor:pointer;font-size:18px;line-height:1;font-weight:700;color:#555}
+.o_lb_more_btn:hover{background:#f8fafc}
+.o_lb_more_menu{position:absolute;right:0;top:calc(100% + 4px);z-index:200;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:210px;padding:6px;white-space:nowrap}
+.o_lb_more_menu button{border:0;display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 12px;border-radius:7px;font-size:13px;background:transparent;cursor:pointer;color:#172033}
+.o_lb_more_menu button:hover{background:#fff0f6;color:#ed1970}
+
+/* KPI cards */
+.o_lb_kpis{display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:12px;margin:18px 0}
+.o_lb_kpis article{min-width:0;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:default}
+.o_lb_kpis article.o_lb_kpi_clickable{cursor:pointer}
+.o_lb_kpis article.o_lb_kpi_clickable:hover{border-color:#ed1970;box-shadow:0 4px 14px #ed197018}
+.o_lb_kpis article.o_lb_kpi_highlight{background:#fff8ec;border-color:#f5deae}
+.o_lb_kpi_top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.o_lb_kpis small{color:#7f8ba1;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.3}
+.o_lb_kpis strong{font-size:23px;font-weight:700;color:#172033;margin:0}
+/* KPI icon bubble */
+.o_lb_kpi_icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.o_lb_kpi_icon.blue{background:#e8effe;color:#3d5afe}
+.o_lb_kpi_icon.rose{background:#ffeaf3;color:#ed1970}
+.o_lb_kpi_icon.green{background:#e6faf3;color:#00b884}
+.o_lb_kpi_icon.amber{background:#fff3d6;color:#c17700}
+.o_lb_kpi_icon.orange{background:#fff0e6;color:#e8590c}
+/* Trend: ALWAYS plain dark/muted — no green/red per design */
+.o_lb_kpi_trend{font-size:11px;font-weight:500;color:#7f8ba1}
+.o_lb_kpi_trend.up,.o_lb_kpi_trend.down,.o_lb_kpi_trend.neutral{color:#7f8ba1}
+
+/* Table */
+.o_lb_table_wrap{background:white;border:1px solid #e1e6ef;border-radius:10px;overflow:visible;margin-top:12px}
+.o_lb_page table{width:100%;border-collapse:collapse}
+.o_lb_page th{background:#f8fafc;text-transform:uppercase;font-size:11px;text-align:left;font-weight:700;color:#6e7d92;letter-spacing:.03em}
+.o_lb_page th,.o_lb_page td{padding:10px 9px;border-bottom:1px solid #edf0f5;white-space:nowrap}
+.o_lb_page tbody tr:last-child td{border-bottom:0}
+.o_lb_page tbody tr:hover{background:#fafbfd}
+/* Employee column */
+.o_lb_employee{display:flex;align-items:center;gap:8px}
+.o_lb_employee img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_employee span{display:block}
+.o_lb_employee b{font-weight:600;font-size:13px}
+.o_lb_employee small{display:block;color:#8490a5;font-size:11px}
+/* Colour dot */
+.o_lb_dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;flex-shrink:0;vertical-align:middle}
+/* Balance pill */
+.o_lb_balance{border-radius:12px;padding:2px 8px;font-size:12px;font-weight:600}
+.o_lb_balance.green{background:#e7f8ee;color:#16874d}
+.o_lb_balance.amber{background:#fff5d9;color:#b17400}
+.o_lb_balance.red{background:#fde8ea;color:#cb2639}
+/* Expiry countdown */
+.o_lb_expiry{color:#b36d00;background:#fff1d6;padding:2px 7px;border-radius:10px;font-size:12px;font-weight:600}
+/* Row action menu */
+.o_lb_actions{position:relative}
+.o_lb_actions>button{border:0;background:transparent;font-size:16px;color:#888;padding:4px 8px}
+.o_lb_menu{position:absolute;right:22px;top:35px;z-index:8;background:white;border:1px solid #dfe4ec;border-radius:8px;box-shadow:0 8px 25px #18203425;min-width:180px;padding:5px}
+.o_lb_menu button{border:0;display:block;width:100%;text-align:left;padding:8px 12px;border-radius:6px;background:transparent;cursor:pointer;font-size:13px}
+.o_lb_menu button:hover{background:#fff0f6;color:#ed1970}
+/* Selection banner */
+.o_lb_selected{display:flex;align-items:center;gap:12px;background:#fff0f6;color:#c3135c;padding:9px 13px;margin:10px 0;border-radius:8px;font-size:13px}
+.o_lb_empty{text-align:center!important;padding:40px!important;color:#8490a5}
+
+/* Overlay + drawer/modal shell */
+.o_lb_overlay{position:fixed;inset:0;z-index:1100;background:#1418249c;display:flex;justify-content:center;align-items:center}
+.o_lb_drawer{position:absolute;right:0;top:0;height:100%;width:400px;background:white;display:flex;flex-direction:column}
+.o_lb_filter_drawer{width:340px}
+.o_lb_drawer header,.o_lb_modal header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e6e9ef}
+.o_lb_drawer h3,.o_lb_modal h3{margin:0;font-size:16px;font-weight:700}
+.o_lb_drawer header button,.o_lb_modal header button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888;line-height:1}
+.o_lb_drawer_body,.o_lb_modal_body{padding:18px;overflow:auto;flex:1}
+/* Filter section headings */
+.o_lb_drawer_body h4{font-size:11px;font-weight:700;text-transform:uppercase;color:#8490a5;letter-spacing:.04em;margin:16px 0 8px}
+.o_lb_drawer_body h4:first-child{margin-top:0}
+/* Generic filter checkbox row */
+.o_lb_filter_check{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;color:#172033;user-select:none}
+.o_lb_filter_check input[type="checkbox"]{margin:0;flex-shrink:0;cursor:pointer;accent-color:#ed1970}
+/* Leave Type filter row: dot is between checkbox and label text */
+.o_lb_filter_lt .o_lb_dot{margin-right:0}
+.o_lb_filter_search{width:100%;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px;margin-bottom:4px}
+/* Group picker (bulk allocation) */
+.o_lb_group_picker{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:#f8fafc;border:1px solid #e4e8ef;border-radius:8px;margin-top:10px}
+.o_lb_group_picker label{display:flex;align-items:center;gap:6px;padding:5px 8px;background:white;border-radius:6px;font-size:13px}
+/* Drawer footer */
+.o_lb_drawer footer,.o_lb_modal footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #e3e7ee}
+.o_lb_drawer footer{flex-direction:column}
+
+/* Modal */
+.o_lb_modal{width:min(600px,90vw);max-height:88vh;background:white;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.o_lb_allocate{width:520px}
+/* Allocation wizard steps */
+.o_lb_steps{display:flex;justify-content:space-around;padding:14px;border-bottom:1px solid #eee;color:#9aa3b4;font-size:13px}
+.o_lb_steps .active{color:#ed1970;font-weight:700}
+.o_lb_tabs{display:flex}
+.o_lb_tabs button{flex:1;border-radius:0;border:0;border-bottom:2px solid #eee;background:transparent}
+.o_lb_tabs .active{color:#ed1970;border-bottom-color:#ed1970}
+.o_lb_search{display:flex;margin:12px 0;gap:8px}
+.o_lb_search input{flex:1}
+.o_lb_person{display:flex;align-items:center;gap:9px;padding:9px;border-bottom:1px solid #eee;cursor:pointer}
+.o_lb_person img{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_person span{flex:1}
+.o_lb_person small{display:block;color:#8490a5;font-size:11px}
+.o_lb_count{background:#edf6ff;color:#3676b5;padding:10px;margin-top:10px;border-radius:7px;font-size:13px}
+.o_lb_form{display:grid;gap:12px}
+.o_lb_form label{font-weight:600;font-size:13px}
+.o_lb_form input,.o_lb_form select,.o_lb_form textarea{display:block;width:100%;margin-top:5px;border:1px solid #dce2ec;border-radius:7px;padding:8px;background:white;font-size:13px}
+.o_lb_review{background:#f8fafc;padding:15px;border-radius:8px}
+.o_lb_review h4{margin-top:0}
+
+/* Detail drawer */
+.o_lb_details{width:480px}
+.o_lb_summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
+.o_lb_summary>div{background:#f5f7fb;padding:12px;border-radius:8px}
+.o_lb_summary small{display:block;font-size:11px;color:#8490a5}
+.o_lb_summary b{font-size:18px;font-weight:700}
+.o_lb_projected,.o_lb_section_title,.o_lb_request_top{display:flex;align-items:center;justify-content:space-between}
+.o_lb_projected{padding:14px;background:#fff0f6;border-radius:9px;margin:12px 0}
+.o_lb_projected small{display:block;color:#8490a5}
+.o_lb_projected strong{font-size:18px;color:#d71566}
+.o_lb_section_title button{border:0;background:transparent;color:#d71566;cursor:pointer}
+.o_lb_details dl{display:grid;grid-template-columns:1fr 1fr}
+.o_lb_details dt,.o_lb_details dd{padding:8px;border-bottom:1px solid #eee;margin:0;font-size:13px}
+.o_lb_details dt{color:#6e7d92;font-weight:500}
+
+/* Adjustment modal */
+.o_lb_adjust_modal{width:min(980px,94vw)}
+.o_lb_adjust_modal input{width:90px}
+
+/* Balance transaction list */
+.balance-transaction-list article{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eee}
+.balance-transaction-list article>span{font-weight:bold;width:42px;flex-shrink:0}
+.balance-transaction-list .positive{color:#14955d}
+.balance-transaction-list .negative{color:#d33447}
+.balance-transaction-list article div{flex:1}
+.balance-transaction-list small{display:block;color:#8490a5;font-size:11px}
+.balance-transaction-list em{font-size:11px;color:#8993a5}
+
+/* Leave History modal */
+.o_lb_history{width:min(960px,94vw)}
+.o_lb_history_header{background:linear-gradient(120deg,#ed1970,#9b3de0);color:white}
+.o_lb_history_header small{color:#ffe6f1}
+.o_lb_history_header img{width:46px;height:46px;border-radius:50%;object-fit:cover}
+.o_lb_history_count{color:#7e899d;margin:12px 0;font-size:13px}
+.o_lb_request_card{border:1px solid #e2e7ef;border-radius:10px;padding:14px;margin:10px 0;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.o_lb_request_card:hover{border-color:#ed1970;box-shadow:0 4px 14px #ed197018}
+.o_lb_request_top small{margin-left:8px;color:#8490a5}
+.o_lb_request_meta{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:#f8fafc;padding:10px;border-radius:7px;margin:10px 0}
+.o_lb_request_meta small,.o_lb_request_meta b{display:block}
+.o_lb_request_meta small{color:#8490a5;font-size:11px}
+
+/* Status badges */
+.o_lb_status{padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;text-transform:capitalize}
+.o_lb_status.approved{background:#e4f7ec;color:#14854b}
+.o_lb_status.pending{background:#fff1cf;color:#986400}
+.o_lb_status.rejected,.o_lb_status.cancelled{background:#fbe6e8;color:#c42b3d}
+
+/* Responsive */
+@media(max-width:1200px){.o_lb_kpis{grid-template-columns:repeat(3,1fr)}.o_lb_table_wrap{overflow:auto}}
+@media(max-width:760px){.o_lb_header{align-items:flex-start;gap:10px;flex-direction:column}.o_lb_tools{flex-wrap:wrap}.o_lb_kpis{grid-template-columns:repeat(2,1fr)}}
