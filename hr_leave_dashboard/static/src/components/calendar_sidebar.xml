@@ -16,7 +16,7 @@
                     <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                     <span class="o_cc_nav_label">Dashboard</span>
                 </a>
-                <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'get_started' ? 'o_cc_nav_active' : '')" t-on-click="openDashboard">
+                <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'get_started' ? 'o_cc_nav_active' : '')" t-on-click="openSetupExperience">
                     <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
                     <span class="o_cc_nav_label">Get Started</span>
                     <i class="fa fa-chevron-right o_cc_nav_arrow"/>

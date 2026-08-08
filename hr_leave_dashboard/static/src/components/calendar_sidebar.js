@@ -7,6 +7,7 @@ export class CalendarSidebar extends Component {
     static template = "hr_leave_dashboard.CalendarSidebar";
     static props = {
         activeMenu: { type: String, optional: true },
+        onOpenSetup: { type: Function, optional: true },
     };
 
     setup() {
@@ -16,6 +17,16 @@ export class CalendarSidebar extends Component {
 
     openDashboard() {
         this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
+    }
+
+    openSetupExperience() {
+        if (this.props.onOpenSetup) {
+            this.props.onOpenSetup();
+        } else {
+            this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard", {
+                additionalContext: { open_setup_wizard: true },
+            });
+        }
     }
 
     openCalendar() {
@@ -49,7 +60,12 @@ export class CalendarSidebar extends Component {
     }
 
     openAuditLog() {
-        this.notification.add("Leave Audit Log feature.", { title: "Audit Log", type: "info" });
+        this.action.doAction({
+            type: "ir.actions.act_window",
+            res_model: "hr.leave.audit.log",
+            views: [[false, "list"], [false, "form"]],
+            name: "Leave Audit Log",
+        });
     }
 
     openSettings() {

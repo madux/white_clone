@@ -1322,19 +1322,70 @@ class HrLeave(models.Model):
         }
 
     @api.model
-    def get_leave_calendar_year_summary(self, year):
+    def get_leave_calendar_year_summary(
+        self,
+        year,
+        department_ids=None,
+        leave_type_ids=None,
+        statuses=None,
+        employee_ids=None,
+        employee_view=False,
+        country_id=None,
+    ):
         self._check_leave_dashboard_access()
         year = int(year)
         date_from = f"{year}-01-01"
         date_to = f"{year}-12-31"
 
-        leaves = self.search([
+        department_ids = [int(x) for x in (department_ids or []) if x]
+        leave_type_ids = [int(x) for x in (leave_type_ids or []) if x]
+        statuses = [str(s) for s in (statuses or []) if s]
+        employee_ids = [int(x) for x in (employee_ids or []) if x]
+
+        domain = [
             ("employee_id.company_id", "=", self.env.company.id),
             ("request_date_from", "<=", date_to),
             ("request_date_to", ">=", date_from),
-            ("state", "in", ("confirm", "validate1", "validate")),
-            ("is_cancelled", "=", False),
-        ])
+        ]
+
+        if employee_view:
+            curr_emp = self.env.user.employee_id
+            if not curr_emp:
+                domain.append(("id", "=", False))
+            else:
+                domain.append(("employee_id", "=", curr_emp.id))
+        elif employee_ids:
+            domain.append(("employee_id", "in", employee_ids))
+
+        if department_ids:
+            domain.append(("employee_id.department_id", "in", department_ids))
+
+        if leave_type_ids:
+            domain.append(("holiday_status_id", "in", leave_type_ids))
+
+        if statuses:
+            state_conditions = []
+            if "approved" in statuses:
+                state_conditions.append(("state", "=", "validate"))
+            if "pending" in statuses:
+                state_conditions.append(("state", "in", ("confirm", "validate1")))
+            if "cancelled" in statuses:
+                state_conditions.append(("is_cancelled", "=", True))
+
+            if state_conditions:
+                or_domain = []
+                for idx, cond in enumerate(state_conditions):
+                    if idx > 0:
+                        or_domain = ["|"] + or_domain
+                    or_domain.append(cond)
+                domain.extend(or_domain)
+        else:
+            domain.extend([
+                ("state", "in", ("confirm", "validate1", "validate")),
+                ("is_cancelled", "=", False),
+            ])
+
+        leaves = self.search(domain)
 
         month_summary = {m: {"approved": 0, "pending": 0, "holidays": 0} for m in range(1, 13)}
         day_occupancy = {}
@@ -1368,7 +1419,7 @@ class HrLeave(models.Model):
 
                 curr += relativedelta(days=1)
 
-        # Dynamic Public Holidays from resource.calendar.leaves or company calendar
+        # Dynamic Public Holidays (Feedback 6 & 7 - No hardcoded fallback)
         public_leaves = self.env["resource.calendar.leaves"].search([
             ("company_id", "in", [False, self.env.company.id]),
             ("resource_id", "=", False),
@@ -1377,35 +1428,38 @@ class HrLeave(models.Model):
         ])
 
         holidays_data = []
-        if public_leaves:
-            for pl in public_leaves:
-                h_date = fields.Date.to_string(pl.date_from.date())
-                m = pl.date_from.date().month
-                holidays_data.append({
-                    "date": h_date,
-                    "name": pl.name or "Public Holiday",
-                    "month": m,
-                })
-        else:
-            holidays_data = [
-                {"date": f"{year}-01-01", "name": "New Year's Day", "month": 1},
-                {"date": f"{year}-05-01", "name": "Workers' Day", "month": 5},
-                {"date": f"{year}-10-01", "name": "Independence Day", "month": 10},
-                {"date": f"{year}-12-25", "name": "Christmas Day", "month": 12},
-                {"date": f"{year}-12-26", "name": "Boxing Day", "month": 12},
-            ]
+        for pl in public_leaves:
+            h_date = fields.Date.to_string(pl.date_from.date())
+            m = pl.date_from.date().month
+            holidays_data.append({
+                "date": h_date,
+                "name": pl.name or "Public Holiday",
+                "month": m,
+            })
 
         for h in holidays_data:
             m = h["month"]
             if m in month_summary:
                 month_summary[m]["holidays"] += 1
 
-        company_country = self.env.company.country_id
+        selected_country = None
+        if country_id:
+            selected_country = self.env["res.country"].browse(int(country_id))
+        if not selected_country or not selected_country.exists():
+            selected_country = self.env.company.country_id
+        if not selected_country:
+            selected_country = self.env["res.country"].search([], limit=1)
+
         country_dict = {
-            "id": company_country.id if company_country else 161,
-            "name": company_country.name if company_country else "Nigeria",
-            "code": company_country.code if company_country else "NG",
+            "id": selected_country.id if selected_country else 0,
+            "name": selected_country.name if selected_country else "Default Region",
+            "code": selected_country.code if selected_country else "DEF",
         }
+
+        all_countries = [
+            {"id": c.id, "name": c.name, "code": c.code}
+            for c in self.env["res.country"].search([], order="name asc", limit=250)
+        ]
 
         return {
             "year": year,
@@ -1413,4 +1467,5 @@ class HrLeave(models.Model):
             "day_occupancy": day_occupancy,
             "holidays": holidays_data,
             "country": country_dict,
+            "all_countries": all_countries,
         }

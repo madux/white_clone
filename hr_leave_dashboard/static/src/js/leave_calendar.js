@@ -32,6 +32,7 @@ export class LeaveCalendarPage extends Component {
             totalActiveEmployees: 1,
 
             yearData: null,
+            selectedCountryId: null,
 
             filterPanelOpen: false,
             periodPickerOpen: false,
@@ -75,10 +76,25 @@ export class LeaveCalendarPage extends Component {
                     "hr.leave",
                     "get_leave_calendar_year_summary",
                     [],
-                    { year: year }
+                    {
+                        year: year,
+                        department_ids: this.state.filters.departmentIds,
+                        leave_type_ids: this.state.filters.leaveTypeIds,
+                        statuses: this.state.filters.statuses,
+                        employee_ids: this.state.filters.employeeIds,
+                        employee_view: this.state.employeeView,
+                        country_id: this.state.selectedCountryId || false,
+                    }
                 );
             } else {
-                const range = this.getRangeForView();
+                let range = this.getRangeForView();
+                if (this.state.filters.dateFrom) {
+                    range.dateFrom = this.state.filters.dateFrom;
+                }
+                if (this.state.filters.dateTo) {
+                    range.dateTo = this.state.filters.dateTo;
+                }
+
                 const res = await this.orm.call(
                     "hr.leave",
                     "get_leave_calendar_data",
@@ -101,6 +117,7 @@ export class LeaveCalendarPage extends Component {
                 this.state.totalActiveEmployees = res.total_active_employees || 1;
             }
         } catch (err) {
+            console.error("Failed to load leave calendar data", err);
             this.notification.add("Failed to load calendar data.", { type: "danger" });
         } finally {
             this.state.loading = false;
@@ -144,19 +161,11 @@ export class LeaveCalendarPage extends Component {
         }
     }
 
-    formatYMD(dateObj) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
-        const day = String(dateObj.getDate()).padStart(2, "0");
-        return `${y}-${m}-${day}`;
-    }
-
     // ---------------------------------------------------------
     // VIEW SWITCHING & NAVIGATION
     // ---------------------------------------------------------
 
     setViewMode(mode) {
-        if (this.state.viewMode === mode) return;
         this.state.viewMode = mode;
         this.loadCalendarData();
     }
@@ -165,9 +174,8 @@ export class LeaveCalendarPage extends Component {
         this.state.coverageMode = !this.state.coverageMode;
     }
 
-    toggleAdminEmployeeView(isEmployeeView) {
-        if (this.state.employeeView === isEmployeeView) return;
-        this.state.employeeView = isEmployeeView;
+    toggleAdminEmployeeView(employeeViewVal) {
+        this.state.employeeView = employeeViewVal;
         this.loadCalendarData();
     }
 
@@ -187,7 +195,8 @@ export class LeaveCalendarPage extends Component {
     }
 
     goToToday() {
-        this.state.currentDate = new Date();
+        const today = new Date();
+        this.state.currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         this.loadCalendarData();
     }
 
@@ -198,6 +207,11 @@ export class LeaveCalendarPage extends Component {
     selectMonthYear(year, monthIdx) {
         this.state.currentDate = new Date(year, monthIdx, 1);
         this.state.periodPickerOpen = false;
+        this.loadCalendarData();
+    }
+
+    selectCountry(countryId) {
+        this.state.selectedCountryId = Number(countryId);
         this.loadCalendarData();
     }
 
@@ -219,7 +233,7 @@ export class LeaveCalendarPage extends Component {
     }
 
     // ---------------------------------------------------------
-    // MONTH VIEW GRID COMPUTATION & SEGMENTATION (FR-146 to FR-151)
+    // MONTH VIEW GRID COMPUTATION (FR-146 to FR-151)
     // ---------------------------------------------------------
 
     get monthGridWeeks() {
@@ -228,14 +242,21 @@ export class LeaveCalendarPage extends Component {
         const month = d.getMonth();
 
         const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+        const daysInMonth = lastDayOfMonth.getDate();
+        const startDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sun
+
+        const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
+        const numWeeks = totalCells / 7;
+
         const startDate = new Date(firstDayOfMonth);
-        startDate.setDate(startDate.getDate() - startDate.getDay());
+        startDate.setDate(startDate.getDate() - startDayOfWeek);
 
         const weeks = [];
         const curr = new Date(startDate);
         const todayStr = this.formatYMD(new Date());
 
-        for (let w = 0; w < 5; w++) {
+        for (let w = 0; w < numWeeks; w++) {
             const weekDays = [];
             for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
                 const dayYMD = this.formatYMD(curr);
@@ -286,9 +307,12 @@ export class LeaveCalendarPage extends Component {
         return this.state.leaves.filter(l => l.date_from <= ymdStr && l.date_to >= ymdStr);
     }
 
-    // Coverage tile calculations (FR-154 to FR-157)
+    // Coverage tile calculations with unique absent employee count (Feedback Item 10)
     getDayCoverageInfo(ymdStr) {
-        const absentCount = this.getDayLeaves(ymdStr).length;
+        const dayLeaves = this.getDayLeaves(ymdStr);
+        const uniqueEmployeeIds = new Set(dayLeaves.map(l => l.employee_id));
+        const absentCount = uniqueEmployeeIds.size;
+
         const total = this.state.totalActiveEmployees || 1;
         const availableCount = Math.max(0, total - absentCount);
         const pct = Math.max(0, Math.min(100, Math.round((availableCount / total) * 100)));
@@ -358,12 +382,16 @@ export class LeaveCalendarPage extends Component {
             const mNum = idx + 1;
             const summary = this.state.yearData.month_summary[mNum] || { approved: 0, pending: 0, holidays: 0 };
             const firstDay = new Date(year, idx, 1);
+            const daysInMonth = new Date(year, idx + 1, 0).getDate();
+            const startDayOfWeek = firstDay.getDay();
+
+            const totalCells = Math.ceil((startDayOfWeek + daysInMonth) / 7) * 7;
             const startDay = new Date(firstDay);
-            startDay.setDate(startDay.getDate() - startDay.getDay());
+            startDay.setDate(startDay.getDate() - startDayOfWeek);
 
             const days = [];
             const curr = new Date(startDay);
-            for (let i = 0; i < 35; i++) {
+            for (let i = 0; i < totalCells; i++) {
                 const dayYMD = this.formatYMD(curr);
                 const occ = this.state.yearData.day_occupancy[dayYMD] || { approved: 0, pending: 0, total: 0 };
                 days.push({
@@ -490,7 +518,7 @@ export class LeaveCalendarPage extends Component {
     }
 
     // ---------------------------------------------------------
-    // DOWNLOAD CONTROL (FR-143)
+    // DOWNLOAD CONTROL & FILE EXPORT (FR-143)
     // ---------------------------------------------------------
 
     toggleDownloadDropdown() {
@@ -499,7 +527,52 @@ export class LeaveCalendarPage extends Component {
 
     exportCalendar(format) {
         this.state.downloadDropdownOpen = false;
-        this.notification.add(`Exporting calendar view as ${format.toUpperCase()}...`, { type: "info" });
+
+        if (!this.state.leaves || this.state.leaves.length === 0) {
+            this.notification.add("No leave records available in current view to export.", { type: "warning" });
+            return;
+        }
+
+        if (format === "csv" || format === "excel") {
+            let csvContent = "Employee,Department,Leave Type,Start Date,End Date,Days,Status\n";
+            for (const l of this.state.leaves) {
+                csvContent += `"${l.employee_name}","${l.department_name}","${l.leave_type_name}","${l.date_from}","${l.date_to}",${l.number_of_days},"${l.status}"\n`;
+            }
+            const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `leave_calendar_${this.state.viewMode}_export.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            this.notification.add("Calendar exported as CSV successfully.", { type: "success" });
+        } else if (format === "ical" || format === "ics") {
+            let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CleonHR//Leave Calendar//EN\n";
+            for (const l of this.state.leaves) {
+                const sDate = l.date_from.replace(/-/g, "");
+                const eDate = l.date_to.replace(/-/g, "");
+                icsContent += "BEGIN:VEVENT\n";
+                icsContent += `SUMMARY:${l.employee_name} - ${l.leave_type_name}\n`;
+                icsContent += `DESCRIPTION:${l.department_name} (${l.number_of_days} days)\n`;
+                icsContent += `DTSTART;VALUE=DATE:${sDate}\n`;
+                icsContent += `DTEND;VALUE=DATE:${eDate}\n`;
+                icsContent += "END:VEVENT\n";
+            }
+            icsContent += "END:VCALENDAR\n";
+            const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `leave_calendar_export.ics`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            this.notification.add("Calendar exported as iCal (.ics) successfully.", { type: "success" });
+        } else if (format === "pdf") {
+            window.print();
+            this.notification.add("Preparing PDF print view...", { type: "info" });
+        }
     }
 
     // ---------------------------------------------------------
@@ -531,6 +604,13 @@ export class LeaveCalendarPage extends Component {
         ];
         const idx = Math.abs(Number(colorIdx) || 0) % palette.length;
         return palette[idx];
+    }
+
+    formatYMD(dateObj) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+        const d = String(dateObj.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
     }
 }
 
