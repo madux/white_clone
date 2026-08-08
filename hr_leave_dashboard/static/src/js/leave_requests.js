@@ -50,6 +50,9 @@ export class LeaveRequestsPage extends Component {
 
             // ── Admin Create Modal ──
             showCreateModal: false,
+            employeeSearch: "",
+            employeeDropdownOpen: false,
+            selectedEmployee: null,
             createForm: {
                 employee_id: "",
                 leave_type_id: "",
@@ -319,6 +322,9 @@ export class LeaveRequestsPage extends Component {
         const opts = await this.orm.call("hr.leave", "get_admin_create_options", []);
         this.state.createEmployees = opts.employees || [];
         this.state.createLeaveTypes = [];
+        this.state.employeeSearch = "";
+        this.state.employeeDropdownOpen = false;
+        this.state.selectedEmployee = null;
         this.state.createForm = {
             employee_id: "",
             leave_type_id: "",
@@ -336,18 +342,55 @@ export class LeaveRequestsPage extends Component {
 
     closeCreateModal() {
         this.state.showCreateModal = false;
+        this.state.employeeDropdownOpen = false;
     }
 
-    async onEmployeeSelect(ev) {
-        const empId = ev.target.value;
-        this.state.createForm.employee_id = empId;
+    get filteredEmployees() {
+        const term = (this.state.employeeSearch || "").trim().toLowerCase();
+        if (!term) {
+            return this.state.createEmployees;
+        }
+        return this.state.createEmployees.filter((emp) => {
+            const text = [emp.name, emp.department, emp.job_title]
+                .filter(Boolean)
+                .join(" ")
+                .toLowerCase();
+            return text.includes(term);
+        });
+    }
+
+    openEmployeeDropdown() {
+        this.state.employeeDropdownOpen = true;
+    }
+
+    onEmployeeSearchInput(ev) {
+        this.state.employeeSearch = ev.target.value;
+        this.state.employeeDropdownOpen = true;
+    }
+
+    async selectEmployee(employee) {
+        this.state.selectedEmployee = employee;
+        this.state.createForm.employee_id = employee.id;
+        this.state.employeeSearch = employee.name;
+        this.state.employeeDropdownOpen = false;
+
         this.state.createForm.leave_type_id = "";
         this.state.createLeaveTypes = [];
         this.state.createPreview = null;
-        if (empId) {
-            const types = await this.orm.call("hr.leave", "get_admin_leave_types_for_employee", [], { employee_id: empId });
-            this.state.createLeaveTypes = types || [];
-        }
+
+        const types = await this.orm.call("hr.leave", "get_admin_leave_types_for_employee", [], { employee_id: employee.id });
+        this.state.createLeaveTypes = types || [];
+    }
+
+    clearEmployee() {
+        this.state.selectedEmployee = null;
+        this.state.createForm.employee_id = "";
+        this.state.employeeSearch = "";
+        this.state.employeeDropdownOpen = false;
+
+        this.state.createForm.leave_type_id = "";
+        this.state.createLeaveTypes = [];
+        this.state.createPreview = null;
     }
 
     async onDateOrTypeChange() {

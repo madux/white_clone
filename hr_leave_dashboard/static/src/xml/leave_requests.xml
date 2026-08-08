@@ -469,15 +469,61 @@
                 </div>
                 <div class="cleon-create-body">
 
-                    <!-- Employee Select (FR-102) -->
-                    <div class="mb-3">
+                    <!-- Searchable Employee Picker (FR-102) -->
+                    <div class="mb-3 admin-employee-picker">
                         <label class="form-label font-weight-bold">Employee *</label>
-                        <select class="form-select" t-model="state.createForm.employee_id" t-on-change="onEmployeeSelect">
-                            <option value="">Select Employee...</option>
-                            <t t-foreach="state.createEmployees" t-as="emp" t-key="emp.id">
-                                <option t-att-value="emp.id"><t t-esc="emp.label || (emp.name + ' (' + emp.department + ')')"/></option>
-                            </t>
-                        </select>
+
+                        <t t-if="state.selectedEmployee">
+                            <!-- Selected Employee Badge -->
+                            <div class="selected-employee-card">
+                                <div class="selected-employee-info">
+                                    <strong class="selected-employee-name"><t t-esc="state.selectedEmployee.name"/></strong>
+                                    <span class="selected-employee-meta">
+                                        <t t-esc="state.selectedEmployee.department"/> · <t t-esc="state.selectedEmployee.job_title"/>
+                                    </span>
+                                </div>
+                                <button type="button" class="selected-employee-change-btn" t-on-click="clearEmployee" title="Change employee">
+                                    <i class="fa fa-times me-1"/> Change
+                                </button>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <!-- Search Combobox Input -->
+                            <div class="employee-combobox-wrap">
+                                <div class="employee-input-box">
+                                    <i class="fa fa-search employee-search-icon"/>
+                                    <input type="text"
+                                           class="form-control employee-search-input"
+                                           placeholder="Search employee by name, department, or job title..."
+                                           autocomplete="off"
+                                           t-att-value="state.employeeSearch"
+                                           t-on-focus="openEmployeeDropdown"
+                                           t-on-input="onEmployeeSearchInput"/>
+                                    <i class="fa fa-chevron-down employee-dropdown-chevron"/>
+                                </div>
+
+                                <!-- Filtered Options Dropdown -->
+                                <t t-if="state.employeeDropdownOpen">
+                                    <div class="employee-dropdown-menu">
+                                        <t t-foreach="this.filteredEmployees" t-as="emp" t-key="emp.id">
+                                            <button type="button"
+                                                    class="employee-option-item"
+                                                    t-on-click="() => this.selectEmployee(emp)">
+                                                <strong class="employee-option-name"><t t-esc="emp.name"/></strong>
+                                                <span class="employee-option-meta">
+                                                    <t t-esc="emp.department"/> · <t t-esc="emp.job_title"/>
+                                                </span>
+                                            </button>
+                                        </t>
+                                        <t t-if="!this.filteredEmployees.length">
+                                            <div class="employee-no-results">
+                                                No matching employees found.
+                                            </div>
+                                        </t>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
                     </div>
 
                     <!-- Leave Type Select (FR-103) -->

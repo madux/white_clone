@@ -668,9 +668,9 @@ class HrLeave(models.Model):
             "employees": [{
                 "id": emp.id,
                 "name": emp.name,
-                "department": emp.department_id.name or "No Dept",
-                "job_title": emp.job_title or "Employee",
-                "label": f"{emp.name} ({emp.department_id.name or 'No Dept'} - {emp.job_title or 'Employee'})",
+                "department": emp.department_id.name or "No Department",
+                "job_title": emp.job_title or (emp.job_id.name if hasattr(emp, "job_id") and emp.job_id else "") or "Employee",
+                "label": f"{emp.name} ({emp.department_id.name or 'No Department'} - {emp.job_title or (emp.job_id.name if hasattr(emp, 'job_id') and emp.job_id else '') or 'Employee'})",
             } for emp in employees],
         }
 
