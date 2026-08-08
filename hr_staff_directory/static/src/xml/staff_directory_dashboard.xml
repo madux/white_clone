@@ -366,11 +366,12 @@
                             <!-- Table body -->
                             <tbody>
                                 <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
-                                    <tr t-att-class="'sdir-tr' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '') + (state.selectedPeople.includes(person.id) ? ' sdir-tr-selected' : '')"
-                                        t-att-data-id="person.id">
+                                    <tr t-att-class="'sdir-tr sdir-clickable' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '') + (state.selectedPeople.includes(person.id) ? ' sdir-tr-selected' : '')"
+                                        t-att-data-id="person.id"
+                                        t-on-click="() => this.openProfile(person.id)">
 
                                         <!-- Checkbox -->
-                                        <td class="sdir-td sdir-td-check">
+                                        <td class="sdir-td sdir-td-check" t-on-click.stop="">
                                             <input type="checkbox" class="sdir-checkbox" t-att-id="'row-chk-' + person.id"
                                                    t-att-checked="state.selectedPeople.includes(person.id)"
                                                    t-on-change="() => this.toggleSelection(person.id)"/>
@@ -493,7 +494,7 @@
                                             </t>
                                         </t>
                                         <!-- Actions (Admin only) -->
-                                        <td class="sdir-td sdir-td-actions" t-if="state.adminMode">
+                                        <td class="sdir-td sdir-td-actions" t-if="state.adminMode" t-on-click.stop="">
                                             <div class="sdir-action-cell">
                                                 <!-- Hover-revealed action buttons -->
                                                 <div class="sdir-action-hover-btns">
@@ -558,7 +559,8 @@
                 <t t-if="state.activeView === 'grid'">
                     <div id="sd-grid-view" class="sd-grid-container">
                         <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
-                            <div t-att-class="'sd-card sd-border-' + person.lifecycle_state">
+                            <div t-att-class="'sd-card sdir-clickable sd-border-' + person.lifecycle_state"
+                                 t-on-click="() => this.openProfile(person.id)">
                                 
                                 <!-- Header Row: Avatar + Name/Title -->
                                 <div class="sd-card-header">
@@ -652,8 +654,399 @@
 
             </div><!-- /.sdir-people-content -->
 
+            <!-- ═══ ORG STRUCTURE TAB ════════════════════════════════════════════ -->
+            <div class="sdir-org-content" t-if="state.activeTab === 'org'">
+                <div class="sdir-placeholder-msg">
+                    <h2>Organizational Structure</h2>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+
+            <!-- ═══ RELATIONSHIP NETWORK TAB ═════════════════════════════════════ -->
+            <div class="sdir-network-content" t-if="state.activeTab === 'network'">
+                <div class="sdir-placeholder-msg">
+                    <h2>Relationship Network</h2>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+
+            <!-- ═══ FLOATING HELP BUTTON ═════════════════════════════════════════ -->
+            <button type="button" class="sdir-fab-help" title="Help &amp; Support">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </button>
+
+            <!-- ═══ PROFILE FULL-SCREEN MODAL ════════════════════════════════════ -->
+            <t t-if="state.showProfileModal and state.activeProfile">
+                <div class="sdir-profile-modal">
+                    <!-- Left Sidebar Panel -->
+                    <div class="sdir-prof-sidebar">
+                        <div class="sdir-prof-sidebar-body">
+                            <a href="#" class="sdir-prof-back" t-on-click.prevent="closeProfile">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Back
+                        </a>
+                        
+                        <div class="sdir-prof-avatar-wrap">
+                            <div t-att-class="'sdir-prof-avatar sdir-ring-' + state.activeProfile.lifecycle_state"
+                                 t-att-style="'background-color:' + avatarColor(state.activeProfile.name) + ';'">
+                                <t t-esc="initials(state.activeProfile.name)"/>
+                            </div>
+                        </div>
+                        
+                        <div class="sdir-prof-name-block">
+                            <h2 class="sdir-prof-name">
+                                <t t-esc="state.activeProfile.name"/>
+                                <span class="sdir-prof-pronouns">he/him</span>
+                            </h2>
+                            <div class="sdir-prof-title" t-esc="state.activeProfile.job_title or '—'"/>
+                        </div>
+                        
+                        <div class="sdir-prof-badges">
+                            <span t-att-class="'sdir-state-pill sdir-state-' + state.activeProfile.lifecycle_state">
+                                <span class="sdir-state-dot"></span>
+                                <t t-esc="lifecycleLabel(state.activeProfile.lifecycle_state)"/>
+                            </span>
+                            <span t-att-class="'sdir-dept-pill sdir-dept-' + deptKey(state.activeProfile.department)" t-if="state.activeProfile.department">
+                                <t t-esc="state.activeProfile.department"/>
+                            </span>
+                        </div>
+                        
+                        <div class="sdir-prof-social">
+                            <a href="#" class="sdir-social-btn sdir-social-li">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            </a>
+                            <a href="#" class="sdir-social-btn sdir-social-fb">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
+                            </a>
+                            <a href="#" class="sdir-social-btn sdir-social-ig">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                            </a>
+                        </div>
+                        
+                        <div class="sdir-prof-actions-main">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-team">
+                                <!-- <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg> -->
+                               <svg width="14" height="12" viewBox="0 0 16 13" fill="none" data-fg-bb5h600=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1004:17:77073:718:e:svg:etetetetetete" style="flex-shrink: 0;"><rect x="5" y="0" width="6" height="5" rx="1.5" fill="#E91E63" data-fg-bb5h601=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1005:19:77178:62:e:rect"></rect><line x1="8" y1="5" x2="8" y2="7" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h602=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1006:19:77259:68:e:line"></line><line x1="3" y1="7" x2="13" y2="7" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h603=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1007:19:77346:69:e:line"></line><line x1="3" y1="7" x2="3" y2="8" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h604=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1008:19:77434:68:e:line"></line><line x1="13" y1="7" x2="13" y2="8" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h605=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1009:19:77521:70:e:line"></line><rect x="0" y="8" width="6" height="5" rx="1.5" fill="#E91E6355" data-fg-bb5h606=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1010:19:77610:69:e:rect"></rect><rect x="10" y="8" width="6" height="5" rx="1.5" fill="#E91E6355" data-fg-bb5h607=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1011:19:77698:70:e:rect"></rect></svg>
+                                Team
+                            </button>
+                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Message
+                            </button>
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-pink">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                                Call
+                            </button>
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                Video Call
+                            </button>
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                Email
+                            </button>
+                        </div>
+                        
+                        <div class="sdir-prof-actions-secondary">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-red sdir-prof-btn-small">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                Suspend
+                            </button>
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                Note
+                            </button>
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 8 16 13"></polyline><line x1="21" y1="8" x2="9" y2="8"></line><polyline points="8 21 3 16 8 11"></polyline><line x1="3" y1="16" x2="15" y2="16"></line></svg>
+                                Transfer
+                            </button>
+                        </div>
+                        </div>
+                        
+                        <div class="sdir-prof-sidebar-footer">
+                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta">
+                                View Full Profile →
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Content Panel -->
+                    <div class="sdir-prof-content">
+                        <!-- Top Tabs -->
+                        <div class="sdir-prof-tabs">
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'overview' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('overview')">Overview</button>
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'activity' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('activity')">Activity</button>
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'modules' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('modules')">All Modules</button>
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'org' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('org')">Org &amp; Team</button>
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'admin' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('admin')">
+                                Admin <span class="sdir-prof-tab-badge">16</span>
+                            </button>
+                        </div>
+                        
+                        <div class="sdir-prof-scroll-area">
+                            <t t-if="state.profileActiveTab === 'overview'">
+                                <!-- ABOUT -->
+                                <div class="sdir-prof-section">
+                                    <h3 class="sdir-prof-sec-title">ABOUT</h3>
+                                    <div class="sdir-prof-card sdir-prof-about-card">
+                                        <p>
+                                            <t t-esc="state.activeProfile.name"/> is a <t t-esc="state.activeProfile.job_title"/> in the <t t-esc="state.activeProfile.department"/> department, based in <t t-esc="state.activeProfile.work_location"/>.
+                                            <t t-esc="state.activeProfile.name"/> has been with the organisation for <t t-esc="state.activeProfile.tenure"/>, having joined on 2019-05-20. 
+                                            <t t-esc="state.activeProfile.name"/> works in a <t t-esc="state.activeProfile.work_mode"/> capacity, bringing consistent focus to design operations.
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="sdir-prof-grid">
+                                    <!-- LEFT COLUMN -->
+                                    <div class="sdir-prof-col">
+                                        <!-- CONTACT -->
+                                        <div class="sdir-prof-section">
+                                            <h3 class="sdir-prof-sec-title">CONTACT</h3>
+                                            <div class="sdir-prof-card sdir-prof-data-card">
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">ID</span>
+                                                    <span class="sdir-prof-data-val" t-esc="state.activeProfile.emp_ref or 'EMP-WL-207'"/>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">EMAIL</span>
+                                                    <span class="sdir-prof-data-val sdir-prof-link">
+                                                        <a href="#"><t t-esc="state.activeProfile.work_email or 'ada.obi@cleonhr.com'"/></a>
+                                                    </span>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">PHONE</span>
+                                                    <span class="sdir-prof-data-val">
+                                                        <t t-esc="state.activeProfile.work_phone or '+234 803 456 7893'"/>
+                                                        <svg class="sdir-prof-copy-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                                    </span>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">LOCATION</span>
+                                                    <span class="sdir-prof-data-val" t-esc="state.activeProfile.work_location or 'Lagos HQ'"/>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">WORK MODE</span>
+                                                    <span class="sdir-prof-data-val">
+                                                        <span class="sd-workmode-pill sd-wm-hybrid"><t t-esc="state.activeProfile.work_mode or 'Hybrid'"/></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- EMPLOYMENT -->
+                                        <div class="sdir-prof-section">
+                                            <h3 class="sdir-prof-sec-title">EMPLOYMENT</h3>
+                                            <div class="sdir-prof-card sdir-prof-data-card">
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">DEPT</span>
+                                                    <span class="sdir-prof-data-val" t-esc="state.activeProfile.department or 'Design'"/>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">GRADE</span>
+                                                    <span class="sdir-prof-data-val">L5 · Senior Manager</span>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">TENURE</span>
+                                                    <span class="sdir-prof-data-val" t-esc="state.activeProfile.tenure or '7y 2m'"/>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">START</span>
+                                                    <span class="sdir-prof-data-val">2019-05-20</span>
+                                                </div>
+                                                <div class="sdir-prof-data-row">
+                                                    <span class="sdir-prof-data-label">TYPE</span>
+                                                    <span class="sdir-prof-data-val">Permanent Full-Time</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- RIGHT COLUMN -->
+                                    <div class="sdir-prof-col">
+                                        <!-- MANAGER -->
+                                        <div class="sdir-prof-section">
+                                            <h3 class="sdir-prof-sec-title">MANAGER</h3>
+                                            <div class="sdir-prof-card sdir-prof-list-card sdir-prof-clickable-row">
+                                                <div class="sdir-prof-list-avatar sdir-prof-avatar-bg1">
+                                                    CEO
+                                                </div>
+                                                <div class="sdir-prof-list-text">
+                                                    <div class="sdir-prof-list-name">Chief Executive Officer</div>
+                                                    <div class="sdir-prof-list-role">Chief Executive Officer</div>
+                                                </div>
+                                                <div class="sdir-prof-list-chevron">›</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- DIRECT REPORTS -->
+                                        <div class="sdir-prof-section">
+                                            <h3 class="sdir-prof-sec-title">DIRECT REPORTS (6)</h3>
+                                            <div class="sdir-prof-card sdir-prof-list-card">
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg2">MM</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Michael Mohammed</div>
+                                                        <div class="sdir-prof-list-role">UI Designer</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg3">RJ</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Rasheed Jenkins</div>
+                                                        <div class="sdir-prof-list-role">Product Designer</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg1">TV</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Tolu Vasser</div>
+                                                        <div class="sdir-prof-list-role">Head of Design</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg4">EW</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Ethan Wilson</div>
+                                                        <div class="sdir-prof-list-role">Senior Product Designer</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg2">AU</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Amina Umeh</div>
+                                                        <div class="sdir-prof-list-role">Head of Design</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                                <div class="sdir-prof-clickable-row sdir-prof-row-item">
+                                                    <div class="sdir-prof-list-avatar sdir-prof-avatar-bg3">LP</div>
+                                                    <div class="sdir-prof-list-text">
+                                                        <div class="sdir-prof-list-name">Lily Park</div>
+                                                        <div class="sdir-prof-list-role">UX Researcher</div>
+                                                    </div>
+                                                    <div class="sdir-prof-list-chevron">›</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- AI SUMMARY -->
+                                        <div class="sdir-prof-section">
+                                            <h3 class="sdir-prof-sec-title">AI SUMMARY</h3>
+                                            <div class="sdir-prof-card sdir-prof-ai-card">
+                                                <div class="sdir-prof-ai-header">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+                                                    AI Summary
+                                                </div>
+                                                <div class="sdir-prof-ai-body">
+                                                    <div class="sdir-prof-ai-icon-bg">
+                                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+                                                    </div>
+                                                    <p class="sdir-prof-ai-text">No summary yet. Click below to generate an AI overview of this employee.</p>
+                                                    <button type="button" class="sdir-prof-btn-ai">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
+                                                        Generate AI Summary
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- BOTTOM FULL WIDTH SECTIONS -->
+                                <!-- SIMILAR COLLEAGUES -->
+                                <div class="sdir-prof-section sdir-prof-mt">
+                                    <h3 class="sdir-prof-sec-title">SIMILAR COLLEAGUES</h3>
+                                    <div class="sdir-prof-similar-grid">
+                                        <div class="sdir-prof-card sdir-prof-similar-card">
+                                            <div class="sdir-prof-similar-avatar sdir-prof-avatar-bg1">Amira</div>
+                                            <div class="sdir-prof-similar-name">Amira</div>
+                                            <div class="sdir-prof-similar-role">Designer</div>
+                                        </div>
+                                        <div class="sdir-prof-card sdir-prof-similar-card">
+                                            <div class="sdir-prof-similar-avatar sdir-prof-avatar-bg2">Michael</div>
+                                            <div class="sdir-prof-similar-name">Michael</div>
+                                            <div class="sdir-prof-similar-role">Designer</div>
+                                        </div>
+                                        <div class="sdir-prof-card sdir-prof-similar-card">
+                                            <div class="sdir-prof-similar-avatar sdir-prof-avatar-bg3">Rash</div>
+                                            <div class="sdir-prof-similar-name">Rasheed</div>
+                                            <div class="sdir-prof-similar-role">Designer</div>
+                                        </div>
+                                        <div class="sdir-prof-card sdir-prof-similar-card">
+                                            <div class="sdir-prof-similar-avatar sdir-prof-avatar-bg4">Tolu</div>
+                                            <div class="sdir-prof-similar-name">Tolu</div>
+                                            <div class="sdir-prof-similar-role">Design</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- SKILLS -->
+                                <div class="sdir-prof-section">
+                                    <h3 class="sdir-prof-sec-title">SKILLS</h3>
+                                    <div class="sdir-prof-pills-row">
+                                        <span class="sdir-prof-pill sdir-prof-pill-pink">Design Systems</span>
+                                        <span class="sdir-prof-pill sdir-prof-pill-pink">UX Research</span>
+                                        <span class="sdir-prof-pill sdir-prof-pill-pink">Leadership</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- LANGUAGES -->
+                                <div class="sdir-prof-section">
+                                    <h3 class="sdir-prof-sec-title">LANGUAGES</h3>
+                                    <div class="sdir-prof-pills-row">
+                                        <span class="sdir-prof-pill sdir-prof-pill-blue">Mandarin</span>
+                                        <span class="sdir-prof-pill sdir-prof-pill-blue">German</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- CURRENT PROJECTS -->
+                                <div class="sdir-prof-section">
+                                    <h3 class="sdir-prof-sec-title">CURRENT PROJECTS</h3>
+                                    <div class="sdir-prof-projects-list">
+                                        <div class="sdir-prof-project-row">
+                                            <div class="sdir-prof-project-name">
+                                                <span class="sdir-prof-project-dot sdir-prof-dot-green"></span>
+                                                Leadership Pipeline
+                                            </div>
+                                            <span class="sdir-prof-badge sdir-prof-badge-active">Active</span>
+                                        </div>
+                                        <div class="sdir-prof-project-row">
+                                            <div class="sdir-prof-project-name">
+                                                <span class="sdir-prof-project-dot sdir-prof-dot-green"></span>
+                                                DEI Initiative
+                                            </div>
+                                            <span class="sdir-prof-badge sdir-prof-badge-active">Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                            </t>
+                            
+                            <!-- OTHER TABS PLACEHOLDERS -->
+                            <t t-if="state.profileActiveTab !== 'overview'">
+                                <div class="sdir-prof-placeholder">
+                                    <p>Content for <t t-esc="state.profileActiveTab"/> coming soon.</p>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
             <!-- Placeholder for other tabs -->
-            <div class="sdir-tab-placeholder" t-if="state.activeTab !== 'people'">
+            <div class="sdir-tab-placeholder" t-if="state.activeTab !== 'people' and state.activeTab !== 'org' and state.activeTab !== 'network'">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#9AA0B2;">
                     <rect x="3" y="3" width="18" height="18" rx="2"/>
                     <path d="M3 9h18M9 21V9"/>

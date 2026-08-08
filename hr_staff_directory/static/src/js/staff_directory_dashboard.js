@@ -19,7 +19,8 @@ export class StaffDirectoryDashboard extends Component {
     setup() {
         this.rpc = useService("rpc");
         this.rootRef = useRef("root");
-        useExternalListener(window, "click", this.onWindowClick);
+        useExternalListener(window, "click", this.onWindowClick.bind(this));
+        this._boundOnKeyDown = this.onKeyDown.bind(this);
 
         // ─── Design Tokens ──────────────────────────────────────────────────
         this.AVATAR_COLORS = [
@@ -100,6 +101,9 @@ export class StaffDirectoryDashboard extends Component {
             activeColumns: initialCols,
             showColumnsModal: false,
             showMoreColumns: false,
+            showProfileModal: false,
+            activeProfile: null,
+            profileActiveTab: 'overview',
             people:      [],
             stats: {
                 total:              0,
@@ -115,11 +119,11 @@ export class StaffDirectoryDashboard extends Component {
         });
 
         onMounted(() => {
-            // nothing chart-related to set up
+            document.addEventListener("keydown", this._boundOnKeyDown);
         });
 
         onWillUnmount(() => {
-            // clean-up if ever needed
+            document.removeEventListener("keydown", this._boundOnKeyDown);
         });
     }
 
@@ -332,6 +336,36 @@ export class StaffDirectoryDashboard extends Component {
 
     toggleMoreColumns() {
         this.state.showMoreColumns = !this.state.showMoreColumns;
+    }
+
+    // ─── Profile Modal Logic ────────────────────────────────────────────────
+    
+    openProfile(personId) {
+        const person = this.state.people.find(p => p.id === personId);
+        if (person) {
+            this.state.activeProfile = person;
+            this.state.profileActiveTab = 'overview';
+            this.state.showProfileModal = true;
+        }
+    }
+
+    closeProfile() {
+        this.state.showProfileModal = false;
+        setTimeout(() => {
+            if (!this.state.showProfileModal) {
+                this.state.activeProfile = null;
+            }
+        }, 300); // clear after animation if any
+    }
+
+    setProfileTab(tab) {
+        this.state.profileActiveTab = tab;
+    }
+
+    onKeyDown(ev) {
+        if (ev.key === "Escape" && this.state.showProfileModal) {
+            this.closeProfile();
+        }
     }
 }
 
