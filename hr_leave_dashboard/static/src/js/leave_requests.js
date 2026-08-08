@@ -510,7 +510,7 @@ export class LeaveRequestsPage extends Component {
     }
 
     openAuditLog() {
-        this.notification.add("Leave Audit Log feature will be opened.", { type: "info" });
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom");
     }
 
     openSetupExperience() {

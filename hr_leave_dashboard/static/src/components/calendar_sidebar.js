@@ -50,12 +50,7 @@ export class CalendarSidebar extends Component {
     }
 
     openAuditLog() {
-        this.action.doAction({
-            type: "ir.actions.act_window",
-            res_model: "hr.leave.audit.log",
-            views: [[false, "list"], [false, "form"]],
-            name: "Leave Audit Log",
-        });
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom");
     }
 
     openSettings() {

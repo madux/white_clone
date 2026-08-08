@@ -170,10 +170,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openAuditLog() {
-        this.notification.add(
-            "Leave Audit Log will be opened when that module view is implemented.",
-            { title: "Audit Log", type: "info" }
-        );
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom");
     }
 
     // ═══════════════════════════════════════════════════════════════
