@@ -292,7 +292,47 @@
 .o_lb_details_footer{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid #e3e7ee}
 .o_lb_btn_block{width:100%!important;display:flex;justify-content:center;text-align:center;box-sizing:border-box;border-radius:8px;padding:10px;font-size:13px;font-weight:600}
 .o_lb_btn_ghost{background:white;border:1px solid #dce2ec;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
-.o_lb_btn_ghost:hover{background:#f8fafc;border-color:#b0bbc9}
+/* ── FR-296–FR-302: Adjust Leave Balances Modal ──────────────────── */
+.o_lb_adjust_modal{width:min(760px,94vw);max-height:90vh}
+.o_lb_adjust_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
+.o_lb_adjust_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
+.o_lb_adjust_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
+.o_lb_adjust_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
+
+/* FR-296: Employee Card */
+.o_lb_adjust_emp_card{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;margin-bottom:16px}
+.o_lb_emp_avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_emp_name{display:block;font-size:13px;font-weight:700;color:#172033}
+.o_lb_emp_sub{display:block;font-size:11px;color:#8490a5}
+
+/* FR-297: Table Grid */
+.o_lb_adjust_table_wrap{overflow:hidden;margin-bottom:8px;border:1px solid #edf0f5;border-radius:10px}
+.o_lb_adjust_table{width:100%;border-collapse:collapse}
+.o_lb_adjust_table th{background:#f8fafc;font-size:11px;font-weight:700;text-transform:uppercase;color:#6e7d92;letter-spacing:.02em;padding:9px 6px}
+.o_lb_adjust_table td{padding:8px 6px;border-bottom:1px solid #edf0f5;font-size:12px;color:#172033;white-space:nowrap}
+.o_lb_adjust_table tbody tr:last-child td{border-bottom:0}
+
+/* Adjustment +/- control input group */
+.o_lb_adj_control{display:inline-flex;align-items:center;border:1px solid #dce2ec;border-radius:6px;overflow:hidden;background:white}
+.o_lb_adj_control button{border:0;background:#f8fafc;width:24px;height:26px;font-size:13px;font-weight:700;color:#555;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.o_lb_adj_control button:hover{background:#fff0f6;color:#ed1970}
+.o_lb_adj_control input{border:0;width:34px;height:26px;text-align:center;font-size:12px;font-weight:600;color:#172033;padding:0;outline:none;background:transparent}
+.o_lb_adj_control input::-webkit-outer-spin-button,
+.o_lb_adj_control input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.o_lb_adj_control input[type=number]{-moz-appearance:textfield}
+
+/* FR-298: Helper text */
+.o_lb_adjust_hint{font-size:11px;color:#8490a5;margin:8px 0 14px}
+
+/* FR-299: Reason field (100% width) */
+.o_lb_reason_wrap{width:100%}
+.o_lb_field_title{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:#172033}
+.o_lb_reason_textarea{width:100%!important;box-sizing:border-box;min-height:70px;border:1px solid #dce2ec;border-radius:8px;padding:9px 12px;font-size:13px;resize:vertical;margin-top:6px;transition:border-color .15s,box-shadow .15s}
+.o_lb_reason_textarea:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+
+/* FR-300–FR-302: Modal Footer */
+.o_lb_adjust_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee}
+.o_lb_adjust_actions{display:flex;align-items:center;gap:10px}
 
 /* Leave History modal */
 .o_lb_history{width:min(960px,94vw)}

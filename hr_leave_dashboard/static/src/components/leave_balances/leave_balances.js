@@ -22,6 +22,7 @@ export class LeaveBalancesPage extends Component {
             "toggleAllocationGroup", "setSelectionMode", "onKpiClick", "openDetails", "openAdjust", "openHistory",
             "doYearEndReset", "doCarryForward", "importBalances",
             "toggleLtFilter", "setLtFilter", "clearLtFilter",
+            "decrementAdjustment", "incrementAdjustment",
         ]) {
             this[methodName] = this[methodName].bind(this);
         }
@@ -223,7 +224,22 @@ export class LeaveBalancesPage extends Component {
         this.state.adjustments = this.state.rows.filter(r => r.employee_id === row.employee_id).map(r => ({ ...r, adjustment: 0 }));
         this.state.adjustmentReason = ""; this.state.adjustmentOpen = true;
     }
-    adjustmentReady() { return this.state.adjustmentReason.trim() && this.state.adjustments.some(r => Number(r.adjustment)); }
+    decrementAdjustment(item) {
+        item.adjustment = (Number(item.adjustment) || 0) - 1;
+    }
+    incrementAdjustment(item) {
+        item.adjustment = (Number(item.adjustment) || 0) + 1;
+    }
+    get hasAdjustments() {
+        return this.state.adjustments && this.state.adjustments.some(r => Number(r.adjustment) !== 0);
+    }
+    adjustedBalance(item) {
+        const adj = Number(item.adjustment || 0);
+        if (adj === 0) return "—";
+        const newBal = Math.round((Number(item.remaining || 0) + adj) * 100) / 100;
+        return `${newBal} days`;
+    }
+    adjustmentReady() { return Boolean(this.state.adjustmentReason.trim()) && this.hasAdjustments; }
     async applyAdjustments() {
         try {
             const result = await this.orm.call("hr.leave.balance.transaction", "apply_balance_adjustments", [this.state.adjustmentEmployee.employee_id, this.state.adjustments.map(r => ({ leave_type_id: r.leave_type_id, adjustment: Number(r.adjustment) })), this.state.adjustmentReason]);
