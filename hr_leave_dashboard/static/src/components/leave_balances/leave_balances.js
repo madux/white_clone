@@ -193,7 +193,12 @@ export class LeaveBalancesPage extends Component {
     setSelectionMode(mode) { this.state.selectionMode = mode; this.state.allocationGroupIds = []; this.state.selectedEmployeeIds = []; }
     toggleAllocationGroup(id) { const a = this.state.allocationGroupIds; const i = a.indexOf(id); i === -1 ? a.push(id) : a.splice(i, 1); }
     adjustedBalance(item) { return Number(item.remaining || 0) + Number(item.adjustment || 0); }
-    selectAllEmployees() { this.state.selectedEmployeeIds = this.filteredEmployees.map(e => e.employee_id); }
+    selectAllEmployees() {
+        const allIds = this.filteredEmployees.map(e => e.employee_id);
+        const allSelected = allIds.length > 0 && allIds.every(id => this.state.selectedEmployeeIds.includes(id));
+        // Toggle: if all are selected → deselect all; otherwise → select all
+        this.state.selectedEmployeeIds = allSelected ? [] : allIds;
+    }
     async applyAllocation() {
         try {
             const a = this.state.allocation;

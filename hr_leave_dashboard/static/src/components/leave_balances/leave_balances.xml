@@ -201,12 +201,177 @@
         </aside>
       </div>
 
-      <!-- Allocate Leave wizard (3-step) -->
-      <div t-if="state.allocationOpen" class="o_lb_overlay"><section class="o_lb_modal o_lb_allocate"><header><div><h3>Allocate Leave</h3><small>Step <t t-esc="state.allocationStep"/> of 3</small></div><button t-on-click="() => state.allocationOpen = false">&#215;</button></header><div class="o_lb_steps"><span t-att-class="state.allocationStep >= 1 ? 'active':''">1 Select Employees</span><span t-att-class="state.allocationStep >= 2 ? 'active':''">2 Allocation Details</span><span t-att-class="state.allocationStep >= 3 ? 'active':''">3 Review &amp; Apply</span></div><div class="o_lb_modal_body">
-        <div t-if="state.allocationStep === 1"><div class="o_lb_tabs"><button t-att-class="state.selectionMode === 'individual' ? 'active':''" t-on-click="() => setSelectionMode('individual')">Individual</button><button t-att-class="state.selectionMode === 'department' ? 'active':''" t-on-click="() => setSelectionMode('department')">Department</button><button disabled="disabled" title="Employee records do not currently contain a Unit field">Unit</button><button t-att-class="state.selectionMode === 'grade' ? 'active':''" t-on-click="() => setSelectionMode('grade')">Grade Level</button></div><div t-if="state.selectionMode === 'department'" class="o_lb_group_picker"><label t-foreach="state.departments" t-as="group" t-key="group.id"><input type="checkbox" t-att-checked="state.allocationGroupIds.includes(group.id)" t-on-change="() => toggleAllocationGroup(group.id)"/> <t t-esc="group.name"/></label></div><div t-if="state.selectionMode === 'grade'" class="o_lb_group_picker"><label t-foreach="state.grades" t-as="grade" t-key="grade.id"><input type="checkbox" t-att-checked="state.allocationGroupIds.includes(grade.id)" t-on-change="() => toggleAllocationGroup(grade.id)"/> <t t-esc="grade.name"/></label></div><div class="o_lb_search"><input t-model="state.employeeSearch" placeholder="Search employees..."/><button t-on-click="selectAllEmployees">Select All Shown</button></div><label class="o_lb_person" t-foreach="filteredEmployees" t-as="e" t-key="e.employee_id"><input type="checkbox" t-att-checked="state.selectedEmployeeIds.includes(e.employee_id)" t-on-change="() => toggleEmployee(e.employee_id)"/><img t-att-src="e.avatar_url"/><span><b t-esc="e.employee_name"/><small><t t-esc="e.department"/> · <t t-esc="e.employee_code"/></small></span></label><div class="o_lb_count"><t t-esc="state.selectedEmployeeIds.length"/> employee(s) selected</div></div>
-        <div t-elif="state.allocationStep === 2" class="o_lb_form"><label>Leave Type *<select t-model="state.allocation.leave_type_id"><option value="">Select leave type...</option><option t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/></select></label><label>Allocation Amount (days) *<input type="number" min="0.5" step="0.5" t-model.number="state.allocation.amount"/></label><label>Reason *<textarea t-model="state.allocation.reason"/></label><label>Effective Date *<input type="date" t-model="state.allocation.effective_date"/></label><label>Notes<textarea t-model="state.allocation.notes"/></label></div>
-        <div t-else="" class="o_lb_review"><h4>Review allocation</h4><p><b>Employees:</b> <t t-esc="selectedEmployees.map(e => e.employee_name).join(', ')"/></p><p><b>Leave type:</b> <t t-esc="selectedAllocationLeaveTypeName"/></p><p><b>Amount:</b> <t t-esc="state.allocation.amount"/> days</p><p><b>Effective:</b> <t t-esc="state.allocation.effective_date"/></p><p><b>Reason:</b> <t t-esc="state.allocation.reason"/></p></div>
-      </div><footer><button t-if="state.allocationStep === 1" t-on-click="() => state.allocationOpen=false">Cancel</button><button t-else="" t-on-click="() => state.allocationStep--">Back</button><button t-if="state.allocationStep &lt; 3" class="o_lb_primary" t-att-disabled="state.allocationStep === 1 ? !state.selectedEmployeeIds.length : !allocationValid" t-on-click="() => state.allocationStep++">Next</button><button t-else="" class="o_lb_primary" t-on-click="applyAllocation">Confirm &amp; Allocate</button></footer></section></div>
+      <!-- Allocate Leave wizard (3-step) FR-278–FR-286 -->
+      <div t-if="state.allocationOpen" class="o_lb_overlay">
+        <section class="o_lb_modal o_lb_allocate">
+          <!-- Modal header -->
+          <header class="o_lb_alloc_header">
+            <div>
+              <h3>Allocate Leave</h3>
+              <small>Step <t t-esc="state.allocationStep"/> of 3</small>
+            </div>
+            <button t-on-click="() => state.allocationOpen = false">&#215;</button>
+          </header>
+
+          <!-- FR-278: Progress stepper with numbered circles -->
+          <div class="o_lb_alloc_steps">
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 1 ? ' active' : '') + (state.allocationStep > 1 ? ' done' : '')">
+              <span class="o_lb_step_num">1</span>
+              <span class="o_lb_step_label">Select Employees</span>
+            </div>
+            <div class="o_lb_step_connector"/>
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 2 ? ' active' : '') + (state.allocationStep > 2 ? ' done' : '')">
+              <span class="o_lb_step_num">2</span>
+              <span class="o_lb_step_label">Allocation Details</span>
+            </div>
+            <div class="o_lb_step_connector"/>
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 3 ? ' active' : '')">
+              <span class="o_lb_step_num">3</span>
+              <span class="o_lb_step_label">Review &amp; Apply</span>
+            </div>
+          </div>
+
+          <div class="o_lb_modal_body">
+
+            <!-- ── STEP 1: Select Employees ── -->
+            <div t-if="state.allocationStep === 1">
+              <!-- FR-279: mode tabs -->
+              <div class="o_lb_tabs">
+                <button t-att-class="state.selectionMode === 'individual' ? 'active' : ''" t-on-click="() => setSelectionMode('individual')">Individual</button>
+                <button t-att-class="state.selectionMode === 'department' ? 'active' : ''" t-on-click="() => setSelectionMode('department')">Department</button>
+                <button disabled="disabled" title="Unit field not yet configured">Unit</button>
+                <button t-att-class="state.selectionMode === 'grade' ? 'active' : ''" t-on-click="() => setSelectionMode('grade')">Grade Level</button>
+              </div>
+
+              <!-- Group pickers for Department / Grade modes -->
+              <div t-if="state.selectionMode === 'department'" class="o_lb_group_picker">
+                <label t-foreach="state.departments" t-as="group" t-key="group.id">
+                  <input type="checkbox" t-att-checked="state.allocationGroupIds.includes(group.id)" t-on-change="() => toggleAllocationGroup(group.id)"/>
+                  <t t-esc="group.name"/>
+                </label>
+              </div>
+              <div t-if="state.selectionMode === 'grade'" class="o_lb_group_picker">
+                <label t-foreach="state.grades" t-as="grade" t-key="grade.id">
+                  <input type="checkbox" t-att-checked="state.allocationGroupIds.includes(grade.id)" t-on-change="() => toggleAllocationGroup(grade.id)"/>
+                  <t t-esc="grade.name"/>
+                </label>
+              </div>
+
+              <!-- FR-280: search + FR-281: Select All / Deselect All pink link -->
+              <div class="o_lb_alloc_search_row">
+                <input class="o_lb_alloc_search_input" t-model="state.employeeSearch" placeholder="Search employees..."/>
+                <!-- FR-281: pink toggle link -->
+                <button class="o_lb_select_all_link" t-on-click="selectAllEmployees">
+                  <t t-if="state.selectedEmployeeIds.length === filteredEmployees.length and filteredEmployees.length > 0">Deselect All</t>
+                  <t t-else="">Select All</t>
+                </button>
+              </div>
+
+              <!-- FR-280: employee list -->
+              <div class="o_lb_person_list">
+                <label class="o_lb_person" t-foreach="filteredEmployees" t-as="e" t-key="e.employee_id">
+                  <input type="checkbox" t-att-checked="state.selectedEmployeeIds.includes(e.employee_id)" t-on-change="() => toggleEmployee(e.employee_id)"/>
+                  <img t-att-src="e.avatar_url"/>
+                  <span>
+                    <b t-esc="e.employee_name"/>
+                    <small><t t-esc="e.department"/> · <t t-esc="e.employee_code"/></small>
+                  </span>
+                </label>
+              </div>
+
+              <!-- FR-282: teal selection counter bar -->
+              <div class="o_lb_selection_bar">
+                <i class="fa fa-users"/>
+                <span><b><t t-esc="state.selectedEmployeeIds.length"/></b> employee(s) selected</span>
+              </div>
+            </div>
+
+            <!-- ── STEP 2: Allocation Details ── FR-283 -->
+            <div t-elif="state.allocationStep === 2" class="o_lb_form o_lb_alloc_form">
+              <h4 class="o_lb_alloc_section_title">Allocation Details</h4>
+
+              <label class="o_lb_field_label">
+                Leave Type <span class="o_lb_required">*</span>
+                <select t-model="state.allocation.leave_type_id" t-att-class="!state.allocation.leave_type_id ? 'o_lb_field_empty' : ''">
+                  <option value="">Select leave type...</option>
+                  <option t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/>
+                </select>
+              </label>
+
+              <label class="o_lb_field_label">
+                Allocation Amount (days) <span class="o_lb_required">*</span>
+                <input type="number" min="0.5" step="0.5" placeholder="Enter number of days" t-model.number="state.allocation.amount" t-att-class="!state.allocation.amount ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Reason <span class="o_lb_required">*</span>
+                <textarea placeholder="Enter reason for this allocation..." t-model="state.allocation.reason" t-att-class="!state.allocation.reason ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Effective Date <span class="o_lb_required">*</span>
+                <input type="date" t-model="state.allocation.effective_date" t-att-class="!state.allocation.effective_date ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Notes <span class="o_lb_optional">(optional)</span>
+                <textarea placeholder="Add any additional notes..." t-model="state.allocation.notes"/>
+              </label>
+            </div>
+
+            <!-- ── STEP 3: Review & Apply ── FR-285 -->
+            <div t-else="" class="o_lb_review">
+              <h4>Review Allocation</h4>
+              <div class="o_lb_review_card">
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Employees</span>
+                  <span class="o_lb_review_value"><b><t t-esc="state.selectedEmployeeIds.length"/> employee(s)</b>: <t t-esc="selectedEmployees.map(e => e.employee_name).join(', ')"/></span>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Leave Type</span>
+                  <span class="o_lb_review_value" t-esc="selectedAllocationLeaveTypeName"/>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Amount</span>
+                  <span class="o_lb_review_value"><b><t t-esc="state.allocation.amount"/> days</b></span>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Effective Date</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.effective_date"/>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Reason</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.reason"/>
+                </div>
+                <div t-if="state.allocation.notes" class="o_lb_review_row">
+                  <span class="o_lb_review_label">Notes</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.notes"/>
+                </div>
+              </div>
+              <p class="o_lb_review_hint"><i class="fa fa-info-circle"/> Clicking "Apply" will create validated allocations for each employee. This cannot be undone.</p>
+            </div>
+
+          </div>
+
+          <!-- Footer navigation -->
+          <footer class="o_lb_alloc_footer">
+            <div>
+              <button t-if="state.allocationStep === 1" t-on-click="() => state.allocationOpen = false">Cancel</button>
+              <button t-else="" t-on-click="() => state.allocationStep--"><i class="fa fa-arrow-left"/> Back</button>
+            </div>
+            <div>
+              <button t-if="state.allocationStep &lt; 3" class="o_lb_primary"
+                t-att-disabled="state.allocationStep === 1 ? !state.selectedEmployeeIds.length : !allocationValid"
+                t-on-click="() => state.allocationStep++">
+                Next <i class="fa fa-arrow-right"/>
+              </button>
+              <button t-else="" class="o_lb_primary" t-on-click="applyAllocation">
+                <i class="fa fa-check"/> Apply
+              </button>
+            </div>
+          </footer>
+        </section>
+      </div>
 
       <!-- Balance Detail drawer -->
       <div t-if="state.detailsOpen" class="o_lb_overlay" t-on-click.self="() => state.detailsOpen=false"><aside class="o_lb_drawer o_lb_details"><header><div class="o_lb_employee"><img t-att-src="state.details.avatar_url"/><span><h3 t-esc="state.details.employee_name"/><small><t t-esc="state.details.employee_code"/> · <t t-esc="state.details.department"/></small></span></div><button t-on-click="() => state.detailsOpen=false">&#215;</button></header><div class="o_lb_drawer_body"><h3><span class="o_lb_dot" t-att-style="'background:'+state.details.color_hex"/> <t t-esc="state.details.leave_type"/></h3><div class="o_lb_summary"><div><small>Allocated</small><b t-esc="state.details.allocated"/></div><div><small>Used</small><b t-esc="state.details.used"/></div><div><small>Pending</small><b t-esc="state.details.pending"/></div><div><small>Remaining</small><b t-esc="state.details.remaining"/></div></div><div class="o_lb_projected"><span><b>Projected Balance</b><small>After pending requests are approved</small></span><strong><t t-esc="state.details.projected"/> days</strong></div><h4>Linked Information</h4><dl><dt>Assigned Policy</dt><dd t-esc="state.details.assigned_policy"/><dt>Accrual Plan</dt><dd t-esc="state.details.accrual_plan"/><dt>Last Accrual Date</dt><dd t-esc="state.details.last_accrual_date || '—'"/><dt>Next Accrual Date</dt><dd t-esc="state.details.next_accrual_date || '—'"/><dt>Expiring Soon</dt><dd><t t-if="state.details.expiring_days"><t t-esc="state.details.expiring_days"/> days on <t t-esc="state.details.expiry_date"/></t><t t-else="">—</t></dd></dl><div class="o_lb_section_title"><h4>Transaction Timeline</h4><button t-on-click="openBalanceAudit">View Audit Log ↗</button></div><div class="balance-transaction-list"><article t-foreach="state.details.transactions" t-as="tx" t-key="tx.id"><span t-att-class="tx.delta >= 0 ? 'positive':'negative'"><t t-esc="tx.delta >= 0 ? '+' : ''"/><t t-esc="tx.delta"/></span><div><b t-esc="tx.label"/><small><t t-esc="tx.date"/> · <t t-esc="tx.reason"/></small></div><em>Balance <t t-esc="tx.balance_after"/></em></article><p t-if="!state.details.transactions.length">No recorded balance transactions yet.</p></div></div><footer><button class="o_lb_primary" t-on-click="() => openAdjust(state.details)">Adjust Balance</button><button t-on-click="() => openHistory(state.details)">View Full History</button></footer></aside></div>
