@@ -735,7 +735,7 @@
                                <svg width="14" height="12" viewBox="0 0 16 13" fill="none" data-fg-bb5h600=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1004:17:77073:718:e:svg:etetetetetete" style="flex-shrink: 0;"><rect x="5" y="0" width="6" height="5" rx="1.5" fill="#E91E63" data-fg-bb5h601=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1005:19:77178:62:e:rect"></rect><line x1="8" y1="5" x2="8" y2="7" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h602=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1006:19:77259:68:e:line"></line><line x1="3" y1="7" x2="13" y2="7" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h603=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1007:19:77346:69:e:line"></line><line x1="3" y1="7" x2="3" y2="8" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h604=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1008:19:77434:68:e:line"></line><line x1="13" y1="7" x2="13" y2="8" stroke="#E91E63" stroke-width="1.5" data-fg-bb5h605=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1009:19:77521:70:e:line"></line><rect x="0" y="8" width="6" height="5" rx="1.5" fill="#E91E6355" data-fg-bb5h606=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1010:19:77610:69:e:rect"></rect><rect x="10" y="8" width="6" height="5" rx="1.5" fill="#E91E6355" data-fg-bb5h607=":0:/src/app/components/hr/EmployeeSimpleView.tsx:1011:19:77698:70:e:rect"></rect></svg>
                                 Team
                             </button>
-                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta">
+                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta" t-on-click="() => this.openMessageBox(state.activeProfile.name, state.activeProfile.work_email)">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                 Message
                             </button>
@@ -747,7 +747,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
                                 Video Call
                             </button>
-                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray" t-on-click="() => this.openMessageBox(state.activeProfile.name, state.activeProfile.work_email)">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                                 Email
                             </button>
@@ -1055,6 +1055,51 @@
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
             </button>
+
+            <!-- MESSAGE COMPOSE BOX -->
+            <div t-if="state.messageBox.isVisible" t-att-class="'sdir-msg-box ' + (state.messageBox.isMinimized ? 'sdir-msg-minimized' : 'sdir-msg-expanded')">
+                <!-- Header -->
+                <div class="sdir-msg-header">
+                    <span class="sdir-msg-title">New Message<t t-if="!state.messageBox.isMinimized"> — <t t-esc="state.messageBox.toName"/></t></span>
+                    <div class="sdir-msg-controls">
+                        <button t-on-click="minimizeMessageBox" class="sdir-msg-btn-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <button t-on-click="closeMessageBox" class="sdir-msg-btn-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- Body -->
+                <div class="sdir-msg-body" t-if="!state.messageBox.isMinimized">
+                    <div class="sdir-msg-row sdir-msg-to-row">
+                        <span class="sdir-msg-label">To:</span> <strong class="sdir-msg-to-email" t-esc="state.messageBox.toEmail"/>
+                    </div>
+                    <div class="sdir-msg-row">
+                        <input type="text" placeholder="Subject" t-model="state.messageBox.subject" class="sdir-msg-input"/>
+                    </div>
+                    <div class="sdir-msg-row sdir-msg-textarea-row">
+                        <textarea t-attf-placeholder="Write to {{state.messageBox.toName}}..." t-model="state.messageBox.body" class="sdir-msg-textarea"></textarea>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="sdir-msg-footer" t-if="!state.messageBox.isMinimized">
+                    <button t-att-class="state.hasMessageError ? 'sdir-msg-btn-send sdir-msg-btn-error' : 'sdir-msg-btn-send'" t-on-click="sendMessage">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send
+                    </button>
+                    <button class="sdir-msg-btn-discard" t-on-click="discardMessage">Discard</button>
+                </div>
+            </div>
+
+            <!-- TOAST NOTIFICATION -->
+            <div t-if="state.toast.isVisible" t-att-class="'sdir-toast sdir-toast-' + state.toast.type">
+                <div class="sdir-toast-icon">
+                    <svg t-if="state.toast.type === 'warning'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <svg t-if="state.toast.type === 'success'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span class="sdir-toast-msg" t-esc="state.toast.message"/>
+            </div>
 
         </div><!-- /.sdir-app -->
     </t>

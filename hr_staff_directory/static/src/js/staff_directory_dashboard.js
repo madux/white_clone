@@ -104,6 +104,20 @@ export class StaffDirectoryDashboard extends Component {
             showProfileModal: false,
             activeProfile: null,
             profileActiveTab: 'overview',
+            messageBox: {
+                isVisible: false,
+                isMinimized: false,
+                toName: '',
+                toEmail: '',
+                subject: '',
+                body: ''
+            },
+            toast: {
+                isVisible: false,
+                type: '',
+                message: ''
+            },
+            hasMessageError: false,
             people:      [],
             stats: {
                 total:              0,
@@ -363,11 +377,13 @@ export class StaffDirectoryDashboard extends Component {
             this.state.activeProfile = person;
             this.state.profileActiveTab = 'overview';
             this.state.showProfileModal = true;
+            this.closeMessageBox();
         }
     }
 
     closeProfile() {
         this.state.showProfileModal = false;
+        this.closeMessageBox();
         setTimeout(() => {
             if (!this.state.showProfileModal) {
                 this.state.activeProfile = null;
@@ -377,6 +393,54 @@ export class StaffDirectoryDashboard extends Component {
 
     setProfileTab(tab) {
         this.state.profileActiveTab = tab;
+    }
+
+    // ─── Messaging & Toast Logic ─────────────────────────────────────────────
+
+    openMessageBox(recipientName, recipientEmail) {
+        this.state.messageBox.isVisible = true;
+        this.state.messageBox.isMinimized = false;
+        this.state.messageBox.toName = recipientName || '';
+        this.state.messageBox.toEmail = recipientEmail || '';
+        this.state.messageBox.subject = '';
+        this.state.messageBox.body = '';
+        this.state.hasMessageError = false;
+    }
+
+    minimizeMessageBox() {
+        this.state.messageBox.isMinimized = !this.state.messageBox.isMinimized;
+    }
+
+    closeMessageBox() {
+        this.state.messageBox.isVisible = false;
+    }
+
+    discardMessage() {
+        this.closeMessageBox();
+    }
+
+    sendMessage() {
+        if (!this.state.messageBox.body || this.state.messageBox.body.trim() === '') {
+            this.state.hasMessageError = true;
+            this.showToast('warning', 'Write something first');
+        } else {
+            this.state.hasMessageError = false;
+            this.showToast('success', `Email sent to ${this.state.messageBox.toName}`);
+            this.closeMessageBox();
+        }
+    }
+
+    showToast(type, message) {
+        this.state.toast.isVisible = true;
+        this.state.toast.type = type;
+        this.state.toast.message = message;
+        
+        if (this.toastTimeout) {
+            clearTimeout(this.toastTimeout);
+        }
+        this.toastTimeout = setTimeout(() => {
+            this.state.toast.isVisible = false;
+        }, 3000);
     }
 
     onKeyDown(ev) {
