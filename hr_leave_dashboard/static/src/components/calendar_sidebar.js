@@ -46,7 +46,7 @@ export class CalendarSidebar extends Component {
     }
 
     openReports() {
-        this.action.doAction("hr_holidays.action_hr_available_holidays_report");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
     }
 
     openAuditLog() {
