@@ -498,16 +498,19 @@
     padding: 12px;
     font-size: 12px;
     color: #8490a5;
+    background: transparent!important;
 }
 .o_lr_usage_totals b {
     display: block;
     font-size: 18px;
     color: #172033;
+    line-height: 1.2;
+    margin-bottom: 2px;
 }
-.o_lr_usage_totals .good { color: #15945a; }
-.o_lr_usage_totals .warn { color: #a36c00; }
-.o_lr_usage_totals .bad { color: #c63043; }
-.o_lr_usage_totals .pink { color: #ed1970; }
+.o_lr_usage_totals .good b, .o_lr_usage_totals .good { color: #15945a!important; }
+.o_lr_usage_totals .warn b, .o_lr_usage_totals .warn { color: #a36c00!important; }
+.o_lr_usage_totals .bad b, .o_lr_usage_totals .bad { color: #c63043!important; }
+.o_lr_usage_totals .pink b, .o_lr_usage_totals .pink { color: #ed1970!important; }
 
 .o_lr_usage_table { overflow-x: auto; }
 .o_lr_usage table {
@@ -538,11 +541,46 @@
 .o_lr_category.unpaid, .o_lr_count.neutral { background: #eef1f5; color: #68748a; }
 .o_lr_category.partially_paid, .o_lr_count.warn { background: #fff3d6; color: #9c6900; }
 .o_lr_count.bad { background: #fde8eb; color: #bd3043; }
+
 .o_lr_days {
-    color: white;
-    padding: 3px 8px;
-    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 11px;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: .02em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.o_lr_days_zero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: #f1f5f9;
+    color: #64748b;
     font-weight: 600;
+    font-size: 11px;
+}
+.o_lr_days_total {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: 12px;
+    background: #ed1970;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 12px;
 }
 .o_lr_usage_bar {
     width: 80px;

@@ -230,7 +230,14 @@
                       <td><span class="o_lr_count warn" t-esc="row.pending"/></td>
                       <td><span class="o_lr_count bad" t-esc="row.rejected"/></td>
                       <td><span class="o_lr_count neutral" t-esc="row.cancelled"/></td>
-                      <td><span class="o_lr_days" t-att-style="'background:'+row.color" t-esc="row.days_taken+'d'"/></td>
+                      <td>
+                        <t t-if="row.days_taken &gt; 0">
+                          <span class="o_lr_days" t-att-style="'background:'+row.color" t-esc="row.days_taken+'d'"/>
+                        </t>
+                        <t t-else="">
+                          <span class="o_lr_days_zero">0d</span>
+                        </t>
+                      </td>
                       <td><t t-esc="row.average_days"/>d</td>
                       <td><t t-esc="row.share"/>%</td>
                       <td><div class="o_lr_usage_bar"><i t-att-style="'width:'+row.share+'%;background:'+row.color"/></div></td>
@@ -243,7 +250,7 @@
                       <td t-esc="state.data.type_totals.pending || 0"/>
                       <td t-esc="state.data.type_totals.rejected || 0"/>
                       <td t-esc="state.data.type_totals.cancelled || 0"/>
-                      <td><span class="o_lr_days"><t t-esc="state.data.type_totals.days_taken || 0"/>d</span></td>
+                      <td><span class="o_lr_days_total"><t t-esc="state.data.type_totals.days_taken || 0"/>d</span></td>
                       <td>—</td>
                       <td>100%</td>
                       <td/>
