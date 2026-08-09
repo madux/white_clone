@@ -1807,3 +1807,67 @@
 .sdir-recent-avatar.sdir-ring-suspended  { border-color: var(--red);    }
 .sdir-recent-avatar.sdir-ring-terminated { border-color: #6B7280;       }
 .sdir-recent-avatar.sdir-ring-alumni     { border-color: var(--purple); }
+
+/* ─── Filter Layout & Chips ─── */
+.sdir-bar-space-between { justify-content: space-between !important; }
+.sdir-filter-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sdir-filter-chip { display: flex; align-items: center; gap: 6px; padding: 4px 10px; background-color: #FDF2F8; border: 1px solid #FBCFE8; border-radius: 9999px; font-size: 13px; color: var(--pink); font-weight: 600; }
+.sdir-filter-chip-close { background: none; border: none; color: #F472B6; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; }
+.sdir-filter-chip-close:hover { color: var(--pink); }
+
+/* ─── Filter Button & Wrapper ─── */
+.sdir-filter-wrapper { position: relative; }
+.sdir-btn-filter-active { border-color: var(--pink) !important; color: var(--pink) !important; }
+.sdir-filter-badge { background-color: var(--pink); color: white; border-radius: 50%; font-size: 11px; font-weight: 600; min-width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; }
+.sdir-btn .sdir-filter-badge { position: absolute; top: -6px; right: -6px; border: 2px solid white; }
+
+/* ─── Filter Modal ─── */
+.sdir-filter-modal { position: absolute; top: calc(100% + 8px); right: 0; width: 800px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #E5E7EB; z-index: 1000; display: flex; flex-direction: column; overflow: hidden; }
+.sdir-filter-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid #F3F4F6; }
+.sdir-filter-title { font-weight: 700; font-size: 16px; color: #111827; display: flex; align-items: center; gap: 8px; }
+.sdir-filter-actions { display: flex; align-items: center; gap: 16px; }
+.sdir-filter-clear { background: none; border: none; color: #6B7280; font-size: 13px; font-weight: 500; cursor: pointer; }
+.sdir-filter-clear:hover { color: #374151; text-decoration: underline; }
+.sdir-filter-close { background: none; border: 1px solid #E5E7EB; border-radius: 4px; padding: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.sdir-filter-close:hover { background: #F9FAFB; }
+
+/* ─── Filter Columns & Accordion ─── */
+.sdir-filter-body { padding: 0 24px; max-height: 500px; overflow-y: auto; }
+.sdir-filter-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.sdir-filter-col { display: flex; flex-direction: column; padding: 16px 0; }
+.sdir-filter-col + .sdir-filter-col { border-left: 1px solid #F3F4F6; padding-left: 24px; }
+.sdir-filter-accordion { border-bottom: 1px solid #F3F4F6; padding-bottom: 12px; margin-bottom: 12px; }
+.sdir-filter-accordion:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.sdir-filter-accordion-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; }
+.sdir-filter-accordion-title { font-size: 11px; font-weight: 700; color: #4B5563; text-transform: uppercase; letter-spacing: 0.5px; }
+.sdir-filter-accordion-right { display: flex; align-items: center; gap: 8px; }
+.sdir-filter-badge-small { font-size: 10px; min-width: 14px; height: 14px; }
+
+/* ─── Filter Content (Checkboxes) ─── */
+.sdir-filter-accordion-content { padding-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+.sdir-filter-checkbox-row { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: #374151; user-select: none; }
+.sdir-checkbox-custom { appearance: none; width: 16px; height: 16px; border: 1px solid #D1D5DB; border-radius: 4px; background: white; margin: 0; cursor: pointer; position: relative; flex-shrink: 0; }
+.sdir-checkbox-custom:checked { background: var(--pink); border-color: var(--pink); }
+.sdir-checkbox-custom:checked::after { content: ''; position: absolute; left: 4px; top: 1px; width: 4px; height: 8px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.sdir-filter-option-label { display: flex; align-items: center; gap: 6px; }
+.sdir-status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.sdir-bg-active     { background-color: var(--green);  }
+.sdir-bg-probation  { background-color: var(--amber);  }
+.sdir-bg-onleave    { background-color: var(--blue);   }
+.sdir-bg-exiting    { background-color: var(--orange); }
+.sdir-bg-suspended  { background-color: var(--red);    }
+.sdir-bg-terminated { background-color: #6B7280;       }
+.sdir-bg-alumni     { background-color: var(--purple); }
+
+/* ─── Date Inputs ─── */
+.sdir-filter-date-inputs { display: flex; gap: 8px; }
+.sdir-filter-date-inputs.sdir-stacked { flex-direction: column; gap: 12px; }
+.sdir-filter-date-group { display: flex; flex-direction: column; gap: 6px; }
+.sdir-filter-date-label { font-size: 11px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; }
+.sdir-filter-input { width: 100%; padding: 6px 10px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; outline: none; }
+.sdir-filter-input:focus { border-color: var(--pink); }
+
+/* ─── Filter Footer ─── */
+.sdir-filter-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid #F3F4F6; background: #F9FAFB; gap: 16px; }
+.sdir-filter-save-input { flex: 1; padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; outline: none; background: white; }
+.sdir-filter-save-input:focus { border-color: var(--pink); }

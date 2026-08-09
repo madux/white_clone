@@ -291,9 +291,88 @@
                         </button>
 
                         <!-- Filter icon-only button -->
-                        <button type="button" class="sdir-btn sdir-btn-icon" id="btnFilter">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"></path></svg>
-                        </button>
+                        <div class="sdir-filter-wrapper">
+                            <button type="button" t-attf-class="sdir-btn sdir-btn-icon #{activeFilterCount > 0 ? 'sdir-btn-filter-active' : ''}" id="btnFilter" t-on-click="() => this.toggleFilterModal()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"></path></svg>
+                                <span class="sdir-filter-badge" t-if="activeFilterCount > 0"><t t-esc="activeFilterCount"/></span>
+                            </button>
+
+                            <!-- FILTER MODAL -->
+                            <div class="sdir-filter-modal" t-if="state.showFilterModal">
+                                <div class="sdir-filter-header">
+                                    <div class="sdir-filter-title">
+                                        Filters
+                                        <span class="sdir-filter-badge" t-if="activeFilterCount > 0"><t t-esc="activeFilterCount"/></span>
+                                    </div>
+                                    <div class="sdir-filter-actions">
+                                        <button type="button" class="sdir-filter-clear" t-if="activeFilterCount > 0" t-on-click="() => this.clearAllFilters()">Clear all</button>
+                                        <button type="button" class="sdir-filter-close" t-on-click="() => this.toggleFilterModal()">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="sdir-filter-body">
+                                    <div class="sdir-filter-cols">
+                                        <t t-foreach="filterDefinitions" t-as="column" t-key="column_index">
+                                            <div class="sdir-filter-col">
+                                                <t t-foreach="column" t-as="cat" t-key="cat.id">
+                                                    <div class="sdir-filter-accordion">
+                                                        <div class="sdir-filter-accordion-header" t-on-click="() => this.toggleFilterAccordion(cat.id)">
+                                                            <span class="sdir-filter-accordion-title"><t t-esc="cat.label"/></span>
+                                                            <div class="sdir-filter-accordion-right">
+                                                                <span class="sdir-filter-badge sdir-filter-badge-small" t-if="state.activeFilters[cat.id] and state.activeFilters[cat.id].length > 0">
+                                                                    <t t-esc="state.activeFilters[cat.id].length"/>
+                                                                </span>
+                                                                <svg t-if="!state.expandedFilters[cat.id]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                                                <svg t-if="state.expandedFilters[cat.id]" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                                                            </div>
+                                                        </div>
+                                                        <div class="sdir-filter-accordion-content" t-if="state.expandedFilters[cat.id]">
+                                                            <t t-if="cat.isDate">
+                                                                <div class="sdir-filter-date-inputs sdir-stacked">
+                                                                    <div class="sdir-filter-date-group">
+                                                                        <label class="sdir-filter-date-label">From</label>
+                                                                        <input type="date" class="sdir-filter-input"
+                                                                               t-att-value="state.activeFilters.start_date_from"
+                                                                               t-on-change="(ev) => this.setDateFilter('start_date_from', ev.target.value)"/>
+                                                                    </div>
+                                                                    <div class="sdir-filter-date-group">
+                                                                        <label class="sdir-filter-date-label">To</label>
+                                                                        <input type="date" class="sdir-filter-input"
+                                                                               t-att-value="state.activeFilters.start_date_to"
+                                                                               t-on-change="(ev) => this.setDateFilter('start_date_to', ev.target.value)"/>
+                                                                    </div>
+                                                                </div>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <t t-foreach="cat.options" t-as="opt" t-key="opt">
+                                                                    <label class="sdir-filter-checkbox-row">
+                                                                        <input type="checkbox" 
+                                                                               class="sdir-checkbox-custom"
+                                                                               t-att-checked="state.activeFilters[cat.id].includes(opt)"
+                                                                               t-on-change="() => this.toggleFilterOption(cat.id, opt)"/>
+                                                                        <div class="sdir-filter-option-label">
+                                                                            <t t-if="cat.hasDots">
+                                                                                <span t-attf-class="sdir-status-dot {{getLifecycleDotClass(opt)}}"></span>
+                                                                            </t>
+                                                                            <t t-esc="opt"/>
+                                                                        </div>
+                                                                    </label>
+                                                                </t>
+                                                            </t>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </t>
+                                    </div>
+                                </div>
+                                <div class="sdir-filter-footer">
+                                    <input type="text" class="sdir-filter-save-input" placeholder="Save as segment..."/>
+                                    <button type="button" class="sdir-btn sdir-btn-magenta">Save</button>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Export button -->
                         <button type="button" class="sdir-btn sdir-btn-ghost" id="btnExport">
@@ -304,10 +383,25 @@
                     </div><!-- /.sdir-toolbar-right -->
                 </div><!-- /.sdir-toolbar -->
 
-                <!-- ── RECENT BAR ──────────────────────────────────────────── -->
-                <t t-if="state.recentlyViewedProfiles.length > 0">
-                    <div class="sdir-recent-bar">
-                        <div class="sdir-recent-content">
+                <!-- ── FILTER CHIPS & RECENT BAR ───────────────────────────── -->
+                <t t-if="activeFilterCount > 0 or state.recentlyViewedProfiles.length > 0">
+                    <div class="sdir-recent-bar sdir-bar-space-between">
+                        <!-- Active Filters (Left) -->
+                        <div class="sdir-filter-chips">
+                            <t t-if="activeFilterCount > 0">
+                                <t t-foreach="activeFilterChips" t-as="chip" t-key="chip.key + '_' + chip.val">
+                                    <div class="sdir-filter-chip">
+                                        <span class="sdir-filter-chip-label"><t t-esc="chip.val"/></span>
+                                        <button type="button" class="sdir-filter-chip-close" t-on-click="() => this.removeFilter(chip.key, chip.val)">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                        </button>
+                                    </div>
+                                </t>
+                            </t>
+                        </div>
+                        
+                        <!-- Recent Avatars (Right) -->
+                        <div class="sdir-recent-content" t-if="state.recentlyViewedProfiles.length > 0">
                             <svg class="sdir-recent-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>

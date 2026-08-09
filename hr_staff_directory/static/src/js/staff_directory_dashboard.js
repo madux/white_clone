@@ -21,6 +21,7 @@ export class StaffDirectoryDashboard extends Component {
         this.rootRef = useRef("root");
         useExternalListener(window, "click", this.onWindowClick.bind(this));
         this._boundOnKeyDown = this.onKeyDown.bind(this);
+        this._boundOnClick = this._onClickOutside.bind(this);
 
         // ─── Design Tokens ──────────────────────────────────────────────────
         this.AVATAR_COLORS = [
@@ -104,6 +105,44 @@ export class StaffDirectoryDashboard extends Component {
             activeColumns: initialCols,
             showColumnsModal: false,
             showMoreColumns: false,
+            showFilterModal: false,
+            activeFilters: {
+                department: [],
+                grade: [],
+                location: [],
+                gender: [],
+                performance: [],
+                employment_type: [],
+                lifecycle: [],
+                manager: [],
+                flight_risk: [],
+                availability: [],
+                work_mode: [],
+                tenure: [],
+                skills: [],
+                languages: [],
+                reporting_depth: [],
+                start_date_from: '',
+                start_date_to: ''
+            },
+            expandedFilters: {
+                department: true,
+                grade: true,
+                location: true,
+                gender: true,
+                performance: true,
+                employment_type: true,
+                lifecycle: true,
+                manager: true,
+                flight_risk: true,
+                availability: true,
+                start_date: true,
+                work_mode: true,
+                tenure: true,
+                skills: true,
+                languages: true,
+                reporting_depth: true
+            },
             showProfileModal: false,
             activeProfile: null,
             profileActiveTab: 'overview',
@@ -138,11 +177,23 @@ export class StaffDirectoryDashboard extends Component {
 
         onMounted(() => {
             document.addEventListener("keydown", this._boundOnKeyDown);
+            document.addEventListener("click", this._boundOnClick);
         });
 
         onWillUnmount(() => {
             document.removeEventListener("keydown", this._boundOnKeyDown);
+            document.removeEventListener("click", this._boundOnClick);
         });
+    }
+
+    _onClickOutside(ev) {
+        // If filter modal is open and the click is outside the wrapper, close it
+        if (this.state.showFilterModal) {
+            const wrapper = document.querySelector('.sdir-filter-wrapper');
+            if (wrapper && !wrapper.contains(ev.target)) {
+                this.state.showFilterModal = false;
+            }
+        }
     }
 
     // ─── Data Loading ────────────────────────────────────────────────────────
@@ -176,6 +227,45 @@ export class StaffDirectoryDashboard extends Component {
             });
         }
 
+        // Apply active filters
+        for (const [key, selectedValues] of Object.entries(this.state.activeFilters)) {
+            // Handle date range filters separately
+            if (key === 'start_date_from' || key === 'start_date_to') {
+                if (key === 'start_date_from' && selectedValues) {
+                    result = result.filter(p => p.create_date && new Date(p.create_date) >= new Date(selectedValues));
+                } else if (key === 'start_date_to' && selectedValues) {
+                    result = result.filter(p => p.create_date && new Date(p.create_date) <= new Date(selectedValues));
+                }
+                continue;
+            }
+
+            if (selectedValues.length > 0) {
+                const normSelected = selectedValues.map(v => String(v).replace(/[^a-zA-Z0-9]/g, '').toLowerCase());
+                
+                result = result.filter(p => {
+                    let pVal = p[key];
+                    if (key === 'lifecycle') pVal = p.lifecycle_state;
+                    if (key === 'location') pVal = p.work_location;
+                    if (key === 'grade') pVal = p.band || p.grade;
+                    if (key === 'role') pVal = p.job_title;
+                    if (key === 'manager') pVal = p.manager_name;
+                    if (key === 'gender') pVal = p.gender;
+                    if (key === 'employment_type') pVal = p.employee_type || 'Permanent Full-Time'; // fallback for Odoo employee type mapping
+                    if (key === 'reporting_depth') {
+                        pVal = (p.direct_report_ids && p.direct_report_ids.length > 0) ? 'Has Direct Reports' : 'Individual Contributor';
+                    }
+                    if (key === 'performance') {
+                        let s = p.progress_score || 0;
+                        pVal = s < 60 ? '0–59' : (s < 80 ? '60–79' : '80–100');
+                    }
+                    
+                    if (pVal === undefined || pVal === null) return false;
+                    const normPVal = String(pVal).replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    return normSelected.includes(normPVal);
+                });
+            }
+        }
+
         const sortBy = this.state.sortBy;
         const sortDesc = this.state.sortDesc;
         if (sortBy) {
@@ -192,6 +282,119 @@ export class StaffDirectoryDashboard extends Component {
         }
         
         return result;
+    }
+
+    // ─── Filters ─────────────────────────────────────────────────────────────
+
+    get filterDefinitions() {
+        return [
+            // Column 1
+            [
+                { id: 'department', label: 'DEPARTMENT', options: ['Compliance & Risk', 'Customer Service', 'Design', 'Engineering', 'Engineering/IT', 'Executive', 'Finance', 'Human Resources', 'Internal Audit', 'Legal'] },
+                { id: 'grade', label: 'GRADE / BAND', options: ['L1 · Individual Contributor', 'L3 · Team Lead', 'L4 · Manager', 'L5 · Senior Manager', 'L6 · Executive', 'L7 · Chief Executive'] },
+                { id: 'location', label: 'LOCATION', options: ['Abuja Regional Office', 'Abuja Nigeria', 'HQ New York', 'Kano Satellite Office', 'Lagos HQ', 'Lagos Nigeria', 'Port Harcourt Branch', 'Remote — Global', 'San Francisco Office'] },
+                { id: 'gender', label: 'GENDER', options: ['Female', 'Male'] },
+                { id: 'performance', label: 'PERFORMANCE SCORE', options: ['0–59', '60–79', '80–100'] },
+            ],
+            // Column 2
+            [
+                { id: 'employment_type', label: 'EMPLOYMENT TYPE', options: ['Contract', 'Part-Time', 'Permanent Full-Time'] },
+                { id: 'lifecycle', label: 'LIFECYCLE STATE', hasDots: true, options: ['Active', 'Probation', 'OnLeave', 'Exiting', 'Suspended', 'Terminated', 'Alumni'] },
+                { id: 'manager', label: 'MANAGER', options: ['Abubakar Banks', 'Ada Obi', 'Adaeze Danjuma', 'Adaeze Musa', 'Adaeze Thomas', 'Adam Mohammed', 'Amelia Obi', 'Amina Johnson', 'Amira Suleiman', 'Ava Bello'] },
+                { id: 'flight_risk', label: 'FLIGHT RISK', options: ['Low', 'Medium', 'High'] },
+                { id: 'availability', label: 'AVAILABILITY', options: ['Online', 'Busy', 'On Leave', 'Out of Office'] },
+                { id: 'start_date', label: 'START DATE', isDate: true },
+            ],
+            // Column 3
+            [
+                { id: 'work_mode', label: 'WORK MODE', options: ['Office', 'Hybrid', 'Remote'] },
+                { id: 'tenure', label: 'TENURE', options: ['0–1y', '1–3y', '3–5y', '5y+'] },
+                { id: 'skills', label: 'SKILLS', options: ['AML/KYC', 'AWS', 'Account Management', 'Audit', 'B2B Sales', 'Branch Operations', 'Brand Strategy', 'Budgeting', 'CRM Tools', 'Campaign Management'] },
+                { id: 'languages', label: 'LANGUAGES', options: ['Arabic', 'English', 'French', 'Hausa', 'Igbo', 'Mandarin', 'Pidgin', 'Portuguese', 'Spanish', 'Yoruba'] },
+                { id: 'reporting_depth', label: 'REPORTING DEPTH', options: ['Has Direct Reports', 'Individual Contributor'] },
+            ]
+        ];
+    }
+
+    get activeFilterCount() {
+        let count = 0;
+        for (const [key, val] of Object.entries(this.state.activeFilters)) {
+            if (key === 'start_date_from' || key === 'start_date_to') {
+                if (val) count++;
+            } else {
+                count += val.length;
+            }
+        }
+        return count;
+    }
+
+    get activeFilterChips() {
+        const chips = [];
+        for (const [key, values] of Object.entries(this.state.activeFilters)) {
+            if (key === 'start_date_from') {
+                if (values) chips.push({ key, val: `From: ${values}` });
+            } else if (key === 'start_date_to') {
+                if (values) chips.push({ key, val: `To: ${values}` });
+            } else {
+                for (const val of values) {
+                    chips.push({ key, val });
+                }
+            }
+        }
+        return chips;
+    }
+
+    toggleFilterModal() {
+        this.state.showFilterModal = !this.state.showFilterModal;
+        if (this.state.showFilterModal) {
+            this.state.showColumnsModal = false; // close other modals
+        }
+    }
+
+    toggleFilterAccordion(categoryId) {
+        this.state.expandedFilters[categoryId] = !this.state.expandedFilters[categoryId];
+    }
+
+    setDateFilter(type, value) {
+        this.state.activeFilters = { ...this.state.activeFilters, [type]: value };
+    }
+
+    toggleFilterOption(categoryId, optionValue) {
+        const arr = this.state.activeFilters[categoryId];
+        let newArr;
+        if (arr.includes(optionValue)) {
+            newArr = arr.filter(v => v !== optionValue);
+        } else {
+            newArr = [...arr, optionValue];
+        }
+        this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
+    }
+
+    removeFilter(categoryId, optionValue) {
+        if (categoryId === 'start_date_from' || categoryId === 'start_date_to') {
+            this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: '' };
+            return;
+        }
+        const newArr = this.state.activeFilters[categoryId].filter(v => v !== optionValue);
+        this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
+    }
+
+    clearAllFilters() {
+        const reset = {
+            start_date_from: '',
+            start_date_to: ''
+        };
+        for (const key in this.state.activeFilters) {
+            if (key !== 'start_date_from' && key !== 'start_date_to') {
+                reset[key] = [];
+            }
+        }
+        this.state.activeFilters = reset;
+    }
+
+    getLifecycleDotClass(val) {
+        const lower = val.toLowerCase();
+        return `sdir-bg-${lower}`;
     }
 
     // ─── Selection Logic ─────────────────────────────────────────────────────

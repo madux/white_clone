@@ -823,6 +823,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 'work_email':      emp.work_email or '',
                 'work_phone':      emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',
                 'progress_score':  mock_score,
+                'gender':          getattr(emp, 'gender', ''),
+                'employee_type':   getattr(emp, 'employee_type', ''),
+                'create_date':     str(emp.create_date) if emp.create_date else '',
             })
         return result
 
