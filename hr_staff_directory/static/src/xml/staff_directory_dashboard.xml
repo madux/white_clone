@@ -411,7 +411,7 @@
                                 <!-- Render in standard order so the most recent (index 0) is left-most (front) -->
                                 <t t-foreach="state.recentlyViewedProfiles" t-as="recent" t-key="recent.id">
                                     <div t-attf-class="sdir-recent-avatar sdir-ring-{{recent.lifecycle_state}}"
-                                         t-att-style="recent.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + recent.id + '); background-size: cover;') : ('background-color: ' + avatarColor(recent.name) + ';')"
+                                         t-att-style="recent.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + recent.id + '&amp;unique=' + recent.avatar_cache_key + '); background-size: cover;') : ('background-color: ' + avatarColor(recent.name) + ';')"
                                          t-att-title="recent.name"
                                          t-on-click="() => this.openProfile(recent.id)">
                                         <t t-esc="recent.has_image ? '' : initials(recent.name)"/>
@@ -507,7 +507,7 @@
                                                         </div>
                                                         <!-- Avatar with lifecycle-state ring -->
                                                         <div t-att-class="'sdir-avatar sdir-ring-' + person.lifecycle_state"
-                                                             t-att-style="person.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + person.id + '); background-size: cover;') : ('background-color:' + avatarColor(person.name) + ';')"
+                                                             t-att-style="person.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + person.id + '&amp;unique=' + person.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(person.name) + ';')"
                                                              t-att-title="person.name">
                                                             <t t-esc="person.has_image ? '' : initials(person.name)"/>
                                                         </div>
@@ -684,7 +684,7 @@
                                 <div class="sd-card-header">
                                     <div class="sd-avatar-wrap">
                                         <div t-att-class="'sd-avatar sd-ring-' + person.lifecycle_state"
-                                             t-att-style="person.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + person.id + '); background-size: cover;') : ('background-color:' + avatarColor(person.name) + ';')">
+                                             t-att-style="person.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + person.id + '&amp;unique=' + person.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(person.name) + ';')">
                                             <t t-esc="person.has_image ? '' : initials(person.name)"/>
                                         </div>
                                         <t t-if="person.lifecycle_state === 'on_leave'">
@@ -813,7 +813,7 @@
                         
                         <div class="sdir-prof-avatar-wrap">
                             <div t-att-class="'sdir-prof-avatar sdir-ring-' + state.activeProfile.lifecycle_state"
-                                 t-att-style="state.activeProfile.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + state.activeProfile.id + '); background-size: cover;') : ('background-color:' + avatarColor(state.activeProfile.name) + ';')">
+                                 t-att-style="state.activeProfile.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + state.activeProfile.id + '&amp;unique=' + state.activeProfile.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(state.activeProfile.name) + ';')">
                                 <t t-esc="state.activeProfile.has_image ? '' : initials(state.activeProfile.name)"/>
                             </div>
                         </div>
@@ -1033,7 +1033,7 @@
                                             <h3 class="sdir-prof-sec-title">MANAGER</h3>
                                             <div class="sdir-prof-card sdir-prof-list-card sdir-prof-clickable-row" t-if="activeProfileManager" t-on-click="() => this.openProfile(activeProfileManager.id)">
                                                 <div class="sdir-prof-rel-avatar"
-                                                     t-att-style="activeProfileManager.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + activeProfileManager.id + '); background-size: cover;') : ('background-color:' + avatarColor(activeProfileManager.name) + ';')">
+                                                     t-att-style="activeProfileManager.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + activeProfileManager.id + '&amp;unique=' + activeProfileManager.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(activeProfileManager.name) + ';')">
                                                     <t t-esc="activeProfileManager.has_image ? '' : initials(activeProfileManager.name)"/>
                                                 </div>
                                                 <div class="sdir-prof-list-text">
@@ -1054,7 +1054,7 @@
                                                 <t t-foreach="activeProfileDirectReports" t-as="report" t-key="report.id">
                                                     <div class="sdir-prof-clickable-row sdir-prof-row-item" t-on-click="() => this.openProfile(report.id)">
                                                         <div class="sdir-prof-rel-avatar"
-                                                             t-att-style="report.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + report.id + '); background-size: cover;') : ('background-color:' + avatarColor(report.name) + ';')">
+                                                             t-att-style="report.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + report.id + '&amp;unique=' + report.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(report.name) + ';')">
                                                             <t t-esc="report.has_image ? '' : initials(report.name)"/>
                                                         </div>
                                                         <div class="sdir-prof-list-text">
@@ -1096,7 +1096,7 @@
                                                 <t t-foreach="activeProfileSimilarColleagues" t-as="colleague" t-key="colleague.id">
                                                     <div class="sdir-prof-card sdir-prof-similar-card" t-on-click="() => this.openProfile(colleague.id)">
                                                         <div t-att-class="'sdir-prof-similar-avatar sdir-ring-' + colleague.lifecycle_state"
-                                                             t-att-style="colleague.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + colleague.id + '); background-size: cover;') : ('background-color:' + avatarColor(colleague.name) + ';')">
+                                                             t-att-style="colleague.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + colleague.id + '&amp;unique=' + colleague.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(colleague.name) + ';')">
                                                             <t t-esc="colleague.has_image ? '' : initials(colleague.name)"/>
                                                         </div>
                                                         <div class="sdir-prof-similar-name" t-esc="colleague.name"/>

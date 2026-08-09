@@ -653,6 +653,26 @@ class HrEmployeeStaffDirectory(models.Model):
                 return {'status': 'pinned', 'employee_id': employee_id}
         return {'status': 'error', 'message': 'Employee not found'}
 
+    # ─── Real-Time Updates ────────────────────────────────────────────────────
+
+    def _notify_staff_directory_update(self):
+        self.env['bus.bus']._sendone('hr_staff_directory', 'hr_staff_directory_update', {})
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        res._notify_staff_directory_update()
+        return res
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._notify_staff_directory_update()
+        return res
+
+    def unlink(self):
+        self._notify_staff_directory_update()
+        return super().unlink()
+
     @api.model
     def get_staff_directory_people_data(self):
         return {
@@ -863,7 +883,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
                 'has_image':          bool(getattr(emp, 'image_128', False) or getattr(emp, 'avatar_128', False)),
+                'avatar_cache_key':   str(emp.write_date.timestamp()) if emp.write_date else '0',
                 'is_pinned':          self.env.user.id in emp.pinned_by_user_ids.ids,
             })
         return result
-

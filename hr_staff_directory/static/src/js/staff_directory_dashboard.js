@@ -18,10 +18,14 @@ export class StaffDirectoryDashboard extends Component {
 
     setup() {
         this.rpc = useService("rpc");
+        this.busService = this.env.services.bus_service;
         this.rootRef = useRef("root");
         useExternalListener(window, "click", this.onWindowClick.bind(this));
         this._boundOnKeyDown = this.onKeyDown.bind(this);
         this._boundOnClick = this._onClickOutside.bind(this);
+
+        // ─── Debounced Load Data for Real-Time Updates ───────────────────────
+        this.debouncedLoadData = this._debounce(this._loadData.bind(this), 500);
 
         // ─── Design Tokens ──────────────────────────────────────────────────
         this.AVATAR_COLORS = [
@@ -173,6 +177,9 @@ export class StaffDirectoryDashboard extends Component {
 
         onWillStart(async () => {
             await this._loadData();
+            // Connect to bus for real-time updates
+            this.busService.addChannel("hr_staff_directory");
+            this.busService.subscribe("hr_staff_directory_update", this.onDirectoryUpdate.bind(this));
         });
 
         onMounted(() => {
@@ -194,6 +201,20 @@ export class StaffDirectoryDashboard extends Component {
                 this.state.showFilterModal = false;
             }
         }
+    }
+
+    // ─── Real-Time Handlers ──────────────────────────────────────────────────
+    onDirectoryUpdate(payload) {
+        // Silently reload data to reflect backend changes
+        this.debouncedLoadData();
+    }
+
+    _debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
     }
 
     // ─── Data Loading ────────────────────────────────────────────────────────
