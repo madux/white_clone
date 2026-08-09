@@ -430,7 +430,7 @@
                             <div class="sdir-sel-label">selected</div>
                             <div class="sdir-sel-divider"/>
                             <button class="sdir-sel-btn">Message All</button>
-                            <button class="sdir-sel-btn">Send Email</button>
+                            <button class="sdir-sel-btn" t-on-click="() => this.openBulkMessageBox()">Send Email</button>
                             <button class="sdir-sel-btn">Export CSV</button>
                             <button class="sdir-sel-btn">Add to Segment</button>
                             <button class="sdir-sel-btn">Assign Workflow</button>
@@ -518,7 +518,7 @@
                                                         </div>
                                                         <!-- Hover-revealed contact icons -->
                                                         <div class="sdir-contact-icons">
-                                                            <button type="button" class="sdir-contact-btn sdir-contact-email" t-att-title="'Email ' + person.name">
+                                                            <button type="button" class="sdir-contact-btn sdir-contact-email" t-att-title="'Email ' + person.name" t-on-click.stop="() => this.openMessageBox(person.name, person.email || person.work_email)">
                                                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                                                                     <polyline points="22,6 12,13 2,6"/>
@@ -1191,7 +1191,8 @@
                 <!-- Body -->
                 <div class="sdir-msg-body" t-if="!state.messageBox.isMinimized">
                     <div class="sdir-msg-row sdir-msg-to-row">
-                        <span class="sdir-msg-label">To:</span> <strong class="sdir-msg-to-email" t-esc="state.messageBox.toEmail"/>
+                        <span class="sdir-msg-label">To:</span> 
+                        <input type="text" class="sdir-msg-to-email-input" t-att-value="state.messageBox.toEmail" t-on-change="(ev) => state.messageBox.toEmail = ev.target.value" placeholder="Enter emails..."/>
                     </div>
                     <div class="sdir-msg-row">
                         <input type="text" placeholder="Subject" t-model="state.messageBox.subject" class="sdir-msg-input"/>

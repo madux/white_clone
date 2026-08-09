@@ -630,6 +630,23 @@ export class StaffDirectoryDashboard extends Component {
         this.state.hasMessageError = false;
     }
 
+    openBulkMessageBox() {
+        if (this.state.selectedPeople.length === 0) return;
+        
+        const selectedPeople = this.state.people.filter(p => this.state.selectedPeople.includes(p.id));
+        const emails = selectedPeople
+            .map(p => p.work_email || p.email)
+            .filter(email => email && email.trim() !== '');
+            
+        this.state.messageBox.isVisible = true;
+        this.state.messageBox.isMinimized = false;
+        this.state.messageBox.toName = `Multiple Recipients (${this.state.selectedPeople.length})`;
+        this.state.messageBox.toEmail = emails.join(', ');
+        this.state.messageBox.subject = '';
+        this.state.messageBox.body = '';
+        this.state.hasMessageError = false;
+    }
+
     minimizeMessageBox() {
         this.state.messageBox.isMinimized = !this.state.messageBox.isMinimized;
     }
