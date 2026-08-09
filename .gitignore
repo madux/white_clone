@@ -28,6 +28,8 @@ hr_staff_directory/hr_staff_directory_study.md
 
 # Dev-only staff seed data (not needed in production)
 hr_staff_directory/dev_seed.sql
+hr_staff_directory/dev_gender_update.sql
 hr_staff_directory/dev_seed_people_block.sql
 hr_staff_directory/dev_generate_seed_all.py
 hr_staff_directory/staff-export-2026-08-05.csv
+hr_staff_directory/staff-export-2026-08-05-with-gender.csv
