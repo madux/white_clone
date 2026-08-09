@@ -468,12 +468,65 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     get isAllSelected() {
+        if (this.state.people.length === 0) return false;
         const filteredIds = this.filteredPeople().map(p => p.id);
         if (filteredIds.length === 0) return false;
         return filteredIds.every(id => this.state.selectedPeople.includes(id));
     }
 
-    // ─── Format Helpers ──────────────────────────────────────────────────────
+    // ─── Export Logic ────────────────────────────────────────────────────────
+
+    exportToCSV(data, filename) {
+        if (!data || data.length === 0) {
+            this.showToast('warning', 'No data to export.');
+            return;
+        }
+
+        // Use this.ALL_COLUMNS for the export, as requested (Option A)
+        const cols = this.ALL_COLUMNS.filter(c => c.id !== 'avatar');
+        
+        // Build CSV Header
+        const header = cols.map(c => `"${c.label.replace(/"/g, '""')}"`).join(',');
+        
+        // Build CSV Rows
+        const rows = data.map(person => {
+            return cols.map(c => {
+                let val = person[c.id];
+                if (val === undefined || val === null) val = '';
+                val = String(val);
+                val = val.replace(/"/g, '""');
+                return `"${val}"`;
+            }).join(',');
+        });
+        
+        const csvContent = [header, ...rows].join('\n');
+        
+        // Create a blob and download link
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('success', `Successfully exported ${data.length} records!`);
+    }
+
+    exportAll() {
+        const dateStr = new Date().toISOString().split('T')[0];
+        this.exportToCSV(this.filteredPeople(), `staff_directory_full_${dateStr}.csv`);
+    }
+
+    exportSelected() {
+        const dateStr = new Date().toISOString().split('T')[0];
+        const selectedData = this.state.people.filter(p => this.state.selectedPeople.includes(p.id));
+        this.exportToCSV(selectedData, `staff_directory_selected_${dateStr}.csv`);
+    }
+
+    // ─── Modal / Profile Logic ──────────────────────────────────────────────────────
 
     num(n) {
         return (n ?? 0).toLocaleString();
