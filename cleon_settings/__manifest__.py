@@ -18,6 +18,7 @@
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
+        'views/cleon_login.xml',
         'views/favicon.xml',
     ],
     'assets': {
