@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve"><t t-name="hr_leave_dashboard.DashboardRouter" owl="1"><div class="p-5 text-center text-muted"><i class="fa fa-spinner fa-spin"/> Opening leave dashboard...</div></t></templates>

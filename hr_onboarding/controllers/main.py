@@ -143,7 +143,7 @@ class HrOnboardingController(http.Controller):
                             "job_title": post.get("exp_job_title"),
                         })
 
-            
+
         if post.get("edu_institution"):
             ResumeLine.create({
                 "employee_id": employee.id,
@@ -157,7 +157,7 @@ class HrOnboardingController(http.Controller):
                 # "line_type_id": edu_type.id if edu_type else False,
             })
 
-            
+
             work_education = work_education.create({
                 ''
             })

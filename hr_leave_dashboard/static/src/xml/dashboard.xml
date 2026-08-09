@@ -2,117 +2,706 @@
 <templates xml:space="preserve">
     <t t-name="hr_leave_dashboard.Dashboard">
         <div class="leaveapp">
-            <div class="leavesidebar">
-                <div class="o_cc_sidebar_header">
-                    <span class="o_cc_header_dot"/>
-                    <span class="o_cc_header_title">
-                    Leave Management</span>
-                    <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
-                        <i class="fa fa-th-large"/>
+
+            <!-- ════════════════════════════════════════════════════
+                 WELCOME MODAL  (Screen 1 — FR-001 to FR-009)
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.showWelcomeModal">
+                <!-- Blurred backdrop -->
+                <div class="cleon-welcome-backdrop" t-on-click="closeWelcomeModal"/>
+
+                <div class="cleon-welcome-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-welcome-title">
+
+                    <!-- X close -->
+                    <button class="cleon-welcome-close" t-on-click="closeWelcomeModal" aria-label="Close welcome modal">
+                        <i class="fa fa-times"/>
                     </button>
+
+                    <!-- Icon + title + description -->
+                    <div class="cleon-welcome-header">
+                        <div class="cleon-welcome-icon">
+                            <i class="fa fa-random"/>
+                        </div>
+                        <div class="cleon-welcome-intro">
+                            <h2 id="cleon-welcome-title" class="cleon-welcome-title">Welcome to Leave Management</h2>
+                            <p class="cleon-welcome-desc">
+                                CleonHR's Leave Management module gives you everything you need to define
+                                policies, process requests, track balances, and generate reports — all in one place.
+                                This wizard will walk you through the essentials.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Feature grid -->
+                    <div class="cleon-welcome-features">
+                        <p class="cleon-features-label">WHAT'S INCLUDED</p>
+                        <div class="cleon-features-grid">
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveTypes">
+                                <div class="cleon-feature-icon cleon-fi-orange"><i class="fa fa-tags"/></div>
+                                <span class="cleon-feature-name">Leave Types</span>
+                            </button>
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveRequests">
+                                <div class="cleon-feature-icon cleon-fi-blue"><i class="fa fa-file-text-o"/></div>
+                                <span class="cleon-feature-name">Leave Requests</span>
+                            </button>
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveCalendar">
+                                <div class="cleon-feature-icon cleon-fi-teal"><i class="fa fa-calendar"/></div>
+                                <span class="cleon-feature-name">Leave Calendar</span>
+                            </button>
+                            <button type="button" class="cleon-feature-tile" t-on-click="openLeaveBalances">
+                                <div class="cleon-feature-icon cleon-fi-green"><i class="fa fa-globe"/></div>
+                                <span class="cleon-feature-name">Balance Management</span>
+                            </button>
+                            <button type="button" class="cleon-feature-tile" t-on-click="openReports">
+                                <div class="cleon-feature-icon cleon-fi-purple"><i class="fa fa-bar-chart"/></div>
+                                <span class="cleon-feature-name">Reports</span>
+                            </button>
+                            <button type="button" class="cleon-feature-tile" t-on-click="openSettings">
+                                <div class="cleon-feature-icon cleon-fi-pink"><i class="fa fa-cog"/></div>
+                                <span class="cleon-feature-name">Settings</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FR-004 + FR-005: Action buttons -->
+                    <div class="cleon-welcome-actions">
+                        <button class="cleon-btn-secondary" t-on-click="exploreOnMyOwn">Explore on my own</button>
+                        <button class="cleon-btn-primary" t-on-click="startSetupGuide">
+                            <i class="fa fa-play-circle"/> Start Setup Guide (5 steps)
+                        </button>
+                    </div>
+
+                    <!-- Time estimate -->
+                    <p class="cleon-welcome-hint">
+                        Takes about 2 minutes · You can re-open this guide any time
+                    </p>
+
                 </div>
+            </t>
+            <!-- ════ END WELCOME MODAL ════════════════════════════ -->
 
-                <nav class="o_cc_nav">
-                    <a class="o_cc_nav_item o_cc_nav_active" t-on-click="openRecord">
-                        <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
-                        <span class="o_cc_nav_label">Dashboard</span>
-                        <!-- <span class="o_cc_nav_badge">2</span> -->
-                    </a>
-                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
-                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
-                        <span class="o_cc_nav_label">Get Started</span>
-                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                    </a>
-                    <a class="o_cc_nav_item" t-on-click="openCustomHearings">
-                        <span class="o_cc_nav_icon"><i class="fa fa-comment-o"/></span>
-                        <span class="o_cc_nav_label">Leave Calendar</span>
-                        <!-- <i class="fa fa-chevron-right o_cc_nav_arrow"/> -->
-                    </a>
-                    <a class="o_cc_nav_item" t-on-click="openMeasures">
-                        <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
-                        <span class="o_cc_nav_label">Leave Request</span>
-                        <span class="o_cc_nav_badge">2</span>
-                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                    </a> 
-                    <p class="sidebar-section-label">Leave Configuration</p>
-                    <ul>
-                        <li>
-                            <a class="o_cc_nav_item" t-on-click="openInvestigations">
-                                <span class="o_cc_nav_icon"><i class="fa-clipboard-list"/></span>
-                                <span class="o_cc_nav_label">Leave types</span>
-                            </a>
-                        </li>
-                        <li>
-                             <a class="o_cc_nav_item" t-on-click="openInvestigations">
-                                <span class="o_cc_nav_icon"><i class="fa fa-file-text-o"/></span>
-                                <span class="o_cc_nav_label">Leave Balances</span>
-                            </a>
-                             
-                        </li>
-                    </ul>
-                    <p class="sidebar-section-label">Reports</p>
-                    <ul>
-                        <a class="o_cc_nav_item" href="/incident-reporting">
-                            <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
-                            <span class="o_cc_nav_label">Leave Analytics</span>
-                        </a>
-                        <a class="o_cc_nav_item" t-on-click="openRecord">
-                            <span class="o_cc_nav_icon"><i class="fa fa-bar-chart"/></span>
-                            <span class="o_cc_nav_label">Audit Logs</span>
-                        </a>
+            <!-- ════════════════════════════════════════════════════
+                 SETUP WIZARD  (Screen 2 — FR-010 to FR-017)
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.showWizard">
+                <!-- Blurred backdrop -->
+                <div class="cleon-welcome-backdrop" t-on-click="closeWizard"/>
 
-                        <a class="o_cc_nav_item" t-on-click="openRecord">
-                            <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
-                            <span class="o_cc_nav_label">Settings</span>
-                        </a>
-                         
-                    </ul>
-                </nav>
+                <div class="cleon-wizard-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-wizard-title">
 
-                <div class="o_cc_sidebar_footer">
-                    <span class="o_cc_footer_label">Solution By MaachSoft</span>
-                    <div class="o_cc_footer_status">
-                        <span class="o_cc_status_dot o_cc_status_green"/>
-                        All integrations active
+                    <!-- Step Progress Bar ─────────────────────── -->
+                    <div class="cleon-wizard-progress" aria-label="Setup progress">
+                        <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
+                            <div t-att-class="{
+                                'cleon-wiz-step': true,
+                                'cleon-wiz-step-active': state.wizardStep === s,
+                                'cleon-wiz-step-done': state.wizardStep > s
+                            }">
+                                <div class="cleon-wiz-dot">
+                                    <t t-if="state.wizardStep > s">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                    <t t-else="">
+                                        <t t-esc="s"/>
+                                    </t>
+                                </div>
+                                <t t-if="s_index lt 4">
+                                    <div class="cleon-wiz-connector"/>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- ── STEP 1: Configure Leave Types ─────────────── -->
+                    <t t-if="state.wizardStep === 1">
+
+                        <!-- Step label + icon + title -->
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon">
+                                <i class="fa fa-tags"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 1 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Leave Types</h2>
+                            </div>
+                        </div>
+
+                        <!-- Step description -->
+                        <p class="cleon-wizard-desc">
+                            Define every leave category your organisation offers — Annual Leave, Sick Leave,
+                            Maternity/Paternity, Compassionate, and any custom types. Each type carries its
+                            own entitlement, carry-over rules, accrual method, and approval workflow.
+                        </p>
+
+                        <!-- Key Actions -->
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-add">
+                                    <i class="fa fa-plus-circle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Click <strong>"Add Leave Type"</strong> on the Leave Types page to create your first policy.
+                                </span>
+                            </div>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-check">
+                                    <i class="fa fa-check-circle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Set entitlements (days per year) and whether days can be carried forward.
+                                </span>
+                            </div>
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-accrual">
+                                    <i class="fa fa-refresh"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Choose an accrual method: <strong>Monthly</strong>, <strong>Pro-rated</strong>,
+                                    or <strong>Full Allocation at year start</strong>.
+                                </span>
+                            </div>
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 1 ─────────────────────────────────── -->
+
+                    <!-- ── STEP 2: Set Up Approval Workflows ──────────────── -->
+                    <t t-if="state.wizardStep === 2">
+
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-blue">
+                                <i class="fa fa-shield"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 2 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Set Up Approval Workflows</h2>
+                            </div>
+                        </div>
+
+                        <p class="cleon-wizard-desc">
+                            Control how leave requests are reviewed and authorised. Choose between
+                            single-level (direct manager only) or multi-level approval chains. Configure
+                            escalation timers so requests are never left waiting.
+                        </p>
+
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-single">
+                                    <i class="fa fa-user-circle-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Single-level</strong>: one approver
+                                    (e.g., <strong>Direct Manager</strong>) signs off the request.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-multi">
+                                    <i class="fa fa-sitemap"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Multi-level chain</strong> approvers
+                                    (<strong>Manager → HR → Director</strong>) for strict governance.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-escalation">
+                                    <i class="fa fa-clock-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Set <strong>escalation timers</strong> — requests auto-escalate
+                                    if not actioned within your chosen window.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 2 ─────────────────────────────────────── -->
+
+                    <!-- ── STEP 3: Manage Leave Balances ──────────────────── -->
+                    <t t-if="state.wizardStep === 3">
+
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-teal">
+                                <i class="fa fa-balance-scale"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 3 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Manage Leave Balances</h2>
+                            </div>
+                        </div>
+
+                        <p class="cleon-wizard-desc">
+                            Allocate leave balances to employees individually or in bulk. Adjust entitlements
+                            mid-cycle, carry forward unused days, and keep a full audit trail of every balance
+                            change. Employees see their live balances in real time.
+                        </p>
+
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-bulk">
+                                    <i class="fa fa-users"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Use <strong>"Bulk Allocate"</strong> to set balances for an entire
+                                    department at once.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-override">
+                                    <i class="fa fa-user-plus"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Individual overrides</strong> let you top-up or deduct
+                                    a single employee's balance.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-export">
+                                    <i class="fa fa-download"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Export <strong>balance snapshots</strong> for payroll or compliance
+                                    reporting at any time.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 3 ─────────────────────────────────────── -->
+
+                    <!-- ── STEP 4: Configure Calendar &amp; Holidays ────────────── -->
+                    <t t-if="state.wizardStep === 4">
+
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-orange">
+                                <i class="fa fa-calendar"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 4 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Configure Calendar &amp; Holidays</h2>
+                            </div>
+                        </div>
+
+                        <p class="cleon-wizard-desc">
+                            Link your regional public holiday schedule to the leave calendar so that national
+                            holidays are automatically excluded from leave counts. View who is out on any given
+                            day to manage team coverage proactively.
+                        </p>
+
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-region">
+                                    <i class="fa fa-globe"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Choose your <strong>country &amp; region</strong> in
+                                    Settings &#8594; Calendar &amp; Working Days.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-calview">
+                                    <i class="fa fa-calendar-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Switch between <strong>Day, Week, Month,</strong> and
+                                    <strong>Year</strong> calendar views.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-coverage">
+                                    <i class="fa fa-exclamation-triangle"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Coverage alerts</strong> highlight days when a department
+                                    is critically understaffed.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 4 ─────────────────────────────────────── -->
+
+                    <!-- ── STEP 5: Process Leave Requests ───────────────────── -->
+                    <t t-if="state.wizardStep === 5">
+
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-pink">
+                                <i class="fa fa-file-text-o"/>
+                            </div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 5 OF 5</span>
+                                <h2 id="cleon-wizard-title" class="cleon-wizard-title">Process Leave Requests</h2>
+                            </div>
+                        </div>
+
+                        <p class="cleon-wizard-desc">
+                            Once your leave types and balances are configured, employees can submit requests
+                            instantly. As an admin you'll review requests, check balance impacts, approve or
+                            reject with comments, and generate reports — all from one place.
+                        </p>
+
+                        <div class="cleon-key-actions">
+                            <p class="cleon-key-actions-label">KEY ACTIONS</p>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-approve">
+                                    <i class="fa fa-check-circle-o"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    <strong>Approve or reject requests</strong> with a single click;
+                                    employees are notified immediately.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-reports">
+                                    <i class="fa fa-bar-chart"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    Use <strong>Reports</strong> to analyse leave trends, utilisation rates,
+                                    and departmental coverage.
+                                </span>
+                            </div>
+
+                            <div class="cleon-key-action-item">
+                                <div class="cleon-ka-icon cleon-ka-audit">
+                                    <i class="fa fa-shield"/>
+                                </div>
+                                <span class="cleon-ka-text">
+                                    The <strong>Audit Log</strong> records every action for full compliance
+                                    and accountability.
+                                </span>
+                            </div>
+
+                        </div>
+
+                    </t>
+                    <!-- ── END STEP 5 ─────────────────────────────────────── -->
+
+                    <!-- ── WIZARD FOOTER ──────────────────────────────── -->
+                    <div class="cleon-wizard-footer">
+
+                        <button class="cleon-wiz-btn-back" t-on-click="goBackFromWizard">
+                            <i class="fa fa-arrow-left"/>
+                            <t t-if="state.wizardStep === 1">Back</t>
+                            <t t-else="">Previous</t>
+                        </button>
+
+                        <t t-if="state.wizardStep === 1 || state.wizardStep === 2">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="goToLeaveTypesFromWizard">
+                                <i class="fa fa-arrow-right"/> Go to Leave Types
+                            </button>
+                        </t>
+                        <t t-elif="state.wizardStep === 3">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openLeaveBalances">
+                                <i class="fa fa-arrow-right"/> Go to Balance Management
+                            </button>
+                        </t>
+                        <t t-elif="state.wizardStep === 4">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openSettings">
+                                <i class="fa fa-arrow-right"/> Go to Settings
+                            </button>
+                        </t>
+                        <t t-elif="state.wizardStep === 5">
+                            <button class="cleon-wiz-btn-shortcut" t-on-click="openLeaveRequests">
+                                <i class="fa fa-arrow-right"/> Go to Leave Requests
+                            </button>
+                        </t>
+                        <t t-else="">
+                            <div/>
+                        </t>
+
+                        <button class="cleon-wiz-btn-next" t-on-click="nextWizardStep">
+                            <t t-if="state.wizardStep lt 5">
+                                Next <i class="fa fa-arrow-right"/>
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-check"/> Finish Setup
+                            </t>
+                        </button>
+
+                    </div>
+
+                    <div class="cleon-wiz-skip-row">
+                        <button class="cleon-skip-link" t-on-click="skipWizard">
+                            Skip and explore on my own
+                        </button>
+                    </div>
+
+                </div>
+            </t>
+            <!-- ════ END SETUP WIZARD ════════════════════════════ -->
+
+            <!-- ════════════════════════════════════════════════════
+                 SETUP COMPLETION SCREEN (Screen 7 — FR-045 to FR-054)
+                 ════════════════════════════════════════════════════ -->
+            <t t-if="state.showCompletionScreen">
+                <div class="cleon-welcome-backdrop" t-on-click="closeCompletionScreen"/>
+
+                <div class="cleon-completion-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-completion-title">
+
+                    <button class="cleon-completion-close" t-on-click="closeCompletionScreen" aria-label="Close completion screen">
+                        <i class="fa fa-times"/>
+                    </button>
+
+                    <div class="cleon-completion-header">
+                        <div class="cleon-completion-badge">
+                            <i class="fa fa-check"/>
+                        </div>
+                        <h2 id="cleon-completion-title" class="cleon-completion-title">You're all set! 🎉</h2>
+                        <p class="cleon-completion-sub">
+                            You've completed the Leave Management setup guide. Here's a quick checklist to get you fully up and running.
+                        </p>
+                    </div>
+
+                    <div class="cleon-completion-body">
+                        <div class="cleon-checklist-header-row">
+                            <span class="cleon-checklist-label-title">QUICK-START CHECKLIST</span>
+                        </div>
+
+                        <div class="cleon-checklist-list">
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_leave_type')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_leave_type')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_leave_type }">
+                                    <t t-if="state.checklist.check_leave_type">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_leave_type }">
+                                    Create at least one Leave Type
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveTypes">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_allocate_balance')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_allocate_balance')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_allocate_balance }">
+                                    <t t-if="state.checklist.check_allocate_balance">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_allocate_balance }">
+                                    Allocate balances to employees
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveBalances">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_set_country')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_set_country')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_set_country }">
+                                    <t t-if="state.checklist.check_set_country">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_set_country }">
+                                    Set country / region for holiday calendar
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openSettings">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_review_request')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_review_request')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_review_request }">
+                                    <t t-if="state.checklist.check_review_request">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_review_request }">
+                                    Review your first leave request
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openLeaveRequests">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+
+                            <div class="cleon-checklist-item"
+                                 role="button"
+                                 tabindex="0"
+                                 t-on-click="() => this.toggleChecklistItem('check_run_report')"
+                                 t-on-keydown="(ev) => this.onChecklistKeydown(ev, 'check_run_report')">
+                                <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': state.checklist.check_run_report }">
+                                    <t t-if="state.checklist.check_run_report">
+                                        <i class="fa fa-check"/>
+                                    </t>
+                                </div>
+                                <span t-att-class="{ 'cleon-checklist-text': true, 'done': state.checklist.check_run_report }">
+                                    Run a leave utilisation report
+                                </span>
+                                <button class="cleon-checklist-go-btn" type="button" t-on-click.stop="openReports">
+                                    Go <i class="fa fa-arrow-right"/>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="cleon-checklist-counter-row">
+                            <span class="cleon-checklist-counter">
+                                <t t-esc="state.completedChecklistCount"/>/5 completed
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="cleon-completion-footer">
+                        <button class="cleon-btn-review-steps" type="button" t-on-click="reviewWizardSteps">
+                            <i class="fa fa-arrow-left"/> Review steps
+                        </button>
+                        <button class="cleon-btn-done-dash" type="button" t-on-click="doneGoToDashboard">
+                            <i class="fa fa-check-circle"/> Done — Go to Dashboard
+                        </button>
+                    </div>
+
+                    <p class="cleon-completion-hint">
+                        You can always reopen this guide from the Help menu in the navigation
+                    </p>
+
+                </div>
+            </t>
+            <!-- ════ END SETUP COMPLETION SCREEN ═════════════════ -->
+
+            <!-- Shared Module Sidebar -->
+            <CalendarSidebar activeMenu="'dashboard'"/>
+
+            <!-- ════════════════════════════════════════════════════
+                 MAIN DASHBOARD AREA (Screen 8 — FR-055 to FR-072)
+                 ════════════════════════════════════════════════════ -->
+            <div class="o_leave_dashboard">
+
+                <!-- FR-071 and FR-072: Header -->
+                <div class="cleon-dash-header">
+                    <div class="cleon-dash-header-left">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
+                            <i class="fa fa-columns"/>
+                        </button>
+                        <div>
+                            <h4 class="cleon-dash-title">Dashboard</h4>
+                            <span class="cleon-dash-subtitle">Manage leave requests, policies, and employee balances</span>
+                        </div>
+                    </div>
+                    <div class="cleon-dash-header-right">
+                        <button type="button" class="cleon-header-plain-btn" title="Take a Tour">
+                            <i class="fa fa-paper-plane-o"/>
+                        </button>
+                        <!-- Re-open the setup experience from the help icon. -->
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Help / Guide">
+                            <i class="fa fa-question-circle-o"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Setup Wizard">
+                            <i class="fa fa-magic"/>
+                        </button>
+
+                        <!-- View Switcher -->
+                        <div class="cleon-view-toggle">
+                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('admin')">
+                                <i class="fa fa-circle-o"/> Admin View
+                            </button>
+                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('employee')">
+                                <i class="fa fa-user-o"/> Employee View
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="o_leave_dashboard">
-                <!-- KPI ROW -->
+
+                <!-- KPI ROW (FR-055 to FR-060) -->
                 <div class="kpi-row">
                     <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">TOTAL EMPLOYEES</span><span class="kpi-icon blue">👥</span></div>
-                        <div class="kpi-value" data-kpi="total_employees"><t t-esc="state.kpis.total_employees"/></div>
-                        <div class="kpi-sub">0 on leave today</div>
+                        <div class="kpi-top">
+                            <span class="kpi-label">TOTAL EMPLOYEES</span>
+                            <span class="kpi-icon blue"><i class="fa fa-users"/></span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.total_employees"/></div>
+                        <div class="kpi-sub"><t t-esc="state.kpis.on_leave_today"/> on leave today</div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">PENDING APPROVALS</span><span class="kpi-icon orange">⏱</span></div>
-                        <div class="kpi-value" data-kpi="pending_approvals"><t t-esc="state.kpis.pending_approvals"/></div>
+
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveRequests">
+                        <t t-if="state.kpis.pending_approvals gt 0">
+                            <span class="kpi-new-badge"><t t-esc="state.kpis.pending_approvals"/> new</span>
+                        </t>
+                        <div class="kpi-top">
+                            <span class="kpi-label">PENDING APPROVALS</span>
+                            <span class="kpi-icon orange"><i class="fa fa-clock-o"/></span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.pending_approvals"/></div>
                         <div class="kpi-sub">Awaiting review</div>
-                    </div>
+                    </button>
+
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveCalendar">
+                        <div class="kpi-top">
+                            <span class="kpi-label">ON LEAVE TODAY</span>
+                            <span class="kpi-icon purple"><i class="fa fa-calendar"/></span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.on_leave_today"/></div>
+                        <div class="kpi-sub"><t t-esc="state.kpis.on_leave_pct"/>% of workforce</div>
+                    </button>
+
                     <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">ON LEAVE TODAY</span><span class="kpi-icon purple">📅</span></div>
-                        <div class="kpi-value" data-kpi="on_leave_today"><t t-esc="state.kpis.on_leave_today"/></div>
-                        <div class="kpi-sub">0% of workforce</div>
-                    </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">UPCOMING (7 DAYS)</span><span class="kpi-icon teal">📈</span></div>
-                        <div class="kpi-value" data-kpi="upcoming"><t t-esc="state.kpis.upcoming_7_days"/></div>
+                        <div class="kpi-top">
+                            <span class="kpi-label">UPCOMING (7 DAYS)</span>
+                            <span class="kpi-icon teal"><i class="fa fa-line-chart"/></span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.upcoming_7_days"/></div>
                         <div class="kpi-sub">Approved upcoming leave</div>
                     </div>
+
                     <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">UTILISATION RATE</span><span class="kpi-icon pink">📊</span></div>
-                        <div class="kpi-value" data-kpi="utilisation"><t t-esc="state.kpis.utilisation_rate"/></div>
+                        <div class="kpi-top">
+                            <span class="kpi-label">UTILISATION RATE</span>
+                            <span class="kpi-icon pink"><i class="fa fa-heartbeat"/></span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.utilisation_rate"/>%</div>
                         <div class="kpi-sub">Leave days consumed</div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-top"><span class="kpi-label">COVERAGE ALERTS</span><span class="kpi-icon green">⚠</span></div>
-                        <div class="kpi-value" data-kpi="coverage"><t t-esc="state.kpis.coverage_alerts"/></div>
-                        <div class="kpi-sub">Coverage healthy</div>
+
+                    <div t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-card coverage-alert-active' : 'kpi-card'">
+                        <div class="kpi-top">
+                            <span class="kpi-label">COVERAGE ALERTS</span>
+                            <span t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-icon red' : 'kpi-icon green'">
+                                <i class="fa fa-exclamation-triangle"/>
+                            </span>
+                        </div>
+                        <div class="kpi-value"><t t-esc="state.kpis.coverage_alerts"/></div>
+                        <div class="kpi-sub">
+                            <t t-if="state.kpis.coverage_alerts gt 0">Coverage needs attention</t>
+                            <t t-else="">Coverage healthy</t>
+                        </div>
                     </div>
                 </div>
 
-                <!-- TRENDS + BY TYPE -->
+                <!-- TRENDS (FR-061 to FR-063) + BY TYPE (FR-064) -->
                 <div class="grid-2">
                     <div class="panel">
                         <div class="panel-head">
@@ -120,40 +709,104 @@
                                 <h5>Leave Trends</h5>
                                 <small>Monthly request volume and outcomes</small>
                             </div>
+                            <!-- Range toggle -->
                             <div class="range-toggle">
-                                <button class="range-btn active" data-months="6">6 months</button>
-                                <button class="range-btn" data-months="12">12 months</button>
+                                <button t-att-class="state.months === 6 ? 'range-btn active' : 'range-btn'"
+                                        t-on-click="() => this.setTrendMonths(6)">
+                                    6 months
+                                </button>
+                                <button t-att-class="state.months === 12 ? 'range-btn active' : 'range-btn'"
+                                        t-on-click="() => this.setTrendMonths(12)">
+                                    12 months
+                                </button>
                             </div>
                         </div>
+                        <!-- Mini stat tiles (OWL rendered with colored text) -->
                         <div class="stat-row">
-                            <div class="stat-box"><div class="stat-value pink" data-summary="total">-</div><div class="stat-label">Total</div></div>
-                            <div class="stat-box"><div class="stat-value green" data-summary="approved">-</div><div class="stat-label">Approved</div></div>
-                            <div class="stat-box"><div class="stat-value orange" data-summary="pending">-</div><div class="stat-label">Pending</div></div>
-                            <div class="stat-box"><div class="stat-value red" data-summary="rejected">-</div><div class="stat-label">Rejected</div></div>
+                            <div class="stat-box">
+                                <div class="stat-value stat-value-pink"><t t-esc="state.trends.summary.total || 0"/></div>
+                                <div class="stat-label">Total</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value stat-value-green"><t t-esc="state.trends.summary.approved || 0"/></div>
+                                <div class="stat-label">Approved</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value stat-value-amber"><t t-esc="state.trends.summary.pending || 0"/></div>
+                                <div class="stat-label">Pending</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value stat-value-red"><t t-esc="state.trends.summary.rejected || 0"/></div>
+                                <div class="stat-label">Rejected</div>
+                            </div>
                         </div>
                         <canvas t-ref="trendsChart" height="90"/>
                     </div>
 
+                    <!-- By Leave Type donut with empty state handling -->
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>By Leave Type</h5><small>All-time request distribution</small></div>
                         </div>
-                        <div class="donut-wrap">
-                            <canvas t-ref="byTypeChart" width="160" height="160"/>
-                        </div>
-                        <div id="byTypeLegend" class="legend-list"/>
+                        <t t-if="state.byType.length">
+                            <div class="donut-wrap">
+                                <canvas t-ref="byTypeChart" width="160" height="160"/>
+                            </div>
+                            <div class="legend-list">
+                                <div class="legend-row" t-foreach="state.byType" t-as="item" t-key="item.name">
+                                    <span class="legend-dot" t-att-style="'background:' + this.getPaletteColor(item_index)"/>
+                                    <span class="legend-name"><t t-esc="item.name"/></span>
+                                    <span class="legend-count"><t t-esc="item.count"/></span>
+                                    <span class="legend-pct"><t t-esc="item.percent"/>%</span>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="dashboard-empty dashboard-empty-chart">
+                                <i class="fa fa-pie-chart d-block fs-3 mb-2 text-muted"/>
+                                <span>No leave requests to analyse yet.</span>
+                            </div>
+                        </t>
                     </div>
                 </div>
 
-                <!-- BALANCE + APPROVAL -->
+                <!-- BALANCE  + APPROVAL -->
                 <div class="grid-2">
+                    <!-- Balance by type with empty state handling -->
                     <div class="panel">
                         <div class="panel-head">
-                            <div><h5>Leave Balance by Type</h5><small>Allocation vs utilisation across all employees</small></div>
+                            <div>
+                                <h5>Leave Balance by Type</h5>
+                                <small>Allocation vs utilisation across all employees</small>
+                            </div>
+                            <button type="button" class="panel-link-btn" t-on-click="openLeaveBalances">
+                                Manage ›
+                            </button>
                         </div>
-                        <div id="balanceList" class="balance-list"/>
+                        <t t-if="state.balance.length">
+                            <div class="balance-list">
+                                <div class="balance-row" t-foreach="state.balance" t-as="item" t-key="item.name">
+                                    <div class="balance-header">
+                                        <span class="legend-dot" t-att-style="'background:' + item.type_color"/>
+                                        <span class="balance-name"><t t-esc="item.name"/></span>
+                                        <span class="balance-figures">
+                                            <t t-esc="item.used"/> used / <t t-esc="item.allocated"/> allocated · <t t-esc="item.percent"/>%
+                                        </span>
+                                    </div>
+                                    <div class="balance-track">
+                                        <div class="balance-fill" t-att-style="'width:' + item.percent + '%;background:' + item.bar_color"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="dashboard-empty">
+                                No leave balances have been allocated yet.
+                            </div>
+                        </t>
                     </div>
 
+                    <!-- Approval Overview -->
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>Approval Overview</h5><small>Request resolution summary</small></div>
@@ -162,16 +815,158 @@
                             <div class="approval-chart-box">
                                 <canvas t-ref="approvalChart" width="140" height="140"/>
                                 <div class="approval-center">
-                                    <div class="approval-rate" data-approval="rate">-</div>
+                                    <div class="approval-rate" data-approval="rate"><t t-esc="state.approval.approval_rate"/>%</div>
                                     <small>Approval</small>
                                 </div>
                             </div>
                         </div>
                         <div class="approval-rows">
-                            <div class="approval-row approved"><span>✓ Approved</span><span data-approval="approved">-</span></div>
-                            <div class="approval-row pending"><span>⏱ Pending</span><span data-approval="pending">-</span></div>
-                            <div class="approval-row rejected"><span>✕ Rejected</span><span data-approval="rejected">-</span></div>
+                            <div class="approval-row approved"><span>✓ Approved</span><span><t t-esc="state.approval.approved"/></span></div>
+                            <div class="approval-row pending"><span>⏱ Pending</span><span><t t-esc="state.approval.pending"/></span></div>
+                            <div class="approval-row rejected"><span>✕ Rejected</span><span><t t-esc="state.approval.rejected"/></span></div>
                         </div>
+                        <div class="panel-footer-btn-wrap">
+                            <button type="button" class="cleon-btn-review-all" t-on-click="openLeaveRequests">
+                                Review All Requests
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DEPARTMENT COVERAGE  + RECENT REQUESTS -->
+                <div class="grid-2 dashboard-lower-row">
+                    <!-- Department Coverage Heatmap -->
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div>
+                                <h5>Department Coverage</h5>
+                                <small>This week's workforce availability</small>
+                            </div>
+                            <button type="button" class="panel-link-btn" t-on-click="openLeaveCalendar">
+                                Calendar ›
+                            </button>
+                        </div>
+
+                        <div class="coverage-table-wrap">
+                            <table class="coverage-table">
+                                <thead>
+                                    <tr>
+                                        <th>Department</th>
+                                        <th>Mon</th>
+                                        <th>Tue</th>
+                                        <th>Wed</th>
+                                        <th>Thu</th>
+                                        <th>Fri</th>
+                                        <th>Sat</th>
+                                        <th>Sun</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.departmentCoverage" t-as="row" t-key="row.department">
+                                        <td class="coverage-department"><t t-esc="row.department"/></td>
+                                        <t t-foreach="row.values" t-as="val" t-key="val_index">
+                                            <td>
+                                                <t t-if="val === null">
+                                                    <span class="coverage-weekend">—</span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span t-att-class="'coverage-cell ' + this.getCoverageClass(val)">
+                                                        <t t-esc="val"/>%
+                                                    </span>
+                                                </t>
+                                            </td>
+                                        </t>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="dashboard-empty" t-if="!state.departmentCoverage.length">
+                                No department coverage data yet.
+                            </div>
+                        </div>
+
+                        <div class="coverage-legend">
+                            <span><i class="legend-dot coverage-good-dot"/> Good (≥85%)</span>
+                            <span><i class="legend-dot coverage-medium-dot"/> Medium (70–84%)</span>
+                            <span><i class="legend-dot coverage-low-dot"/> Low (&lt;70%)</span>
+                        </div>
+                    </div>
+
+                    <!-- Recent Requests List -->
+                    <div class="panel">
+                        <div class="panel-head">
+                            <div>
+                                <h5>Recent Requests</h5>
+                                <small>Latest leave submissions</small>
+                            </div>
+                            <button type="button" class="panel-link-btn" t-on-click="openLeaveRequests">
+                                View all ›
+                            </button>
+                        </div>
+
+                        <div class="recent-request-list">
+                            <button type="button"
+                                    class="recent-request-row"
+                                    t-foreach="state.recentRequests"
+                                    t-as="req"
+                                    t-key="req.id"
+                                    t-on-click="openLeaveRequests">
+                                <span class="recent-avatar"><t t-esc="this.getInitials(req.employee)"/></span>
+                                <span class="recent-request-main">
+                                    <span class="recent-request-name"><t t-esc="req.employee"/></span>
+                                    <span class="recent-request-meta"><t t-esc="req.leave_type"/> · <t t-esc="req.duration"/>d</span>
+                                </span>
+                                <span t-att-class="'request-status ' + req.status"><t t-esc="req.status"/></span>
+                                <span class="recent-request-date"><t t-esc="req.submitted_date"/></span>
+                            </button>
+
+                            <div class="dashboard-empty" t-if="!state.recentRequests.length">
+                                No leave requests have been submitted yet.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Bar -->
+                <div class="panel quick-actions-panel">
+                    <div class="panel-head">
+                        <h5><i class="fa fa-bolt"/> Quick Actions</h5>
+                    </div>
+                    <div class="quick-actions">
+                        <button class="quick-action quick-pink" t-on-click="openLeaveRequests">
+                            <i class="fa fa-check-circle-o"/>
+                            <strong>Review Pending</strong>
+                            <small><t t-esc="state.kpis.pending_approvals"/> awaiting</small>
+                        </button>
+
+                        <button class="quick-action quick-blue" t-on-click="openLeaveCalendar">
+                            <i class="fa fa-calendar"/>
+                            <strong>Leave Calendar</strong>
+                            <small>View schedule</small>
+                        </button>
+
+                        <button class="quick-action quick-green" t-on-click="openLeaveBalances">
+                            <i class="fa fa-globe"/>
+                            <strong>Manage Balances</strong>
+                            <small>Allocations</small>
+                        </button>
+
+                        <button class="quick-action quick-purple" t-on-click="openLeaveTypes">
+                            <i class="fa fa-tags"/>
+                            <strong>Leave Types</strong>
+                            <small>Configure</small>
+                        </button>
+
+                        <button class="quick-action quick-orange" t-on-click="openReports">
+                            <i class="fa fa-bar-chart"/>
+                            <strong>Reports</strong>
+                            <small>Analytics</small>
+                        </button>
+
+                        <button class="quick-action quick-dark" t-on-click="openAuditLog">
+                            <i class="fa fa-file-text-o"/>
+                            <strong>Audit Log</strong>
+                            <small>Activity trail</small>
+                        </button>
                     </div>
                 </div>
 

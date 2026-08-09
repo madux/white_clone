@@ -1,53 +1,116 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { Component, onMounted, onWillUnmount, useState, useRef, onWillStart, useEffect } from "@odoo/owl";
-import { loadJS, loadBundle} from "@web/core/assets";
+import { Component, onWillUnmount, useState, useRef, onWillStart, useEffect } from "@odoo/owl";
+import { loadBundle } from "@web/core/assets";
+import { useService } from "@web/core/utils/hooks";
+import { CalendarSidebar } from "../components/calendar_sidebar";
 
 export class HrLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.Dashboard";
+    static components = { CalendarSidebar };
 
     setup() {
+        this.action = useService("action");
+        this.orm = useService("orm");
+        this.notification = useService("notification");
         this.charts = {};
-        this.isDestroyed = false;   // <-- guard flag
-        this.currentRequest = null; // <-- track in-flight ajax so we can abort it
-        this.charts_trends = null;
+        this.isDestroyed = false;
+        this.currentRequest = null;
         this.canvasRef = useRef("trendsChart");
         this.byTypeChart = useRef("byTypeChart");
         this.approvalChart = useRef("approvalChart");
-        
+
         this.state = useState({
             months: 6,
-            kpis: {},
-            trends: {labels: [], total: [], approved: [], pending: [], rejected: [], summary: {} },
+            kpis: {
+                total_employees: 0,
+                pending_approvals: 0,
+                on_leave_today: 0,
+                on_leave_pct: 0,
+                upcoming_7_days: 0,
+                utilisation_rate: 0,
+                coverage_alerts: 0,
+            },
+            trends: { labels: [], total: [], approved: [], pending: [], rejected: [], summary: {} },
             byType: [],
             balance: [],
             approval: { approved: 0, pending: 0, rejected: 0, approval_rate: 0 },
+            departmentCoverage: [],
+            recentRequests: [],
+            sidebarCollapsed: false,
+            viewMode: "admin",
             loading: true,
+            // ── Welcome Modal ──────────────────────────
+            showWelcomeModal: false,
+            // ── Setup Wizard ───────────────────────────
+            showWizard: false,
+            wizardStep: 1,       // 1–5, which step is currently displayed
+            setupState: "not_started",
+            setupStep: 0,        // highest step reached (from DB)
+            reviewMode: false,   // read-only review of completed setup
+            // Completion Screen & Checklist (Screen 7)
+
+            showCompletionScreen: false,
+            checklist: {
+                check_leave_type: false,
+                check_allocate_balance: false,
+                check_set_country: false,
+                check_review_request: false,
+                check_run_report: false,
+            },
+            completedChecklistCount: 0,
         });
-        // onMounted(async () => {
-        //     await loadJS("/web/static/lib/Chart/Chart.js");
-        //     this.fetchAndRender(6);
 
-        //     $(this.el).on("click", ".range-btn", (ev) => {
-        //         const months = $(ev.currentTarget).data("months");
-        //         $(".range-btn").removeClass("active");
-        //         $(ev.currentTarget).addClass("active");
-        //         this.fetchAndRender(months);
-        //     });
-        // });
+        this.onKeyDown = (ev) => {
+            if (ev.key === "Escape") {
+                if (this.state.showCompletionScreen) {
+                    this.closeCompletionScreen();
+                } else if (this.state.showWizard) {
+                    this.closeWizard();
+                } else if (this.state.showWelcomeModal) {
+                    this.closeWelcomeModal();
+                }
+            }
+        };
 
-        // onWillUnmount(() => {
-        //     this.isDestroyed = true;
-        //     if (this.currentRequest) {
-        //         this.currentRequest.abort(); // cancel pending ajax
-        //     }
-        //     Object.values(this.charts).forEach((c) => c && c.destroy());
-        //     if (this.el) {
-        //         $(this.el).off("click", ".range-btn");
-        //     }
-        // });
-        onWillStart(async () => await loadBundle("web.chartjs_lib"));
+        onWillStart(async () => {
+            const force = new URLSearchParams(window.location.search).get("leave_setup") === "1" || Boolean(this.props.action?.context?.open_setup_wizard);
+            const [, setup] = await Promise.all([
+                loadBundle("web.chartjs_lib"),
+                this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force }),
+            ]);
+            this.state.setupState = setup.state;
+            this.state.setupStep = setup.current_step;
+            if (setup.checklist) {
+                this.state.checklist = setup.checklist;
+                this.state.completedChecklistCount = setup.completed_count || 0;
+            }
+
+            if (force) {
+                this.openSetupExperience();
+            } else if (setup.state === "in_progress") {
+                // Resume wizard at the last saved step
+                this.state.wizardStep = setup.current_step || 1;
+                this.state.showWizard = true;
+            } else {
+                // Show welcome modal only if setup has not been dismissed/completed
+                this.state.showWelcomeModal = setup.show_welcome;
+            }
+        });
+
+        useEffect(() => {
+            window.addEventListener("keydown", this.onKeyDown);
+            return () => {
+                window.removeEventListener("keydown", this.onKeyDown);
+            };
+        }, () => []);
+
+        onWillUnmount(() => {
+            this.isDestroyed = true;
+            if (this.currentRequest) this.currentRequest.abort();
+            Object.values(this.charts).forEach((chart) => chart?.destroy());
+        });
 
         useEffect(
             () => {
@@ -58,22 +121,241 @@ export class HrLeaveDashboard extends Component {
                     if (this.charts.approval) this.charts.approval.destroy();
                 };
             },
-            () => [this.state.months]   // <-- only re-run when "months" changes
+            () => [this.state.months]
         );
-
-        // useEffect(() => {
-        //     this.fetchAndRender();
-        //     return () => { 
-        //         if (this.charts.trends) this.charts.trends.destroy();
-
-        //     };
-        // });
     }
-    fetchAndRender(months) {
-        // abort any previous in-flight request before starting a new one
-        if (this.currentRequest) {
-            this.currentRequest.abort();
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DASHBOARD CONTROLS & HELPERS
+    // ═══════════════════════════════════════════════════════════════
+
+    /* FR-062: Switch trend month range (6 or 12) and re-fetch data. */
+    setTrendMonths(months) {
+        if (months !== 6 && months !== 12 || months === this.state.months) return;
+        this.state.months = months;
+        this.fetchAndRender(months);
+    }
+
+    toggleLeaveSidebar() {
+        window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
+    }
+
+    /* FR-072: Admin vs Employee View toggle. */
+    setViewMode(mode) {
+        if (!["admin", "employee"].includes(mode)) return;
+        this.state.viewMode = mode;
+        if (mode === "employee") {
+            return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
         }
+    }
+
+    /* FR-067: Coverage percentage color class helper. */
+    getCoverageClass(value) {
+        if (value === null || value === undefined) return "";
+        if (value >= 85) return "coverage-good";
+        if (value >= 70) return "coverage-medium";
+        return "coverage-low";
+    }
+
+    /* FR-068: Employee initials generator. */
+    getInitials(name) {
+        return (name || "")
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0].toUpperCase())
+            .join("");
+    }
+
+    openAuditLog() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // CENTRAL RE-OPENING METHOD
+    // ═══════════════════════════════════════════════════════════════
+
+    openSetupExperience() {
+        this.state.showWelcomeModal = false;
+        this.state.showWizard = false;
+        this.state.showCompletionScreen = false;
+
+        if (this.state.setupState === "completed") {
+            this.state.showCompletionScreen = true;
+        } else if (this.state.setupState === "in_progress") {
+            this.state.wizardStep = this.state.setupStep || 1;
+            this.state.showWizard = true;
+        } else {
+            this.state.showWelcomeModal = true;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  WELCOME MODAL METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    openWelcomeModal() {
+        this.state.showWizard = false;
+        this.state.showCompletionScreen = false;
+        this.state.showWelcomeModal = true;
+    }
+
+    async closeWelcomeModal() {
+        this.state.showWelcomeModal = false;
+        await this.orm.call("hr.leave.setup.progress", "dismiss_welcome", []);
+    }
+
+    async exploreOnMyOwn() {
+        await this.closeWelcomeModal();
+    }
+
+    async startSetupGuide() {
+        const setup = await this.orm.call("hr.leave.setup.progress", "start_setup", []);
+        this.state.setupState = setup.state;
+        this.state.setupStep = setup.current_step;
+        this.state.wizardStep = setup.current_step;
+        this.state.reviewMode = false;
+        this.state.showWelcomeModal = false;
+        this.state.showCompletionScreen = false;
+        this.state.showWizard = true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SETUP WIZARD METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    goBackFromWizard() {
+        if (this.state.wizardStep <= 1) {
+            this.state.showWizard = false;
+            this.state.reviewMode = false;
+            this.state.showCompletionScreen = false;
+            this.state.showWelcomeModal = true;
+        } else {
+            this.state.wizardStep -= 1;
+        }
+    }
+
+    async nextWizardStep() {
+        const nextStep = this.state.wizardStep + 1;
+
+        if (this.state.reviewMode) {
+            if (nextStep > 5) {
+                this.state.showWizard = false;
+                this.state.reviewMode = false;
+                this.state.showCompletionScreen = true;
+            } else {
+                this.state.wizardStep = nextStep;
+            }
+            return;
+        }
+
+        if (nextStep > 5) {
+            const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
+            this.state.setupState = result.state;
+            this.state.showWizard = false;
+            this.state.showCompletionScreen = true;
+            return;
+        }
+        const saved = await this.orm.call(
+            "hr.leave.setup.progress", "advance_step", [], { step: nextStep }
+        );
+        this.state.setupStep = saved.current_step;
+        this.state.wizardStep = nextStep;
+    }
+
+    async skipWizard() {
+        this.state.showWizard = false;
+        if (!this.state.reviewMode) {
+            await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
+        }
+        this.state.reviewMode = false;
+    }
+
+    closeWizard() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+    }
+
+    goToLeaveTypesFromWizard() {
+        return this.openLeaveTypes();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  SETUP COMPLETION SCREEN & CHECKLIST METHODS
+    // ═══════════════════════════════════════════════════════════════
+
+    async toggleChecklistItem(itemKey) {
+        const targetVal = !this.state.checklist[itemKey];
+        const res = await this.orm.call(
+            "hr.leave.setup.progress", "set_checklist_item", [],
+            { item_key: itemKey, completed: targetVal }
+        );
+        if (res && res.checklist) {
+            this.state.checklist = res.checklist;
+            this.state.completedChecklistCount = res.completed_count || 0;
+        }
+    }
+
+    onChecklistKeydown(ev, itemKey) {
+        if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            this.toggleChecklistItem(itemKey);
+        }
+    }
+
+    reviewWizardSteps() {
+        this.state.showCompletionScreen = false;
+        this.state.reviewMode = true;
+        this.state.wizardStep = 1;
+        this.state.showWizard = true;
+    }
+
+    doneGoToDashboard() {
+        this.state.showCompletionScreen = false;
+    }
+
+    closeCompletionScreen() {
+        this.state.showCompletionScreen = false;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  NAVIGATION ACTIONS
+    // ═══════════════════════════════════════════════════════════════
+
+    openDashboard() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
+    }
+
+    openLeaveTypes() {
+        return this.action.doAction("hr_holidays.open_view_holiday_status");
+    }
+
+    openLeaveRequests() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
+    }
+
+    openLeaveCalendar() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
+    }
+
+    openLeaveBalances() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
+    }
+
+    openReports() {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
+    }
+
+    openSettings() {
+        return this.action.doAction("base_setup.action_general_configuration");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DASHBOARD DATA
+    // ═══════════════════════════════════════════════════════════════
+
+    fetchAndRender(months) {
+        if (this.currentRequest) this.currentRequest.abort();
 
         this.currentRequest = $.ajax({
             url: "/hr_leave_dashboard/data",
@@ -82,68 +364,35 @@ export class HrLeaveDashboard extends Component {
             data: JSON.stringify({ jsonrpc: "2.0", params: { months } }),
             dataType: "json",
         }).done((res) => {
-            if (this.isDestroyed || !$(this.el)) {
-                console.log(`logger22-2 ${res}`)
-
-                return; // <-- key guard
-
+            if (this.isDestroyed || !$(this.el)) return;
+            if (!res || !res.result) {
+                console.error("Dashboard backend returned error or empty response:", res ? res.error : "No response");
+                this.state.loading = false;
+                return;
             }
 
             const data = res.result;
-            /**data == {
-             * "kpis":{
-             *      "total_employees":7,
-             *      "on_leave_today":0,
-             *      "pending_approvals":1,
-             *      "upcoming_7_days":0,
-             *      "utilisation_rate":50,
-             *       "coverage_alerts":0},
-             * "trends":{
-                    * "labels":["Jan","Feb","Mar","Apr","May","Jun"],
-                    * "total":[0,0,0,0,2,0],
-                    * "approved":[0,0,0,0,1,0],
-                    * "pending":[0,0,0,0,1,0],
-                    * "rejected":[0,0,0,0,0,0],
-                    * "summary":{
-                    *   "total":2,
-                    *   "approved":1,   
-                    *   "pending":1,
-                    *   "rejected":0
-                    * }
-                },
-                "by_type":[
-                    {"name":"Paid Time Off","count":2,"percent":100}
-                ],
-                "balance":[
-                    {"name":"Paid Time Off","color":2,"used":10,"allocated":20,"percent":50}
-                ],
-                "approval_overview":{
-                    "approved":1,"pending":1,"rejected":0,"approval_rate":50
-                    }
-                }*/
+            this.state.kpis = data.kpis || this.state.kpis;
+            this.state.trends = data.trends || this.state.trends;
+            this.state.byType = data.by_type || [];
+            this.state.balance = data.balance || [];
+            this.state.approval = data.approval_overview || this.state.approval;
+            this.state.departmentCoverage = data.department_coverage || [];
+            this.state.recentRequests = data.recent_requests || [];
+            this.state.loading = false;
 
-            console.log(`logger22-3 ${JSON.stringify(data)}`)
-            this.state.kpis = data.kpis;
-            this.state.trends = data.trends;
-            this.state.byType = data.by_type;
-            this.state.balance = data.balance;
-            this.state.approval = data.approval_overview;
-
-            this.renderKpis(data.kpis);
-            this.renderTrends(data.trends);
-            this.renderByType(data.by_type);
-            this.renderBalance(data.balance);
-            this.renderApproval(data.approval_overview);
+            if (data.trends) this.renderTrends(data.trends);
+            if (data.by_type) this.renderByType(data.by_type);
+            if (data.approval_overview) this.renderApproval(data.approval_overview);
         }).fail((err) => {
-            if (err.statusText === "abort") return; // expected on unmount
+            if (err.statusText === "abort") return;
             console.error("Dashboard load failed", err);
         });
     }
 
     renderTrends(d) {
-        const canvas = this.canvasRef.el; //$(this.el)?.querySelector("#trendsChart");
-        console.log(`The main canvas ${canvas}`)
-        if (!canvas) return; // extra safety
+        const canvas = this.canvasRef.el;
+        if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (this.charts.trends) this.charts.trends.destroy();
         this.charts.trends = new Chart(ctx, {
@@ -151,17 +400,11 @@ export class HrLeaveDashboard extends Component {
             data: {
                 labels: d.labels,
                 datasets: [
-                    { label: "Total", data: d.total, borderColor: "#e91e8c", tension: 0.4, fill: true, backgroundColor: "rgba(233,30,140,0.08)" },
+                    { label: "Total",    data: d.total,    borderColor: "#e91e8c", tension: 0.4, fill: true, backgroundColor: "rgba(233,30,140,0.08)" },
                     { label: "Approved", data: d.approved, borderColor: "#17a673", tension: 0.4 },
-                    { label: "Pending", data: d.pending, borderColor: "#f0ad4e", tension: 0.4 },
+                    { label: "Pending",  data: d.pending,  borderColor: "#f0ad4e", tension: 0.4 },
                     { label: "Rejected", data: d.rejected, borderColor: "#dc3545", tension: 0.4 },
                 ],
-                // datasets: [
-                //     { label: "Total", data: [3, 3, 10, 18, 40, 8], borderColor: "#e91e8c", tension: 0.4, fill: true, backgroundColor: "rgba(233,30,140,0.08)" },
-                //     { label: "Approved", data: [3, 3, 34, 18, 40, 8], borderColor: "#17a673", tension: 0.4 },
-                //     { label: "Pending", data: [3, 23, 10, 28, 20, 8], borderColor: "#f0ad4e", tension: 0.4 },
-                //     { label: "Rejected", data: [3, 3, 10, 18, 5, 8], borderColor: "#dc3545", tension: 0.4 },
-                // ],
             },
             options: { responsive: true, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true } } },
         });
@@ -172,19 +415,9 @@ export class HrLeaveDashboard extends Component {
         $(this.el).find("[data-summary='rejected']").text(d.summary.rejected);
     }
 
-    renderKpis(k) {
-        const $root = $(this.el);
-        $root.find("[data-kpi='total_employees']").text(k.total_employees);
-        $root.find("[data-kpi='pending_approvals']").text(k.pending_approvals);
-        $root.find("[data-kpi='on_leave_today']").text(k.on_leave_today);
-        $root.find("[data-kpi='upcoming']").text(k.upcoming_7_days);
-        $root.find("[data-kpi='utilisation']").text(k.utilisation_rate + "%");
-        $root.find("[data-kpi='coverage']").text(k.coverage_alerts);
-    }
-
-    
     renderByType(items) {
-        const ctx = this.byTypeChart.el.getContext("2d");
+        const ctx = this.byTypeChart.el ? this.byTypeChart.el.getContext("2d") : null;
+        if (!ctx) return;
         if (this.charts.byType) this.charts.byType.destroy();
         const palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"];
         this.charts.byType = new Chart(ctx, {
@@ -195,46 +428,16 @@ export class HrLeaveDashboard extends Component {
             },
             options: { plugins: { legend: { display: false } }, cutout: "70%" },
         });
-
-        const $legend = $(this.el).find("#byTypeLegend").empty();
-        items.forEach((i, idx) => {
-            $legend.append(`
-                <div class="legend-row">
-                    <span class="legend-dot" style="background:${palette[idx % palette.length]}"></span>
-                    <span class="legend-name">${i.name}</span>
-                    <span class="legend-count">${i.count}</span>
-                    <span class="legend-pct">${i.percent}%</span>
-                </div>
-            `);
-        });
     }
 
-    renderBalance(items) {
-        const $list = $(this.el).find("#balanceList").empty();
-        items.forEach((i) => {
-            $list.append(`
-                <div class="balance-row">
-                    <div class="balance-header">
-                        <span class="legend-dot" style="background:${i.color}"></span>
-                        <span class="balance-name">${i.name}</span>
-                        <span class="balance-figures">${i.used} used / ${i.allocated} allocated &nbsp; ${i.percent}%</span>
-                    </div>
-                    <div class="balance-track">
-                        <div class="balance-fill" style="width:${i.percent}%; background:${i.color}"></div>
-                    </div>
-                </div>
-            `);
-        });
+    getPaletteColor(index) {
+        const palette = ["#4e73df", "#e74a3b", "#e91e8c", "#f6a623", "#1cc88a", "#36b9cc", "#6f42c1", "#858796"];
+        return palette[index % palette.length];
     }
 
     renderApproval(a) {
-        // const canvas = this.approvalChart.el;
-        //  //$(this.el)?.querySelector("#trendsChart");
-        // const canvas = this.approvalChart.el.getContext("2d");
-        // console.log(`The main2 canvas ${canvas}`)
-        const canvas = this.approvalChart.el; //$(this.el)?.querySelector("#trendsChart");
-        console.log(`The main canvas ${canvas}`)
-        if (!canvas) return; // extra safety
+        const canvas = this.approvalChart.el;
+        if (!canvas) return;
         const ctx = canvas.getContext("2d");
         if (this.charts.approval) this.charts.approval.destroy();
         this.charts.approval = new Chart(ctx, {
@@ -247,12 +450,7 @@ export class HrLeaveDashboard extends Component {
             },
             options: { cutout: "75%", plugins: { legend: { display: false } } },
         });
-        $(this.el).find("[data-approval='rate']").text(a.approval_rate + "%");
-        $(this.el).find("[data-approval='approved']").text(a.approved);
-        $(this.el).find("[data-approval='pending']").text(a.pending);
-        $(this.el).find("[data-approval='rejected']").text(a.rejected);
     }
 }
 
 registry.category("actions").add("hr_leave_dashboard", HrLeaveDashboard);
-
