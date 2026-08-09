@@ -1,4 +1,4 @@
-/* ── Reports Page (FR-310 to FR-325) ─────────────────────────────────── */
+/* ── Reports Page  to  ─────────────────────────────────── */
 .o_lr_page {
     background: #f5f7fb;
     color: #172033;
@@ -61,7 +61,7 @@
     border-radius: 12px;
 }
 
-/* Section Header & Toolbar (FR-310–FR-315) */
+/* Section Header & Toolbar */
 .o_lr_section_header {
     display: flex;
     align-items: flex-start;
@@ -162,7 +162,7 @@
     color: #ed1970;
 }
 
-/* FR-316–FR-320: Global Filter Bar (Single Horizontal Row, compact width) */
+/* Global Filter Bar (Single Horizontal Row, compact width) */
 .o_lr_filters_row {
     display: inline-flex;
     align-items: center;
@@ -230,7 +230,7 @@
     cursor: pointer;
 }
 
-/* FR-321: Five Report Tabs Navigation */
+/* Five Report Tabs Navigation */
 .o_lr_tabs {
     display: flex;
     align-items: center;
@@ -271,7 +271,7 @@
     font-size: 12px!important;
 }
 
-/* FR-322: Overview KPI Summary Tiles */
+/* Overview KPI Summary Tiles */
 .o_lr_kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -329,7 +329,7 @@
 .o_lr_kpi_icon.amber { background: #fff3d6; color: #c17700; }
 .o_lr_kpi_icon.rose { background: #ffe8f2; color: #ed1970; }
 
-/* Charts Grid (FR-323 & FR-324) */
+/* Charts Grid  & */
 .o_lr_charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -353,7 +353,7 @@
     position: relative;
 }
 
-/* FR-325: Request Status Breakdown Tiles */
+/* Request Status Breakdown Tiles */
 .o_lr_status_breakdown {
     background: white;
     border: 1px solid #e5e9f0;

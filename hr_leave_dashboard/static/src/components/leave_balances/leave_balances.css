@@ -6,7 +6,7 @@
 .o_lb_page{display:flex;height:100%;min-height:calc(100vh - 46px);background:#f5f7fb;color:#172033;font-size:13px}
 .o_lb_main{flex:1;padding:18px 22px;overflow:auto;min-width:0;overflow-x:auto}
 
-/* Alert banner (FR-247) */
+/* Alert banner */
 .o_lb_alert{display:flex;align-items:center;justify-content:space-between;background:#fff7e9;border:1px solid #f4d69f;border-radius:8px;padding:12px 16px;margin-bottom:14px;color:#965e16}
 .o_lb_alert button{border:0;background:transparent;cursor:pointer;color:#965e16;font-size:13px;padding:4px 8px}
 .o_lb_alert button:hover{text-decoration:underline}
@@ -30,7 +30,7 @@
 .o_lb_btn_filters{position:relative}
 .o_lb_filter_badge{background:#ed1970;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px;font-weight:700}
 
-/* FR-252: More Options ⋮ button + dropdown */
+/* More Options ⋮ button + dropdown */
 .o_lb_more_wrap{position:relative}
 .o_lb_more_btn{border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;cursor:pointer;font-size:18px;line-height:1;font-weight:700;color:#555}
 .o_lb_more_btn:hover{background:#f8fafc}
@@ -54,12 +54,12 @@
 .o_lb_kpi_icon.green{background:#e6faf3;color:#00b884}
 .o_lb_kpi_icon.amber{background:#fff3d6;color:#c17700}
 .o_lb_kpi_icon.orange{background:#fff0e6;color:#e8590c}
-/* Trend: FR-254 — green for positive, red for negative */
+/* Trend:  — green for positive, red for negative */
 .o_lb_kpi_trend{font-size:11px;font-weight:600}
 .o_lb_kpi_trend.up{color:#16874d}
 .o_lb_kpi_trend.down{color:#cb2639}
 .o_lb_kpi_trend.neutral{color:#8490a5;font-weight:500}
-/* FR-255 — red count text on negative balance card when count > 0 */
+/* red count text on negative balance card when count > 0 */
 .o_lb_kpi_red{color:#cb2639!important}
 
 /* Table */
@@ -70,7 +70,7 @@
 .o_lb_page tbody tr:last-child td{border-bottom:0}
 .o_lb_page tbody tr:hover{background:#fafbfd}
 
-/* FR-262: Leave Type column quick-filter */
+/* Leave Type column quick-filter */
 .o_lb_th_filter{overflow:visible!important;position:relative}
 .o_lb_th_wrap{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .o_lb_lt_filter_btn{border:0;background:transparent;cursor:pointer;padding:1px 3px;border-radius:4px;color:#b0bbc9;font-size:10px;display:inline-flex;align-items:center;transition:color .15s,background .15s;line-height:1}
@@ -153,10 +153,10 @@
 .o_lb_person span{flex:1}
 .o_lb_person small{display:block;color:#8490a5;font-size:11px}
 .o_lb_count{background:#edf6ff;color:#3676b5;padding:10px;margin-top:10px;border-radius:7px;font-size:13px}
-/* ── Allocate Leave Wizard ── FR-278–FR-286 ──────────────────── */
+/* ── Allocate Leave Wizard ──  ──────────────────── */
 .o_lb_allocate{width:min(560px,94vw);max-height:90vh}
 
-/* FR-278: Numbered step progress bar */
+/* Numbered step progress bar */
 .o_lb_alloc_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
 .o_lb_alloc_header h3{margin:0;font-size:16px;font-weight:700}
 .o_lb_alloc_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
@@ -171,22 +171,22 @@
 .o_lb_alloc_step.done .o_lb_step_label{color:#14954d}
 .o_lb_step_connector{flex:1;height:2px;background:#e5e9f0;margin:0 8px;min-width:20px}
 
-/* FR-279: Mode selection tabs */
+/* Mode selection tabs */
 .o_lb_tabs{display:flex;border-bottom:2px solid #eee;margin-bottom:12px}
 .o_lb_tabs button{flex:1;border:0;border-bottom:2px solid transparent;margin-bottom:-2px;background:transparent;padding:9px 6px;font-size:13px;font-weight:600;color:#8490a5;cursor:pointer;transition:color .15s,border-color .15s}
 .o_lb_tabs button:hover{color:#ed1970}
 .o_lb_tabs button.active{color:#ed1970;border-bottom-color:#ed1970}
 .o_lb_tabs button:disabled{opacity:.4;cursor:not-allowed}
 
-/* FR-280: Employee search row + FR-281: Select All / Deselect All */
+/* Employee search row + : Select All / Deselect All */
 .o_lb_alloc_search_row{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
 .o_lb_alloc_search_input{flex:1;border:1px solid #dce2ec;border-radius:7px;padding:8px 10px;font-size:13px;background:white}
 .o_lb_alloc_search_input:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
-/* FR-281: pink text link — no button border */
+/* pink text link — no button border */
 .o_lb_select_all_link{border:0;background:transparent;color:#ed1970;font-size:13px;font-weight:600;cursor:pointer;padding:0;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
 .o_lb_select_all_link:hover{color:#c01257}
 
-/* FR-280: Scrollable employee list */
+/* Scrollable employee list */
 .o_lb_person_list{max-height:240px;overflow-y:auto;border:1px solid #eef1f7;border-radius:8px;margin-bottom:6px}
 .o_lb_person{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid #f0f3f8;cursor:pointer;transition:background .12s}
 .o_lb_person:last-child{border-bottom:0}
@@ -197,12 +197,12 @@
 .o_lb_person small{display:block;color:#8490a5;font-size:11px}
 .o_lb_person input[type="checkbox"]{accent-color:#ed1970;width:15px;height:15px;flex-shrink:0;cursor:pointer}
 
-/* FR-282: Teal selection counter bar */
+/* Teal selection counter bar */
 .o_lb_selection_bar{display:flex;align-items:center;gap:8px;background:#e6faf8;color:#1a8a7f;border:1px solid #b2ebe4;border-radius:8px;padding:9px 14px;font-size:13px}
 .o_lb_selection_bar i{font-size:14px}
 .o_lb_selection_bar b{font-weight:700}
 
-/* FR-283: Step 2 form */
+/* Step 2 form */
 .o_lb_alloc_form{display:flex;flex-direction:column;gap:14px}
 .o_lb_alloc_section_title{font-size:15px;font-weight:700;color:#172033;margin:0 0 4px}
 .o_lb_field_label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:#444}
@@ -216,7 +216,7 @@
 /* Empty/required field subtle pink tint */
 .o_lb_alloc_form .o_lb_field_empty{border-color:#f7b8d2;background:#fff8fb}
 
-/* FR-285: Step 3 review card */
+/* Step 3 review card */
 .o_lb_review{padding:0}
 .o_lb_review h4{font-size:15px;font-weight:700;margin:0 0 12px;color:#172033}
 .o_lb_review_card{border:1px solid #e5e9f0;border-radius:10px;overflow:hidden;background:white}
@@ -227,12 +227,11 @@
 .o_lb_review_hint{font-size:12px;color:#8490a5;margin:10px 0 0;display:flex;align-items:center;gap:6px}
 .o_lb_review_hint i{color:#c17700}
 
-/* FR-278: Wizard footer layout */
+/* Wizard footer layout */
 .o_lb_alloc_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-top:1px solid #e3e7ee;gap:8px}
 .o_lb_alloc_footer div{display:flex;gap:8px}
 
-
-/* ── FR-287–FR-295: Balance Details Side Drawer ──────────────────── */
+/* ── : Balance Details Side Drawer ──────────────────── */
 .o_lb_details{width:440px}
 .o_lb_details_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
 .o_lb_details_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
@@ -242,7 +241,7 @@
 .o_lb_drawer_subtitle{font-size:12px;font-weight:700;color:#8490a5;margin:16px 0 10px;letter-spacing:.02em}
 .o_lb_drawer_subtitle.uppercase{text-transform:uppercase;letter-spacing:.04em}
 
-/* FR-288 & FR-289: Unified Balance Summary Soft Pink Container Box */
+/* & : Unified Balance Summary Soft Pink Container Box */
 .o_lb_summary_container{background:#fdf2f7;border-radius:12px;padding:16px;margin-bottom:18px}
 .o_lb_summary_title{font-size:13px;font-weight:700;color:#172033;margin:0 0 14px 0}
 .o_lb_summary_grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px;margin-bottom:16px}
@@ -256,7 +255,7 @@
 .o_lb_projected_row small{display:block;font-size:11px;color:#8490a5}
 .o_lb_projected_val{font-size:16px;font-weight:700;color:#16874d}
 
-/* FR-290: Linked Information Soft Neutral Container Box */
+/* Linked Information Soft Neutral Container Box */
 .o_lb_linked_container{background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:18px}
 .o_lb_linked_row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:12px}
 .o_lb_linked_row span{color:#8490a5}
@@ -264,7 +263,7 @@
 .o_lb_linked_expiring_row{display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-top:4px;border-top:1px solid #edf0f5;font-size:12px}
 .o_lb_expiring_lbl{color:#8490a5;display:flex;align-items:center;gap:6px}
 
-/* FR-291–FR-293: Transaction Timeline */
+/* Transaction Timeline */
 .o_lb_section_title{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
 .o_lb_audit_link{border:0;background:transparent;color:#ed1970;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
 .o_lb_audit_link:hover{text-decoration:underline}
@@ -288,24 +287,24 @@
 .o_lb_tx_req_link:hover{text-decoration:underline}
 .o_lb_tx_bal{color:#8490a5;font-style:normal}
 
-/* FR-294–FR-295: Drawer Footer */
+/* Drawer Footer */
 .o_lb_details_footer{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid #e3e7ee}
 .o_lb_btn_block{width:100%!important;display:flex;justify-content:center;text-align:center;box-sizing:border-box;border-radius:8px;padding:10px;font-size:13px;font-weight:600}
 .o_lb_btn_ghost{background:white;border:1px solid #dce2ec;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
-/* ── FR-296–FR-302: Adjust Leave Balances Modal ──────────────────── */
+/* ── : Adjust Leave Balances Modal ──────────────────── */
 .o_lb_adjust_modal{width:min(760px,94vw);max-height:90vh}
 .o_lb_adjust_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
 .o_lb_adjust_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
 .o_lb_adjust_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
 .o_lb_adjust_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
 
-/* FR-296: Employee Card */
+/* Employee Card */
 .o_lb_adjust_emp_card{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;margin-bottom:16px}
 .o_lb_emp_avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
 .o_lb_emp_name{display:block;font-size:13px;font-weight:700;color:#172033}
 .o_lb_emp_sub{display:block;font-size:11px;color:#8490a5}
 
-/* FR-297: Table Grid */
+/* Table Grid */
 .o_lb_adjust_table_wrap{overflow:hidden;margin-bottom:8px;border:1px solid #edf0f5;border-radius:10px}
 .o_lb_adjust_table{width:100%;border-collapse:collapse}
 .o_lb_adjust_table th{background:#f8fafc;font-size:11px;font-weight:700;text-transform:uppercase;color:#6e7d92;letter-spacing:.02em;padding:9px 6px}
@@ -321,23 +320,23 @@
 .o_lb_adj_control input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .o_lb_adj_control input[type=number]{-moz-appearance:textfield}
 
-/* FR-298: Helper text */
+/* Helper text */
 .o_lb_adjust_hint{font-size:11px;color:#8490a5;margin:8px 0 14px}
 
-/* FR-299: Reason field (100% width) */
+/* Reason field (100% width) */
 .o_lb_reason_wrap{width:100%}
 .o_lb_field_title{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:#172033}
 .o_lb_reason_textarea{width:100%!important;box-sizing:border-box;min-height:70px;border:1px solid #dce2ec;border-radius:8px;padding:9px 12px;font-size:13px;resize:vertical;margin-top:6px;transition:border-color .15s,box-shadow .15s}
 .o_lb_reason_textarea:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
 
-/* FR-300–FR-302: Modal Footer */
+/* Modal Footer */
 .o_lb_adjust_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee}
 .o_lb_adjust_actions{display:flex;align-items:center;gap:10px}
 
-/* ── FR-303–FR-309: Complete Leave History Modal ─────────────────── */
+/* ── : Complete Leave History Modal ─────────────────── */
 .o_lb_hist_modal{width:min(760px,94vw);max-height:90vh;border-radius:16px;overflow:hidden}
 
-/* FR-303: Gradient Header */
+/* Gradient Header */
 .o_lb_hist_header{background:linear-gradient(135deg,#d91b6c 0%,#a822b3 100%);color:white;padding:18px 24px;display:flex;align-items:flex-start;justify-content:space-between}
 .o_lb_hist_emp_info{display:flex;align-items:center;gap:14px}
 .o_lb_hist_avatar{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);object-fit:cover;flex-shrink:0}
@@ -349,14 +348,14 @@
 
 .o_lb_hist_body{padding:20px;overflow-y:auto;flex:1}
 
-/* FR-304: 4 Summary Stat Cards */
+/* 4 Summary Stat Cards */
 .o_lb_hist_stats_row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 .o_lb_hist_stat_card{background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;padding:12px 14px;text-align:center}
 .o_lb_hist_stat_card small{display:block;font-size:10px;font-weight:700;color:#8490a5;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
 .o_lb_hist_stat_card b{display:block;font-size:22px;font-weight:700;line-height:1.1}
 .o_lb_hist_stat_card span{display:block;font-size:11px;color:#8490a5;margin-top:4px}
 
-/* FR-305: Toolbar (Search taking majority length, filter, export in 1 row) */
+/* Toolbar (Search taking majority length, filter, export in 1 row) */
 .o_lb_hist_toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
 .o_lb_hist_search_box{flex:1;display:flex;align-items:center;background:white;border:1px solid #dce2ec;border-radius:8px;padding:0 12px;height:38px;transition:border-color .15s,box-shadow .15s}
 .o_lb_hist_search_box:focus-within{border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
@@ -370,7 +369,7 @@
 .o_lb_hist_export_btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;background:white;border:1px solid #dce2ec;border-radius:8px;font-size:13px;font-weight:600;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
 .o_lb_hist_export_btn:hover{background:#f8fafc;border-color:#b0bbc9}
 
-/* FR-306–FR-308: Leave Request Cards list */
+/* Leave Request Cards list */
 .o_lb_hist_card_list{display:flex;flex-direction:column;gap:12px}
 .o_lb_hist_card{background:white;border:1px solid #e5e9f0;border-left:4px solid #ed1970;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
 .o_lb_hist_card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);border-color:#dce2ec}
@@ -385,10 +384,9 @@
 .o_lb_hist_card_extra,.o_lb_hist_card_notes{font-size:12px;color:#444;margin-top:6px;display:flex;align-items:center;gap:6px}
 .o_lb_hist_card_extra i,.o_lb_hist_card_notes i{color:#8490a5}
 
-/* FR-309: Footer */
+/* Footer */
 .o_lb_hist_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee;background:white}
 .o_lb_hist_count{font-size:12px;color:#8490a5}
-
 
 /* Status badges */
 .o_lb_status{padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;text-transform:capitalize}

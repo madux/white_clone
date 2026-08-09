@@ -1,4 +1,4 @@
-/* Screen 12 — Leave Types Page Stylesheet */
+/* Leave Types Page Stylesheet */
 
 /* Keep the custom form in Bootstrap's normal modal layer. Odoo notifications
    use z-index 1055 and must remain visible above it. */

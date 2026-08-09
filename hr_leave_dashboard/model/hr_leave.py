@@ -10,7 +10,6 @@ import base64
 
 _logger = logging.getLogger(__name__)
 
-
 class HrLeave(models.Model):
     _inherit = "hr.leave"
 
@@ -43,7 +42,7 @@ class HrLeave(models.Model):
         copy=False,
     )
 
-    # Screen 10 — Leave Request Detail Fields (FR-115, FR-136)
+    # Screen 10: Leave Request Detail Fields (FR-115, FR-136)
     request_ref = fields.Char(
         string="Request ID",
         readonly=True,
@@ -331,7 +330,7 @@ class HrLeave(models.Model):
             return {"ok": False, "message": str(error.args[0] if error.args else _("The request could not be cancelled."))}
 
     # ---------------------------------------------------------
-    # KPI CARDS — FR-055 to FR-060
+    # KPI CARDS (FR-055 to FR-060)
     # ---------------------------------------------------------
 
     @api.model
@@ -394,7 +393,7 @@ class HrLeave(models.Model):
         }
 
     # ---------------------------------------------------------
-    # LEAVE TRENDS AREA CHART — FR-061 to FR-063
+    # LEAVE TRENDS AREA CHART (FR-061 to FR-063)
     # ---------------------------------------------------------
 
     @api.model
@@ -448,7 +447,7 @@ class HrLeave(models.Model):
         }
 
     # ---------------------------------------------------------
-    # BY LEAVE TYPE DONUT CHART — FR-064
+    # BY LEAVE TYPE DONUT CHART (FR-064)
     # ---------------------------------------------------------
 
     @api.model
@@ -475,7 +474,7 @@ class HrLeave(models.Model):
         return result
 
     # ---------------------------------------------------------
-    # LEAVE BALANCE BY TYPE — FR-065
+    # LEAVE BALANCE BY TYPE (FR-065)
     # ---------------------------------------------------------
 
     @api.model
@@ -501,7 +500,7 @@ class HrLeave(models.Model):
 
             percent = round((used / allocated) * 100) if allocated else 0
 
-            # FR-065 Threshold colour-coding: green (<60%), amber (60-79%), red (>=80%)
+            # FR-065: Threshold colour-coding: green (<60%), amber (60-79%), red (>=80%)
             if percent < 60:
                 bar_color = "#10b981"  # green
             elif percent < 80:
@@ -520,7 +519,7 @@ class HrLeave(models.Model):
         return result
 
     # ---------------------------------------------------------
-    # APPROVAL OVERVIEW — FR-066
+    # APPROVAL OVERVIEW (FR-066)
     # ---------------------------------------------------------
 
     @api.model
@@ -540,7 +539,7 @@ class HrLeave(models.Model):
         }
 
     # ---------------------------------------------------------
-    # DEPARTMENT COVERAGE HEATMAP — FR-067
+    # DEPARTMENT COVERAGE HEATMAP (FR-067)
     # ---------------------------------------------------------
 
     @api.model
@@ -607,7 +606,7 @@ class HrLeave(models.Model):
         }
 
     # ---------------------------------------------------------
-    # RECENT REQUESTS — FR-068
+    # RECENT REQUESTS (FR-068)
     # ---------------------------------------------------------
 
     @api.model
@@ -650,7 +649,7 @@ class HrLeave(models.Model):
         return result
 
     # ═════════════════════════════════════════════════════════
-    # SCREEN 9 — LEAVE REQUESTS PAGE BACKEND METHODS (FR-073 to FR-113)
+    # SCREEN 9: LEAVE REQUESTS PAGE BACKEND METHODS (FR-073 to FR-113)
     # ═════════════════════════════════════════════════════════
 
     @api.model
@@ -845,7 +844,7 @@ class HrLeave(models.Model):
                 action_name = "final_approval"
             else:
                 action_name = "approve"
-            
+
             # Immutable Audit Log Entry (FR-111)
             leave._create_audit_record(action_name)
             processed += 1
@@ -862,7 +861,7 @@ class HrLeave(models.Model):
             lambda l: l.employee_id.id in emp_ids and l.state in ("confirm", "validate1")
         )
         for leave in leaves:
-            # Post rejection reason to chatter without destroying original leave.notes (LLM Review)
+            # Post rejection reason to chatter without destroying original leave.notes.
             body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                      user=self.env.user.name, reason=reason)
             leave.message_post(body=body)
@@ -1335,7 +1334,7 @@ class HrLeave(models.Model):
 
         days = preview.number_of_days or 0.0
 
-        # Check overlapping existing leave requests for FR-107 (Approved or Pending only per LLM review)
+        # Check overlapping existing leave requests for FR-107.
         conflicts = self.search([
             ("employee_id", "=", employee.id),
             ("state", "in", ("confirm", "validate1", "validate")),
@@ -1430,7 +1429,7 @@ class HrLeave(models.Model):
         return {"created": True, "id": leave.id}
 
     # ---------------------------------------------------------
-    # SCREEN 11 — LEAVE CALENDAR BACKEND API (FR-138 to FR-177)
+    # SCREEN 11: LEAVE CALENDAR BACKEND API (FR-138 to FR-177)
     # ---------------------------------------------------------
 
     @api.model

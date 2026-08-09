@@ -239,6 +239,7 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
     // MONTH VIEW GRID COMPUTATION (FR-146 to FR-151)
+
     // ---------------------------------------------------------
 
     get monthGridWeeks() {
@@ -279,7 +280,8 @@ export class LeaveCalendarPage extends Component {
         return weeks;
     }
 
-    // Preprocessing multi-day continuous blocks for a given week (FR-150)
+    // FR-150: Preprocess multi-day continuous blocks for a given week.
+
     getWeekSegments(weekDays) {
         const weekStartStr = weekDays[0].ymd;
         const weekEndStr = weekDays[6].ymd;
@@ -372,6 +374,7 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
     // YEAR VIEW MINI-CALENDAR GRID GENERATOR (FR-162 to FR-168)
+
     // ---------------------------------------------------------
 
     get yearMonths() {
@@ -433,6 +436,7 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
     // FILTERS SIDE PANEL LOGIC (FR-169 to FR-177)
+
     // ---------------------------------------------------------
 
     cloneFilterObj(f) {
@@ -524,6 +528,7 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
     // DOWNLOAD CONTROL & FILE EXPORT (FR-143)
+
     // ---------------------------------------------------------
 
     toggleDownloadDropdown() {
@@ -582,6 +587,7 @@ export class LeaveCalendarPage extends Component {
 
     // ---------------------------------------------------------
     // SCREEN 10 REUSED MODAL TRIGGER (FR-152)
+
     // ---------------------------------------------------------
 
     openLeaveDetail(id) {

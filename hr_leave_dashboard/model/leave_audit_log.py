@@ -2,7 +2,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, ValidationError
 
-
 class HrLeaveAuditLog(models.Model):
     _name = "hr.leave.audit.log"
     _description = "Leave Audit Log"

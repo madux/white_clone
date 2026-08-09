@@ -4,7 +4,6 @@ from odoo.exceptions import AccessError
 from odoo.http import request
 from werkzeug.utils import redirect
 
-
 class HrLeaveDashboardController(http.Controller):
 
     @http.route('/hr_leave_dashboard/data', type='json', auth='user')

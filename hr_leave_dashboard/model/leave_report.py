@@ -7,7 +7,6 @@ from dateutil.relativedelta import relativedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError
 
-
 class HrLeaveReportService(models.AbstractModel):
     _name = "hr.leave.report.service"
     _description = "CleonHR Leave Reports Service"

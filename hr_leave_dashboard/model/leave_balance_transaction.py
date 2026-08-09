@@ -5,7 +5,6 @@ from datetime import datetime, time, timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
-
 class HrLeaveBalanceTransaction(models.Model):
     _name = "hr.leave.balance.transaction"
     _description = "Immutable Leave Balance Transaction"
@@ -445,7 +444,7 @@ class HrLeaveBalanceTransaction(models.Model):
             },
         }
 
-    # ── FR-252: Bulk page-level actions ──────────────────────────────────────
+    # FR-252: Bulk page-level actions
 
     @api.model
     def bulk_year_end_reset(self):

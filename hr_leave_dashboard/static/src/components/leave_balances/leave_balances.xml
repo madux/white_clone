@@ -4,7 +4,7 @@
     <div class="leaveapp o_lb_page" t-on-click="closeMoreOptions">
       <CalendarSidebar activeMenu="'balances'"/>
       <main class="o_leave_dashboard o_lb_main">
-        <!-- FR-247: Amber expiry alert banner -->
+        <!-- Amber expiry alert banner -->
         <div t-if="state.expiryBanner and state.kpis.expiring_employees" class="o_lb_alert">
           <span><i class="fa fa-clock-o"/> <b><t t-esc="state.kpis.expiring_employees"/> employees</b> have leave expiring within 30 days</span>
           <span>
@@ -21,16 +21,16 @@
           </div>
           <div class="o_lb_tools">
             <input t-model="state.search" placeholder="Search by name or ID..."/>
-            <!-- FR-249: Filters button with active badge -->
+            <!-- Filters button with active badge -->
             <button t-on-click="openFilters" class="o_lb_btn_filters">
               <i class="fa fa-sliders"/> Filters
               <b t-if="activeFilterCount" class="o_lb_filter_badge"><t t-esc="activeFilterCount"/></b>
             </button>
-            <!-- FR-250: Export button -->
+            <!-- Export button -->
             <button t-on-click="exportRows"><i class="fa fa-download"/> Export</button>
-            <!-- FR-251: Allocate Leave button -->
+            <!-- Allocate Leave button -->
             <button class="o_lb_primary" t-on-click="openAllocation">+ Allocate Leave</button>
-            <!-- FR-252: More Options ⋮ button -->
+            <!-- More Options ⋮ button -->
             <div class="o_lb_more_wrap" t-on-click.stop="">
               <button class="o_lb_more_btn" t-on-click="() => state.moreOptionsOpen = !state.moreOptionsOpen" title="More Options">&#8942;</button>
               <div t-if="state.moreOptionsOpen" class="o_lb_more_menu">
@@ -42,7 +42,7 @@
           </div>
         </header>
 
-        <!-- FR-253–258: KPI summary cards -->
+        <!-- 258: KPI summary cards -->
         <section class="o_lb_kpis">
           <t t-foreach="kpiCards" t-as="card" t-key="card.key">
             <article t-att-class="(card.highlight ? 'o_lb_kpi_highlight ' : '') + (card.clickable ? 'o_lb_kpi_clickable' : '')" t-on-click="() => onKpiClick(card)">
@@ -52,9 +52,9 @@
                   <i t-att-class="'fa '+card.icon"/>
                 </span>
               </div>
-              <!-- FR-255: red count text when negative_employees > 0 -->
+              <!-- red count text when negative_employees > 0 -->
               <strong t-att-class="card.redCount ? 'o_lb_kpi_red' : ''" t-esc="card.displayValue"/>
-              <!-- FR-254: green for positive trends, red for negative -->
+              <!-- green for positive trends, red for negative -->
               <span t-if="card.trendLabel" t-att-class="'o_lb_kpi_trend ' + card.trendDirection" t-esc="card.trendLabel"/>
               <span t-else="" class="o_lb_kpi_trend neutral">Current rolling window</span>
             </article>
@@ -76,7 +76,7 @@
                 <th><input type="checkbox" t-on-change="toggleAll"/></th>
                 <th t-on-click="() => sortBy('employee_name')">Employee <i t-att-class="'fa '+sortIcon('employee_name')"/></th>
                 <th t-on-click="() => sortBy('department')">Department</th>
-                <!-- FR-262: Leave Type column header with quick-filter funnel icon -->
+                <!-- Leave Type column header with quick-filter funnel icon -->
                 <th class="o_lb_th_filter" t-on-click.stop="">
                   <div class="o_lb_th_wrap">
                     <span>Leave Type</span>
@@ -154,7 +154,7 @@
         </section>
       </main>
 
-      <!-- FR-249: Filters side panel -->
+      <!-- Filters side panel -->
       <div t-if="state.filtersOpen" class="o_lb_overlay" t-on-click.self="() => state.filtersOpen = false">
         <aside class="o_lb_drawer o_lb_filter_drawer">
           <header>
@@ -201,7 +201,7 @@
         </aside>
       </div>
 
-      <!-- Allocate Leave wizard (3-step) FR-278–FR-286 -->
+      <!-- Allocate Leave wizard (3-step) -->
       <div t-if="state.allocationOpen" class="o_lb_overlay">
         <section class="o_lb_modal o_lb_allocate">
           <!-- Modal header -->
@@ -213,7 +213,7 @@
             <button t-on-click="() => state.allocationOpen = false">&#215;</button>
           </header>
 
-          <!-- FR-278: Progress stepper with numbered circles -->
+          <!-- Progress stepper with numbered circles -->
           <div class="o_lb_alloc_steps">
             <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 1 ? ' active' : '') + (state.allocationStep > 1 ? ' done' : '')">
               <span class="o_lb_step_num">1</span>
@@ -235,7 +235,7 @@
 
             <!-- ── STEP 1: Select Employees ── -->
             <div t-if="state.allocationStep === 1">
-              <!-- FR-279: mode tabs -->
+              <!-- mode tabs -->
               <div class="o_lb_tabs">
                 <button t-att-class="state.selectionMode === 'individual' ? 'active' : ''" t-on-click="() => setSelectionMode('individual')">Individual</button>
                 <button t-att-class="state.selectionMode === 'department' ? 'active' : ''" t-on-click="() => setSelectionMode('department')">Department</button>
@@ -257,17 +257,17 @@
                 </label>
               </div>
 
-              <!-- FR-280: search + FR-281: Select All / Deselect All pink link -->
+              <!-- Search and Select All / Deselect All link -->
               <div class="o_lb_alloc_search_row">
                 <input class="o_lb_alloc_search_input" t-model="state.employeeSearch" placeholder="Search employees..."/>
-                <!-- FR-281: pink toggle link -->
+                <!-- pink toggle link -->
                 <button class="o_lb_select_all_link" t-on-click="selectAllEmployees">
                   <t t-if="state.selectedEmployeeIds.length === filteredEmployees.length and filteredEmployees.length > 0">Deselect All</t>
                   <t t-else="">Select All</t>
                 </button>
               </div>
 
-              <!-- FR-280: employee list -->
+              <!-- employee list -->
               <div class="o_lb_person_list">
                 <label class="o_lb_person" t-foreach="filteredEmployees" t-as="e" t-key="e.employee_id">
                   <input type="checkbox" t-att-checked="state.selectedEmployeeIds.includes(e.employee_id)" t-on-change="() => toggleEmployee(e.employee_id)"/>
@@ -279,14 +279,14 @@
                 </label>
               </div>
 
-              <!-- FR-282: teal selection counter bar -->
+              <!-- teal selection counter bar -->
               <div class="o_lb_selection_bar">
                 <i class="fa fa-users"/>
                 <span><b><t t-esc="state.selectedEmployeeIds.length"/></b> employee(s) selected</span>
               </div>
             </div>
 
-            <!-- ── STEP 2: Allocation Details ── FR-283 -->
+            <!-- ── STEP 2: Allocation Details ── -->
             <div t-elif="state.allocationStep === 2" class="o_lb_form o_lb_alloc_form">
               <h4 class="o_lb_alloc_section_title">Allocation Details</h4>
 
@@ -319,7 +319,7 @@
               </label>
             </div>
 
-            <!-- ── STEP 3: Review & Apply ── FR-285 -->
+            <!-- ── STEP 3: Review & Apply ── -->
             <div t-else="" class="o_lb_review">
               <h4>Review Allocation</h4>
               <div class="o_lb_review_card">
@@ -373,10 +373,10 @@
         </section>
       </div>
 
-      <!-- Balance Detail drawer (FR-287–FR-295) -->
+      <!-- Balance Detail drawer -->
       <div t-if="state.detailsOpen" class="o_lb_overlay" t-on-click.self="() => state.detailsOpen=false">
         <aside class="o_lb_drawer o_lb_details">
-          <!-- FR-287: Header with Title 'Balance Details' and sub-label 'Employee Name • Leave Type' -->
+          <!-- Header with Title 'Balance Details' and sub-label 'Employee Name • Leave Type' -->
           <header class="o_lb_details_header">
             <div>
               <h3>Balance Details</h3>
@@ -386,7 +386,7 @@
           </header>
 
           <div class="o_lb_drawer_body">
-            <!-- FR-288 & FR-289: Unified Balance Summary Soft Pink Box (2x2 grid + Projected Balance row) -->
+            <!-- & : Unified Balance Summary Soft Pink Box (2x2 grid + Projected Balance row) -->
             <div class="o_lb_summary_container">
               <h4 class="o_lb_summary_title">Balance Summary</h4>
               <div class="o_lb_summary_grid">
@@ -416,8 +416,7 @@
               </div>
             </div>
 
-
-            <!-- FR-290: Linked Information inside container box matching design screenshot 2 -->
+            <!-- Linked Information inside container box matching design screenshot 2 -->
             <h4 class="o_lb_drawer_subtitle">Linked Information</h4>
             <div class="o_lb_linked_container">
               <div class="o_lb_linked_row">
@@ -445,7 +444,7 @@
               </div>
             </div>
 
-            <!-- FR-291 to FR-293: Transaction Timeline -->
+            <!-- Transaction Timeline -->
             <div class="o_lb_section_title">
               <h4 class="o_lb_drawer_subtitle">Transaction Timeline</h4>
               <button class="o_lb_audit_link" t-on-click="openBalanceAudit">
@@ -477,7 +476,7 @@
 
           </div>
 
-          <!-- FR-294 & FR-295: Drawer Footer -->
+          <!-- & : Drawer Footer -->
           <footer class="o_lb_details_footer">
             <button class="o_lb_primary o_lb_btn_block" t-on-click="() => openAdjust(state.details)">Adjust Balance</button>
             <button class="o_lb_btn_ghost o_lb_btn_block" t-on-click="() => openHistory(state.details)">View Full History</button>
@@ -485,11 +484,10 @@
         </aside>
       </div>
 
-
-      <!-- FR-296–FR-302: Balance Adjustment modal -->
+      <!-- Balance Adjustment modal -->
       <div t-if="state.adjustmentOpen" class="o_lb_overlay">
         <section class="o_lb_modal o_lb_adjust_modal">
-          <!-- FR-296: Header with Title, Subtitle and Employee Avatar/Info Card -->
+          <!-- Header with Title, Subtitle and Employee Avatar/Info Card -->
           <header class="o_lb_adjust_header">
             <div>
               <h3>Adjust Leave Balances</h3>
@@ -499,7 +497,7 @@
           </header>
 
           <div class="o_lb_modal_body">
-            <!-- FR-296: Employee Header Card -->
+            <!-- Employee Header Card -->
             <div class="o_lb_adjust_emp_card">
               <img t-att-src="state.adjustmentEmployee.avatar_url" class="o_lb_emp_avatar"/>
               <div>
@@ -508,7 +506,7 @@
               </div>
             </div>
 
-            <!-- FR-297: Multi-Leave-Type Adjustment Grid -->
+            <!-- Multi-Leave-Type Adjustment Grid -->
             <div class="o_lb_adjust_table_wrap">
               <table class="o_lb_adjust_table">
                 <thead>
@@ -547,10 +545,10 @@
               </table>
             </div>
 
-            <!-- FR-298: Positive/Negative Helper Text -->
+            <!-- Positive/Negative Helper Text -->
             <p class="o_lb_adjust_hint">Enter a positive number to add days, or a negative number to subtract days.</p>
 
-            <!-- FR-299: Mandatory Reason Field (100% width, inline label header) -->
+            <!-- Mandatory Reason Field (100% width, inline label header) -->
             <div class="o_lb_reason_wrap">
               <label class="o_lb_field_label">
                 <span class="o_lb_field_title">
@@ -561,7 +559,7 @@
             </div>
           </div>
 
-          <!-- FR-300–FR-302: Modal Footer -->
+          <!-- Modal Footer -->
           <footer class="o_lb_adjust_footer">
             <div class="o_lb_adjust_status">
               <span t-if="!hasAdjustments" class="text-muted font-italic">No adjustments entered yet</span>
@@ -574,12 +572,11 @@
         </section>
       </div>
 
-
-      <!-- FR-303–FR-309: Complete Leave History modal -->
+      <!-- Complete Leave History modal -->
       <div t-if="state.historyOpen" class="o_lb_overlay">
         <section class="o_lb_modal o_lb_hist_modal">
 
-          <!-- FR-303: Gradient Header -->
+          <!-- Gradient Header -->
           <header class="o_lb_hist_header">
             <div class="o_lb_hist_emp_info">
               <img t-att-src="state.history.employee.avatar_url" class="o_lb_hist_avatar"/>
@@ -594,7 +591,7 @@
 
           <div class="o_lb_modal_body o_lb_hist_body">
 
-            <!-- FR-304: 4 Summary Stat Cards -->
+            <!-- 4 Summary Stat Cards -->
             <div class="o_lb_hist_stats_row">
               <div class="o_lb_hist_stat_card">
                 <small>TOTAL APPROVED</small>
@@ -618,7 +615,7 @@
               </div>
             </div>
 
-            <!-- FR-305: Toolbar (Search field taking majority length + filter + export in 1 row) -->
+            <!-- Toolbar (Search field taking majority length + filter + export in 1 row) -->
             <div class="o_lb_hist_toolbar">
               <!-- Search box with magnifying glass icon inside -->
               <div class="o_lb_hist_search_box">
@@ -644,7 +641,7 @@
               </button>
             </div>
 
-            <!-- FR-306–FR-308: Leave Request Cards list -->
+            <!-- Leave Request Cards list -->
             <div class="o_lb_hist_card_list">
               <article class="o_lb_hist_card" t-foreach="filteredHistory" t-as="req" t-key="req.id"
                        t-att-style="'border-left-color:' + (req.color_hex || '#ed1970')"
@@ -676,13 +673,13 @@
                   </div>
                 </div>
 
-                <!-- FR-307: Approved By (if approved) -->
+                <!-- Approved By (if approved) -->
                 <div t-if="req.approved_by" class="o_lb_hist_card_extra">
                   <small class="text-muted"><i class="fa fa-user-o"/> Approved By: </small>
                   <b><t t-esc="req.approved_by"/><t t-if="req.approved_on"> · <t t-esc="req.approved_on"/></t></b>
                 </div>
 
-                <!-- FR-308: Notes field (if notes exist) -->
+                <!-- Notes field (if notes exist) -->
                 <div t-if="req.reason" class="o_lb_hist_card_notes">
                   <small class="text-muted"><i class="fa fa-file-text-o"/> Notes: </small>
                   <em t-esc="req.reason"/>
@@ -695,7 +692,7 @@
 
           </div>
 
-          <!-- FR-309: Footer bar with count & Close button -->
+          <!-- Footer bar with count & Close button -->
           <footer class="o_lb_hist_footer">
             <span class="o_lb_hist_count">Showing <t t-esc="filteredHistory.length"/> of <t t-esc="state.history.requests.length"/> leave requests</span>
             <button class="o_lb_btn_ghost" t-on-click="() => state.historyOpen = false">Close</button>
@@ -703,7 +700,6 @@
 
         </section>
       </div>
-
 
       <LeaveRequestDetailModal t-if="state.requestDetailId" requestId="state.requestDetailId" close.bind="() => state.requestDetailId=null"/>
     </div>

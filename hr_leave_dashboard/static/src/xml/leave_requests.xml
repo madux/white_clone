@@ -11,7 +11,7 @@
                  ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
 
-                <!-- FR-073 & FR-074 Header -->
+                <!-- FR-073 and FR-074: Header -->
                 <div class="cleon-dash-header">
                     <div class="cleon-dash-header-left">
                         <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
@@ -28,7 +28,7 @@
                         </div>
                     </div>
                     <div class="cleon-dash-header-right">
-                        <!-- FR-101: Create Leave Request Button -->
+                        <!-- Create Leave Request Button -->
                         <button type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
                             <i class="fa fa-plus me-1"/> Create Leave Request
                         </button>
@@ -322,7 +322,7 @@
                 </div>
                 <div class="cleon-create-body">
 
-                    <!-- Searchable Employee Picker (FR-102) -->
+                    <!-- Searchable Employee Picker -->
                     <div class="mb-3 admin-employee-picker">
                         <label class="form-label font-weight-bold">Employee *</label>
 
@@ -379,7 +379,7 @@
                         </t>
                     </div>
 
-                    <!-- Leave Type Select (FR-103) -->
+                    <!-- Leave Type Select -->
                     <div class="mb-3" t-if="state.createForm.employee_id">
                         <label class="form-label font-weight-bold">Leave Type *</label>
                         <select class="form-select" t-model="state.createForm.leave_type_id" t-on-change="onDateOrTypeChange">
@@ -397,7 +397,7 @@
                         </t>
                     </div>
 
-                    <!-- Date From / To (FR-104) -->
+                    <!-- Date From / To -->
                     <div class="row g-2 mb-3" t-if="state.createForm.leave_type_id">
                         <div class="col-6">
                             <label class="form-label font-weight-bold">Start Date *</label>
@@ -409,14 +409,14 @@
                         </div>
                     </div>
 
-                    <!-- Duration Preview (FR-104) -->
+                    <!-- Duration Preview -->
                     <t t-if="state.createPreview">
                         <div class="alert alert-info py-2 px-3 mb-3 font-weight-bold">
                             Calculated Duration: <t t-esc="state.createPreview.duration"/> working day(s)
                         </div>
                     </t>
 
-                    <!-- Half Day Option (FR-104) -->
+                    <!-- Half Day Option -->
                     <div class="form-check mb-3" t-if="state.createForm.leave_type_id">
                         <input type="checkbox" class="form-check-input" id="half_day_chk" t-model="state.createForm.half_day" t-on-change="onDateOrTypeChange"/>
                         <label class="form-check-label" for="half_day_chk">Half-day Request</label>
@@ -428,7 +428,7 @@
                         </t>
                     </div>
 
-                    <!-- Overlap Warning & Override (FR-107) -->
+                    <!-- Overlap Warning & Override -->
                     <t t-if="state.showOverlapWarning">
                         <div class="alert alert-warning mb-3">
                             <h6 class="alert-heading mb-1"><i class="fa fa-exclamation-triangle me-1"/> Overlapping Request Warning</h6>
@@ -440,7 +440,7 @@
                         </div>
                     </t>
 
-                    <!-- Admin Note (min 10 chars - FR-105) -->
+                    <!-- Admin Note (min 10 chars -->
                     <div class="mb-3" t-if="state.createForm.leave_type_id">
                         <label class="form-label font-weight-bold">Admin Note / Reason * (min 10 characters)</label>
                         <textarea class="form-control" rows="3"

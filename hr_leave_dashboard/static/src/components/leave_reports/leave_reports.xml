@@ -48,11 +48,11 @@
             </div>
           </div>
 
-          <!-- FR-316 to FR-320: Global Filter Bar (In a single horizontal row) -->
+          <!-- Global Filter Bar -->
           <div class="o_lr_filters_row">
             <span class="o_lr_filter_label"><i class="fa fa-filter"/> Filters:</span>
             
-            <!-- Date Range Filter (FR-317) -->
+            <!-- Date Range Filter -->
             <select class="o_lr_filter_select" t-model="state.filters.date_range" t-on-change="refresh">
               <option value="this_week">This Week</option>
               <option value="this_month">This Month</option>
@@ -62,13 +62,13 @@
               <option value="custom">Custom Range</option>
             </select>
 
-            <!-- Department Filter (FR-318) -->
+            <!-- Department Filter -->
             <select class="o_lr_filter_select" t-model="state.filters.department_id" t-on-change="refresh">
               <option value="">All Departments</option>
               <option t-foreach="state.data.departments" t-as="department" t-key="department.id" t-att-value="department.id" t-esc="department.name"/>
             </select>
 
-            <!-- Leave Type Filter (FR-319) -->
+            <!-- Leave Type Filter -->
             <select class="o_lr_filter_select" t-model="state.filters.leave_type_id" t-on-change="refresh">
               <option value="">All Leave Types</option>
               <option t-foreach="state.data.leave_types" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/>
@@ -83,7 +83,7 @@
             </t>
           </div>
 
-          <!-- FR-321: Five Report Tabs Navigation -->
+          <!-- Five Report Tabs Navigation -->
           <nav class="o_lr_tabs">
             <button t-foreach="tabs" t-as="tab" t-key="tab.key"
                     t-att-class="state.activeTab === tab.key ? 'active':''"
@@ -101,10 +101,10 @@
             <i class="fa fa-spinner fa-spin"/> Loading report data...
           </div>
 
-          <!-- Tab 1: Overview (FR-322 to FR-325) -->
+          <!-- Tab 1: Overview -->
           <div t-elif="state.activeTab === 'overview'" class="o_lr_overview">
             
-            <!-- FR-322: Overview 4 KPI Summary Tiles -->
+            <!-- Overview 4 KPI Summary Tiles -->
             <div class="o_lr_kpis">
               <article class="o_lr_kpi_card">
                 <div>
@@ -143,7 +143,7 @@
               </article>
             </div>
 
-            <!-- Charts Row (FR-323 & FR-324) -->
+            <!-- Charts Row  & -->
             <div class="o_lr_charts">
               <article class="o_lr_chart_card">
                 <h4>Leave Distribution by Type</h4>
@@ -159,7 +159,7 @@
               </article>
             </div>
 
-            <!-- FR-325: Request Status Breakdown Tiles -->
+            <!-- Request Status Breakdown Tiles -->
             <article class="o_lr_status_breakdown">
               <h4>Request Status Breakdown</h4>
               <div class="o_lr_status_grid">

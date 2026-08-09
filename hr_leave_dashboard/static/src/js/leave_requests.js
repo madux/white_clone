@@ -146,7 +146,8 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  EXPORT (FR-081)
+    // EXPORT (FR-081)
+
     // ═══════════════════════════════════════════════════════════════
 
     exportRequests() {
@@ -182,7 +183,8 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  SELECTION & BULK ACTIONS (FR-090 to FR-100)
+    // SELECTION & BULK ACTIONS (FR-090 to FR-100)
+
     // ═══════════════════════════════════════════════════════════════
 
     toggleRow(id) {
@@ -263,7 +265,8 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  REVIEW REQUEST DETAIL MODAL (FR-114 to FR-137)
+    // REVIEW REQUEST DETAIL MODAL (FR-114 to FR-137)
+
     // ═══════════════════════════════════════════════════════════════
 
     reviewRequest(id) {
@@ -288,7 +291,8 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  PAGINATION (FR-093 to FR-096)
+    // PAGINATION (FR-093 to FR-096)
+
     // ═══════════════════════════════════════════════════════════════
 
     async goToPage(page) {
@@ -314,7 +318,8 @@ export class LeaveRequestsPage extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  ADMIN CREATE LEAVE REQUEST MODAL (FR-101 to FR-112)
+    // ADMIN CREATE LEAVE REQUEST MODAL (FR-101 to FR-112)
+
     // ═══════════════════════════════════════════════════════════════
 
     async openCreateModal() {

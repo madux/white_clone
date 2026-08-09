@@ -6,7 +6,7 @@
 
         <div class="leave-detail-modal-box" role="dialog" aria-modal="true">
 
-            <!-- Modal Header (FR-115, FR-118) -->
+            <!-- Modal Header -->
             <div class="leave-detail-modal-header">
                 <div class="leave-detail-title-wrap">
                     <div class="leave-detail-title-icon">
@@ -35,7 +35,7 @@
 
                 <t t-elif="state.detail">
 
-                    <!-- Status & Submission Row (FR-116, FR-117) -->
+                    <!-- Status and Submission Row -->
                     <div class="leave-detail-status-row">
                         <span t-att-class="'leave-detail-status-pill ' + state.detail.status">
                             <t t-if="state.detail.status === 'pending'">
@@ -59,7 +59,7 @@
                         </t>
                     </div>
 
-                    <!-- Employee Identity Banner & 2x2 Grid (FR-119, FR-120) -->
+                    <!-- Employee Identity Banner and 2x2 Grid -->
                     <div class="leave-detail-section mb-4">
                         <div class="employee-identity-banner">
                             <div class="employee-avatar-circle">
@@ -94,7 +94,7 @@
                         </div>
                     </div>
 
-                    <!-- Leave Details Section (FR-121, FR-122) -->
+                    <!-- Leave Details Section -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-title">Leave Details</div>
                         <div class="leave-details-grid">
@@ -127,7 +127,7 @@
                         </div>
                     </div>
 
-                    <!-- Reason Section (FR-123, FR-124) -->
+                    <!-- Reason Section -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-title">Reason</div>
                         <div class="reason-content-box">
@@ -146,7 +146,7 @@
                         </div>
                     </div>
 
-                    <!-- Collapsible Balance Impact Section (FR-125, FR-126) -->
+                    <!-- Collapsible Balance Impact Section -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-header-toggle" t-on-click="toggleBalanceImpact">
                             <div class="detail-section-title mb-0">
@@ -175,7 +175,7 @@
                         </t>
                     </div>
 
-                    <!-- Team Coverage Impact Section (FR-127, FR-128) -->
+                    <!-- Team Coverage Impact Section -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-title">Team Coverage Impact</div>
                         <div class="coverage-impact-box">
@@ -200,7 +200,7 @@
                         </div>
                     </div>
 
-                    <!-- Approval Workflow Timeline (FR-129 to FR-131) -->
+                    <!-- Approval Workflow Timeline -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-title">Approval Workflow</div>
                         <div class="workflow-timeline">
@@ -232,7 +232,7 @@
                         </div>
                     </div>
 
-                    <!-- Request History Section (FR-132) -->
+                    <!-- Request History Section -->
                     <div class="leave-detail-section">
                         <div class="detail-section-title">Request History</div>
                         <t t-if="state.detail.history and state.detail.history.length">
@@ -253,7 +253,7 @@
                 </t>
             </div>
 
-            <!-- Action Buttons Footer (FR-133 to FR-137) -->
+            <!-- Action Buttons Footer -->
             <t t-if="state.detail">
                 <div class="leave-detail-modal-footer">
                     <!-- Pending Actions -->
@@ -282,7 +282,7 @@
                 </div>
             </t>
 
-            <!-- Nested Rejection Reason Modal (FR-134) -->
+            <!-- Nested Rejection Reason Modal -->
             <t t-if="state.showRejectModal">
                 <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeReject"/>
                 <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
@@ -306,7 +306,7 @@
                 </div>
             </t>
 
-            <!-- Nested Cancellation Reason Modal (FR-136) -->
+            <!-- Nested Cancellation Reason Modal -->
             <t t-if="state.showCancelModal">
                 <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeCancel"/>
                 <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">

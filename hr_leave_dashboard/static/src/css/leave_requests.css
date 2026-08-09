@@ -29,7 +29,7 @@
     box-shadow: 0 6px 16px rgba(233, 30, 140, 0.4) !important;
 }
 
-/* Status Summary Cards (FR-075 to FR-077) */
+/* Status Summary Cards  to */
 .leave-request-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -80,7 +80,7 @@
     background: #fffdfd;
 }
 
-/* Toolbar & Filters (FR-078 to FR-081) */
+/* Toolbar & Filters  to */
 .leave-request-toolbar {
     display: grid;
     grid-template-columns: minmax(280px, 1fr) 160px 160px auto;
@@ -158,7 +158,7 @@
     color: #0f172a;
 }
 
-/* Floating Bulk Actions Bar (FR-097 to FR-100) */
+/* Floating Bulk Actions Bar  to */
 .bulk-actions-bar {
     background: #1e293b;
     color: #ffffff;
@@ -188,7 +188,7 @@
     color: #ffffff !important;
 }
 
-/* Data Table (FR-083 to FR-092) */
+/* Data Table  to */
 .table-panel {
     padding: 0 !important;
     overflow: hidden;
@@ -304,7 +304,7 @@
     color: #be185d;
 }
 
-/* Pagination (FR-093 to FR-096) */
+/* Pagination  to */
 .request-pagination {
     display: flex;
     align-items: center;
@@ -440,7 +440,7 @@
     padding-top: 16px;
 }
 
-/* Searchable Employee Combobox & Card (FR-102) */
+/* Searchable Employee Combobox & Card */
 .admin-employee-picker {
     position: relative;
 }

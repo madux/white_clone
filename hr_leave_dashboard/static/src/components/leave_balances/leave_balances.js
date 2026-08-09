@@ -38,8 +38,10 @@ export class LeaveBalancesPage extends Component {
             adjustmentOpen: false, adjustmentEmployee: null, adjustments: [], adjustmentReason: "",
             historyOpen: false, history: null, historySearch: "", historyStatus: "all",
             requestDetailId: null,
-            ltFilterOpen: false,   // FR-262: Leave Type column quick-filter dropdown open
-            ltQuickFilter: null,   // FR-262: leave_type_id of the active quick-filter (null = all)
+            ltFilterOpen: false,   // Leave Type column quick-filter dropdown open
+
+            ltQuickFilter: null,   // leave_type_id of the active quick-filter (null = all)
+
         });
         onWillStart(() => this.refreshPage());
     }
@@ -68,7 +70,8 @@ export class LeaveBalancesPage extends Component {
         let rows = term
             ? this.state.rows.filter(r => r.employee_name.toLowerCase().includes(term) || r.employee_code.toLowerCase().includes(term))
             : this.state.rows;
-        // FR-262: apply Leave Type column quick-filter if active
+        // apply Leave Type column quick-filter if active
+
         if (this.state.ltQuickFilter !== null) {
             rows = rows.filter(r => r.leave_type_id === this.state.ltQuickFilter);
         }
@@ -94,7 +97,8 @@ export class LeaveBalancesPage extends Component {
     get kpiCards() {
         const kpis = this.state.kpis;
         const format = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-        // FR-254: green for positive trends, red for negative trends
+        // green for positive trends, red for negative trends
+
         const trend = (value, suffix = "") => {
             if (value === undefined || value === null) return {};
             return {
@@ -108,7 +112,8 @@ export class LeaveBalancesPage extends Component {
             { key: "allocated", label: "Total Leave Days Allocated", icon: "fa-calendar-check-o", color: "rose", displayValue: format(kpis.allocated), ...trend(kpis.allocated_trend_pct, "%") },
             { key: "used", label: "Total Leave Days Used", icon: "fa-check-circle", color: "green", displayValue: format(kpis.used), ...trend(kpis.used_trend_pct, "%") },
             { key: "remaining", label: "Total Remaining", icon: "fa-balance-scale", color: "amber", displayValue: format(kpis.remaining), highlight: true, ...trend(kpis.remaining_trend_pct, "%") },
-            // FR-255: orange/amber alert icon, count in red when > 0
+            // orange/amber alert icon, count in red when > 0
+
             { key: "negative_employees", label: "Employees with Negative Balance", icon: "fa-exclamation-triangle", color: "orange", displayValue: format(negCount), redCount: negCount > 0, ...trend(kpis.negative_employees_trend) },
             { key: "expiring_employees", label: "Employees with Expiring Leave", icon: "fa-clock-o", color: "amber", displayValue: format(kpis.expiring_employees), clickable: true },
         ];
@@ -159,7 +164,8 @@ export class LeaveBalancesPage extends Component {
     }
     sortIcon(field) { return this.state.sort.field === field ? (this.state.sort.direction === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort"; }
 
-    // FR-262: Leave Type column quick-filter
+    // Leave Type column quick-filter
+
     toggleLtFilter(ev) {
         ev.stopPropagation();
         this.state.ltFilterOpen = !this.state.ltFilterOpen;
@@ -273,7 +279,8 @@ export class LeaveBalancesPage extends Component {
         const a = document.createElement("a"); a.href = url; a.download = `${this.state.history.employee.code}_leave_history.csv`; a.click(); URL.revokeObjectURL(url);
     }
 
-    // FR-252 — More Options bulk/page-level actions
+    // More Options bulk/page-level actions
+
     toggleMoreOptions() { this.state.moreOptionsOpen = !this.state.moreOptionsOpen; }
     closeMoreOptions() {
         this.state.moreOptionsOpen = false;
@@ -300,6 +307,5 @@ export class LeaveBalancesPage extends Component {
         this.state.importOpen = true;
     }
 }
-
 
 registry.category("actions").add("hr_leave_dashboard.LeaveBalancesPage", LeaveBalancesPage);

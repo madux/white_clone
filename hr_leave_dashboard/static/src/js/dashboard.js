@@ -49,7 +49,8 @@ export class HrLeaveDashboard extends Component {
             setupState: "not_started",
             setupStep: 0,        // highest step reached (from DB)
             reviewMode: false,   // read-only review of completed setup
-            // ── Completion Screen & Checklist (Screen 7)
+            // Completion Screen & Checklist (Screen 7)
+
             showCompletionScreen: false,
             checklist: {
                 check_leave_type: false,
@@ -128,7 +129,7 @@ export class HrLeaveDashboard extends Component {
     //  DASHBOARD CONTROLS & HELPERS
     // ═══════════════════════════════════════════════════════════════
 
-    /** FR-062: Switch trend month range (6 or 12) and re-fetch data. */
+    /* FR-062: Switch trend month range (6 or 12) and re-fetch data. */
     setTrendMonths(months) {
         if (months !== 6 && months !== 12 || months === this.state.months) return;
         this.state.months = months;
@@ -139,7 +140,7 @@ export class HrLeaveDashboard extends Component {
         window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
     }
 
-    /** FR-072: Admin vs Employee View toggle. */
+    /* FR-072: Admin vs Employee View toggle. */
     setViewMode(mode) {
         if (!["admin", "employee"].includes(mode)) return;
         this.state.viewMode = mode;
@@ -148,7 +149,7 @@ export class HrLeaveDashboard extends Component {
         }
     }
 
-    /** FR-067: Coverage percentage color class helper. */
+    /* FR-067: Coverage percentage color class helper. */
     getCoverageClass(value) {
         if (value === null || value === undefined) return "";
         if (value >= 85) return "coverage-good";
@@ -156,7 +157,7 @@ export class HrLeaveDashboard extends Component {
         return "coverage-low";
     }
 
-    /** FR-068: Employee initials generator. */
+    /* FR-068: Employee initials generator. */
     getInitials(name) {
         return (name || "")
             .split(/\s+/)
@@ -171,7 +172,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    //  CENTRAL RE-OPENING METHOD (FR-054 Fix)
+    // CENTRAL RE-OPENING METHOD
     // ═══════════════════════════════════════════════════════════════
 
     openSetupExperience() {

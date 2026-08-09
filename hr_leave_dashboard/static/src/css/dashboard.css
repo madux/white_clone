@@ -3,7 +3,6 @@
    Covers: Dashboard layout + Welcome Modal (Screen 1)
    ══════════════════════════════════════════════════════════════ */
 
-
 /* ══ LAYOUT ═════════════════════════════════════════════════ */
 
 .leaveapp {
@@ -25,7 +24,7 @@
     scrollbar-width: none;
 }
 
-/* Screen 19 — shared role-aware Leave navigation */
+/* shared role-aware Leave navigation */
 .leavesidebar .o_cc_sidebar_header{height:64px;flex:0 0 64px;display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid #e7ebf2;background:#fff}.leavesidebar .o_cc_header_dot{width:7px;height:7px;border-radius:50%;background:#ed277c}.leavesidebar .o_cc_header_title{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.leavesidebar .o_cc_collapse_btn{margin-left:auto;border:1px solid #dce2ec;background:#fff;color:#627087;border-radius:7px;width:30px;height:30px}.leavesidebar .o_cc_nav{padding:12px 9px;display:flex;flex-direction:column;gap:3px}.leavesidebar .o_cc_nav ul{list-style:none;margin:0;padding:0}.leavesidebar .o_cc_nav_item{min-height:42px;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:#33425c;text-decoration:none;cursor:pointer;white-space:nowrap}.leavesidebar .o_cc_nav_item:hover,.leavesidebar .o_cc_nav_active{background:#fde6f1;color:#eb1d70}.leavesidebar .o_cc_nav_icon{width:23px;height:23px;border-radius:6px;background:#f0f2f6;display:grid;place-items:center;flex:0 0 23px}.leavesidebar .o_cc_nav_active .o_cc_nav_icon{background:#f9cfe1}.leavesidebar .o_cc_nav_arrow{margin-left:auto;color:#a3adbc;font-size:10px}.leavesidebar .sidebar-section-label{display:flex;justify-content:space-between;margin:17px 7px 7px;color:#99a4b5;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.leavesidebar .o_cc_section_toggle{cursor:pointer}.leavesidebar .o_cc_pending_badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ed1c61;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700}.leavesidebar .o_cc_sidebar_footer{margin-top:auto;padding:12px 9px 18px;border-top:1px solid #e7ebf2;background:#fff}.leavesidebar .o_cc_sidebar_footer button{width:100%;height:40px;display:flex;align-items:center;gap:10px;border:0;border-radius:8px;background:#fff;color:#33425c;text-align:left}.leavesidebar .o_cc_sidebar_footer button:hover{background:#fdebf3;color:#e91e70}.leavesidebar .o_cc_sidebar_footer button i{width:22px}.leavesidebar .o_cc_sidebar_footer button em{margin-left:auto;background:#fde2ed;color:#e91e70;border-radius:4px;padding:2px 5px;font-size:9px;font-style:normal}.leavesidebar.is-collapsed{width:68px}.leavesidebar.is-collapsed .o_cc_header_dot,.leavesidebar.is-collapsed .o_cc_header_title,.leavesidebar.is-collapsed .o_cc_nav_label,.leavesidebar.is-collapsed .o_cc_nav_arrow,.leavesidebar.is-collapsed .sidebar-section-label,.leavesidebar.is-collapsed .o_cc_pending_badge,.leavesidebar.is-collapsed .o_cc_sidebar_footer span,.leavesidebar.is-collapsed .o_cc_sidebar_footer em{display:none}.leavesidebar.is-collapsed .o_cc_collapse_btn{margin:auto}.leavesidebar.is-collapsed .o_cc_sidebar_header{padding:0}.leavesidebar.is-collapsed .o_cc_nav_item{justify-content:center;padding:8px}.leavesidebar.is-collapsed .o_cc_sidebar_footer button{justify-content:center}.o_leave_sidebar_collapsed .o_leave_dashboard,.o_leave_sidebar_collapsed .o_timeoff_calendar{margin-left:68px!important}.o_leave_sidebar_collapsed .o_ed_main,.o_leave_sidebar_collapsed .o_mlr_page>main{margin-left:68px!important}
 
 .o_ed_main,.o_mlr_page>main{margin-left:230px;transition:margin-left .3s}
@@ -46,8 +45,7 @@
     overflow: auto !important;
 }
 
-
-/* ══ DASHBOARD HEADER (with re-open icons — FR-008) ══════════ */
+/* ══ DASHBOARD HEADER (with re-open icons —  ══════════ */
 
 .cleon-dash-header {
     display: flex;
@@ -78,7 +76,7 @@
     gap: 8px;
 }
 
-/* FR-008: Wizard (✦) and Help (?) icon buttons */
+/* Wizard (✦) and Help (?) icon buttons */
 .cleon-header-icon-btn {
     width: 34px;
     height: 34px;
@@ -118,8 +116,7 @@
     transform: scale(1.08);
 }
 
-
-/* ══ WELCOME MODAL — BACKDROP (FR-009) ══════════════════════ */
+/* ══ WELCOME MODAL — BACKDROP  ══════════════════════ */
 
 .cleon-welcome-backdrop {
     position: fixed;
@@ -130,7 +127,6 @@
     z-index: 1050;
     animation: cleon-fade-in 0.25s ease;
 }
-
 
 /* ══ WELCOME MODAL — CARD ════════════════════════════════════ */
 
@@ -151,7 +147,7 @@
     animation: cleon-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* FR-006: X close button */
+/* X close button */
 .cleon-welcome-close {
     position: absolute;
     top: 14px;
@@ -176,8 +172,7 @@
     transform: scale(1.1);
 }
 
-
-/* ══ WELCOME MODAL — HEADER (FR-002) ════════════════════════ */
+/* ══ WELCOME MODAL — HEADER  ════════════════════════ */
 
 .cleon-welcome-header {
     display: flex;
@@ -216,8 +211,7 @@
     line-height: 1.6;
 }
 
-
-/* ══ WELCOME MODAL — FEATURE GRID (FR-003) ══════════════════ */
+/* ══ WELCOME MODAL — FEATURE GRID  ══════════════════ */
 
 .cleon-welcome-features {
     background: #fafbfc;
@@ -288,8 +282,7 @@
     line-height: 1.2;
 }
 
-
-/* ══ WELCOME MODAL — ACTION BUTTONS (FR-004 + FR-005) ═══════ */
+/* ══ WELCOME MODAL — ACTION BUTTONS  +  ═══════ */
 
 .cleon-welcome-actions {
     display: flex;
@@ -297,7 +290,7 @@
     margin-bottom: 12px;
 }
 
-/* FR-005: Secondary "Explore on my own" */
+/* Secondary "Explore on my own" */
 .cleon-btn-secondary {
     flex: 1;
     padding: 10px 16px;
@@ -318,7 +311,7 @@
     background: #fff5fa;
 }
 
-/* FR-004: Primary "Start Setup Guide (5 steps)" */
+/* Primary "Start Setup Guide (5 steps)" */
 .cleon-btn-primary {
     flex: 2;
     padding: 10px 20px;
@@ -347,15 +340,13 @@
     transform: translateY(0);
 }
 
-
-/* FR-007: Time estimate hint label */
+/* Time estimate hint label */
 .cleon-welcome-hint {
     margin: 0;
     text-align: center;
     font-size: 11.5px;
     color: #b0b7c3;
 }
-
 
 /* ══ ANIMATIONS ══════════════════════════════════════════════ */
 
@@ -374,7 +365,6 @@
         transform: translate(-50%, -50%) scale(1);
     }
 }
-
 
 /* ══ KPI ROW ═════════════════════════════════════════════════ */
 
@@ -423,7 +413,6 @@
 
 .kpi-value { font-size: 26px; font-weight: 700; color: #2b2d33; }
 .kpi-sub   { font-size: 12px; color: #9aa0ac; margin-top: 2px; }
-
 
 /* ══ PANELS + GRIDS ══════════════════════════════════════════ */
 
@@ -474,7 +463,6 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-
 /* ══ STAT ROW ════════════════════════════════════════════════ */
 
 .stat-row {
@@ -492,7 +480,6 @@
 .stat-value-red   { color: #ef4444; font-size: 20px; font-weight: 700; }
 .stat-label      { font-size: 11px; color: #9aa0ac; margin-top: 2px; }
 
-
 /* ══ DONUT / LEGEND ══════════════════════════════════════════ */
 
 .donut-wrap  { display: flex; justify-content: center; margin-bottom: 12px; }
@@ -504,7 +491,6 @@
 .legend-count { font-weight: 600; margin-right: 8px; }
 .legend-pct  { color: #9aa0ac; width: 32px; text-align: right; }
 
-
 /* ══ BALANCE LIST ════════════════════════════════════════════ */
 
 .balance-list    { display: flex; flex-direction: column; gap: 16px; }
@@ -513,7 +499,6 @@
 .balance-figures { color: #9aa0ac; }
 .balance-track   { background: #eef0f3; border-radius: 6px; height: 6px; overflow: hidden; }
 .balance-fill    { height: 100%; border-radius: 6px; }
-
 
 /* ══ APPROVAL ════════════════════════════════════════════════ */
 
@@ -542,11 +527,9 @@
 .approval-row.pending  { background: #fdf6e3; color: #b8860b; }
 .approval-row.rejected { background: #fdecec; color: #e74a3b; }
 
-
 /* ════════════════════════════════════════════════════════════════
    SETUP WIZARD — Screen 2 (FR-010 to FR-017)
    ════════════════════════════════════════════════════════════════ */
-
 
 /* ── Wizard Modal Card ─────────────────────────────────────── */
 
@@ -569,8 +552,7 @@
     animation: cleon-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-
-/* ── FR-010: Step Progress Bar ─────────────────────────────── */
+/* ── : Step Progress Bar ─────────────────────────────── */
 
 .cleon-wizard-progress {
     display: flex;
@@ -632,8 +614,7 @@
     background: #e91e8c;
 }
 
-
-/* ── FR-011: Step Header (icon + label + title) ────────────── */
+/* ── : Step Header (icon + label + title) ────────────── */
 
 .cleon-wizard-step-header {
     display: flex;
@@ -688,8 +669,7 @@
     line-height: 1.25;
 }
 
-
-/* ── FR-012: Step Description ──────────────────────────────── */
+/* ── : Step Description ──────────────────────────────── */
 
 .cleon-wizard-desc {
     margin: 0 0 18px;
@@ -698,8 +678,7 @@
     line-height: 1.65;
 }
 
-
-/* ── FR-013: Key Actions ───────────────────────────────────── */
+/* ── : Key Actions ───────────────────────────────────── */
 
 .cleon-key-actions {
     background: #fafbfc;
@@ -755,7 +734,7 @@
 .cleon-ka-region   { background: linear-gradient(135deg, #2563eb, #60a5fa); }
 .cleon-ka-calview  { background: linear-gradient(135deg, #f97316, #fb923c); }
 .cleon-ka-coverage { background: linear-gradient(135deg, #dc2626, #f87171); }
-/* Step 5 action icon colours (Screen 6) */
+/* Step 5 action icon colours () */
 .cleon-ka-approve   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
 .cleon-ka-reports   { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
 .cleon-ka-audit     { background: linear-gradient(135deg, #2563eb, #60a5fa); }
@@ -771,7 +750,6 @@
     font-weight: 600;
 }
 
-
 /* ── Wizard Footer (Back / Shortcut / Next) ────────────────── */
 
 .cleon-wizard-footer {
@@ -782,7 +760,7 @@
     margin-bottom: 10px;
 }
 
-/* FR-015: Back button */
+/* Back button */
 .cleon-wiz-btn-back {
     padding: 9px 16px;
     border: 1.5px solid #e0e3ea;
@@ -804,7 +782,7 @@
     color: #374151;
 }
 
-/* FR-014: Go to Leave Types shortcut */
+/* Go to Leave Types shortcut */
 .cleon-wiz-btn-shortcut {
     justify-self: center;
     padding: 9px 16px;
@@ -827,7 +805,7 @@
     box-shadow: 0 2px 8px rgba(233, 30, 140, 0.15);
 }
 
-/* FR-016: Next / Finish button */
+/* Next / Finish button */
 .cleon-wiz-btn-next {
     padding: 9px 20px;
     border: none;
@@ -854,8 +832,7 @@
     transform: translateY(0);
 }
 
-
-/* ── FR-017: Skip link ─────────────────────────────────────── */
+/* ── : Skip link ─────────────────────────────────────── */
 
 .cleon-wiz-skip-row {
     text-align: center;
@@ -876,7 +853,6 @@
 .cleon-skip-link:hover {
     color: #6b7280;
 }
-
 
 /* ── Steps 2–5 Placeholder Cards ──────────────────────────── */
 
@@ -899,7 +875,6 @@
     font-size: 13px;
     color: #9aa0ac;
 }
-
 
 /* ════════════════════════════════════════════════════════════════
    SETUP COMPLETION SCREEN — Screen 7 (FR-045 to FR-054)
@@ -965,7 +940,7 @@
     background: rgba(255, 255, 255, 0.4);
 }
 
-/* Header Banner (FR-045, FR-046) */
+/* Header Banner , */
 .cleon-completion-header {
     background: linear-gradient(135deg, #e91e8c 0%, #ff529a 50%, #6d28d9 100%);
     padding: 32px 28px 24px;
@@ -1003,7 +978,7 @@
     color: rgba(255, 255, 255, 0.92);
 }
 
-/* Body & Checklist (FR-047, FR-048, FR-049, FR-050) */
+/* Body & Checklist , , , */
 .cleon-completion-body {
     padding: 20px 24px 12px;
 }
@@ -1107,7 +1082,7 @@
     color: #94a3b8;
 }
 
-/* Footer (FR-051, FR-052, FR-054) */
+/* Footer , , */
 .cleon-completion-footer {
     display: flex;
     align-items: center;
@@ -1164,12 +1139,11 @@
     color: #94a3b8;
 }
 
-
 /* ════════════════════════════════════════════════════════════════
    SCREEN 8 — ADMIN DASHBOARD STYLES (FR-055 to FR-072)
    ════════════════════════════════════════════════════════════════ */
 
-/* Header controls & View Switcher (FR-071, FR-072) */
+/* Header controls & View Switcher , */
 .cleon-header-plain-btn {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -1220,7 +1194,7 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-/* KPI Cards & Badges (FR-055 to FR-060) */
+/* KPI Cards & Badges  to */
 .kpi-card-button {
     text-align: left;
     background: #ffffff;
@@ -1301,7 +1275,7 @@
     box-shadow: 0 6px 16px rgba(233, 30, 140, 0.4);
 }
 
-/* Department Coverage Heatmap (FR-067) */
+/* Department Coverage Heatmap */
 .coverage-table-wrap {
     overflow-x: auto;
     margin: 12px 0 16px;
@@ -1379,7 +1353,7 @@
 .coverage-medium-dot { background: #f59e0b; }
 .coverage-low-dot { background: #ef4444; }
 
-/* Recent Requests List (FR-068) */
+/* Recent Requests List */
 .recent-request-list {
     display: flex;
     flex-direction: column;
@@ -1477,7 +1451,7 @@
     color: #94a3b8;
 }
 
-/* Quick Actions Panel (FR-069) */
+/* Quick Actions Panel */
 .quick-actions-panel {
     margin-top: 20px;
 }

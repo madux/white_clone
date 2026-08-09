@@ -13,11 +13,11 @@
             <!-- Main Content Area -->
             <div class="o_leave_dashboard">
 
-                <!-- Page Header (FR-178 to FR-182) -->
+                <!-- Page Header (FR-178 to FR-184) -->
                 <header class="o_cc_header border-bottom pb-3 mb-3">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
 
-                        <!-- Title & Description (FR-178) -->
+                        <!-- Title & Description -->
                         <div class="d-flex align-items-center gap-2">
                             <span class="page-title-icon text-primary"><i class="fa fa-list-alt fa-lg"/></span>
                             <div>
@@ -26,10 +26,10 @@
                             </div>
                         </div>
 
-                        <!-- Header Right Actions & View Toggle (FR-179 to FR-182) -->
+                        <!-- Header Right Actions and View Toggle -->
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
-                            <!-- Admin View / Employee View Toggle Switch (FR-179) -->
+                            <!-- Admin View / Employee View Toggle Switch -->
                             <div class="d-flex align-items-center gap-2 bg-light border rounded px-2 py-1 me-2">
                                 <span t-att-class="'small font-weight-bold ' + (state.viewMode === 'admin' ? 'text-primary' : 'text-muted')">Admin View</span>
                                 <div class="form-check form-switch m-0">
@@ -40,7 +40,7 @@
                                 <span t-att-class="'small font-weight-bold ' + (state.viewMode === 'employee' ? 'text-primary' : 'text-muted')">Employee View</span>
                             </div>
 
-                            <!-- Section Tour, Help, Setup Wizard (FR-179) -->
+                            <!-- Section Tour, Help, Setup Wizard -->
                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Section Tour" t-on-click="startTour">
                                 <i class="fa fa-location-arrow"/>
                             </button>
@@ -51,7 +51,7 @@
                                 <i class="fa fa-star"/>
                             </button>
 
-                            <!-- Export Dropdown (FR-181) -->
+                            <!-- Export Dropdown -->
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleExportDropdown">
                                     <i class="fa fa-download me-1"/> Export
@@ -62,12 +62,12 @@
                                 </ul>
                             </div>
 
-                            <!-- Help / FAQ Button (FR-182) -->
+                            <!-- Help / FAQ Button -->
                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Leave Types FAQ &amp; Documentation" t-on-click="openFAQ">
                                 <i class="fa fa-question"/>
                             </button>
 
-                            <!-- Add Leave Type Button (FR-180, hidden in Employee View) -->
+                            <!-- Add Leave Type Button, hidden in Employee View -->
                             <t t-if="state.viewMode === 'admin'">
                                 <button type="button" class="btn btn-sm btn-pink-active font-weight-bold px-3 ms-2" t-on-click="openAddModal">
                                     <i class="fa fa-plus me-1"/> Add Leave Type
@@ -77,10 +77,10 @@
                         </div>
                     </div>
 
-                    <!-- Search & Filter Toolbar (Fig 12.2, FR-183 to FR-187) -->
+                    <!-- Search & Filter Toolbar (Fig 12.2) -->
                     <div class="d-flex align-items-center gap-2 mt-3 flex-wrap bg-light p-2 rounded border">
 
-                        <!-- Real-time Search Input (FR-183) -->
+                        <!-- Real-time Search Input -->
                         <div class="flex-grow-1 min-w-220">
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text bg-white"><i class="fa fa-search text-muted"/></span>
@@ -88,7 +88,7 @@
                             </div>
                         </div>
 
-                        <!-- All Categories Filter Dropdown (FR-184) -->
+                        <!-- All Categories Filter Dropdown -->
                         <div class="filter-select-wrapper">
                             <select class="form-select form-select-sm" t-model="state.categoryFilter">
                                 <option value="all">All Categories</option>
@@ -98,7 +98,7 @@
                             </select>
                         </div>
 
-                        <!-- All Status Filter Dropdown (FR-185, hidden in Employee View) -->
+                        <!-- All Status Filter Dropdown , hidden in Employee View) -->
                         <t t-if="state.viewMode === 'admin'">
                             <div class="filter-select-wrapper">
                                 <select class="form-select form-select-sm" t-model="state.statusFilter">
@@ -109,7 +109,7 @@
                             </div>
                         </t>
 
-                        <!-- All Locations Filter Dropdown (FR-186) -->
+                        <!-- All Locations Filter Dropdown -->
                         <div class="filter-select-wrapper">
                             <select class="form-select form-select-sm" t-model="state.locationFilter">
                                 <option value="all">All Locations</option>
@@ -119,7 +119,7 @@
                             </select>
                         </div>
 
-                        <!-- Clear Filters Button (FR-187) -->
+                        <!-- Clear Filters Button -->
                         <t t-if="this.hasActiveFilters">
                             <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1 font-weight-bold" t-on-click="clearFilters">
                                 <i class="fa fa-times me-1"/> Clear
@@ -159,7 +159,7 @@
                     </div>
                 </t>
 
-                <!-- Data Table Container (FR-188 to FR-198) -->
+                <!-- Data Table Container -->
                 <t t-else="">
                     <div class="table-responsive border rounded bg-white shadow-sm overflow-hidden">
                         <table class="table table-hover align-middle mb-0 text-nowrap">
@@ -199,14 +199,14 @@
                                             t-on-dragstart="(ev) => this.onRowDragStart(ev, leaveTypeItem)"
                                             t-on-dragover="this.onRowDragOver"
                                             t-on-drop="(ev) => this.onRowDrop(ev, leaveTypeItem)">
-                                            <!-- Drag Handle (FR-195) -->
+                                            <!-- Drag Handle -->
                                             <t t-if="state.viewMode === 'admin'">
                                                 <td class="text-muted text-center cursor-move" title="Drag to reorder sequence">
                                                     <i class="fa fa-ellipsis-v me-1"/><i class="fa fa-ellipsis-v"/>
                                                 </td>
                                             </t>
 
-                                            <!-- Leave Type Name + Color Dot + System Badge (FR-189) -->
+                                            <!-- Leave Type Name + Color Dot + System Badge -->
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="leave-type-color-dot" t-att-style="'background-color: ' + leaveTypeItem.color_hex"/>
@@ -220,7 +220,7 @@
                                             <!-- Code -->
                                             <td><code class="text-primary font-weight-bold"><t t-esc="leaveTypeItem.code"/></code></td>
 
-                                            <!-- Type Category Badge (FR-190) -->
+                                            <!-- Type Category Badge -->
                                             <td>
                                                 <t t-if="leaveTypeItem.category === 'paid'">
                                                     <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1">Paid</span>
@@ -233,7 +233,7 @@
                                                 </t>
                                             </td>
 
-                                            <!-- Color Swatch + Hex (FR-191) -->
+                                            <!-- Color Swatch + Hex -->
                                             <td>
                                                 <div class="d-flex align-items-center gap-2">
                                                     <span class="color-swatch-box rounded shadow-sm border" t-att-style="'background-color: ' + leaveTypeItem.color_hex"/>
@@ -251,7 +251,7 @@
                                                 </t>
                                             </td>
 
-                                            <!-- Carryover Column (FR-192) -->
+                                            <!-- Carryover Column -->
                                             <td>
                                                 <t t-if="leaveTypeItem.allow_carryover">
                                                     <span class="text-success small font-weight-bold"><i class="fa fa-check-circle me-1"/> Yes</span>
@@ -264,7 +264,7 @@
                                             <!-- Assigned Employee Count -->
                                             <td class="small font-weight-bold"><t t-esc="leaveTypeItem.assigned_count"/> emps</td>
 
-                                            <!-- Total Days Used Column (FR-193) -->
+                                            <!-- Total Days Used Column -->
                                             <td class="small font-weight-bold">
                                                 <t t-if="leaveTypeItem.total_days_used &gt; 0">
                                                     <t t-esc="leaveTypeItem.total_days_used"/> days
@@ -275,7 +275,7 @@
                                             </td>
 
                                             <t t-if="state.viewMode === 'admin'">
-                                                <!-- Status Toggle (FR-194) -->
+                                                <!-- Status Toggle -->
                                                 <td>
                                                     <div class="form-check form-switch m-0">
                                                         <input class="form-check-input cursor-pointer" type="checkbox"
@@ -284,23 +284,23 @@
                                                     </div>
                                                 </td>
 
-                                                <!-- Actions Column (FR-199 to FR-204) -->
+                                                <!-- Actions Column -->
                                                 <td class="text-end pe-3">
                                                     <div class="btn-group btn-group-sm">
-                                                        <!-- View Eye Icon (FR-200) -->
+                                                        <!-- View Eye Icon -->
                                                         <button type="button" class="btn btn-light border btn-sm" title="View Detail" t-on-click="() => this.openDetailDrawer(leaveTypeItem)">
                                                             <i class="fa fa-eye text-primary"/>
                                                         </button>
-                                                        <!-- Edit Pencil Icon (FR-201) -->
+                                                        <!-- Edit Pencil Icon -->
                                                         <button type="button" class="btn btn-light border btn-sm" title="Edit Policy" t-on-click="() => this.openEditModal(leaveTypeItem)">
                                                             <i class="fa fa-pencil text-dark"/>
                                                         </button>
-                                                        <!-- Duplicate Copy Icon (FR-202) -->
+                                                        <!-- Duplicate Copy Icon -->
                                                         <button type="button" class="btn btn-light border btn-sm" title="Duplicate Leave Type" t-on-click="() => this.openDuplicateModal(leaveTypeItem)">
                                                             <i class="fa fa-files-o text-secondary"/>
                                                         </button>
 
-                                                        <!-- More Options Dropdown (FR-203) -->
+                                                        <!-- More Options Dropdown -->
                                                         <div class="dropdown d-inline-block">
                                                             <button type="button" class="btn btn-light border btn-sm dropdown-toggle" data-bs-toggle="dropdown">
                                                                 <i class="fa fa-ellipsis-v text-muted"/>
@@ -334,21 +334,21 @@
                         </table>
                     </div>
 
-                    <!-- Footer Pagination & Page Size Selector (FR-196 to FR-198) -->
+                    <!-- Footer Pagination and Page Size Selector -->
                     <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-2 small text-muted">
-                            <!-- Items Per Page Selector (FR-196) -->
+                            <!-- Items Per Page Selector -->
                             <label>Show</label>
                             <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.setPageSize(ev.target.value)">
                                 <option value="10" t-att-selected="state.pageSize === 10">10 per page</option>
                                 <option value="25" t-att-selected="state.pageSize === 25">25 per page</option>
                                 <option value="50" t-att-selected="state.pageSize === 50">50 per page</option>
                             </select>
-                            <!-- Results Count Label (FR-198) -->
+                            <!-- Results Count Label -->
                             <span class="ms-2"><t t-esc="this.resultsCountLabel"/></span>
                         </div>
 
-                        <!-- Pagination Buttons (FR-197) -->
+                        <!-- Pagination Buttons -->
                         <div class="btn-group btn-group-sm">
                             <button type="button" class="btn btn-light border" t-att-disabled="state.currentPage === 1" t-on-click="prevPage">
                                 <i class="fa fa-chevron-left me-1"/> Previous
@@ -418,7 +418,7 @@
                 </div>
             </t>
 
-            <!-- Detail Side Drawer Component (FR-205 to FR-213) -->
+            <!-- Detail Side Drawer Component -->
             <t t-if="state.drawerLeaveType">
                 <LeaveTypeDetailDrawer leaveType="state.drawerLeaveType"
                                        initialTab="state.drawerTab || 'overview'"
@@ -428,7 +428,7 @@
                                        onToggleActive.bind="toggleStatus"/>
             </t>
 
-            <!-- Add / Edit Modal Component (FR-214 to FR-245) -->
+            <!-- Add / Edit Modal Component -->
             <t t-if="state.modalOpen">
                 <LeaveTypeFormModal mode="state.modalMode"
                                     leaveTypeData="state.editingLeaveType"
@@ -453,7 +453,7 @@
             <div class="cleon-welcome-backdrop" style="z-index: 1060;" t-on-click="props.close"/>
             <div class="filters-slide-panel shadow-lg bg-white overflow-hidden d-flex flex-column" style="z-index: 1070; width: 540px;" role="dialog" aria-modal="true">
 
-                <!-- Drawer Header (FR-206) -->
+                <!-- Drawer Header -->
                 <div class="p-3 border-bottom bg-light d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-2">
                         <span class="leave-type-color-dot" t-att-style="'background-color: ' + props.leaveType.color_hex"/>
@@ -471,7 +471,7 @@
                     <button type="button" class="btn-close" t-on-click="props.close"/>
                 </div>
 
-                <!-- Drawer Action Buttons (FR-207) -->
+                <!-- Drawer Action Buttons -->
                 <div class="p-3 border-bottom d-flex gap-2 bg-white">
                     <button type="button" class="btn btn-sm btn-pink-active font-weight-bold" t-on-click="() => props.onEdit(props.leaveType)">
                         <i class="fa fa-pencil me-1"/> Edit Policy
@@ -485,7 +485,7 @@
                     </button>
                 </div>
 
-                <!-- Drawer Tab Navigation Header (FR-208) -->
+                <!-- Drawer Tab Navigation Header -->
                 <div class="border-bottom bg-light px-3 pt-2">
                     <ul class="nav nav-tabs border-0 small font-weight-bold">
                         <li class="nav-item">
@@ -506,9 +506,9 @@
                 <!-- Tab Content Body -->
                 <div class="p-3 overflow-y-auto flex-grow-1 bg-white">
 
-                    <!-- OVERVIEW TAB (FR-209, FR-210) -->
+                    <!-- OVERVIEW TAB -->
                     <t t-if="state.activeTab === 'overview'">
-                        <!-- Summary Metric Cards (FR-209) -->
+                        <!-- Summary Metric Cards -->
                         <div class="row g-2 mb-4">
                             <div class="col-3">
                                 <div class="p-2 border rounded bg-light text-center">
@@ -536,7 +536,7 @@
                             </div>
                         </div>
 
-                        <!-- Configuration Details List (FR-210) -->
+                        <!-- Configuration Details List -->
                         <h4 class="h6 font-weight-bold mb-3 text-uppercase text-muted micro-text">Configuration Details</h4>
                         <div class="detail-label-value-list border rounded p-3 bg-light d-flex flex-column gap-2 small">
                             <div class="d-flex justify-content-between border-bottom pb-1">
@@ -582,7 +582,7 @@
                         </div>
                     </t>
 
-                    <!-- POLICIES TAB (FR-211) -->
+                    <!-- POLICIES TAB -->
                     <t t-if="state.activeTab === 'policies'">
                         <div class="small d-flex flex-column gap-3">
                             <div class="p-3 border rounded bg-light">
@@ -602,7 +602,7 @@
                         </div>
                     </t>
 
-                    <!-- EMPLOYEES TAB (FR-212: Real Eligible Employees with Balances) -->
+                    <!-- EMPLOYEES TAB : Real Eligible Employees with Balances) -->
                     <t t-if="state.activeTab === 'employees'">
                         <t t-if="state.loadingEmployees">
                             <div class="text-center py-4 text-muted"><i class="fa fa-spin fa-circle-o-notch me-1"/> Loading eligible employees...</div>
@@ -640,7 +640,7 @@
                         </t>
                     </t>
 
-                    <!-- ACTIVITY LOG TAB (FR-213: Per Leave Type Audit History) -->
+                    <!-- Activity Log Tab: Per Leave Type Audit History -->
                     <t t-if="state.activeTab === 'activity'">
                         <t t-if="state.loadingLogs">
                             <div class="text-center py-4 text-muted"><i class="fa fa-spin fa-circle-o-notch me-1"/> Loading activity log...</div>
@@ -681,7 +681,7 @@
                 <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
                     <div class="modal-content shadow-lg border-0">
 
-                        <!-- Modal Header (FR-214) -->
+                        <!-- Modal Header -->
                         <div class="modal-header bg-light border-bottom">
                             <div>
                                 <h3 class="h5 font-weight-bold mb-0 text-dark">
@@ -696,7 +696,7 @@
                             <button type="button" class="btn-close" t-on-click="handleCancel"/>
                         </div>
 
-                        <!-- Modal Body with 5 Collapsible Sections (FR-215 to FR-240) -->
+                        <!-- Modal Body with 5 Collapsible Sections -->
                         <div class="modal-body p-4 bg-white" t-ref="modalBody">
 
                             <t t-if="this.validationMessages.length">
@@ -708,7 +708,7 @@
                                 </div>
                             </t>
 
-                            <!-- In-Use Warning Banner (Edit only, FR-215) -->
+                            <!-- In-Use Warning Banner (Edit only) -->
                             <t t-if="props.mode === 'edit' and state.form.assignedEmployeeCount &gt; 0">
                                 <div class="alert alert-warning border-warning d-flex align-items-center gap-2 mb-4" role="alert">
                                     <i class="fa fa-exclamation-triangle fa-lg text-warning"/>
@@ -718,7 +718,7 @@
                                 </div>
                             </t>
 
-                            <!-- 1. BASIC INFORMATION SECTION (FR-216, FR-217) -->
+                            <!-- 1. BASIC INFORMATION SECTION -->
                             <div class="form-section-card border rounded p-3 mb-4 bg-light">
                                 <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('basic')">
                                     <div class="d-flex align-items-center gap-2">
@@ -757,7 +757,7 @@
                                             <textarea class="form-control form-control-sm" rows="2" placeholder="Brief description of this leave type" t-model="state.form.description"/>
                                         </div>
 
-                                        <!-- Colour Picker (FR-217) -->
+                                        <!-- Colour Picker -->
                                         <div class="col-12">
                                             <label class="form-label font-weight-bold small">Colour</label>
                                             <div class="d-flex align-items-center gap-3 mb-2">
@@ -781,7 +781,7 @@
                                 </t>
                             </div>
 
-                            <!-- 2. LEAVE TYPE SETTINGS SECTION (FR-218) -->
+                            <!-- 2. LEAVE TYPE SETTINGS SECTION -->
                             <div class="form-section-card border rounded p-3 mb-4 bg-light">
                                 <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('settings')">
                                     <div class="d-flex align-items-center gap-2">
@@ -840,7 +840,7 @@
                                 </t>
                             </div>
 
-                            <!-- 3. APPLIES TO — ELIGIBILITY SECTION (FR-219 to FR-223) -->
+                            <!-- 3. APPLIES TO: ELIGIBILITY SECTION -->
                             <div class="form-section-card border rounded p-3 mb-4 bg-light">
                                 <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('appliesTo')">
                                     <div class="d-flex align-items-center gap-2">
@@ -855,7 +855,7 @@
 
                                 <t t-if="state.expandedSections.appliesTo">
                                     <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- Eligibility Scope 5 Radio Options (FR-220) -->
+                                        <!-- Eligibility Scope 5 Radio Options -->
                                         <div class="col-12">
                                             <label class="form-label font-weight-bold small">Eligibility Scope</label>
                                             <div class="row g-2 mb-3">
@@ -897,7 +897,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Dynamic Multi-Select Dropdowns based on Eligibility Scope (FR-220) -->
+                                        <!-- Dynamic Multi-Select Dropdowns based on Eligibility Scope -->
                                         <t t-if="state.form.eligibilityScope === 'departments'">
                                             <div class="col-12">
                                                 <label class="form-label font-weight-bold small">Select Eligible Departments <span class="text-danger">*</span></label>
@@ -939,7 +939,7 @@
                                             </div>
                                         </t>
 
-                                        <!-- Applicable Employee Types Filter (FR-221) -->
+                                        <!-- Applicable Employee Types Filter -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Employee Types</label>
                                             <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('employeeTypeIds', ev)">
@@ -949,7 +949,7 @@
                                             </select>
                                         </div>
 
-                                        <!-- Applicable Locations (FR-222) -->
+                                        <!-- Applicable Locations -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Locations</label>
                                             <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('locationIds', ev)">
@@ -962,7 +962,7 @@
                                             </t>
                                         </div>
 
-                                        <!-- Minimum Service Period (FR-223) -->
+                                        <!-- Minimum Service Period -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Minimum Service Period (months)</label>
                                             <input type="number" class="form-control form-control-sm" t-model="state.form.minimumServiceMonths"/>
@@ -971,7 +971,7 @@
                                 </t>
                             </div>
 
-                            <!-- 4. ACCRUAL SECTION (FR-224 to FR-226) -->
+                            <!-- 4. ACCRUAL SECTION -->
                             <div class="form-section-card border rounded p-3 mb-4 bg-light">
                                 <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('accrual')">
                                     <div class="d-flex align-items-center gap-2">
@@ -986,7 +986,7 @@
 
                                 <t t-if="state.expandedSections.accrual">
                                     <div class="mt-2 border-top pt-3 bg-white p-3 rounded border">
-                                        <!-- 5 Accrual Method Radio Cards (FR-225) -->
+                                        <!-- 5 Accrual Method Radio Cards -->
                                         <div class="d-flex flex-column gap-2 mb-3">
                                             <div t-att-class="'p-3 border rounded cursor-pointer d-flex align-items-center justify-content-between ' + (state.form.accrualMethod === 'year_start' ? 'border-success bg-success-subtle' : 'bg-light')"
                                                  t-on-click="() => state.form.accrualMethod = 'year_start'">
@@ -1034,7 +1034,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Accrual Summary Preview Banner (FR-226) -->
+                                        <!-- Accrual Summary Preview Banner -->
                                         <div class="alert alert-info border-info mb-0 py-2 px-3 small d-flex align-items-center gap-2">
                                             <i class="fa fa-info-circle"/>
                                             <span><t t-esc="this.accrualSummaryPreviewText"/></span>
@@ -1043,7 +1043,7 @@
                                 </t>
                             </div>
 
-                            <!-- 5. ADVANCED POLICIES SECTION (FR-227 to FR-240) -->
+                            <!-- 5. ADVANCED POLICIES SECTION -->
                             <div class="form-section-card border rounded p-3 mb-4 bg-light">
                                 <div class="section-card-header d-flex justify-content-between align-items-center cursor-pointer" t-on-click="() => this.toggleSection('advanced')">
                                     <div class="d-flex align-items-center gap-2">
@@ -1061,7 +1061,7 @@
                                 <t t-if="state.expandedSections.advanced">
                                     <div class="row g-3 mt-2 border-top pt-3 bg-white p-3 rounded border">
 
-                                        <!-- Accrual Rules (FR-228) -->
+                                        <!-- Accrual Rules -->
                                         <div class="col-12 border-bottom pb-3">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Accrual Rules &amp; Carryforward</h5>
                                             <div class="row g-2">
@@ -1084,7 +1084,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Tenure-based Accrual Scaling Tier Table (FR-229) -->
+                                        <!-- Tenure-based Accrual Scaling Tier Table -->
                                         <div class="col-12 border-bottom pb-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <div class="form-check form-switch m-0">
@@ -1120,7 +1120,7 @@
                                             </t>
                                         </div>
 
-                                        <!-- Accrual Suspension Conditions (5 Checkboxes, FR-230) -->
+                                        <!-- Accrual Suspension Conditions (5 Checkboxes) -->
                                         <div class="col-12 border-bottom pb-3">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Accrual Suspension Conditions</h5>
                                             <p class="text-muted micro-text mb-2">Accrual stops automatically during the following employee states:</p>
@@ -1158,11 +1158,11 @@
                                             </div>
                                         </div>
 
-                                        <!-- Approval Settings (FR-231 to FR-235) -->
+                                        <!-- Approval Settings -->
                                         <div class="col-12 border-bottom pb-3">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Approval Settings</h5>
 
-                                            <!-- Approval Workflow 3 Radio Cards (FR-232) -->
+                                            <!-- Approval Workflow 3 Radio Cards -->
                                             <label class="form-label micro-label font-weight-bold mb-2">Approval Workflow</label>
                                             <div class="row g-2 mb-3">
                                                 <div class="col-md-4">
@@ -1188,7 +1188,7 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Require Supporting Document 3-Way Pill Button Group (FR-233) -->
+                                            <!-- Require Supporting Document 3-Way Pill Button Group -->
                                             <label class="form-label micro-label font-weight-bold mb-2">Require Supporting Document</label>
                                             <div class="btn-group btn-group-sm w-100 mb-3">
                                                 <button type="button" t-att-class="'btn ' + (state.form.supportingDocumentPolicy === 'never' ? 'btn-pink-active' : 'btn-outline-secondary')"
@@ -1215,7 +1215,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Restrictions & Negative Balance (FR-236 to FR-239) -->
+                                        <!-- Restrictions and Negative Balance -->
                                         <div class="col-12 border-bottom pb-3">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Restrictions &amp; Overlap Safeguards</h5>
                                             <div class="row g-3 mb-2">
@@ -1232,7 +1232,7 @@
                                                         <label class="form-check-label micro-text text-muted" for="block_overlap_chk">Block request if threshold exceeded (otherwise warning only)</label>
                                                     </div>
                                                 </div>
-                                                <!-- Allow Negative Balance Toggle Switch (FR-238) -->
+                                                <!-- Allow Negative Balance Toggle Switch -->
                                                 <div class="col-12 mt-2">
                                                     <div class="form-check form-switch">
                                                         <input class="form-check-input" type="checkbox" id="neg_balance_chk" t-model="state.form.allowNegativeBalance"/>
@@ -1242,7 +1242,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Display & Visibility (FR-240) -->
+                                        <!-- Display & Visibility -->
                                         <div class="col-12">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Display &amp; Visibility</h5>
                                             <div class="d-flex gap-4">
@@ -1261,7 +1261,7 @@
                                 </t>
                             </div>
 
-                            <!-- Live Policy Summary Banner (FR-241) -->
+                            <!-- Live Policy Summary Banner -->
                             <div class="alert alert-success border-success bg-success-subtle mb-0 py-2 px-3 small d-flex flex-column gap-1">
                                 <strong class="text-success"><i class="fa fa-check-circle me-1"/> Policy Configuration Live Summary</strong>
                                 <div class="d-flex flex-wrap gap-3 micro-text text-dark">
@@ -1273,7 +1273,7 @@
 
                         </div>
 
-                        <!-- Modal Footer (FR-242 to FR-244) -->
+                        <!-- Modal Footer -->
                         <div class="modal-footer bg-light border-top justify-content-between">
                             <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="handleCancel">Cancel</button>
 

@@ -16,7 +16,7 @@
                 <header class="o_cc_header border-bottom pb-3 mb-3">
                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
 
-                        <!-- Title & Description (FR-138) -->
+                        <!-- Title & Description -->
                         <div>
                             <h1 class="h4 font-weight-bold mb-1">Leave Calendar</h1>
                             <p class="text-muted small mb-0">Manage and visualize employee leave, coverage, and public holidays</p>
@@ -25,7 +25,7 @@
                         <!-- Header Right Controls -->
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
-                            <!-- Admin / Employee View Toggle (FR-139) -->
+                            <!-- Admin / Employee View Toggle -->
                             <div class="cleon-calendar-view-switch" role="group">
                                 <button type="button"
                                         t-att-class="!state.employeeView ? 'active' : ''"
@@ -39,7 +39,7 @@
                                 </button>
                             </div>
 
-                            <!-- View Mode Icon Switcher (FR-140) -->
+                            <!-- View Mode Icon Switcher -->
                             <div class="btn-group btn-group-sm ms-2" role="group">
                                 <button type="button"
                                         t-att-class="'btn ' + (state.viewMode === 'month' ? 'btn-primary' : 'btn-outline-secondary')"
@@ -67,14 +67,14 @@
                                 </button>
                             </div>
 
-                            <!-- Coverage Analysis Toggle Button (FR-141) -->
+                            <!-- Coverage Analysis Toggle Button -->
                             <button type="button"
                                     t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
                                     t-on-click="toggleCoverageMode">
                                 <i class="fa fa-line-chart me-1"/> Coverage Analysis
                             </button>
 
-                            <!-- Filters Button (FR-142, FR-177) -->
+                            <!-- Filters Button -->
                             <button type="button" class="btn btn-sm btn-outline-secondary position-relative" t-on-click="openFilters">
                                 <i class="fa fa-filter me-1"/> Filters
                                 <t t-if="this.activeFilterCount > 0">
@@ -82,7 +82,7 @@
                                 </t>
                             </button>
 
-                            <!-- Download Dropdown Button (FR-143) -->
+                            <!-- Download Dropdown Button -->
                             <button type="button" t-att-class="'btn btn-sm btn-pink-active cleon-calendar-request-slot ' + (state.employeeView ? '' : 'cleon-calendar-request-hidden')" t-on-click="openEmployeeRequest" t-att-tabindex="state.employeeView ? 0 : -1"><i class="fa fa-plus"/> Request Leave</button>
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
@@ -98,7 +98,7 @@
                         </div>
                     </div>
 
-                    <!-- Navigation Toolbar (FR-144, FR-145) -->
+                    <!-- Navigation Toolbar -->
                     <div class="d-flex align-items-center gap-2 mt-3">
                         <button type="button" class="btn btn-sm btn-light border" t-on-click="() => this.navigate(-1)" title="Previous">
                             <i class="fa fa-chevron-left"/>
@@ -107,7 +107,7 @@
                             <button type="button" class="btn btn-sm btn-light border font-weight-bold dropdown-toggle" t-on-click="togglePeriodPicker">
                                 <t t-esc="this.periodLabel"/>
                             </button>
-                            <!-- Period Month/Year Picker Dropdown (FR-145) -->
+                            <!-- Period Month/Year Picker Dropdown -->
                             <t t-if="state.periodPickerOpen">
                                 <div class="period-picker-dropdown shadow p-3 bg-white border rounded">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -168,10 +168,10 @@
                                     <t t-foreach="week" t-as="day" t-key="day.ymd">
                                         <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '')">
 
-                                            <!-- Day Number in Top Left (FR-146) -->
+                                            <!-- Day Number in Top Left -->
                                             <span class="day-number-label"><t t-esc="day.dayNumber"/></span>
 
-                                            <!-- COVERAGE ANALYSIS OVERLAY MODE (Fig 11.2, FR-154 to FR-157) -->
+                                            <!-- COVERAGE ANALYSIS OVERLAY MODE (Fig 11.2) -->
                                             <t t-if="state.coverageMode">
                                                 <t t-set="cov" t-value="this.getDayCoverageInfo(day.ymd)"/>
                                                 <div t-att-class="'coverage-tile-cell ' + cov.level">
@@ -180,7 +180,7 @@
                                                 </div>
                                             </t>
 
-                                            <!-- STANDARD LEAVE BLOCKS MODE (Fig 11.1, FR-147 to FR-151) -->
+                                            <!-- STANDARD LEAVE BLOCKS MODE (Fig 11.1) -->
                                             <t t-else="">
                                                 <div class="day-cell-leave-stack">
                                                     <t t-set="dayLeaves" t-value="this.getDayLeaves(day.ymd)"/>
@@ -194,7 +194,7 @@
                                                         </div>
                                                     </t>
 
-                                                    <!-- Stack Overflow Indicator "+N more" (FR-149) -->
+                                                    <!-- Stack Overflow Indicator "+N more" -->
                                                     <t t-if="dayLeaves.length > 3">
                                                         <div class="leave-overflow-badge" t-on-click="() => this.openLeaveDetail(dayLeaves[3].id)">
                                                             +<t t-esc="dayLeaves.length - 3"/> more
@@ -288,7 +288,7 @@
                     <t t-if="state.viewMode === 'year'">
                         <div class="year-view-container">
 
-                            <!-- Header Country / Region Selector Dropdown (FR-166) -->
+                            <!-- Header Country / Region Selector Dropdown -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h3 class="h5 font-weight-bold mb-0"><t t-esc="state.currentDate.getFullYear()"/> Annual Leave Overview</h3>
                                 <div class="country-region-selector d-flex align-items-center gap-2">
@@ -303,14 +303,14 @@
                                 </div>
                             </div>
 
-                            <!-- 4-Column 12-Month Grid (FR-162) -->
+                            <!-- 4-Column 12-Month Grid -->
                             <div class="year-grid-4col">
                                 <t t-foreach="this.yearMonths" t-as="m" t-key="m.number">
                                     <div class="year-month-card border rounded p-3 bg-white shadow-sm">
                                         <div class="month-card-header d-flex justify-content-between align-items-center mb-2">
                                             <strong class="month-title"><t t-esc="m.name"/></strong>
                                         </div>
-                                        <!-- Per-Month Leave Counter Badges (FR-164) -->
+                                        <!-- Per-Month Leave Counter Badges -->
                                         <div class="month-summary-line small text-muted mb-2">
                                             <span class="dot-approved">• <t t-esc="m.summary.approved"/> approved</span>
                                             <span class="dot-pending ms-2">• <t t-esc="m.summary.pending"/> pending</span>
@@ -334,7 +334,7 @@
                                             </t>
                                         </div>
 
-                                        <!-- Public Holiday Annotations (FR-165) -->
+                                        <!-- Public Holiday Annotations -->
                                         <t t-if="m.holidays and m.holidays.length">
                                             <div class="holiday-annotations-box mt-2 pt-2 border-top">
                                                 <t t-foreach="m.holidays" t-as="h" t-key="h.date">
@@ -402,7 +402,7 @@
                     </div>
                     <div class="filter-panel-body p-3 overflow-y-auto">
 
-                        <!-- Date Range (FR-170) -->
+                        <!-- Date Range -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Date Range</label>
                             <div class="row g-2">
@@ -415,7 +415,7 @@
                             </div>
                         </div>
 
-                        <!-- Department Checkboxes (FR-171) -->
+                        <!-- Department Checkboxes -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Department</label>
                             <div class="filter-checkbox-list">
@@ -433,7 +433,7 @@
                             </div>
                         </div>
 
-                        <!-- Leave Type Checkboxes (FR-172) -->
+                        <!-- Leave Type Checkboxes -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Leave Type</label>
                             <div class="filter-checkbox-list">
@@ -451,7 +451,7 @@
                             </div>
                         </div>
 
-                        <!-- Status Checkboxes (FR-173) -->
+                        <!-- Status Checkboxes -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Status</label>
                             <div class="filter-checkbox-list">
@@ -476,7 +476,7 @@
                             </div>
                         </div>
 
-                        <!-- Searchable Employee List (FR-174) -->
+                        <!-- Searchable Employee List -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Employees</label>
                             <input type="text" class="form-control form-control-sm mb-2"
@@ -505,7 +505,7 @@
                 </div>
             </t>
 
-            <!-- Reused Screen 10 Leave Request Detail Modal (FR-152, FR-114 Dual Trigger) -->
+            <!-- Reused Leave Request Detail Modal -->
             <t t-if="state.detailRequestId">
                 <LeaveRequestDetailModal
                     requestId="state.detailRequestId"

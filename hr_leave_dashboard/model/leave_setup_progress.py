@@ -2,7 +2,6 @@
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
-
 class HrLeaveSetupProgress(models.Model):
     _name = "hr.leave.setup.progress"
     _description = "Leave Management Setup Progress"
@@ -25,7 +24,7 @@ class HrLeaveSetupProgress(models.Model):
     completed_by_id = fields.Many2one("res.users", readonly=True)
     completed_at = fields.Datetime(readonly=True)
 
-    # FR-050 Checklist completion state fields
+    # FR-050: Checklist completion state fields
     check_leave_type = fields.Boolean(default=False)
     check_allocate_balance = fields.Boolean(default=False)
     check_set_country = fields.Boolean(default=False)

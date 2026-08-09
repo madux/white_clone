@@ -7,17 +7,17 @@
                  WELCOME MODAL  (Screen 1 — FR-001 to FR-009)
                  ════════════════════════════════════════════════════ -->
             <t t-if="state.showWelcomeModal">
-                <!-- FR-009: Blurred backdrop -->
+                <!-- Blurred backdrop -->
                 <div class="cleon-welcome-backdrop" t-on-click="closeWelcomeModal"/>
 
                 <div class="cleon-welcome-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-welcome-title">
 
-                    <!-- FR-006: X close -->
+                    <!-- X close -->
                     <button class="cleon-welcome-close" t-on-click="closeWelcomeModal" aria-label="Close welcome modal">
                         <i class="fa fa-times"/>
                     </button>
 
-                    <!-- FR-002: Icon + title + description -->
+                    <!-- Icon + title + description -->
                     <div class="cleon-welcome-header">
                         <div class="cleon-welcome-icon">
                             <i class="fa fa-random"/>
@@ -32,7 +32,7 @@
                         </div>
                     </div>
 
-                    <!-- FR-003: Feature grid -->
+                    <!-- Feature grid -->
                     <div class="cleon-welcome-features">
                         <p class="cleon-features-label">WHAT'S INCLUDED</p>
                         <div class="cleon-features-grid">
@@ -71,7 +71,7 @@
                         </button>
                     </div>
 
-                    <!-- FR-007: Time estimate -->
+                    <!-- Time estimate -->
                     <p class="cleon-welcome-hint">
                         Takes about 2 minutes · You can re-open this guide any time
                     </p>
@@ -79,7 +79,6 @@
                 </div>
             </t>
             <!-- ════ END WELCOME MODAL ════════════════════════════ -->
-
 
             <!-- ════════════════════════════════════════════════════
                  SETUP WIZARD  (Screen 2 — FR-010 to FR-017)
@@ -90,7 +89,7 @@
 
                 <div class="cleon-wizard-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-wizard-title">
 
-                    <!-- FR-010: Step Progress Bar ─────────────────────── -->
+                    <!-- Step Progress Bar ─────────────────────── -->
                     <div class="cleon-wizard-progress" aria-label="Setup progress">
                         <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
                             <div t-att-class="{
@@ -116,7 +115,7 @@
                     <!-- ── STEP 1: Configure Leave Types ─────────────── -->
                     <t t-if="state.wizardStep === 1">
 
-                        <!-- FR-011: Step label + icon + title -->
+                        <!-- Step label + icon + title -->
                         <div class="cleon-wizard-step-header">
                             <div class="cleon-wizard-icon">
                                 <i class="fa fa-tags"/>
@@ -127,14 +126,14 @@
                             </div>
                         </div>
 
-                        <!-- FR-012: Step description -->
+                        <!-- Step description -->
                         <p class="cleon-wizard-desc">
                             Define every leave category your organisation offers — Annual Leave, Sick Leave,
                             Maternity/Paternity, Compassionate, and any custom types. Each type carries its
                             own entitlement, carry-over rules, accrual method, and approval workflow.
                         </p>
 
-                        <!-- FR-013: Key Actions -->
+                        <!-- Key Actions -->
                         <div class="cleon-key-actions">
                             <p class="cleon-key-actions-label">KEY ACTIONS</p>
                             <div class="cleon-key-action-item">
@@ -166,7 +165,6 @@
 
                     </t>
                     <!-- ── END STEP 1 ─────────────────────────────────── -->
-
 
                     <!-- ── STEP 2: Set Up Approval Workflows ──────────────── -->
                     <t t-if="state.wizardStep === 2">
@@ -396,7 +394,6 @@
                     </t>
                     <!-- ── END STEP 5 ─────────────────────────────────────── -->
 
-
                     <!-- ── WIZARD FOOTER ──────────────────────────────── -->
                     <div class="cleon-wizard-footer">
 
@@ -450,7 +447,6 @@
                 </div>
             </t>
             <!-- ════ END SETUP WIZARD ════════════════════════════ -->
-
 
             <!-- ════════════════════════════════════════════════════
                  SETUP COMPLETION SCREEN (Screen 7 — FR-045 to FR-054)
@@ -595,7 +591,6 @@
             </t>
             <!-- ════ END SETUP COMPLETION SCREEN ═════════════════ -->
 
-
             <!-- Shared Module Sidebar -->
             <CalendarSidebar activeMenu="'dashboard'"/>
 
@@ -604,7 +599,7 @@
                  ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
 
-                <!-- FR-071 & FR-072 Header -->
+                <!-- FR-071 and FR-072: Header -->
                 <div class="cleon-dash-header">
                     <div class="cleon-dash-header-left">
                         <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
@@ -619,7 +614,7 @@
                         <button type="button" class="cleon-header-plain-btn" title="Take a Tour">
                             <i class="fa fa-paper-plane-o"/>
                         </button>
-                        <!-- Point Help icon to openSetupExperience (FR-054 fix) -->
+                        <!-- Re-open the setup experience from the help icon. -->
                         <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Help / Guide">
                             <i class="fa fa-question-circle-o"/>
                         </button>
@@ -627,7 +622,7 @@
                             <i class="fa fa-magic"/>
                         </button>
 
-                        <!-- FR-072: View Switcher -->
+                        <!-- View Switcher -->
                         <div class="cleon-view-toggle">
                             <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
                                     t-on-click="() => this.setViewMode('admin')">
@@ -643,7 +638,6 @@
 
                 <!-- KPI ROW (FR-055 to FR-060) -->
                 <div class="kpi-row">
-                    <!-- FR-055 -->
                     <div class="kpi-card">
                         <div class="kpi-top">
                             <span class="kpi-label">TOTAL EMPLOYEES</span>
@@ -653,7 +647,6 @@
                         <div class="kpi-sub"><t t-esc="state.kpis.on_leave_today"/> on leave today</div>
                     </div>
 
-                    <!-- FR-056 -->
                     <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveRequests">
                         <t t-if="state.kpis.pending_approvals gt 0">
                             <span class="kpi-new-badge"><t t-esc="state.kpis.pending_approvals"/> new</span>
@@ -666,7 +659,6 @@
                         <div class="kpi-sub">Awaiting review</div>
                     </button>
 
-                    <!-- FR-057 -->
                     <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveCalendar">
                         <div class="kpi-top">
                             <span class="kpi-label">ON LEAVE TODAY</span>
@@ -676,7 +668,6 @@
                         <div class="kpi-sub"><t t-esc="state.kpis.on_leave_pct"/>% of workforce</div>
                     </button>
 
-                    <!-- FR-058 -->
                     <div class="kpi-card">
                         <div class="kpi-top">
                             <span class="kpi-label">UPCOMING (7 DAYS)</span>
@@ -686,7 +677,6 @@
                         <div class="kpi-sub">Approved upcoming leave</div>
                     </div>
 
-                    <!-- FR-059 -->
                     <div class="kpi-card">
                         <div class="kpi-top">
                             <span class="kpi-label">UTILISATION RATE</span>
@@ -696,7 +686,6 @@
                         <div class="kpi-sub">Leave days consumed</div>
                     </div>
 
-                    <!-- FR-060 -->
                     <div t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-card coverage-alert-active' : 'kpi-card'">
                         <div class="kpi-top">
                             <span class="kpi-label">COVERAGE ALERTS</span>
@@ -712,7 +701,7 @@
                     </div>
                 </div>
 
-                <!-- TRENDS (FR-061..063) + BY TYPE (FR-064) -->
+                <!-- TRENDS (FR-061 to FR-063) + BY TYPE (FR-064) -->
                 <div class="grid-2">
                     <div class="panel">
                         <div class="panel-head">
@@ -720,7 +709,7 @@
                                 <h5>Leave Trends</h5>
                                 <small>Monthly request volume and outcomes</small>
                             </div>
-                            <!-- FR-062: Range toggle -->
+                            <!-- Range toggle -->
                             <div class="range-toggle">
                                 <button t-att-class="state.months === 6 ? 'range-btn active' : 'range-btn'"
                                         t-on-click="() => this.setTrendMonths(6)">
@@ -732,7 +721,7 @@
                                 </button>
                             </div>
                         </div>
-                        <!-- FR-063: Mini stat tiles (OWL rendered with colored text) -->
+                        <!-- Mini stat tiles (OWL rendered with colored text) -->
                         <div class="stat-row">
                             <div class="stat-box">
                                 <div class="stat-value stat-value-pink"><t t-esc="state.trends.summary.total || 0"/></div>
@@ -754,7 +743,7 @@
                         <canvas t-ref="trendsChart" height="90"/>
                     </div>
 
-                    <!-- FR-064: By Leave Type donut with empty state handling -->
+                    <!-- By Leave Type donut with empty state handling -->
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>By Leave Type</h5><small>All-time request distribution</small></div>
@@ -781,9 +770,9 @@
                     </div>
                 </div>
 
-                <!-- BALANCE (FR-065) + APPROVAL (FR-066) -->
+                <!-- BALANCE  + APPROVAL -->
                 <div class="grid-2">
-                    <!-- FR-065: Balance by type with empty state handling -->
+                    <!-- Balance by type with empty state handling -->
                     <div class="panel">
                         <div class="panel-head">
                             <div>
@@ -817,7 +806,7 @@
                         </t>
                     </div>
 
-                    <!-- FR-066: Approval Overview -->
+                    <!-- Approval Overview -->
                     <div class="panel">
                         <div class="panel-head">
                             <div><h5>Approval Overview</h5><small>Request resolution summary</small></div>
@@ -844,9 +833,9 @@
                     </div>
                 </div>
 
-                <!-- DEPARTMENT COVERAGE (FR-067) + RECENT REQUESTS (FR-068) -->
+                <!-- DEPARTMENT COVERAGE  + RECENT REQUESTS -->
                 <div class="grid-2 dashboard-lower-row">
-                    <!-- FR-067: Department Coverage Heatmap -->
+                    <!-- Department Coverage Heatmap -->
                     <div class="panel">
                         <div class="panel-head">
                             <div>
@@ -902,7 +891,7 @@
                         </div>
                     </div>
 
-                    <!-- FR-068: Recent Requests List -->
+                    <!-- Recent Requests List -->
                     <div class="panel">
                         <div class="panel-head">
                             <div>
@@ -937,7 +926,7 @@
                     </div>
                 </div>
 
-                <!-- FR-069: Quick Actions Bar -->
+                <!-- Quick Actions Bar -->
                 <div class="panel quick-actions-panel">
                     <div class="panel-head">
                         <h5><i class="fa fa-bolt"/> Quick Actions</h5>

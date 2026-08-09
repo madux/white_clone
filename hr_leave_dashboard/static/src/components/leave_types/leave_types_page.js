@@ -212,7 +212,8 @@ export class LeaveTypesPage extends Component {
         });
     }
 
-    // Drag and Drop Sequence Reordering on Master Array (FR-195)
+    // FR-195: Drag and Drop Sequence Reordering on Master Array
+
     onRowDragStart(ev, leaveTypeItem) {
         if (this.hasActiveFilters || this.state.viewMode === "employee") {
             this.notification.add("Reordering sequence is disabled while filters or Employee View are active.", { type: "warning" });
@@ -256,7 +257,8 @@ export class LeaveTypesPage extends Component {
         }
     }
 
-    // Toggle Active Status (FR-194)
+    // FR-194: Toggle Active Status
+
     async toggleStatus(leaveType) {
         if (leaveType.active) {
             const impact = await this.orm.call("hr.leave.type", "get_deactivation_impact", [leaveType.id]);

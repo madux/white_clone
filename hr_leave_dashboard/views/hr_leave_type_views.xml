@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-        <!-- Client Action for Custom Screen 12 Leave Types Page -->
+        <!-- Client Action for Custom Leave Types Page -->
         <record id="action_hr_leave_types_custom" model="ir.actions.client">
             <field name="name">Leave Types Policy Configuration</field>
             <field name="tag">hr_leave_dashboard.LeaveTypesPage</field>
