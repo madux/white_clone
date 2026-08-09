@@ -26,14 +26,14 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
                             <!-- Admin / Employee View Toggle (FR-139) -->
-                            <div class="btn-group btn-group-sm" role="group">
+                            <div class="cleon-calendar-view-switch" role="group">
                                 <button type="button"
-                                        t-att-class="'btn ' + (!state.employeeView ? 'btn-dark font-weight-bold' : 'btn-outline-secondary')"
+                                        t-att-class="!state.employeeView ? 'active' : ''"
                                         t-on-click="() => this.toggleAdminEmployeeView(false)">
                                     Admin View
                                 </button>
                                 <button type="button"
-                                        t-att-class="'btn ' + (state.employeeView ? 'btn-dark font-weight-bold' : 'btn-outline-secondary')"
+                                        t-att-class="state.employeeView ? 'active' : ''"
                                         t-on-click="() => this.toggleAdminEmployeeView(true)">
                                     Employee View
                                 </button>
@@ -83,6 +83,7 @@
                             </button>
 
                             <!-- Download Dropdown Button (FR-143) -->
+                            <button type="button" t-att-class="'btn btn-sm btn-pink-active cleon-calendar-request-slot ' + (state.employeeView ? '' : 'cleon-calendar-request-hidden')" t-on-click="openEmployeeRequest" t-att-tabindex="state.employeeView ? 0 : -1"><i class="fa fa-plus"/> Request Leave</button>
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
                                     <i class="fa fa-download me-1"/> Download
@@ -511,6 +512,7 @@
                     close.bind="closeDetailModal"
                     onChanged.bind="loadCalendarData"/>
             </t>
+            <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData"/>
 
         </div>
     </t>

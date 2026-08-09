@@ -18,7 +18,7 @@
           <section class="o_ed_card"><h3>Quick Actions</h3><button class="o_ed_quick" t-on-click="requestLeave"><i class="fa fa-plus-circle"/> Request Leave</button><button class="o_ed_quick" t-on-click="openRequests"><i class="fa fa-file-text-o"/> View My Requests</button><button class="o_ed_quick" t-on-click="openCalendar"><i class="fa fa-calendar"/> View Calendar</button></section>
         </div></div>
       </t>
-    </main>
+    </main><EmployeeRequestModal t-if="state.requestOpen" close.bind="closeRequest" submitted.bind="load"/>
   </div>
 </t>
 </templates>

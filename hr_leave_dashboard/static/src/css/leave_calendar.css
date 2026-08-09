@@ -406,3 +406,4 @@
         transform: translateX(0);
     }
 }
+.cleon-calendar-view-switch{display:grid;grid-template-columns:108px 118px;align-items:center;padding:3px;border:1px solid #e1e5ec;border-radius:8px;background:#f3f5f8}.cleon-calendar-view-switch button{height:32px;border:0!important;border-radius:6px;background:transparent!important;color:#566278!important;font-weight:500;box-shadow:none!important;outline:0!important;white-space:nowrap}.cleon-calendar-view-switch button.active{background:#fff!important;color:#e91e75!important;font-weight:600;box-shadow:0 1px 4px #cbd2dd!important}.cleon-calendar-view-switch button:focus-visible{outline:2px solid #ed3b8b!important;outline-offset:1px!important}.cleon-calendar-request-slot{width:116px;transition:none!important}.cleon-calendar-request-hidden{visibility:hidden;pointer-events:none}

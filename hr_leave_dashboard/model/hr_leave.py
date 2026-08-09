@@ -6,6 +6,7 @@ from odoo.exceptions import AccessError, ValidationError, UserError
 from odoo.osv import expression
 import logging
 import math
+import base64
 
 _logger = logging.getLogger(__name__)
 
@@ -200,6 +201,92 @@ class HrLeave(models.Model):
             "holidays": [{"name": holiday.name, "date": fields.Datetime.to_string(holiday.date_from), "days_away": max(0, (holiday.date_from.date() - today).days)} for holiday in holidays],
             "recent": [{"id": leave.id, "type": leave.holiday_status_id.name, "start": fields.Date.to_string(leave.request_date_from), "end": fields.Date.to_string(leave.request_date_to), "days": round(leave.number_of_days, 1), "state": leave.state, "status": status_labels.get(leave.state, leave.state)} for leave in recent],
         }
+
+    @api.model
+    def _employee_for_current_user(self):
+        employee = self.env["hr.employee"].sudo().search([
+            ("user_id", "=", self.env.user.id), ("company_id", "in", self.env.companies.ids), ("active", "=", True),
+        ], limit=1)
+        if not employee:
+            raise AccessError(_("Your user is not linked to an active employee record."))
+        return employee
+
+    @api.model
+    def get_employee_request_options(self):
+        employee = self._employee_for_current_user()
+        types = self.env["hr.leave.type"].sudo().search([
+            ("active", "=", True), ("visible_to_employees", "=", True),
+            "|", ("company_id", "=", False), ("company_id", "=", employee.company_id.id),
+        ]).filtered(lambda leave_type: employee in leave_type._get_eligible_employees())
+        allocations = self.env["hr.leave.allocation"].sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("holiday_status_id", "in", types.ids)])
+        approved = self.sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
+        return {"employee": {"id": employee.id, "name": employee.name}, "leave_types": [{
+            "id": leave_type.id, "name": leave_type.name, "color": leave_type.cleon_color_hex or "#3B82F6",
+            "allocated": round(sum(allocations.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
+            "used": round(sum(approved.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
+            "unlimited": bool(leave_type.unlimited_entitlement), "allow_half_day": bool(leave_type.allow_half_day),
+        } for leave_type in types]}
+
+    @api.model
+    def preview_employee_leave_request(self, leave_type_id, date_from, date_to, half_day=False, period="am"):
+        employee = self._employee_for_current_user()
+        leave_type = self.env["hr.leave.type"].sudo().browse(int(leave_type_id)).exists()
+        options = self.get_employee_request_options()
+        if not leave_type or leave_type.id not in [item["id"] for item in options["leave_types"]]:
+            raise ValidationError(_("This leave type is not available to you."))
+        if not date_from or not date_to or fields.Date.from_string(date_to) < fields.Date.from_string(date_from):
+            raise ValidationError(_("Select a valid start and end date."))
+        preview = self.sudo().new({"employee_id": employee.id, "holiday_status_id": leave_type.id, "request_date_from": date_from, "request_date_to": date_to, "request_unit_half": bool(half_day), "request_date_from_period": period})
+        preview._compute_department_id(); preview._compute_resource_calendar_id(); preview._compute_date_from_to()
+        duration = 0.5 if half_day else round(preview.number_of_days or 0.0, 1)
+        policy = self.env["hr.leave.type"].sudo().evaluate_leave_request_policy(employee.id, leave_type.id, date_from, date_to, duration, half_day)
+        row = next(item for item in options["leave_types"] if item["id"] == leave_type.id)
+        remaining = row["allocated"] - row["used"]
+        holidays = self.env["resource.calendar.leaves"].sudo().search_count([
+            ("date_from", "<=", date_to + " 23:59:59"), ("date_to", ">=", date_from + " 00:00:00"),
+            ("calendar_id", "=", employee.resource_calendar_id.id),
+        ])
+        return {"duration": duration, "holiday_count": holidays, "current_balance": remaining, "projected_balance": remaining - duration if not row["unlimited"] else remaining, "unlimited": row["unlimited"], **policy}
+
+    @api.model
+    def submit_employee_leave_request(self, values):
+        try:
+            with self.env.cr.savepoint():
+                result = self._submit_employee_leave_request(values)
+            return {"ok": True, **result}
+        except (ValidationError, UserError, AccessError) as error:
+            message = error.args[0] if error.args else _("The leave request could not be submitted.")
+            return {"ok": False, "message": str(message)}
+
+    @api.model
+    def _submit_employee_leave_request(self, values):
+        employee = self._employee_for_current_user()
+        reason = (values.get("reason") or "").strip()
+        if len(reason) < 5:
+            raise ValidationError(_("Please provide a reason of at least 5 characters."))
+        preview = self.preview_employee_leave_request(values.get("leave_type_id"), values.get("date_from"), values.get("date_to"), values.get("half_day", False), values.get("period", "am"))
+        if not preview.get("eligible") or preview.get("errors"):
+            raise ValidationError("\n".join(preview.get("errors") or [_('This request does not comply with the leave policy.')]))
+        attachment = values.get("attachment") or {}
+        if preview.get("document_required") and not attachment.get("data"):
+            raise ValidationError(_("A supporting document is required for this request."))
+        if attachment.get("data") and attachment.get("mimetype") not in ("application/pdf", "image/jpeg", "image/png"):
+            raise ValidationError(_("Only PDF, JPG, and PNG attachments are supported."))
+        if attachment.get("data"):
+            try:
+                if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:
+                    raise ValidationError(_("The attachment must not exceed 10 MB."))
+            except ValueError:
+                raise ValidationError(_("The supporting document is not a valid encoded file."))
+        notes = reason
+        if values.get("emergency_contact"):
+            notes += "\n" + _("Emergency contact: %s") % values["emergency_contact"]
+        leave = self.create({"employee_id": employee.id, "holiday_status_id": int(values["leave_type_id"]), "request_date_from": values["date_from"], "request_date_to": values["date_to"], "request_unit_half": bool(values.get("half_day")), "request_date_from_period": values.get("period", "am"), "notes": notes})
+        if attachment.get("data"):
+            self.env["ir.attachment"].sudo().create({"name": attachment.get("name") or _("Supporting document"), "datas": attachment["data"], "mimetype": attachment.get("mimetype"), "res_model": "hr.leave", "res_id": leave.id})
+        if leave.state == "draft":
+            leave.action_confirm()
+        return {"id": leave.id, "reference": leave.request_ref, "message": _("Your leave request has been submitted for approval.")}
 
     # ---------------------------------------------------------
     # KPI CARDS — FR-055 to FR-060

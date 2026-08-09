@@ -5,10 +5,11 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../components/calendar_sidebar";
 import { LeaveRequestDetailModal } from "../components/leave_request_detail/leave_request_detail";
+import { EmployeeRequestModal } from "../components/employee_request_modal/employee_request_modal";
 
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
-    static components = { CalendarSidebar, LeaveRequestDetailModal };
+    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal };
 
     setup() {
         this.orm = useService("orm");
@@ -58,6 +59,7 @@ export class LeaveCalendarPage extends Component {
             },
 
             detailRequestId: null,
+            employeeRequestOpen: false,
         });
 
         onWillStart(() => this.loadCalendarData());
@@ -178,6 +180,9 @@ export class LeaveCalendarPage extends Component {
         this.state.employeeView = employeeViewVal;
         this.loadCalendarData();
     }
+
+    openEmployeeRequest() { this.state.employeeRequestOpen = true; }
+    closeEmployeeRequest() { this.state.employeeRequestOpen = false; }
 
     navigate(direction) {
         const d = new Date(this.state.currentDate);
