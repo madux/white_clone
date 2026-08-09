@@ -76,7 +76,7 @@ body.o_login_page,
 .cleonhr_form_card:hover {
     transform: translateY(-5px);
     color:#f5f6f8;
-    background-color: #cd0d67;
+    background-color: #f3f3f3;
 }
 
 .loginavatar {
