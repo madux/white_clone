@@ -19,9 +19,13 @@
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
         'views/cleon_login.xml',
+        'views/homepage.xml',
         'views/favicon.xml',
     ],
     'assets': {
+        'web.assets_frontend': [
+            'cleon_settings/static/src/css/cleon_login.css',
+        ],
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
             'cleon_settings/static/src/xml/status_widget.xml',
