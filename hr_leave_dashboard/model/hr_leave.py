@@ -288,6 +288,48 @@ class HrLeave(models.Model):
             leave.action_confirm()
         return {"id": leave.id, "reference": leave.request_ref, "message": _("Your leave request has been submitted for approval.")}
 
+    @api.model
+    def get_my_leave_requests(self, status="all", search="", leave_type_id=False):
+        employee = self._employee_for_current_user()
+        domain = [("employee_id", "=", employee.id)]
+        if status == "pending": domain += [("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False)]
+        elif status == "approved": domain += [("state", "=", "validate"), ("is_cancelled", "=", False)]
+        elif status == "rejected": domain += [("state", "=", "refuse"), ("is_cancelled", "=", False)]
+        elif status == "cancelled": domain += [("is_cancelled", "=", True)]
+        if leave_type_id: domain.append(("holiday_status_id", "=", int(leave_type_id)))
+        search = (search or "").strip()
+        if search: domain += ["|", ("holiday_status_id.name", "ilike", search), ("notes", "ilike", search)]
+        all_records = self.sudo().search([("employee_id", "=", employee.id)])
+        records = self.sudo().search(domain, order="create_date desc, id desc")
+        def request_status(record):
+            if record.is_cancelled: return "cancelled"
+            return "approved" if record.state == "validate" else "pending" if record.state in ("confirm", "validate1") else "rejected" if record.state == "refuse" else "draft"
+        counts = {key: 0 for key in ("all", "pending", "approved", "rejected", "cancelled")}; counts["all"] = len(all_records)
+        for record in all_records: counts[request_status(record)] = counts.get(request_status(record), 0) + 1
+        rows = []
+        for record in records:
+            approver = record.second_approver_id or record.first_approver_id
+            if not approver and employee.parent_id: approver = employee.parent_id.user_id
+            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) == "pending", "can_resubmit": request_status(record) == "rejected"})
+        types = self.env["hr.leave.type"].sudo().browse(all_records.mapped("holiday_status_id").ids).sorted("name")
+        return {"rows": rows, "counts": counts, "leave_types": [{"id": item.id, "name": item.name} for item in types]}
+
+    @api.model
+    def cancel_my_pending_leave(self, leave_id, reason):
+        employee = self._employee_for_current_user(); reason = (reason or "").strip()
+        if len(reason) < 3: return {"ok": False, "message": _("Please provide a cancellation reason of at least 3 characters.")}
+        leave = self.search([("id", "=", int(leave_id)), ("employee_id", "=", employee.id)], limit=1)
+        if not leave: return {"ok": False, "message": _("This leave request could not be found.")}
+        if leave.state not in ("confirm", "validate1") or leave.is_cancelled: return {"ok": False, "message": _("Only a pending leave request can be cancelled.")}
+        try:
+            with self.env.cr.savepoint():
+                leave.action_refuse()
+                leave.write({"is_cancelled": True, "cancelled_by_id": self.env.user.id, "cancelled_at": fields.Datetime.now(), "cancellation_reason": reason})
+                leave._create_audit_record("cancelled", note=reason)
+            return {"ok": True, "message": _("Your pending leave request has been cancelled.")}
+        except (ValidationError, UserError, AccessError) as error:
+            return {"ok": False, "message": str(error.args[0] if error.args else _("The request could not be cancelled."))}
+
     # ---------------------------------------------------------
     # KPI CARDS — FR-055 to FR-060
     # ---------------------------------------------------------
@@ -979,10 +1021,12 @@ class HrLeave(models.Model):
 
     @api.model
     def get_leave_request_detail(self, leave_id):
-        self._check_leave_dashboard_access()
-        leave = self.browse(int(leave_id)).exists()
+        is_admin = self.env.user.has_group("hr_holidays.group_hr_holidays_manager") or self.env.user.has_group("base.group_system")
+        leave = self.sudo().browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id != self.env.company:
             raise ValidationError(_("Invalid leave request."))
+        if not is_admin and leave.employee_id.user_id != self.env.user:
+            raise AccessError(_("You can only view your own leave requests."))
 
         res = self._serialize_leave_request(leave)
         status = leave._get_cleon_leave_status()
@@ -1114,9 +1158,9 @@ class HrLeave(models.Model):
             })
 
         actions = {
-            "can_approve": status == "pending" and not leave.is_cancelled,
-            "can_reject": status == "pending" and not leave.is_cancelled,
-            "can_cancel": status == "approved" and not leave.is_cancelled,
+            "can_approve": is_admin and status == "pending" and not leave.is_cancelled,
+            "can_reject": is_admin and status == "pending" and not leave.is_cancelled,
+            "can_cancel": is_admin and status == "approved" and not leave.is_cancelled,
         }
 
         res.update({

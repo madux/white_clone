@@ -9,6 +9,7 @@ export class LeaveRequestDetailModal extends Component {
         requestId: Number,
         close: Function,
         onChanged: { type: Function, optional: true },
+        readOnly: { type: Boolean, optional: true },
     };
 
     setup() {

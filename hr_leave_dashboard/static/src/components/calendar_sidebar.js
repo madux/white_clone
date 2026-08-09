@@ -12,6 +12,7 @@ export class CalendarSidebar extends Component {
 
     setup() {
         this.action = useService("action");
+        this.user = useService("user");
         this.notification = useService("notification");
     }
 
@@ -33,8 +34,9 @@ export class CalendarSidebar extends Component {
         this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
     }
 
-    openRequests() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
+    async openRequests() {
+        const isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
+        this.action.doAction(isAdmin ? "hr_leave_dashboard.action_hr_leave_requests_custom" : "hr_leave_dashboard.action_hr_leave_my_requests");
     }
 
     openLeaveTypes() {

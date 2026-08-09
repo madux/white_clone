@@ -28,8 +28,8 @@ export class EmployeeLeaveDashboard extends Component {
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
     requestLeave() { this.state.requestOpen = true; }
     closeRequest() { this.state.requestOpen = false; }
-    openCalendar() { return this.action.doAction("hr_holidays.hr_leave_action_new_request"); }
-    openRequests() { return this.action.doAction("hr_holidays.hr_leave_action_new_request", { viewType: "list" }); }
+    openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
+    openRequests() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
     formatDate(value) { if (!value) return "—"; return new Date(value.replace(" ", "T")).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); }
     statusClass(state) { return state === "validate" ? "approved" : ["confirm", "validate1"].includes(state) ? "pending" : state === "refuse" ? "rejected" : "draft"; }
 }

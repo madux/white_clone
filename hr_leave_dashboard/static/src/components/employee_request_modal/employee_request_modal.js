@@ -5,11 +5,11 @@ import { useService } from "@web/core/utils/hooks";
 
 export class EmployeeRequestModal extends Component {
     static template = "hr_leave_dashboard.EmployeeRequestModal";
-    static props = { close: Function, submitted: { type: Function, optional: true } };
+    static props = { close: Function, submitted: { type: Function, optional: true }, initial: { type: Object, optional: true } };
     setup() {
         this.orm = useService("orm"); this.notification = useService("notification");
         this.state = useState({ loading: true, submitting: false, types: [], balances: [], form: { leave_type_id: "", date_from: "", date_to: "", half_day: false, period: "am", reason: "", emergency_contact: "", attachment: null }, preview: null, error: "" });
-        onWillStart(async () => { const data = await this.orm.call("hr.leave", "get_employee_request_options", []); this.state.types = data.leave_types || []; this.state.balances = data.leave_types || []; this.state.loading = false; });
+        onWillStart(async () => { const data = await this.orm.call("hr.leave", "get_employee_request_options", []); this.state.types = data.leave_types || []; this.state.balances = data.leave_types || []; if (this.props.initial) Object.assign(this.state.form, this.props.initial); this.state.loading = false; if (this.props.initial) await this.preview(); });
     }
     get selectedType() { return this.state.types.find(item => item.id === Number(this.state.form.leave_type_id)); }
     get canSubmit() { const p = this.state.preview; return !this.state.submitting && p && p.eligible && !(p.errors || []).length && this.state.form.reason.trim().length >= 5 && (!p.document_required || this.state.form.attachment); }

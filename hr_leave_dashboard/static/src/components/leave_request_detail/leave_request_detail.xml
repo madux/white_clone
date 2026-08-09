@@ -257,19 +257,19 @@
             <t t-if="state.detail">
                 <div class="leave-detail-modal-footer">
                     <!-- Pending Actions -->
-                    <t t-if="state.detail.actions.can_reject">
+                    <t t-if="!props.readOnly and state.detail.actions.can_reject">
                         <button type="button" class="btn-detail-reject" t-on-click="openReject" t-att-disabled="state.processing">
                             Reject
                         </button>
                     </t>
-                    <t t-if="state.detail.actions.can_approve">
+                    <t t-if="!props.readOnly and state.detail.actions.can_approve">
                         <button type="button" class="btn-detail-approve" t-on-click="approve" t-att-disabled="state.processing">
                             <i class="fa fa-check me-1"/> Approve
                         </button>
                     </t>
 
                     <!-- Approved Action -->
-                    <t t-if="state.detail.actions.can_cancel">
+                    <t t-if="!props.readOnly and state.detail.actions.can_cancel">
                         <button type="button" class="btn-detail-cancel" t-on-click="openCancel" t-att-disabled="state.processing">
                             <i class="fa fa-exclamation-triangle me-1"/> Cancel Leave
                         </button>

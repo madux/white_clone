@@ -15,6 +15,11 @@
         <field name="tag">hr_leave_dashboard.EmployeeDashboard</field>
     </record>
 
+    <record id="action_hr_leave_my_requests" model="ir.actions.client">
+        <field name="name">My Leave Requests</field>
+        <field name="tag">hr_leave_dashboard.MyLeaveRequests</field>
+    </record>
+
     <record id="action_hr_leave_requests_custom" model="ir.actions.client">
         <field name="name">Leave Requests</field>
         <field name="tag">hr_leave_requests_page</field>
