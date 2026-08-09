@@ -397,6 +397,14 @@ export class StaffDirectoryDashboard extends Component {
         return `sdir-bg-${lower}`;
     }
 
+    getPronouns(gender) {
+        if (!gender) return 'other/none';
+        const g = gender.toLowerCase();
+        if (g === 'male') return 'he/him';
+        if (g === 'female') return 'she/her';
+        return 'other/none';
+    }
+
     // ─── Selection Logic ─────────────────────────────────────────────────────
 
     toggleSort(colId) {

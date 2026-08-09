@@ -821,7 +821,7 @@
                         <div class="sdir-prof-name-block">
                             <h2 class="sdir-prof-name">
                                 <t t-esc="state.activeProfile.name"/>
-                                <span class="sdir-prof-pronouns">he/him</span>
+                                <span class="sdir-prof-pronouns" t-esc="this.getPronouns(state.activeProfile.gender)"/>
                             </h2>
                             <div class="sdir-prof-title" t-esc="state.activeProfile.job_title or '—'"/>
                         </div>
