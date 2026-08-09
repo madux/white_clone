@@ -304,6 +304,30 @@
                     </div><!-- /.sdir-toolbar-right -->
                 </div><!-- /.sdir-toolbar -->
 
+                <!-- ── RECENT BAR ──────────────────────────────────────────── -->
+                <t t-if="state.recentlyViewedProfiles.length > 0">
+                    <div class="sdir-recent-bar">
+                        <div class="sdir-recent-content">
+                            <svg class="sdir-recent-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span class="sdir-recent-label">Recent:</span>
+                            <div class="sdir-recent-avatars">
+                                <!-- Render in standard order so the most recent (index 0) is left-most (front) -->
+                                <t t-foreach="state.recentlyViewedProfiles" t-as="recent" t-key="recent.id">
+                                    <div t-attf-class="sdir-recent-avatar sdir-ring-{{recent.lifecycle_state}}"
+                                         t-attf-style="background-color: {{avatarColor(recent.name)}};"
+                                         t-att-title="recent.name"
+                                         t-on-click="() => this.openProfile(recent.id)">
+                                        <t t-esc="initials(recent.name)"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
                 <!-- ── SELECTION BAR ───────────────────────────────────────── -->
                 <t t-if="state.selectedPeople.length > 0 and state.activeView === 'list'">
                     <div class="sdir-selection-bar">

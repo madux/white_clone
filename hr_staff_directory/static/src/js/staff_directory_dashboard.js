@@ -89,6 +89,9 @@ export class StaffDirectoryDashboard extends Component {
         const savedCols = localStorage.getItem('sdir_active_columns');
         const initialCols = savedCols ? JSON.parse(savedCols) : ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'];
 
+        const savedRecent = localStorage.getItem('sdir_recent_profiles');
+        const initialRecent = savedRecent ? JSON.parse(savedRecent) : [];
+
         this.state = useState({
             loading:     true,
             activeTab:   'people',   // 'people' | 'org' | 'network'
@@ -118,6 +121,7 @@ export class StaffDirectoryDashboard extends Component {
                 message: ''
             },
             hasMessageError: false,
+            recentlyViewedProfiles: initialRecent,
             people:      [],
             stats: {
                 total:              0,
@@ -378,6 +382,14 @@ export class StaffDirectoryDashboard extends Component {
             this.state.profileActiveTab = 'overview';
             this.state.showProfileModal = true;
             this.closeMessageBox();
+            
+            // Track recently viewed
+            this.state.recentlyViewedProfiles = this.state.recentlyViewedProfiles.filter(p => p.id !== personId);
+            this.state.recentlyViewedProfiles.unshift(person);
+            if (this.state.recentlyViewedProfiles.length > 5) {
+                this.state.recentlyViewedProfiles = this.state.recentlyViewedProfiles.slice(0, 5);
+            }
+            localStorage.setItem('sdir_recent_profiles', JSON.stringify(this.state.recentlyViewedProfiles));
         }
     }
 
