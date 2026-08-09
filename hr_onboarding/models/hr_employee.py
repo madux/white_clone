@@ -40,8 +40,8 @@ class HrEmployee(models.Model):
         help="Regulatory pension identifier (e.g. Nigerian PenCom PIN). "
              "No equivalent field exists in core Odoo.",
     )
-    work_experience_ids = fields.Many2many('hr.work_experience', string="Work experiences")
-    work_education_ids = fields.Many2many('hr.work_education', string="Work education")
+    work_experience_ids = fields.Many2many('hr.work_experience', 'hr_employee_experience_rel', 'emp_id', 'experience_id',  string="Work experiences")
+    work_education_ids = fields.Many2many('hr.work_education',  'hr_employee_education_rel', 'emp_id', 'education_id',  string="Work education")
     work_skill_ids = fields.Many2many('hr.work_skills', string="Work Skills")
 
     @api.model_create_multi
