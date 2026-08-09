@@ -4,10 +4,11 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { EmployeeRequestModal } from "../employee_request_modal/employee_request_modal";
+import { CalendarSidebar } from "../calendar_sidebar";
 
 export class EmployeeLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.EmployeeDashboard";
-    static components = { EmployeeRequestModal };
+    static components = { EmployeeRequestModal, CalendarSidebar };
 
     setup() {
         this.orm = useService("orm");
@@ -23,6 +24,7 @@ export class EmployeeLeaveDashboard extends Component {
         finally { this.state.loading = false; }
     }
     openAdmin() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard"); }
+    toggleSidebar() { window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar")); }
     openTour() { this.notification.add("Use the balance cards and quick actions to manage your personal leave.", { title: "Employee Dashboard Tour", type: "info" }); }
     openHelp() { this.notification.add("Available balance is approved allocation less approved leave; pending days are shown separately.", { title: "Leave Dashboard Guide", type: "info" }); }
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }

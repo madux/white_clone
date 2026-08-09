@@ -5,7 +5,7 @@
         <div class="leaveapp">
 
             <!-- Shared Sidebar -->
-            <CalendarSidebar activeMenu="'calendar'"/>
+            <CalendarSidebar activeMenu="'calendar'" mode="state.employeeView ? 'employee' : 'auto'" t-key="state.employeeView"/>
 
             <!-- Main Content Area -->
             <div class="o_leave_dashboard">

@@ -2,12 +2,12 @@
 <templates xml:space="preserve">
 
     <t t-name="hr_leave_dashboard.CalendarSidebar" owl="1">
-        <div class="leavesidebar">
+        <div t-att-class="'leavesidebar ' + (state.collapsed ? 'is-collapsed' : '')">
             <div class="o_cc_sidebar_header">
                 <span class="o_cc_header_dot"/>
                 <span class="o_cc_header_title">Leave Management</span>
-                <button type="button" class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
-                    <i class="fa fa-th-large"/>
+                <button type="button" class="btn btn-sm o_cc_collapse_btn" t-on-click="toggleCollapsed" t-att-title="state.collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                    <i t-att-class="state.collapsed ? 'fa fa-chevron-right' : 'fa fa-chevron-left'"/>
                 </button>
             </div>
 
@@ -16,7 +16,7 @@
                     <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
                     <span class="o_cc_nav_label">Dashboard</span>
                 </a>
-                <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'get_started' ? 'o_cc_nav_active' : '')" t-on-click="openSetupExperience">
+                <a t-if="!state.employeeMode" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'get_started' ? 'o_cc_nav_active' : '')" t-on-click="openSetupExperience">
                     <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
                     <span class="o_cc_nav_label">Get Started</span>
                     <i class="fa fa-chevron-right o_cc_nav_arrow"/>
@@ -27,14 +27,16 @@
                 </a>
                 <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'requests' ? 'o_cc_nav_active' : '')" t-on-click="openRequests">
                     <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
-                    <span class="o_cc_nav_label">Leave Request</span>
+                    <span class="o_cc_nav_label" t-esc="state.employeeMode ? 'My Leave Requests' : 'Leave Requests'"/>
+                    <span t-if="state.pending" class="o_cc_pending_badge" t-esc="state.pending"/>
                     <i class="fa fa-chevron-right o_cc_nav_arrow"/>
                 </a>
 
-                <p class="sidebar-section-label">Leave Configuration</p>
-                <ul>
+                <t t-if="!state.employeeMode">
+                <p class="sidebar-section-label o_cc_section_toggle" t-on-click="toggleConfiguration">Leave Configuration <i t-att-class="state.configOpen ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/></p>
+                <ul t-if="state.configOpen">
                     <li>
-                        <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'types' ? 'o_cc_nav_active' : '')" t-on-click="openLeaveTypes">
+                        <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'leave_types' ? 'o_cc_nav_active' : '')" t-on-click="openLeaveTypes">
                             <span class="o_cc_nav_icon"><i class="fa fa-tags"/></span>
                             <span class="o_cc_nav_label">Leave Types</span>
                         </a>
@@ -46,18 +48,18 @@
                         </a>
                     </li>
                 </ul>
+                </t>
 
-                <p class="sidebar-section-label">Reports</p>
-                <ul>
+                <p t-if="!state.employeeMode" class="sidebar-section-label">Reports</p><ul>
                     <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'reports' ? 'o_cc_nav_active' : '')" t-on-click="openReports">
                         <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
                         <span class="o_cc_nav_label">Reports</span>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openAuditLog">
+                    <a t-if="!state.employeeMode" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'audit' ? 'o_cc_nav_active' : '')" t-on-click="openAuditLog">
                         <span class="o_cc_nav_icon"><i class="fa fa-shield"/></span>
                         <span class="o_cc_nav_label">Audit Log</span>
                     </a>
-                    <a class="o_cc_nav_item" t-on-click="openSettings">
+                    <a t-if="!state.employeeMode" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'settings' ? 'o_cc_nav_active' : '')" t-on-click="openSettings">
                         <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
                         <span class="o_cc_nav_label">Settings</span>
                     </a>
@@ -65,11 +67,8 @@
             </nav>
 
             <div class="o_cc_sidebar_footer">
-                <span class="o_cc_footer_label">Solution By MaachSoft</span>
-                <div class="o_cc_footer_status">
-                    <span class="o_cc_status_dot o_cc_status_green"/>
-                    All integrations active
-                </div>
+                <button t-on-click="openTour"><i class="fa fa-map-o"/><span>Take a Tour</span><em>Guide</em></button>
+                <button t-if="!state.employeeMode" t-on-click="openSetupExperience"><i class="fa fa-magic"/><span>Setup Wizard</span></button>
             </div>
         </div>
     </t>

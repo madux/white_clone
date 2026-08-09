@@ -470,7 +470,7 @@ export class LeaveRequestsPage extends Component {
     // ═══════════════════════════════════════════════════════════════
 
     toggleLeaveSidebar() {
-        this.state.sidebarCollapsed = !this.state.sidebarCollapsed;
+        window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
     }
 
     setViewMode(mode) {
