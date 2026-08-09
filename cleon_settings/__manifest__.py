@@ -14,7 +14,7 @@
     # depend on it, but making setup depend on those same modules creates a
     # cycle (notably cleon_settings <-> hr_warning). The licensing module is
     # also master-database functionality and must not be required by tenants.
-    'depends': ['base', 'hr', 'base_addons'],
+    'depends': ['base', 'hr', 'base_addons', 'cleon_license', 'hr_employee'],
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',

@@ -9,7 +9,7 @@
     'summary': 'To install base apps',
     'description': """To install base apps.
 """,
-    'depends': ['base', 'white_clone_theme', 'cleon_home_menu', 'hr_employee'],
+    'depends': ['base', 'white_clone_theme', 'hr'],
     'data': [
         'views/views.xml'
     ],
