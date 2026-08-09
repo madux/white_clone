@@ -13,6 +13,7 @@
             <field name="icon_class">fa fa-warning</field>
             <field name="icon_color">#F59E0B</field>
         <field name="category_name">CleonHR-HR Admin</field>
+        <field name="sequence">50</field>
     </record>
  
 

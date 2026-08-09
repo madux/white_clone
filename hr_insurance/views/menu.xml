@@ -9,8 +9,9 @@
     />
     <record id="hr_insurance.hr_admin_health_insurance" model="ir.ui.menu">
             <field name="icon_class">fa fa-heartbeat</field>
-            <field name="icon_color">#10B981</field>
+            <field name="icon_color">#EF4444</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">70</field>
         </record>
 
 </odoo>

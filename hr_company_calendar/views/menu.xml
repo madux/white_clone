@@ -11,6 +11,7 @@
             <field name="icon_class">fa fa-calendar</field>
             <field name="icon_color">#14B8A6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">130</field>
         </record>
 
 

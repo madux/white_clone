@@ -412,7 +412,158 @@
 .has-cleon-app-rail .o_main_navbar .o_menu_brand,
 .has-cleon-app-rail .o_main_navbar .o_menu_sections{display:none!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu{margin:4px 8px}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle{width:148px;height:38px;padding:0 15px!important;display:flex;align-items:center;gap:10px;border:0!important;border-radius:10px!important;background:#fff!important;color:#e62b7a!important;font-size:0!important;box-shadow:none!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle .oi{font-size:18px!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle::after{content:"CleonHR"!important;display:inline!important;width:auto!important;height:auto!important;margin:0!important;border:0!important;color:#e62b7a!important;font-size:18px!important;font-weight:600!important}
 
+
 /* ============================================================
-   CLEONHR PERSISTENT APP RAIL — v5.0
+   CLEONHR PERSISTENT APP RAIL — v6.0
    ============================================================ */
-.cleon-app-rail{position:fixed;z-index:1035;left:0;top:46px;bottom:0;width:72px;background:#fff;border-right:1px solid #e3e7ef;box-shadow:1px 0 4px rgba(25,39,65,.04);overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#aab3c2 transparent}.cleon-rail-nav{display:flex;flex-direction:column;align-items:stretch;padding:8px 4px 18px}.cleon-rail-app{position:relative;min-height:72px;padding:7px 2px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:9px;color:#17233b;text-decoration:none!important;text-align:center;outline:none}.cleon-rail-app:hover,.cleon-rail-app:focus{background:#f6f2fb;color:#6d3bd1}.cleon-rail-app.active{background:#fde7f2;color:#e91d70}.cleon-rail-app.active:before{content:"";position:absolute;left:-4px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:#e91d70}.cleon-rail-icon{width:29px;height:29px;display:grid;place-items:center;border-radius:8px;color:var(--app-color);font-size:20px}.cleon-rail-icon img{width:25px;height:25px;object-fit:contain}.cleon-rail-icon .cleon-rail-fallback{display:none}.cleon-rail-label{width:64px;max-height:27px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:10px;font-weight:600;line-height:1.2;overflow-wrap:anywhere}.cleon-rail-loading,.cleon-rail-empty{min-height:90px;padding:14px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#7b879b;text-align:center;font-size:11px}.has-cleon-app-rail .o_web_client>.o_action_manager{margin-left:72px;width:calc(100% - 72px)}.has-cleon-app-rail .leavesidebar{left:72px!important}.has-cleon-app-rail .o_main_navbar{padding-left:8px}.has-cleon-app-rail .hmo-overlay{display:none!important}@media(max-width:767px){.cleon-app-rail{width:60px}.cleon-rail-app{min-height:64px}.cleon-rail-label{width:52px;font-size:9px}.has-cleon-app-rail .o_web_client>.o_action_manager{margin-left:60px;width:calc(100% - 60px)}.has-cleon-app-rail .leavesidebar{left:60px!important}}
+
+.cleon-app-rail {
+    position: fixed;
+    z-index: 1035;
+    left: 0;
+    top: 46px;
+    bottom: 0;
+    width: 72px;
+    background: #fff;
+    border-right: 1px solid #e3e7ef;
+    box-shadow: 1px 0 4px rgba(25, 39, 65, .04);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #aab3c2 transparent;
+}
+
+.cleon-rail-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 4px 18px;
+}
+
+.cleon-rail-app {
+    position: relative;
+    height: 76px;           /* enough for icon + label + breathing room */
+    flex-shrink: 0;         /* items never compress — forces rail to scroll */
+    overflow: hidden;       /* hard-clip: content never bleeds into sidebar */
+    margin-bottom: 3px;     /* visible gap between items */
+    padding: 8px 4px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-radius: 9px;
+    color: #17233b;
+    text-decoration: none !important;
+    text-align: center;
+    outline: none;
+    transition: background .15s;
+}
+
+.cleon-rail-app:hover,
+.cleon-rail-app:focus {
+    background: #f6f2fb;
+    color: #6d3bd1;
+}
+
+.cleon-rail-app.active {
+    background: #fde7f2;
+    color: #e91d70;
+}
+
+.cleon-rail-app.active::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: #e91d70;
+}
+
+/* icon box: colored background, white icon */
+.cleon-rail-icon {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: var(--app-color, #64748B);
+    color: #ffffff !important;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.cleon-rail-app:hover .cleon-rail-icon,
+.cleon-rail-app:focus .cleon-rail-icon {
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,.18);
+}
+
+.cleon-rail-icon i {
+    color: #ffffff !important;
+    line-height: 1;
+}
+
+.cleon-rail-icon img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.cleon-rail-icon .cleon-rail-fallback { display: none; }
+
+.cleon-rail-label {
+    width: 62px;
+    max-height: 24px;       /* room for exactly 2 lines at 9px */
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.cleon-rail-loading,
+.cleon-rail-empty {
+    min-height: 90px;
+    padding: 14px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #7b879b;
+    text-align: center;
+    font-size: 11px;
+}
+
+/* Layout adjustments when rail is present */
+.has-cleon-app-rail .o_web_client > .o_action_manager {
+    margin-left: 72px;
+    width: calc(100% - 72px);
+}
+
+.has-cleon-app-rail .leavesidebar { left: 72px !important; }
+.has-cleon-app-rail .o_main_navbar { padding-left: 8px; }
+.has-cleon-app-rail .hmo-overlay { display: none !important; }
+
+@media (max-width: 767px) {
+    .cleon-app-rail { width: 60px; }
+    .cleon-rail-app { height: 60px; flex-shrink: 0; }
+    .cleon-rail-icon { width: 30px; height: 30px; font-size: 14px; }
+    .cleon-rail-label { width: 52px; font-size: 9px; }
+    .has-cleon-app-rail .o_web_client > .o_action_manager {
+        margin-left: 60px;
+        width: calc(100% - 60px);
+    }
+    .has-cleon-app-rail .leavesidebar { left: 60px !important; }
+}
+
