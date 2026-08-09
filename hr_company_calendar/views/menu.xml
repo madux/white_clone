@@ -9,6 +9,7 @@
     />
     <record id="hr_company_calendar.hr_admin_company_calendar" model="ir.ui.menu">
             <field name="icon_class">fa fa-calendar</field>
+            <field name="icon_color">#14B8A6</field>
             <field name="category_name">CleonHR-HR Admin</field>
         </record>
 

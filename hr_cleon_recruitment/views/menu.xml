@@ -16,6 +16,7 @@
     />
     <record id="hr_cleon_recruitment.hr_recruitment_custom_menu" model="ir.ui.menu">
             <field name="icon_class">fa fa-users</field>
+            <field name="icon_color">#3B82F6</field>
             <field name="category_name">CleonHR-Recruitment</field>
         </record>
  

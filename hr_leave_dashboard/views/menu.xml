@@ -13,6 +13,7 @@
 
     <record id="hr_leave_dashboard.hr_admin_leave_management" model="ir.ui.menu">
             <field name="icon_class">fa fa-plane</field>
+            <field name="icon_color">#EC4899</field>
             <field name="category_name">CleonHR-HR Admin</field>
         </record>
 

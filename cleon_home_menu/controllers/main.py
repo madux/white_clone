@@ -33,7 +33,7 @@ class HomeMenuController(http.Controller):
         menus = request.env['ir.ui.menu'].sudo().search([
             ('parent_id', '!=', False),
             ('category_name', 'ilike', 'CleonHR'),
-        ])
+        ], order='sequence, id')
 
         categories = {}
         order = []
@@ -72,7 +72,9 @@ class HomeMenuController(http.Controller):
                 "description": getattr(menu, 'description', False) or (
                     "%s tools and workflows" % menu.name
                 ),
-                "icon": menu.web_icon or False,
+                "icon": "/home_menu/get_icon/%s" % menu.id if menu.web_icon_data else False,
+                "icon_class": getattr(menu, 'icon_class', False) or "fa fa-th-large",
+                "icon_color": getattr(menu, 'icon_color', False) or "#64748B",
                 "url": "/web#menu_id=%s" % menu.id,
                 "children": children,
             })
