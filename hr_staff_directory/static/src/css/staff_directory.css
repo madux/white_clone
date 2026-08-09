@@ -1474,6 +1474,18 @@
   background: #e5e7eb;
   color: #6b7280;
 }
+.sdir-star-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9CA3AF;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.sdir-star-icon:hover { color: #6B7280; }
+.sdir-star-active { color: #f59e0b; }
 
 .sdir-cols-add-sec {
   padding: 16px;
@@ -1870,5 +1882,13 @@
 
 /* ─── Filter Footer ─── */
 .sdir-filter-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid #F3F4F6; background: #F9FAFB; gap: 16px; }
+.sdir-tr-selected { background: #f0fdf4 !important; }
+.sdir-tr-selected .sdir-checkbox { accent-color: #10b981; }
+
+.sdir-row-pinned { background-color: #fef9c3 !important; }
+.sdir-row-pinned td:first-child { box-shadow: inset 4px 0 0 0 #f59e0b; }
+.sdir-card-pinned { background-color: #fef9c3 !important; border-left: 4px solid #f59e0b !important; }
+
+.sdir-td { padding: 12px 16px; border-bottom: 1px solid #E5E7EB; color: #111827; font-size: 13px; vertical-align: middle; }
 .sdir-filter-save-input { flex: 1; padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; outline: none; background: white; }
 .sdir-filter-save-input:focus { border-color: var(--pink); }

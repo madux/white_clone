@@ -484,7 +484,7 @@
                             <!-- Table body -->
                             <tbody>
                                 <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
-                                    <tr t-att-class="'sdir-tr sdir-clickable' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '') + (state.selectedPeople.includes(person.id) ? ' sdir-tr-selected' : '')"
+                                    <tr t-att-class="'sdir-tr sdir-clickable' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '') + (state.selectedPeople.includes(person.id) ? ' sdir-tr-selected' : '') + (person.is_pinned ? ' sdir-row-pinned' : '')"
                                         t-att-data-id="person.id"
                                         t-on-click="() => this.openProfile(person.id)">
 
@@ -500,8 +500,8 @@
                                                 <td class="sdir-td sdir-td-name">
                                                     <div class="sdir-name-cell">
                                                         <!-- Star icon -->
-                                                        <div class="sdir-star-icon">
-                                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1">
+                                                        <div t-att-class="'sdir-star-icon' + (person.is_pinned ? ' sdir-star-active' : '')" t-on-click.stop="() => this.togglePin(person)">
+                                                            <svg width="14" height="14" viewBox="0 0 24 24" t-att-fill="person.is_pinned ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.5">
                                                                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                                                             </svg>
                                                         </div>
@@ -677,7 +677,7 @@
                 <t t-if="state.activeView === 'grid'">
                     <div id="sd-grid-view" class="sd-grid-container">
                         <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
-                            <div t-att-class="'sd-card sdir-clickable sd-border-' + person.lifecycle_state"
+                            <div t-att-class="'sd-card sdir-clickable sd-border-' + person.lifecycle_state + (person.is_pinned ? ' sdir-card-pinned' : '')"
                                  t-on-click="() => this.openProfile(person.id)">
                                 
                                 <!-- Header Row: Avatar + Name/Title -->

@@ -23,7 +23,17 @@ class HrEmployeeStaffDirectory(models.Model):
         ('L5 · Senior Manager', 'L5 · Senior Manager'),
         ('L6 · Director', 'L6 · Director'),
         ('L7 · Executive', 'L7 · Executive'),
-    ])
+    ], string='Mock Grade')
+    
+    # SINGLE SOURCE OF TRUTH FOR PINNED EMPLOYEES:
+    # This Many2many field persists which users have pinned/favorited this employee.
+    pinned_by_user_ids = fields.Many2many(
+        'res.users',
+        'hr_employee_pinned_users_rel',
+        'employee_id',
+        'user_id',
+        string='Pinned by Users'
+    )
     work_mode = fields.Selection([
         ('office', 'Office'),
         ('hybrid', 'Hybrid'),
@@ -631,6 +641,19 @@ class HrEmployeeStaffDirectory(models.Model):
     # ─── People Tab: Entry Point ──────────────────────────────────────────────
 
     @api.model
+    def toggle_employee_pin(self, employee_id):
+        emp = self.browse(employee_id)
+        if emp.exists():
+            user_id = self.env.user.id
+            if user_id in emp.pinned_by_user_ids.ids:
+                emp.pinned_by_user_ids = [(3, user_id)]
+                return {'status': 'unpinned', 'employee_id': employee_id}
+            else:
+                emp.pinned_by_user_ids = [(4, user_id)]
+                return {'status': 'pinned', 'employee_id': employee_id}
+        return {'status': 'error', 'message': 'Employee not found'}
+
+    @api.model
     def get_staff_directory_people_data(self):
         return {
             'stats':  self._sd_people_stats(),
@@ -840,6 +863,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
                 'has_image':          bool(getattr(emp, 'image_128', False) or getattr(emp, 'avatar_128', False)),
+                'is_pinned':          self.env.user.id in emp.pinned_by_user_ids.ids,
             })
         return result
 

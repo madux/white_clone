@@ -266,20 +266,24 @@ export class StaffDirectoryDashboard extends Component {
             }
         }
 
-        const sortBy = this.state.sortBy;
-        const sortDesc = this.state.sortDesc;
-        if (sortBy) {
-            result = [...result].sort((a, b) => {
-                let valA = a[sortBy] || '';
-                let valB = b[sortBy] || '';
-                if (typeof valA === 'string') valA = valA.toLowerCase();
-                if (typeof valB === 'string') valB = valB.toLowerCase();
-                
-                if (valA < valB) return sortDesc ? 1 : -1;
-                if (valA > valB) return sortDesc ? -1 : 1;
-                return 0;
-            });
-        }
+        // Final Sort: Pinned first, then by selected sort column
+        result.sort((a, b) => {
+            if (a.is_pinned !== b.is_pinned) {
+                return a.is_pinned ? -1 : 1;
+            }
+            const col = this.state.sortBy;
+            const dir = this.state.sortDesc ? -1 : 1;
+            
+            let valA = a[col];
+            let valB = b[col];
+            
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+            
+            if (valA < valB) return -1 * dir;
+            if (valA > valB) return 1 * dir;
+            return 0;
+        });
         
         return result;
     }
@@ -403,6 +407,29 @@ export class StaffDirectoryDashboard extends Component {
         if (g === 'male') return 'he/him';
         if (g === 'female') return 'she/her';
         return 'other/none';
+    }
+
+    // ─── Pin Logic ─────────────────────────────────────────────────────
+
+    async togglePin(person) {
+        // Optimistic UI update
+        person.is_pinned = !person.is_pinned;
+        // Re-assign people array to trigger reactivity for sorting
+        this.state.people = [...this.state.people];
+        
+        try {
+            await this.rpc('/hr_staff_directory/toggle_pin', {
+                employee_id: person.id
+            });
+            const action = person.is_pinned ? 'pinned' : 'unpinned';
+            this.showToast('success', `${person.name} has been successfully ${action}!`);
+        } catch (error) {
+            // Revert on error
+            person.is_pinned = !person.is_pinned;
+            this.state.people = [...this.state.people];
+            console.error('Failed to toggle pin:', error);
+            this.showToast('error', 'Failed to update pin status.');
+        }
     }
 
     // ─── Selection Logic ─────────────────────────────────────────────────────
