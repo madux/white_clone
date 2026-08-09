@@ -839,6 +839,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
+                'has_image':          bool(getattr(emp, 'image_128', False) or getattr(emp, 'avatar_128', False)),
             })
         return result
 
