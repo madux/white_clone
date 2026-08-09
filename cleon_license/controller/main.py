@@ -2,6 +2,7 @@
 import xmlrpc.client
 import json
 import logging
+import os
 from datetime import date, datetime
 ICON_PALETTE = [
         "#EC4899",  # pink
@@ -23,12 +24,12 @@ _logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 # Configuration – adjust to match your licence server
 # ─────────────────────────────────────────────────────────────────────────────
-LICENSE_SERVER_URL = "http://localhost:8072"   # URL of the Odoo instance that holds my_license_db
-LICENSE_DB         = "hope_children"
-LICENSE_DB_USER    = "admin"
-LICENSE_DB_PASSWORD = "admin"
+LICENSE_SERVER_URL = os.getenv("CLEON_LICENSE_SERVER_URL", "http://localhost:4071")
+LICENSE_DB         = os.getenv("CLEON_LICENSE_DB", "white_clone_master")
+LICENSE_DB_USER    = os.getenv("CLEON_LICENSE_DB_USER", "admin")
+LICENSE_DB_PASSWORD = os.getenv("CLEON_LICENSE_DB_PASSWORD", "admin")
 
-TARGET_DB          = "hope_children"           # the client database this portal serves
+TARGET_DB          = os.getenv("CLEON_TARGET_DB", "white_clone_db")
 TARGET_DB_URL      = f"/web?db={TARGET_DB}"
 
 
@@ -105,6 +106,11 @@ def _fetch_available_modules():
 
 class LicensePortal(http.Controller): 
 
+    @http.route('/', type='http', auth='public', website=True, csrf=False)
+    def master_home(self, **kwargs):
+        """Use the licensing gateway as the master database home page."""
+        return request.redirect('/erp')
+
     @http.route(['/erp'], type='http', auth='public', website=True, csrf=False)
     def erp_gateway(self, **kwargs):
 
@@ -113,6 +119,27 @@ class LicensePortal(http.Controller):
 
         # 🔥 STEP 2: extract subdomain
         db_name = host.split(':')[0].split('.')[0]
+
+        # Local development has no tenant subdomain. Present the databases
+        # explicitly so the complete master -> tenant login flow can be tested.
+        if db_name in ('localhost', '127'):
+            request.env.cr.execute("""
+                SELECT datname
+                  FROM pg_database
+                 WHERE datname LIKE 'white_clone_%'
+                   AND datallowconn
+                   AND NOT datistemplate
+                 ORDER BY datname
+            """)
+            databases = [row[0] for row in request.env.cr.fetchall()]
+            selected_db = kwargs.get('db') or TARGET_DB
+            if selected_db not in databases and databases:
+                selected_db = databases[0]
+            return request.render('cleon_license.maacherp_login_page', {
+                'db_name': selected_db,
+                'company_name': 'CleonHR Local Development',
+                'databases': databases,
+            })
 
         # OPTIONAL SAFETY: avoid breaking on localhost base domain
         # if db_name in ['localhost', '127']:

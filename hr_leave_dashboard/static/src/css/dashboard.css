@@ -1,37 +1,372 @@
-/* ══════════════════════════════════════════════════
-   SETRACO PAYROLL — MATERIAL DESIGN CSS
-   Covers: Dashboard + Payroll Register
-   ══════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   CLEONHR LEAVE MANAGEMENT — DASHBOARD CSS
+   Covers: Dashboard layout + Welcome Modal (Screen 1)
+   ══════════════════════════════════════════════════════════════ */
 
+/* ══ LAYOUT ═════════════════════════════════════════════════ */
 
-/* ══ SIDEBAR ═════════════════════════════════ */
 .leaveapp {
-    display: flex; 
-    min-height: 100vh; 
+    display: flex;
+    min-height: 100vh;
 }
+
 .leavesidebar {
-  width: 230px;
-  background: #f8faff;
-  min-height: 100vh;
-  position: fixed;
-  left: 0; top: 50px; bottom: 0;
-  display: flex;
-  flex-direction: column;
-  z-index: 200;
-  transition: transform .3s cubic-bezier(.4,0,.2,1);
-  overflow-y: auto;
-  scrollbar-width: none;
+    width: 230px;
+    background: #f8faff;
+    min-height: 100vh;
+    position: fixed;
+    left: 0; top: 50px; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    z-index: 200;
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+    scrollbar-width: none;
 }
+
+/* shared role-aware Leave navigation */
+.leavesidebar .o_cc_sidebar_header{height:64px;flex:0 0 64px;display:flex;align-items:center;gap:9px;padding:0 14px;border-bottom:1px solid #e7ebf2;background:#fff}.leavesidebar .o_cc_header_dot{width:7px;height:7px;border-radius:50%;background:#ed277c}.leavesidebar .o_cc_header_title{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}.leavesidebar .o_cc_collapse_btn{margin-left:auto;border:1px solid #dce2ec;background:#fff;color:#627087;border-radius:7px;width:30px;height:30px}.leavesidebar .o_cc_nav{padding:12px 9px;display:flex;flex-direction:column;gap:3px}.leavesidebar .o_cc_nav ul{list-style:none;margin:0;padding:0}.leavesidebar .o_cc_nav_item{min-height:42px;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:#33425c;text-decoration:none;cursor:pointer;white-space:nowrap}.leavesidebar .o_cc_nav_item:hover,.leavesidebar .o_cc_nav_active{background:#fde6f1;color:#eb1d70}.leavesidebar .o_cc_nav_icon{width:23px;height:23px;border-radius:6px;background:#f0f2f6;display:grid;place-items:center;flex:0 0 23px}.leavesidebar .o_cc_nav_active .o_cc_nav_icon{background:#f9cfe1}.leavesidebar .o_cc_nav_arrow{margin-left:auto;color:#a3adbc;font-size:10px}.leavesidebar .sidebar-section-label{display:flex;justify-content:space-between;margin:17px 7px 7px;color:#99a4b5;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}.leavesidebar .o_cc_section_toggle{cursor:pointer}.leavesidebar .o_cc_pending_badge{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ed1c61;color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700}.leavesidebar .o_cc_sidebar_footer{margin-top:auto;padding:12px 9px 18px;border-top:1px solid #e7ebf2;background:#fff}.leavesidebar .o_cc_sidebar_footer button{width:100%;height:40px;display:flex;align-items:center;gap:10px;border:0;border-radius:8px;background:#fff;color:#33425c;text-align:left}.leavesidebar .o_cc_sidebar_footer button:hover{background:#fdebf3;color:#e91e70}.leavesidebar .o_cc_sidebar_footer button i{width:22px}.leavesidebar .o_cc_sidebar_footer button em{margin-left:auto;background:#fde2ed;color:#e91e70;border-radius:4px;padding:2px 5px;font-size:9px;font-style:normal}.leavesidebar.is-collapsed{width:68px}.leavesidebar.is-collapsed .o_cc_header_dot,.leavesidebar.is-collapsed .o_cc_header_title,.leavesidebar.is-collapsed .o_cc_nav_label,.leavesidebar.is-collapsed .o_cc_nav_arrow,.leavesidebar.is-collapsed .sidebar-section-label,.leavesidebar.is-collapsed .o_cc_pending_badge,.leavesidebar.is-collapsed .o_cc_sidebar_footer span,.leavesidebar.is-collapsed .o_cc_sidebar_footer em{display:none}.leavesidebar.is-collapsed .o_cc_collapse_btn{margin:auto}.leavesidebar.is-collapsed .o_cc_sidebar_header{padding:0}.leavesidebar.is-collapsed .o_cc_nav_item{justify-content:center;padding:8px}.leavesidebar.is-collapsed .o_cc_sidebar_footer button{justify-content:center}.o_leave_sidebar_collapsed .o_leave_dashboard,.o_leave_sidebar_collapsed .o_timeoff_calendar{margin-left:68px!important}.o_leave_sidebar_collapsed .o_ed_main,.o_leave_sidebar_collapsed .o_mlr_page>main{margin-left:68px!important}
+
+.o_ed_main,.o_mlr_page>main{margin-left:230px;transition:margin-left .3s}
+.o_leave_panel_toggle{width:34px;height:34px;border:1px solid #dce2ec;border-radius:7px;background:#fff;color:#5f6d82;display:grid;place-items:center}
 
 .o_leave_dashboard {
     padding: 16px;
     background: #f5f6fa;
     margin-left: 220px;
+    flex: 1;
 }
 
 .o_timeoff_calendar {
     margin-left: 235px !important;
 }
+
+.o_web_client > .o_action_manager {
+    overflow: auto !important;
+}
+
+/* ══ DASHBOARD HEADER (with re-open icons —  ══════════ */
+
+.cleon-dash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eaecf0;
+}
+
+.cleon-dash-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1d23;
+}
+
+.cleon-dash-subtitle {
+    font-size: 12px;
+    color: #9aa0ac;
+    margin-top: 2px;
+    display: block;
+}
+
+.cleon-dash-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Wizard (✦) and Help (?) icon buttons */
+.cleon-header-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+
+.cleon-wizard-btn {
+    background: linear-gradient(135deg, #e91e8c, #ff6b9d);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.35);
+}
+
+.cleon-wizard-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 4px 14px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-help-btn {
+    background: #fff;
+    color: #6b7280;
+    border: 1.5px solid #e0e3ea;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.cleon-help-btn:hover {
+    background: #f8faff;
+    border-color: #e91e8c;
+    color: #e91e8c;
+    transform: scale(1.08);
+}
+
+/* ══ WELCOME MODAL — BACKDROP  ══════════════════════ */
+
+.cleon-welcome-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 17, 25, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 1050;
+    animation: cleon-fade-in 0.25s ease;
+}
+
+/* ══ WELCOME MODAL — CARD ════════════════════════════════════ */
+
+.cleon-welcome-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1060;
+    width: 100%;
+    max-width: 480px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18),
+        0 4px 16px rgba(233, 30, 140, 0.12);
+    padding: 28px 28px 20px;
+    animation: cleon-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* X close button */
+.cleon-welcome-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: #f1f3f6;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-welcome-close:hover {
+    background: #ffe4f0;
+    color: #e91e8c;
+    transform: scale(1.1);
+}
+
+/* ══ WELCOME MODAL — HEADER  ════════════════════════ */
+
+.cleon-welcome-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+/* Branded gradient icon */
+.cleon-welcome-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 4px 14px rgba(233, 30, 140, 0.35);
+}
+
+.cleon-welcome-title {
+    margin: 0 0 6px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1d23;
+    line-height: 1.3;
+}
+
+.cleon-welcome-desc {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+/* ══ WELCOME MODAL — FEATURE GRID  ══════════════════ */
+
+.cleon-welcome-features {
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 22px;
+}
+
+.cleon-features-label {
+    margin: 0 0 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa0ac;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.cleon-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.cleon-feature-tile {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    background: #fff;
+    border: 1px solid #eaecf0;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.cleon-feature-tile:hover {
+    border-color: #e91e8c;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.1);
+}
+
+.cleon-feature-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.cleon-fi-orange  { background: linear-gradient(135deg, #f97316, #fb923c); }
+.cleon-fi-blue    { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+.cleon-fi-teal    { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.cleon-fi-green   { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cleon-fi-purple  { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.cleon-fi-pink    { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+
+.cleon-feature-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+}
+
+/* ══ WELCOME MODAL — ACTION BUTTONS  +  ═══════ */
+
+.cleon-welcome-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* Secondary "Explore on my own" */
+.cleon-btn-secondary {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1.5px solid #e0e3ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.cleon-btn-secondary:hover {
+    border-color: #e91e8c;
+    color: #e91e8c;
+    background: #fff5fa;
+}
+
+/* Primary "Start Setup Guide (5 steps)" */
+.cleon-btn-primary {
+    flex: 2;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: 0 3px 12px rgba(233, 30, 140, 0.35);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.cleon-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-btn-primary:active {
+    transform: translateY(0);
+}
+
+/* Time estimate hint label */
+.cleon-welcome-hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11.5px;
+    color: #b0b7c3;
+}
+
+/* ══ ANIMATIONS ══════════════════════════════════════════════ */
+
+@keyframes cleon-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes cleon-slide-up {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 28px)) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* ══ KPI ROW ═════════════════════════════════════════════════ */
 
 .kpi-row {
     display: grid;
@@ -45,9 +380,6 @@
     border-radius: 10px;
     padding: 14px 16px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-.o_web_client > .o_action_manager {
-    overflow: auto !important;
 }
 
 .kpi-top {
@@ -71,15 +403,18 @@
     font-size: 13px;
     color: #fff;
 }
-.kpi-icon.blue { background: #4e73df; }
+
+.kpi-icon.blue   { background: #4e73df; }
 .kpi-icon.orange { background: #f0ad4e; }
 .kpi-icon.purple { background: #6f42c1; }
-.kpi-icon.teal { background: #36b9cc; }
-.kpi-icon.pink { background: #e91e8c; }
-.kpi-icon.green { background: #1cc88a; }
+.kpi-icon.teal   { background: #36b9cc; }
+.kpi-icon.pink   { background: #e91e8c; }
+.kpi-icon.green  { background: #1cc88a; }
 
 .kpi-value { font-size: 26px; font-weight: 700; color: #2b2d33; }
-.kpi-sub { font-size: 12px; color: #9aa0ac; margin-top: 2px; }
+.kpi-sub   { font-size: 12px; color: #9aa0ac; margin-top: 2px; }
+
+/* ══ PANELS + GRIDS ══════════════════════════════════════════ */
 
 .grid-2 {
     display: grid;
@@ -101,7 +436,8 @@
     align-items: flex-start;
     margin-bottom: 14px;
 }
-.panel-head h5 { margin: 0; font-weight: 700; }
+
+.panel-head h5    { margin: 0; font-weight: 700; }
 .panel-head small { color: #9aa0ac; }
 
 .range-toggle {
@@ -110,6 +446,7 @@
     padding: 3px;
     display: flex;
 }
+
 .range-btn {
     border: none;
     background: transparent;
@@ -119,7 +456,14 @@
     cursor: pointer;
     color: #6b7280;
 }
-.range-btn.active { background: #fff; color: #e91e8c; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+.range-btn.active {
+    background: #fff;
+    color: #e91e8c;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* ══ STAT ROW ════════════════════════════════════════════════ */
 
 .stat-row {
     display: grid;
@@ -127,46 +471,1055 @@
     gap: 10px;
     margin-bottom: 16px;
 }
-.stat-box { background: #f8f9fb; border-radius: 8px; padding: 10px; text-align: center; }
-.stat-value { font-size: 20px; font-weight: 700; }
-.stat-value.pink { color: #e91e8c; }
-.stat-value.green { color: #1cc88a; }
-.stat-value.orange { color: #f0ad4e; }
-.stat-value.red { color: #e74a3b; }
-.stat-label { font-size: 11px; color: #9aa0ac; }
 
-.donut-wrap { display: flex; justify-content: center; margin-bottom: 12px; }
+.stat-box        { background: #f8f9fb; border-radius: 8px; padding: 10px; text-align: center; }
+.stat-value      { font-size: 20px; font-weight: 700; line-height: 1.2; }
+.stat-value-pink  { color: #e91e8c; font-size: 20px; font-weight: 700; }
+.stat-value-green { color: #10b981; font-size: 20px; font-weight: 700; }
+.stat-value-amber { color: #f59e0b; font-size: 20px; font-weight: 700; }
+.stat-value-red   { color: #ef4444; font-size: 20px; font-weight: 700; }
+.stat-label      { font-size: 11px; color: #9aa0ac; margin-top: 2px; }
+
+/* ══ DONUT / LEGEND ══════════════════════════════════════════ */
+
+.donut-wrap  { display: flex; justify-content: center; margin-bottom: 12px; }
 
 .legend-list { display: flex; flex-direction: column; gap: 6px; }
-.legend-row { display: flex; align-items: center; font-size: 12px; gap: 8px; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.legend-row  { display: flex; align-items: center; font-size: 12px; gap: 8px; }
+.legend-dot  { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
 .legend-name { flex: 1; color: #4b4f58; }
 .legend-count { font-weight: 600; margin-right: 8px; }
-.legend-pct { color: #9aa0ac; width: 32px; text-align: right; }
+.legend-pct  { color: #9aa0ac; width: 32px; text-align: right; }
 
-.balance-list { display: flex; flex-direction: column; gap: 16px; }
-.balance-header { display: flex; align-items: center; font-size: 12px; margin-bottom: 6px; gap: 8px; }
-.balance-name { font-weight: 600; flex: 1; }
+/* ══ BALANCE LIST ════════════════════════════════════════════ */
+
+.balance-list    { display: flex; flex-direction: column; gap: 16px; }
+.balance-header  { display: flex; align-items: center; font-size: 12px; margin-bottom: 6px; gap: 8px; }
+.balance-name    { font-weight: 600; flex: 1; }
 .balance-figures { color: #9aa0ac; }
-.balance-track { background: #eef0f3; border-radius: 6px; height: 6px; overflow: hidden; }
-.balance-fill { height: 100%; border-radius: 6px; }
+.balance-track   { background: #eef0f3; border-radius: 6px; height: 6px; overflow: hidden; }
+.balance-fill    { height: 100%; border-radius: 6px; }
 
-.approval-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+/* ══ APPROVAL ════════════════════════════════════════════════ */
+
+.approval-wrap      { display: flex; justify-content: center; margin-bottom: 16px; }
 .approval-chart-box { position: relative; width: 140px; height: 140px; }
+
 .approval-center {
     position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
 }
+
 .approval-rate { font-size: 22px; font-weight: 700; }
 
 .approval-rows { display: flex; flex-direction: column; gap: 8px; }
+
 .approval-row {
-    display: flex; 
+    display: flex;
     justify-content: space-between;
-    padding: 8px 12px; 
-    border-radius: 6px; font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
 }
+
 .approval-row.approved { background: #eafaf1; color: #1cc88a; }
-.approval-row.pending { background: #fdf6e3; color: #b8860b; }
+.approval-row.pending  { background: #fdf6e3; color: #b8860b; }
 .approval-row.rejected { background: #fdecec; color: #e74a3b; }
+
+/* ════════════════════════════════════════════════════════════════
+   SETUP WIZARD — Screen 2 (FR-010 to FR-017)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Wizard Modal Card ─────────────────────────────────────── */
+
+.cleon-wizard-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1060;
+    width: 92%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.18),
+        0 4px 16px rgba(109, 40, 217, 0.10);
+    padding: 28px 28px 20px;
+    animation: cleon-slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── : Step Progress Bar ─────────────────────────────── */
+
+.cleon-wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    gap: 0;
+}
+
+/* Each step wrapper holds the dot + connector line */
+.cleon-wiz-step {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+/* The numbered/check circle */
+.cleon-wiz-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid #e0e3ea;
+    background: #fff;
+    color: #9aa0ac;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+/* Connector line between dots */
+.cleon-wiz-connector {
+    width: 40px;
+    height: 2px;
+    background: #e0e3ea;
+    transition: background 0.25s ease;
+    flex-shrink: 0;
+}
+
+/* Active step */
+.cleon-wiz-step-active .cleon-wiz-dot {
+    background: linear-gradient(135deg, #e91e8c, #ff6b9d);
+    border-color: #e91e8c;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(233, 30, 140, 0.15);
+}
+
+/* Completed step */
+.cleon-wiz-step-done .cleon-wiz-dot {
+    background: #e91e8c;
+    border-color: #e91e8c;
+    color: #fff;
+}
+
+.cleon-wiz-step-done .cleon-wiz-connector {
+    background: #e91e8c;
+}
+
+/* ── : Step Header (icon + label + title) ────────────── */
+
+.cleon-wizard-step-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* Default: indigo/purple for Step 1 */
+.cleon-wizard-icon {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(109, 40, 217, 0.30);
+}
+
+/* Step-specific icon colour variants */
+.cleon-wiz-icon-green  { background: linear-gradient(135deg, #16a34a, #4ade80);  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.28); }
+.cleon-wiz-icon-blue   { background: linear-gradient(135deg, #2563eb, #60a5fa);  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28); }
+.cleon-wiz-icon-teal   { background: linear-gradient(135deg, #0d9488, #2dd4bf);  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.28); }
+.cleon-wiz-icon-orange { background: linear-gradient(135deg, #f97316, #fb923c);  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.28); }
+.cleon-wiz-icon-pink   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); box-shadow: 0 4px 12px rgba(233, 30, 140, 0.28); }
+
+.cleon-wizard-step-meta {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+}
+
+/* "STEP 1 OF 5" badge */
+.cleon-wiz-step-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #e91e8c;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.cleon-wizard-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1d23;
+    line-height: 1.25;
+}
+
+/* ── : Step Description ──────────────────────────────── */
+
+.cleon-wizard-desc {
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.65;
+}
+
+/* ── : Key Actions ───────────────────────────────────── */
+
+.cleon-key-actions {
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.cleon-key-actions-label {
+    margin: 0 0 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9aa0ac;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.cleon-key-action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+}
+
+.cleon-ka-icon {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #fff;
+    margin-top: 1px;
+}
+
+.cleon-ka-add      { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+.cleon-ka-check    { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cleon-ka-accrual  { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+/* Step 2 action icon colours */
+.cleon-ka-single     { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.cleon-ka-multi      { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.cleon-ka-escalation { background: linear-gradient(135deg, #f97316, #fb923c); }
+/* Step 3 action icon colours */
+.cleon-ka-bulk     { background: linear-gradient(135deg, #0d9488, #2dd4bf); }
+.cleon-ka-override { background: linear-gradient(135deg, #16a34a, #4ade80); }
+.cleon-ka-export   { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+/* Step 4 action icon colours */
+.cleon-ka-region   { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.cleon-ka-calview  { background: linear-gradient(135deg, #f97316, #fb923c); }
+.cleon-ka-coverage { background: linear-gradient(135deg, #dc2626, #f87171); }
+/* Step 5 action icon colours () */
+.cleon-ka-approve   { background: linear-gradient(135deg, #e91e8c, #ff6b9d); }
+.cleon-ka-reports   { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.cleon-ka-audit     { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+
+.cleon-ka-text {
+    font-size: 13px;
+    color: #4b4f58;
+    line-height: 1.55;
+}
+
+.cleon-ka-text strong {
+    color: #1a1d23;
+    font-weight: 600;
+}
+
+/* ── Wizard Footer (Back / Shortcut / Next) ────────────────── */
+
+.cleon-wizard-footer {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* Back button */
+.cleon-wiz-btn-back {
+    padding: 9px 16px;
+    border: 1.5px solid #e0e3ea;
+    border-radius: 8px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.cleon-wiz-btn-back:hover {
+    border-color: #9aa0ac;
+    color: #374151;
+}
+
+/* Go to Leave Types shortcut */
+.cleon-wiz-btn-shortcut {
+    justify-self: center;
+    padding: 9px 16px;
+    border: 1.5px solid #e91e8c;
+    border-radius: 8px;
+    background: #fff;
+    color: #e91e8c;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.cleon-wiz-btn-shortcut:hover {
+    background: #fff5fa;
+    box-shadow: 0 2px 8px rgba(233, 30, 140, 0.15);
+}
+
+/* Next / Finish button */
+.cleon-wiz-btn-next {
+    padding: 9px 20px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff6b9d 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 3px 12px rgba(233, 30, 140, 0.35);
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.cleon-wiz-btn-next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-wiz-btn-next:active {
+    transform: translateY(0);
+}
+
+/* ── : Skip link ─────────────────────────────────────── */
+
+.cleon-wiz-skip-row {
+    text-align: center;
+}
+
+.cleon-skip-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 11.5px;
+    color: #b0b7c3;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.2s;
+}
+
+.cleon-skip-link:hover {
+    color: #6b7280;
+}
+
+/* ── Steps 2–5 Placeholder Cards ──────────────────────────── */
+
+.cleon-wiz-placeholder {
+    text-align: center;
+    padding: 28px 20px 20px;
+    color: #9aa0ac;
+    margin-bottom: 20px;
+}
+
+.cleon-wiz-placeholder-icon {
+    font-size: 36px;
+    color: #d1d5db;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.cleon-wiz-placeholder p {
+    margin: 0;
+    font-size: 13px;
+    color: #9aa0ac;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SETUP COMPLETION SCREEN — Screen 7 (FR-045 to FR-054)
+   ════════════════════════════════════════════════════════════════ */
+
+.cleon-completion-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1060;
+    width: 92%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow:
+        0 24px 64px rgba(0, 0, 0, 0.22),
+        0 6px 20px rgba(233, 30, 140, 0.15);
+    animation: cleon-slide-up 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (max-width: 576px) {
+    .cleon-completion-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+    .cleon-btn-review-steps, .cleon-btn-done-dash {
+        width: 100%;
+        justify-content: center;
+    }
+    .cleon-wizard-footer {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .cleon-wiz-btn-shortcut {
+        justify-self: stretch;
+        justify-content: center;
+    }
+}
+
+.cleon-completion-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.cleon-completion-close:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Header Banner , */
+.cleon-completion-header {
+    background: linear-gradient(135deg, #e91e8c 0%, #ff529a 50%, #6d28d9 100%);
+    padding: 32px 28px 24px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.cleon-completion-badge {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(4px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.cleon-completion-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.cleon-completion-sub {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+/* Body & Checklist , , , */
+.cleon-completion-body {
+    padding: 20px 24px 12px;
+}
+
+.cleon-checklist-header-row {
+    margin-bottom: 12px;
+}
+
+.cleon-checklist-label-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #9aa0ac;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.cleon-checklist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cleon-checklist-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-checklist-item:hover {
+    background: #f4f6fa;
+    border-color: #e2e8f0;
+}
+
+.cleon-checklist-radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #ffffff;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.cleon-checklist-radio.checked {
+    background: #e91e8c;
+    border-color: #e91e8c;
+}
+
+.cleon-checklist-text {
+    flex-grow: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    transition: all 0.2s ease;
+}
+
+.cleon-checklist-text.done {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+.cleon-checklist-go-btn {
+    padding: 4px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #e91e8c;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.cleon-checklist-go-btn:hover {
+    background: #fff5fa;
+    border-color: #e91e8c;
+}
+
+.cleon-checklist-counter-row {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.cleon-checklist-counter {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+}
+
+/* Footer , , */
+.cleon-completion-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    gap: 12px;
+}
+
+.cleon-btn-review-steps {
+    padding: 9px 16px;
+    border: 1.5px solid #e0e3ea;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.cleon-btn-review-steps:hover {
+    border-color: #9aa0ac;
+    color: #374151;
+}
+
+.cleon-btn-done-dash {
+    padding: 10px 22px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff529a 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    box-shadow: 0 4px 14px rgba(233, 30, 140, 0.35);
+    transition: all 0.2s ease;
+}
+
+.cleon-btn-done-dash:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(233, 30, 140, 0.45);
+}
+
+.cleon-completion-hint {
+    text-align: center;
+    margin: 0 0 16px;
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCREEN 8 — ADMIN DASHBOARD STYLES (FR-055 to FR-072)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Header controls & View Switcher , */
+.cleon-header-plain-btn {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-header-plain-btn:hover {
+    border-color: #cbd5e1;
+    color: #1e293b;
+    background: #f8fafc;
+}
+
+.cleon-view-toggle {
+    display: flex;
+    background: #f1f5f9;
+    padding: 3px;
+    border-radius: 8px;
+    gap: 2px;
+}
+
+.cleon-view-option {
+    background: none;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.cleon-view-option.active {
+    background: #ffffff;
+    color: #e91e8c;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* KPI Cards & Badges  to */
+.kpi-card-button {
+    text-align: left;
+    background: #ffffff;
+    border: 1px solid #f0f1f5;
+    cursor: pointer;
+    position: relative;
+}
+
+.kpi-card-button:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.kpi-new-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+
+.coverage-alert-active {
+    border: 1.5px solid #fca5a5 !important;
+    background: #fff5f5 !important;
+}
+
+.kpi-icon.red {
+    background: linear-gradient(135deg, #ef4444, #f87171);
+    color: #ffffff;
+}
+
+.kpi-icon.green {
+    background: linear-gradient(135deg, #10b981, #34d399);
+    color: #ffffff;
+}
+
+/* Panel Links & Buttons */
+.panel-link-btn {
+    background: none;
+    border: none;
+    color: #e91e8c;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.panel-link-btn:hover {
+    color: #be185d;
+    text-decoration: underline;
+}
+
+.panel-footer-btn-wrap {
+    margin-top: 16px;
+}
+
+.cleon-btn-review-all {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #e91e8c 0%, #ff529a 100%);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(233, 30, 140, 0.3);
+    transition: all 0.2s ease;
+}
+
+.cleon-btn-review-all:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(233, 30, 140, 0.4);
+}
+
+/* Department Coverage Heatmap */
+.coverage-table-wrap {
+    overflow-x: auto;
+    margin: 12px 0 16px;
+}
+
+.coverage-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.coverage-table th {
+    text-align: center;
+    padding: 8px 6px;
+    color: #64748b;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.coverage-table th:first-child {
+    text-align: left;
+    padding-left: 8px;
+}
+
+.coverage-table td {
+    padding: 6px 4px;
+    text-align: center;
+}
+
+.coverage-table td.coverage-department {
+    text-align: left;
+    font-weight: 600;
+    color: #334155;
+    padding-left: 8px;
+}
+
+.coverage-cell {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 11px;
+    min-width: 44px;
+}
+
+.coverage-good {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.coverage-medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.coverage-low {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.coverage-weekend {
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.coverage-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 8px;
+}
+
+.coverage-good-dot { background: #10b981; }
+.coverage-medium-dot { background: #f59e0b; }
+.coverage-low-dot { background: #ef4444; }
+
+/* Recent Requests List */
+.recent-request-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.recent-request-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: #fafbfc;
+    border: 1px solid #f0f1f5;
+    border-radius: 8px;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-request-row:hover {
+    background: #f4f6fa;
+    border-color: #e2e8f0;
+}
+
+.recent-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e91e8c, #6d28d9);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.recent-request-main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.recent-request-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.recent-request-meta {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.request-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.request-status.approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.request-status.pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.request-status.rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.recent-request-date {
+    font-size: 11px;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
+
+.dashboard-empty {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Quick Actions Panel */
+.quick-actions-panel {
+    margin-top: 20px;
+}
+
+.quick-actions-panel .panel-head h5 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-top: 14px;
+}
+
+@media (max-width: 992px) {
+    .quick-actions {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .quick-actions {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.quick-action {
+    padding: 16px 12px;
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.quick-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
+}
+
+.quick-action i {
+    font-size: 20px;
+    margin-bottom: 2px;
+}
+
+.quick-action strong {
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+.quick-action small {
+    font-size: 10.5px;
+    opacity: 0.88;
+}
+
+.quick-pink   { background: linear-gradient(135deg, #e91e8c, #ff529a); }
+.quick-blue   { background: linear-gradient(135deg, #2563eb, #60a5fa); }
+.quick-green  { background: linear-gradient(135deg, #10b981, #34d399); }
+.quick-purple { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
+.quick-orange { background: linear-gradient(135deg, #f97316, #fb923c); }
+.quick-dark   { background: linear-gradient(135deg, #334155, #475569); }

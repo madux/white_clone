@@ -1,0 +1,102 @@
+/* Leave Types Page Stylesheet */
+
+/* Keep the custom form in Bootstrap's normal modal layer. Odoo notifications
+   use z-index 1055 and must remain visible above it. */
+.leave-type-modal-backdrop {
+    z-index: 1040 !important;
+}
+
+.leave-type-form-modal {
+    z-index: 1050 !important;
+}
+
+.leave-type-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.color-swatch-box {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.preset-swatch-item {
+    width: 28px;
+    height: 28px;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    transition: transform 0.15s;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.preset-swatch-item:hover {
+    transform: scale(1.15);
+}
+
+.section-num-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.bg-pink {
+    background-color: #e91e8c !important;
+}
+
+.bg-success-subtle {
+    background-color: #dcfce7 !important;
+}
+
+.bg-warning-subtle {
+    background-color: #fef3c7 !important;
+}
+
+.bg-secondary-subtle {
+    background-color: #f1f5f9 !important;
+}
+
+.bg-primary-subtle {
+    background-color: #e0f2fe !important;
+}
+
+.text-warning-dark {
+    color: #b45309 !important;
+}
+
+.filter-select-wrapper {
+    min-width: 150px;
+}
+
+.micro-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+
+.min-w-220 {
+    min-width: 220px;
+}
+
+.w-120 {
+    width: 120px;
+}
+
+.cursor-move {
+    cursor: move;
+}
+
+.form-section-card {
+    transition: box-shadow 0.2s;
+}
+
+.form-section-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}

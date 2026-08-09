@@ -4,19 +4,33 @@ resources/ui/AGENTS.md
 .opencode/plans/recruitment-schedule-tasks.md
 .opencode/plans/create-job-modal-comprehensive.md
 .opencode/plans/create-job-modal.md
-**/__pycache__/
+
+# Python / Odoo generated files
+__pycache__/
+*.py[cod]
+*.pyo
+*$py.class
+*.log
+*.pot
+*.mo
+
+# Local runtime/state
+.env
+.venv/
+venv/
+sessions/
+filestore/
+.odoo/
+conf/
+
 # Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
-# IDEs and Editors
+# Editors and operating-system noise
 .vscode/
 .idea/
 *.swp
 *.swo
-# Byte-compiled / optimized / DLL files
-**/__pycache__/
-*.py[cod]
-*$py.class
-
+.DS_Store

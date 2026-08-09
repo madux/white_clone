@@ -359,6 +359,9 @@
             <field name="name">account.analytic.line.select.extended</field>
             <field name="model">account.analytic.line</field>
             <field name="inherit_id" ref="analytic.view_account_analytic_line_filter"/>
+            <!-- This shared search view is disabled to preserve Community
+                 compatibility. -->
+            <field name="active" eval="False"/>
             <field name="arch" type="xml">
                 <field name="name" position="before">
                     <field name="branch_id" />
