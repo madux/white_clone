@@ -789,6 +789,8 @@
             </div>
 
             <!-- ═══ FLOATING HELP BUTTON ═════════════════════════════════════════ -->
+            <!-- TODO: Implement Help & Support functionality (e.g., trigger tutorial or support modal) -->
+            <!--
             <button type="button" class="sdir-fab-help" title="Help &amp; Support">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -796,6 +798,7 @@
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
                 </svg>
             </button>
+            -->
 
             <!-- ═══ PROFILE FULL-SCREEN MODAL ════════════════════════════════════ -->
             <t t-if="state.showProfileModal and state.activeProfile">
@@ -1166,6 +1169,8 @@
             </footer><!-- /.sdir-footer -->
 
             <!-- Floating help button (outside footer, fixed bottom-right) -->
+            <!-- TODO: Implement Help functionality (e.g., open documentation link) -->
+            <!--
             <button type="button" class="sdir-fab" id="sdirFab" title="Help">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"/>
@@ -1173,6 +1178,7 @@
                     <line x1="12" y1="17" x2="12.01" y2="17"/>
                 </svg>
             </button>
+            -->
 
             <!-- MESSAGE COMPOSE BOX -->
             <div t-if="state.messageBox.isVisible" t-att-class="'sdir-msg-box ' + (state.messageBox.isMinimized ? 'sdir-msg-minimized' : 'sdir-msg-expanded')">
