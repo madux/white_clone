@@ -25,6 +25,15 @@
 
     function escapeHtml(value) { return $("<span>").text(value || "").html(); }
 
+    function isNavbarAppsButton(target) {
+        if (!target || !target.closest) return false;
+        return Boolean(
+            target.closest(".o_navbar_apps_menu .dropdown-toggle") ||
+            target.closest('button[title="Home Menu"],a[title="Home Menu"]') ||
+            target.closest(".o_navbar_apps_menu .oi-apps")
+        );
+    }
+
     var Launcher = {
         apps: [],
 
@@ -84,13 +93,11 @@
                 $(".cleon-rail-app").removeClass("active"); $(this).addClass("active");
             });
 
-            /* Keep Odoo's familiar grid button useful without opening a second launcher. */
+            /* Route the CleonHR grid/brand button to the full Explore Modules view. */
             document.addEventListener("click", function (event) {
-                var button = event.target.closest('button[title="Home Menu"],a[title="Home Menu"]');
-                if (!button) return;
+                if (!isNavbarAppsButton(event.target)) return;
                 event.preventDefault(); event.stopImmediatePropagation();
-                document.getElementById("cleonAppRail")?.scrollTo({ top: 0, behavior: "smooth" });
-                document.querySelector(".cleon-rail-app")?.focus();
+                window.location.href = "/maacherp/landing";
             }, true);
 
             document.addEventListener("keydown", function (event) {

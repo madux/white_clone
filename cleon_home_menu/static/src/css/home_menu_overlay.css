@@ -411,6 +411,7 @@
    CleonHR branding on the left and the standard systray on the right. */
 .has-cleon-app-rail .o_main_navbar .o_menu_brand,
 .has-cleon-app-rail .o_main_navbar .o_menu_sections{display:none!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu{margin:4px 8px}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle{width:148px;height:38px;padding:0 15px!important;display:flex;align-items:center;gap:10px;border:0!important;border-radius:10px!important;background:#fff!important;color:#e62b7a!important;font-size:0!important;box-shadow:none!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle .oi{font-size:18px!important}.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle::after{content:"CleonHR"!important;display:inline!important;width:auto!important;height:auto!important;margin:0!important;border:0!important;color:#e62b7a!important;font-size:18px!important;font-weight:600!important}
+.has-cleon-app-rail .o_main_navbar .o_navbar_apps_menu>.dropdown-toggle{cursor:pointer!important}
 
 
 /* ============================================================
@@ -566,4 +567,3 @@
     }
     .has-cleon-app-rail .leavesidebar { left: 60px !important; }
 }
-
