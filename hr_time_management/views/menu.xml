@@ -1,0 +1,9 @@
+<odoo>
+    <record id="hr_administration.hr_admin_time_mgt" model="ir.ui.menu">
+        <field name="name">Time Management</field>
+        <field name="action" ref="hr_time_management.action_time_management"/>
+        <field name="icon_class">fa fa-clock-o</field>
+        <field name="icon_color">#8B5CF6</field>
+        <field name="category_name">CleonHR-HR Admin</field>
+    </record>
+</odoo>

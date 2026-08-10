@@ -1,0 +1,6 @@
+<odoo>
+    <record id="action_time_management" model="ir.actions.client">
+        <field name="name">Time Management</field>
+        <field name="tag">hr_time_management.App</field>
+    </record>
+</odoo>

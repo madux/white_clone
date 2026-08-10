@@ -1,0 +1,6 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cleon_shift_user,cleon.hr.shift user,model_cleon_hr_shift,hr_time_management.group_time_management_user,1,0,0,0
+access_cleon_shift_manager,cleon.hr.shift manager,model_cleon_hr_shift,hr_time_management.group_time_management_manager,1,1,1,1
+access_regularization_user,attendance regularization user,model_cleon_attendance_regularization,hr_time_management.group_time_management_user,1,1,1,0
+access_regularization_manager,attendance regularization manager,model_cleon_attendance_regularization,hr_time_management.group_time_management_manager,1,1,1,1
+access_time_audit_manager,time audit manager,model_cleon_time_audit_log,hr_time_management.group_time_management_manager,1,0,0,0
