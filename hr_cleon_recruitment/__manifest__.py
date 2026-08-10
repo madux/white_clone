@@ -10,7 +10,8 @@
     """,
     'author': 'MaachSoftware',
     'depends': [
-        'hr', 
+        'hr',
+        'base_addons',
         'hr_recruitment', 
         'hr_cbt_portal_recruitment', 
         'ik_multi_branch', 

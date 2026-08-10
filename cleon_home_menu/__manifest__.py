@@ -1,22 +1,21 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'CleonHR Home Menu',
-    'version': '17.0.4.0',
-    'summary': 'Replace the default apps dropdown with a full-screen animated overlay',
+    'version': '17.0.5.0',
+    'summary': 'Persistent CleonHR application launcher sidebar',
     'description': """
-Home Menu Overlay
-=================
-Intercepts the top-left grid (Home Menu) button in  17 and replaces
-the default dropdown with a beautiful full-screen overlay showing all
-installed apps with their icons, names and descriptions.
+CleonHR Application Rail
+========================
+Displays the CleonHR application launcher permanently on the left side
+of every Odoo 17 backend screen. The standard action area and CleonHR
+module sidebars are offset so the launcher never covers page content.
 
 Features
 --------
-- Full-screen animated overlay with blur backdrop
+- Always-visible compact application rail
 - Dynamically loads all installed apps from the database
-- Live search/filter
-- Click any app card to navigate to that module
-- Keyboard shortcut: H (same as default) or ESC to close
+- Click any app to navigate to that module
+- Keyboard shortcut: H focuses the launcher
 - Responsive (mobile friendly)
 - No dependency on  JS framework – pure jQuery
     """,

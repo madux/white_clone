@@ -5,6 +5,11 @@ class IrUiMenu(models.Model):
 
     category_name = fields.Char(help="HRCORE")
     icon_class = fields.Char(default="fa fa-folder")
+    icon_color = fields.Char(
+        string="Launcher Icon Colour",
+        default="#64748B",
+        help="Hex colour used by the persistent CleonHR application launcher.",
+    )
     # parent_category_name = fields.Char(help="HRCORE", related="parent.category_name", store=True)
 
     @api.model
