@@ -653,31 +653,20 @@ class HrEmployeeStaffDirectory(models.Model):
                 return {'status': 'pinned', 'employee_id': employee_id}
         return {'status': 'error', 'message': 'Employee not found'}
 
-    # ─── Real-Time Updates ────────────────────────────────────────────────────
-
-    def _notify_staff_directory_update(self):
-        self.env['bus.bus']._sendone('hr_staff_directory', 'hr_staff_directory_update', {})
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        res = super().create(vals_list)
-        res._notify_staff_directory_update()
-        return res
-
-    def write(self, vals):
-        res = super().write(vals)
-        self._notify_staff_directory_update()
-        return res
-
-    def unlink(self):
-        self._notify_staff_directory_update()
-        return super().unlink()
+    # NOTE: Real-time sync (create/write/unlink → bus broadcast) now lives in
+    # staff_directory_sync.py so the same notification is emitted for every
+    # model the Staff Directory aggregates (hr.employee, hr.contract, hr.leave,
+    # hr.department, hr.work.location, hr.employee.skill).
 
     @api.model
     def get_staff_directory_people_data(self):
         return {
             'stats':  self._sd_people_stats(),
             'people': self._sd_people_list(),
+            'departments': [
+                {'id': dept.id, 'name': dept.complete_name}
+                for dept in self.env['hr.department'].search([])
+            ],
         }
 
     # ─── People Tab: Stat Cards ───────────────────────────────────────────────

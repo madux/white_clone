@@ -24,6 +24,7 @@
         'hr',
         'hr_holidays',
         'hr_contract',
+        'hr_skills',
         'mail',
         'web',
         'hr_administration',

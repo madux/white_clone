@@ -4,6 +4,15 @@ import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState, use
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
+// ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
+// bus_service.subscribe() has no unsubscribe in Odoo 17, so subscribing on every
+// mount would leak listeners and trigger N reloads per notification. Instead we
+// subscribe ONCE per page and dispatch to whichever dashboard instance is live.
+const SDIR_CHANNEL = "hr_staff_directory";
+const SDIR_EVENT = "hr_staff_directory_update";
+let sdirSubscribed = false;
+let activeSdirHandler = null;
+
 /**
  * Staff Directory — People Tab OWL client action.
  * Fetches per-employee data from /hr_staff_directory/people and renders
@@ -26,6 +35,14 @@ export class StaffDirectoryDashboard extends Component {
 
         // ─── Debounced Load Data for Real-Time Updates ───────────────────────
         this.debouncedLoadData = this._debounce(this._loadData.bind(this), 500);
+        this._loadSeq = 0;
+
+        // ─── Real-Time Sync ──────────────────────────────────────────────────
+        // Register this instance as the live receiver of bus notifications.
+        this._boundOnDirectoryUpdate = this.onDirectoryUpdate.bind(this);
+        activeSdirHandler = this._boundOnDirectoryUpdate;
+        this._onBusReconnect = () => this._loadData();
+        this._fallbackPollInterval = null;
 
         // ─── Design Tokens ──────────────────────────────────────────────────
         this.AVATAR_COLORS = [
@@ -166,6 +183,7 @@ export class StaffDirectoryDashboard extends Component {
             hasMessageError: false,
             recentlyViewedProfiles: initialRecent,
             people:      [],
+            departments: [],
             stats: {
                 total:              0,
                 active:             0,
@@ -178,8 +196,21 @@ export class StaffDirectoryDashboard extends Component {
         onWillStart(async () => {
             await this._loadData();
             // Connect to bus for real-time updates
-            this.busService.addChannel("hr_staff_directory");
-            this.busService.subscribe("hr_staff_directory_update", this.onDirectoryUpdate.bind(this));
+            this.busService.addChannel(SDIR_CHANNEL);
+            if (!sdirSubscribed) {
+                // Subscribe exactly once; dispatch to the live instance.
+                this.busService.subscribe(SDIR_EVENT, (payload) => {
+                    if (activeSdirHandler) activeSdirHandler(payload);
+                });
+                sdirSubscribed = true;
+            }
+            // Refresh after a websocket reconnection to catch any missed updates.
+            this.busService.addEventListener("reconnect", this._onBusReconnect);
+            // Low-frequency fallback poll so the view never goes stale even if
+            // the bus connection is unavailable for a long time.
+            this._fallbackPollInterval = window.setInterval(() => {
+                if (!this.state.loading) this._loadData();
+            }, 60000);
         });
 
         onMounted(() => {
@@ -190,6 +221,16 @@ export class StaffDirectoryDashboard extends Component {
         onWillUnmount(() => {
             document.removeEventListener("keydown", this._boundOnKeyDown);
             document.removeEventListener("click", this._boundOnClick);
+            // Stop receiving notifications for this instance.
+            if (activeSdirHandler === this._boundOnDirectoryUpdate) {
+                activeSdirHandler = null;
+            }
+            this.busService.removeEventListener("reconnect", this._onBusReconnect);
+            if (this._fallbackPollInterval) {
+                window.clearInterval(this._fallbackPollInterval);
+                this._fallbackPollInterval = null;
+            }
+            this.busService.deleteChannel(SDIR_CHANNEL);
         });
     }
 
@@ -220,15 +261,39 @@ export class StaffDirectoryDashboard extends Component {
     // ─── Data Loading ────────────────────────────────────────────────────────
 
     async _loadData() {
+        const requestSeq = ++this._loadSeq;
+        this.state.loading = true;
         try {
             const d = await this.rpc('/hr_staff_directory/people');
+            // Ignore stale responses that raced with a newer reload.
+            if (requestSeq !== this._loadSeq) return;
             this.state.stats  = d.stats  || this.state.stats;
-            this.state.people = d.people || [];
+            this.state.departments = d.departments || [];
+            this._applyPeopleData(d.people || []);
         } catch (e) {
             console.error('[SDIR] people data load failed', e);
         } finally {
-            this.state.loading = false;
+            if (requestSeq === this._loadSeq) {
+                this.state.loading = false;
+            }
         }
+    }
+
+    _applyPeopleData(people) {
+        const existingIds = new Set(people.map(p => p.id));
+
+        // Re-map the open profile to the fresh record so an open modal updates live.
+        if (this.state.activeProfile && this.state.activeProfile.id) {
+            const fresh = people.find(p => p.id === this.state.activeProfile.id);
+            this.state.activeProfile = fresh || null;
+        }
+
+        // Prune selections and recent profiles to ids that still exist.
+        this.state.selectedPeople = this.state.selectedPeople.filter(id => existingIds.has(id));
+        this.state.recentlyViewedProfiles = (this.state.recentlyViewedProfiles || [])
+            .filter(p => existingIds.has(p.id));
+
+        this.state.people = people;
     }
 
     // ─── Filtered people (fuzzy search) ──────────────────────────────────────
@@ -267,7 +332,7 @@ export class StaffDirectoryDashboard extends Component {
                     let pVal = p[key];
                     if (key === 'lifecycle') pVal = p.lifecycle_state;
                     if (key === 'location') pVal = p.work_location;
-                    if (key === 'grade') pVal = p.band || p.grade;
+                    if (key === 'grade') pVal = p.band || p.grade; // TODO(sdir): 'band' key doesn't exist; 'grade' is the live key — keep band for forward-compat.
                     if (key === 'role') pVal = p.job_title;
                     if (key === 'manager') pVal = p.manager_name;
                     if (key === 'gender') pVal = p.gender;
@@ -312,20 +377,52 @@ export class StaffDirectoryDashboard extends Component {
     // ─── Filters ─────────────────────────────────────────────────────────────
 
     get filterDefinitions() {
+        const dynamicValues = (field, isList = false) => {
+            if (!this.state.people || this.state.people.length === 0) return [];
+            const values = new Set();
+            this.state.people.forEach(p => {
+                const val = p[field];
+                if (!val) return;
+                if (isList) {
+                    val.split(',').forEach(v => {
+                        const trimmed = v.trim();
+                        if (trimmed) values.add(trimmed);
+                    });
+                } else {
+                    values.add(val.trim());
+                }
+            });
+            const arr = Array.from(values).sort();
+            return arr.length > 0 ? arr : [];
+        };
+
+        const deptOpts = [...new Set([
+            ...(this.state.departments || []).map(d => d.name).filter(Boolean),
+            ...dynamicValues('department'),
+        ])].sort();
+        const gradeOpts = dynamicValues('grade');
+        const locOpts = dynamicValues('work_location');
+        const empTypeOpts = dynamicValues('employment_type');
+        const mgrOpts = dynamicValues('manager_name');
+        const skillOpts = dynamicValues('skills', true);
+        // TODO(sdir): 'languages' payload is always '' — hr.employee has no 'languages' field
+        // (see hr_employee.py payload builder); seed a computed field later so this filter works.
+        const langOpts = dynamicValues('languages', true);
+
         return [
             // Column 1
             [
-                { id: 'department', label: 'DEPARTMENT', options: ['Compliance & Risk', 'Customer Service', 'Design', 'Engineering', 'Engineering/IT', 'Executive', 'Finance', 'Human Resources', 'Internal Audit', 'Legal'] },
-                { id: 'grade', label: 'GRADE / BAND', options: ['L1 · Individual Contributor', 'L3 · Team Lead', 'L4 · Manager', 'L5 · Senior Manager', 'L6 · Executive', 'L7 · Chief Executive'] },
-                { id: 'location', label: 'LOCATION', options: ['Abuja Regional Office', 'Abuja Nigeria', 'HQ New York', 'Kano Satellite Office', 'Lagos HQ', 'Lagos Nigeria', 'Port Harcourt Branch', 'Remote — Global', 'San Francisco Office'] },
-                { id: 'gender', label: 'GENDER', options: ['Female', 'Male'] },
+                { id: 'department', label: 'DEPARTMENT', options: deptOpts.length ? deptOpts : ['Compliance & Risk', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Human Resources'] },
+                { id: 'grade', label: 'GRADE / BAND', options: gradeOpts.length ? gradeOpts : ['L1 · Individual Contributor', 'L3 · Team Lead', 'L4 · Manager', 'L6 · Executive'] },
+                { id: 'location', label: 'LOCATION', options: locOpts.length ? locOpts : ['Abuja Nigeria', 'Lagos HQ', 'Remote — Global'] },
+                { id: 'gender', label: 'GENDER', options: ['Female', 'Male', 'Other/None'] },
                 { id: 'performance', label: 'PERFORMANCE SCORE', options: ['0–59', '60–79', '80–100'] },
             ],
             // Column 2
             [
-                { id: 'employment_type', label: 'EMPLOYMENT TYPE', options: ['Contract', 'Part-Time', 'Permanent Full-Time'] },
+                { id: 'employment_type', label: 'EMPLOYMENT TYPE', options: empTypeOpts.length ? empTypeOpts : ['Contract', 'Part-Time', 'Permanent Full-Time'] },
                 { id: 'lifecycle', label: 'LIFECYCLE STATE', hasDots: true, options: ['Active', 'Probation', 'OnLeave', 'Exiting', 'Suspended', 'Terminated', 'Alumni'] },
-                { id: 'manager', label: 'MANAGER', options: ['Abubakar Banks', 'Ada Obi', 'Adaeze Danjuma', 'Adaeze Musa', 'Adaeze Thomas', 'Adam Mohammed', 'Amelia Obi', 'Amina Johnson', 'Amira Suleiman', 'Ava Bello'] },
+                { id: 'manager', label: 'MANAGER', options: mgrOpts.length ? mgrOpts : [] },
                 { id: 'flight_risk', label: 'FLIGHT RISK', options: ['Low', 'Medium', 'High'] },
                 { id: 'availability', label: 'AVAILABILITY', options: ['Online', 'Busy', 'On Leave', 'Out of Office'] },
                 { id: 'start_date', label: 'START DATE', isDate: true },
@@ -334,8 +431,8 @@ export class StaffDirectoryDashboard extends Component {
             [
                 { id: 'work_mode', label: 'WORK MODE', options: ['Office', 'Hybrid', 'Remote'] },
                 { id: 'tenure', label: 'TENURE', options: ['0–1y', '1–3y', '3–5y', '5y+'] },
-                { id: 'skills', label: 'SKILLS', options: ['AML/KYC', 'AWS', 'Account Management', 'Audit', 'B2B Sales', 'Branch Operations', 'Brand Strategy', 'Budgeting', 'CRM Tools', 'Campaign Management'] },
-                { id: 'languages', label: 'LANGUAGES', options: ['Arabic', 'English', 'French', 'Hausa', 'Igbo', 'Mandarin', 'Pidgin', 'Portuguese', 'Spanish', 'Yoruba'] },
+                { id: 'skills', label: 'SKILLS', options: skillOpts.length ? skillOpts : ['AWS', 'Account Management', 'Brand Strategy', 'CRM Tools'] },
+                { id: 'languages', label: 'LANGUAGES', options: langOpts.length ? langOpts : ['English', 'French'] },
                 { id: 'reporting_depth', label: 'REPORTING DEPTH', options: ['Has Direct Reports', 'Individual Contributor'] },
             ]
         ];
