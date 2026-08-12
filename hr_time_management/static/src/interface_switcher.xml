@@ -3,9 +3,9 @@
         <div t-if="state.allowed" class="ctm-interface-switcher">
             <button class="ctm-interface-trigger" t-on-click="toggle" title="Switch between admin and employee interfaces">
                 <i class="fa fa-refresh"/>
-                <span>Switch View</span>
+                <span t-esc="state.isAdmin ? 'Switch View' : 'Employee Portal'"/>
             </button>
-            <section t-if="state.open" class="ctm-interface-popover">
+            <section t-if="state.open and state.isAdmin" class="ctm-interface-popover">
                 <header><i class="fa fa-refresh"/> SWITCH INTERFACE <button t-on-click="toggle">×</button></header>
                 <div class="ctm-interface-options">
                     <button t-att-class="state.mode === 'admin' ? 'active' : ''" t-on-click="() => this.selectMode('admin')">

@@ -2,10 +2,10 @@
 <templates xml:space="preserve">
 
     <t t-name="hr_leave_dashboard.LeaveCalendarPage" owl="1">
-        <div class="leaveapp">
+        <div t-att-class="props.embedded ? 'leaveapp leaveapp-embedded' : 'leaveapp'">
 
             <!-- Shared Sidebar -->
-            <CalendarSidebar activeMenu="'calendar'" mode="state.employeeView ? 'employee' : 'auto'" t-key="state.employeeView"/>
+            <CalendarSidebar t-if="!props.embedded" activeMenu="'calendar'" mode="state.employeeView ? 'employee' : 'auto'" t-key="state.employeeView"/>
 
             <!-- Main Content Area -->
             <div class="o_leave_dashboard">
@@ -26,7 +26,7 @@
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
                             <!-- Admin / Employee View Toggle -->
-                            <div class="cleon-calendar-view-switch" role="group">
+                            <div t-if="state.isAdmin and !props.forceEmployee" class="cleon-calendar-view-switch" role="group">
                                 <button type="button"
                                         t-att-class="!state.employeeView ? 'active' : ''"
                                         t-on-click="() => this.toggleAdminEmployeeView(false)">

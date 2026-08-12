@@ -9,6 +9,7 @@
         "hr_timesheet",
         "hr_administration",
         "hr_employee",
+        "hr_leave_dashboard",
         "mail",
         "web",
     ],

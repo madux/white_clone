@@ -10,24 +10,30 @@ export class CleonInterfaceSwitcher extends Component {
     setup() {
         this.action = useService("action");
         this.user = useService("user");
-        this.state = useState({allowed: false, open: false, mode: "admin"});
+        this.state = useState({allowed: false, isAdmin: false, open: false, mode: "admin"});
         onWillStart(async () => {
-            this.state.allowed = await this.user.hasGroup("base.group_system");
+            this.state.allowed = await this.user.hasGroup("base.group_user");
+            this.state.isAdmin = await this.user.hasGroup("base.group_system");
             this.state.mode = window.localStorage.getItem("cleonhr_interface_mode") === "employee" ? "employee" : "admin";
+            if (!this.state.isAdmin) this.state.mode = "employee";
         });
     }
 
     toggle() {
+        if (!this.state.isAdmin) {
+            return this.selectMode("employee");
+        }
         this.state.open = !this.state.open;
     }
 
     async selectMode(mode) {
-        if (!this.state.allowed) {
+        if (!this.state.allowed || (mode === "admin" && !this.state.isAdmin)) {
             return;
         }
         this.state.mode = mode;
         this.state.open = false;
         window.localStorage.setItem("cleonhr_interface_mode", mode);
+        document.documentElement.classList.toggle("has-cleon-employee-portal", mode === "employee");
         window.dispatchEvent(new CustomEvent("cleonhr-interface-mode-change", {detail: {mode}}));
         const action = mode === "employee"
             ? "hr_time_management.action_employee_portal"

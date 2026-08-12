@@ -101,7 +101,9 @@ class HrLeave(models.Model):
                     raise ValidationError(_("Policy validation error for '%s':\n%s") % (leave.holiday_status_id.name, "\n".join("• " + e for e in res["errors"])))
 
     @api.model
-    def _check_leave_dashboard_access(self):
+    def _check_leave_dashboard_access(self, employee_scope=False):
+        if employee_scope and self.env.user.has_group("base.group_user"):
+            return
         if not (
             self.env.user.has_group("base.group_system")
             or self.env.user.has_group("hr_holidays.group_hr_holidays_manager")
@@ -1443,7 +1445,7 @@ class HrLeave(models.Model):
         employee_ids=None,
         employee_view=False,
     ):
-        self._check_leave_dashboard_access()
+        self._check_leave_dashboard_access(employee_scope=employee_view)
 
         department_ids = [int(x) for x in (department_ids or []) if x]
         leave_type_ids = [int(x) for x in (leave_type_ids or []) if x]
@@ -1560,7 +1562,7 @@ class HrLeave(models.Model):
         employee_view=False,
         country_id=None,
     ):
-        self._check_leave_dashboard_access()
+        self._check_leave_dashboard_access(employee_scope=employee_view)
         year = int(year)
         date_from = f"{year}-01-01"
         date_to = f"{year}-12-31"

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
 <t t-name="hr_leave_dashboard.EmployeeDashboard" owl="1">
-  <div class="o_ed_page">
-    <CalendarSidebar activeMenu="'dashboard'" mode="'employee'"/>
+  <div t-att-class="props.embedded ? 'o_ed_page o_ed_embedded' : 'o_ed_page'">
+    <CalendarSidebar t-if="!props.embedded" activeMenu="'dashboard'" mode="'employee'"/>
     <main class="o_ed_main">
-      <header class="o_ed_header"><div class="o_ed_heading"><button class="o_leave_panel_toggle" t-on-click="toggleSidebar" title="Toggle Leave navigation"><i class="fa fa-columns"/></button><div><h2>Dashboard</h2><p>View and manage your leave requests</p></div></div><div class="o_ed_header_actions" t-if="state.data.can_admin"><button title="Section Tour" t-on-click="openTour"><i class="fa fa-paper-plane-o"/></button><button title="Help / Guide" t-on-click="openHelp"><i class="fa fa-question-circle-o"/></button><button title="Setup Wizard" t-on-click="openSetup"><i class="fa fa-magic"/></button><div class="o_ed_switch"><button t-on-click="openAdmin"><i class="fa fa-shield"/> Admin View</button><button class="active"><i class="fa fa-user-o"/> Employee View</button></div></div></header>
+      <header t-if="!props.embedded" class="o_ed_header"><div class="o_ed_heading"><button class="o_leave_panel_toggle" t-on-click="toggleSidebar" title="Toggle Leave navigation"><i class="fa fa-columns"/></button><div><h2>Dashboard</h2><p>View and manage your leave requests</p></div></div><div class="o_ed_header_actions" t-if="state.data.can_admin"><button title="Section Tour" t-on-click="openTour"><i class="fa fa-paper-plane-o"/></button><button title="Help / Guide" t-on-click="openHelp"><i class="fa fa-question-circle-o"/></button><button title="Setup Wizard" t-on-click="openSetup"><i class="fa fa-magic"/></button><div class="o_ed_switch"><button t-on-click="openAdmin"><i class="fa fa-shield"/> Admin View</button><button class="active"><i class="fa fa-user-o"/> Employee View</button></div></div></header>
       <div t-if="state.loading" class="o_ed_loading"><i class="fa fa-spinner fa-spin"/> Loading your dashboard...</div>
       <t t-else="">
         <section class="o_ed_welcome"><div><h3>Welcome back, <t t-esc="state.data.employee.name"/>! 👋</h3><p>You have <b t-esc="state.data.kpis.total_balance || 0"/> days of leave available</p></div><button t-on-click="requestLeave"><i class="fa fa-plus"/> Request Leave</button></section>

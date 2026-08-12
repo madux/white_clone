@@ -9,6 +9,7 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class MyLeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.MyLeaveRequestsPage";
     static components = { EmployeeRequestModal, LeaveRequestDetailModal, CalendarSidebar };
+    static props = { embedded: {type: Boolean, optional: true} };
     setup(){this.orm=useService("orm");this.action=useService("action");this.notification=useService("notification");this.state=useState({loading:true,rows:[],counts:{},types:[],status:"all",search:"",typeId:"",requestOpen:false,initial:null,detailId:null,cancelId:null,cancelReason:"",cancelError:""});onWillStart(()=>this.load());}
     async load(){this.state.loading=true;try{const data=await this.orm.call("hr.leave","get_my_leave_requests",[this.state.status,this.state.search,this.state.typeId||false]);this.state.rows=data.rows||[];this.state.counts=data.counts||{};this.state.types=data.leave_types||[];}finally{this.state.loading=false;}}
     async setStatus(status){this.state.status=status;await this.load();}

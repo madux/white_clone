@@ -39,6 +39,9 @@
 
         build: function () {
             if (document.getElementById("cleonAppRail")) return;
+            if (localStorage.getItem("cleonhr_interface_mode") === "employee") {
+                document.documentElement.classList.add("has-cleon-employee-portal");
+            }
             $("body").append([
                 '<aside id="cleonAppRail" class="cleon-app-rail" aria-label="CleonHR applications">',
                 '  <div class="cleon-rail-loading"><i class="fa fa-spinner fa-spin"></i></div>',

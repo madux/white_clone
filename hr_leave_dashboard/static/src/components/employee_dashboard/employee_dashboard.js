@@ -9,13 +9,14 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class EmployeeLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.EmployeeDashboard";
     static components = { EmployeeRequestModal, CalendarSidebar };
+    static props = { embedded: {type: Boolean, optional: true}, startRequest: {type: Boolean, optional: true} };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
         this.state = useState({ loading: true, requestOpen: false, data: { employee: {}, kpis: {}, balances: [], upcoming_leave: [], holidays: [], recent: [] } });
-        onWillStart(() => this.load());
+        onWillStart(async () => { await this.load(); if (this.props.startRequest) this.state.requestOpen = true; });
     }
     async load() {
         this.state.loading = true;

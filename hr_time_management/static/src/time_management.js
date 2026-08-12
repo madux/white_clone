@@ -3,13 +3,18 @@
 import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { EmployeeLeaveDashboard } from "@hr_leave_dashboard/components/employee_dashboard/employee_dashboard";
+import { MyLeaveRequestsPage } from "@hr_leave_dashboard/components/my_leave_requests/my_leave_requests";
+import { LeaveCalendarPage } from "@hr_leave_dashboard/js/leave_calendar";
 
 export class TimeManagementApp extends Component {
     static template = "hr_time_management.App";
     static props = ["*"];
+    static components = { EmployeeLeaveDashboard, MyLeaveRequestsPage, LeaveCalendarPage };
 
     setup() {
         this.orm = useService("orm");
+        this.action = useService("action");
         this.notification = useService("notification");
         this.user = useService("user");
         const now = new Date();
@@ -18,22 +23,28 @@ export class TimeManagementApp extends Component {
             gateway: true, page: "dashboard", loading: false, rows: [], counts: {}, attendanceRate: 0,
             departments: [], shifts: [], status: "all", search: "", departmentId: "",
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
-            isManager: false, mode: "admin", employeeData: null, employeePage: "clock", busy: false,
+            isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "clock", busy: false,
+            profileOpen: true, leaveOpen: true, timeOpen: true,
             policy: {},
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
             const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
             this.state.isManager = access.is_manager;
+            this.state.isPortal = forceEmployeePortal || !access.is_manager;
             const savedMode = window.localStorage.getItem("cleonhr_interface_mode");
             this.state.mode = !forceEmployeePortal && access.is_manager && savedMode !== "employee" ? "admin" : "employee";
             this.state.gateway = access.is_manager && this.state.mode === "admin";
+            this.state.employeePage = this.state.isPortal ? "dashboard" : "clock";
             await this.load();
         });
         this.onInterfaceModeChange = async (event) => {
             await this.setMode(event.detail?.mode || "employee", false);
         };
-        onMounted(() => window.addEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange));
+        onMounted(() => {
+            window.addEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange);
+            document.documentElement.classList.toggle("has-cleon-employee-portal", this.state.isPortal);
+        });
         onWillUnmount(() => window.removeEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange));
     }
 
@@ -68,6 +79,16 @@ export class TimeManagementApp extends Component {
         this.state.employeePage = "clock"; await this.load();
     }
     setEmployeePage(page) { this.state.employeePage = page; }
+    togglePortalSection(section) { this.state[`${section}Open`] = !this.state[`${section}Open`]; }
+    showPortalLeave(page) { this.state.leaveOpen = true; this.state.employeePage = page; }
+    openPortalAction(action) {
+        window.localStorage.setItem("cleonhr_interface_mode", "employee");
+        document.documentElement.classList.add("has-cleon-employee-portal");
+        return this.action.doAction(action, {clearBreadcrumbs: true});
+    }
+    openLeaveDashboard() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_employee_dashboard"); }
+    openLeaveRequests() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
+    openLeaveCalendar() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     async toggleAttendance() {
         if (this.state.busy) return;
         this.state.busy = true;

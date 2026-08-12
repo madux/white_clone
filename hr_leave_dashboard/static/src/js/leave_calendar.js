@@ -10,11 +10,17 @@ import { EmployeeRequestModal } from "../components/employee_request_modal/emplo
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
     static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal };
+    static props = {
+        embedded: { type: Boolean, optional: true },
+        forceEmployee: { type: Boolean, optional: true },
+        "*": true,
+    };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.user = useService("user");
 
         const today = new Date();
 
@@ -25,6 +31,7 @@ export class LeaveCalendarPage extends Component {
             currentDate: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
             coverageMode: false,
             employeeView: false,
+            isAdmin: false,
 
             leaves: [],
             leaveTypes: [],
@@ -62,7 +69,12 @@ export class LeaveCalendarPage extends Component {
             employeeRequestOpen: false,
         });
 
-        onWillStart(() => this.loadCalendarData());
+        onWillStart(async () => {
+            this.state.isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
+            const requestedEmployee = this.props.forceEmployee || this.props.action?.params?.force_employee_view || window.localStorage.getItem("cleonhr_interface_mode") === "employee";
+            this.state.employeeView = Boolean(requestedEmployee || !this.state.isAdmin);
+            await this.loadCalendarData();
+        });
     }
 
     // ---------------------------------------------------------
@@ -177,6 +189,7 @@ export class LeaveCalendarPage extends Component {
     }
 
     toggleAdminEmployeeView(employeeViewVal) {
+        if (!this.state.isAdmin && !employeeViewVal) return;
         this.state.employeeView = employeeViewVal;
         this.loadCalendarData();
     }
