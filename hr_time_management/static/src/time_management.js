@@ -1,28 +1,51 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
 export class TimeManagementApp extends Component {
     static template = "hr_time_management.App";
+    static props = ["*"];
 
     setup() {
         this.orm = useService("orm");
         this.notification = useService("notification");
+        this.user = useService("user");
         const now = new Date();
         const iso = now.toISOString().slice(0, 10);
         this.state = useState({
             gateway: true, page: "dashboard", loading: false, rows: [], counts: {}, attendanceRate: 0,
             departments: [], shifts: [], status: "all", search: "", departmentId: "",
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
+            isManager: false, mode: "admin", employeeData: null, employeePage: "clock", busy: false,
+            policy: {},
         });
-        onWillStart(() => this.load());
+        onWillStart(async () => {
+            const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
+            const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
+            this.state.isManager = access.is_manager;
+            const savedMode = window.localStorage.getItem("cleonhr_interface_mode");
+            this.state.mode = !forceEmployeePortal && access.is_manager && savedMode !== "employee" ? "admin" : "employee";
+            this.state.gateway = access.is_manager && this.state.mode === "admin";
+            await this.load();
+        });
+        this.onInterfaceModeChange = async (event) => {
+            await this.setMode(event.detail?.mode || "employee", false);
+        };
+        onMounted(() => window.addEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange));
+        onWillUnmount(() => window.removeEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange));
     }
 
     async load() {
         this.state.loading = true;
         try {
+            if (this.state.mode === "employee") {
+                this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", [], {
+                    date_from: this.state.dateFrom, date_to: this.state.dateTo,
+                });
+                return;
+            }
             const data = await this.orm.call("hr.attendance", "get_cleon_time_data", [], {
                 view: this.state.page, date_from: this.state.dateFrom, date_to: this.state.dateTo,
                 department_id: this.state.departmentId || false, search: this.state.search,
@@ -33,6 +56,41 @@ export class TimeManagementApp extends Component {
         } catch (error) {
             this.notification.add(error?.data?.message || "Could not load attendance data.", { type: "danger" });
         } finally { this.state.loading = false; }
+    }
+
+    async setMode(mode, broadcast = true) {
+        if (mode === "admin" && !this.state.isManager) return;
+        this.state.mode = mode; this.state.gateway = false;
+        window.localStorage.setItem("cleonhr_interface_mode", mode);
+        if (broadcast) {
+            window.dispatchEvent(new CustomEvent("cleonhr-interface-mode-change", {detail: {mode}}));
+        }
+        this.state.employeePage = "clock"; await this.load();
+    }
+    setEmployeePage(page) { this.state.employeePage = page; }
+    async toggleAttendance() {
+        if (this.state.busy) return;
+        this.state.busy = true;
+        try {
+            const wasCheckedIn = this.state.employeeData?.attendance_state === "checked_in";
+            this.state.employeeData = await this.orm.call("hr.attendance", "cleon_toggle_attendance", []);
+            const row = this.state.employeeData.today;
+            this.notification.add(
+                wasCheckedIn ? `Clocked out successfully. Total hours: ${row?.hours || 0}.` : `Clocked in successfully at ${row?.check_in || "now"}.`,
+                {type: "success"}
+            );
+        } catch (error) { this.notification.add(error?.data?.message || "Attendance could not be recorded.", {type:"danger"}); }
+        finally { this.state.busy = false; }
+    }
+    async openSettings() {
+        this.state.page = "settings";
+        this.state.policy = await this.orm.call("cleon.time.policy", "get_cleon_policy", []);
+    }
+    async savePolicy() {
+        try {
+            this.state.policy = await this.orm.call("cleon.time.policy", "save_cleon_policy", [this.state.policy]);
+            this.notification.add("Time Management policy saved.", {type:"success"});
+        } catch (error) { this.notification.add(error?.data?.message || "Policy could not be saved.", {type:"danger"}); }
     }
 
     get filteredRows() {

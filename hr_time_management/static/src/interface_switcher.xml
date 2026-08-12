@@ -1,0 +1,25 @@
+<templates xml:space="preserve">
+    <t t-name="hr_time_management.InterfaceSwitcher">
+        <div t-if="state.allowed" class="ctm-interface-switcher">
+            <button class="ctm-interface-trigger" t-on-click="toggle" title="Switch between admin and employee interfaces">
+                <i class="fa fa-refresh"/>
+                <span>Switch View</span>
+            </button>
+            <section t-if="state.open" class="ctm-interface-popover">
+                <header><i class="fa fa-refresh"/> SWITCH INTERFACE <button t-on-click="toggle">×</button></header>
+                <div class="ctm-interface-options">
+                    <button t-att-class="state.mode === 'admin' ? 'active' : ''" t-on-click="() => this.selectMode('admin')">
+                        <span class="dot"/><span>Admin View</span><small t-if="state.mode === 'admin'">Current</small>
+                    </button>
+                    <button t-att-class="state.mode === 'employee' ? 'active' : ''" t-on-click="() => this.selectMode('employee')">
+                        <span class="dot"/><span>Employee View</span><small t-if="state.mode === 'employee'">Current</small>
+                    </button>
+                </div>
+                <p>Switch between the administration workspace and the authenticated Employee Portal.</p>
+                <button class="ctm-interface-confirm" t-on-click="() => this.selectMode(state.mode === 'admin' ? 'employee' : 'admin')">
+                    Switch to <t t-esc="state.mode === 'admin' ? 'Employee' : 'Admin'"/> View
+                </button>
+            </section>
+        </div>
+    </t>
+</templates>

@@ -26,6 +26,8 @@ Implemented foundation
 ----------------------
 
 The first slice includes the module selector, Attendance Dashboard, attendance
-detail dialog, Attendance Sheets filters/export, and audited attendance editing.
+detail dialog, Attendance Sheets filters/export, audited attendance editing,
+employee clock-in/out, personal attendance history, role-aware Admin/Employee
+switching, and an admin policy configuration page.
 Shift, overtime, regularisation, reports and task-timesheet screens build on the
 models listed above and are intentionally separate subsequent slices.

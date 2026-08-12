@@ -17,6 +17,71 @@ class HrAttendance(models.Model):
     ], string="Status Override")
     cleon_edit_reason = fields.Text(string="Last Edit Reason", readonly=True)
 
+    @api.model
+    def get_cleon_access(self):
+        is_manager = self.env.user.has_group("base.group_system")
+        return {"is_manager": is_manager, "has_employee": bool(self.env.user.employee_id)}
+
+    @api.model
+    def get_cleon_employee_data(self, date_from=False, date_to=False):
+        employee = self.env.user.employee_id
+        if not employee:
+            raise UserError(_("Your user account is not linked to an employee record."))
+        today = fields.Date.context_today(self)
+        month_start = today.replace(day=1)
+        start_date = fields.Date.to_date(date_from) if date_from else month_start
+        end_date = fields.Date.to_date(date_to) if date_to else today
+        start_dt, _unused = self._day_bounds(start_date)
+        _unused, end_dt = self._day_bounds(end_date)
+        attendances = self.search([
+            ("employee_id", "=", employee.id), ("check_in", ">=", start_dt), ("check_in", "<", end_dt)
+        ], order="check_in desc")
+        rows = [self._row(employee, record, pytz.UTC.localize(record.check_in).astimezone(self._user_tz()).date()) for record in attendances]
+        open_attendance = attendances.filtered(lambda record: not record.check_out)[:1]
+        today_start, today_end = self._day_bounds(today)
+        today_attendance = self.search([
+            ("employee_id", "=", employee.id), ("check_in", ">=", today_start), ("check_in", "<", today_end)
+        ], order="check_in desc", limit=1)
+        expected, _grace, shift = self._expected_start(employee, today)
+        policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
+        return {
+            "employee": employee.name,
+            "employee_id": employee.id,
+            "attendance_state": "checked_in" if open_attendance else "checked_out",
+            "today": self._row(employee, today_attendance, today) if today_attendance else False,
+            "rows": rows,
+            "summary": {
+                "days_present": len({pytz.UTC.localize(record.check_in).astimezone(self._user_tz()).date() for record in attendances}),
+                "total_hours": round(sum(max(0, row["hours"]) for row in rows), 2),
+                "late_arrivals": len([row for row in rows if row["status"] == "late"]),
+            },
+            "shift": {
+                "name": shift.name if shift else "Standard Schedule",
+                "start": expected,
+                "end": shift.end_hour if shift else expected + (policy.standard_hours if policy else 8.0),
+                "break_minutes": shift.break_minutes if shift else (policy.default_break_minutes if policy else 0),
+            },
+        }
+
+    @api.model
+    def cleon_toggle_attendance(self):
+        employee = self.env.user.employee_id
+        if not employee:
+            raise UserError(_("Your user account is not linked to an employee record."))
+        previous_state = employee.attendance_state
+        attendance = employee._attendance_action_change()
+        action = "created" if previous_state == "checked_out" else "modified"
+        self.env["cleon.time.audit.log"].sudo().create({
+            "attendance_id": attendance.id, "employee_id": employee.id, "user_id": self.env.user.id,
+            "action": action, "reason": "Employee clock in" if action == "created" else "Employee clock out",
+            "after_values": {
+                "check_in": fields.Datetime.to_string(attendance.check_in),
+                "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
+            },
+            "company_id": employee.company_id.id,
+        })
+        return self.get_cleon_employee_data()
+
     @api.constrains("cleon_break_minutes")
     def _check_break_minutes(self):
         if any(record.cleon_break_minutes < 0 for record in self):
@@ -42,6 +107,15 @@ class HrAttendance(models.Model):
 
     @api.model
     def _expected_start(self, employee, target_date):
+        assignment = self.env["cleon.hr.shift.assignment"].search([
+            ("company_id", "=", employee.company_id.id),
+            ("date_from", "<=", target_date),
+            "|", ("date_to", "=", False), ("date_to", ">=", target_date),
+            "|", ("employee_id", "=", employee.id), ("department_id", "=", employee.department_id.id),
+        ], order="assignment_type desc, employee_id desc, date_from desc", limit=1)
+        if assignment:
+            shift = assignment.shift_id
+            return shift.start_hour, shift.grace_minutes, shift
         shift = self.env["cleon.hr.shift"].search([
             ("employee_ids", "in", employee.id), ("company_id", "=", employee.company_id.id)
         ], limit=1)
@@ -94,6 +168,8 @@ class HrAttendance(models.Model):
 
     @api.model
     def get_cleon_time_data(self, view="dashboard", date_from=False, date_to=False, department_id=False, search=""):
+        if not self.env.user.has_group("base.group_system"):
+            raise UserError(_("Only Settings administrators can view organization-wide attendance."))
         today = fields.Date.context_today(self)
         start_date = fields.Date.to_date(date_from) if date_from else today
         end_date = fields.Date.to_date(date_to) if date_to else start_date
@@ -133,6 +209,8 @@ class HrAttendance(models.Model):
 
     def cleon_update_attendance(self, values, reason):
         self.ensure_one()
+        if not self.env.user.has_group("base.group_system"):
+            raise UserError(_("Only Settings administrators can edit attendance records."))
         if not reason or not reason.strip():
             raise UserError(_("Please provide a reason for changing this attendance record."))
         allowed = {"check_in", "check_out", "cleon_break_minutes", "cleon_status_override", "cleon_shift_id"}

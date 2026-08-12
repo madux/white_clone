@@ -17,12 +17,10 @@ class CrmPortalController(http.Controller):
     # ─────────────────────────────────────────────────────────────
     @http.route('/landing', type='http', auth='user')
     def show_html_page(self, **kw):
-        # Get actual file path inside the module
-        # html_path = '/white_clone_portal/static/html/landing_page.html'
         file_path = get_resource_path(
             'white_clone_portal',  # your module name
             'static/html',          # folder path inside module
-            'landing_page.html'          # file name
+            'landing_page.html'     # file name
         )
         if not file_path:
             return "HTML file not found."
@@ -39,6 +37,5 @@ class CrmPortalController(http.Controller):
         # Return raw HTML content
         return request.make_response(
             html,
-            headers=[('Content-Type', 'text/html'),('defaultData', json.dumps(data))],
-            
+            headers=[('Content-Type', 'text/html'), ('defaultData', json.dumps(data))],
         )

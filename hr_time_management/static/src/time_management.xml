@@ -1,6 +1,7 @@
 <templates xml:space="preserve">
 <t t-name="hr_time_management.App">
     <div class="ctm-app">
+        <t t-if="state.mode === 'admin'">
         <aside class="ctm-sidebar">
             <button class="ctm-module-title" t-on-click="showGateway"><strong>Attendance</strong><span>⌄</span><small>Module Management</small></button>
             <p class="ctm-nav-label">MAIN</p>
@@ -11,10 +12,11 @@
             <button class="ctm-nav"><i class="fa fa-file-text-o"/>Regularization Requests <span class="ctm-count">0</span></button>
             <p class="ctm-nav-label">SYSTEM</p>
             <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button>
-            <button class="ctm-nav"><i class="fa fa-cog"/>Settings</button>
+            <button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button>
             <button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
         </aside>
         <main class="ctm-main">
+            <div class="ctm-view-switch" t-if="state.isManager"><button class="active"><i class="fa fa-shield"/> Admin View</button><button t-on-click="() => this.setMode('employee')"><i class="fa fa-user-o"/> Employee View</button></div>
             <t t-if="state.page === 'dashboard'">
                 <div class="ctm-heading"><div><span>Time Management &gt; Attendance Management</span><h1><i class="fa fa-clock-o"/> Attendance Dashboard</h1><p>Monitor real-time attendance and workforce presence</p></div><div><button class="ctm-btn" t-on-click="exportCsv">⬇ Export Excel</button></div></div>
                 <div class="ctm-kpis">
@@ -28,7 +30,7 @@
                     <t t-call="hr_time_management.AttendanceTable"/>
                 </section>
             </t>
-            <t t-else="">
+            <t t-elif="state.page === 'sheet'">
                 <div class="ctm-heading"><div><h1>Attendance Sheets</h1><p>Review and correct recorded employee attendance</p></div></div>
                 <section class="ctm-filters">
                     <label>Department<select t-model="state.departmentId"><option value="">All</option><t t-foreach="state.departments" t-as="dept" t-key="dept.id"><option t-att-value="dept.id" t-esc="dept.name"/></t></select></label>
@@ -38,7 +40,45 @@
                 </section>
                 <section class="ctm-panel"><t t-call="hr_time_management.AttendanceTable"/></section>
             </t>
+            <t t-else="">
+                <div class="ctm-heading"><div><h1>Time Management Policy</h1><p>Configure company-wide attendance, grace period, clocking, and overtime defaults</p></div></div>
+                <section class="ctm-policy">
+                    <label>Work Week<select t-model="state.policy.work_week"><option value="five">5-day week</option><option value="six">6-day week</option><option value="custom">Custom</option></select></label>
+                    <label>Standard Hours Per Day<input type="number" min="0" step="0.5" t-model="state.policy.standard_hours"/></label>
+                    <label>Default Break (minutes)<input type="number" min="0" t-model="state.policy.default_break_minutes"/></label>
+                    <label>Late Grace Period (minutes)<input type="number" min="0" t-model="state.policy.default_grace_minutes"/></label>
+                    <label>Clock-in Method<select t-model="state.policy.clock_method"><option value="manual">Manual</option><option value="biometric">Biometric</option><option value="gps">GPS-based</option><option value="ip">IP-based</option><option value="mixed">Multiple Methods</option></select></label>
+                    <label>Daily Overtime Threshold<input type="number" min="0" step="0.5" t-model="state.policy.daily_overtime_threshold"/></label>
+                    <label class="check"><input type="checkbox" t-model="state.policy.weekend_overtime"/> Enable weekend overtime</label>
+                    <label class="check"><input type="checkbox" t-model="state.policy.holiday_overtime"/> Enable holiday overtime</label>
+                    <div class="ctm-policy-actions"><button class="ctm-btn pink" t-on-click="savePolicy">Save Policy</button></div>
+                </section>
+            </t>
         </main>
+        </t>
+        <t t-else="">
+            <aside class="ctm-sidebar employee">
+                <div class="ctm-employee-brand"><i class="fa fa-user-circle"/><strong>EMPLOYEE VIEW</strong><small t-esc="state.employeeData?.employee || 'Employee'"/></div>
+                <p class="ctm-nav-label">TIME &amp; ATTENDANCE</p>
+                <button t-att-class="'ctm-nav ' + (state.employeePage === 'clock' ? 'active' : '')" t-on-click="() => this.setEmployeePage('clock')"><i class="fa fa-clock-o"/>Clock In/Out</button>
+                <button t-att-class="'ctm-nav ' + (state.employeePage === 'history' ? 'active' : '')" t-on-click="() => this.setEmployeePage('history')"><i class="fa fa-calendar-check-o"/>My Attendance</button>
+                <button t-att-class="'ctm-nav ' + (state.employeePage === 'overtime' ? 'active' : '')" t-on-click="() => this.setEmployeePage('overtime')"><i class="fa fa-hourglass-half"/>Overtime Requests</button>
+            </aside>
+            <main class="ctm-main employee-main">
+                <header class="ctm-employee-header"><div><h1>Time &amp; Attendance</h1><p>Track your attendance and working hours</p></div><div class="ctm-view-switch" t-if="state.isManager"><button t-on-click="() => this.setMode('admin')"><i class="fa fa-shield"/> Admin View</button><button class="active"><i class="fa fa-user-o"/> Employee View</button></div></header>
+                <t t-if="state.employeeData">
+                    <t t-if="state.employeePage === 'clock'">
+                        <section class="ctm-clock-card"><i class="fa fa-clock-o"/><h2>CLOCK IN/OUT</h2><p>Status</p><strong t-esc="state.employeeData.attendance_state === 'checked_in' ? 'Clocked In' : 'Clocked Out'"/><small t-if="state.employeeData.today"><t t-esc="state.employeeData.today.check_in"/> <t t-if="state.employeeData.today.check_out">— <t t-esc="state.employeeData.today.check_out"/></t></small><button t-att-class="state.employeeData.attendance_state === 'checked_in' ? 'clock-out' : 'clock-in'" t-on-click="toggleAttendance" t-att-disabled="state.busy"><t t-esc="state.employeeData.attendance_state === 'checked_in' ? 'CLOCK OUT' : 'CLOCK IN'"/></button></section>
+                        <div class="ctm-employee-widgets"><article><span>DAYS PRESENT</span><strong t-esc="state.employeeData.summary.days_present"/><small>This month</small></article><article><span>TOTAL HOURS</span><strong t-esc="state.employeeData.summary.total_hours"/><small>This month</small></article><article><span>LATE ARRIVALS</span><strong t-esc="state.employeeData.summary.late_arrivals"/><small>This month</small></article><article><span>MY SHIFT</span><strong t-esc="state.employeeData.shift.name"/><small><t t-esc="state.employeeData.shift.break_minutes"/> minute break</small></article></div>
+                    </t>
+                    <t t-elif="state.employeePage === 'history'">
+                        <div class="ctm-heading"><div><h1>My Attendance History</h1><p>View your complete attendance records</p></div></div>
+                        <section class="ctm-panel"><div class="ctm-table-wrap"><table><thead><tr><th>DATE</th><th>CLOCK IN</th><th>CLOCK OUT</th><th>HOURS</th><th>STATUS</th><th>LATE BY</th></tr></thead><tbody><tr t-foreach="state.employeeData.rows" t-as="row" t-key="row.id"><td t-esc="row.date"/><td t-esc="row.check_in"/><td t-esc="row.check_out || '—'"/><td><t t-esc="row.hours"/> hrs</td><td><span t-att-class="'status '+row.status" t-esc="label(row.status)"/></td><td><t t-if="row.late_by"><t t-esc="row.late_by"/> min</t><t t-else="">—</t></td></tr></tbody></table></div></section>
+                    </t>
+                    <t t-else=""><div class="ctm-heading"><div><h1>Overtime Requests</h1><p>Request and track your overtime hours</p></div></div><section class="ctm-empty-state"><i class="fa fa-hourglass-half"/><h2>Overtime workflow coming next</h2><p>The policy foundation is ready; request fields and approval rules will follow the detailed screen specification.</p></section></t>
+                </t>
+            </main>
+        </t>
         <t t-if="state.gateway"><div class="ctm-overlay"><section class="ctm-gateway"><button class="ctm-close" t-on-click="selectAttendance">×</button><h2>Time Management</h2><p>Select a module to manage your workforce time and attendance</p><div class="ctm-module-grid"><button t-on-click="selectAttendance"><i class="fa fa-clock-o blue"/><span><strong>Attendance Management</strong><small>Track and manage employee attendance, clock-ins, and absences</small></span></button><button t-on-click="() => this.selectPending('Shift Management')"><i class="fa fa-calendar purple"/><span><strong>Shift Management</strong><small>Schedule and assign shifts across your organization</small></span></button><button t-on-click="() => this.selectPending('Overtime Management')"><i class="fa fa-money green"/><span><strong>Overtime Management</strong><small>Monitor and approve overtime requests and costs</small></span></button><button t-on-click="() => this.selectPending('Time Tracking')"><i class="fa fa-clock-o orange"/><span><strong>Time Tracking</strong><small>Track task hours and manage timesheets</small></span></button></div><p class="ctm-gateway-message" t-if="state.gatewayMessage" t-esc="state.gatewayMessage"/><footer>Need help choosing? <b>View the guide</b></footer></section></div></t>
         <t t-if="state.detail"><div class="ctm-overlay"><section class="ctm-modal detail"><button class="ctm-close" t-on-click="closeDetail">×</button><h2>Employee Attendance Details</h2><div class="ctm-person"><div class="avatar" t-esc="state.detail.employee[0]"/><div><strong t-esc="state.detail.employee"/><small><t t-esc="state.detail.employee_code"/> • <t t-esc="state.detail.department"/></small></div></div><div class="ctm-detail-grid"><div><span>Clock In</span><strong t-esc="state.detail.check_in || 'Missing'"/></div><div><span>Clock Out</span><strong t-esc="state.detail.check_out || 'Missing'"/></div><div><span>Shift</span><strong t-esc="state.detail.shift"/></div><div><span>Status</span><b t-att-class="'status '+state.detail.status" t-esc="label(state.detail.status)"/></div></div></section></div></t>
         <t t-if="state.edit"><div class="ctm-overlay"><section class="ctm-modal edit"><button class="ctm-close" t-on-click="closeEdit">×</button><h2>Edit Attendance Record</h2><div class="ctm-warning">⚠ <strong>You are about to modify an attendance record</strong><br/>Please provide a reason for this change. The update will be audited.</div><div class="ctm-person"><div><span>Employee Name</span><strong t-esc="state.edit.employee"/></div><div><span>Employee ID</span><strong t-esc="state.edit.employee_code"/></div><div><span>Date</span><strong t-esc="state.edit.date"/></div><div><span>Current Status</span><b t-att-class="'status '+state.edit.status" t-esc="label(state.edit.status)"/></div></div><label>Clock-in Time<input type="datetime-local" t-model="state.edit.check_in_input"/></label><label>Clock-out Time<input type="datetime-local" t-model="state.edit.check_out_input"/></label><label>Attendance Status *<select t-model="state.edit.status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option><option value="on_leave">On Leave</option></select></label><label>Break Duration (minutes)<input type="number" min="0" t-model="state.edit.break_minutes"/></label><label>Reason for change *<textarea t-model="state.editReason"/></label><p class="ctm-error" t-if="state.error" t-esc="state.error"/><footer><button class="ctm-btn" t-on-click="closeEdit">Cancel</button><button class="ctm-btn pink" t-on-click="saveEdit">Save Changes</button></footer></section></div></t>

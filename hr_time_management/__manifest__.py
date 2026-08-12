@@ -20,6 +20,9 @@
     ],
     "assets": {
         "web.assets_backend": [
+            "hr_time_management/static/src/interface_switcher.js",
+            "hr_time_management/static/src/interface_switcher.xml",
+            "hr_time_management/static/src/interface_switcher.css",
             "hr_time_management/static/src/time_management.js",
             "hr_time_management/static/src/time_management.xml",
             "hr_time_management/static/src/time_management.css",

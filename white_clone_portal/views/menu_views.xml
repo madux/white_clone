@@ -13,6 +13,7 @@
             id="menu_white_clone_portal_root"
             name="CleonHR"
             sequence="50"
+            groups="base.group_no_one"
             web_icon="white_clone_portal,static/description/icon.png"
             action="white_clone_portal.action_white_clone_portal_dashboard"/>
 

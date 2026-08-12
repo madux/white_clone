@@ -1,6 +1,19 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_cleon_shift_user,cleon.hr.shift user,model_cleon_hr_shift,hr_time_management.group_time_management_user,1,0,0,0
 access_cleon_shift_manager,cleon.hr.shift manager,model_cleon_hr_shift,hr_time_management.group_time_management_manager,1,1,1,1
+access_shift_assignment_user,shift assignment user,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_user,1,0,0,0
+access_shift_assignment_manager,shift assignment manager,model_cleon_hr_shift_assignment,hr_time_management.group_time_management_manager,1,1,1,1
+access_time_policy_user,time policy user,model_cleon_time_policy,hr_time_management.group_time_management_user,1,0,0,0
+access_time_policy_manager,time policy manager,model_cleon_time_policy,hr_time_management.group_time_management_manager,1,1,1,1
 access_regularization_user,attendance regularization user,model_cleon_attendance_regularization,hr_time_management.group_time_management_user,1,1,1,0
 access_regularization_manager,attendance regularization manager,model_cleon_attendance_regularization,hr_time_management.group_time_management_manager,1,1,1,1
 access_time_audit_manager,time audit manager,model_cleon_time_audit_log,hr_time_management.group_time_management_manager,1,0,0,0
+access_cleon_shift_system,cleon.hr.shift system administrator,model_cleon_hr_shift,base.group_system,1,1,1,1
+access_shift_assignment_system,shift assignment system administrator,model_cleon_hr_shift_assignment,base.group_system,1,1,1,1
+access_time_policy_system,time policy system administrator,model_cleon_time_policy,base.group_system,1,1,1,1
+access_regularization_system,attendance regularization system administrator,model_cleon_attendance_regularization,base.group_system,1,1,1,1
+access_time_audit_system,time audit system administrator,model_cleon_time_audit_log,base.group_system,1,0,0,0
+access_cleon_shift_internal,cleon.hr.shift internal employee,model_cleon_hr_shift,base.group_user,1,0,0,0
+access_shift_assignment_internal,shift assignment internal employee,model_cleon_hr_shift_assignment,base.group_user,1,0,0,0
+access_time_policy_internal,time policy internal employee,model_cleon_time_policy,base.group_user,1,0,0,0
+access_regularization_internal,attendance regularization internal employee,model_cleon_attendance_regularization,base.group_user,1,1,1,0
