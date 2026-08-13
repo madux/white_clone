@@ -20,17 +20,21 @@ export class TimeManagementApp extends Component {
         const now = new Date();
         const iso = now.toISOString().slice(0, 10);
         this.state = useState({
-            gateway: true, page: "dashboard", loading: false, rows: [], counts: {}, attendanceRate: 0,
+            gateway: true, feature: "attendance", page: "dashboard", loading: false, rows: [], counts: {}, attendanceRate: 0,
             departments: [], shifts: [], status: "all", search: "", departmentId: "",
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
             isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "clock", busy: false,
             profileOpen: true, leaveOpen: true, timeOpen: true,
             policy: {},
+            featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
             const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
             this.state.isManager = access.is_manager;
+            this.state.featureAccess = access.features || this.state.featureAccess;
+            const savedFeature = window.sessionStorage.getItem("cleonhr_time_feature");
+            if (savedFeature && this.state.featureAccess[savedFeature]) this.state.feature = savedFeature;
             this.state.isPortal = forceEmployeePortal || !access.is_manager;
             const savedMode = window.localStorage.getItem("cleonhr_interface_mode");
             this.state.mode = !forceEmployeePortal && access.is_manager && savedMode !== "employee" ? "admin" : "employee";
@@ -41,11 +45,21 @@ export class TimeManagementApp extends Component {
         this.onInterfaceModeChange = async (event) => {
             await this.setMode(event.detail?.mode || "employee", false);
         };
+        this.onFeatureShortcut = (event) => {
+            if (event.altKey && event.key.toLowerCase() === "t" && this.state.mode === "admin") {
+                event.preventDefault();
+                this.showGateway();
+            }
+        };
         onMounted(() => {
             window.addEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange);
+            window.addEventListener("keydown", this.onFeatureShortcut);
             document.documentElement.classList.toggle("has-cleon-employee-portal", this.state.isPortal);
         });
-        onWillUnmount(() => window.removeEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange));
+        onWillUnmount(() => {
+            window.removeEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange);
+            window.removeEventListener("keydown", this.onFeatureShortcut);
+        });
     }
 
     async load() {
@@ -118,9 +132,34 @@ export class TimeManagementApp extends Component {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
     label(status) { return ({present:"Present", late:"Late", absent:"Absent", on_leave:"On Leave"})[status] || status; }
-    selectAttendance() { this.state.gateway = false; this.state.page = "dashboard"; this.load(); }
-    selectPending(name) { this.state.gatewayMessage = `${name} is part of this foundation; its detailed screens are the next implementation stage.`; }
-    showGateway() { this.state.gateway = true; }
+    selectAttendance() { this.selectFeature("attendance"); }
+    selectFeature(feature) {
+        if (!this.state.featureAccess[feature]) {
+            this.state.gatewayMessage = "Contact your administrator for access.";
+            return;
+        }
+        this.state.feature = feature;
+        window.sessionStorage.setItem("cleonhr_time_feature", feature);
+        this.state.gateway = false;
+        this.state.gatewayMessage = "";
+        this.state.page = "dashboard";
+        if (feature === "attendance") this.load();
+    }
+    featureName(feature = this.state.feature) { return ({attendance:"Attendance Management", shift:"Shift Management", tracking:"Time Tracking", overtime:"Overtime Management"})[feature]; }
+    featureIcon(feature = this.state.feature) {
+        return ({
+            attendance: "fa-calendar",
+            shift: "fa-clock-o",
+            tracking: "fa-list-alt",
+            overtime: "fa-hourglass-half",
+        })[feature];
+    }
+    showGateway() {
+        if (this.state.mode === "admin") {
+            this.state.gatewayMessage = "";
+            this.state.gateway = true;
+        }
+    }
     setPage(page) {
         this.state.page = page; this.state.status = "all"; this.state.detail = null;
         if (page === "sheet") {

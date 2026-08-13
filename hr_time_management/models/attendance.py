@@ -20,7 +20,12 @@ class HrAttendance(models.Model):
     @api.model
     def get_cleon_access(self):
         is_manager = self.env.user.has_group("base.group_system")
-        return {"is_manager": is_manager, "has_employee": bool(self.env.user.employee_id)}
+        return {
+            "is_manager": is_manager,
+            "has_employee": bool(self.env.user.employee_id),
+            # Client contract for introducing dedicated feature groups later.
+            "features": {key: True for key in ("attendance", "shift", "tracking", "overtime")},
+        }
 
     @api.model
     def get_cleon_employee_data(self, date_from=False, date_to=False):
