@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class CleonTimePolicy(models.Model):
@@ -42,6 +42,22 @@ class CleonTimePolicy(models.Model):
         ("time_policy_company_unique", "unique(company_id)", "Only one Time Management policy is allowed per company."),
     ]
 
+    @api.constrains(
+        "standard_hours", "default_break_minutes", "default_grace_minutes",
+        "daily_overtime_threshold", "daily_overtime_rate",
+        "weekend_overtime_rate", "holiday_overtime_rate",
+    )
+    def _check_time_values(self):
+        for policy in self:
+            if policy.standard_hours <= 0 or policy.standard_hours > 24:
+                raise ValidationError(_("Standard working hours must be greater than 0 and no more than 24."))
+            if policy.default_break_minutes < 0 or policy.default_grace_minutes < 0:
+                raise ValidationError(_("Break and grace periods cannot be negative."))
+            if policy.daily_overtime_threshold < 0:
+                raise ValidationError(_("The daily overtime threshold cannot be negative."))
+            if min(policy.daily_overtime_rate, policy.weekend_overtime_rate, policy.holiday_overtime_rate) < 0:
+                raise ValidationError(_("Overtime multiplier rates cannot be negative."))
+
     @api.model
     def get_cleon_policy(self):
         if not self.env.user.has_group("base.group_system"):
@@ -55,8 +71,19 @@ class CleonTimePolicy(models.Model):
             "default_grace_minutes": policy.default_grace_minutes or 0,
             "clock_method": policy.clock_method or "manual",
             "daily_overtime_threshold": policy.daily_overtime_threshold or 8,
+            "daily_overtime_rate": policy.daily_overtime_rate or 1.5,
             "weekend_overtime": policy.weekend_overtime,
+            "weekend_overtime_rate": policy.weekend_overtime_rate or 2.0,
             "holiday_overtime": policy.holiday_overtime,
+            "holiday_overtime_rate": policy.holiday_overtime_rate or 2.5,
+            "overtime_request_mode": policy.overtime_request_mode or "both",
+            "synchronization_frequency": policy.synchronization_frequency or "realtime",
+            "payroll_integration": policy.payroll_integration,
+            "performance_integration": policy.performance_integration,
+            "employee_portal": policy.employee_portal,
+            "leave_integration": policy.leave_integration,
+            "launched": policy.launched,
+            "go_live_date": fields.Date.to_string(policy.go_live_date) if policy.go_live_date else False,
         }
 
     @api.model
@@ -66,6 +93,10 @@ class CleonTimePolicy(models.Model):
         allowed = {
             "work_week", "standard_hours", "default_break_minutes", "default_grace_minutes",
             "clock_method", "daily_overtime_threshold", "weekend_overtime", "holiday_overtime",
+            "daily_overtime_rate", "weekend_overtime_rate", "holiday_overtime_rate",
+            "overtime_request_mode", "synchronization_frequency", "payroll_integration",
+            "performance_integration", "employee_portal", "leave_integration",
+            "launched", "go_live_date",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)

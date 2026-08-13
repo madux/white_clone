@@ -75,6 +75,18 @@ class HrAttendance(models.Model):
             raise UserError(_("Your user account is not linked to an employee record."))
         previous_state = employee.attendance_state
         attendance = employee._attendance_action_change()
+        if previous_state == "checked_out":
+            local_date = pytz.UTC.localize(attendance.check_in).astimezone(self._user_tz()).date()
+            _expected, _grace, shift = self._expected_start(employee, local_date)
+            policy = self.env["cleon.time.policy"].search([
+                ("company_id", "=", employee.company_id.id),
+            ], limit=1)
+            attendance.write({
+                "cleon_shift_id": shift.id if shift else False,
+                "cleon_break_minutes": shift.break_minutes if shift else (
+                    policy.default_break_minutes if policy else 0
+                ),
+            })
         action = "created" if previous_state == "checked_out" else "modified"
         self.env["cleon.time.audit.log"].sudo().create({
             "attendance_id": attendance.id, "employee_id": employee.id, "user_id": self.env.user.id,
@@ -144,6 +156,64 @@ class HrAttendance(models.Model):
         return ("late" if late_by else "present"), late_by
 
     @api.model
+    def _time_integration_values(self, attendance, employee, target_date, shift=False):
+        """Return one normalized view of attendance for downstream features.
+
+        Attendance remains the source of actual hours; shifts/policy provide the
+        expectation, analytic lines provide task hours, and the resource calendar
+        identifies public holidays.  No values are copied between those models.
+        """
+        policy = self.env["cleon.time.policy"].search([
+            ("company_id", "=", employee.company_id.id),
+        ], limit=1)
+        expected_hours = policy.standard_hours if policy else 8.0
+        if shift:
+            expected_hours = (shift.end_hour - shift.start_hour) % 24
+            expected_hours = max(0.0, expected_hours - shift.break_minutes / 60.0)
+
+        net_hours = max(0.0, (attendance.worked_hours or 0.0) - (
+            (attendance.cleon_break_minutes or 0) / 60.0
+        )) if attendance else 0.0
+        calendar = employee.resource_calendar_id
+        day_start, day_end = self._day_bounds(target_date)
+        is_holiday = bool(calendar and calendar.global_leave_ids.filtered(
+            lambda leave: leave.date_from < day_end and leave.date_to > day_start
+        ))
+        is_weekend = target_date.weekday() >= (5 if not policy or policy.work_week == "five" else 6)
+
+        overtime_category = "daily"
+        overtime_rate = policy.daily_overtime_rate if policy else 1.5
+        threshold = policy.daily_overtime_threshold if policy else expected_hours
+        if is_holiday and (not policy or policy.holiday_overtime):
+            overtime_category = "holiday"
+            overtime_rate = policy.holiday_overtime_rate if policy else 2.5
+            threshold = 0.0
+        elif is_weekend and (not policy or policy.weekend_overtime):
+            overtime_category = "weekend"
+            overtime_rate = policy.weekend_overtime_rate if policy else 2.0
+            threshold = 0.0
+        overtime_hours = max(0.0, net_hours - threshold)
+
+        timesheet_hours = 0.0
+        if employee and "account.analytic.line" in self.env:
+            groups = self.env["account.analytic.line"].sudo()._read_group(
+                [("employee_id", "=", employee.id), ("date", "=", target_date)],
+                [], ["unit_amount:sum"],
+            )
+            timesheet_hours = groups[0][0] if groups else 0.0
+        return {
+            "expected_hours": round(expected_hours, 2),
+            "net_hours": round(net_hours, 2),
+            "hours_variance": round(timesheet_hours - net_hours, 2),
+            "timesheet_hours": round(timesheet_hours, 2),
+            "overtime_hours": round(overtime_hours, 2),
+            "overtime_category": overtime_category,
+            "overtime_rate": overtime_rate,
+            "is_weekend": is_weekend,
+            "is_holiday": is_holiday,
+        }
+
+    @api.model
     def _row(self, employee, attendance, target_date, on_leave=False):
         expected, _grace, assigned_shift = self._expected_start(employee, target_date)
         status, late_by = self._status_for(attendance, employee, target_date)
@@ -151,7 +221,7 @@ class HrAttendance(models.Model):
             status = "on_leave"
         shift = attendance.cleon_shift_id if attendance and attendance.cleon_shift_id else assigned_shift
         hours = max(0.0, (attendance.worked_hours if attendance else 0.0) - ((attendance.cleon_break_minutes if attendance else 0) / 60.0))
-        return {
+        row = {
             "id": attendance.id if attendance else 0,
             "employee_id": employee.id,
             "employee": employee.name,
@@ -170,6 +240,8 @@ class HrAttendance(models.Model):
             "break_minutes": attendance.cleon_break_minutes if attendance else 0,
             "hours": round(hours, 2),
         }
+        row.update(self._time_integration_values(attendance, employee, target_date, shift))
+        return row
 
     @api.model
     def get_cleon_time_data(self, view="dashboard", date_from=False, date_to=False, department_id=False, search=""):

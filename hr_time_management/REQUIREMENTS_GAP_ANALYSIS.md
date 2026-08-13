@@ -32,6 +32,13 @@ the forthcoming screen-by-screen UI specification.
   change, success feedback and audit recording.
 - Employee monthly attendance history and summary KPIs.
 - Community dependencies: `hr_attendance`, `hr_holidays`, and `hr_timesheet`.
+- Attendance rows expose a normalized integration view containing assigned
+  shift, expected/net hours, matching analytic-timesheet hours, variance,
+  weekend/public-holiday flags, and categorized overtime hours/rate.
+- CleonHR clock-in snapshots the effective shift and break policy onto the
+  native attendance record so later policy changes do not rewrite history.
+- The policy API persists overtime multipliers/request mode, synchronization
+  frequency, module integration switches, and launch scheduling fields.
 
 ## Required but awaiting detailed UI/business rules
 
@@ -79,6 +86,10 @@ device integration rules are agreed.
 - Attendance-cap and overtime-excess variance rules.
 - Manager review and payroll-billable output mapping.
 
+Attendance-to-timesheet comparison is operational and read-only. Automatic
+creation of analytic lines remains deferred because a valid project/task and
+description cannot be inferred safely from an attendance check-in.
+
 ### Overtime
 
 - Daily/weekend/holiday categorisation using company calendars.
@@ -86,6 +97,11 @@ device integration rules are agreed.
 - Threshold and multiplier application, approval hierarchy and caps.
 - Payroll-ready output contract and locked-period behaviour.
 - Employee request/history UI and cancellation rules.
+
+Daily/weekend/public-holiday classification and multiplier selection are now
+available on normalized attendance rows. Approval requests, caps and payroll
+posting remain deferred until their state transitions and target payroll model
+are confirmed.
 
 ### Cross-cutting
 
