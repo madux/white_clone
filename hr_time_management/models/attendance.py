@@ -49,6 +49,37 @@ class HrAttendance(models.Model):
         ], order="check_in desc", limit=1)
         expected, _grace, shift = self._expected_start(employee, today)
         policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        timesheets = self.env["account.analytic.line"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("date", ">=", week_start),
+            ("date", "<=", week_end),
+        ])
+        timesheet_hours = sum(timesheets.mapped("unit_amount"))
+        expected_week_hours = (policy.standard_hours if policy else 8.0) * (
+            5 if not policy or policy.work_week == "five" else 6
+        )
+        pending_regularizations = self.env["cleon.attendance.regularization"].sudo().search_count([
+            ("employee_id", "=", employee.id), ("state", "=", "submitted"),
+        ])
+        year_start, _unused = self._day_bounds(today.replace(month=1, day=1))
+        ytd_attendances = self.search([
+            ("employee_id", "=", employee.id),
+            ("check_in", ">=", year_start),
+            ("check_in", "<", today_end),
+        ])
+        upcoming_shifts = []
+        for offset in range(7):
+            schedule_date = today + timedelta(days=offset)
+            schedule_start, _schedule_grace, schedule = self._expected_start(employee, schedule_date)
+            if schedule:
+                upcoming_shifts.append({
+                    "date": fields.Date.to_string(schedule_date),
+                    "name": schedule.name,
+                    "start": schedule_start,
+                    "end": schedule.end_hour,
+                })
         return {
             "employee": employee.name,
             "employee_id": employee.id,
@@ -59,6 +90,16 @@ class HrAttendance(models.Model):
                 "days_present": len({pytz.UTC.localize(record.check_in).astimezone(self._user_tz()).date() for record in attendances}),
                 "total_hours": round(sum(max(0, row["hours"]) for row in rows), 2),
                 "late_arrivals": len([row for row in rows if row["status"] == "late"]),
+                "ytd_days_present": len({
+                    pytz.UTC.localize(record.check_in).astimezone(self._user_tz()).date()
+                    for record in ytd_attendances
+                }),
+                "weekly_timesheet_hours": round(timesheet_hours, 2),
+                "weekly_expected_hours": round(expected_week_hours, 2),
+                "weekly_timesheet_percent": round(
+                    min(100, timesheet_hours / expected_week_hours * 100) if expected_week_hours else 0
+                ),
+                "pending_requests": pending_regularizations,
             },
             "shift": {
                 "name": shift.name if shift else "Standard Schedule",
@@ -66,6 +107,7 @@ class HrAttendance(models.Model):
                 "end": shift.end_hour if shift else expected + (policy.standard_hours if policy else 8.0),
                 "break_minutes": shift.break_minutes if shift else (policy.default_break_minutes if policy else 0),
             },
+            "upcoming_shifts": upcoming_shifts,
         }
 
     @api.model

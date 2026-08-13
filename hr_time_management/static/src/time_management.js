@@ -55,10 +55,16 @@ export class TimeManagementApp extends Component {
             window.addEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange);
             window.addEventListener("keydown", this.onFeatureShortcut);
             document.documentElement.classList.toggle("has-cleon-employee-portal", this.state.isPortal);
+            this.employeeRefreshTimer = window.setInterval(() => {
+                if (this.state.mode === "employee" && !this.state.busy && !this.state.loading) {
+                    this.load();
+                }
+            }, 30000);
         });
         onWillUnmount(() => {
             window.removeEventListener("cleonhr-interface-mode-change", this.onInterfaceModeChange);
             window.removeEventListener("keydown", this.onFeatureShortcut);
+            window.clearInterval(this.employeeRefreshTimer);
         });
     }
 
@@ -66,9 +72,7 @@ export class TimeManagementApp extends Component {
         this.state.loading = true;
         try {
             if (this.state.mode === "employee") {
-                this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", [], {
-                    date_from: this.state.dateFrom, date_to: this.state.dateTo,
-                });
+                this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
                 return;
             }
             const data = await this.orm.call("hr.attendance", "get_cleon_time_data", [], {

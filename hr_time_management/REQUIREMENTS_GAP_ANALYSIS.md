@@ -39,6 +39,9 @@ the forthcoming screen-by-screen UI specification.
   native attendance record so later policy changes do not rewrite history.
 - The policy API persists overtime multipliers/request mode, synchronization
   frequency, module integration switches, and launch scheduling fields.
+- Employee Portal data refreshes every 30 seconds and shows monthly/YTD
+  attendance, current-week analytic-timesheet progress, pending attendance
+  requests, and the next seven days of assigned shifts.
 
 ## Required but awaiting detailed UI/business rules
 
@@ -70,6 +73,10 @@ progress should be implemented when their final UI is supplied.
 
 Do not treat browser-provided GPS/IP text as verified until the security and
 device integration rules are agreed.
+
+Mobile GPS, QR, photo/biometric verification, offline queues, certificate
+pinning and push notifications require trusted mobile/device services and are
+not simulated by the web client.
 
 ### Shifts
 
