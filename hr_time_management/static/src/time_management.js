@@ -32,6 +32,8 @@ export class TimeManagementApp extends Component {
             shiftPage: "dashboard", shiftData: {shifts: [], assignments: [], employees: [], departments: [], kpis: {}},
             shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
             assignmentForm: null,
+            trackingPage: "dashboard", trackingState: "all", trackingSearch: "",
+            trackingData: {rows: [], kpis: {}}, timesheetDetail: null,
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
@@ -82,6 +84,12 @@ export class TimeManagementApp extends Component {
             }
             if (this.state.feature === "shift") {
                 this.state.shiftData = await this.orm.call("cleon.hr.shift", "get_shift_management_data", []);
+                return;
+            }
+            if (this.state.feature === "tracking") {
+                this.state.trackingData = await this.orm.call("cleon.time.sheet", "get_tracking_data", [], {
+                    page: this.state.trackingPage, state: this.state.trackingState, search: this.state.trackingSearch,
+                });
                 return;
             }
             const data = await this.orm.call("hr.attendance", "get_cleon_time_data", [], {
@@ -255,6 +263,39 @@ export class TimeManagementApp extends Component {
         }
     }
     setShiftPage(page) { this.state.shiftPage = page; this.state.shiftDetail = null; }
+    async setTrackingPage(page) { this.state.trackingPage = page; await this.load(); }
+    async setTrackingState(status) { this.state.trackingState = status; await this.load(); }
+    async applyTrackingFilters() { await this.load(); }
+    async decideTimesheet(sheet, decision) {
+        const comment = window.prompt(decision === "approve" ? "Approval comment (optional)" : "Rejection reason", "");
+        if (comment === null) return;
+        if (decision === "reject" && !comment.trim()) {
+            this.notification.add("A rejection reason is required.", {type: "warning"}); return;
+        }
+        try {
+            await this.orm.call("cleon.time.sheet", "manager_decide", [sheet.id, decision, comment]);
+            await this.load();
+            this.notification.add(`Timesheet ${decision === "approve" ? "approved" : "rejected"}.`, {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The timesheet decision could not be saved.", {type: "danger"});
+        }
+    }
+    viewTimesheet(sheet) { this.state.timesheetDetail = sheet; }
+    closeTimesheetDetail() { this.state.timesheetDetail = null; }
+    get trackingRows() {
+        const rows = this.state.trackingData.rows || [];
+        return this.state.trackingPage === "dashboard"
+            ? rows.filter((row) => row.state === "submitted")
+            : rows;
+    }
+    exportTimesheets() {
+        const rows = this.trackingRows;
+        const csv = [["Employee", "Department", "Week", "Hours", "Billable", "Variance", "Status"], ...rows.map(row => [row.employee, row.department, row.week, row.total, row.billable, row.variance, row.state])]
+            .map(line => line.map(value => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"}));
+        link.download = "team-timesheets.csv"; link.click(); URL.revokeObjectURL(link.href);
+    }
     get filteredShifts() {
         const query = this.state.shiftSearch.trim().toLowerCase();
         return (this.state.shiftData.shifts || []).filter(shift =>

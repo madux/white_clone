@@ -16,4 +16,12 @@ access_time_audit_system,time audit system administrator,model_cleon_time_audit_
 access_cleon_shift_internal,cleon.hr.shift internal employee,model_cleon_hr_shift,base.group_user,1,0,0,0
 access_shift_assignment_internal,shift assignment internal employee,model_cleon_hr_shift_assignment,base.group_user,1,0,0,0
 access_time_policy_internal,time policy internal employee,model_cleon_time_policy,base.group_user,1,0,0,0
+access_cleon_time_sheet_user,weekly timesheet user,model_cleon_time_sheet,hr_time_management.group_time_management_user,1,1,1,0
+access_cleon_time_sheet_manager,weekly timesheet manager,model_cleon_time_sheet,hr_time_management.group_time_management_manager,1,1,1,1
+access_cleon_time_sheet_system,weekly timesheet system,model_cleon_time_sheet,base.group_system,1,1,1,1
+access_cleon_time_sheet_line_user,timesheet entry user,model_cleon_time_sheet_line,hr_time_management.group_time_management_user,1,1,1,1
+access_cleon_time_sheet_line_manager,timesheet entry manager,model_cleon_time_sheet_line,hr_time_management.group_time_management_manager,1,1,1,1
+access_cleon_time_sheet_line_system,timesheet entry system,model_cleon_time_sheet_line,base.group_system,1,1,1,1
 access_regularization_internal,attendance regularization internal employee,model_cleon_attendance_regularization,base.group_user,1,1,1,0
+access_cleon_time_sheet_internal,weekly timesheet internal employee,model_cleon_time_sheet,base.group_user,1,1,1,0
+access_cleon_time_sheet_line_internal,timesheet entry internal employee,model_cleon_time_sheet_line,base.group_user,1,1,1,1
