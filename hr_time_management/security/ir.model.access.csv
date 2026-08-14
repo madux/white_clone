@@ -25,3 +25,7 @@ access_cleon_time_sheet_line_system,timesheet entry system,model_cleon_time_shee
 access_regularization_internal,attendance regularization internal employee,model_cleon_attendance_regularization,base.group_user,1,1,1,0
 access_cleon_time_sheet_internal,weekly timesheet internal employee,model_cleon_time_sheet,base.group_user,1,1,1,0
 access_cleon_time_sheet_line_internal,timesheet entry internal employee,model_cleon_time_sheet_line,base.group_user,1,1,1,1
+access_overtime_user,overtime request user,model_cleon_overtime_request,hr_time_management.group_time_management_user,1,1,1,0
+access_overtime_manager,overtime request manager,model_cleon_overtime_request,hr_time_management.group_time_management_manager,1,1,1,1
+access_overtime_system,overtime request system,model_cleon_overtime_request,base.group_system,1,1,1,1
+access_overtime_internal,overtime request internal employee,model_cleon_overtime_request,base.group_user,1,1,1,0

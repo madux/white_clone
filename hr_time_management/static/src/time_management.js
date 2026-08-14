@@ -34,6 +34,9 @@ export class TimeManagementApp extends Component {
             assignmentForm: null,
             trackingPage: "dashboard", trackingState: "all", trackingSearch: "",
             trackingData: {rows: [], kpis: {}}, timesheetDetail: null,
+            overtimePage: "dashboard", overtimeState: "all", overtimeSearch: "",
+            overtimeData: {rows: [], kpis: {}}, overtimeDetail: null,
+            employeeOvertime: {rows: [], kpis: {}}, overtimeForm: null, overtimeDecision: null,
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
@@ -80,6 +83,9 @@ export class TimeManagementApp extends Component {
         try {
             if (this.state.mode === "employee") {
                 this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
+                if (this.state.employeePage === "overtime") {
+                    this.state.employeeOvertime = await this.orm.call("cleon.overtime.request", "get_my_overtime", []);
+                }
                 return;
             }
             if (this.state.feature === "shift") {
@@ -89,6 +95,12 @@ export class TimeManagementApp extends Component {
             if (this.state.feature === "tracking") {
                 this.state.trackingData = await this.orm.call("cleon.time.sheet", "get_tracking_data", [], {
                     page: this.state.trackingPage, state: this.state.trackingState, search: this.state.trackingSearch,
+                });
+                return;
+            }
+            if (this.state.feature === "overtime") {
+                this.state.overtimeData = await this.orm.call("cleon.overtime.request", "get_overtime_data", [], {
+                    page: this.state.overtimePage, state: this.state.overtimeState, search: this.state.overtimeSearch,
                 });
                 return;
             }
@@ -113,7 +125,7 @@ export class TimeManagementApp extends Component {
         }
         this.state.employeePage = "clock"; await this.load();
     }
-    setEmployeePage(page) { this.state.employeePage = page; }
+    async setEmployeePage(page) { this.state.employeePage = page; await this.load(); }
     get calendarBlanks() {
         return Array.from({length: this.state.employeeData?.calendar?.leading_blanks || 0});
     }
@@ -233,7 +245,7 @@ export class TimeManagementApp extends Component {
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
-    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend", holiday:"Public Holiday", future:"Not yet recorded", submitted:"Pending", approved:"Approved", rejected:"Rejected", draft:"Withdrawn"})[status] || status; }
+    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend Overtime", holiday:"Holiday Overtime", daily:"Daily Overtime", special:"Special Assignment", on_call:"On-call Work", future:"Not yet recorded", auto:"Auto-calculated", submitted:"Pending Approval", approved:"Approved", rejected:"Rejected", withdrawn:"Withdrawn", draft:"Draft"})[status] || status; }
     selectAttendance() { this.selectFeature("attendance"); }
     selectFeature(feature) {
         if (!this.state.featureAccess[feature]) {
@@ -295,6 +307,77 @@ export class TimeManagementApp extends Component {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"}));
         link.download = "team-timesheets.csv"; link.click(); URL.revokeObjectURL(link.href);
+    }
+    async setOvertimePage(page) { this.state.overtimePage = page; await this.load(); }
+    async setOvertimeState(status) { this.state.overtimeState = status; await this.load(); }
+    async applyOvertimeFilters() { await this.load(); }
+    viewOvertime(request) { this.state.overtimeDetail = request; }
+    closeOvertimeDetail() { this.state.overtimeDetail = null; }
+    openOvertimeForm() {
+        const date = new Date().toISOString().slice(0, 10);
+        this.state.overtimeForm = {date, start_time: `${date}T17:00`, end_time: `${date}T18:00`, category: "daily", justification: ""};
+    }
+    closeOvertimeForm() { this.state.overtimeForm = null; }
+    async submitOvertime() {
+        const form = this.state.overtimeForm;
+        if (!form) return;
+        if ((form.justification || "").trim().length < 30) {
+            this.notification.add("Justification must contain at least 30 characters.", {type: "warning"}); return;
+        }
+        try {
+            this.state.busy = true;
+            const result = await this.orm.call("cleon.overtime.request", "submit_manual_request", [{...form}]);
+            this.closeOvertimeForm(); await this.load();
+            this.notification.add(`Overtime request ${result.name} submitted successfully.`, {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The overtime request could not be submitted.", {type: "danger"});
+        } finally { this.state.busy = false; }
+    }
+    async withdrawOvertime(request) {
+        if (!window.confirm(`Withdraw overtime request ${request.name}?`)) return;
+        try {
+            await this.orm.call("cleon.overtime.request", "withdraw_request", [request.id]);
+            await this.load(); this.notification.add("Overtime request withdrawn.", {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The request could not be withdrawn.", {type: "danger"});
+        }
+    }
+    decideOvertime(request, decision) {
+        this.state.overtimeDecision = {request, decision, comment: ""};
+    }
+    closeOvertimeDecision() { this.state.overtimeDecision = null; }
+    async confirmOvertimeDecision() {
+        const dialog = this.state.overtimeDecision;
+        if (!dialog) return;
+        const {request, decision} = dialog;
+        const comment = (dialog.comment || "").trim();
+        if (decision === "reject" && !comment) {
+            this.notification.add("A rejection reason is required.", {type: "warning"}); return;
+        }
+        try {
+            this.state.busy = true;
+            await this.orm.call("cleon.overtime.request", "manager_decide", [request.id, decision, comment]);
+            this.closeOvertimeDecision();
+            this.closeOvertimeDetail();
+            await this.load();
+            this.notification.add(`Overtime request ${decision === "approve" ? "approved" : "rejected"} for ${request.employee}.`, {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The overtime decision could not be saved.", {type: "danger"});
+        } finally { this.state.busy = false; }
+    }
+    get overtimeRows() {
+        const rows = this.state.overtimeData.rows || [];
+        return this.state.overtimePage === "dashboard"
+            ? rows.filter((row) => ["auto", "submitted"].includes(row.state)).slice(0, 8)
+            : rows;
+    }
+    exportOvertime() {
+        const rows = this.state.overtimeData.rows || [];
+        const csv = [["Reference", "Employee", "Department", "Date", "Regular Hours", "Overtime Hours", "Category", "Source", "Status", "Estimated Cost"], ...rows.map(row => [row.name, row.employee, row.department, row.date, row.regular_hours, row.hours, row.category, row.source, row.state, row.cost])]
+            .map(line => line.map(value => `"${String(value ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], {type: "text/csv"}));
+        link.download = "overtime-report.csv"; link.click(); URL.revokeObjectURL(link.href);
     }
     get filteredShifts() {
         const query = this.state.shiftSearch.trim().toLowerCase();

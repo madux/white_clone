@@ -27,6 +27,7 @@
             "hr_time_management/static/src/time_management.js",
             "hr_time_management/static/src/time_management.xml",
             "hr_time_management/static/src/time_management.css",
+            "hr_time_management/static/src/overtime.css",
         ],
     },
     "installable": True,
