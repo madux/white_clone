@@ -15,6 +15,7 @@ class CleonTimePolicy(models.Model):
     standard_hours = fields.Float(default=8.0, required=True)
     default_break_minutes = fields.Integer(default=60)
     default_grace_minutes = fields.Integer(default=15)
+    regularization_window_days = fields.Integer(default=30, required=True)
     clock_method = fields.Selection([
         ("manual", "Manual"), ("biometric", "Biometric"),
         ("gps", "GPS-based"), ("ip", "IP-based"), ("mixed", "Multiple Methods"),
@@ -43,7 +44,7 @@ class CleonTimePolicy(models.Model):
     ]
 
     @api.constrains(
-        "standard_hours", "default_break_minutes", "default_grace_minutes",
+        "standard_hours", "default_break_minutes", "default_grace_minutes", "regularization_window_days",
         "daily_overtime_threshold", "daily_overtime_rate",
         "weekend_overtime_rate", "holiday_overtime_rate",
     )
@@ -53,6 +54,8 @@ class CleonTimePolicy(models.Model):
                 raise ValidationError(_("Standard working hours must be greater than 0 and no more than 24."))
             if policy.default_break_minutes < 0 or policy.default_grace_minutes < 0:
                 raise ValidationError(_("Break and grace periods cannot be negative."))
+            if policy.regularization_window_days < 1 or policy.regularization_window_days > 365:
+                raise ValidationError(_("The regularization window must be between 1 and 365 days."))
             if policy.daily_overtime_threshold < 0:
                 raise ValidationError(_("The daily overtime threshold cannot be negative."))
             if min(policy.daily_overtime_rate, policy.weekend_overtime_rate, policy.holiday_overtime_rate) < 0:
@@ -69,6 +72,7 @@ class CleonTimePolicy(models.Model):
             "standard_hours": policy.standard_hours or 8,
             "default_break_minutes": policy.default_break_minutes or 0,
             "default_grace_minutes": policy.default_grace_minutes or 0,
+            "regularization_window_days": policy.regularization_window_days or 30,
             "clock_method": policy.clock_method or "manual",
             "daily_overtime_threshold": policy.daily_overtime_threshold or 8,
             "daily_overtime_rate": policy.daily_overtime_rate or 1.5,
@@ -92,6 +96,7 @@ class CleonTimePolicy(models.Model):
             raise AccessError(_("Only Settings administrators can change company policy configuration."))
         allowed = {
             "work_week", "standard_hours", "default_break_minutes", "default_grace_minutes",
+            "regularization_window_days",
             "clock_method", "daily_overtime_threshold", "weekend_overtime", "holiday_overtime",
             "daily_overtime_rate", "weekend_overtime_rate", "holiday_overtime_rate",
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",

@@ -20,7 +20,11 @@ the forthcoming screen-by-screen UI specification.
 - Live daily attendance dashboard and historical attendance sheets.
 - Automatic Present/Late/Absent/On Leave status foundation.
 - Attendance detail and controlled manual correction with mandatory reason.
-- Regularisation request model and submit/approve/reject workflow.
+- Regularisation request model and employee/manager UI for submit, list,
+  inspect, withdraw, approve and reject. Approval updates attendance and keeps
+  the decision user/time, manager comment and before/after audit values.
+- Configurable regularisation window (30 days by default), one request per
+  employee/date, 20–500 character reasons and requested-time validation.
 - Audit records with performer, timestamps and before/after values.
 - Shift templates with type, times, break, grace and recurrence metadata.
 - Dated employee or department shift assignment and temporary overrides.
@@ -69,14 +73,16 @@ progress should be implemented when their final UI is supplied.
 - GPS perimeter/accuracy rules and trustworthy location verification.
 - Biometric device adapters and device identity mapping.
 - IP allowlists and verification.
-- Half-day classification (the monthly colour-coded attendance calendar is
-  implemented; half-day still needs the approved threshold rule).
+- Half-day classification currently uses less than half of effective expected
+  shift hours; it can be replaced if the final policy specifies another rule.
 - Payroll-period lock and privileged unlock workflow.
 - Manual attendance creation screen and bulk operations.
 - Employee calendar day-detail popovers and PDF export (status tooltips and the
   month view are implemented).
 - Optional manager clock event notification and end-of-day summary.
-- Configurable automatic check-out at shift end and half-day classification.
+- Configurable automatic check-out at shift end.
+- Regularisation attachment upload UI, email/in-app decision notifications and
+  the two-year retention cleanup job. The model already supports attachments.
 
 Do not treat browser-provided GPS/IP text as verified until the security and
 device integration rules are agreed.

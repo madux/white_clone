@@ -14,7 +14,7 @@ class HrAttendance(models.Model):
     cleon_break_minutes = fields.Integer(string="Break Duration", default=0)
     cleon_status_override = fields.Selection([
         ("present", "Present"), ("late", "Late"),
-        ("absent", "Absent"), ("on_leave", "On Leave"),
+        ("half_day", "Half-day"), ("absent", "Absent"), ("on_leave", "On Leave"),
     ], string="Status Override")
     cleon_edit_reason = fields.Text(string="Last Edit Reason", readonly=True)
 
@@ -290,6 +290,10 @@ class HrAttendance(models.Model):
         actual_minutes = local_check.hour * 60 + local_check.minute
         expected_minutes = round(expected * 60) + grace
         late_by = max(0, actual_minutes - expected_minutes)
+        if attendance.check_out:
+            integration = self._time_integration_values(attendance, employee, target_date)
+            if integration["expected_hours"] and integration["net_hours"] < integration["expected_hours"] / 2:
+                return "half_day", late_by
         return ("late" if late_by else "present"), late_by
 
     @api.model
@@ -443,7 +447,7 @@ class HrAttendance(models.Model):
         clean["cleon_edit_reason"] = reason.strip()
         self.write(clean)
         after = {key: audit_value(key) for key in clean if key != "cleon_edit_reason"}
-        self.env["cleon.time.audit.log"].create({
+        self.env["cleon.time.audit.log"].sudo().create({
             "attendance_id": self.id, "employee_id": self.employee_id.id,
             "action": "modified", "reason": reason.strip(),
             "before_values": before, "after_values": after,

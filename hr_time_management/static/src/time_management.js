@@ -25,6 +25,8 @@ export class TimeManagementApp extends Component {
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
             isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "clock", busy: false,
             profileOpen: true, leaveOpen: true, timeOpen: true,
+            regularizations: [], regularization: null, regularizationDetail: null,
+            managerDecision: "", regularizationFilter: "all",
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
         });
@@ -125,6 +127,69 @@ export class TimeManagementApp extends Component {
             type: "info",
         });
     }
+    newRegularization() {
+        const today = new Date().toISOString().slice(0, 10);
+        this.state.regularization = {
+            attendance_date: today, issue_type: "forgot_in",
+            requested_check_in: `${today}T09:00`, requested_check_out: `${today}T17:00`, reason: "",
+        };
+        this.state.error = "";
+    }
+    closeRegularization() { this.state.regularization = null; this.state.error = ""; }
+    syncRegularizationDate() {
+        const date = this.state.regularization.attendance_date;
+        this.state.regularization.requested_check_in = `${date}T09:00`;
+        this.state.regularization.requested_check_out = `${date}T17:00`;
+    }
+    async loadRegularizations(manager = false) {
+        this.state.regularizations = await this.orm.call(
+            "cleon.attendance.regularization", manager ? "get_manager_requests" : "get_my_requests", []
+        );
+    }
+    async openRegularizations(manager = false) {
+        if (manager) { this.state.page = "regularizations"; }
+        else { this.state.employeePage = "regularizations"; }
+        try { await this.loadRegularizations(manager); }
+        catch (error) { this.notification.add(error?.data?.message || "Could not load correction requests.", {type:"danger"}); }
+    }
+    async submitRegularization() {
+        const values = this.state.regularization;
+        if ((values.reason || "").trim().length < 20) {
+            this.state.error = "Please provide a reason of at least 20 characters."; return;
+        }
+        try {
+            await this.orm.call("cleon.attendance.regularization", "submit_request", [values]);
+            this.closeRegularization();
+            await this.loadRegularizations(false);
+            this.notification.add("Regularization request submitted successfully. You will be notified once reviewed.", {type:"success"});
+        } catch (error) { this.state.error = error?.data?.message || "The correction request could not be submitted."; }
+    }
+    async withdrawRegularization(request) {
+        if (!window.confirm("Are you sure? This will return the request to draft.")) return;
+        try {
+            await this.orm.call("cleon.attendance.regularization", "withdraw_request", [request.id]);
+            await this.loadRegularizations(false);
+            this.notification.add("Regularization request withdrawn.", {type:"success"});
+        } catch (error) { this.notification.add(error?.data?.message || "Request could not be withdrawn.", {type:"danger"}); }
+    }
+    async decideRegularization(request, decision) {
+        const comment = window.prompt(decision === "approve" ? "Approval comment (optional)" : "Rejection reason", "");
+        if (comment === null) return;
+        if (decision === "reject" && !comment.trim()) {
+            this.notification.add("A rejection reason is required.", {type:"warning"}); return;
+        }
+        try {
+            await this.orm.call("cleon.attendance.regularization", "manager_decide", [request.id, decision, comment]);
+            await this.loadRegularizations(true);
+            this.notification.add(`Regularization request ${decision === "approve" ? "approved and attendance updated" : "rejected"}.`, {type:"success"});
+        } catch (error) { this.notification.add(error?.data?.message || "The decision could not be saved.", {type:"danger"}); }
+    }
+    viewRegularization(request) { this.state.regularizationDetail = request; }
+    closeRegularizationDetail() { this.state.regularizationDetail = null; }
+    get filteredRegularizations() {
+        return this.state.regularizationFilter === "all" ? this.state.regularizations :
+            this.state.regularizations.filter(item => item.state === this.state.regularizationFilter);
+    }
     async toggleAttendance() {
         if (this.state.busy) return;
         this.state.busy = true;
@@ -153,7 +218,7 @@ export class TimeManagementApp extends Component {
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
-    label(status) { return ({present:"Present", late:"Late", absent:"Absent", on_leave:"On Leave", weekend:"Weekend", holiday:"Public Holiday", future:"Not yet recorded"})[status] || status; }
+    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend", holiday:"Public Holiday", future:"Not yet recorded", submitted:"Pending", approved:"Approved", rejected:"Rejected", draft:"Withdrawn"})[status] || status; }
     selectAttendance() { this.selectFeature("attendance"); }
     selectFeature(feature) {
         if (!this.state.featureAccess[feature]) {
