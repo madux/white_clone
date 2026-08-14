@@ -277,7 +277,14 @@ class HrAttendance(models.Model):
             return shift.start_hour, shift.grace_minutes, shift
         calendar = employee.resource_calendar_id
         lines = calendar.attendance_ids.filtered(lambda line: int(line.dayofweek) == target_date.weekday() and line.day_period != "lunch")
-        return (min(lines.mapped("hour_from")) if lines else 9.0), 0, self.env["cleon.hr.shift"]
+        policy = self.env["cleon.time.policy"].search([
+            ("company_id", "=", employee.company_id.id),
+        ], limit=1)
+        return (
+            min(lines.mapped("hour_from")) if lines else 9.0,
+            policy.default_grace_minutes if policy else 0,
+            self.env["cleon.hr.shift"],
+        )
 
     @api.model
     def _status_for(self, attendance, employee, target_date):

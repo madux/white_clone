@@ -17,6 +17,7 @@ class CleonTimeSheet(models.Model):
     state = fields.Selection([
         ("draft", "Draft"), ("submitted", "Submitted"),
         ("approved", "Approved"), ("rejected", "Rejected"),
+        ("correction", "Corrections Requested"),
     ], default="draft", required=True, index=True, tracking=True)
     line_ids = fields.One2many("cleon.time.sheet.line", "sheet_id", string="Entries")
     total_hours = fields.Float(compute="_compute_totals", store=True)
@@ -83,8 +84,8 @@ class CleonTimeSheet(models.Model):
         self._assert_owner_or_manager()
         self._validate_entries()
         for sheet in self:
-            if sheet.state not in ("draft", "rejected"):
-                raise ValidationError(_("Only a draft or rejected timesheet can be submitted."))
+            if sheet.state not in ("draft", "rejected", "correction"):
+                raise ValidationError(_("Only a draft, rejected, or correction-requested timesheet can be submitted."))
             sheet.write({"state": "submitted", "submitted_at": fields.Datetime.now(), "manager_comment": False})
             sheet._audit("submitted", _("Timesheet submitted for manager approval."))
         return True
@@ -101,15 +102,20 @@ class CleonTimeSheet(models.Model):
     def action_decide(self, decision, comment=False):
         if not (self.env.user.has_group("hr_time_management.group_time_management_manager") or self.env.user.has_group("base.group_system")):
             raise AccessError(_("Only a Time Management manager can approve timesheets."))
-        if decision not in ("approve", "reject"):
+        if decision not in ("approve", "reject", "request_changes"):
             raise ValidationError(_("Invalid timesheet decision."))
-        if decision == "reject" and not (comment or "").strip():
-            raise ValidationError(_("A rejection reason is required."))
+        if decision in ("reject", "request_changes") and not (comment or "").strip():
+            raise ValidationError(_("A reason is required when rejecting or requesting corrections."))
         for sheet in self:
             if sheet.state != "submitted":
                 raise ValidationError(_("Only submitted timesheets can be reviewed."))
+            target_state = {
+                "approve": "approved",
+                "reject": "rejected",
+                "request_changes": "correction",
+            }[decision]
             values = {
-                "state": "approved" if decision == "approve" else "rejected",
+                "state": target_state,
                 "approver_id": self.env.user.id,
                 "approved_at": fields.Datetime.now(),
                 "manager_comment": comment,
@@ -117,7 +123,7 @@ class CleonTimeSheet(models.Model):
             sheet.write(values)
             if decision == "approve":
                 sheet.line_ids._sync_analytic_lines()
-            sheet._audit("approved" if decision == "approve" else "rejected", comment or _("Timesheet approved."))
+            sheet._audit(target_state, comment or _("Timesheet approved."))
         return True
 
     @api.model
@@ -186,8 +192,8 @@ class CleonTimeSheetLine(models.Model):
                 raise ValidationError(_("Time entry hours must be greater than zero and no more than 24."))
             if line.sheet_id.week_start and not line.sheet_id.week_start <= line.date <= line.sheet_id.week_end:
                 raise ValidationError(_("Time entry date must fall within its timesheet week."))
-            if line.sheet_id.state not in ("draft", "rejected"):
-                raise ValidationError(_("Submitted or approved timesheets are read-only."))
+            if line.sheet_id.state not in ("draft", "rejected", "correction"):
+                raise ValidationError(_("Timesheets awaiting review or already approved are read-only."))
 
     def _sync_analytic_lines(self):
         for line in self:

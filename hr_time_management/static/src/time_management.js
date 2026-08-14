@@ -33,7 +33,7 @@ export class TimeManagementApp extends Component {
             shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
             assignmentForm: null,
             trackingPage: "dashboard", trackingState: "all", trackingSearch: "",
-            trackingData: {rows: [], kpis: {}}, timesheetDetail: null,
+            trackingData: {rows: [], kpis: {}}, timesheetDetail: null, timesheetDecision: null,
             overtimePage: "dashboard", overtimeState: "all", overtimeSearch: "",
             overtimeData: {rows: [], kpis: {}}, overtimeDetail: null,
             employeeOvertime: {rows: [], kpis: {}}, overtimeForm: null, overtimeDecision: null,
@@ -245,7 +245,7 @@ export class TimeManagementApp extends Component {
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
-    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend Overtime", holiday:"Holiday Overtime", daily:"Daily Overtime", special:"Special Assignment", on_call:"On-call Work", future:"Not yet recorded", auto:"Auto-calculated", submitted:"Pending Approval", approved:"Approved", rejected:"Rejected", withdrawn:"Withdrawn", draft:"Draft"})[status] || status; }
+    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend Overtime", holiday:"Holiday Overtime", daily:"Daily Overtime", special:"Special Assignment", on_call:"On-call Work", future:"Not yet recorded", auto:"Auto-calculated", submitted:"Pending Approval", approved:"Approved", rejected:"Rejected", correction:"Corrections Requested", withdrawn:"Withdrawn", draft:"Draft"})[status] || status; }
     selectAttendance() { this.selectFeature("attendance"); }
     selectFeature(feature) {
         if (!this.state.featureAccess[feature]) {
@@ -278,18 +278,27 @@ export class TimeManagementApp extends Component {
     async setTrackingPage(page) { this.state.trackingPage = page; await this.load(); }
     async setTrackingState(status) { this.state.trackingState = status; await this.load(); }
     async applyTrackingFilters() { await this.load(); }
-    async decideTimesheet(sheet, decision) {
-        const comment = window.prompt(decision === "approve" ? "Approval comment (optional)" : "Rejection reason", "");
-        if (comment === null) return;
-        if (decision === "reject" && !comment.trim()) {
-            this.notification.add("A rejection reason is required.", {type: "warning"}); return;
+    decideTimesheet(sheet, decision) {
+        this.state.timesheetDecision = {sheet, decision, comment: "", busy: false};
+    }
+    closeTimesheetDecision() { this.state.timesheetDecision = null; }
+    async confirmTimesheetDecision() {
+        const dialog = this.state.timesheetDecision;
+        if (!dialog) return;
+        if (["reject", "request_changes"].includes(dialog.decision) && !dialog.comment.trim()) {
+            this.notification.add("Add a reason for this decision.", {type: "warning"}); return;
         }
+        dialog.busy = true;
         try {
-            await this.orm.call("cleon.time.sheet", "manager_decide", [sheet.id, decision, comment]);
+            await this.orm.call("cleon.time.sheet", "manager_decide", [dialog.sheet.id, dialog.decision, dialog.comment]);
+            const outcome = dialog.decision === "approve" ? "approved" : dialog.decision === "reject" ? "rejected" : "returned for corrections";
+            this.closeTimesheetDecision();
+            this.closeTimesheetDetail();
             await this.load();
-            this.notification.add(`Timesheet ${decision === "approve" ? "approved" : "rejected"}.`, {type: "success"});
+            this.notification.add(`Timesheet for ${dialog.sheet.employee} ${outcome}.`, {type: "success"});
         } catch (error) {
             this.notification.add(error?.data?.message || "The timesheet decision could not be saved.", {type: "danger"});
+            dialog.busy = false;
         }
     }
     viewTimesheet(sheet) { this.state.timesheetDetail = sheet; }

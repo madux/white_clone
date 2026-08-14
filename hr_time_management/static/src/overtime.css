@@ -53,5 +53,7 @@
 .ctm-overtime-decision textarea { min-height:84px; padding:10px 12px; border:1px solid #d7dde7; border-radius:8px; resize:vertical; }
 .ctm-overtime-decision footer { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
 .ctm-btn.danger.filled { background:#e63847; border-color:#e63847; color:#fff; }
+.ctm-btn.warning.filled { background:#efa31a; border-color:#efa31a; color:#fff; }
+.icon-btn.warning { color:#d88700; }
 @media (max-width:1100px) { .ctm-overtime-kpis { grid-template-columns:1fr 1fr; } }
 @media (max-width:700px) { .ctm-overtime-kpis, .ctm-overtime-kpis.employee, .ctm-overtime-breakdown > div, .ctm-overtime-form .ctm-form-grid { grid-template-columns:1fr; } .ctm-overtime-form label.full { grid-column:auto; } .ctm-overtime-table { min-width:900px; } }

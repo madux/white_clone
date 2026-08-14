@@ -1,6 +1,6 @@
 {
     "name": "CLEONHR Time Management",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.1.0",
     "category": "CleonHR-HR ADMIN",
     "summary": "Attendance, shifts, overtime and timesheet management",
     "depends": [

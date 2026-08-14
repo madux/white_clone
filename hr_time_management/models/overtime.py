@@ -44,6 +44,11 @@ class CleonOvertimeRequest(models.Model):
     approver_id = fields.Many2one("res.users", readonly=True)
     decision_at = fields.Datetime(readonly=True)
     manager_comment = fields.Text(readonly=True)
+    payroll_state = fields.Selection([
+        ("not_ready", "Not Ready"),
+        ("ready", "Ready for Payroll"),
+        ("transferred", "Transferred to Payroll"),
+    ], default="not_ready", required=True, readonly=True, index=True)
 
     _sql_constraints = [
         ("attendance_unique", "unique(attendance_id)", "Overtime was already generated for this attendance record."),
@@ -163,8 +168,52 @@ class CleonOvertimeRequest(models.Model):
                 "state": "approved" if decision == "approve" else "rejected",
                 "approver_id": self.env.user.id, "decision_at": fields.Datetime.now(),
                 "manager_comment": comment,
+                "payroll_state": "ready" if decision == "approve" else "not_ready",
             })
             request._audit("approved" if decision == "approve" else "rejected", comment or _("Overtime approved."))
+            request._notify_employee_decision(decision, comment)
+        return True
+
+    def _notify_employee_decision(self, decision, comment=False):
+        """Notify through Odoo mail without assuming an external mail gateway."""
+        for request in self:
+            partner = request.employee_id.user_id.partner_id
+            if not partner:
+                continue
+            outcome = _("approved") if decision == "approve" else _("rejected")
+            body = _("Your overtime request %(reference)s for %(hours)s hour(s) was %(outcome)s.") % {
+                "reference": request.name,
+                "hours": round(request.overtime_hours, 2),
+                "outcome": outcome,
+            }
+            if comment:
+                body += "<br/>" + _("Manager comment: %s") % comment
+            request.message_post(body=body, partner_ids=partner.ids, subtype_xmlid="mail.mt_note")
+
+    def get_payroll_ready_values(self):
+        """Stable handoff contract for a future CleonHR payroll connector."""
+        self.ensure_one()
+        if self.state != "approved" or self.payroll_state not in ("ready", "transferred"):
+            raise ValidationError(_("Only approved overtime is eligible for payroll transfer."))
+        return {
+            "reference": self.name,
+            "employee_id": self.employee_id.id,
+            "company_id": self.company_id.id,
+            "date": fields.Date.to_string(self.date),
+            "hours": self.overtime_hours,
+            "category": self.category,
+            "multiplier": self.multiplier,
+            "estimated_cost": self.estimated_cost,
+            "currency_id": self.currency_id.id,
+        }
+
+    def mark_payroll_transferred(self):
+        if not self._manager_allowed():
+            raise AccessError(_("Only a Time Management manager can confirm payroll transfer."))
+        for request in self:
+            request.get_payroll_ready_values()
+            request.payroll_state = "transferred"
+            request._audit("modified", _("Approved overtime marked as transferred to payroll."), "system")
         return True
 
     @api.model
@@ -192,11 +241,12 @@ class CleonOvertimeRequest(models.Model):
             "approver": request.approver_id.name or "",
             "decision_at": fields.Datetime.to_string(request.decision_at) if request.decision_at else False,
             "manager_comment": request.manager_comment or "",
+            "payroll_state": request.payroll_state,
         } for request in requests]
         return {"rows": rows, "kpis": {
             "total": round(sum(month.mapped("overtime_hours")), 2),
             "approved": round(sum(month.filtered(lambda request: request.state == "approved").mapped("overtime_hours")), 2),
-            "pending": len(month.filtered(lambda request: request.state == "submitted")),
+            "pending": len(month.filtered(lambda request: request.state in ("auto", "submitted"))),
         }}
 
     @api.model
@@ -236,6 +286,7 @@ class CleonOvertimeRequest(models.Model):
             "hours": round(row.overtime_hours, 2), "category": row.category,
             "source": row.source, "state": row.state, "reason": row.justification or "",
             "multiplier": row.multiplier, "cost": round(row.estimated_cost, 2),
+            "payroll_state": row.payroll_state,
             "approver": row.approver_id.name or "", "decision_at": fields.Datetime.to_string(row.decision_at) if row.decision_at else False,
         } for row in requests.sorted(lambda row: (row.date, row.id), reverse=True)]
         daily = sum(month.filtered(lambda row: row.category == "daily").mapped("overtime_hours"))
