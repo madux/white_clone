@@ -97,6 +97,16 @@ export class TimeManagementApp extends Component {
         this.state.employeePage = "clock"; await this.load();
     }
     setEmployeePage(page) { this.state.employeePage = page; }
+    get calendarBlanks() {
+        return Array.from({length: this.state.employeeData?.calendar?.leading_blanks || 0});
+    }
+    formatHour(value) {
+        const hours = Math.floor(Number(value || 0));
+        const minutes = Math.round((Number(value || 0) - hours) * 60);
+        const suffix = hours >= 12 ? "PM" : "AM";
+        const displayHour = hours % 12 || 12;
+        return `${displayHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+    }
     togglePortalSection(section) { this.state[`${section}Open`] = !this.state[`${section}Open`]; }
     showPortalLeave(page) { this.state.leaveOpen = true; this.state.employeePage = page; }
     openPortalAction(action) {
@@ -107,6 +117,14 @@ export class TimeManagementApp extends Component {
     openLeaveDashboard() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_employee_dashboard"); }
     openLeaveRequests() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
     openLeaveCalendar() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_calendar"); }
+    openTimesheets() {
+        return this.action.doAction("hr_timesheet.act_hr_timesheet_line", {clearBreadcrumbs: true});
+    }
+    deferredFeature(name) {
+        this.notification.add(`${name} is recorded in the implementation backlog and will be enabled with its approved workflow screen.`, {
+            type: "info",
+        });
+    }
     async toggleAttendance() {
         if (this.state.busy) return;
         this.state.busy = true;
@@ -135,7 +153,7 @@ export class TimeManagementApp extends Component {
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
-    label(status) { return ({present:"Present", late:"Late", absent:"Absent", on_leave:"On Leave"})[status] || status; }
+    label(status) { return ({present:"Present", late:"Late", absent:"Absent", on_leave:"On Leave", weekend:"Weekend", holiday:"Public Holiday", future:"Not yet recorded"})[status] || status; }
     selectAttendance() { this.selectFeature("attendance"); }
     selectFeature(feature) {
         if (!this.state.featureAccess[feature]) {

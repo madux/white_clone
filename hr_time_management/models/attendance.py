@@ -1,3 +1,4 @@
+import calendar
 from datetime import datetime, time, timedelta
 
 import pytz
@@ -57,6 +58,10 @@ class HrAttendance(models.Model):
             ("date", "<=", week_end),
         ])
         timesheet_hours = sum(timesheets.mapped("unit_amount"))
+        project_hours = {}
+        for line in timesheets:
+            project_name = line.project_id.name if line.project_id else _("Internal / Other")
+            project_hours[project_name] = project_hours.get(project_name, 0.0) + line.unit_amount
         expected_week_hours = (policy.standard_hours if policy else 8.0) * (
             5 if not policy or policy.work_week == "five" else 6
         )
@@ -73,13 +78,87 @@ class HrAttendance(models.Model):
         for offset in range(7):
             schedule_date = today + timedelta(days=offset)
             schedule_start, _schedule_grace, schedule = self._expected_start(employee, schedule_date)
-            if schedule:
-                upcoming_shifts.append({
-                    "date": fields.Date.to_string(schedule_date),
-                    "name": schedule.name,
-                    "start": schedule_start,
-                    "end": schedule.end_hour,
-                })
+            upcoming_shifts.append({
+                "date": fields.Date.to_string(schedule_date),
+                "name": schedule.name if schedule else "Standard Schedule",
+                "start": schedule_start,
+                "end": schedule.end_hour if schedule else schedule_start + (
+                    policy.standard_hours if policy else 8.0
+                ),
+            })
+
+        row_by_date = {row["date"]: row for row in rows}
+        approved_leaves = self.env["hr.leave"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("state", "=", "validate"),
+            ("request_date_from", "<=", end_date),
+            ("request_date_to", ">=", month_start),
+        ])
+        leave_dates = set()
+        for leave in approved_leaves:
+            cursor = max(leave.request_date_from, month_start)
+            leave_end = min(leave.request_date_to, end_date)
+            while cursor <= leave_end:
+                leave_dates.add(fields.Date.to_string(cursor))
+                cursor += timedelta(days=1)
+        holiday_dates = set()
+        resource_calendar = employee.resource_calendar_id
+        if resource_calendar:
+            month_start_dt, _unused = self._day_bounds(month_start)
+            _unused, month_end_dt = self._day_bounds(end_date)
+            for leave in resource_calendar.global_leave_ids.filtered(
+                lambda item: item.date_from < month_end_dt and item.date_to > month_start_dt
+            ):
+                local_start = pytz.UTC.localize(leave.date_from).astimezone(self._user_tz()).date()
+                local_end = pytz.UTC.localize(leave.date_to).astimezone(self._user_tz()).date()
+                cursor = max(local_start, month_start)
+                while cursor <= min(local_end, end_date):
+                    holiday_dates.add(fields.Date.to_string(cursor))
+                    cursor += timedelta(days=1)
+        calendar_days = []
+        days_in_month = calendar.monthrange(month_start.year, month_start.month)[1]
+        for day_number in range(1, days_in_month + 1):
+            day = month_start.replace(day=day_number)
+            key = fields.Date.to_string(day)
+            row = row_by_date.get(key)
+            status = row["status"] if row else "future"
+            if key in leave_dates:
+                status = "on_leave"
+            elif key in holiday_dates:
+                status = "holiday"
+            elif day.weekday() >= (5 if not policy or policy.work_week == "five" else 6):
+                status = "weekend"
+            elif day < today and not row:
+                status = "absent"
+            calendar_days.append({
+                "date": key,
+                "day": day_number,
+                "weekday": day.strftime("%a"),
+                "status": status,
+                "is_today": day == today,
+            })
+
+        monthly_overtime = round(sum(row["overtime_hours"] for row in rows), 2)
+        weekend_overtime = round(sum(
+            row["overtime_hours"] for row in rows if row["overtime_category"] == "weekend"
+        ), 2)
+        holiday_overtime = round(sum(
+            row["overtime_hours"] for row in rows if row["overtime_category"] == "holiday"
+        ), 2)
+        pending_actions = []
+        if open_attendance:
+            pending_actions.append({"type": "clock", "label": _("Remember to clock out today")})
+        if pending_regularizations:
+            pending_actions.append({
+                "type": "regularization",
+                "label": _("%s attendance correction request(s) awaiting review") % pending_regularizations,
+            })
+        missing_hours = max(0.0, expected_week_hours - timesheet_hours)
+        if missing_hours:
+            pending_actions.append({
+                "type": "timesheet",
+                "label": _("Log %.1f remaining timesheet hours this week") % missing_hours,
+            })
         return {
             "employee": employee.name,
             "employee_id": employee.id,
@@ -100,6 +179,11 @@ class HrAttendance(models.Model):
                     min(100, timesheet_hours / expected_week_hours * 100) if expected_week_hours else 0
                 ),
                 "pending_requests": pending_regularizations,
+                "weekly_missing_hours": round(missing_hours, 2),
+                "weekly_timesheet_status": "complete" if timesheet_hours >= expected_week_hours else "draft",
+                "monthly_overtime_hours": monthly_overtime,
+                "weekend_overtime_hours": weekend_overtime,
+                "holiday_overtime_hours": holiday_overtime,
             },
             "shift": {
                 "name": shift.name if shift else "Standard Schedule",
@@ -108,6 +192,17 @@ class HrAttendance(models.Model):
                 "break_minutes": shift.break_minutes if shift else (policy.default_break_minutes if policy else 0),
             },
             "upcoming_shifts": upcoming_shifts,
+            "tomorrow_shift": upcoming_shifts[1] if len(upcoming_shifts) > 1 else False,
+            "timesheet_projects": [
+                {"name": name, "hours": round(hours, 2)}
+                for name, hours in sorted(project_hours.items(), key=lambda item: item[1], reverse=True)
+            ],
+            "pending_actions": pending_actions,
+            "calendar": {
+                "label": month_start.strftime("%B %Y"),
+                "leading_blanks": (month_start.weekday()),
+                "days": calendar_days,
+            },
         }
 
     @api.model

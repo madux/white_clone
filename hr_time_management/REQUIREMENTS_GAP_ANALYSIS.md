@@ -42,6 +42,11 @@ the forthcoming screen-by-screen UI specification.
 - Employee Portal data refreshes every 30 seconds and shows monthly/YTD
   attendance, current-week analytic-timesheet progress, pending attendance
   requests, and the next seven days of assigned shifts.
+- The employee Time dashboard now follows the four-widget specification:
+  today's clock state, effective shift/tomorrow preview, native analytic-line
+  timesheet progress/project split, and calculated monthly overtime. It also
+  includes live pending actions and a colour-coded monthly attendance calendar
+  derived from attendance, approved leave and the resource calendar.
 
 ## Required but awaiting detailed UI/business rules
 
@@ -64,10 +69,12 @@ progress should be implemented when their final UI is supplied.
 - GPS perimeter/accuracy rules and trustworthy location verification.
 - Biometric device adapters and device identity mapping.
 - IP allowlists and verification.
-- Monthly colour-coded attendance calendar and half-day classification.
+- Half-day classification (the monthly colour-coded attendance calendar is
+  implemented; half-day still needs the approved threshold rule).
 - Payroll-period lock and privileged unlock workflow.
 - Manual attendance creation screen and bulk operations.
-- Employee monthly calendar, day detail tooltips and PDF export.
+- Employee calendar day-detail popovers and PDF export (status tooltips and the
+  month view are implemented).
 - Optional manager clock event notification and end-of-day summary.
 - Configurable automatic check-out at shift end and half-day classification.
 
