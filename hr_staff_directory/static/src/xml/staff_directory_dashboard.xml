@@ -677,66 +677,53 @@
                 <t t-if="state.activeView === 'grid'">
                     <div id="sd-grid-view" class="sd-grid-container">
                         <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
-                            <div t-att-class="'sd-card sdir-clickable sd-border-' + person.lifecycle_state + (person.is_pinned ? ' sdir-card-pinned' : '')"
+                            <div t-att-class="'sd-card sdir-clickable' + (person.is_pinned ? ' sdir-card-pinned' : '')"
                                  t-on-click="() => this.openProfile(person.id)">
                                 
-                                <!-- Header Row: Avatar + Name/Title -->
-                                <div class="sd-card-header">
+                                <!-- Top Row: Status Badge & Overflow Menu -->
+                                <div class="sd-card-top-row">
+                                    <span t-att-class="'sd-badge sd-badge-' + person.lifecycle_state">
+                                        <t t-esc="lifecycleLabel(person.lifecycle_state)"/>
+                                    </span>
+                                    <div class="sd-overflow-menu">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="5" cy="12" r="1"/>
+                                            <circle cx="12" cy="12" r="1"/>
+                                            <circle cx="19" cy="12" r="1"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                
+                                <!-- Avatar Row -->
+                                <div class="sd-card-avatar-row">
                                     <div class="sd-avatar-wrap">
                                         <div t-att-class="'sd-avatar sd-ring-' + person.lifecycle_state"
                                              t-att-style="person.has_image ? ('background-image: url(/web/image?model=hr.employee&amp;field=avatar_128&amp;id=' + person.id + '&amp;unique=' + person.avatar_cache_key + '); background-size: cover;') : ('background-color:' + avatarColor(person.name) + ';')">
                                             <t t-esc="person.has_image ? '' : initials(person.name)"/>
                                         </div>
-                                        <t t-if="person.lifecycle_state === 'on_leave'">
-                                            <div class="sd-avatar-badge sd-bg-blue">
-                                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                                                </svg>
-                                            </div>
-                                        </t>
-                                    </div>
-                                    <div class="sd-header-text">
-                                        <div class="sd-name" t-esc="person.name"/>
-                                        <div class="sd-title" t-esc="person.job_title or '—'"/>
+                                        <div t-att-class="'sd-avatar-initials-badge sd-bg-status-' + person.lifecycle_state">
+                                            <t t-esc="initials(person.name)"/>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <!-- Status Badge -->
-                                <div class="sd-card-status">
-                                    <span t-att-class="'sd-badge sd-badge-' + person.lifecycle_state">
-                                        <t t-esc="lifecycleLabel(person.lifecycle_state)"/>
+                                <!-- Name & Verification Row -->
+                                <div class="sd-card-name-row">
+                                    <div class="sd-name" t-esc="person.name"/>
+                                    <span class="sd-verified-badge">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="20 6 9 17 4 12"/>
+                                        </svg>
                                     </span>
                                 </div>
-
-                                <!-- Department & Work Mode -->
-                                <div class="sd-card-row sd-dept-row">
-                                    <div class="sd-dept" t-esc="person.department or '—'"/>
-                                    <div t-att-class="'sd-workmode-pill sd-wm-' + (person.work_mode or 'hybrid').toLowerCase()">
-                                        <t t-esc="person.work_mode or '—'"/>
-                                    </div>
+                                
+                                <!-- Role & Department Row -->
+                                <div class="sd-card-role" t-esc="person.job_title or '—'"/>
+                                <div class="sd-card-dept-loc">
+                                    <t t-esc="person.department or '—'"/> · <u t-esc="person.work_location or '—'"/>
                                 </div>
-
-                                <!-- Location & Tenure -->
-                                <div class="sd-card-row sd-loc-row">
-                                    <div class="sd-loc" t-esc="person.work_location or '—'"/>
-                                    <div class="sd-tenure" t-esc="person.tenure or '—'"/>
-                                </div>
-
-                                <!-- Progress Bar -->
-                                <div class="sd-card-row sd-progress-row">
-                                    <div class="sd-progress-wrap">
-                                        <div t-att-class="'sd-progress-fill sd-progress-' + (person.progress_score &gt;= 83 ? 'green' : 'amber')" 
-                                             t-att-style="'width: ' + person.progress_score + '%;'"></div>
-                                    </div>
-                                    <div t-att-class="'sd-progress-val sd-text-' + (person.progress_score &gt;= 83 ? 'green' : 'amber')" 
-                                         t-esc="person.progress_score"/>
-                                </div>
-
-                                <!-- Divider -->
-                                <div class="sd-card-divider"></div>
-
-                                <!-- Contact Block -->
+                                
+                                <!-- Contact Info Rows -->
                                 <div class="sd-contact-block">
                                     <div class="sd-contact-item">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -751,6 +738,55 @@
                                         </svg>
                                         <span class="sd-contact-text" t-esc="person.work_phone or '—'"/>
                                     </div>
+                                </div>
+
+                                <!-- Action Icons Row -->
+                                <!-- <div class="sd-card-divider"></div> -->
+                                <div class="sd-action-icons-row">
+                                    <button type="button" class="sd-action-btn sd-action-chat">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="sd-action-btn sd-action-phone">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="sd-action-btn sd-action-email">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                            <polyline points="22,6 12,13 2,6"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="sd-action-btn sd-action-video">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="23 7 16 12 23 17 23 7"/>
+                                            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Social Icons Row -->
+                                <div class="sd-card-divider"></div>
+                                <div class="sd-social-icons-row">
+                                    <button type="button" class="sd-social-btn sd-social-linkedin">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="sd-social-btn sd-social-x">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="sd-social-btn sd-social-instagram">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
                         </t>
