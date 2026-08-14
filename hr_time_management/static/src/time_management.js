@@ -29,6 +29,9 @@ export class TimeManagementApp extends Component {
             managerDecision: "", regularizationFilter: "all",
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
+            shiftPage: "dashboard", shiftData: {shifts: [], assignments: [], employees: [], departments: [], kpis: {}},
+            shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
+            assignmentForm: null,
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
@@ -75,6 +78,10 @@ export class TimeManagementApp extends Component {
         try {
             if (this.state.mode === "employee") {
                 this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
+                return;
+            }
+            if (this.state.feature === "shift") {
+                this.state.shiftData = await this.orm.call("cleon.hr.shift", "get_shift_management_data", []);
                 return;
             }
             const data = await this.orm.call("hr.attendance", "get_cleon_time_data", [], {
@@ -230,7 +237,7 @@ export class TimeManagementApp extends Component {
         this.state.gateway = false;
         this.state.gatewayMessage = "";
         this.state.page = "dashboard";
-        if (feature === "attendance") this.load();
+        this.load();
     }
     featureName(feature = this.state.feature) { return ({attendance:"Attendance Management", shift:"Shift Management", tracking:"Time Tracking", overtime:"Overtime Management"})[feature]; }
     featureIcon(feature = this.state.feature) {
@@ -246,6 +253,87 @@ export class TimeManagementApp extends Component {
             this.state.gatewayMessage = "";
             this.state.gateway = true;
         }
+    }
+    setShiftPage(page) { this.state.shiftPage = page; this.state.shiftDetail = null; }
+    get filteredShifts() {
+        const query = this.state.shiftSearch.trim().toLowerCase();
+        return (this.state.shiftData.shifts || []).filter(shift =>
+            (this.state.shiftStatus === "all" || (this.state.shiftStatus === "active") === shift.active) &&
+            (!query || shift.name.toLowerCase().includes(query) || shift.code.toLowerCase().includes(query))
+        );
+    }
+    shiftColor(index) { return ["orange", "blue", "purple", "indigo", "pink", "gray"][index % 6]; }
+    dayLabel(day) { return ["M", "T", "W", "T", "F", "S", "S"][day]; }
+    timeToFloat(value) {
+        const [hours, minutes] = String(value || "00:00").split(":").map(Number);
+        return hours + minutes / 60;
+    }
+    floatToTime(value) {
+        const minutes = Math.round(Number(value || 0) * 60);
+        return `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+    }
+    newShift(shift = null) {
+        this.state.error = "";
+        this.state.shiftForm = shift ? {
+            ...shift, start_time: this.floatToTime(shift.start_hour), end_time: this.floatToTime(shift.end_hour),
+            active_days: [...shift.active_days],
+        } : {
+            name: "", code: "", active: true, start_time: "09:00", end_time: "17:00",
+            break_minutes: 60, grace_minutes: 15, shift_type: "fixed", recurrence: "weekly",
+            active_days: [0, 1, 2, 3, 4],
+        };
+    }
+    closeShiftForm() { this.state.shiftForm = null; this.state.error = ""; }
+    toggleShiftDay(day) {
+        const days = this.state.shiftForm.active_days;
+        this.state.shiftForm.active_days = days.includes(day) ? days.filter(value => value !== day) : [...days, day].sort();
+    }
+    async saveShift() {
+        const form = this.state.shiftForm;
+        if (!form.name.trim()) { this.state.error = "Shift name is required."; return; }
+        if (!form.active_days.length) { this.state.error = "Select at least one active day."; return; }
+        try {
+            await this.orm.call("cleon.hr.shift", "save_shift", [{
+                id: form.id || false, name: form.name.trim(), code: form.code,
+                active: form.active, start_hour: this.timeToFloat(form.start_time), end_hour: this.timeToFloat(form.end_time),
+                break_minutes: Number(form.break_minutes), grace_minutes: Number(form.grace_minutes),
+                shift_type: form.shift_type, recurrence: form.recurrence, active_days: form.active_days,
+            }]);
+            this.closeShiftForm(); await this.load();
+            this.notification.add(`Shift ${form.id ? "updated" : "created"} successfully and ready for assignment.`, {type:"success"});
+        } catch (error) { this.state.error = error?.data?.message || "The shift could not be saved."; }
+    }
+    viewShift(shift) { this.state.shiftDetail = shift; }
+    closeShiftDetail() { this.state.shiftDetail = null; }
+    showShiftAssignments() {
+        this.closeShiftDetail();
+        this.setShiftPage("assignments");
+    }
+    get shiftDetailAssignments() {
+        return this.state.shiftDetail ? (this.state.shiftData.assignments || []).filter(row => row.shift_id === this.state.shiftDetail.id) : [];
+    }
+    newAssignment() {
+        this.state.error = "";
+        this.state.assignmentForm = {
+            scope: "employee", employee_id: "", department_id: "", shift_id: "",
+            date_from: new Date().toISOString().slice(0, 10), date_to: "", note: "",
+        };
+    }
+    closeAssignmentForm() { this.state.assignmentForm = null; this.state.error = ""; }
+    async saveAssignment() {
+        const form = this.state.assignmentForm;
+        if (!form.shift_id || (form.scope === "employee" ? !form.employee_id : !form.department_id)) {
+            this.state.error = "Select a shift and the employee or department to assign."; return;
+        }
+        try {
+            await this.orm.call("cleon.hr.shift.assignment", "create_shift_assignment", [{
+                shift_id: form.shift_id, employee_id: form.scope === "employee" ? form.employee_id : false,
+                department_id: form.scope === "department" ? form.department_id : false,
+                date_from: form.date_from, date_to: form.date_to, note: form.note,
+            }]);
+            this.closeAssignmentForm(); await this.load();
+            this.notification.add("Shift assignment saved successfully.", {type:"success"});
+        } catch (error) { this.state.error = error?.data?.message || "The shift assignment could not be saved."; }
     }
     setPage(page) {
         this.state.page = page; this.state.status = "all"; this.state.detail = null;
