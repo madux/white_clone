@@ -22,15 +22,24 @@ prototype is the required scope, and the primary UX must be OWL-led.
 - [x] Replaced `REQUIREMENTS.md` with the corrected complete product inventory,
   model plan, workflows, OWL architecture, security map, assumptions, phases,
   and expanded test checklist.
+- [x] Phase 2: replaced the dashboard-only entry point with the role-aware OWL
+  Expense Management shell, full prototype module/subpage navigation, reusable
+  OWL KPI component, responsive Figma-derived styling, loading/error states,
+  live claims/workflow/payment surfaces, and secured server capability gateway.
+- [x] Phase 2 verification: Odoo upgrade passed; Python/XML/whitespace checks
+  passed; the generated 7.9 MB backend asset bundle contains the compiled
+  `ExpenseApp` JavaScript and QWeb template.
+- [x] Phase 2 verification: the server gateway returned all 16 modules for the
+  Admin user; the existing 7 workflow methods / 9 Odoo test units passed with
+  0 failures and 0 errors after compatibility hardening for private employee
+  fields in the installed custom HR module.
 
 ## In progress
 
-- [ ] Phase 2: shared OWL application shell, reusable components, capability
-  gateway, role-aware navigation, and Figma-derived theme tokens.
+- [ ] Phase 3: Requests, cash advances, and multi-level approval engine.
 
 ## Pending
 
-- [ ] Phase 3: Requests, cash advances, and multi-level approval engine.
 - [ ] Phase 4: Payments/batches and Petty Cash.
 - [ ] Phase 5: Community subledger, Vendors, Budgets, and Periods.
 - [ ] Phase 6: Teams, Reports, Audit, Settings, Email/Integration metadata, and
@@ -40,7 +49,8 @@ prototype is the required scope, and the primary UX must be OWL-led.
 
 ## Blockers
 
-- None.
+- None. Authenticated visual browser QA remains pending for the final verification
+  phase; server, registry, assets, and automated regressions are passing.
 
 ## Assumptions/prototype defects recorded
 

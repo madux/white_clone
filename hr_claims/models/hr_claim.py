@@ -154,7 +154,8 @@ class HrClaim(models.Model):
     def _compute_can_employee_action(self):
         is_admin = self.env.user.has_group("hr_claims.group_hr_claim_admin")
         for claim in self:
-            claim.can_employee_action = is_admin or claim.employee_id.user_id == self.env.user
+            owner = claim.employee_id.sudo().user_id
+            claim.can_employee_action = is_admin or owner == self.env.user
 
     @api.depends("payment_ids.amount", "payment_ids.state", "amount_total")
     def _compute_payment_totals(self):
@@ -201,7 +202,7 @@ class HrClaim(models.Model):
                 and not self.env.user.has_group("hr_claims.group_hr_claim_admin")
             ):
                 employee = self.env["hr.employee"].browse(vals["employee_id"])
-                if employee.user_id != self.env.user:
+                if employee.sudo().user_id != self.env.user:
                     raise AccessError("You can only create claims for yourself.")
         records = super().create(vals_list)
         for record in records:
@@ -219,7 +220,7 @@ class HrClaim(models.Model):
 
     def _is_owner(self):
         self.ensure_one()
-        return self.employee_id.user_id == self.env.user
+        return self.employee_id.sudo().user_id == self.env.user
 
     def _ensure_user_can_edit(self):
         for claim in self:
@@ -526,12 +527,18 @@ class HrClaim(models.Model):
             by_department[claim.department_id.display_name or _("No Department")] += dashboard_amount(claim)
 
         pending_claims = claims.filtered(lambda c: c.state == "submitted")
+        payable_claims = claims.filtered(
+            lambda c: c.state == "approved" and c.claim_type_id.reimbursable
+        )
         today = fields.Date.today()
         pending_ages = [
             (today - claim.submitted_date.date()).days
             for claim in pending_claims
             if claim.submitted_date
         ]
+        overdue_payables = payable_claims.filtered(
+            lambda c: c.approved_date and (today - c.approved_date.date()).days > 7
+        )
         decided_count = counts["approved"] + counts["paid"] + counts["rejected"]
         approved_count = counts["approved"] + counts["paid"]
         recent = claims.sorted(key=lambda c: (c.submitted_date or c.create_date, c.id), reverse=True)[:8]
@@ -551,12 +558,16 @@ class HrClaim(models.Model):
                 "approved": counts["approved"],
                 "paid": counts["paid"],
                 "rejected": counts["rejected"],
-                "payable_count": len(
-                    claims.filtered(
-                        lambda c: c.state == "approved" and c.claim_type_id.reimbursable
-                    )
+                "payable_count": len(payable_claims),
+                "payable_value": sum(
+                    dashboard_amount(claim) for claim in payable_claims
+                ),
+                "overdue_payable_count": len(overdue_payables),
+                "overdue_payable_value": sum(
+                    dashboard_amount(claim) for claim in overdue_payables
                 ),
                 "total_value": sum(dashboard_amount(claim) for claim in claims),
+                "submitted_value": values["submitted"],
                 "approved_value": values["approved"] + values["paid"],
                 "paid_value": values["paid"],
                 "approval_rate": round(100 * approved_count / decided_count, 1)

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_hr_claim_root" name="Claims" sequence="45" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
-    <menuitem id="menu_hr_claim_dashboard" name="Dashboard" parent="menu_hr_claim_root" action="action_hr_claim_dashboard" sequence="1" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
+    <menuitem id="menu_hr_claim_root" name="Expense Management" sequence="45" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
+    <menuitem id="menu_hr_claim_dashboard" name="Expense App" parent="menu_hr_claim_root" action="action_hr_claim_dashboard" sequence="1" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
     <menuitem id="menu_hr_claim_my" name="My Claims" parent="menu_hr_claim_root" action="action_hr_claim_my" sequence="10" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_admin"/>
     <menuitem id="menu_hr_claim_all" name="All Claims" parent="menu_hr_claim_root" action="action_hr_claim_all" sequence="20" groups="hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
 

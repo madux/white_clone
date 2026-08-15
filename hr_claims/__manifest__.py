@@ -1,7 +1,7 @@
 {
-    "name": "HR Claims",
-    "summary": "Employee expense claims, approvals, payments, and analytics",
-    "version": "17.0.1.0.0",
+    "name": "Expense Management",
+    "summary": "Claims, requests, advances, payments, petty cash, budgets, and analytics",
+    "version": "17.0.2.0.0",
     "category": "Human Resources/Expenses",
     "author": "CleonTime",
     "license": "LGPL-3",
@@ -26,8 +26,11 @@
     "assets": {
         "web.assets_backend": [
             "hr_claims/static/src/js/claim_dashboard.js",
+            "hr_claims/static/src/js/expense_app.js",
             "hr_claims/static/src/xml/claim_dashboard.xml",
+            "hr_claims/static/src/xml/expense_app.xml",
             "hr_claims/static/src/scss/claim_dashboard.scss",
+            "hr_claims/static/src/scss/expense_app.scss",
         ],
     },
     "application": True,

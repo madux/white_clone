@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_claims.ExpenseKpiCard" owl="1">
+        <button class="o_expense_kpi card border-0 text-start h-100 w-100"
+                t-att-class="props.onClick ? 'o_expense_clickable' : ''"
+                t-on-click="click">
+            <div class="card-body d-flex align-items-start gap-3">
+                <span class="o_expense_kpi_icon" t-att-class="'o_expense_tone_' + (props.tone || 'pink')">
+                    <i t-att-class="'fa ' + props.icon"/>
+                </span>
+                <div class="min-w-0">
+                    <div class="small text-uppercase text-muted fw-bold" t-esc="props.label"/>
+                    <div class="h2 fw-black mb-0 text-dark" t-esc="props.value"/>
+                    <div t-if="props.hint" class="small text-muted text-truncate" t-esc="props.hint"/>
+                </div>
+            </div>
+        </button>
+    </t>
+
+    <t t-name="hr_claims.ExpenseApp" owl="1">
+        <div class="o_expense_app" t-att-class="state.sidebarCollapsed ? 'o_expense_sidebar_collapsed' : ''">
+            <aside class="o_expense_sidebar">
+                <div class="o_expense_brand d-flex align-items-center gap-3 px-3 py-3">
+                    <span class="o_expense_logo">C</span>
+                    <div t-if="!state.sidebarCollapsed" class="min-w-0">
+                        <div class="fw-black text-white text-truncate">Expense Management</div>
+                        <div class="small text-white-50">Community ERP</div>
+                    </div>
+                </div>
+                <div t-if="!state.sidebarCollapsed" class="px-3 pb-2">
+                    <div class="input-group input-group-sm o_expense_module_search">
+                        <span class="input-group-text border-0"><i class="fa fa-search"/></span>
+                        <input class="form-control border-0" placeholder="Search modules"
+                               t-att-value="state.moduleSearch" t-on-input="updateModuleSearch"/>
+                    </div>
+                </div>
+                <nav class="o_expense_module_nav px-2 py-2">
+                    <button t-foreach="modules" t-as="module" t-key="module.key"
+                            class="o_expense_module_btn btn w-100 d-flex align-items-center gap-3 text-start"
+                            t-att-class="state.activeModule === module.key ? 'active' : ''"
+                            t-att-title="module.label"
+                            t-on-click="() => this.selectModule(module.key)">
+                        <i t-att-class="'fa ' + module.icon"/>
+                        <span t-if="!state.sidebarCollapsed" class="flex-grow-1" t-esc="module.label"/>
+                        <span t-if="!module.available and !state.sidebarCollapsed" class="o_expense_build_dot" title="Implementation in progress"/>
+                    </button>
+                </nav>
+                <div class="mt-auto p-2">
+                    <button class="btn o_expense_collapse_btn w-100" t-on-click="toggleSidebar">
+                        <i t-att-class="state.sidebarCollapsed ? 'fa fa-angle-double-right' : 'fa fa-angle-double-left'"/>
+                        <span t-if="!state.sidebarCollapsed" class="ms-2">Collapse</span>
+                    </button>
+                </div>
+            </aside>
+
+            <section class="o_expense_workspace">
+                <header class="o_expense_header px-3 px-lg-4 py-3 d-flex align-items-center justify-content-between gap-3">
+                    <div class="min-w-0">
+                        <div class="small text-muted"><t t-esc="state.data?.company.name || ''"/> / <t t-esc="activeModule?.label || 'Dashboard'"/></div>
+                        <h1 class="h4 fw-black mb-0 text-truncate" t-esc="activePage?.label || activeModule?.label || 'Dashboard'"/>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 gap-lg-3">
+                        <button class="btn btn-light rounded-circle" title="Refresh" t-on-click="refresh"><i class="fa fa-refresh"/></button>
+                        <span class="badge rounded-pill o_expense_role_badge" t-esc="state.data?.role_label || ''"/>
+                        <div class="d-none d-md-block text-end">
+                            <div class="small fw-bold" t-esc="state.data?.user.name || ''"/>
+                            <div class="text-muted" style="font-size: .72rem">Signed in</div>
+                        </div>
+                    </div>
+                </header>
+
+                <div t-if="activeModule?.pages.length &gt; 1" class="o_expense_subnav px-3 px-lg-4">
+                    <button t-foreach="activeModule.pages" t-as="page" t-key="page.key"
+                            class="btn o_expense_subnav_btn"
+                            t-att-class="state.activePage === page.key ? 'active' : ''"
+                            t-on-click="() => this.selectPage(page.key)" t-esc="page.label"/>
+                </div>
+
+                <main class="o_expense_content p-3 p-lg-4">
+                    <div t-if="state.loading" class="o_expense_state card border-0">
+                        <div class="card-body text-center py-5">
+                            <span class="spinner-border text-primary"/><p class="text-muted mt-3 mb-0">Loading your workspace…</p>
+                        </div>
+                    </div>
+                    <div t-elif="state.error" class="o_expense_state card border-0">
+                        <div class="card-body text-center py-5">
+                            <i class="fa fa-exclamation-triangle fa-2x text-danger"/>
+                            <h2 class="h5 mt-3">We could not load Expense Management</h2>
+                            <button class="btn btn-primary mt-2" t-on-click="refresh">Try again</button>
+                        </div>
+                    </div>
+
+                    <t t-elif="isDashboard">
+                        <div class="o_expense_page_intro d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                            <div>
+                                <h2 class="h3 fw-black mb-1">Good day, <t t-esc="state.data.user.name"/>.</h2>
+                                <p class="text-muted mb-0">Claims, approvals, payments, and financial exposure at a glance</p>
+                            </div>
+                            <button t-if="canCreateClaim" class="btn btn-primary o_expense_primary" t-on-click="newClaim"><i class="fa fa-plus me-2"/>New Claim</button>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-sm-6 col-xl-3"><ExpenseKpiCard label="Claims Pending" value="kpis.submitted || 0" hint="Awaiting action" icon="fa-clock-o" tone="warning" onClick="() => this.openClaims([['state', '=', 'submitted']])"/></div>
+                            <div class="col-12 col-sm-6 col-xl-3"><ExpenseKpiCard label="Approved Claims" value="formatMoney(kpis.approved_value)" t-att-hint="`${kpis.approved || 0} claims`" icon="fa-check" tone="success" onClick="() => this.openClaims([['state', '=', 'approved']])"/></div>
+                            <div class="col-12 col-sm-6 col-xl-3"><ExpenseKpiCard label="Payments Queue" value="formatMoney(kpis.payable_value)" t-att-hint="`${kpis.payable_count || 0} claims`" icon="fa-credit-card" tone="violet" onClick="() => this.openClaims([['state', '=', 'approved']])"/></div>
+                            <div class="col-12 col-sm-6 col-xl-3"><ExpenseKpiCard label="Paid Out" value="formatMoney(kpis.paid_value)" t-att-hint="`${kpis.paid || 0} completed`" icon="fa-money" tone="pink" onClick="() => this.openClaims([['state', '=', 'paid']])"/></div>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12 col-xl-4"><div class="card o_expense_panel h-100"><div class="card-body"><h3 class="h6 fw-black">Claims Status</h3><p class="small text-muted">Current workflow distribution</p><div class="o_expense_chart"><canvas t-ref="statusChart"/></div></div></div></div>
+                            <div class="col-12 col-xl-8"><div class="card o_expense_panel h-100"><div class="card-body"><h3 class="h6 fw-black">Six-Month Trend</h3><p class="small text-muted">Submitted, approved, and paid values by event date</p><div class="o_expense_chart"><canvas t-ref="trendChart"/></div></div></div></div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-12 col-xl-5"><div class="card o_expense_panel h-100"><div class="card-body"><h3 class="h6 fw-black">Spend by Department</h3><p class="small text-muted">Approved and paid exposure</p><div class="o_expense_chart"><canvas t-ref="departmentChart"/></div></div></div></div>
+                            <div class="col-12 col-xl-7"><div class="card o_expense_panel h-100"><div class="card-header bg-white border-0 d-flex justify-content-between align-items-center"><div><h3 class="h6 fw-black mb-0">Recent Activity</h3><span class="small text-muted">Latest visible claims</span></div><button class="btn btn-sm btn-light" t-on-click="() => this.openClaims([])">View all</button></div><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Claim</th><th>Employee</th><th class="text-end">Amount</th><th>Status</th></tr></thead><tbody><tr t-foreach="dashboard.recent || []" t-as="claim" t-key="claim.id" class="o_expense_table_row" t-on-click="() => this.openClaim(claim.id)"><td><strong t-esc="claim.name"/><div class="small text-muted" t-esc="claim.title"/></td><td t-esc="claim.employee"/><td class="text-end fw-bold" t-esc="formatMoney(claim.amount)"/><td><span class="badge rounded-pill text-bg-light" t-esc="claim.state_label"/></td></tr><tr t-if="!(dashboard.recent || []).length"><td colspan="4" class="text-center text-muted py-4">No activity yet.</td></tr></tbody></table></div></div></div>
+                        </div>
+                    </t>
+
+                    <t t-elif="isClaims">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><h2 class="h3 fw-black mb-1">Claims Data</h2><p class="text-muted mb-0">Create, review, approve, and reimburse employee expenses</p></div><div class="d-flex gap-2"><button class="btn btn-outline-secondary" t-on-click="() => this.openClaims([])"><i class="fa fa-table me-2"/>Advanced View</button><button t-if="canCreateClaim" class="btn btn-primary o_expense_primary" t-on-click="newClaim"><i class="fa fa-plus me-2"/>New Claim</button></div></div>
+                        <div class="row g-3 mb-4"><div class="col-sm-6 col-xl-3"><ExpenseKpiCard label="Total Claims" value="kpis.total || 0" hint="Visible records" icon="fa-files-o" tone="pink"/></div><div class="col-sm-6 col-xl-3"><ExpenseKpiCard label="Under Review" value="kpis.submitted || 0" t-att-hint="formatMoney(kpis.submitted_value)" icon="fa-clock-o" tone="warning"/></div><div class="col-sm-6 col-xl-3"><ExpenseKpiCard label="Approved" value="kpis.approved || 0" hint="Awaiting payment" icon="fa-check" tone="success"/></div><div class="col-sm-6 col-xl-3"><ExpenseKpiCard label="Paid" value="kpis.paid || 0" hint="Completed" icon="fa-credit-card" tone="violet"/></div></div>
+                        <div class="card o_expense_panel"><div class="card-header bg-white border-0 d-flex justify-content-between align-items-center"><h3 class="h6 fw-black mb-0">Recent Claims</h3><div class="btn-group btn-group-sm"><button class="btn btn-light active">Table</button><button class="btn btn-light" t-on-click="() => this.openClaims([])">Kanban</button></div></div><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Claim</th><th>Employee</th><th>Type</th><th class="text-end">Amount</th><th>Status</th></tr></thead><tbody><tr t-foreach="dashboard.recent || []" t-as="claim" t-key="claim.id" class="o_expense_table_row" t-on-click="() => this.openClaim(claim.id)"><td class="fw-bold" t-esc="claim.name"/><td t-esc="claim.employee"/><td t-esc="claim.title"/><td class="text-end fw-bold" t-esc="formatMoney(claim.amount)"/><td><span class="badge rounded-pill text-bg-light" t-esc="claim.state_label"/></td></tr></tbody></table></div></div>
+                    </t>
+
+                    <t t-elif="isWorkflow">
+                        <div class="mb-4"><h2 class="h3 fw-black mb-1">Approval Workflow</h2><p class="text-muted">Pending decisions, history, routing rules, and SLA analytics</p></div>
+                        <div class="row g-3 mb-4"><div class="col-md-4"><ExpenseKpiCard label="Awaiting Action" value="kpis.submitted || 0" hint="Claims in queue" icon="fa-hourglass-half" tone="warning" onClick="() => this.openClaims([['state', '=', 'submitted']])"/></div><div class="col-md-4"><ExpenseKpiCard label="Total Value" value="formatMoney(kpis.submitted_value)" hint="Pending exposure" icon="fa-line-chart" tone="violet"/></div><div class="col-md-4"><ExpenseKpiCard label="Average Age" t-att-value="`${kpis.average_pending_age || 0}d`" hint="Days in queue" icon="fa-calendar" tone="pink"/></div></div>
+                        <div class="card o_expense_panel"><div class="card-body text-center py-5"><i class="fa fa-random fa-3x text-primary opacity-50"/><h3 class="h5 fw-bold mt-3">Combined approval workspace</h3><p class="text-muted mx-auto" style="max-width: 560px">The OWL shell and claims queue are active. Request routing, multi-level steps, escalation rules, and combined decisions are the next corrected implementation phase.</p><button class="btn btn-primary" t-on-click="() => this.openClaims([['state', '=', 'submitted']])">Open Pending Claims</button></div></div>
+                    </t>
+
+                    <t t-elif="isPayments">
+                        <div class="mb-4"><h2 class="h3 fw-black mb-1">Payment Queue</h2><p class="text-muted">Approved reimbursements and payment history</p></div>
+                        <div class="row g-3 mb-4"><div class="col-md-4"><ExpenseKpiCard label="Total Payables" value="formatMoney(kpis.payable_value)" t-att-hint="`${kpis.payable_count || 0} claims`" icon="fa-credit-card" tone="pink"/></div><div class="col-md-4"><ExpenseKpiCard label="Overdue" value="formatMoney(kpis.overdue_payable_value)" t-att-hint="`${kpis.overdue_payable_count || 0} claims`" icon="fa-exclamation-triangle" tone="warning"/></div><div class="col-md-4"><ExpenseKpiCard label="Paid" value="formatMoney(kpis.paid_value)" t-att-hint="`${kpis.paid || 0} completed`" icon="fa-check-circle" tone="success"/></div></div>
+                        <div class="card o_expense_panel"><div class="card-body d-flex flex-column flex-md-row align-items-center justify-content-between gap-3"><div><h3 class="h5 fw-bold mb-1">Process approved claims</h3><p class="text-muted mb-0">Use the secured Finance queue to register partial or full payments.</p></div><button class="btn btn-primary o_expense_primary" t-on-click="() => this.openClaims([['state', '=', 'approved']])">Open Payment Queue</button></div></div>
+                    </t>
+
+                    <t t-else="">
+                        <div class="o_expense_page_intro mb-4"><h2 class="h3 fw-black mb-1" t-esc="activePage?.label || activeModule?.label"/><p class="text-muted mb-0"><t t-esc="activeModule?.label"/> is part of the corrected full Figma scope.</p></div>
+                        <div class="card o_expense_panel"><div class="card-body text-center py-5"><span class="o_expense_large_icon"><i t-att-class="'fa ' + (activeModule?.icon || 'fa-cubes')"/></span><h3 class="h5 fw-bold mt-3">Implementation phase in progress</h3><p class="text-muted mx-auto mb-0" style="max-width: 620px">This page is now represented in the OWL application shell and capability map. Its records, workflow actions, analytics, and creation flow will activate with the corresponding corrected phase recorded in PROGRESS.md.</p></div></div>
+                    </t>
+                </main>
+            </section>
+        </div>
+    </t>
+</templates>
