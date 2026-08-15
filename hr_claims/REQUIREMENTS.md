@@ -194,6 +194,8 @@ All persistent records have a global allowed-company rule. Employee own-record r
 10. Corporate Card Claim is non-reimbursable in one card but appears in approval workflow. Non-reimbursable claims can be approved for audit but are excluded from the payment queue.
 11. Attachments use Odoo `ir.attachment`/chatter rather than a second document store. File-type/size enforcement follows Odoo server limits; the prototype's 10 MB and HEIC language is advisory.
 12. A user without a linked `hr.employee` cannot create an employee claim; Admin can assign the employee explicitly.
+13. The prototype's four-step claim flow and seven-step claim-type flow are represented by native Odoo forms with clearly separated notebook pages. This keeps browser history, access checks, autosave, and validation idiomatic while retaining every captured data area.
+14. The payment queue supports multiple records and individual/partial payment registration. Automated bank-file generation or a single bulk bank execution is an integration concern because the prototype does not define a banking format or provider.
 
 ## 8. Implementation phases
 
@@ -212,19 +214,18 @@ All persistent records have a global allowed-company rule. Employee own-record r
 
 The result of each test is recorded in `FINAL_REVIEW.md`.
 
-- [ ] Install `hr_claims` on a clean Odoo 17 Community database without traceback.
-- [ ] Employee creates a Draft claim with multiple lines and saves it.
-- [ ] Employee submits a valid claim; state, submission date, audit, and chatter update.
-- [ ] Invalid empty, over-limit, ineligible, outside-window, and missing-required-receipt claims are blocked.
-- [ ] Employee sees only own claims/payments; cannot read another employee's claim directly.
-- [ ] Manager sees all allowed-company claims and approves a Submitted claim.
-- [ ] Manager rejects a Submitted claim only with a reason.
-- [ ] Manager returns a claim; employee edits and resubmits it.
-- [ ] Finance sees approved reimbursable claims and cannot approve/reject.
-- [ ] Finance registers a partial payment, then completes payment; claim becomes Paid only when covered.
-- [ ] Employee can withdraw a Submitted claim and cancel a Draft/Returned claim.
-- [ ] Dashboard KPIs and all three charts load with live data and respect employee visibility.
-- [ ] Native graph/pivot reports render and privileged roles can open them.
-- [ ] Admin can maintain categories, types, windows, assignments, and view audit events.
-- [ ] Multi-company rules prevent cross-company visibility.
-
+- [x] Install `hr_claims` on a clean Odoo 17 Community database without traceback.
+- [x] Employee creates a Draft claim with multiple lines and saves it.
+- [x] Employee submits a valid claim; state, submission date, audit, and chatter update.
+- [x] Invalid empty, over-limit, ineligible, outside-window, and missing-required-receipt claims are blocked.
+- [x] Employee sees only own claims/payments; cannot read another employee's claim directly.
+- [x] Manager sees all allowed-company claims and approves a Submitted claim.
+- [x] Manager rejects a Submitted claim only with a reason.
+- [x] Manager returns a claim; employee edits and resubmits it.
+- [x] Finance sees approved reimbursable claims and cannot approve/reject.
+- [x] Finance registers a partial payment, then completes payment; claim becomes Paid only when covered.
+- [x] Employee can withdraw a Submitted claim and cancel a Draft/Returned claim.
+- [x] Dashboard KPIs and all three charts load with live data and respect employee visibility.
+- [x] Native graph/pivot reports render and privileged roles can open them.
+- [x] Admin can maintain categories, types, windows, assignments, and view audit events.
+- [x] Multi-company rules prevent cross-company visibility.

@@ -4,33 +4,40 @@ Last updated: 2026-08-15
 
 ## Done
 
-- Reviewed the Figma prototype in Admin and Employee modes.
-- Inspected all claims-specific screens, creation/configuration flows, workflow states, payments, audit, dashboards, reports, and the Roles & Permissions page.
-- Recorded the authoritative four-role permission matrix.
-- Wrote the data model, workflow, views, chart definitions, assumptions, phased plan, and manual checklist in `REQUIREMENTS.md`.
-- Implemented categories, types, windows, claims, line items, payments, audit events, and transient decision/payment wizards.
-- Implemented Draft → Submitted → Approved/Rejected/Returned → Paid/Cancelled transitions with server-side role checks and validations.
-- Implemented Employee, Manager, Finance, and Administrator groups, ACLs, own-record rules, privileged visibility, and global multi-company boundaries.
-- Added seed categories, the three prototype claim types, processing windows, and claim/payment sequences.
-- Added four automated Odoo workflow/security tests; latest run: **4 passed, 0 failed, 0 errors**.
-- Clean installation completed successfully on the disposable `codex_hr_claims_test` Odoo 17 Community database.
+- [x] Phase 1: reviewed the Figma Admin/Employee claims experience and Roles & Permissions source of truth.
+- [x] Phase 1: documented models, workflow, views, reports, roles, assumptions, phases, and test checklist in `REQUIREMENTS.md`.
+- [x] Phase 2: implemented claim configuration, claims/lines, payments, audit events, wizards, seed data, and sequences.
+- [x] Phase 2: implemented and hardened the Employee, Manager, Finance, and Administrator security matrix with multi-company isolation.
+- [x] Phase 3: implemented all native views, workflow/payment/configuration/report actions, and menus.
+- [x] Phase 4: implemented the role-aware OWL/Chart.js dashboard and three charts.
+- [x] Phase 5: passed clean install, upgrade, automated workflow/security tests, Python/XML/static checks, and browser QA.
+- [x] Phase 5: completed the manual checklist and recorded every result in `FINAL_REVIEW.md`.
+- [x] Final review: documented delivered scope, assumptions, deferrals, test results, conventions, environment notes, and follow-ups.
 
 ## In progress
 
-- Phases 3–4: native views/menu polish and OWL dashboard browser verification.
+- None.
 
 ## Pending
 
-- Final view/asset QA and manual role/workflow walkthrough completion.
-- Final documentation and `FINAL_REVIEW.md`.
+- None for the documented `hr_claims` scope.
+- Optional external integrations and advanced routing are listed in `FINAL_REVIEW.md`.
 
 ## Blockers
 
 - None.
 
-## Assumptions made
+## Verification snapshot
 
-- Requests, advances, petty cash, vendors, budgets, and general accounting in the prototype are adjacent modules and are not duplicated by `hr_claims`.
-- Pending/Pending Approval are normalized to Submitted.
-- Multi-level workflow configuration is stored for extensibility; the executable v1 decision is Manager/Admin per the Roles page.
-- Odoo company currency and Community models are used; no Enterprise Accounting/Payroll dependency is introduced.
+- Fresh Odoo 17 Community install: **PASS**.
+- Automated Odoo tests: **PASS — 0 failed, 0 errors**.
+- Python compilation, XML parsing, and diff whitespace: **PASS**.
+- Browser claim lifecycle, two-line Draft, dashboard/charts, graph/pivot, configuration, and audit: **PASS**.
+- Test database retained for review: `codex_hr_claims_test`.
+
+## Checkpoint commits
+
+- `1230bc9` — `[ADD] hr_claims requirements and implementation plan`
+- `45f1a51` — `[ADD] complete Odoo 17 HR claims management`
+- `fed7190` — `[FIX] harden claims workflow and payment integrity`
+- Final documentation checkpoint: recorded by the commit containing this file.

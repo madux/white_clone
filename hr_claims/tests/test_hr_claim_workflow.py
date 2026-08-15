@@ -106,6 +106,24 @@ class TestHrClaimWorkflow(TransactionCase):
         self.assertEqual(claim.state, "rejected")
         self.assertEqual(claim.rejection_reason, "Outside policy.")
 
+    def test_employee_withdraws_and_cancels(self):
+        draft_claim = self._create_claim()
+        draft_claim.with_user(self.employee_user).action_cancel()
+        self.assertEqual(draft_claim.state, "cancelled")
+
+        submitted_claim = self._create_claim()
+        submitted_claim.with_user(self.employee_user).action_submit()
+        submitted_claim.with_user(self.employee_user).action_withdraw()
+        self.assertEqual(submitted_claim.state, "cancelled")
+
+        returned_claim = self._create_claim()
+        returned_claim.with_user(self.employee_user).action_submit()
+        returned_claim.with_user(self.manager_user)._apply_negative_decision(
+            "return", "Please correct the dates."
+        )
+        returned_claim.with_user(self.employee_user).action_cancel()
+        self.assertEqual(returned_claim.state, "cancelled")
+
     def test_roles_and_record_visibility(self):
         own_claim = self._create_claim(state="paid")
         self.assertEqual(own_claim.state, "draft")
