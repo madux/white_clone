@@ -62,21 +62,23 @@
         <field name="arch" type="xml">
             <form string="Expense Claim">
                 <header>
-                    <button name="action_submit" string="Submit" type="object" class="oe_highlight" groups="hr_claims.group_hr_claim_employee" invisible="state not in ('draft', 'returned')"/>
+                    <button name="action_submit" string="Submit" type="object" class="oe_highlight" groups="hr_claims.group_hr_claim_employee" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
                     <button name="action_approve" string="Approve" type="object" class="oe_highlight" groups="hr_claims.group_hr_claim_manager" invisible="state != 'submitted'"/>
                     <button name="action_open_return_wizard" string="Return" type="object" groups="hr_claims.group_hr_claim_manager" invisible="state != 'submitted'"/>
                     <button name="action_open_reject_wizard" string="Reject" type="object" groups="hr_claims.group_hr_claim_manager" invisible="state != 'submitted'"/>
-                    <button name="action_open_payment_wizard" string="Register Payment" type="object" class="oe_highlight" groups="hr_claims.group_hr_claim_finance" invisible="state != 'approved' or not claim_type_id"/>
-                    <button name="action_withdraw" string="Withdraw" type="object" groups="hr_claims.group_hr_claim_employee" invisible="state != 'submitted'"/>
-                    <button name="action_cancel" string="Cancel" type="object" groups="hr_claims.group_hr_claim_employee" invisible="state not in ('draft', 'returned')"/>
-                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" groups="hr_claims.group_hr_claim_employee" invisible="state not in ('returned', 'rejected', 'cancelled')"/>
+                    <button name="action_open_payment_wizard" string="Register Payment" type="object" class="oe_highlight" groups="hr_claims.group_hr_claim_finance" invisible="state != 'approved' or not is_reimbursable"/>
+                    <button name="action_withdraw" string="Withdraw" type="object" groups="hr_claims.group_hr_claim_employee" invisible="state != 'submitted' or not can_employee_action"/>
+                    <button name="action_cancel" string="Cancel" type="object" groups="hr_claims.group_hr_claim_employee" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" groups="hr_claims.group_hr_claim_admin" invisible="state not in ('rejected', 'cancelled')"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted,returned,approved,paid"/>
                 </header>
                 <sheet>
                     <field name="company_id" invisible="1"/>
+                    <field name="can_employee_action" invisible="1"/>
+                    <field name="is_reimbursable" invisible="1"/>
                     <widget name="web_ribbon" title="Rejected" bg_color="text-bg-danger" invisible="state != 'rejected'"/>
                     <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-secondary" invisible="state != 'cancelled'"/>
-                    <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1><h2><field name="title" placeholder="What was this expense for?"/></h2></div>
+                    <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1><h2><field name="title" placeholder="What was this expense for?" readonly="state not in ('draft', 'returned')"/></h2></div>
                     <group>
                         <group>
                             <field name="employee_id" readonly="state not in ('draft', 'returned')"/>

@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import fields, models
 from odoo.exceptions import AccessError
 
 
@@ -36,10 +36,6 @@ class HrClaimAudit(models.Model):
         related="claim_id.company_id", store=True, readonly=True, index=True
     )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        return super(HrClaimAudit, self.sudo()).create(vals_list)
-
     def write(self, vals):
         raise AccessError("Claim audit entries are immutable.")
 
@@ -47,4 +43,3 @@ class HrClaimAudit(models.Model):
         if self.env.context.get("uninstall_mode"):
             return super().unlink()
         raise AccessError("Claim audit entries are immutable.")
-

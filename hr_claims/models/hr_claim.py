@@ -79,6 +79,10 @@ class HrClaim(models.Model):
     receipt_attachment_count = fields.Integer(
         string="Receipt Count", compute="_compute_attachment_count"
     )
+    is_reimbursable = fields.Boolean(
+        related="claim_type_id.reimbursable", readonly=True
+    )
+    can_employee_action = fields.Boolean(compute="_compute_can_employee_action")
     state = fields.Selection(
         [
             ("draft", "Draft"),
@@ -136,6 +140,12 @@ class HrClaim(models.Model):
         for claim in self:
             claim.receipt_attachment_count = len(claim.attachment_ids)
 
+    @api.depends_context("uid")
+    def _compute_can_employee_action(self):
+        is_admin = self.env.user.has_group("hr_claims.group_hr_claim_admin")
+        for claim in self:
+            claim.can_employee_action = is_admin or claim.employee_id.user_id == self.env.user
+
     @api.depends("payment_ids.amount", "payment_ids.state", "amount_total")
     def _compute_payment_totals(self):
         for claim in self:
@@ -169,8 +179,17 @@ class HrClaim(models.Model):
         for vals in vals_list:
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("hr.claim") or "New"
-            if vals.get("employee_id") and not self.env.user.has_group(
+            if not self.env.su and not self.env.user.has_group(
                 "hr_claims.group_hr_claim_admin"
+            ):
+                vals["state"] = "draft"
+                vals.pop("approved_by_id", None)
+                vals.pop("approved_date", None)
+                vals.pop("paid_date", None)
+            if (
+                not self.env.su
+                and vals.get("employee_id")
+                and not self.env.user.has_group("hr_claims.group_hr_claim_admin")
             ):
                 employee = self.env["hr.employee"].browse(vals["employee_id"])
                 if employee.user_id != self.env.user:
@@ -201,10 +220,14 @@ class HrClaim(models.Model):
                 raise AccessError("Only the owner can edit a Draft or Returned claim.")
 
     def write(self, vals):
-        if not self.env.su and not self.env.context.get("hr_claim_workflow"):
+        if not self.env.su:
             if "state" in vals:
                 raise AccessError("Claim states can only be changed through workflow actions.")
             self._ensure_user_can_edit()
+        return super().write(vals)
+
+    def _workflow_write(self, vals):
+        """Apply a transition after its private server action has authorized it."""
         return super().write(vals)
 
     def unlink(self):
@@ -216,7 +239,7 @@ class HrClaim(models.Model):
 
     def _log_action(self, action, description):
         for claim in self:
-            self.env["hr.claim.audit"].create(
+            self.env["hr.claim.audit"].sudo().create(
                 {
                     "claim_id": claim.id,
                     "action": action,
@@ -274,7 +297,14 @@ class HrClaim(models.Model):
                 for window in dated_windows
             ):
                 raise UserError("The submission window for this claim type is closed.")
-            window_days = claim_type.submission_window_days
+            configured_durations = submission_windows.filtered(
+                lambda window: window.duration_days > 0
+            ).mapped("duration_days")
+            window_days = (
+                min(configured_durations)
+                if configured_durations
+                else claim_type.submission_window_days
+            )
             if claim.expense_end_date and window_days and claim.expense_end_date < today - timedelta(
                 days=window_days
             ):
@@ -288,7 +318,7 @@ class HrClaim(models.Model):
         self._validate_for_submission()
         for claim in self:
             was_returned = claim.state == "returned"
-            claim.with_context(hr_claim_workflow=True).write(
+            claim._workflow_write(
                 {"state": "submitted", "submitted_date": fields.Datetime.now()}
             )
             action = "resubmitted" if was_returned else "submitted"
@@ -308,7 +338,7 @@ class HrClaim(models.Model):
         for claim in self:
             if claim.state != "submitted":
                 raise UserError("Only Submitted claims can be approved.")
-            claim.with_context(hr_claim_workflow=True).write(
+            claim._workflow_write(
                 {
                     "state": "approved",
                     "approved_by_id": self.env.user.id,
@@ -358,7 +388,7 @@ class HrClaim(models.Model):
             else:
                 values = {"state": "returned", "return_reason": reason}
                 action, message = "returned", _("Claim returned for correction: %s") % reason
-            claim.with_context(hr_claim_workflow=True).write(values)
+            claim._workflow_write(values)
             claim._log_action(action, message)
             claim.message_post(body=message)
         return True
@@ -368,7 +398,7 @@ class HrClaim(models.Model):
         for claim in self:
             if claim.state != "submitted":
                 raise UserError("Only Submitted claims can be withdrawn.")
-            claim.with_context(hr_claim_workflow=True).write({"state": "cancelled"})
+            claim._workflow_write({"state": "cancelled"})
             claim._log_action("withdrawn", _("Claim withdrawn by employee."))
             claim.message_post(body=_("Claim withdrawn."))
         return True
@@ -378,16 +408,17 @@ class HrClaim(models.Model):
         for claim in self:
             if claim.state not in ("draft", "returned"):
                 raise UserError("Only Draft or Returned claims can be cancelled.")
-            claim.with_context(hr_claim_workflow=True).write({"state": "cancelled"})
+            claim._workflow_write({"state": "cancelled"})
             claim._log_action("cancelled", _("Claim cancelled."))
         return True
 
     def action_reset_to_draft(self):
-        self._check_owner_or_admin()
+        if not self._is_admin():
+            raise AccessError("Only a Claims Administrator can reset a decision to Draft.")
         for claim in self:
-            if claim.state not in ("returned", "rejected", "cancelled"):
+            if claim.state not in ("rejected", "cancelled"):
                 raise UserError("This claim cannot be reset to Draft.")
-            claim.with_context(hr_claim_workflow=True).write({"state": "draft"})
+            claim._workflow_write({"state": "draft"})
         return True
 
     def action_open_payment_wizard(self):
@@ -413,14 +444,19 @@ class HrClaim(models.Model):
     def get_dashboard_data(self):
         claims = self.search([])
         company_currency = self.env.company.currency_id
+        dashboard_date = fields.Date.today()
+
+        def dashboard_amount(claim):
+            return claim.currency_id._convert(
+                claim.amount_total, company_currency, claim.company_id, dashboard_date
+            )
+
         state_labels = dict(self._fields["state"].selection)
         counts = defaultdict(int)
         values = defaultdict(float)
         for claim in claims:
             counts[claim.state] += 1
-            values[claim.state] += claim.currency_id._convert(
-                claim.amount_total, company_currency, claim.company_id, fields.Date.today()
-            )
+            values[claim.state] += dashboard_amount(claim)
 
         start = fields.Date.start_of(fields.Date.today(), "month") - relativedelta(months=5)
         monthly = []
@@ -438,15 +474,15 @@ class HrClaim(models.Model):
             monthly.append(
                 {
                     "label": month_start.strftime("%b %Y"),
-                    "submitted": sum(submitted.mapped("amount_total")),
-                    "approved": sum(approved.mapped("amount_total")),
-                    "paid": sum(paid.mapped("amount_total")),
+                    "submitted": sum(dashboard_amount(claim) for claim in submitted),
+                    "approved": sum(dashboard_amount(claim) for claim in approved),
+                    "paid": sum(dashboard_amount(claim) for claim in paid),
                 }
             )
 
         by_department = defaultdict(float)
         for claim in claims.filtered(lambda c: c.state in ("approved", "paid")):
-            by_department[claim.department_id.display_name or _("No Department")] += claim.amount_total
+            by_department[claim.department_id.display_name or _("No Department")] += dashboard_amount(claim)
 
         pending_claims = claims.filtered(lambda c: c.state == "submitted")
         today = fields.Date.today()
@@ -477,7 +513,7 @@ class HrClaim(models.Model):
                         lambda c: c.state == "approved" and c.claim_type_id.reimbursable
                     )
                 ),
-                "total_value": sum(claims.mapped("amount_total")),
+                "total_value": sum(dashboard_amount(claim) for claim in claims),
                 "approved_value": values["approved"] + values["paid"],
                 "paid_value": values["paid"],
                 "approval_rate": round(100 * approved_count / decided_count, 1)
@@ -507,7 +543,7 @@ class HrClaim(models.Model):
                     "name": claim.name,
                     "title": claim.title,
                     "employee": claim.employee_id.display_name,
-                    "amount": claim.amount_total,
+                    "amount": dashboard_amount(claim),
                     "state": claim.state,
                     "state_label": state_labels[claim.state],
                     "submitted": fields.Datetime.to_string(claim.submitted_date)

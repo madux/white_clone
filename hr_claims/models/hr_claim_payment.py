@@ -65,9 +65,27 @@ class HrClaimPayment(models.Model):
         ):
             raise AccessError("Only Finance or an Administrator can create payments.")
         for vals in vals_list:
+            vals["state"] = "draft"
+            vals.pop("processed_by_id", None)
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("hr.claim.payment") or "New"
         return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su:
+            if "state" in vals:
+                raise AccessError("Payment states can only be changed through workflow actions.")
+            if any(payment.state != "draft" for payment in self):
+                raise AccessError("Completed or cancelled payments are immutable.")
+        return super().write(vals)
+
+    def unlink(self):
+        if any(payment.state != "draft" for payment in self):
+            raise AccessError("Only Draft payments can be deleted.")
+        return super().unlink()
+
+    def _workflow_write(self, vals):
+        return super().write(vals)
 
     def action_confirm(self):
         if not (
@@ -83,7 +101,7 @@ class HrClaimPayment(models.Model):
                 raise UserError("The claim is not eligible for payment.")
             if claim.currency_id.compare_amounts(payment.amount, claim.residual_amount) > 0:
                 raise UserError("Payment amount cannot exceed the outstanding claim amount.")
-            payment.write(
+            payment._workflow_write(
                 {"state": "completed", "processed_by_id": self.env.user.id}
             )
             claim.invalidate_recordset(["amount_paid", "residual_amount", "payment_state"])
@@ -92,7 +110,7 @@ class HrClaimPayment(models.Model):
                 body=_("Payment %s for %s was processed.") % (payment.name, payment.amount)
             )
             if claim.currency_id.compare_amounts(claim.amount_paid, claim.amount_total) >= 0:
-                claim.sudo().with_context(hr_claim_workflow=True).write(
+                claim.sudo()._workflow_write(
                     {"state": "paid", "paid_date": fields.Datetime.now()}
                 )
                 claim._log_action("paid", _("Claim paid in full."))
@@ -102,6 +120,5 @@ class HrClaimPayment(models.Model):
         for payment in self:
             if payment.state != "draft":
                 raise UserError("Only Draft payments can be cancelled.")
-            payment.state = "cancelled"
+            payment._workflow_write({"state": "cancelled"})
         return True
-
