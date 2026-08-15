@@ -9,4 +9,7 @@ from . import hr_cash_advance
 from . import hr_expense_approval
 from . import hr_expense_payment_batch
 from . import hr_petty_cash
+from . import hr_expense_accounting
+from . import hr_expense_vendor
+from . import hr_expense_budget
 from . import hr_expense_app

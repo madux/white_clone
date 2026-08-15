@@ -143,6 +143,7 @@ class HrClaimPayment(models.Model):
         self._lock_claims(claims)
         self.invalidate_recordset(["state"])
         for payment in self:
+            self.env["hr.expense.period"]._ensure_date_open(payment.payment_date, "payment")
             if payment.state != "draft":
                 raise UserError("Only Draft payments can be confirmed.")
             claim = payment.claim_id

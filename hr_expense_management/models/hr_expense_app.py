@@ -77,16 +77,16 @@ class HrExpenseApp(models.Model):
                 ("accounts", "Accounts"), ("tree", "Tree"),
                 ("mapping", "GL Mapping"), ("journals", "Journal Entries"),
                 ("settings", "Settings"),
-            ], allowed("finance"), False),
+            ], allowed("finance")),
             self._app_module("vendors", "Vendors", "fa-building-o", [
                 ("directory", "Directory"), ("categories", "Categories"),
                 ("claims", "Vendor Claims"), ("terms", "Terms"),
                 ("analytics", "Analytics"),
-            ], allowed("finance"), False),
+            ], allowed("finance")),
             self._app_module("budget", "Budget", "fa-pie-chart", [
                 ("overview", "Overview"), ("departments", "By Department"),
                 ("variance", "Budget vs Actual"), ("periods", "Periods"),
-            ], allowed("finance"), False),
+            ], allowed("finance")),
             self._app_module("reports", "Reports", "fa-bar-chart", [
                 ("financial", "Financial"), ("claims", "Claims"),
                 ("employees", "Employees"), ("custom", "Custom"),
@@ -150,6 +150,12 @@ class HrExpenseApp(models.Model):
             return self._get_payment_page(page)
         if module == "petty_cash":
             return self._get_petty_cash_page(page)
+        if module == "accounts":
+            return self._get_accounts_page(page)
+        if module == "vendors":
+            return self._get_vendors_page(page)
+        if module == "budget":
+            return self._get_budget_page(page)
         return {"records": [], "kpis": {}, "available": False}
 
     @api.model
@@ -397,3 +403,202 @@ class HrExpenseApp(models.Model):
         else:
             records = [{"id": fund.id, "name": fund.name, "code": fund.code, "location": fund.location, "custodian": fund.custodian_id.name, "balance": fund.current_balance, "maximum": fund.maximum_amount, "threshold": fund.minimum_threshold, "state": "active" if fund.active else "inactive"} for fund in funds]
         return {"available": True, "records": records, "kpis": {"funds": len(funds), "balance": sum(funds.mapped("current_balance")), "maximum": sum(funds.mapped("maximum_amount")), "low": len(funds.filtered(lambda fund: fund.current_balance <= fund.minimum_threshold)), "pending": len(transactions.filtered(lambda tx: tx.state == "submitted")), "replenishments": len(replenishments.filtered(lambda rep: rep.state == "submitted"))}}
+
+    @api.model
+    def _check_financial_workspace(self):
+        if not (
+            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
+            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
+        ):
+            raise AccessError("Only Finance can access this financial workspace.")
+
+    @api.model
+    def _get_accounts_page(self, page):
+        self._check_financial_workspace()
+        accounts = self.env["hr.expense.account"].with_context(active_test=False).search([], order="code, id")
+        mappings = self.env["hr.expense.gl.map"].with_context(active_test=False).search([], order="source_type, sequence, id")
+        journals = self.env["hr.expense.journal"].search([], order="date desc, id desc", limit=200)
+        if page == "mapping":
+            records = [{
+                "id": item.id,
+                "name": item.name,
+                "source": dict(item._fields["source_type"].selection).get(item.source_type),
+                "category": item.claim_category_id.name or _("All Categories"),
+                "debit": "%s · %s" % (item.debit_account_id.code, item.debit_account_id.name),
+                "credit": "%s · %s" % (item.credit_account_id.code, item.credit_account_id.name),
+                "state": "active" if item.active else "inactive",
+            } for item in mappings]
+        elif page == "journals":
+            records = [{
+                "id": item.id,
+                "name": item.name,
+                "date": item.date,
+                "description": item.description,
+                "source": item.source_reference or _("Manual"),
+                "debit": item.total_debit,
+                "credit": item.total_credit,
+                "balanced": item.balanced,
+                "state": item.state,
+            } for item in journals]
+        else:
+            records = [{
+                "id": item.id,
+                "code": item.code,
+                "name": item.name,
+                "type": dict(item._fields["account_type"].selection).get(item.account_type),
+                "subtype": item.subtype or "—",
+                "parent": item.parent_id.name or "",
+                "level": len((item.parent_path or "").strip("/").split("/")) - 1,
+                "header": item.is_header,
+                "balance": item.balance,
+                "state": "active" if item.active else "inactive",
+            } for item in accounts]
+        return {
+            "available": True,
+            "records": records,
+            "kpis": {
+                "total": len(accounts),
+                "active": len(accounts.filtered("active")),
+                "headers": len(accounts.filtered("is_header")),
+                "posting": len(accounts.filtered(lambda account: not account.is_header)),
+                "mappings": len(mappings.filtered("active")),
+                "draft_journals": len(journals.filtered(lambda journal: journal.state == "draft")),
+                "posted_value": sum(journals.filtered(lambda journal: journal.state == "posted").mapped("total_debit")),
+            },
+        }
+
+    @api.model
+    def app_create_vendor(self, values):
+        self._check_financial_workspace()
+        name = (values.get("name") or "").strip()
+        code = (values.get("code") or "").strip()
+        if not name or not code:
+            raise UserError("Vendor name and code are required.")
+        rating = int(values.get("rating") or 3)
+        if rating < 1 or rating > 5:
+            raise UserError("Vendor rating must be from 1 to 5.")
+        vendor = self.env["res.partner"].sudo().create({
+            "name": name,
+            "company_type": "company",
+            "company_id": self.env.company.id,
+            "email": (values.get("email") or "").strip() or False,
+            "phone": (values.get("phone") or "").strip() or False,
+            "is_expense_vendor": True,
+            "expense_vendor_code": code,
+            "expense_vendor_category_id": int(values["category_id"]) if values.get("category_id") else False,
+            "expense_payment_term_id": int(values["term_id"]) if values.get("term_id") else False,
+            "default_expense_account_id": int(values["account_id"]) if values.get("account_id") else False,
+            "expense_rating": rating,
+            "expense_vendor_active": True,
+        })
+        return {"id": vendor.id, "name": vendor.name}
+
+    @api.model
+    def _get_vendors_page(self, page):
+        self._check_financial_workspace()
+        vendors = self.env["res.partner"].search([("is_expense_vendor", "=", True)], order="name")
+        categories = self.env["hr.expense.vendor.category"].with_context(active_test=False).search([], order="sequence, name")
+        terms = self.env["hr.expense.payment.term"].with_context(active_test=False).search([], order="due_days, name")
+        vendor_lines = self.env["hr.claim.line"].search([("vendor_id", "!=", False)], order="expense_date desc, id desc", limit=200)
+        if page == "categories":
+            records = [{
+                "id": item.id, "code": item.code, "name": item.name,
+                "tax": item.tax_rate,
+                "account": item.default_expense_account_id.code or "—",
+                "state": "active" if item.active else "inactive",
+            } for item in categories]
+        elif page == "terms":
+            records = [{
+                "id": item.id, "code": item.code, "name": item.name,
+                "days": item.due_days, "discount": item.early_discount_percent,
+                "discount_days": item.early_discount_days,
+                "state": "active" if item.active else "inactive",
+            } for item in terms]
+        elif page == "claims":
+            records = [{
+                "id": item.id, "name": item.claim_id.name,
+                "vendor": item.vendor_id.name, "employee": item.claim_id.employee_id.name,
+                "description": item.description, "category": dict(item._fields["category"].selection).get(item.category),
+                "date": item.expense_date, "amount": item.amount,
+                "state": item.claim_id.state,
+            } for item in vendor_lines]
+        else:
+            records = [{
+                "id": item.id, "code": item.expense_vendor_code or "—", "name": item.name,
+                "category": item.expense_vendor_category_id.name or _("Uncategorized"),
+                "email": item.email or "", "phone": item.phone or "",
+                "rating": item.expense_rating, "account": item.default_expense_account_id.code or "—",
+                "claim_count": item.expense_claim_count, "spend": item.expense_claim_value,
+                "state": "active" if item.expense_vendor_active else "inactive",
+            } for item in vendors]
+        return {
+            "available": True,
+            "records": records,
+            "vendor_options": {
+                "categories": [{"id": item.id, "name": item.name} for item in categories.filtered("active")],
+                "terms": [{"id": item.id, "name": item.name} for item in terms.filtered("active")],
+                "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in self.env["hr.expense.account"].search([
+                    ("account_type", "=", "expense"), ("is_header", "=", False), ("active", "=", True)
+                ], order="code")],
+            },
+            "kpis": {
+                "total": len(vendors),
+                "active": len(vendors.filtered("expense_vendor_active")),
+                "high_rating": len(vendors.filtered(lambda vendor: vendor.expense_rating >= 4)),
+                "categories": len(categories.filtered("active")),
+                "spend": sum(vendors.mapped("expense_claim_value")),
+                "claims": len(vendor_lines.mapped("claim_id")),
+            },
+        }
+
+    @api.model
+    def _get_budget_page(self, page):
+        self._check_financial_workspace()
+        budgets = self.env["hr.expense.budget"].search([], order="period_id desc, department_id")
+        lines = self.env["hr.expense.budget.line"].search([], order="department_id, category_id, account_id")
+        periods = self.env["hr.expense.period"].search([], order="date_start desc")
+        if page == "periods":
+            records = [{
+                "id": item.id, "code": item.code, "name": item.name,
+                "start": item.date_start, "end": item.date_end,
+                "submission": item.submission_cutoff, "approval": item.approval_cutoff,
+                "payment": item.payment_cutoff, "gl": item.gl_cutoff,
+                "state": item.state,
+            } for item in periods]
+        elif page == "departments":
+            records = [{
+                "id": item.id, "code": item.code, "name": item.name,
+                "department": item.department_id.name, "period": item.period_id.name,
+                "approved": item.total_approved, "committed": item.total_committed,
+                "actual": item.total_actual, "available": item.total_available,
+                "utilization": item.utilization, "state": item.state,
+            } for item in budgets]
+        else:
+            records = [{
+                "id": item.id,
+                "name": item.category_id.name or item.account_id.name,
+                "department": item.department_id.name,
+                "cost_center": item.budget_id.cost_center or item.budget_id.code,
+                "period": item.period_id.name,
+                "account": item.account_id.code or "—",
+                "approved": item.approved_amount, "forecast": item.forecast_amount,
+                "committed": item.committed_amount, "actual": item.actual_amount,
+                "available": item.available_amount, "utilization": item.utilization,
+                "state": item.status,
+                "state_label": dict(item._fields["status"].selection).get(item.status),
+            } for item in lines]
+        approved = sum(lines.mapped("approved_amount"))
+        committed = sum(lines.mapped("committed_amount"))
+        actual = sum(lines.mapped("actual_amount"))
+        return {
+            "available": True,
+            "records": records,
+            "kpis": {
+                "approved": approved, "committed": committed, "actual": actual,
+                "available": approved - committed - actual,
+                "utilization": ((committed + actual) / approved * 100) if approved else 0,
+                "over": len(lines.filtered(lambda line: line.status == "over")),
+                "at_risk": len(lines.filtered(lambda line: line.status == "risk")),
+                "periods_open": len(periods.filtered(lambda period: period.state == "open")),
+            },
+        }

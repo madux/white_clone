@@ -327,6 +327,9 @@ class HrClaim(models.Model):
 
     def action_submit(self):
         self._check_owner_or_admin()
+        self.env["hr.expense.period"]._ensure_date_open(
+            fields.Date.context_today(self), "submission"
+        )
         for claim in self:
             if claim.state not in ("draft", "returned"):
                 raise UserError("Only Draft or Returned claims can be submitted.")
@@ -364,6 +367,9 @@ class HrClaim(models.Model):
 
     def action_approve(self, comment=None):
         self._check_approver()
+        self.env["hr.expense.period"]._ensure_date_open(
+            fields.Date.context_today(self), "approval"
+        )
         approval_comment = comment.strip() if comment and comment.strip() else False
         for claim in self:
             if claim.state != "submitted":

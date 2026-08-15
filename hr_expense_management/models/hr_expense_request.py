@@ -151,6 +151,9 @@ class HrExpenseRequest(models.Model):
         return super().unlink()
 
     def action_submit(self):
+        self.env["hr.expense.period"]._ensure_date_open(
+            fields.Date.context_today(self), "submission"
+        )
         for request in self:
             if not (request._is_owner() or request._is_admin()):
                 raise AccessError("Only the owner can submit this request.")
@@ -165,6 +168,9 @@ class HrExpenseRequest(models.Model):
         return True
 
     def action_approve(self, comment=None):
+        self.env["hr.expense.period"]._ensure_date_open(
+            fields.Date.context_today(self), "approval"
+        )
         for request in self:
             if not (request._is_manager() or request._is_admin()):
                 raise AccessError("Only Managers can approve requests.")

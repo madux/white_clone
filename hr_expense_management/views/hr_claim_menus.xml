@@ -25,6 +25,20 @@
     <menuitem id="menu_hr_petty_cash_reconciliations" name="Reconciliations" parent="menu_hr_petty_cash" action="action_hr_petty_cash_reconciliations" sequence="30"/>
     <menuitem id="menu_hr_petty_cash_replenishments" name="Replenishments" parent="menu_hr_petty_cash" action="action_hr_petty_cash_replenishments" sequence="40"/>
 
+    <menuitem id="menu_hr_expense_accounts" name="Accounts" parent="menu_hr_claim_root" sequence="47" groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_expense_account_list" name="Chart of Accounts" parent="menu_hr_expense_accounts" action="action_hr_expense_accounts" sequence="10"/>
+    <menuitem id="menu_hr_expense_gl_maps" name="GL Mapping" parent="menu_hr_expense_accounts" action="action_hr_expense_gl_maps" sequence="20"/>
+    <menuitem id="menu_hr_expense_journals" name="Journal Entries" parent="menu_hr_expense_accounts" action="action_hr_expense_journals" sequence="30"/>
+
+    <menuitem id="menu_hr_expense_vendors" name="Vendors" parent="menu_hr_claim_root" sequence="48" groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_expense_vendor_directory" name="Vendor Directory" parent="menu_hr_expense_vendors" action="action_hr_expense_vendors" sequence="10"/>
+    <menuitem id="menu_hr_expense_vendor_categories" name="Vendor Categories" parent="menu_hr_expense_vendors" action="action_hr_expense_vendor_categories" sequence="20"/>
+    <menuitem id="menu_hr_expense_payment_terms" name="Payment Terms" parent="menu_hr_expense_vendors" action="action_hr_expense_payment_terms" sequence="30"/>
+
+    <menuitem id="menu_hr_expense_budget" name="Budget" parent="menu_hr_claim_root" sequence="49" groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_expense_budget_list" name="Budgets" parent="menu_hr_expense_budget" action="action_hr_expense_budgets" sequence="10"/>
+    <menuitem id="menu_hr_expense_periods" name="Periods &amp; Cut-offs" parent="menu_hr_expense_budget" action="action_hr_expense_periods" sequence="20"/>
+
     <menuitem id="menu_hr_claim_reports" name="Reports" parent="menu_hr_claim_root" action="action_hr_claim_reports" sequence="50" groups="hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance"/>
 
     <menuitem id="menu_hr_claim_configuration" name="Configuration" parent="menu_hr_claim_root" sequence="80" groups="hr_expense_management.group_hr_expense_admin"/>

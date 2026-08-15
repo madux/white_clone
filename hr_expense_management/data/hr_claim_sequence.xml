@@ -32,4 +32,11 @@
     <record id="seq_hr_petty_cash_transaction" model="ir.sequence"><field name="name">Petty Cash Transaction</field><field name="code">hr.petty.cash.transaction</field><field name="prefix">PTX/%(year)s/</field><field name="padding">5</field><field name="company_id" eval="False"/></record>
     <record id="seq_hr_petty_cash_reconciliation" model="ir.sequence"><field name="name">Petty Cash Reconciliation</field><field name="code">hr.petty.cash.reconciliation</field><field name="prefix">REC/%(year)s/</field><field name="padding">5</field><field name="company_id" eval="False"/></record>
     <record id="seq_hr_petty_cash_replenishment" model="ir.sequence"><field name="name">Petty Cash Replenishment</field><field name="code">hr.petty.cash.replenishment</field><field name="prefix">REP/%(year)s/</field><field name="padding">5</field><field name="company_id" eval="False"/></record>
+    <record id="seq_hr_expense_journal" model="ir.sequence">
+        <field name="name">Expense Journal</field>
+        <field name="code">hr.expense.journal</field>
+        <field name="prefix">EJ/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
 </odoo>

@@ -1,7 +1,7 @@
 {
     "name": "Expense Management",
     "summary": "Claims, requests, advances, payments, petty cash, budgets, and analytics",
-    "version": "17.0.5.0.0",
+    "version": "17.0.6.0.0",
     "category": "Human Resources/Expenses",
     "author": "CleonTime",
     "license": "LGPL-3",
@@ -21,6 +21,9 @@
         "views/hr_claim_payment_views.xml",
         "views/hr_expense_workflow_views.xml",
         "views/hr_expense_finance_views.xml",
+        "views/hr_expense_accounting_views.xml",
+        "views/hr_expense_vendor_views.xml",
+        "views/hr_expense_budget_views.xml",
         "views/hr_claim_audit_views.xml",
         "views/hr_claim_dashboard_views.xml",
         "views/hr_claim_menus.xml",

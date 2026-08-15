@@ -82,6 +82,28 @@ duplicating records.
   contains no former custom module record, and leaves Odoo's standard
   `hr_expense` addon untouched. Upgrade, OWL asset compilation, and all 13 test
   methods / 17 assertion groups pass with 0 failures and 0 errors.
+- [x] Phase 5 checkpoint A: implemented the Community expense subledger with a
+  hierarchical chart of accounts, configurable GL mappings, balanced immutable
+  posted journals, source links, and configured claim/payment/advance/petty-cash
+  journal generation without adding an Enterprise accounting dependency.
+- [x] Phase 5 checkpoint A: implemented expense vendor categories, payment
+  terms, validated vendor master data on `res.partner`, vendor links on claims
+  and petty cash, ratings, default GL accounts, and approved-spend metrics.
+- [x] Phase 5 checkpoint A: implemented fiscal periods and operation cut-offs,
+  controlled close/reopen workflows, department budgets and lines, request
+  commitments, claim/petty-cash actuals, availability, utilization, warning
+  thresholds, and budget states.
+- [x] Phase 5 checkpoint A OWL UX: activated Accounts, Vendors, and Budget with
+  all audited subpages, live KPI cards, searchable responsive tables, account
+  hierarchy indentation, mapping/journal status, vendor table/card modes and a
+  constrained create modal, budget utilization/status views, periods, and
+  native advanced-edit fallbacks. The broad Odoo Contact Manager permission was
+  deliberately not granted to Finance.
+- [x] Phase 5 checkpoint A verification: Odoo upgrade, native-view validation,
+  OWL backend asset compilation, and 17 test methods / 23 assertion groups pass
+  with 0 failures and 0 errors. Coverage includes balanced-journal immutability,
+  claim journal generation, commitment/actual exposure, closed-period blocking,
+  constrained vendor creation, live OWL payloads, and role enforcement.
 
 ## In progress
 
@@ -92,7 +114,9 @@ duplicating records.
 
 - [ ] Phase 4 checkpoint B: richer payment/petty-cash report charts, inline
   custodian reassignment, receipts, and page-specific card views.
-- [ ] Phase 5: Community subledger, Vendors, Budgets, and Periods.
+- [ ] Phase 5 checkpoint B: OWL-native budget-line and GL/journal creation
+  wizards, commitment release/transfer edge cases, richer accounting adapters,
+  and vendor/budget analytics charts.
 - [ ] Phase 6: Teams, Reports, Audit, Settings, Email/Integration metadata, and
   Theme management.
 - [ ] Phase 7: clean install/upgrade, automated security/workflow regression,

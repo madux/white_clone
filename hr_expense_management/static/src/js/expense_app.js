@@ -150,7 +150,9 @@ export class ExpenseApp extends Component {
             const matchesStatus = status === "all" || record.state === status;
             const haystack = [record.name, record.reference, record.employee, record.type,
                 record.purpose, record.description, record.department, record.kind_label,
-                record.fund, record.custodian, record.payee, record.category, record.location]
+                record.fund, record.custodian, record.payee, record.category, record.location,
+                record.code, record.vendor, record.account, record.source, record.cost_center,
+                record.period, record.parent, record.subtype]
                 .filter(Boolean).join(" ").toLowerCase();
             return matchesStatus && (!query || haystack.includes(query));
         });
@@ -162,6 +164,18 @@ export class ExpenseApp extends Component {
 
     get isPettyCash() {
         return this.state.activeModule === "petty_cash";
+    }
+
+    get isAccounts() {
+        return this.state.activeModule === "accounts";
+    }
+
+    get isVendors() {
+        return this.state.activeModule === "vendors";
+    }
+
+    get isBudget() {
+        return this.state.activeModule === "budget";
     }
 
     get canCreateClaim() {
@@ -196,7 +210,8 @@ export class ExpenseApp extends Component {
     }
 
     async loadActivePage() {
-        const supported = ["requests", "advances", "workflow", "payments", "petty_cash"];
+        const supported = ["requests", "advances", "workflow", "payments", "petty_cash",
+            "accounts", "vendors", "budget"];
         if (!supported.includes(this.state.activeModule)) {
             this.state.pageData = { records: [], kpis: {} };
             return;
@@ -239,9 +254,9 @@ export class ExpenseApp extends Component {
     }
 
     statusClass(state) {
-        if (["approved", "fulfilled", "retired", "paid"].includes(state)) return "text-bg-success";
-        if (["submitted", "outstanding", "partial", "pending"].includes(state)) return "text-bg-warning";
-        if (["rejected", "cancelled", "written_off"].includes(state)) return "text-bg-danger";
+        if (["approved", "fulfilled", "retired", "paid", "posted", "active", "under"].includes(state)) return "text-bg-success";
+        if (["submitted", "outstanding", "partial", "pending", "track", "risk", "draft"].includes(state)) return "text-bg-warning";
+        if (["rejected", "cancelled", "written_off", "over"].includes(state)) return "text-bg-danger";
         return "text-bg-light";
     }
 
@@ -267,6 +282,19 @@ export class ExpenseApp extends Component {
         };
     }
 
+    openVendorModal() {
+        const options = this.state.pageData?.vendor_options || {};
+        this.state.modal = {
+            type: "vendor",
+            values: {
+                name: "", code: "", email: "", phone: "", rating: "3",
+                category_id: options.categories?.[0]?.id || "",
+                term_id: options.terms?.[0]?.id || "",
+                account_id: options.accounts?.[0]?.id || "",
+            },
+        };
+    }
+
     closeModal() {
         this.state.modal = null;
     }
@@ -286,6 +314,19 @@ export class ExpenseApp extends Component {
             await this.loadActivePage();
         } catch (error) {
             this.notification.add(error.message || "Unable to save the request.", { type: "danger" });
+        }
+    }
+
+    async createVendor() {
+        try {
+            const vendor = await this.orm.call("hr.claim", "app_create_vendor", [
+                { ...this.state.modal.values },
+            ]);
+            this.notification.add(`Vendor ${vendor.name} created.`, { type: "success" });
+            this.closeModal();
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to create the vendor.", { type: "danger" });
         }
     }
 
@@ -362,6 +403,10 @@ export class ExpenseApp extends Component {
     }
 
     openPettyCashAction(xmlId) {
+        return this.action.doAction(xmlId);
+    }
+
+    openFinancialAction(xmlId) {
         return this.action.doAction(xmlId);
     }
 

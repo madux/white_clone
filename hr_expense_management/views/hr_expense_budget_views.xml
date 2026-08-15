@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_expense_period_tree" model="ir.ui.view">
+        <field name="name">hr.expense.period.list</field><field name="model">hr.expense.period</field>
+        <field name="arch" type="xml"><tree decoration-success="state == 'open'" decoration-muted="state == 'closed'"><field name="code"/><field name="name"/><field name="date_start"/><field name="date_end"/><field name="submission_cutoff"/><field name="approval_cutoff" optional="show"/><field name="payment_cutoff" optional="show"/><field name="gl_cutoff" optional="show"/><field name="state" widget="badge"/><field name="company_id" groups="base.group_multi_company"/></tree></field>
+    </record>
+    <record id="view_hr_expense_period_form" model="ir.ui.view">
+        <field name="name">hr.expense.period.form</field><field name="model">hr.expense.period</field>
+        <field name="arch" type="xml"><form string="Expense Period"><header><button name="action_open" type="object" string="Open" class="oe_highlight" invisible="state != 'future'"/><button name="action_close" type="object" string="Close" invisible="state != 'open'"/><field name="state" widget="statusbar"/></header><sheet><field name="company_id" invisible="1"/><div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div><group><group><field name="code"/><field name="date_start"/><field name="date_end"/></group><group><field name="submission_cutoff"/><field name="approval_cutoff"/><field name="payment_cutoff"/><field name="gl_cutoff"/><field name="company_id" groups="base.group_multi_company"/></group></group><group string="Closure"><field name="closed_by_id"/><field name="closed_date"/><field name="reopen_reason"/></group></sheet><chatter/></form></field>
+    </record>
+    <record id="action_hr_expense_periods" model="ir.actions.act_window"><field name="name">Periods &amp; Cut-offs</field><field name="res_model">hr.expense.period</field><field name="view_mode">tree,form</field></record>
+
+    <record id="view_hr_expense_budget_tree" model="ir.ui.view">
+        <field name="name">hr.expense.budget.list</field><field name="model">hr.expense.budget</field>
+        <field name="arch" type="xml"><tree decoration-success="state == 'active'" decoration-muted="state == 'closed'"><field name="code"/><field name="name"/><field name="period_id"/><field name="department_id"/><field name="cost_center" optional="show"/><field name="total_approved" sum="Approved"/><field name="total_committed" sum="Committed"/><field name="total_actual" sum="Actual"/><field name="total_available" sum="Available"/><field name="utilization" widget="percentage"/><field name="state" widget="badge"/><field name="company_id" groups="base.group_multi_company"/></tree></field>
+    </record>
+    <record id="view_hr_expense_budget_form" model="ir.ui.view">
+        <field name="name">hr.expense.budget.form</field><field name="model">hr.expense.budget</field>
+        <field name="arch" type="xml"><form string="Expense Budget"><header><button name="action_approve" type="object" string="Approve" class="oe_highlight" invisible="state != 'draft'"/><button name="action_activate" type="object" string="Activate" class="oe_highlight" invisible="state != 'approved'"/><button name="action_close" type="object" string="Close" invisible="state != 'active'"/><field name="state" widget="statusbar"/></header><sheet><field name="company_id" invisible="1"/><div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div><group><group><field name="code"/><field name="period_id"/><field name="department_id"/><field name="cost_center"/></group><group><field name="company_id" groups="base.group_multi_company"/><field name="total_approved"/><field name="total_committed"/><field name="total_actual"/><field name="total_available"/><field name="utilization" widget="percentage"/></group></group><field name="line_ids" readonly="state in ('active', 'closed')"><tree editable="bottom"><field name="company_id" column_invisible="True"/><field name="category_id"/><field name="account_id"/><field name="approved_amount" sum="Approved"/><field name="forecast_amount" sum="Forecast"/><field name="committed_amount" sum="Committed"/><field name="actual_amount" sum="Actual"/><field name="available_amount" sum="Available"/><field name="utilization" widget="percentage"/><field name="warning_threshold"/><field name="status" widget="badge"/></tree></field></sheet><chatter/></form></field>
+    </record>
+    <record id="action_hr_expense_budgets" model="ir.actions.act_window"><field name="name">Expense Budgets</field><field name="res_model">hr.expense.budget</field><field name="view_mode">tree,form</field></record>
+
+    <record id="view_hr_expense_request_form_budget" model="ir.ui.view">
+        <field name="name">hr.expense.request.form.budget</field><field name="model">hr.expense.request</field><field name="inherit_id" ref="view_hr_expense_request_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='amount']" position="after"><field name="department_id" invisible="1"/><field name="budget_line_id" readonly="state not in ('draft', 'returned')"/></xpath></field>
+    </record>
+    <record id="view_hr_claim_form_budget" model="ir.ui.view">
+        <field name="name">hr.claim.form.budget</field><field name="model">hr.claim</field><field name="inherit_id" ref="view_hr_claim_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='department_id']" position="after"><field name="budget_line_id" readonly="state not in ('draft', 'returned')"/></xpath></field>
+    </record>
+    <record id="view_hr_petty_cash_transaction_form_budget" model="ir.ui.view">
+        <field name="name">hr.petty.cash.transaction.form.budget</field><field name="model">hr.petty.cash.transaction</field><field name="inherit_id" ref="view_hr_petty_cash_transaction_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='category']" position="after"><field name="budget_line_id"/></xpath></field>
+    </record>
+</odoo>
