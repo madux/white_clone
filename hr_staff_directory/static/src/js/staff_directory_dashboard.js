@@ -10,6 +10,7 @@ import { useService } from "@web/core/utils/hooks";
 // subscribe ONCE per page and dispatch to whichever dashboard instance is live.
 const SDIR_CHANNEL = "hr_staff_directory";
 const SDIR_EVENT = "hr_staff_directory_update";
+const SDIR_RELOAD_DEBOUNCE_MS = 50;
 let sdirSubscribed = false;
 let activeSdirHandler = null;
 
@@ -38,7 +39,7 @@ export class StaffDirectoryDashboard extends Component {
         onPatched(() => this._autosizeJumpInput(this.jumpInput.el));
 
         // ─── Debounced Load Data for Real-Time Updates ───────────────────────
-        this.debouncedLoadData = this._debounce(this._loadData.bind(this), 500);
+        this.debouncedLoadData = this._debounce(this._loadData.bind(this), SDIR_RELOAD_DEBOUNCE_MS);
         this._loadSeq = 0;
 
         // ─── Real-Time Sync ──────────────────────────────────────────────────
@@ -235,6 +236,10 @@ export class StaffDirectoryDashboard extends Component {
                 activeSdirHandler = null;
             }
             this.busService.removeEventListener("reconnect", this._onBusReconnect);
+            if (this.debouncedLoadData && this.debouncedLoadData.cancel) {
+                // Cancel any pending reload so it can't fire on a destroyed component.
+                this.debouncedLoadData.cancel();
+            }
             if (this._fallbackPollInterval) {
                 window.clearInterval(this._fallbackPollInterval);
                 this._fallbackPollInterval = null;
@@ -263,10 +268,18 @@ export class StaffDirectoryDashboard extends Component {
 
     _debounce(func, wait) {
         let timeout;
-        return function(...args) {
+        const debounced = function(...args) {
             clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
+            timeout = setTimeout(() => {
+                timeout = null;
+                func.apply(this, args);
+            }, wait);
         };
+        debounced.cancel = () => {
+            clearTimeout(timeout);
+            timeout = null;
+        };
+        return debounced;
     }
 
     // ─── Data Loading ────────────────────────────────────────────────────────
