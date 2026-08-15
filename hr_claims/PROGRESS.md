@@ -46,6 +46,21 @@ prototype is the required scope, and the primary UX must be OWL-led.
   `web.assets_backend` bundle compiled with the OWL app and templates; 11 test
   methods / 15 assertions groups passed with 0 failures and 0 errors, including
   request-to-advance settlement and two-level approval routing.
+- [x] Phase 4 checkpoint A: implemented configurable payment methods, validated
+  payment batches with per-claim savepoints/result logs, batch-to-payment links,
+  and secured batch processing that settles approved claim balances.
+- [x] Phase 4 checkpoint A: implemented petty-cash funds, custodian ownership,
+  computed live balances, expenses and adjustments, Finance approval/posting,
+  physical-count reconciliation, replenishment request/approve/issue, and
+  generated replenishment ledger transactions.
+- [x] Phase 4 checkpoint A OWL UX: activated all Payments and Petty Cash
+  navigation pages with live KPIs, searchable tables, payment queue/history/
+  methods/batches, fund and transaction data, reconciliation and replenishment
+  views, plus direct operational actions and native advanced-edit fallbacks.
+- [x] Phase 4 checkpoint A verification: upgrade and backend asset compilation
+  passed; 13 test methods / 17 assertion groups passed with 0 failures and 0
+  errors, including full payment-batch settlement and petty-cash expense,
+  replenishment, and reconciliation flows.
 
 ## In progress
 
@@ -54,7 +69,8 @@ prototype is the required scope, and the primary UX must be OWL-led.
 
 ## Pending
 
-- [ ] Phase 4: Payments/batches and Petty Cash.
+- [ ] Phase 4 checkpoint B: richer payment/petty-cash report charts, inline
+  custodian reassignment, receipts, and page-specific card views.
 - [ ] Phase 5: Community subledger, Vendors, Budgets, and Periods.
 - [ ] Phase 6: Teams, Reports, Audit, Settings, Email/Integration metadata, and
   Theme management.

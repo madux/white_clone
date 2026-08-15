@@ -12,6 +12,8 @@
         <field name="retirement_days">30</field>
         <field name="description">Request funds before incurring approved business expenses.</field>
     </record>
+    <record id="payment_method_bank" model="hr.expense.payment.method"><field name="name">Bank Transfer</field><field name="code">BANK</field><field name="method_type">bank</field><field name="supports_batch" eval="True"/></record>
+    <record id="payment_method_payroll" model="hr.expense.payment.method"><field name="name">Payroll Integration</field><field name="code">PAYROLL</field><field name="method_type">payroll</field><field name="supports_batch" eval="True"/></record>
     <record id="category_travel" model="hr.claim.category">
         <field name="name">Travel</field><field name="code">TRAVEL</field><field name="sequence">10</field><field name="color">4</field>
     </record>

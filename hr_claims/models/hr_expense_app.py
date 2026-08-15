@@ -65,7 +65,9 @@ class HrExpenseApp(models.Model):
                 ("reconciliation", "Reconciliation"),
                 ("replenishment", "Replenishment"),
                 ("custodians", "Custodians"),
-            ], allowed("finance"), False),
+            ], allowed("finance") or bool(self.env["hr.petty.cash.fund"].search_count([
+                ("custodian_id.user_id", "=", user.id)
+            ]))),
             self._app_module("teams", "Teams", "fa-users", [
                 ("members", "Members"), ("departments", "Departments"),
                 ("roles", "Roles"), ("analytics", "Analytics"),
@@ -144,6 +146,10 @@ class HrExpenseApp(models.Model):
             return self._get_advance_page(page)
         if module == "workflow":
             return self._get_workflow_page(page)
+        if module == "payments":
+            return self._get_payment_page(page)
+        if module == "petty_cash":
+            return self._get_petty_cash_page(page)
         return {"records": [], "kpis": {}, "available": False}
 
     @api.model
@@ -353,3 +359,41 @@ class HrExpenseApp(models.Model):
             raise UserError("The cash advance no longer exists.")
         advance.action_retire(amount, reference)
         return True
+
+    @api.model
+    def _get_payment_page(self, page):
+        claims = self.env["hr.claim"].search([("state", "=", "approved"), ("residual_amount", ">", 0)], order="approved_date")
+        payments = self.env["hr.claim.payment"].search([], order="payment_date desc, id desc", limit=200)
+        methods = self.env["hr.expense.payment.method"].search([]) if self.env.user.has_group("hr_claims.group_hr_claim_finance") or self.env.user.has_group("hr_claims.group_hr_claim_admin") else self.env["hr.expense.payment.method"]
+        batches = self.env["hr.expense.payment.batch"].search([], limit=100) if methods else self.env["hr.expense.payment.batch"]
+        records = []
+        if page in ("queue", "receivables", "process"):
+            records = [{"id": claim.id, "name": claim.name, "employee": claim.employee_id.name, "department": claim.department_id.name or _("No Department"), "amount": claim.residual_amount, "approved_date": claim.approved_date, "days": max((fields.Date.context_today(claim) - fields.Date.to_date(claim.approved_date)).days, 0) if claim.approved_date else 0, "state": "payable"} for claim in claims]
+        elif page == "history":
+            records = [{"id": item.id, "name": item.name, "employee": item.employee_id.name, "amount": item.amount, "method": dict(item._fields["payment_method"].selection).get(item.payment_method), "date": item.payment_date, "state": item.state} for item in payments]
+        elif page == "methods":
+            records = [{"id": item.id, "name": item.name, "type": dict(item._fields["method_type"].selection).get(item.method_type), "active": item.active, "batch": item.supports_batch} for item in methods]
+        return {"available": True, "records": records, "methods": [{"id": item.id, "name": item.name} for item in methods], "batches": [{"id": batch.id, "name": batch.name, "amount": batch.total_amount, "count": batch.claim_count, "state": batch.state} for batch in batches], "kpis": {"payable_count": len(claims), "payable_value": sum(claims.mapped("residual_amount")), "paid_count": len(payments.filtered(lambda item: item.state == "completed")), "paid_value": sum(payments.filtered(lambda item: item.state == "completed").mapped("amount"))}}
+
+    @api.model
+    def app_process_payment_batch(self, claim_ids, method_id):
+        batch = self.env["hr.expense.payment.batch"].create({"method_id": int(method_id), "claim_ids": [(6, 0, [int(item) for item in claim_ids])]})
+        batch.action_validate()
+        batch.action_process()
+        return {"id": batch.id, "name": batch.name, "state": batch.state}
+
+    @api.model
+    def _get_petty_cash_page(self, page):
+        funds = self.env["hr.petty.cash.fund"].search([])
+        transactions = self.env["hr.petty.cash.transaction"].search([], order="date desc, id desc", limit=200)
+        reconciliations = self.env["hr.petty.cash.reconciliation"].search([], order="date desc", limit=100)
+        replenishments = self.env["hr.petty.cash.replenishment"].search([], order="request_date desc", limit=100)
+        if page == "transactions":
+            records = [{"id": tx.id, "name": tx.name, "date": tx.date, "fund": tx.fund_id.name, "payee": tx.payee, "category": tx.category or "", "amount": tx.amount, "type": dict(tx._fields["transaction_type"].selection).get(tx.transaction_type), "state": tx.state, "state_label": dict(tx._fields["state"].selection).get(tx.state)} for tx in transactions]
+        elif page == "reconciliation":
+            records = [{"id": rec.id, "name": rec.name, "date": rec.date, "fund": rec.fund_id.name, "system": rec.system_balance, "physical": rec.physical_count, "variance": rec.variance, "state": rec.state, "state_label": dict(rec._fields["state"].selection).get(rec.state)} for rec in reconciliations]
+        elif page == "replenishment":
+            records = [{"id": rep.id, "name": rep.name, "fund": rep.fund_id.name, "amount": rep.requested_amount, "date": rep.request_date, "urgent": rep.urgent, "justification": rep.justification, "state": rep.state, "state_label": dict(rep._fields["state"].selection).get(rep.state)} for rep in replenishments]
+        else:
+            records = [{"id": fund.id, "name": fund.name, "code": fund.code, "location": fund.location, "custodian": fund.custodian_id.name, "balance": fund.current_balance, "maximum": fund.maximum_amount, "threshold": fund.minimum_threshold, "state": "active" if fund.active else "inactive"} for fund in funds]
+        return {"available": True, "records": records, "kpis": {"funds": len(funds), "balance": sum(funds.mapped("current_balance")), "maximum": sum(funds.mapped("maximum_amount")), "low": len(funds.filtered(lambda fund: fund.current_balance <= fund.minimum_threshold)), "pending": len(transactions.filtered(lambda tx: tx.state == "submitted")), "replenishments": len(replenishments.filtered(lambda rep: rep.state == "submitted"))}}

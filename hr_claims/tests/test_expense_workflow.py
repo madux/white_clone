@@ -34,6 +34,7 @@ class TestExpenseRequestAdvanceWorkflow(TransactionCase):
             "name": "Project Cash Advance", "code": "TEST_ADVANCE",
             "creates_advance": True, "retirement_days": 14,
         })
+        cls.claim_type = cls.env.ref("hr_claims.claim_type_mileage")
 
     def _make_request(self, employee=None, user=None, amount=1000):
         employee = employee or self.employee
@@ -113,3 +114,67 @@ class TestExpenseRequestAdvanceWorkflow(TransactionCase):
         attachment = bundle.js()
         self.assertTrue(attachment)
         self.assertIn(b"hr_claims.ExpenseApp", attachment.raw)
+
+    def test_finance_batch_pays_approved_claims(self):
+        claim = self.env["hr.claim"].with_user(self.employee_user).create({
+            "title": "Batch payable", "employee_id": self.employee.id,
+            "claim_type_id": self.claim_type.id,
+            "expense_start_date": fields.Date.today(), "expense_end_date": fields.Date.today(),
+            "line_ids": [Command.create({
+                "description": "Travel", "category": "transport", "amount": 750,
+                "expense_date": fields.Date.today(),
+            })],
+        })
+        claim.with_user(self.employee_user).action_submit()
+        claim.with_user(self.manager_user).action_approve()
+        method = self.env.ref("hr_claims.payment_method_bank")
+        batch = self.env["hr.expense.payment.batch"].with_user(self.finance_user).create({
+            "method_id": method.id, "claim_ids": [Command.set([claim.id])],
+            "reference": "BANK-RUN-001",
+        })
+        batch.action_validate()
+        batch.action_process()
+        self.assertEqual(batch.state, "completed")
+        self.assertEqual(claim.state, "paid")
+        self.assertEqual(batch.payment_ids.amount, 750)
+
+    def test_petty_cash_expense_replenishment_and_reconciliation(self):
+        fund = self.env["hr.petty.cash.fund"].with_user(self.finance_user).create({
+            "name": "Test Office Fund", "code": "PC-TEST",
+            "location": "Head Office", "custodian_id": self.employee.id,
+            "maximum_amount": 5000, "minimum_threshold": 1000,
+        })
+        opening = self.env["hr.petty.cash.transaction"].with_user(self.finance_user).create({
+            "fund_id": fund.id, "transaction_type": "opening", "payee": "Opening",
+            "amount": 5000,
+        })
+        opening.action_submit()
+        opening.action_approve()
+        self.assertEqual(fund.current_balance, 5000)
+
+        expense = self.env["hr.petty.cash.transaction"].with_user(self.employee_user).create({
+            "fund_id": fund.id, "transaction_type": "expense", "payee": "Courier",
+            "category": "Delivery", "amount": 1200,
+        })
+        expense.action_submit()
+        with self.assertRaises(AccessError):
+            expense.with_user(self.employee_user).write({"state": "posted"})
+        expense.with_user(self.finance_user).action_approve()
+        self.assertEqual(fund.current_balance, 3800)
+
+        replenishment = self.env["hr.petty.cash.replenishment"].with_user(self.employee_user).create({
+            "fund_id": fund.id, "requested_amount": 1200,
+            "justification": "Restore the fund to its approved maximum.",
+        })
+        replenishment.action_submit()
+        replenishment.with_user(self.finance_user).action_approve()
+        replenishment.with_user(self.finance_user).action_issue()
+        self.assertEqual(replenishment.state, "issued")
+        self.assertEqual(fund.current_balance, 5000)
+
+        reconciliation = self.env["hr.petty.cash.reconciliation"].with_user(self.employee_user).create({
+            "fund_id": fund.id, "period_start": fields.Date.today() - timedelta(days=7),
+            "physical_count": 5000,
+        })
+        reconciliation.action_confirm()
+        self.assertEqual(reconciliation.state, "passed")

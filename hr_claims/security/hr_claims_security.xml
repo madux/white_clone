@@ -97,6 +97,12 @@
         <field name="model_id" ref="model_hr_expense_approval_step"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
+    <record id="rule_hr_expense_payment_method_company" model="ir.rule"><field name="name">Payment methods: allowed companies</field><field name="model_id" ref="model_hr_expense_payment_method"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="rule_hr_expense_payment_batch_company" model="ir.rule"><field name="name">Payment batches: allowed companies</field><field name="model_id" ref="model_hr_expense_payment_batch"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="rule_hr_petty_cash_fund_company" model="ir.rule"><field name="name">Petty cash funds: allowed companies</field><field name="model_id" ref="model_hr_petty_cash_fund"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="rule_hr_petty_cash_transaction_company" model="ir.rule"><field name="name">Petty cash transactions: allowed companies</field><field name="model_id" ref="model_hr_petty_cash_transaction"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="rule_hr_petty_cash_reconciliation_company" model="ir.rule"><field name="name">Petty cash reconciliations: allowed companies</field><field name="model_id" ref="model_hr_petty_cash_reconciliation"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
+    <record id="rule_hr_petty_cash_replenishment_company" model="ir.rule"><field name="name">Petty cash replenishments: allowed companies</field><field name="model_id" ref="model_hr_petty_cash_replenishment"/><field name="domain_force">[('company_id', 'in', company_ids)]</field></record>
 
     <!-- Employee self-service; privileged all-record rules are unioned with these. -->
     <record id="rule_hr_claim_employee_own" model="ir.rule">
@@ -186,4 +192,12 @@
         <field name="groups" eval="[(4, ref('group_hr_claim_manager')), (4, ref('group_hr_claim_admin'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>
+    <record id="rule_hr_petty_cash_fund_employee_custodian" model="ir.rule"><field name="name">Petty cash funds: assigned custodian</field><field name="model_id" ref="model_hr_petty_cash_fund"/><field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/><field name="domain_force">[('custodian_id.user_id', '=', user.id)]</field></record>
+    <record id="rule_hr_petty_cash_transaction_employee_custodian" model="ir.rule"><field name="name">Petty cash transactions: assigned custodian</field><field name="model_id" ref="model_hr_petty_cash_transaction"/><field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/><field name="domain_force">[('fund_id.custodian_id.user_id', '=', user.id)]</field></record>
+    <record id="rule_hr_petty_cash_reconciliation_employee_custodian" model="ir.rule"><field name="name">Petty cash reconciliations: assigned custodian</field><field name="model_id" ref="model_hr_petty_cash_reconciliation"/><field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/><field name="domain_force">[('fund_id.custodian_id.user_id', '=', user.id)]</field></record>
+    <record id="rule_hr_petty_cash_replenishment_employee_custodian" model="ir.rule"><field name="name">Petty cash replenishments: assigned custodian</field><field name="model_id" ref="model_hr_petty_cash_replenishment"/><field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/><field name="domain_force">[('fund_id.custodian_id.user_id', '=', user.id)]</field></record>
+    <record id="rule_hr_petty_cash_fund_finance_all" model="ir.rule"><field name="name">Petty cash funds: Finance and Admin</field><field name="model_id" ref="model_hr_petty_cash_fund"/><field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/><field name="domain_force">[(1, '=', 1)]</field></record>
+    <record id="rule_hr_petty_cash_transaction_finance_all" model="ir.rule"><field name="name">Petty cash transactions: Finance and Admin</field><field name="model_id" ref="model_hr_petty_cash_transaction"/><field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/><field name="domain_force">[(1, '=', 1)]</field></record>
+    <record id="rule_hr_petty_cash_reconciliation_finance_all" model="ir.rule"><field name="name">Petty cash reconciliations: Finance and Admin</field><field name="model_id" ref="model_hr_petty_cash_reconciliation"/><field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/><field name="domain_force">[(1, '=', 1)]</field></record>
+    <record id="rule_hr_petty_cash_replenishment_finance_all" model="ir.rule"><field name="name">Petty cash replenishments: Finance and Admin</field><field name="model_id" ref="model_hr_petty_cash_replenishment"/><field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/><field name="domain_force">[(1, '=', 1)]</field></record>
 </odoo>

@@ -149,7 +149,8 @@ export class ExpenseApp extends Component {
         return (this.state.pageData?.records || []).filter((record) => {
             const matchesStatus = status === "all" || record.state === status;
             const haystack = [record.name, record.reference, record.employee, record.type,
-                record.purpose, record.description, record.department, record.kind_label]
+                record.purpose, record.description, record.department, record.kind_label,
+                record.fund, record.custodian, record.payee, record.category, record.location]
                 .filter(Boolean).join(" ").toLowerCase();
             return matchesStatus && (!query || haystack.includes(query));
         });
@@ -157,6 +158,10 @@ export class ExpenseApp extends Component {
 
     get isPayments() {
         return this.state.activeModule === "payments";
+    }
+
+    get isPettyCash() {
+        return this.state.activeModule === "petty_cash";
     }
 
     get canCreateClaim() {
@@ -191,7 +196,7 @@ export class ExpenseApp extends Component {
     }
 
     async loadActivePage() {
-        const supported = ["requests", "advances", "workflow"];
+        const supported = ["requests", "advances", "workflow", "payments", "petty_cash"];
         if (!supported.includes(this.state.activeModule)) {
             this.state.pageData = { records: [], kpis: {} };
             return;
@@ -338,6 +343,26 @@ export class ExpenseApp extends Component {
 
     openApprovalRules() {
         return this.action.doAction("hr_claims.action_hr_expense_approval_rules");
+    }
+
+    async processAllPayables() {
+        const method = this.state.pageData.methods?.[0];
+        const claimIds = this.pageRecords.map((record) => record.id);
+        if (!method || !claimIds.length) {
+            this.notification.add("There are no payable claims or active payment methods.", { type: "warning" });
+            return;
+        }
+        try {
+            const batch = await this.orm.call("hr.claim", "app_process_payment_batch", [claimIds, method.id]);
+            this.notification.add(`Batch ${batch.name} finished with status ${batch.state}.`, { type: batch.state === "completed" ? "success" : "warning" });
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to process the payment batch.", { type: "danger" });
+        }
+    }
+
+    openPettyCashAction(xmlId) {
+        return this.action.doAction(xmlId);
     }
 
     openClaims(domain = []) {
