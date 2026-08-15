@@ -1,0 +1,35 @@
+{
+    "name": "HR Claims",
+    "summary": "Employee expense claims, approvals, payments, and analytics",
+    "version": "17.0.1.0.0",
+    "category": "Human Resources/Expenses",
+    "author": "CleonTime",
+    "license": "LGPL-3",
+    "depends": ["hr", "mail", "web"],
+    "data": [
+        "security/hr_claims_security.xml",
+        "security/ir.model.access.csv",
+        "data/hr_claim_sequence.xml",
+        "data/hr_claim_data.xml",
+        "wizard/hr_claim_reject_wizard_views.xml",
+        "wizard/hr_claim_payment_wizard_views.xml",
+        "views/hr_claim_category_views.xml",
+        "views/hr_claim_type_views.xml",
+        "views/hr_claim_window_views.xml",
+        "views/hr_claim_views.xml",
+        "views/hr_claim_payment_views.xml",
+        "views/hr_claim_audit_views.xml",
+        "views/hr_claim_dashboard_views.xml",
+        "views/hr_claim_menus.xml",
+    ],
+    "assets": {
+        "web.assets_backend": [
+            "hr_claims/static/src/js/claim_dashboard.js",
+            "hr_claims/static/src/xml/claim_dashboard.xml",
+            "hr_claims/static/src/scss/claim_dashboard.scss",
+        ],
+    },
+    "application": True,
+    "installable": True,
+}
+

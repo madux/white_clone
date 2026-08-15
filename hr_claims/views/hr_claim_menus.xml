@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_hr_claim_root" name="Claims" sequence="45" groups="hr_claims.group_hr_claim_employee"/>
+    <menuitem id="menu_hr_claim_dashboard" name="Dashboard" parent="menu_hr_claim_root" action="action_hr_claim_dashboard" sequence="1" groups="hr_claims.group_hr_claim_employee"/>
+    <menuitem id="menu_hr_claim_my" name="My Claims" parent="menu_hr_claim_root" action="action_hr_claim_my" sequence="10" groups="hr_claims.group_hr_claim_employee"/>
+    <menuitem id="menu_hr_claim_all" name="All Claims" parent="menu_hr_claim_root" action="action_hr_claim_all" sequence="20" groups="hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance"/>
+
+    <menuitem id="menu_hr_claim_workflow" name="Workflow" parent="menu_hr_claim_root" sequence="30" groups="hr_claims.group_hr_claim_manager"/>
+    <menuitem id="menu_hr_claim_pending" name="Pending Approvals" parent="menu_hr_claim_workflow" action="action_hr_claim_pending" sequence="10"/>
+    <menuitem id="menu_hr_claim_approved" name="Approved" parent="menu_hr_claim_workflow" action="action_hr_claim_approved" sequence="20"/>
+    <menuitem id="menu_hr_claim_rejected" name="Rejected" parent="menu_hr_claim_workflow" action="action_hr_claim_rejected" sequence="30"/>
+
+    <menuitem id="menu_hr_claim_payments" name="Payments" parent="menu_hr_claim_root" sequence="40" groups="hr_claims.group_hr_claim_finance"/>
+    <menuitem id="menu_hr_claim_payment_queue" name="Payment Queue" parent="menu_hr_claim_payments" action="action_hr_claim_payment_queue" sequence="10"/>
+    <menuitem id="menu_hr_claim_payment_history" name="Payment History" parent="menu_hr_claim_payments" action="action_hr_claim_payment_history" sequence="20"/>
+
+    <menuitem id="menu_hr_claim_reports" name="Reports" parent="menu_hr_claim_root" action="action_hr_claim_reports" sequence="50" groups="hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance"/>
+
+    <menuitem id="menu_hr_claim_configuration" name="Configuration" parent="menu_hr_claim_root" sequence="80" groups="hr_claims.group_hr_claim_admin"/>
+    <menuitem id="menu_hr_claim_categories" name="Categories" parent="menu_hr_claim_configuration" action="action_hr_claim_categories" sequence="10"/>
+    <menuitem id="menu_hr_claim_types" name="Claim Types" parent="menu_hr_claim_configuration" action="action_hr_claim_types" sequence="20"/>
+    <menuitem id="menu_hr_claim_windows" name="Claim Windows" parent="menu_hr_claim_configuration" action="action_hr_claim_windows" sequence="30"/>
+    <menuitem id="menu_hr_claim_audit" name="Audit Trail" parent="menu_hr_claim_root" action="action_hr_claim_audit" sequence="90" groups="hr_claims.group_hr_claim_admin"/>
+</odoo>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="category_travel" model="hr.claim.category">
+        <field name="name">Travel</field><field name="code">TRAVEL</field><field name="sequence">10</field><field name="color">4</field>
+    </record>
+    <record id="category_logistics" model="hr.claim.category">
+        <field name="name">Logistics</field><field name="code">LOGISTICS</field><field name="sequence">20</field><field name="color">3</field>
+    </record>
+    <record id="category_training" model="hr.claim.category">
+        <field name="name">Training</field><field name="code">TRAINING</field><field name="sequence">30</field><field name="color">5</field>
+    </record>
+    <record id="category_medical" model="hr.claim.category">
+        <field name="name">Medical</field><field name="code">MEDICAL</field><field name="sequence">40</field><field name="color">1</field>
+    </record>
+    <record id="category_operations" model="hr.claim.category">
+        <field name="name">Operations</field><field name="code">OPERATIONS</field><field name="sequence">50</field><field name="color">2</field>
+    </record>
+    <record id="category_office" model="hr.claim.category">
+        <field name="name">Office</field><field name="code">OFFICE</field><field name="sequence">60</field><field name="color">6</field>
+    </record>
+
+    <record id="window_monthly_submission" model="hr.claim.window">
+        <field name="name">Monthly Submission Window</field>
+        <field name="window_type">submission</field>
+        <field name="duration_days">30</field>
+    </record>
+    <record id="window_manager_approval" model="hr.claim.window">
+        <field name="name">Manager Approval Window</field>
+        <field name="window_type">approval</field>
+        <field name="duration_days">5</field>
+    </record>
+    <record id="window_payment_processing" model="hr.claim.window">
+        <field name="name">Payment Processing Window</field>
+        <field name="window_type">payment</field>
+        <field name="duration_days">9</field>
+    </record>
+
+    <record id="claim_type_mileage" model="hr.claim.type">
+        <field name="name">Mileage</field>
+        <field name="code">MILEAGE</field>
+        <field name="category_id" ref="category_travel"/>
+        <field name="description">Mileage and local ground transport reimbursement.</field>
+        <field name="amount_type">open</field>
+        <field name="receipt_policy">none</field>
+        <field name="submission_window_days">30</field>
+        <field name="window_ids" eval="[(4, ref('window_monthly_submission')), (4, ref('window_manager_approval')), (4, ref('window_payment_processing'))]"/>
+    </record>
+    <record id="claim_type_per_diem" model="hr.claim.type">
+        <field name="name">Per Diem</field>
+        <field name="code">PER_DIEM</field>
+        <field name="category_id" ref="category_travel"/>
+        <field name="description">Travel per diem and daily allowance.</field>
+        <field name="amount_type">open</field>
+        <field name="receipt_policy">none</field>
+        <field name="submission_window_days">60</field>
+        <field name="window_ids" eval="[(4, ref('window_manager_approval')), (4, ref('window_payment_processing'))]"/>
+    </record>
+    <record id="claim_type_corporate_card" model="hr.claim.type">
+        <field name="name">Corporate Card Claim</field>
+        <field name="code">CORP_CARD</field>
+        <field name="category_id" ref="category_operations"/>
+        <field name="description">Non-reimbursable company card expense declaration.</field>
+        <field name="amount_type">open</field>
+        <field name="reimbursable" eval="False"/>
+        <field name="receipt_policy">required</field>
+        <field name="payment_method">card</field>
+        <field name="submission_window_days">30</field>
+        <field name="window_ids" eval="[(4, ref('window_monthly_submission')), (4, ref('window_manager_approval'))]"/>
+    </record>
+</odoo>
+

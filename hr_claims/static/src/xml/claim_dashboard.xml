@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_claims.ClaimDashboard" owl="1">
+        <div class="o_hr_claim_dashboard h-100 overflow-auto bg-light">
+            <div class="container-fluid p-4 p-xl-5">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                    <div>
+                        <h1 class="h3 fw-bold mb-1">Claims Dashboard</h1>
+                        <p class="text-muted mb-0">Claims, approvals, reimbursements, and live financial exposure</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" t-on-click="refresh"><i class="fa fa-refresh me-2"/>Refresh</button>
+                        <button class="btn btn-primary" t-on-click="newClaim"><i class="fa fa-plus me-2"/>New Claim</button>
+                    </div>
+                </div>
+
+                <div t-if="state.loading" class="text-center py-5"><i class="fa fa-spinner fa-spin fa-2x text-primary"/><p class="text-muted mt-3">Loading claims dashboard…</p></div>
+                <t t-elif="state.data">
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-sm-6 col-xl-3"><button class="o_claim_kpi card border-0 shadow-sm w-100 text-start" t-on-click="() => this.openClaims([])"><div class="card-body"><span class="o_claim_kpi_icon bg-primary-subtle text-primary"><i class="fa fa-file-text-o"/></span><div class="text-uppercase text-muted small fw-semibold mt-3">Total Claims</div><div class="display-6 fw-bold"><t t-esc="kpis.total || 0"/></div><div class="small text-muted"><t t-esc="formatMoney(kpis.total_value)"/> submitted</div></div></button></div>
+                        <div class="col-12 col-sm-6 col-xl-3"><button class="o_claim_kpi card border-0 shadow-sm w-100 text-start" t-on-click="() => this.openClaims([['state', '=', 'submitted']])"><div class="card-body"><span class="o_claim_kpi_icon bg-warning-subtle text-warning"><i class="fa fa-clock-o"/></span><div class="text-uppercase text-muted small fw-semibold mt-3">Pending Review</div><div class="display-6 fw-bold"><t t-esc="kpis.submitted || 0"/></div><div class="small text-muted"><t t-esc="kpis.average_pending_age || 0"/> average days in queue</div></div></button></div>
+                        <div class="col-12 col-sm-6 col-xl-3"><button class="o_claim_kpi card border-0 shadow-sm w-100 text-start" t-on-click="() => this.openClaims([['state', '=', 'approved']])"><div class="card-body"><span class="o_claim_kpi_icon bg-success-subtle text-success"><i class="fa fa-check"/></span><div class="text-uppercase text-muted small fw-semibold mt-3">Approved</div><div class="display-6 fw-bold"><t t-esc="kpis.approved || 0"/></div><div class="small text-muted"><t t-esc="formatMoney(kpis.approved_value)"/> approved value</div></div></button></div>
+                        <div class="col-12 col-sm-6 col-xl-3"><button class="o_claim_kpi card border-0 shadow-sm w-100 text-start" t-on-click="() => this.openClaims([['state', '=', 'paid']])"><div class="card-body"><span class="o_claim_kpi_icon bg-info-subtle text-info"><i class="fa fa-credit-card"/></span><div class="text-uppercase text-muted small fw-semibold mt-3">Paid</div><div class="display-6 fw-bold"><t t-esc="kpis.paid || 0"/></div><div class="small text-muted"><t t-esc="formatMoney(kpis.paid_value)"/> reimbursed</div></div></button></div>
+                    </div>
+
+                    <div class="row g-3 mb-4" t-if="canReview || canPay">
+                        <div class="col-md-4" t-if="canReview"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small text-uppercase fw-semibold">Approval Rate</div><div class="h2 fw-bold text-success mb-1"><t t-esc="kpis.approval_rate || 0"/>%</div><div class="small text-muted">Decided claims approved</div></div></div></div>
+                        <div class="col-md-4" t-if="canReview"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small text-uppercase fw-semibold">Rejection Rate</div><div class="h2 fw-bold text-danger mb-1"><t t-esc="kpis.rejection_rate || 0"/>%</div><div class="small text-muted"><t t-esc="kpis.rejected || 0"/> rejected claims</div></div></div></div>
+                        <div class="col-md-4" t-if="canPay"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-muted small text-uppercase fw-semibold">Payment Queue</div><div class="h2 fw-bold text-primary mb-1"><t t-esc="kpis.payable_count || 0"/></div><div class="small text-muted">Approved reimbursable claims</div></div></div></div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-xl-4"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h6 fw-bold">Status Distribution</h2><p class="small text-muted">Current claim count by workflow state</p><div class="o_claim_chart"><canvas t-ref="statusChart"/></div></div></div></div>
+                        <div class="col-12 col-xl-8"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h6 fw-bold">Six-Month Value Trend</h2><p class="small text-muted">Submitted, approved, and paid claim values</p><div class="o_claim_chart"><canvas t-ref="trendChart"/></div></div></div></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-xl-5"><div class="card border-0 shadow-sm h-100"><div class="card-body"><h2 class="h6 fw-bold">Approved Spend by Department</h2><p class="small text-muted">Approved and paid claims grouped by department</p><div class="o_claim_chart"><canvas t-ref="departmentChart"/></div></div></div></div>
+                        <div class="col-12 col-xl-7"><div class="card border-0 shadow-sm h-100"><div class="card-body p-0"><div class="p-3 border-bottom d-flex justify-content-between"><div><h2 class="h6 fw-bold mb-1">Recent Claims</h2><span class="small text-muted">Latest visible claims</span></div><button class="btn btn-sm btn-light" t-on-click="() => this.openClaims([])">View all</button></div><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th>Claim</th><th>Employee</th><th class="text-end">Amount</th><th>Status</th></tr></thead><tbody><tr t-foreach="state.data.recent" t-as="claim" t-key="claim.id" class="o_claim_recent" t-on-click="() => this.openClaim(claim.id)"><td><strong t-esc="claim.name"/><div class="small text-muted" t-esc="claim.title"/></td><td t-esc="claim.employee"/><td class="text-end fw-semibold" t-esc="formatMoney(claim.amount)"/><td><span class="badge text-bg-light" t-esc="claim.state_label"/></td></tr><tr t-if="!state.data.recent.length"><td colspan="4" class="text-center text-muted py-4">No claims yet.</td></tr></tbody></table></div></div></div></div>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>
+
