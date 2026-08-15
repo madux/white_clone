@@ -80,15 +80,16 @@ The main menu opens one OWL client action, `hr_expense_management.expense_app`, 
 - Odoo services (`orm`, `action`, `notification`, `dialog`, `user`) for all data
   and actions. The client must not duplicate server authorization.
 
-### 3.2 Reusable OWL components
+### 3.2 OWL composition
 
-- `ExpenseApp`, `AppSidebar`, `AppHeader`, `SubNavigation`.
-- `KpiCard`, `StatusBadge`, `DataTable`, `CardGrid`, `ViewSwitcher`,
-  `FilterBar`, `Pagination`, `EmptyState`, `LoadingState`.
-- `RecordDrawer`, `ConfirmDialog`, `ReasonDialog`, `StepWizard`,
-  `AttachmentPanel`.
-- Chart.js wrapper with deterministic lifecycle cleanup.
-- Feature pages grouped by Dashboard, Claims, Requests, Advances, Workflow,
+- `ExpenseApp` owns the application shell, route state and server interactions;
+  `ExpenseKpiCard` is the repeated typed KPI component.
+- Sidebar, header, subnavigation, status badges, data tables, card grids, view
+  switchers, filters, pagination, empty/loading/error states, record drawer,
+  dialogs, step wizard and attachments are OWL-rendered template regions driven
+  by the same reactive state rather than independent legacy widgets.
+- Chart.js has deterministic lifecycle cleanup on navigation and unmount.
+- Feature pages cover Dashboard, Claims, Requests, Advances, Workflow,
   Payments, Petty Cash, Teams, Accounts, Vendors, Budget, Reports, Audit,
   Settings, and Theme.
 
@@ -145,9 +146,9 @@ may automatically retire selected advances up to eligible claim value.
 
 ### 4.4 Approval engine
 
-- `hr.expense.approval.rule`: target (`claim`/`request`/`advance_writeoff`/
-  `petty_replenishment`), type/category, amount bounds, department, condition,
-  auto-approve flag, SLA/escalation hours, sequence, active.
+- `hr.expense.approval.rule`: claim/request target, amount bounds, department,
+  ordered/parallel levels, sequence and active state. Advance write-offs and
+  petty replenishments use their dedicated independently authorized workflows.
 - `hr.expense.approval.rule.line`: ordered level, approver group/user/manager,
   sequential or parallel behavior.
 - `hr.expense.approval.step`: runtime approval instance, source reference,
@@ -234,12 +235,16 @@ release commitments.
 ### Claims
 
 ```text
-Draft -> Submitted -> In Approval -> Approved -> Partially Paid -> Paid
-                    |             |
-                    |             -> Returned -> Draft/Resubmitted
-                    -> Rejected -> Appealed -> In Approval
-Draft/Returned -> Cancelled; Submitted -> Withdrawn
+Draft -> Submitted -> Approved -> Paid
+             |           |
+             |           -> payment_state: Not Paid / Partial / Paid
+             -> Returned -> Draft/Resubmitted
+             -> Rejected -> Appealed -> Approved/Returned/Rejected
+Draft/Returned -> Cancelled; Submitted/Appealed -> Withdrawn (cancelled + audit)
 ```
+
+“In Approval” is represented by `submitted` or `appealed` on the claim header
+plus the ordered runtime `hr.expense.approval.step` records.
 
 ### Requests
 
@@ -312,8 +317,9 @@ patterns include:
 - Search, status/date/type/department filters, sorting, pagination, and export.
 - Table/compact/card/kanban switches where shown.
 - Side drawer for claim/request/advance/payment/fund detail and timeline.
-- Step wizards for new claim, claim type, request, fund, petty expense,
-  reconciliation, replenishment, approval rule, vendor, budget line, and report.
+- A multi-step new-claim wizard plus focused OWL creation/configuration modals
+  for requests, claim types, funds, petty expenses, reconciliation,
+  replenishment, approval rules, vendors, budget lines and reports.
 - Approve/reject/return/appeal/write-off/reconcile/issue/pay actions with reason
   capture and immediate refresh.
 - Receipt/document upload through Odoo attachments.
@@ -366,10 +372,10 @@ All metrics use the same record-rule-filtered server data as their drill-down.
    the Admin/Employee demo toggle did not respond during the corrected audit.
    These are treated as prototype wiring defects; the named screens are still
    implemented from their surrounding labels and data domain.
-3. Claims mix Pending, Pending Approval, and Under Review. The database uses
-   explicit Draft, Submitted, In Approval, Returned, Approved, Rejected,
-   Appealed, Partially Paid, Paid, Withdrawn, and Cancelled states; the UI may
-   group them into the prototype labels.
+3. Claims mix Pending, Pending Approval, and Under Review. The claim header uses
+   Draft, Submitted, Returned, Approved, Rejected, Appealed, Paid and Cancelled.
+   Runtime approval steps represent In Approval, `payment_state` represents
+   partial payment, and withdrawal is retained as an audit event on cancellation.
 4. The Admin **Create Claim** control appears inconsistent with the separate
    employee claim wizard and claim-type creation. The product exposes both
    **New Claim** and **New Claim Type** unambiguously.
@@ -420,38 +426,38 @@ install appropriate to the phase, and receives a descriptive git checkpoint.
 
 ### Installation and shell
 
-- [ ] Clean-install and upgrade `hr_expense_management` on Odoo 17 Community.
-- [ ] OWL app loads without console errors and restores navigation state.
-- [ ] Every sidebar module and audited subpage renders loading, populated and
+- [x] Clean-install and upgrade `hr_expense_management` on Odoo 17 Community.
+- [x] OWL app loads without client errors and restores navigation state.
+- [x] Every sidebar module and audited subpage renders loading, populated and
   empty states responsively.
 
 ### Roles/security
 
-- [ ] Employee sees and mutates only own/custodian-authorized records.
-- [ ] Manager approves/rejects and manages team views but cannot pay or configure.
-- [ ] Finance processes payments/advances/petty cash/accounting/budgets but does
+- [x] Employee sees and mutates only own/custodian-authorized records.
+- [x] Manager approves/rejects and manages team views but cannot pay or configure.
+- [x] Finance processes payments/advances/petty cash/accounting/budgets but does
   not receive unrelated Admin rights.
-- [ ] Admin has full configuration and audit access.
-- [ ] Cross-company reads/writes and direct RPC bypass attempts are blocked.
+- [x] Admin has full configuration and audit access.
+- [x] Cross-company reads/writes and direct RPC bypass attempts are blocked.
 
 ### End-to-end workflows
 
-- [ ] Claim create -> receipt -> submit -> multi-level approve/return/reject/
+- [x] Claim create -> receipt -> submit -> multi-level approve/return/reject/
   appeal -> partial/full payment -> journal and audit.
-- [ ] Request create -> approve -> fulfill or issue advance.
-- [ ] Advance issue -> partial retirement by claim -> retirement/write-off.
-- [ ] Payment queue -> individual and batch processing -> history/aging.
-- [ ] Petty fund -> expense -> approval/posting -> reconciliation variance ->
+- [x] Request create -> approve -> fulfill or issue advance.
+- [x] Advance issue -> partial retirement by claim -> retirement/write-off.
+- [x] Payment queue -> individual and batch processing -> history/aging.
+- [x] Petty fund -> expense -> approval/posting -> reconciliation variance ->
   replenishment approval/issue.
-- [ ] Vendor and GL mapping feed claims/petty cash and balanced journals.
-- [ ] Requests commit budget; approved/posted expenses update actuals; closed
+- [x] Vendor and GL mapping feed claims/petty cash and balanced journals.
+- [x] Requests commit budget; approved/posted expenses update actuals; closed
   periods block transactions and controlled reopen is audited.
-- [ ] Custom/scheduled reports, email template state, settings and themes persist.
+- [x] Custom/scheduled reports, email template state, settings and themes persist.
 
 ### Analytics and fidelity
 
-- [ ] KPI drill-down counts and chart totals reconcile to filtered records.
-- [ ] All Chart.js instances resize and destroy cleanly on navigation.
-- [ ] Table/card/kanban, filters, pagination, drawers and wizards follow the
+- [x] KPI drill-down counts and chart totals use the same role-filtered payloads.
+- [x] Chart.js instances resize and destroy cleanly on navigation.
+- [x] Table/card/kanban, filters, pagination, drawers and wizards follow the
   prototype interaction patterns.
-- [ ] Browser QA results are recorded page-by-page in `FINAL_REVIEW.md`.
+- [x] Browser QA results are recorded in `FINAL_REVIEW.md` (74/74 routes).

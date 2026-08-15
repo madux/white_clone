@@ -93,6 +93,32 @@ class TestExpenseRequestAdvanceWorkflow(TransactionCase):
         self.assertEqual(request.state, "approved")
         self.assertEqual(request.approval_step_ids.mapped("state"), ["approved", "approved"])
 
+    def test_parallel_request_level_requires_every_step(self):
+        self.env["hr.expense.approval.rule"].create({
+            "name": "Parallel request review", "target": "request",
+            "minimum_amount": 3000,
+            "line_ids": [
+                Command.create({
+                    "name": "Operational Review", "sequence": 10,
+                    "approver_type": "group", "group_id": self.manager_group.id,
+                }),
+                Command.create({
+                    "name": "Budget Review", "sequence": 10,
+                    "approver_type": "group", "group_id": self.manager_group.id,
+                }),
+            ],
+        })
+        request = self._make_request(amount=3500)
+        request.with_user(self.employee_user).action_submit()
+        self.assertEqual(request.approval_step_ids.mapped("state"), ["pending", "pending"])
+
+        request.with_user(self.manager_user).action_approve("Operations approved")
+        self.assertEqual(request.state, "submitted")
+        self.assertEqual(request.approval_step_ids.mapped("state"), ["approved", "pending"])
+        request.with_user(self.manager_user).action_approve("Budget approved")
+        self.assertEqual(request.state, "approved")
+        self.assertEqual(request.approval_step_ids.mapped("state"), ["approved", "approved"])
+
     def test_request_and_advance_security(self):
         own = self._make_request()
         other = self._make_request(employee=self.other_employee, user=self.other_user)

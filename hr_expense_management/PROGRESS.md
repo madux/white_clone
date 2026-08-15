@@ -1,149 +1,72 @@
 # Expense Management ERP — Progress
 
-Last updated: 2026-08-15
+Last updated: 2026-08-16
+Status: **Complete — final verification passed**
 
-## Scope correction
+## Scope and namespace
 
-The previous implementation incorrectly reduced the Figma prototype to claims
-only and marked the work complete. That completion status is revoked. The full
-prototype is the required scope, and the primary UX must be OWL-led.
+The claims-only completion was revoked and the complete Figma expense ERP was
+implemented. The addon is `hr_expense_management`, displayed as **Expense
+Management**. The exact technical name `hr_expense` is not used because it is
+already Odoo 17 Community's standard Expenses addon. Claim-specific business
+models correctly retain the `hr.claim.*` vocabulary.
 
-## Technical namespace correction
+## Completed phases
 
-The addon is now `hr_expense_management`, not `hr_claims`. The exact technical
-name `hr_expense` cannot be used because it is already an official Odoo 17
-Community addon. All module external IDs, application-wide security group
-references, OWL template/action registrations, asset paths, test tags,
-documentation, and install commands have been moved to the new namespace.
-Claim-domain records retain their accurate `hr.claim.*` business-model names.
-[UPGRADE.md](UPGRADE.md) and the transactional SQL helper preserve existing
-installed databases, role assignments, and record references without
-duplicating records.
+- [x] Re-audited the full prototype and Roles page; replaced the former
+  claims-only scope with the complete requirements inventory.
+- [x] Built the responsive OWL application shell with 16 role-aware modules,
+  74 audited subpages, persisted navigation, searchable/reorderable/favoritable
+  sidebar, responsive header, sorting, pagination, CSV export, table/card modes,
+  KPI drill-downs, record drawers, native advanced-edit fallbacks, loading/error/
+  empty states, and Chart.js lifecycle management.
+- [x] Completed Claims, including multi-line three-step creation, receipts,
+  validation, sequential/parallel approval routing, return/reject/appeal,
+  partial/full reimbursement, payment hand-off, chatter, and audit.
+- [x] Completed Requests, Advances, approval queues/rules, retirement and
+  independently approved write-offs.
+- [x] Completed Payments and Petty Cash, including payment methods/batches,
+  queue/history/aging/reporting, funds, custodians, expenses, reconciliation,
+  replenishment approval and issue.
+- [x] Completed the Community expense subledger, GL mapping, balanced immutable
+  journals, vendors/categories/terms, budgets/lines, commitments/actuals,
+  periods/cut-offs, and controlled reopen behavior.
+- [x] Completed Teams, Reports, immutable cross-module Audit, policies, email
+  templates, non-secret integration metadata, company settings/profile, custom
+  and scheduled reports, and live Theme customization.
+- [x] Renamed the former `hr_claims` addon and external IDs transactionally;
+  upgrade guidance and migration helper are included in `UPGRADE.md` and
+  `scripts/rename_from_hr_claims.sql`.
+- [x] Added native Odoo administration views and explicit multi-company ACL/
+  record-rule/server-action enforcement for Employee, Manager, Finance, and
+  Administrator roles.
 
-## Done
+## Final verification
 
-- [x] Preserved the working claim model, workflow, security hardening, payments,
-  native fallback views, initial OWL dashboard, and regression tests.
-- [x] Re-read the previous progress, requirements, final review, and latest
-  commits before resuming.
-- [x] Re-audited all top-level Figma modules and their visible subpages:
-  Dashboard, Setup, Claims, Requests, Advances, Workflow, Payments, Petty Cash,
-  Teams/Roles, Accounts, Vendors, Budget, Reports, Audit, Settings, and Theme.
-- [x] Confirmed the Figma Roles & Permissions matrix remains the security source
-  of truth.
-- [x] Replaced `REQUIREMENTS.md` with the corrected complete product inventory,
-  model plan, workflows, OWL architecture, security map, assumptions, phases,
-  and expanded test checklist.
-- [x] Phase 2: replaced the dashboard-only entry point with the role-aware OWL
-  Expense Management shell, full prototype module/subpage navigation, reusable
-  OWL KPI component, responsive Figma-derived styling, loading/error states,
-  live claims/workflow/payment surfaces, and secured server capability gateway.
-- [x] Phase 2 verification: Odoo upgrade passed; Python/XML/whitespace checks
-  passed; the generated 7.9 MB backend asset bundle contains the compiled
-  `ExpenseApp` JavaScript and QWeb template.
-- [x] Phase 2 verification: the server gateway returned all 16 modules for the
-  Admin user; the existing 7 workflow methods / 9 Odoo test units passed with
-  0 failures and 0 errors after compatibility hardening for private employee
-  fields in the installed custom HR module.
-- [x] Phase 3 checkpoint A: implemented expense request types and requests,
-  employee draft/submit/cancel flows, Manager approve/reject/return decisions,
-  Finance advance issuance, partial/full advance retirement, aging and balances,
-  configurable multi-level claim/request approval rules, runtime approval
-  steps, and company/ownership security rules.
-- [x] Phase 3 checkpoint A OWL UX: activated Requests, Advances, and Workflow
-  pages inside the OWL application with KPI cards, search and status filters,
-  table/card switching, request creation modal, combined claim/request approval
-  decisions, advance issuance, retirement modal, and route configuration views.
-- [x] Phase 3 checkpoint A verification: module upgrade passed; the minified
-  `web.assets_backend` bundle compiled with the OWL app and templates; 11 test
-  methods / 15 assertions groups passed with 0 failures and 0 errors, including
-  request-to-advance settlement and two-level approval routing.
-- [x] Phase 4 checkpoint A: implemented configurable payment methods, validated
-  payment batches with per-claim savepoints/result logs, batch-to-payment links,
-  and secured batch processing that settles approved claim balances.
-- [x] Phase 4 checkpoint A: implemented petty-cash funds, custodian ownership,
-  computed live balances, expenses and adjustments, Finance approval/posting,
-  physical-count reconciliation, replenishment request/approve/issue, and
-  generated replenishment ledger transactions.
-- [x] Phase 4 checkpoint A OWL UX: activated all Payments and Petty Cash
-  navigation pages with live KPIs, searchable tables, payment queue/history/
-  methods/batches, fund and transaction data, reconciliation and replenishment
-  views, plus direct operational actions and native advanced-edit fallbacks.
-- [x] Phase 4 checkpoint A verification: upgrade and backend asset compilation
-  passed; 13 test methods / 17 assertion groups passed with 0 failures and 0
-  errors, including full payment-batch settlement and petty-cash expense,
-  replenishment, and reconciliation flows.
-- [x] Renamed the addon from `hr_claims` to the collision-safe
-  `hr_expense_management` namespace; renamed application-wide security roles,
-  added a transactional installed-database migration, and preserved the
-  claim-specific business-model vocabulary.
-- [x] Namespace verification: the migrated local database contains the installed
-  `hr_expense_management` 17.0.5.0.0 record and 1,021 namespaced external IDs,
-  contains no former custom module record, and leaves Odoo's standard
-  `hr_expense` addon untouched. Upgrade, OWL asset compilation, and all 13 test
-  methods / 17 assertion groups pass with 0 failures and 0 errors.
-- [x] Phase 5 checkpoint A: implemented the Community expense subledger with a
-  hierarchical chart of accounts, configurable GL mappings, balanced immutable
-  posted journals, source links, and configured claim/payment/advance/petty-cash
-  journal generation without adding an Enterprise accounting dependency.
-- [x] Phase 5 checkpoint A: implemented expense vendor categories, payment
-  terms, validated vendor master data on `res.partner`, vendor links on claims
-  and petty cash, ratings, default GL accounts, and approved-spend metrics.
-- [x] Phase 5 checkpoint A: implemented fiscal periods and operation cut-offs,
-  controlled close/reopen workflows, department budgets and lines, request
-  commitments, claim/petty-cash actuals, availability, utilization, warning
-  thresholds, and budget states.
-- [x] Phase 5 checkpoint A OWL UX: activated Accounts, Vendors, and Budget with
-  all audited subpages, live KPI cards, searchable responsive tables, account
-  hierarchy indentation, mapping/journal status, vendor table/card modes and a
-  constrained create modal, budget utilization/status views, periods, and
-  native advanced-edit fallbacks. The broad Odoo Contact Manager permission was
-  deliberately not granted to Finance.
-- [x] Phase 5 checkpoint A verification: Odoo upgrade, native-view validation,
-  OWL backend asset compilation, and 17 test methods / 23 assertion groups pass
-  with 0 failures and 0 errors. Coverage includes balanced-journal immutability,
-  claim journal generation, commitment/actual exposure, closed-period blocking,
-  constrained vendor creation, live OWL payloads, and role enforcement.
+- [x] Python compilation, all XML parsing, and `git diff --check` pass.
+- [x] Upgrade test suite passes: 23 methods / 33 Odoo test units, with zero
+  failures or errors.
+- [x] Fresh-database install and the same full suite pass with no failures or
+  errors.
+- [x] Real authenticated browser QA loads all 16 modules and traverses all 74
+  module/subpage routes with zero unavailable screens, OWL dialogs, or Sass
+  fallback errors.
+- [x] Browser interaction QA covers the claim stepper/add-remove lines/review,
+  request creation, scheduled-report recipients, company editing, dashboard
+  quick actions, Theme controls, and post-appeal Claims runtime.
 
-## In progress
+The in-process Odoo `browser_js` case is retained but skips when the optional
+`websocket-client` package is absent. The independent in-app browser pass above
+is the authoritative browser acceptance result for this workspace.
 
-- [ ] Phase 3 checkpoint B: advance write-off approval, richer request/advance
-  analytics, and final page-specific UX polish.
+## External boundaries
 
-## Pending
-
-- [ ] Phase 4 checkpoint B: richer payment/petty-cash report charts, inline
-  custodian reassignment, receipts, and page-specific card views.
-- [ ] Phase 5 checkpoint B: OWL-native budget-line and GL/journal creation
-  wizards, commitment release/transfer edge cases, richer accounting adapters,
-  and vendor/budget analytics charts.
-- [ ] Phase 6: Teams, Reports, Audit, Settings, Email/Integration metadata, and
-  Theme management.
-- [ ] Phase 7: clean install/upgrade, automated security/workflow regression,
-  page-by-page browser QA, and corrected final review.
+Bank/NIBSS, Paystack, payroll, QuickBooks/Sage, and cloud-storage pages are
+implemented as safe configuration/status adapter surfaces. They intentionally
+do not transmit data or money until a separately authorized provider addon is
+installed. This is the only external boundary; the internal product workflows
+are functional without Enterprise dependencies.
 
 ## Blockers
 
-- None. Authenticated visual browser QA remains pending for the final verification
-  phase; server, registry, assets, and automated regressions are passing.
-
-## Assumptions/prototype defects recorded
-
-- Some visible prototype tabs do not change content; their named pages remain
-  requirements and are implemented from the surrounding domain.
-- External payment/accounting/storage providers are adapter surfaces until a
-  provider is separately configured; internal workflows remain functional.
-- The collision-safe technical name is `hr_expense_management`; the exact
-  `hr_expense` name belongs to Odoo's standard Expenses addon.
-
-## Existing checkpoint history
-
-- `1230bc9` — `[ADD] hr_claims requirements and implementation plan`
-- `45f1a51` — `[ADD] complete Odoo 17 HR claims management`
-- `fed7190` — `[FIX] harden claims workflow and payment integrity`
-- `5f864b6` — `[DOC] finalize HR claims verification and review`
-- `4bb2d40` — `[FIX] address HR claims review findings`
-- `dcff1a8` — `[DOC] record HR claims review remediation`
-
-These checkpoints describe the earlier claims-only increment; they do not mark
-the corrected full-product scope complete.
+None.

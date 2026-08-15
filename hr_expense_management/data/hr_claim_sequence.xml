@@ -39,4 +39,11 @@
         <field name="padding">5</field>
         <field name="company_id" eval="False"/>
     </record>
+    <record id="seq_hr_cash_advance_writeoff" model="ir.sequence">
+        <field name="name">Cash Advance Write-Off</field>
+        <field name="code">hr.cash.advance.writeoff</field>
+        <field name="prefix">WO/%(year)s/</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
 </odoo>

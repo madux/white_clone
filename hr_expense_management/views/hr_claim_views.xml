@@ -39,6 +39,7 @@
                 <separator/>
                 <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="appealed" string="Appealed" domain="[('state', '=', 'appealed')]"/>
                 <filter name="returned" string="Returned" domain="[('state', '=', 'returned')]"/>
                 <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
                 <filter name="paid" string="Paid" domain="[('state', '=', 'paid')]"/>
@@ -63,14 +64,14 @@
             <form string="Expense Claim">
                 <header>
                     <button name="action_submit" string="Submit" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
-                    <button name="action_open_approve_wizard" string="Approve" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
-                    <button name="action_open_return_wizard" string="Return" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
-                    <button name="action_open_reject_wizard" string="Reject" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
+                    <button name="action_open_approve_wizard" string="Approve" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_manager" invisible="state not in ('submitted', 'appealed')"/>
+                    <button name="action_open_return_wizard" string="Return" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state not in ('submitted', 'appealed')"/>
+                    <button name="action_open_reject_wizard" string="Reject" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state not in ('submitted', 'appealed')"/>
                     <button name="action_open_payment_wizard" string="Register Payment" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_finance" invisible="state != 'approved' or not is_reimbursable"/>
                     <button name="action_withdraw" string="Withdraw" type="object" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state != 'submitted' or not can_employee_action"/>
                     <button name="action_cancel" string="Cancel" type="object" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
                     <button name="action_reset_to_draft" string="Reset to Draft" type="object" groups="hr_expense_management.group_hr_expense_admin" invisible="state not in ('rejected', 'cancelled')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,returned,approved,paid"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,returned,rejected,appealed,approved,paid"/>
                 </header>
                 <sheet>
                     <field name="company_id" invisible="1"/>
@@ -109,7 +110,7 @@
                         <page string="Approval">
                             <group>
                                 <group><field name="submitted_date"/><field name="approved_by_id"/><field name="approved_date"/></group>
-                                <group><field name="approval_comment" readonly="1"/><field name="rejection_reason" invisible="not rejection_reason"/><field name="return_reason" invisible="not return_reason"/></group>
+                                <group><field name="approval_comment" readonly="1"/><field name="rejection_reason" invisible="not rejection_reason"/><field name="return_reason" invisible="not return_reason"/><field name="appeal_reason" invisible="not appeal_reason"/><field name="appealed_date" invisible="not appealed_date"/><field name="appeal_count" invisible="not appeal_count"/></group>
                             </group>
                         </page>
                         <page string="Payments">
@@ -164,7 +165,7 @@
         <field name="name">All Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form,graph,pivot</field><field name="search_view_id" ref="view_hr_claim_search"/>
     </record>
     <record id="action_hr_claim_pending" model="ir.actions.act_window">
-        <field name="name">Pending Approvals</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form</field><field name="domain">[('state', '=', 'submitted')]</field><field name="context">{'search_default_submitted': 1}</field><field name="search_view_id" ref="view_hr_claim_search"/>
+        <field name="name">Pending Approvals</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form</field><field name="domain">[('state', 'in', ('submitted', 'appealed'))]</field><field name="context">{'search_default_submitted': 1}</field><field name="search_view_id" ref="view_hr_claim_search"/>
     </record>
     <record id="action_hr_claim_approved" model="ir.actions.act_window">
         <field name="name">Approved Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form</field><field name="domain">[('state', 'in', ('approved', 'paid'))]</field><field name="search_view_id" ref="view_hr_claim_search"/>

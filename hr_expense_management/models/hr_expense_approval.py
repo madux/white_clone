@@ -53,7 +53,9 @@ class HrExpenseApprovalRule(models.Model):
         if not rule.line_ids:
             raise UserError("The matching approval rule has no approval levels.")
         values = []
-        for index, line in enumerate(rule.line_ids.sorted("sequence")):
+        lines = rule.line_ids.sorted(lambda line: (line.sequence, line.id))
+        first_sequence = lines[0].sequence
+        for line in lines:
             approver = line._resolve_approver(record.employee_id)
             values.append({
                 "rule_id": rule.id,
@@ -63,7 +65,8 @@ class HrExpenseApprovalRule(models.Model):
                 "request_id": record.id if target == "request" else False,
                 "company_id": record.company_id.id,
                 "sequence": line.sequence,
-                "state": "pending" if index == 0 else "waiting",
+                # Lines sharing a sequence form a parallel approval level.
+                "state": "pending" if line.sequence == first_sequence else "waiting",
                 "approver_user_id": approver.id if approver else False,
                 "approver_group_id": line.group_id.id if line.approver_type == "group" else False,
             })
@@ -182,9 +185,14 @@ class HrExpenseApprovalStep(models.Model):
             "decision_date": fields.Datetime.now(), "comment": comment or False,
         })
         source_steps = self.claim_id.approval_step_ids if self.claim_id else self.request_id.approval_step_ids
-        next_step = source_steps.filtered(lambda step: step.state == "waiting").sorted("sequence")[:1]
-        if next_step:
-            next_step.sudo().write({"state": "pending"})
+        if source_steps.filtered(lambda step: step.state == "pending"):
+            return False
+        waiting = source_steps.filtered(lambda step: step.state == "waiting").sorted("sequence")
+        if waiting:
+            next_sequence = waiting[0].sequence
+            waiting.filtered(lambda step: step.sequence == next_sequence).sudo().write(
+                {"state": "pending"}
+            )
             return False
         return True
 

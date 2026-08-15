@@ -19,6 +19,7 @@ class HrClaimAudit(models.Model):
             ("rejected", "Rejected"),
             ("returned", "Returned"),
             ("resubmitted", "Resubmitted"),
+            ("appealed", "Appealed"),
             ("withdrawn", "Withdrawn"),
             ("cancelled", "Cancelled"),
             ("payment", "Payment Processed"),

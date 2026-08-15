@@ -8,6 +8,7 @@
     <menuitem id="menu_hr_expense_requests" name="Requests" parent="menu_hr_claim_root" sequence="25" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_admin"/>
     <menuitem id="menu_hr_expense_request_data" name="Request Data" parent="menu_hr_expense_requests" action="action_hr_expense_requests" sequence="10"/>
     <menuitem id="menu_hr_cash_advances" name="Advances" parent="menu_hr_claim_root" action="action_hr_cash_advances" sequence="27" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_cash_advance_writeoffs" name="Advance Write-Offs" parent="menu_hr_claim_root" action="action_hr_cash_advance_writeoffs" sequence="28" groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
 
     <menuitem id="menu_hr_claim_workflow" name="Workflow" parent="menu_hr_claim_root" sequence="30" groups="hr_expense_management.group_hr_expense_manager"/>
     <menuitem id="menu_hr_claim_pending" name="Pending Approvals" parent="menu_hr_claim_workflow" action="action_hr_claim_pending" sequence="10"/>
@@ -40,6 +41,8 @@
     <menuitem id="menu_hr_expense_periods" name="Periods &amp; Cut-offs" parent="menu_hr_expense_budget" action="action_hr_expense_periods" sequence="20"/>
 
     <menuitem id="menu_hr_claim_reports" name="Reports" parent="menu_hr_claim_root" action="action_hr_claim_reports" sequence="50" groups="hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance"/>
+    <menuitem id="menu_hr_expense_custom_reports" name="Custom Reports" parent="menu_hr_claim_root" action="action_hr_expense_custom_reports" sequence="51" groups="hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_expense_scheduled_reports" name="Scheduled Reports" parent="menu_hr_claim_root" action="action_hr_expense_scheduled_reports" sequence="52" groups="hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
 
     <menuitem id="menu_hr_claim_configuration" name="Configuration" parent="menu_hr_claim_root" sequence="80" groups="hr_expense_management.group_hr_expense_admin"/>
     <menuitem id="menu_hr_claim_categories" name="Categories" parent="menu_hr_claim_configuration" action="action_hr_claim_categories" sequence="10"/>
@@ -47,5 +50,9 @@
     <menuitem id="menu_hr_claim_windows" name="Claim Windows" parent="menu_hr_claim_configuration" action="action_hr_claim_windows" sequence="30"/>
     <menuitem id="menu_hr_expense_request_types" name="Request Types" parent="menu_hr_claim_configuration" action="action_hr_expense_request_types" sequence="40"/>
     <menuitem id="menu_hr_expense_approval_rules" name="Approval Rules" parent="menu_hr_claim_configuration" action="action_hr_expense_approval_rules" sequence="50"/>
+    <menuitem id="menu_hr_expense_policies" name="Policies" parent="menu_hr_claim_configuration" action="action_hr_expense_policies" sequence="60"/>
+    <menuitem id="menu_hr_expense_email_templates" name="Email Templates" parent="menu_hr_claim_configuration" action="action_hr_expense_email_templates" sequence="70"/>
+    <menuitem id="menu_hr_expense_integrations" name="Integrations" parent="menu_hr_claim_configuration" action="action_hr_expense_integrations" sequence="80"/>
     <menuitem id="menu_hr_claim_audit" name="Audit Trail" parent="menu_hr_claim_root" action="action_hr_claim_audit" sequence="90" groups="hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_expense_audit" name="System Audit" parent="menu_hr_claim_root" action="action_hr_expense_audit" sequence="91" groups="hr_expense_management.group_hr_expense_admin"/>
 </odoo>

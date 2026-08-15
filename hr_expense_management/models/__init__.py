@@ -12,4 +12,5 @@ from . import hr_petty_cash
 from . import hr_expense_accounting
 from . import hr_expense_vendor
 from . import hr_expense_budget
+from . import hr_expense_governance
 from . import hr_expense_app

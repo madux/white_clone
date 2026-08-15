@@ -137,6 +137,31 @@ class TestHrClaimWorkflow(TransactionCase):
         self.assertEqual(claim.state, "rejected")
         self.assertEqual(claim.rejection_reason, "Outside policy.")
 
+    def test_rejected_claim_can_be_appealed_and_reapproved(self):
+        self.env.company.expense_enable_appeals = True
+        claim = self._create_claim()
+        claim.with_user(self.employee_user).action_submit()
+        claim.with_user(self.manager_user)._apply_negative_decision(
+            "reject", "Insufficient business justification."
+        )
+        with self.assertRaises(UserError):
+            claim.with_user(self.employee_user).action_appeal("")
+        with self.assertRaises(AccessError):
+            claim.with_user(self.other_user).action_appeal("Not my claim")
+
+        claim.with_user(self.employee_user).action_appeal(
+            "The customer invitation and agenda are now attached."
+        )
+        self.assertEqual(claim.state, "appealed")
+        self.assertEqual(claim.appeal_count, 1)
+        self.assertTrue(claim.appealed_date)
+        self.assertTrue(
+            claim.sudo().audit_ids.filtered(lambda event: event.action == "appealed")
+        )
+
+        claim.with_user(self.manager_user).action_approve("Appeal evidence accepted.")
+        self.assertEqual(claim.state, "approved")
+
     def test_employee_withdraws_and_cancels(self):
         draft_claim = self._create_claim()
         draft_claim.with_user(self.employee_user).action_cancel()

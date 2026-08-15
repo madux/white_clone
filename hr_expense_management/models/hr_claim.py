@@ -18,6 +18,9 @@ class HrClaim(models.Model):
         "approval_comment",
         "rejection_reason",
         "return_reason",
+        "appeal_reason",
+        "appealed_date",
+        "appeal_count",
         "submitted_date",
         "approved_by_id",
         "approved_date",
@@ -98,6 +101,7 @@ class HrClaim(models.Model):
             ("draft", "Draft"),
             ("submitted", "Submitted"),
             ("returned", "Returned"),
+            ("appealed", "Appealed"),
             ("approved", "Approved"),
             ("rejected", "Rejected"),
             ("paid", "Paid"),
@@ -112,6 +116,9 @@ class HrClaim(models.Model):
     approval_comment = fields.Text(readonly=True, copy=False, tracking=True)
     rejection_reason = fields.Text(readonly=True, copy=False, tracking=True)
     return_reason = fields.Text(readonly=True, copy=False, tracking=True)
+    appeal_reason = fields.Text(readonly=True, copy=False, tracking=True)
+    appealed_date = fields.Datetime(readonly=True, copy=False, tracking=True)
+    appeal_count = fields.Integer(readonly=True, copy=False)
     approved_by_id = fields.Many2one("res.users", readonly=True, copy=False)
     approved_date = fields.Datetime(readonly=True, copy=False, tracking=True)
     paid_date = fields.Datetime(readonly=True, copy=False, tracking=True)
@@ -354,8 +361,8 @@ class HrClaim(models.Model):
     def action_open_approve_wizard(self):
         self._check_approver()
         self.ensure_one()
-        if self.state != "submitted":
-            raise UserError("Only Submitted claims can be approved.")
+        if self.state not in ("submitted", "appealed"):
+            raise UserError("Only Submitted or Appealed claims can be approved.")
         return {
             "type": "ir.actions.act_window",
             "name": _("Approve Claim"),
@@ -372,8 +379,8 @@ class HrClaim(models.Model):
         )
         approval_comment = comment.strip() if comment and comment.strip() else False
         for claim in self:
-            if claim.state != "submitted":
-                raise UserError("Only Submitted claims can be approved.")
+            if claim.state not in ("submitted", "appealed"):
+                raise UserError("Only Submitted or Appealed claims can be approved.")
             claim._workflow_write(
                 {
                     "state": "approved",
@@ -382,6 +389,7 @@ class HrClaim(models.Model):
                     "approval_comment": approval_comment,
                     "rejection_reason": False,
                     "return_reason": False,
+                    "appeal_reason": False,
                 }
             )
             audit_message = _("Claim approved.")
@@ -425,8 +433,8 @@ class HrClaim(models.Model):
         if not reason or not reason.strip():
             raise UserError("A reason is required.")
         for claim in self:
-            if claim.state != "submitted":
-                raise UserError("Only Submitted claims can be rejected or returned.")
+            if claim.state not in ("submitted", "appealed"):
+                raise UserError("Only Submitted or Appealed claims can be rejected or returned.")
             if decision == "reject":
                 values = {"state": "rejected", "rejection_reason": reason}
                 action, message = "rejected", _("Claim rejected: %s") % reason
@@ -438,11 +446,36 @@ class HrClaim(models.Model):
             claim.message_post(body=message)
         return True
 
+    def action_appeal(self, reason):
+        self._check_owner_or_admin()
+        if not self.env.company.expense_enable_appeals:
+            raise UserError("Claim appeals are disabled for this company.")
+        if not reason or not reason.strip():
+            raise UserError("An appeal reason is required.")
+        for claim in self:
+            if claim.state != "rejected":
+                raise UserError("Only Rejected claims can be appealed.")
+            claim.approval_step_ids.filtered(
+                lambda step: step.state in ("waiting", "pending")
+            ).sudo().write({"state": "cancelled"})
+            claim._workflow_write({
+                "state": "appealed",
+                "appeal_reason": reason.strip(),
+                "appealed_date": fields.Datetime.now(),
+                "appeal_count": claim.appeal_count + 1,
+                "rejection_reason": False,
+            })
+            self.env["hr.expense.approval.rule"]._create_steps_for(claim, "claim")
+            message = _("Claim appealed: %s") % reason.strip()
+            claim._log_action("appealed", message)
+            claim.message_post(body=message)
+        return True
+
     def action_withdraw(self):
         self._check_owner_or_admin()
         for claim in self:
-            if claim.state != "submitted":
-                raise UserError("Only Submitted claims can be withdrawn.")
+            if claim.state not in ("submitted", "appealed"):
+                raise UserError("Only Submitted or Appealed claims can be withdrawn.")
             claim._workflow_write({"state": "cancelled"})
             claim._log_action("withdrawn", _("Claim withdrawn by employee."))
             claim.message_post(body=_("Claim withdrawn."))
