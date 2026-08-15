@@ -45,6 +45,15 @@ The final clean install and module tests passed with **0 failures and 0 errors**
 - Validated Python compilation, every XML file, whitespace, module upgrade, clean install, views, assets, and browser behavior.
 - Preserved unrelated working-tree changes in `hr_cbt_portal_recruitment` and `hr_employee`.
 
+### Post-review hardening
+
+- Replaced inherited Employee permissions for Manager/Finance with explicit, role-accurate ACLs. Employees retain own-record self-service; Managers can decide but not create/delete claims; Finance can read claims and process payments but cannot alter claim content.
+- Extended Manager read-only visibility to payment history on every visible claim.
+- Added an Approve wizard so an optional approval comment is captured in the same server action as approval; employees cannot forge decision metadata.
+- Aligned monthly chart attribution to `submitted_date`, `approved_date`, and `paid_date` for the respective series.
+- Added claim-row locking around draft allocation and confirmation, plus a draft-exposure limit, preventing concurrent or preallocated payments from exceeding the residual.
+- Added regression coverage for each review finding and repeated both upgrade and clean-install verification.
+
 ## 3. Assumptions and ambiguities resolved
 
 | # | Ambiguity or gap | Resolution |
@@ -83,22 +92,25 @@ No requirement recorded in `REQUIREMENTS.md` is otherwise deferred.
 | Submit and record date/audit/chatter | PASS | Browser lifecycle and automated workflow test. |
 | Empty/over-limit/ineligible/outside-window/missing receipt blocked | PASS | Automated negative tests. |
 | Employee sees own claims/payments only | PASS | Automated per-user record-rule and dashboard test. |
-| Manager sees company claims and approves | PASS | Browser lifecycle and automated role test. |
+| Manager sees company claims, payment history, and approves with optional comment | PASS | Browser lifecycle plus automated role, wizard, and read-only payment tests. |
 | Rejection requires a reason | PASS | Automated mandatory-reason test. |
 | Return, edit, resubmit | PASS | Automated end-to-end workflow test. |
 | Finance sees payable claims and cannot decide them | PASS | Automated authorization test. |
 | Partial then full payment; Paid only when covered | PASS | Automated payment test and browser full-payment lifecycle. |
+| Draft/concurrent payment overexposure protection | PASS | Automated draft-exposure test; confirmation uses a database claim-row lock and refreshed residual. |
 | Employee withdraw/cancel actions | PASS | Server action/state validation and installed view modifiers. |
-| Dashboard KPI and three live charts | PASS | Browser: four KPIs and three canvases rendered with live paid data; no frontend error. |
+| Dashboard KPI and three live charts | PASS | Browser: four KPIs and three canvases rendered with live paid data; automated test verifies event-date monthly attribution. |
 | Native graph and pivot reports | PASS | Browser: graph loaded; pivot rendered paid amount by department and XLSX action. |
 | Admin configuration and audit | PASS | Browser: Claim Types, Claim Windows/assignments, and five lifecycle audit events rendered. |
 | Multi-company isolation | PASS | Automated second-company visibility test for Manager and Finance. |
 
-Final automated command result: **5 workflow test methods, 0 failed, 0 errors** (Odoo statistics report 7 test units). Python compile, XML parse, and `git diff --check` also passed.
+Final post-review command result: **7 workflow test methods, 0 failed, 0 errors** (Odoo statistics report 9 test units). Upgrade and clean-install runs both passed. Python compile, XML parse, and `git diff --check` also passed.
 
 ## 6. Conventions and deviations
 
 - Models, ACLs, rules, actions, views, menus, mail mixins, assets, and tests follow standard Odoo 17 Community patterns.
+- Role groups use explicit ACLs instead of inheriting Employee CRUD; record rules provide company/record scope and server methods enforce state/field transitions.
+- Payment confirmation uses a short PostgreSQL `FOR UPDATE` lock on the affected claim rows, acquired in sorted order to serialize financial balance checks safely.
 - The dashboard is a small OWL client action; Chart.js is loaded through Odoo's `web.chartjs_lib`, not vendored.
 - Bootstrap/Odoo utility classes provide layout and styling; SCSS only adds dashboard-specific sizing and interaction polish.
 - No Enterprise module, field, or service is required.
@@ -107,7 +119,7 @@ Final automated command result: **5 workflow test methods, 0 failed, 0 errors** 
 ## 7. Environment notes
 
 - The existing workspace configuration has a pre-existing transient-vacuum `TypeError` caused by a string-valued/deprecated age-limit option. It affects base transient-model cleanup generally and is unrelated to `hr_claims`; clean install, tests, wizards, views, and browser operations still passed. Replace the deprecated `osv_memory_age_limit` setting with a valid numeric `transient_age_limit` value in the local Odoo configuration.
-- The populated `codex_hr_claims_test` database is intentionally retained for review. The fresh-install-only database was removed and is not recoverable, but contained no user data.
+- The populated `codex_hr_claims_test` database is intentionally retained for review. Both fresh-install-only databases, including the post-review `codex_hr_claims_review_test`, were removed and are not recoverable, but contained no user data.
 
 ## 8. Recommended review steps
 

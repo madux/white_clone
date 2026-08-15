@@ -89,6 +89,7 @@ Immutable functional audit entries created by claim/payment workflow methods.
 
 ### Transient wizards
 
+- `hr.claim.approval.wizard`: optional Manager/Admin approval comment captured atomically with approval.
 - `hr.claim.reject.wizard`: mandatory reason for Reject or Return for correction.
 - `hr.claim.payment.wizard`: Finance/Admin registration of an approved claim payment.
 
@@ -106,7 +107,7 @@ Rules:
 
 - Employees create and edit only their own Draft/Returned claims.
 - Submit validates employee ownership, at least one positive line, period order, claim-type min/max limits, active submission windows, eligibility, and receipt rules.
-- Manager or Admin approves, rejects, or returns Submitted claims. Reject/Return requires a reason.
+- Manager or Admin approves, rejects, or returns Submitted claims. Approval accepts an optional comment; Reject/Return requires a reason.
 - Finance or Admin registers payments only for Approved claims. Partial payments are supported; full coverage moves the claim to Paid.
 - Paid claims cannot be edited or returned through normal UI actions.
 - Withdraw is available to the owner while Submitted; Cancel is available while Draft/Returned.
@@ -147,7 +148,7 @@ Rules:
 
 - Payment Queue action filtered to Approved claims for Finance/Admin.
 - Payment History list/form and registration wizard.
-- Employee can read payments linked to own claims; only Finance/Admin processes them.
+- Employee can read payments linked to own claims; Manager can read payments on all visible claims; only Finance/Admin processes them.
 
 ### Audit
 
@@ -166,8 +167,8 @@ The prototype's **Teams > Roles & Permissions** page defines four system roles. 
 | Prototype role | Prototype permissions | Odoo group and enforcement |
 |---|---|---|
 | Employee | Submit Claims; View Own Claims; Create Requests | **Claims / Employee**. Create/read own claims, write/delete only own editable claims, read own payments, read active types/windows. Requests are outside this module. |
-| Manager | Approve Claims; Reject Claims; View Reports; Manage Team; View All Claims | **Claims / Manager**, implies Employee. Read all company claims; approve/reject/return; use claim reports. Team administration continues to use Odoo HR groups and is not reimplemented here. |
-| Finance | Process Payments; View All Claims; Generate Reports; View Reports | **Claims / Finance**, implies Employee. Read all company claims, read lines/receipts, create/confirm payment records, use/export reports; cannot approve/reject. |
+| Manager | Approve Claims; Reject Claims; View Reports; Manage Team; View All Claims | **Claims / Manager**. Read all company claims and their payment history; approve/reject/return; use claim reports. It is separate from Employee because the prototype does not grant claim submission to this role. Team administration continues to use Odoo HR groups and is not reimplemented here. |
+| Finance | Process Payments; View All Claims; Generate Reports; View Reports | **Claims / Finance**. Read all company claims, lines, receipts, types, windows, and payments; create/confirm payment records; use/export reports; cannot submit or approve/reject claims. It is separate from Employee. |
 | Admin | Full System Access; User Management; Settings; Audit Trail Access | **Claims / Administrator**, implies Manager and Finance. Full module CRUD, configuration, workflow, payment, and audit access. General Odoo user management remains governed by Odoo Administration Settings. |
 
 All persistent records have a global allowed-company rule. Employee own-record rules use `employee_id.user_id = user.id`. Manager/Finance/Admin group rules widen claim visibility to allowed companies. Workflow methods also check groups server-side; hiding buttons is not the security boundary.
@@ -175,7 +176,7 @@ All persistent records have a global allowed-company rule. Employee own-record r
 ## 6. Dashboard/chart definitions
 
 - **Status Distribution:** count of claims by Draft, Submitted, Returned, Approved, Rejected, Paid, Cancelled.
-- **Monthly Trend:** monthly amount submitted, approved, and paid for the most recent six months.
+- **Monthly Trend:** monthly amount submitted, approved, and paid for the most recent six months, attributed respectively by submission, approval, and payment event dates.
 - **Spend by Department:** approved plus paid claim amount grouped by employee department; top departments by value.
 - **Approval KPIs:** approval rate, rejection rate, current pending queue, total approved value, average age of pending claims.
 - **Payment KPIs:** approved payable count/value, overdue count/value using seven days as the prototype threshold, average days from approval to payment.
@@ -196,6 +197,7 @@ All persistent records have a global allowed-company rule. Employee own-record r
 12. A user without a linked `hr.employee` cannot create an employee claim; Admin can assign the employee explicitly.
 13. The prototype's four-step claim flow and seven-step claim-type flow are represented by native Odoo forms with clearly separated notebook pages. This keeps browser history, access checks, autosave, and validation idiomatic while retaining every captured data area.
 14. The payment queue supports multiple records and individual/partial payment registration. Automated bank-file generation or a single bulk bank execution is an integration concern because the prototype does not define a banking format or provider.
+15. The Roles page is treated as four distinct capability sets. Manager and Finance therefore do not implicitly receive Employee submission rights; Administrator composes Manager and Finance and retains explicit full module access.
 
 ## 8. Implementation phases
 
@@ -220,12 +222,15 @@ The result of each test is recorded in `FINAL_REVIEW.md`.
 - [x] Invalid empty, over-limit, ineligible, outside-window, and missing-required-receipt claims are blocked.
 - [x] Employee sees only own claims/payments; cannot read another employee's claim directly.
 - [x] Manager sees all allowed-company claims and approves a Submitted claim.
+- [x] Manager can add an optional approval comment and read payment history for visible claims without processing payments.
 - [x] Manager rejects a Submitted claim only with a reason.
 - [x] Manager returns a claim; employee edits and resubmits it.
 - [x] Finance sees approved reimbursable claims and cannot approve/reject.
 - [x] Finance registers a partial payment, then completes payment; claim becomes Paid only when covered.
+- [x] Draft payment exposure cannot exceed the claim residual, and confirmation serializes on the claim to prevent concurrent overpayment.
 - [x] Employee can withdraw a Submitted claim and cancel a Draft/Returned claim.
 - [x] Dashboard KPIs and all three charts load with live data and respect employee visibility.
+- [x] Monthly Submitted, Approved, and Paid chart values use their respective event dates.
 - [x] Native graph/pivot reports render and privileged roles can open them.
 - [x] Admin can maintain categories, types, windows, assignments, and view audit events.
 - [x] Multi-company rules prevent cross-company visibility.
