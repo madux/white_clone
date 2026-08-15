@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_tree" model="ir.ui.view">
+        <field name="name">hr.claim.tree</field>
+        <field name="model">hr.claim</field>
+        <field name="arch" type="xml">
+            <tree string="Claims" sample="1"
+                  decoration-muted="state in ('cancelled', 'rejected')"
+                  decoration-info="state == 'submitted'"
+                  decoration-warning="state == 'returned'"
+                  decoration-success="state in ('approved', 'paid')">
+                <field name="name"/>
+                <field name="title"/>
+                <field name="employee_id"/>
+                <field name="department_id" optional="hide"/>
+                <field name="claim_type_id"/>
+                <field name="amount_total" sum="Total"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'submitted'"
+                       decoration-warning="state == 'returned'"
+                       decoration-success="state in ('approved', 'paid')"
+                       decoration-danger="state == 'rejected'"/>
+                <field name="payment_state" widget="badge" optional="hide"/>
+                <field name="submitted_date" optional="show"/>
+                <field name="approved_date" optional="hide"/>
+                <field name="paid_date" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_search" model="ir.ui.view">
+        <field name="name">hr.claim.search</field>
+        <field name="model">hr.claim</field>
+        <field name="arch" type="xml">
+            <search string="Claims">
+                <field name="name"/><field name="title"/><field name="employee_id"/><field name="claim_type_id"/><field name="department_id"/>
+                <filter name="my_claims" string="My Claims" domain="[('employee_id.user_id', '=', uid)]"/>
+                <separator/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="submitted" string="Submitted" domain="[('state', '=', 'submitted')]"/>
+                <filter name="returned" string="Returned" domain="[('state', '=', 'returned')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="paid" string="Paid" domain="[('state', '=', 'paid')]"/>
+                <filter name="rejected" string="Rejected" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter name="submitted_this_month" string="Submitted This Month" date="submitted_date" default_period="this_month"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
+                    <filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/>
+                    <filter name="group_department" string="Department" context="{'group_by': 'department_id'}"/>
+                    <filter name="group_type" string="Claim Type" context="{'group_by': 'claim_type_id'}"/>
+                    <filter name="group_month" string="Submission Month" context="{'group_by': 'submitted_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_form" model="ir.ui.view">
+        <field name="name">hr.claim.form</field>
+        <field name="model">hr.claim</field>
+        <field name="arch" type="xml">
+            <form string="Expense Claim">
+                <header>
+                    <button name="action_submit" string="Submit" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
+                    <button name="action_open_approve_wizard" string="Approve" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
+                    <button name="action_open_return_wizard" string="Return" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
+                    <button name="action_open_reject_wizard" string="Reject" type="object" groups="hr_expense_management.group_hr_expense_manager" invisible="state != 'submitted'"/>
+                    <button name="action_open_payment_wizard" string="Register Payment" type="object" class="oe_highlight" groups="hr_expense_management.group_hr_expense_finance" invisible="state != 'approved' or not is_reimbursable"/>
+                    <button name="action_withdraw" string="Withdraw" type="object" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state != 'submitted' or not can_employee_action"/>
+                    <button name="action_cancel" string="Cancel" type="object" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin" invisible="state not in ('draft', 'returned') or not can_employee_action"/>
+                    <button name="action_reset_to_draft" string="Reset to Draft" type="object" groups="hr_expense_management.group_hr_expense_admin" invisible="state not in ('rejected', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,submitted,returned,approved,paid"/>
+                </header>
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <field name="can_employee_action" invisible="1"/>
+                    <field name="is_reimbursable" invisible="1"/>
+                    <widget name="web_ribbon" title="Rejected" bg_color="text-bg-danger" invisible="state != 'rejected'"/>
+                    <widget name="web_ribbon" title="Cancelled" bg_color="text-bg-secondary" invisible="state != 'cancelled'"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name" readonly="1"/></h1><h2><field name="title" placeholder="What was this expense for?" readonly="state not in ('draft', 'returned')"/></h2></div>
+                    <group>
+                        <group>
+                            <field name="employee_id" readonly="state not in ('draft', 'returned')"/>
+                            <field name="department_id" readonly="1"/>
+                            <field name="claim_type_id" readonly="state not in ('draft', 'returned')"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="state not in ('draft', 'returned')"/>
+                        </group>
+                        <group>
+                            <field name="money_type" readonly="state not in ('draft', 'returned')"/>
+                            <field name="reimbursement_method" readonly="state not in ('draft', 'returned')"/>
+                            <field name="expense_start_date" readonly="state not in ('draft', 'returned')"/>
+                            <field name="expense_end_date" readonly="state not in ('draft', 'returned')"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Expense Items">
+                            <field name="line_ids" readonly="state not in ('draft', 'returned')">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/><field name="description"/><field name="category"/><field name="expense_date"/><field name="receipt_reference" optional="show"/><field name="currency_id" column_invisible="True"/><field name="amount" sum="Total"/>
+                                </tree>
+                            </field>
+                            <group class="oe_subtotal_footer oe_right"><field name="amount_total" readonly="1"/></group>
+                        </page>
+                        <page string="Details &amp; Receipts">
+                            <field name="description" placeholder="Brief description of the expenses..." readonly="state not in ('draft', 'returned')"/>
+                            <field name="attachment_ids" widget="many2many_binary" readonly="state not in ('draft', 'returned')"/>
+                        </page>
+                        <page string="Approval">
+                            <group>
+                                <group><field name="submitted_date"/><field name="approved_by_id"/><field name="approved_date"/></group>
+                                <group><field name="approval_comment" readonly="1"/><field name="rejection_reason" invisible="not rejection_reason"/><field name="return_reason" invisible="not return_reason"/></group>
+                            </group>
+                        </page>
+                        <page string="Payments">
+                            <group><field name="amount_paid"/><field name="residual_amount"/><field name="payment_state"/><field name="paid_date"/></group>
+                            <field name="payment_ids" readonly="1">
+                                <tree><field name="name"/><field name="payment_date"/><field name="amount"/><field name="payment_method"/><field name="reference"/><field name="state" widget="badge"/></tree>
+                            </field>
+                        </page>
+                        <page string="Audit Trail" groups="hr_expense_management.group_hr_expense_admin">
+                            <field name="audit_ids" readonly="1">
+                                <tree create="0" delete="0"><field name="date"/><field name="action"/><field name="description"/><field name="user_id"/></tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter"><field name="message_follower_ids"/><field name="activity_ids"/><field name="message_ids"/></div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_kanban" model="ir.ui.view">
+        <field name="name">hr.claim.kanban</field><field name="model">hr.claim</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" sample="1">
+                <field name="name"/><field name="title"/><field name="employee_id"/><field name="claim_type_id"/><field name="amount_total"/><field name="currency_id"/><field name="state"/><field name="receipt_attachment_count"/>
+                <templates><t t-name="kanban-box"><div class="oe_kanban_global_click o_kanban_record">
+                    <div class="d-flex justify-content-between align-items-start"><strong><field name="name"/></strong><span class="badge rounded-pill text-bg-light"><field name="state"/></span></div>
+                    <div class="mt-2 fw-semibold"><field name="title"/></div>
+                    <div class="text-muted"><field name="employee_id"/> · <field name="claim_type_id"/></div>
+                    <div class="mt-3 d-flex justify-content-between"><strong><field name="amount_total" widget="monetary" options="{'currency_field': 'currency_id'}"/></strong><span title="Receipts"><i class="fa fa-paperclip me-1"/><field name="receipt_attachment_count"/></span></div>
+                </div></t></templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_graph" model="ir.ui.view">
+        <field name="name">hr.claim.graph</field><field name="model">hr.claim</field>
+        <field name="arch" type="xml"><graph string="Claims Analysis" sample="1"><field name="claim_type_id"/><field name="amount_total" type="measure"/></graph></field>
+    </record>
+    <record id="view_hr_claim_pivot" model="ir.ui.view">
+        <field name="name">hr.claim.pivot</field><field name="model">hr.claim</field>
+        <field name="arch" type="xml"><pivot string="Claims Analysis" sample="1"><field name="department_id" type="row"/><field name="state" type="col"/><field name="amount_total" type="measure"/></pivot></field>
+    </record>
+
+    <record id="action_hr_claim_my" model="ir.actions.act_window">
+        <field name="name">My Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form,graph,pivot</field>
+        <field name="domain">[('employee_id.user_id', '=', uid)]</field><field name="context">{'search_default_my_claims': 1}</field>
+        <field name="search_view_id" ref="view_hr_claim_search"/>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Submit your first expense claim</p><p>Add expense items and receipts, then submit it for approval.</p></field>
+    </record>
+    <record id="action_hr_claim_all" model="ir.actions.act_window">
+        <field name="name">All Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form,graph,pivot</field><field name="search_view_id" ref="view_hr_claim_search"/>
+    </record>
+    <record id="action_hr_claim_pending" model="ir.actions.act_window">
+        <field name="name">Pending Approvals</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form</field><field name="domain">[('state', '=', 'submitted')]</field><field name="context">{'search_default_submitted': 1}</field><field name="search_view_id" ref="view_hr_claim_search"/>
+    </record>
+    <record id="action_hr_claim_approved" model="ir.actions.act_window">
+        <field name="name">Approved Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,kanban,form</field><field name="domain">[('state', 'in', ('approved', 'paid'))]</field><field name="search_view_id" ref="view_hr_claim_search"/>
+    </record>
+    <record id="action_hr_claim_rejected" model="ir.actions.act_window">
+        <field name="name">Rejected Claims</field><field name="res_model">hr.claim</field><field name="view_mode">tree,form</field><field name="domain">[('state', '=', 'rejected')]</field><field name="search_view_id" ref="view_hr_claim_search"/>
+    </record>
+    <record id="action_hr_claim_reports" model="ir.actions.act_window">
+        <field name="name">Claims Reports</field><field name="res_model">hr.claim</field><field name="view_mode">graph,pivot,tree</field><field name="search_view_id" ref="view_hr_claim_search"/>
+    </record>
+</odoo>

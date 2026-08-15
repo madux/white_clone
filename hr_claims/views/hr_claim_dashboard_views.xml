@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <record id="action_hr_claim_dashboard" model="ir.actions.client">
-        <field name="name">Expense Management</field><field name="tag">hr_claims.expense_app</field>
-    </record>
-</odoo>
