@@ -5,9 +5,15 @@ access_hr_claim_window_employee,hr.claim.window employee,model_hr_claim_window,g
 access_hr_claim_employee,hr.claim employee,model_hr_claim,group_hr_claim_employee,1,1,1,1
 access_hr_claim_line_employee,hr.claim.line employee,model_hr_claim_line,group_hr_claim_employee,1,1,1,1
 access_hr_claim_payment_employee,hr.claim.payment employee,model_hr_claim_payment,group_hr_claim_employee,1,0,0,0
+access_hr_claim_category_manager,hr.claim.category manager,model_hr_claim_category,group_hr_claim_manager,1,0,0,0
+access_hr_claim_type_manager,hr.claim.type manager,model_hr_claim_type,group_hr_claim_manager,1,0,0,0
+access_hr_claim_window_manager,hr.claim.window manager,model_hr_claim_window,group_hr_claim_manager,1,0,0,0
 access_hr_claim_manager,hr.claim manager,model_hr_claim,group_hr_claim_manager,1,1,0,0
 access_hr_claim_line_manager,hr.claim.line manager,model_hr_claim_line,group_hr_claim_manager,1,0,0,0
-access_hr_claim_payment_manager,hr.claim.payment manager,model_hr_claim_payment,group_hr_claim_manager,0,0,0,0
+access_hr_claim_payment_manager,hr.claim.payment manager,model_hr_claim_payment,group_hr_claim_manager,1,0,0,0
+access_hr_claim_category_finance,hr.claim.category finance,model_hr_claim_category,group_hr_claim_finance,1,0,0,0
+access_hr_claim_type_finance,hr.claim.type finance,model_hr_claim_type,group_hr_claim_finance,1,0,0,0
+access_hr_claim_window_finance,hr.claim.window finance,model_hr_claim_window,group_hr_claim_finance,1,0,0,0
 access_hr_claim_finance,hr.claim finance,model_hr_claim,group_hr_claim_finance,1,0,0,0
 access_hr_claim_line_finance,hr.claim.line finance,model_hr_claim_line,group_hr_claim_finance,1,0,0,0
 access_hr_claim_payment_finance,hr.claim.payment finance,model_hr_claim_payment,group_hr_claim_finance,1,1,1,0
@@ -20,6 +26,7 @@ access_hr_claim_payment_admin,hr.claim.payment admin,model_hr_claim_payment,grou
 access_hr_claim_audit_admin,hr.claim.audit admin,model_hr_claim_audit,group_hr_claim_admin,1,0,0,0
 access_hr_claim_reject_wizard_manager,hr.claim.reject.wizard manager,model_hr_claim_reject_wizard,group_hr_claim_manager,1,1,1,1
 access_hr_claim_reject_wizard_admin,hr.claim.reject.wizard admin,model_hr_claim_reject_wizard,group_hr_claim_admin,1,1,1,1
+access_hr_claim_approval_wizard_manager,hr.claim.approval.wizard manager,model_hr_claim_approval_wizard,group_hr_claim_manager,1,1,1,1
+access_hr_claim_approval_wizard_admin,hr.claim.approval.wizard admin,model_hr_claim_approval_wizard,group_hr_claim_admin,1,1,1,1
 access_hr_claim_payment_wizard_finance,hr.claim.payment.wizard finance,model_hr_claim_payment_wizard,group_hr_claim_finance,1,1,1,1
 access_hr_claim_payment_wizard_admin,hr.claim.payment.wizard admin,model_hr_claim_payment_wizard,group_hr_claim_admin,1,1,1,1
-

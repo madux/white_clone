@@ -10,7 +10,7 @@
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-outline-secondary" t-on-click="refresh"><i class="fa fa-refresh me-2"/>Refresh</button>
-                        <button class="btn btn-primary" t-on-click="newClaim"><i class="fa fa-plus me-2"/>New Claim</button>
+                        <button t-if="canCreate" class="btn btn-primary" t-on-click="newClaim"><i class="fa fa-plus me-2"/>New Claim</button>
                     </div>
                 </div>
 
@@ -42,4 +42,3 @@
         </div>
     </t>
 </templates>
-

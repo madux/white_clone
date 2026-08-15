@@ -14,6 +14,16 @@ class HrClaim(models.Model):
     _order = "submitted_date desc, id desc"
     _check_company_auto = True
 
+    _decision_fields = {
+        "approval_comment",
+        "rejection_reason",
+        "return_reason",
+        "submitted_date",
+        "approved_by_id",
+        "approved_date",
+        "paid_date",
+    }
+
     name = fields.Char(default="New", readonly=True, copy=False, index=True)
     title = fields.Char(required=True, tracking=True)
     description = fields.Text(tracking=True)
@@ -99,7 +109,7 @@ class HrClaim(models.Model):
         copy=False,
         index=True,
     )
-    approval_comment = fields.Text(copy=False)
+    approval_comment = fields.Text(readonly=True, copy=False, tracking=True)
     rejection_reason = fields.Text(readonly=True, copy=False, tracking=True)
     return_reason = fields.Text(readonly=True, copy=False, tracking=True)
     approved_by_id = fields.Many2one("res.users", readonly=True, copy=False)
@@ -183,9 +193,8 @@ class HrClaim(models.Model):
                 "hr_claims.group_hr_claim_admin"
             ):
                 vals["state"] = "draft"
-                vals.pop("approved_by_id", None)
-                vals.pop("approved_date", None)
-                vals.pop("paid_date", None)
+                for field_name in self._decision_fields:
+                    vals.pop(field_name, None)
             if (
                 not self.env.su
                 and vals.get("employee_id")
@@ -223,6 +232,11 @@ class HrClaim(models.Model):
         if not self.env.su:
             if "state" in vals:
                 raise AccessError("Claim states can only be changed through workflow actions.")
+            if not self._is_admin() and self._decision_fields.intersection(vals):
+                raise AccessError(
+                    "Approval, decision, and workflow metadata can only be changed "
+                    "through workflow actions."
+                )
             self._ensure_user_can_edit()
         return super().write(vals)
 
@@ -333,8 +347,23 @@ class HrClaim(models.Model):
         if not (self._is_manager() or self._is_admin()):
             raise AccessError("Only a Claims Manager or Administrator can make approval decisions.")
 
-    def action_approve(self):
+    def action_open_approve_wizard(self):
         self._check_approver()
+        self.ensure_one()
+        if self.state != "submitted":
+            raise UserError("Only Submitted claims can be approved.")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Approve Claim"),
+            "res_model": "hr.claim.approval.wizard",
+            "view_mode": "form",
+            "target": "new",
+            "context": {"default_claim_id": self.id},
+        }
+
+    def action_approve(self, comment=None):
+        self._check_approver()
+        approval_comment = comment.strip() if comment and comment.strip() else False
         for claim in self:
             if claim.state != "submitted":
                 raise UserError("Only Submitted claims can be approved.")
@@ -343,12 +372,21 @@ class HrClaim(models.Model):
                     "state": "approved",
                     "approved_by_id": self.env.user.id,
                     "approved_date": fields.Datetime.now(),
+                    "approval_comment": approval_comment,
                     "rejection_reason": False,
                     "return_reason": False,
                 }
             )
-            claim._log_action("approved", _("Claim approved."))
-            claim.message_post(body=_("Claim approved by %s.") % self.env.user.display_name)
+            audit_message = _("Claim approved.")
+            chatter_message = _("Claim approved by %s.") % self.env.user.display_name
+            if approval_comment:
+                audit_message = _("Claim approved: %s") % approval_comment
+                chatter_message = _("Claim approved by %(user)s: %(comment)s") % {
+                    "user": self.env.user.display_name,
+                    "comment": approval_comment,
+                }
+            claim._log_action("approved", audit_message)
+            claim.message_post(body=chatter_message)
         return True
 
     def action_open_reject_wizard(self):
@@ -467,7 +505,10 @@ class HrClaim(models.Model):
                 lambda c: c.submitted_date
                 and month_start <= c.submitted_date.date() < month_end
             )
-            approved = submitted.filtered(lambda c: c.state in ("approved", "paid"))
+            approved = claims.filtered(
+                lambda c: c.approved_date
+                and month_start <= c.approved_date.date() < month_end
+            )
             paid = claims.filtered(
                 lambda c: c.paid_date and month_start <= c.paid_date.date() < month_end
             )
@@ -497,7 +538,9 @@ class HrClaim(models.Model):
         return {
             "currency": {"symbol": company_currency.symbol, "position": company_currency.position},
             "role": {
-                "employee": True,
+                "employee": self.env.user.has_group(
+                    "hr_claims.group_hr_claim_employee"
+                ),
                 "manager": self.env.user.has_group("hr_claims.group_hr_claim_manager"),
                 "finance": self.env.user.has_group("hr_claims.group_hr_claim_finance"),
                 "admin": self.env.user.has_group("hr_claims.group_hr_claim_admin"),

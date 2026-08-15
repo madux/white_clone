@@ -11,6 +11,7 @@
         "security/ir.model.access.csv",
         "data/hr_claim_sequence.xml",
         "data/hr_claim_data.xml",
+        "wizard/hr_claim_approval_wizard_views.xml",
         "wizard/hr_claim_reject_wizard_views.xml",
         "wizard/hr_claim_payment_wizard_views.xml",
         "views/hr_claim_category_views.xml",
@@ -32,4 +33,3 @@
     "application": True,
     "installable": True,
 }
-

@@ -62,6 +62,11 @@ export class HrClaimDashboard extends Component {
         return role.finance || role.admin;
     }
 
+    get canCreate() {
+        const role = this.state.data?.role || {};
+        return role.employee || role.admin;
+    }
+
     formatMoney(value) {
         const currency = this.state.data?.currency || { symbol: "", position: "before" };
         const amount = new Intl.NumberFormat(undefined, {
@@ -182,4 +187,3 @@ export class HrClaimDashboard extends Component {
 }
 
 registry.category("actions").add("hr_claims.dashboard", HrClaimDashboard);
-

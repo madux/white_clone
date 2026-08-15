@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from dateutil.relativedelta import relativedelta
+
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, tagged
@@ -66,9 +68,13 @@ class TestHrClaimWorkflow(TransactionCase):
         self.assertEqual(claim.state, "submitted")
         self.assertTrue(claim.submitted_date)
 
-        claim.with_user(self.manager_user).action_approve()
+        approval = self.env["hr.claim.approval.wizard"].with_user(
+            self.manager_user
+        ).create({"claim_id": claim.id, "comment": "Policy checks completed."})
+        approval.action_confirm()
         self.assertEqual(claim.state, "approved")
         self.assertEqual(claim.approved_by_id, self.manager_user)
+        self.assertEqual(claim.approval_comment, "Policy checks completed.")
 
         first = self.env["hr.claim.payment"].with_user(self.finance_user).create(
             {"claim_id": claim.id, "amount": 40.0, "payment_method": "bank"}
@@ -85,8 +91,33 @@ class TestHrClaimWorkflow(TransactionCase):
         self.assertEqual(claim.payment_state, "paid")
         self.assertTrue(claim.paid_date)
         self.assertIn("paid", claim.audit_ids.mapped("action"))
+        manager_payments = self.env["hr.claim.payment"].with_user(
+            self.manager_user
+        ).search([("claim_id", "=", claim.id)])
+        self.assertEqual(set(manager_payments.ids), {first.id, second.id})
+        with self.assertRaises(AccessError):
+            first.with_user(self.manager_user).write({"reference": "FORBIDDEN"})
         with self.assertRaises(AccessError):
             second.with_user(self.finance_user).write({"amount": 50.0})
+
+    def test_draft_payment_exposure_cannot_exceed_residual(self):
+        claim = self._create_claim(amount=100.0)
+        claim.with_user(self.employee_user).action_submit()
+        claim.with_user(self.manager_user).action_approve()
+
+        first = self.env["hr.claim.payment"].with_user(self.finance_user).create(
+            {"claim_id": claim.id, "amount": 60.0, "payment_method": "bank"}
+        )
+        with self.assertRaises(UserError):
+            self.env["hr.claim.payment"].with_user(self.finance_user).create(
+                {"claim_id": claim.id, "amount": 50.0, "payment_method": "bank"}
+            )
+        second = self.env["hr.claim.payment"].with_user(self.finance_user).create(
+            {"claim_id": claim.id, "amount": 40.0, "payment_method": "bank"}
+        )
+        first.action_confirm()
+        second.action_confirm()
+        self.assertEqual(claim.state, "paid")
 
     def test_return_resubmit_and_reject_requires_reason(self):
         claim = self._create_claim()
@@ -146,6 +177,23 @@ class TestHrClaimWorkflow(TransactionCase):
         )
         self.assertEqual(employee_dashboard["kpis"]["total"], 1)
         self.assertEqual(manager_dashboard["kpis"]["total"], len(manager_claims))
+        self.assertTrue(employee_dashboard["role"]["employee"])
+        self.assertFalse(manager_dashboard["role"]["employee"])
+        self.assertFalse(
+            self.manager_user.has_group("hr_claims.group_hr_claim_employee")
+        )
+        self.assertFalse(
+            self.finance_user.has_group("hr_claims.group_hr_claim_employee")
+        )
+
+        with self.assertRaises(AccessError):
+            self._create_claim(user=self.manager_user)
+        with self.assertRaises(AccessError):
+            self._create_claim(user=self.finance_user)
+        with self.assertRaises(AccessError):
+            own_claim.with_user(self.employee_user).write(
+                {"approval_comment": "Employee-authored approval"}
+            )
 
         other_company = self.env["res.company"].create({"name": "Claims Other Co"})
         other_category = (
@@ -220,6 +268,46 @@ class TestHrClaimWorkflow(TransactionCase):
                     "description": "Forged event",
                 }
             )
+
+    def test_dashboard_monthly_series_use_event_dates(self):
+        baseline = self.env["hr.claim"].with_user(
+            self.manager_user
+        ).get_dashboard_data()
+        claim = self._create_claim(amount=25.0)
+        claim.with_user(self.employee_user).action_submit()
+
+        submitted_at = fields.Datetime.now() - relativedelta(months=1)
+        approved_at = fields.Datetime.now()
+        claim.sudo()._workflow_write(
+            {
+                "state": "approved",
+                "submitted_date": submitted_at,
+                "approved_date": approved_at,
+                "approved_by_id": self.manager_user.id,
+            }
+        )
+        updated = self.env["hr.claim"].with_user(
+            self.manager_user
+        ).get_dashboard_data()
+        baseline_months = {row["label"]: row for row in baseline["monthly"]}
+        updated_months = {row["label"]: row for row in updated["monthly"]}
+        submitted_label = submitted_at.strftime("%b %Y")
+        approved_label = approved_at.strftime("%b %Y")
+
+        self.assertEqual(
+            updated_months[submitted_label]["submitted"]
+            - baseline_months[submitted_label]["submitted"],
+            25.0,
+        )
+        self.assertEqual(
+            updated_months[approved_label]["approved"]
+            - baseline_months[approved_label]["approved"],
+            25.0,
+        )
+        self.assertEqual(
+            updated_months[submitted_label]["approved"],
+            baseline_months[submitted_label]["approved"],
+        )
 
     def test_submission_validation(self):
         empty_claim = self.env["hr.claim"].with_user(self.employee_user).create(
