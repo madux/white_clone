@@ -483,7 +483,7 @@
 
                             <!-- Table body -->
                             <tbody>
-                                <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
+                                <t t-foreach="paginatedPeople()" t-as="person" t-key="person.id">
                                     <tr t-att-class="'sdir-tr sdir-clickable' + (person_index % 2 !== 0 ? ' sdir-tr-alt' : '') + (state.selectedPeople.includes(person.id) ? ' sdir-tr-selected' : '') + (person.is_pinned ? ' sdir-row-pinned' : '')"
                                         t-att-data-id="person.id"
                                         t-on-click="() => this.openProfile(person.id)">
@@ -652,7 +652,7 @@
                                 </t>
 
                                 <!-- Empty state -->
-                                <t t-if="filteredPeople().length === 0">
+                                <t t-if="paginatedPeople().length === 0">
                                     <tr>
                                         <td t-att-colspan="state.adminMode ? 10 : 8">
                                             <div class="sdir-empty-row">
@@ -676,7 +676,7 @@
                 <!-- ── DATA GRID ───────────────────────────────────────────── -->
                 <t t-if="state.activeView === 'grid'">
                     <div id="sd-grid-view" class="sd-grid-container">
-                        <t t-foreach="filteredPeople()" t-as="person" t-key="person.id">
+                        <t t-foreach="paginatedPeople()" t-as="person" t-key="person.id">
                             <div t-att-class="'sd-card sdir-clickable' + (person.is_pinned ? ' sdir-card-pinned' : '')"
                                  t-on-click="() => this.openProfile(person.id)">
                                 
@@ -792,7 +792,7 @@
                         </t>
 
                         <!-- Empty state -->
-                        <t t-if="filteredPeople().length === 0">
+                        <t t-if="paginatedPeople().length === 0">
                             <div class="sd-grid-empty">
                                                 <div class="sdir-empty-icon-wrap">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1179,16 +1179,19 @@
             <!-- ═══ FOOTER ═════════════════════════════════════════════════ -->
             <footer class="sdir-footer" id="sdirFooter">
 
-                <!-- Left: page info -->
-                <span class="sdir-page-info" id="sdirPageInfo">
-                    1–<t t-esc="filteredPeople().length"/> of <t t-esc="num(state.stats.total)"/>
-                </span>
+                <!-- Left: page info text -->
+                <div class="sdir-page-info" id="sdirPageInfo">
+                    <input type="text" class="sdir-page-input" t-ref="jumpInput" t-att-value="pageWindowText"
+                           t-on-focus="onJumpFocus" t-on-keydown="onJumpInput" t-on-input="onJumpInputType" t-on-blur="onJumpBlur"
+                           aria-label="Display range — type a number or a range"/>
+                    <span class="sdir-page-total">of <t t-esc="pageTotal"/></span>
+                </div>
 
                 <!-- Center: legend -->
                 <div class="sdir-legend" id="sdirLegend">
                     <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-active"/>Active</span>
                     <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-probation"/>Probation</span>
-                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-on-leave"/>On Leave</span>
+                    <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-on-leave"/>OnLeave</span>
                     <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-exiting"/>Exiting</span>
                     <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-suspended"/>Suspended</span>
                     <span class="sdir-legend-item"><span class="sdir-legend-dot sdir-ld-terminated"/>Terminated</span>
@@ -1197,9 +1200,20 @@
 
                 <!-- Right: pagination -->
                 <div class="sdir-pagination" id="sdirPagination">
-                    <button type="button" class="sdir-page-btn sdir-page-disabled" disabled="disabled" id="btnPrev">← Prev</button>
-                    <button type="button" class="sdir-page-btn sdir-page-num sdir-page-active" id="pageNum1">1</button>
-                    <button type="button" class="sdir-page-btn sdir-page-disabled" disabled="disabled" id="btnNext">Next →</button>
+                    <button type="button" t-att-class="'sdir-page-btn ' + (currentPage === 1 ? 'sdir-page-disabled' : '')" t-att-disabled="currentPage === 1 ? 'disabled' : undefined" t-on-click="prevPage">← Prev</button>
+                    
+                    <t t-foreach="visiblePages()" t-as="p" t-key="p_index">
+                        <t t-if="p === '...'">
+                            <span class="sdir-page-ellipsis">...</span>
+                        </t>
+                        <t t-else="">
+                            <button type="button" t-att-class="'sdir-page-btn sdir-page-num ' + (p === currentPage ? 'sdir-page-active' : '')" t-on-click="() => this.goToPage(p)">
+                                <t t-esc="p"/>
+                            </button>
+                        </t>
+                    </t>
+                    
+                    <button type="button" t-att-class="'sdir-page-btn ' + (currentPage === getTotalPages() ? 'sdir-page-disabled' : '')" t-att-disabled="currentPage === getTotalPages() ? 'disabled' : undefined" t-on-click="nextPage">Next →</button>
                 </div>
 
             </footer><!-- /.sdir-footer -->

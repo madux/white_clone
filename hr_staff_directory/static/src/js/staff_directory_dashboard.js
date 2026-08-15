@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillStart, onWillUnmount, useRef, useState, useExternalListener } from "@odoo/owl";
+import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, useState, useExternalListener } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -29,9 +29,13 @@ export class StaffDirectoryDashboard extends Component {
         this.rpc = useService("rpc");
         this.busService = this.env.services.bus_service;
         this.rootRef = useRef("root");
+        this.jumpInput = useRef("jumpInput");
         useExternalListener(window, "click", this.onWindowClick.bind(this));
         this._boundOnKeyDown = this.onKeyDown.bind(this);
         this._boundOnClick = this._onClickOutside.bind(this);
+
+        // Re-size the page-window input after every render so its width hugs the text.
+        onPatched(() => this._autosizeJumpInput(this.jumpInput.el));
 
         // ─── Debounced Load Data for Real-Time Updates ───────────────────────
         this.debouncedLoadData = this._debounce(this._loadData.bind(this), 500);
@@ -122,6 +126,8 @@ export class StaffDirectoryDashboard extends Component {
             sortBy:      'name',
             sortDesc:    false,
             searchQuery: '',
+            currentOffset: 0,
+            pageSize: 12,
             selectedPeople: [],
             activeColumns: initialCols,
             showColumnsModal: false,
@@ -216,6 +222,9 @@ export class StaffDirectoryDashboard extends Component {
         onMounted(() => {
             document.addEventListener("keydown", this._boundOnKeyDown);
             document.addEventListener("click", this._boundOnClick);
+            // onPatched does not run on the initial mount (OWL MountFiber skips
+            // patched hooks), so size the input here for the first paint.
+            this._autosizeJumpInput(this.jumpInput.el);
         });
 
         onWillUnmount(() => {
@@ -243,6 +252,8 @@ export class StaffDirectoryDashboard extends Component {
             }
         }
     }
+
+    resetFilters() {}
 
     // ─── Real-Time Handlers ──────────────────────────────────────────────────
     onDirectoryUpdate(payload) {
@@ -296,7 +307,146 @@ export class StaffDirectoryDashboard extends Component {
         this.state.people = people;
     }
 
-    // ─── Filtered people (fuzzy search) ──────────────────────────────────────
+    // ─── Pagination Computed Properties ─────────────────────────────────
+
+    get currentPage() {
+        return Math.floor(this.state.currentOffset / this.state.pageSize) + 1;
+    }
+
+    paginatedPeople() {
+        const filtered = this.filteredPeople();
+        const total = filtered.length;
+        if (total === 0) return [];
+        const maxOffset = Math.max(0, total - this.state.pageSize);
+        const safeOffset = Math.min(Math.max(0, this.state.currentOffset), maxOffset);
+        return filtered.slice(safeOffset, safeOffset + this.state.pageSize);
+    }
+
+    getTotalPages() {
+        return Math.ceil(this.filteredPeople().length / this.state.pageSize) || 1;
+    }
+
+    get pageWindowText() {
+        const total = this.filteredPeople().length;
+        if (total === 0) return '0';
+        const safeOffset = Math.min(Math.max(0, this.state.currentOffset), Math.max(0, total - this.state.pageSize));
+        const start = safeOffset + 1;
+        const end = Math.min(safeOffset + this.state.pageSize, total);
+        return `${start}-${end}`;
+    }
+
+    get pageTotal() {
+        return this.filteredPeople().length;
+    }
+
+    visiblePages() {
+        const total = this.getTotalPages();
+        const current = this.currentPage;
+        let pages = [];
+        if (total <= 7) {
+            for (let i = 1; i <= total; i++) pages.push(i);
+        } else {
+            if (current <= 4) {
+                pages = [1, 2, 3, 4, 5, '...', total];
+            } else if (current >= total - 3) {
+                pages = [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+            } else {
+                pages = [1, '...', current - 1, current, current + 1, '...', total];
+            }
+        }
+        return pages;
+    }
+
+    // ─── Pagination Actions ─────────────────────────────────────────────
+
+    goToPage(page) {
+        if (page === '...') return;
+        if (page >= 1 && page <= this.getTotalPages()) {
+            this.state.currentOffset = (page - 1) * this.state.pageSize;
+        }
+    }
+
+    nextPage() {
+        if (this.currentPage < this.getTotalPages()) {
+            this.state.currentOffset += this.state.pageSize;
+        }
+    }
+
+    prevPage() {
+        if (this.currentPage > 1) {
+            this.state.currentOffset = Math.max(0, this.state.currentOffset - this.state.pageSize);
+        }
+    }
+
+    onJumpInput(ev) {
+        if (ev.key !== 'Enter') return;
+        const val = ev.target.value.trim();
+        const total = this.filteredPeople().length;
+
+        // Match a single page size (e.g. 5 → show 5 users per page)
+        if (/^\d+$/.test(val)) {
+            let size = parseInt(val, 10);
+            if (total > 0) size = Math.min(Math.max(1, size), total);
+            else size = 1;
+            this.state.pageSize = size;
+            this.state.currentOffset = 0;
+            ev.target.blur();
+        }
+        // Match a record range (e.g. 4-9 → show exactly records 4..9)
+        else if (/^(\d+)\s*-\s*(\d+)$/.test(val)) {
+            let match = val.match(/^(\d+)\s*-\s*(\d+)$/);
+            let start = parseInt(match[1], 10);
+            let end = parseInt(match[2], 10);
+            if (start > end) {
+                let temp = start; start = end; end = temp;
+            }
+            if (total === 0) {
+                ev.target.value = this.pageWindowText;
+                ev.target.blur();
+                return;
+            }
+            start = Math.min(Math.max(1, start), total);
+            end = Math.min(Math.max(1, end), total);
+            this.state.pageSize = end - start + 1;
+            this.state.currentOffset = start - 1;
+            ev.target.blur();
+        }
+        else {
+            // Invalid input: revert to the standard computed text
+            ev.target.value = this.pageWindowText;
+            ev.target.blur();
+        }
+    }
+
+    onJumpFocus(ev) {
+        ev.target.select();
+        this._autosizeJumpInput(ev.target);
+    }
+
+    onJumpInputType(ev) {
+        this._autosizeJumpInput(ev.target);
+    }
+
+    onJumpBlur(ev) {
+        ev.target.value = this.pageWindowText;
+        this._autosizeJumpInput(ev.target);
+    }
+
+    _autosizeJumpInput(el) {
+        if (!el) return;
+        const ghost = document.createElement('span');
+        ghost.style.cssText = window.getComputedStyle(el).cssText;
+        ghost.style.width = 'auto';
+        ghost.style.position = 'absolute';
+        ghost.style.visibility = 'hidden';
+        ghost.style.whiteSpace = 'pre';
+        ghost.textContent = el.value || ' ';
+        document.body.appendChild(ghost);
+        el.style.width = `${ghost.offsetWidth + 2}px`;
+        document.body.removeChild(ghost);
+    }
+
+    // ─── Data Access & Computed ─────────────────────────────────────────
 
     filteredPeople() {
         const q = (this.state.searchQuery || '').toLowerCase().trim();
@@ -479,6 +629,7 @@ export class StaffDirectoryDashboard extends Component {
 
     setDateFilter(type, value) {
         this.state.activeFilters = { ...this.state.activeFilters, [type]: value };
+        this.state.currentOffset = 0;
     }
 
     toggleFilterOption(categoryId, optionValue) {
@@ -490,15 +641,18 @@ export class StaffDirectoryDashboard extends Component {
             newArr = [...arr, optionValue];
         }
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
+        this.state.currentOffset = 0;
     }
 
     removeFilter(categoryId, optionValue) {
         if (categoryId === 'start_date_from' || categoryId === 'start_date_to') {
             this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: '' };
+            this.state.currentOffset = 0;
             return;
         }
         const newArr = this.state.activeFilters[categoryId].filter(v => v !== optionValue);
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
+        this.state.currentOffset = 0;
     }
 
     clearAllFilters() {
@@ -512,6 +666,8 @@ export class StaffDirectoryDashboard extends Component {
             }
         }
         this.state.activeFilters = reset;
+        this.state.activeFilters.start_date_to = '';
+        this.state.currentOffset = 0;
     }
 
     getLifecycleDotClass(val) {
@@ -559,6 +715,7 @@ export class StaffDirectoryDashboard extends Component {
             this.state.sortBy = colId;
             this.state.sortDesc = false;
         }
+        this.state.currentOffset = 0;
     }
 
     toggleSelection(id) {
@@ -699,10 +856,12 @@ export class StaffDirectoryDashboard extends Component {
 
     onSearch(ev) {
         this.state.searchQuery = ev.target.value;
+        this.state.currentOffset = 0;
     }
 
     clearSearch() {
         this.state.searchQuery = '';
+        this.state.currentOffset = 0;
     }
 
     toggleTab(tab) {
