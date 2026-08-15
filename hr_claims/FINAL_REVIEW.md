@@ -1,7 +1,13 @@
-# HR Claims — Final Review
+# HR Claims — Final Review (Superseded)
+
+> **Scope correction (2026-08-15):** This review covered only the earlier
+> claims-only increment. It is not the final review for the complete Figma
+> expense ERP and must not be used as evidence that the current task is done.
+> The corrected scope and active work are recorded in `REQUIREMENTS.md` and
+> `PROGRESS.md`. This document will be replaced after all corrected phases pass.
 
 Date: 2026-08-15  
-Status: **Complete**  
+Status: **Superseded — claims-only increment, corrected scope still in progress**  
 Target: Odoo 17 Community Edition
 
 ## 1. Outcome

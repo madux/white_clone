@@ -1,236 +1,449 @@
-# HR Claims — Requirements and Implementation Plan
+# HR Claims / Expense ERP — Corrected Requirements and Implementation Plan
 
-## 1. Scope and prototype inventory
+Last corrected: 2026-08-15
 
-This module implements the claims-management portion of the published Figma prototype at <https://stamp-menus-90926699.figma.site/> for Odoo 17 Community Edition.
+## 1. Scope correction
 
-The prototype was reviewed in both Admin and Employee modes. The claims-specific screens and states inspected were:
+`hr_claims` must implement the complete expense-management ERP shown at
+<https://stamp-menus-90926699.figma.site/>, not only the claim header and
+approval subset. The module name is retained for compatibility, but its product
+scope is the whole prototype.
 
-- Admin and employee dashboards.
-- Admin Claims Data in table, compact, and kanban modes, including expandable claim details.
-- Employee My Claims list and the four-step New Expense Claim flow: Type & Details, Line Items, Receipts, Review.
-- Claim Types/Categories and the seven-step claim-type setup flow.
-- Claim Windows and Claim Type Assignments.
-- Workflow queues: pending, approved, rejected, claim review drawer, return, approve, and reject actions.
-- Payment queue, batch-processing summary, and payment history.
-- Financial Reports, Claims Reports, Approval Analytics, and Activity Log.
-- Teams > Roles & Permissions. This page is the source of truth for security.
+The previous statement that Requests, Advances, Petty Cash, Vendors, Budgets,
+Accounts, and related screens were merely future integrations was incorrect and
+is revoked. Those areas are first-class requirements because the prototype gives
+each one its own navigation, records, workflows, KPIs, and role-dependent
+actions.
 
-The same prototype also contains requests, cash advances, petty cash, vendors, accounts, budgets, and general team administration. Those are contextual adjacent products, not `hr_claims` models. They are deliberately not duplicated in this module. Claims retain extension-friendly fields for payment and accounting references, but do not depend on Enterprise Accounting.
+The primary user experience must be a responsive OWL application that follows
+the prototype's application shell, cards, tables, kanban/card switches, status
+badges, drawers/modals, multi-step creation flows, filters, charts, and role-aware
+navigation. Native Odoo views remain useful fallbacks for administration and
+power users; they are not the primary experience.
 
-## 2. Data model
+## 2. Audited prototype inventory
 
-### `hr.claim.category`
+The corrected audit covered the following top-level areas and subpages.
 
-Groups claim types into tabs/categories such as Travel, Logistics, Training, Medical, Operations, and Office.
+1. **Dashboard:** overview, quick actions, recent activity, tasks, announcements,
+   KPI drill-downs, global search, messages, and documents.
+2. **Setup:** progress, company configuration, policy foundations, onboarding.
+3. **Claims:** claim data (table/compact/kanban), claim types/categories, windows,
+   assignments, employee claim creation, review drawer, receipts, approval,
+   rejection, return, appeal, and payment hand-off.
+4. **Requests:** data (table/card), request types, history, analytics, and new
+   pre-approval/cash-advance request flow.
+5. **Advances:** outstanding balances, issue advance, retirement, age analysis,
+   and write-offs.
+6. **Workflow:** combined pending queue, approved/rejected history, automation
+   rules, claim approval routing, request approval routing, and analytics.
+7. **Payments:** payables queue, receivables/aging, individual and batch
+   processing, payment history, methods, and reports.
+8. **Petty Cash:** funds/accounts, transactions, expense recording,
+   reconciliation, replenishment, and custodians.
+9. **Teams:** members, departments, roles and permissions, team analytics, and
+   team settings.
+10. **Accounts:** chart of accounts, account tree, GL mapping, journal entries,
+    and accounting settings.
+11. **Vendors:** directory, categories, vendor-claim links, payment terms, and
+    analytics.
+12. **Budget:** overview, department budgets, budget-versus-actual, and fiscal
+    periods/cut-offs.
+13. **Reports:** financial, claims, employees, custom reports, and scheduled
+    reports.
+14. **Audit:** activity log, user actions, system/configuration changes, advanced
+    search, and filters.
+15. **Settings and Theme:** organization/security/workflow/email/integration
+    configuration and branding/theme preferences with live preview.
 
-- `name`, `code`, `description`, `sequence`, `active`, `color`.
-- `company_id` for multi-company separation.
-- One-to-many `claim_type_ids`.
+## 3. OWL application architecture
 
-### `hr.claim.type`
+### 3.1 Client action shell
 
-Configures the rules employees see when starting a claim.
+The main menu opens one OWL client action, `hr_claims.expense_app`, containing:
 
-- Identity: `name`, `code`, `category_id`, `description`, `internal_notes`, `active`, `company_id`.
-- Amount calculation: `amount_type` (`fixed` or `open`), `fixed_amount`, `minimum_amount`, `maximum_amount`.
-- Reimbursement: `reimbursable`, default `payment_method` (`bank`, `payroll`, `cheque`, `card`, `cash`).
-- Eligibility: `eligibility` (`all` or `restricted`), `employee_ids`, `department_ids`.
-- Documentation: `receipt_policy` (`required`, `conditional`, `optional`, `none`) and `receipt_threshold`.
-- Approval: `approval_type` retained as a Community-safe configuration value; version 1 executes a single Manager/Admin decision while preserving the prototype's multi-level options for later extension.
-- Finance metadata: `gl_account_code` as a plain posting-code reference. It intentionally does not depend on Enterprise Accounting.
-- Controls: `submission_window_days`, `maximum_per_claim`, `window_ids`.
+- Collapsible/reorderable module sidebar with favorites and search.
+- Header with company, current role, global search, notifications, shortcuts,
+  messages, and document access.
+- Breadcrumb/history strip and page-specific subnavigation.
+- Responsive content region with reusable KPI cards, filters, data tables,
+  record cards, status badges, pagination, empty/loading/error states, drawers,
+  modals, and multi-step wizards.
+- Role-aware module and action visibility driven by server capabilities, never
+  by hard-coded client assumptions.
+- Odoo services (`orm`, `action`, `notification`, `dialog`, `user`) for all data
+  and actions. The client must not duplicate server authorization.
 
-### `hr.claim.window`
+### 3.2 Reusable OWL components
 
-Reusable time-rule templates shown in the prototype's Claim Windows library.
+- `ExpenseApp`, `AppSidebar`, `AppHeader`, `SubNavigation`.
+- `KpiCard`, `StatusBadge`, `DataTable`, `CardGrid`, `ViewSwitcher`,
+  `FilterBar`, `Pagination`, `EmptyState`, `LoadingState`.
+- `RecordDrawer`, `ConfirmDialog`, `ReasonDialog`, `StepWizard`,
+  `AttachmentPanel`.
+- Chart.js wrapper with deterministic lifecycle cleanup.
+- Feature pages grouped by Dashboard, Claims, Requests, Advances, Workflow,
+  Payments, Petty Cash, Teams, Accounts, Vendors, Budget, Reports, Audit,
+  Settings, and Theme.
 
-- `name`, `window_type` (`submission`, `approval`, `payment`, `cutoff`), `duration_days`, `active`.
-- Optional `start_date`, `end_date`, `description`, `company_id`.
-- Many-to-many relationship with claim types.
+### 3.3 Server gateway
 
-### `hr.claim`
+A Community-safe abstract/service model exposes role-filtered payloads and
+small action methods to the OWL client. It uses normal ORM models and record
+rules; no raw SQL or client-trusted domains are security boundaries.
 
-The claim header and workflow record. It inherits `mail.thread` and `mail.activity.mixin`.
+## 4. Data model
 
-- Identity: sequence-backed `name` (`CLM/YYYY/NNNNN`), `title`, `description`.
-- Ownership: `employee_id`, related `department_id`, `company_id`, `currency_id`.
-- Classification: `claim_type_id`, `money_type` (`personal`, `company`, `hybrid`), `reimbursement_method`.
-- Period: `expense_start_date`, `expense_end_date`, `submitted_date`.
-- Detail: `line_ids`, computed `amount_total`, `attachment_ids`, computed attachment count.
-- Workflow: `state`, `approval_comment`, `rejection_reason`, `return_reason`, `approved_by_id`, `approved_date`, `paid_date`.
-- Finance: one-to-many `payment_ids`, computed `amount_paid` and `payment_state`.
-- Audit: one-to-many `audit_ids`; chatter tracks important fields and messages.
+All business models include `company_id`, currency where monetary, chatter or
+structured audit where operationally important, and multi-company rules.
 
-### `hr.claim.line`
+### 4.1 Claims (existing, expanded)
 
-Expense items entered in step 2 of the employee flow.
+- `hr.claim.category`: category identity, icon/color, sequence, active.
+- `hr.claim.type`: category, fixed/open amount, limits, reimbursable flag,
+  receipt policy/threshold, eligibility, default payment method, GL mapping,
+  approval routing, windows.
+- `hr.claim.window`: submission/approval/payment/cut-off template and dated
+  boundaries.
+- `hr.claim.type.assignment`: explicit claim-type-to-window/employee/department
+  assignment with effective dates.
+- `hr.claim`: employee, type, money type, purpose, period, line items,
+  attachments, amount, approval state/history, advance retirement, payable,
+  payment and journal references.
+- `hr.claim.line`: date, category, description, quantity/rate/amount, vendor,
+  receipt, tax and GL references.
+- `hr.claim.payment`: reimbursement payment register.
+- `hr.claim.audit`: immutable cross-workflow claim audit.
 
-- `claim_id`, `sequence`, `description`, `category`, `amount`, `expense_date`, `receipt_reference`.
-- `currency_id` related from the claim.
-- SQL/Python validation prevents negative amounts.
+### 4.2 Requests
 
-### `hr.claim.payment`
+- `hr.expense.request.type`: request name/code, purpose class, amount limits,
+  whether approval creates an advance, active, routing defaults.
+- `hr.expense.request`: sequence, employee, type, purpose, amount, needed date,
+  attachments, state, approval metadata, linked advance and audit events.
 
-Community-safe reimbursement register used for the Finance payment queue and history.
+Relationships: a request may create one cash advance; it may also be referenced
+by later claims. Request types link to approval rules.
 
-- Sequence-backed `name` (`PAY/YYYY/NNNNN`), `claim_id`, related employee/company/currency.
-- `amount`, `payment_method`, `payment_date`, `reference`, `notes`.
-- `state` (`draft`, `completed`, `cancelled`), `processed_by_id`.
-- Confirming a payment marks the claim paid once its approved total has been covered.
+### 4.3 Cash advances
 
-### `hr.claim.audit`
+- `hr.cash.advance`: approved request/employee, issued amount/date/method,
+  retirement deadline, outstanding amount, aging bracket, state, payment and
+  accounting references.
+- `hr.cash.advance.retirement`: advance, claim or manual settlement, amount,
+  date, reference, state.
+- `hr.cash.advance.writeoff`: advance, reason, approval, amount, date, journal.
 
-Immutable functional audit entries created by claim/payment workflow methods.
+Outstanding equals issued minus posted retirements/write-offs. Claim approval
+may automatically retire selected advances up to eligible claim value.
 
-- `claim_id`, `action`, `description`, `user_id`, `date`, `company_id`.
-- Read from the Audit menu by Administrators only.
-- Chatter remains the human conversation/history; this model powers the structured Activity Log.
+### 4.4 Approval engine
 
-### Transient wizards
+- `hr.expense.approval.rule`: target (`claim`/`request`/`advance_writeoff`/
+  `petty_replenishment`), type/category, amount bounds, department, condition,
+  auto-approve flag, SLA/escalation hours, sequence, active.
+- `hr.expense.approval.rule.line`: ordered level, approver group/user/manager,
+  sequential or parallel behavior.
+- `hr.expense.approval.step`: runtime approval instance, source reference,
+  level, approver, decision, comment, timestamps.
 
-- `hr.claim.approval.wizard`: optional Manager/Admin approval comment captured atomically with approval.
-- `hr.claim.reject.wizard`: mandatory reason for Reject or Return for correction.
-- `hr.claim.payment.wizard`: Finance/Admin registration of an approved claim payment.
+### 4.5 Payments
 
-## 3. Workflow and state machine
+- `hr.expense.payment.method`: bank/payroll/cash/cheque configuration, active,
+  batch support.
+- `hr.expense.payment.batch`: selected payables, total, method, reference,
+  processing state and result log.
+- Existing `hr.claim.payment` links to an optional batch.
+- Employee bank details use Community `res.partner.bank` linked through the
+  employee work contact/user partner, with an explicit preferred account.
 
-```text
-Draft ──Submit──> Submitted ──Approve──> Approved ──Pay in full──> Paid
-  │                   │   │
-  │                   │   ├──Reject──> Rejected
-  │                   │   └──Return───> Returned ──Correct & Resubmit──> Submitted
-  └──Withdraw/Cancel──┴───────────────────────────────────────────────> Cancelled
-```
+### 4.6 Petty cash
 
-Rules:
+- `hr.petty.cash.fund`: code, name, location/branch, custodian employee,
+  currency, maximum fund, minimum/replenishment threshold, current balance,
+  account, active, last reconciliation.
+- `hr.petty.cash.transaction`: sequence, fund, type (opening, expense,
+  replenishment, adjustment, closure), date, payee/vendor, category, amount,
+  receipt, state, balance-after, GL/journal reference.
+- `hr.petty.cash.reconciliation`: period, fund, system balance, physical count,
+  variance, status, reconciler, adjustment transaction and notes.
+- `hr.petty.cash.replenishment`: fund, requested/approved/issued amounts,
+  requester, approver, justification, urgency, dates, reference, state.
 
-- Employees create and edit only their own Draft/Returned claims.
-- Submit validates employee ownership, at least one positive line, period order, claim-type min/max limits, active submission windows, eligibility, and receipt rules.
-- Manager or Admin approves, rejects, or returns Submitted claims. Approval accepts an optional comment; Reject/Return requires a reason.
-- Finance or Admin registers payments only for Approved claims. Partial payments are supported; full coverage moves the claim to Paid.
-- Paid claims cannot be edited or returned through normal UI actions.
-- Withdraw is available to the owner while Submitted; Cancel is available while Draft/Returned.
-- Every transition creates an audit entry and chatter message.
+### 4.7 Lightweight Community accounting
 
-## 4. Views and navigation
+The module must not depend on Enterprise accounting. It implements the
+prototype's required ledger as a focused expense subledger:
 
-### Dashboard (OWL client action)
+- `hr.expense.account`: code, name, type/subtype, parent, header/posting,
+  active, company.
+- `hr.expense.gl.map`: transaction/category, debit, credit, optional tax
+  account and cost-center strategy.
+- `hr.expense.journal`: sequence, date, source model/id/reference,
+  description, state, balanced total.
+- `hr.expense.journal.line`: journal, account, debit, credit, department,
+  employee/vendor, currency.
 
-- Role-aware KPI cards: total claims, submitted/pending review, approved awaiting payment, paid, rejected, and total/approved/paid value.
-- Pending approval/payment queue summaries for privileged roles.
-- Recent claims table with direct drill-down.
-- Chart.js charts: claim status distribution (doughnut), monthly submitted/approved/paid value trend (line), and spend by department (bar).
-- Employee data is restricted by the same server-side security rules, so employees see only their claims.
+Approval/payment/advance/petty-cash actions create balanced draft or posted
+entries according to configuration. If Community `account` is installed later,
+an adapter can replace this subledger without changing business workflows.
+
+### 4.8 Vendors
+
+- Extend `res.partner` with expense-vendor flag, vendor code/category, rating,
+  payment term, default expense account, tax data, active status and payment
+  details.
+- `hr.expense.vendor.category`: name, tax rate, default GL account.
+- `hr.expense.payment.term`: due days and early-payment discount.
+- Claims and petty-cash transactions link to vendors.
+
+### 4.9 Budgets and periods
+
+- `hr.expense.budget`: fiscal period/company, department/cost center, state.
+- `hr.expense.budget.line`: category/GL, approved, forecast, committed and
+  actual values, thresholds and computed availability/status.
+- `hr.expense.period`: start/end, submission/approval/payment/GL cut-offs,
+  open/closed/future state and controlled reopen audit.
+
+Requests create commitments; approved/posted expenses create actuals and
+release commitments.
+
+### 4.10 Configuration, reports, and audit
+
+- `hr.expense.settings` values are stored on `res.company` and/or
+  `ir.config_parameter` with Admin-only writes.
+- `hr.expense.email.template` stores prototype notification templates and
+  activation state; sending uses Community `mail.template` where configured.
+- `hr.expense.integration` stores non-secret connection status/configuration
+  metadata; real providers remain pluggable adapters.
+- `hr.expense.theme` stores company branding/color/typography/layout choices.
+- `hr.expense.custom.report` and `hr.expense.scheduled.report` store report
+  definitions and delivery schedules. Scheduled delivery uses `ir.cron` and
+  Community mail.
+- `hr.expense.audit` is the immutable cross-module audit trail for user actions
+  and system configuration changes.
+
+## 5. Workflow/state machines
 
 ### Claims
 
-- List view with reference, employee, type, amount, state, submitted and approval/payment dates; decorations make states scannable.
-- Form view with header workflow buttons/statusbar, employee/period/detail fields, editable line items, receipts, approval/finance information, audit history, and chatter.
-- Kanban grouped visually by workflow state.
-- Search view with My Claims, Draft, Submitted, Approved, Paid, Rejected, type, employee, department, date, and state groupings.
-- Graph and pivot views for reports and ad-hoc analysis.
+```text
+Draft -> Submitted -> In Approval -> Approved -> Partially Paid -> Paid
+                    |             |
+                    |             -> Returned -> Draft/Resubmitted
+                    -> Rejected -> Appealed -> In Approval
+Draft/Returned -> Cancelled; Submitted -> Withdrawn
+```
 
-### Configuration
+### Requests
 
-- Categories list/form.
-- Claim Types list/form containing the seven prototype configuration areas as notebook pages.
-- Claim Windows list/form and type assignment from the claim-type form.
-- Configuration menus are Admin-only; other roles receive read access to active types/windows needed to create and review claims.
+```text
+Draft -> Submitted -> In Approval -> Approved -> Fulfilled/Advance Issued -> Closed
+                    -> Returned -> Draft
+                    -> Rejected
+Draft/Submitted -> Cancelled/Withdrawn
+```
 
-### Workflow
+### Advances
 
-- Pending Approvals action filtered to Submitted claims for Manager/Admin.
-- Approved and Rejected saved actions.
-- Claim form/drawer equivalent provides Details, Line Items, Approval History/Audit, receipts, and actions.
+```text
+Approved Request -> Issued -> Partially Retired -> Retired
+                         |                     -> Written Off (approval required)
+                         -> Overdue (derived from deadline)
+```
 
-### Payments
+### Payment batches
 
-- Payment Queue action filtered to Approved claims for Finance/Admin.
-- Payment History list/form and registration wizard.
-- Employee can read payments linked to own claims; Manager can read payments on all visible claims; only Finance/Admin processes them.
+```text
+Draft -> Validated -> Processing -> Completed
+                  -> Failed/Partially Failed -> Retried or Cancelled
+```
 
-### Audit
+### Petty cash transactions
 
-- Admin-only timeline/list of claim transition and payment events with action filters.
+```text
+Draft -> Pending Approval -> Approved -> Posted
+                         -> Rejected
+Reconciliation: Draft -> Counted -> Passed or Variance -> Adjusted/Closed
+Replenishment: Draft -> Submitted -> Approved -> Issued or Rejected/Cancelled
+```
 
-### Reports
+### Budgets/periods
 
-- OWL dashboard charts plus native graph/pivot actions.
-- Claims by status/type/department and amount over time.
-- Manager, Finance, and Admin can view reports; Finance/Admin can export using standard Odoo list/pivot export permissions.
+Budgets move Draft -> Approved -> Active -> Closed. Periods move Future -> Open
+-> Closed; reopening requires Admin/Finance authority, a reason, and audit.
 
-## 5. Roles and access rules
+Every transition validates role, company, current state, amounts, periods,
+receipts, budget, and accounting balance on the server.
 
-The prototype's **Teams > Roles & Permissions** page defines four system roles. The following mapping is authoritative.
+## 6. Roles and security (Figma Roles page is authoritative)
 
-| Prototype role | Prototype permissions | Odoo group and enforcement |
+| Role | Prototype permissions | Module enforcement |
 |---|---|---|
-| Employee | Submit Claims; View Own Claims; Create Requests | **Claims / Employee**. Create/read own claims, write/delete only own editable claims, read own payments, read active types/windows. Requests are outside this module. |
-| Manager | Approve Claims; Reject Claims; View Reports; Manage Team; View All Claims | **Claims / Manager**. Read all company claims and their payment history; approve/reject/return; use claim reports. It is separate from Employee because the prototype does not grant claim submission to this role. Team administration continues to use Odoo HR groups and is not reimplemented here. |
-| Finance | Process Payments; View All Claims; Generate Reports; View Reports | **Claims / Finance**. Read all company claims, lines, receipts, types, windows, and payments; create/confirm payment records; use/export reports; cannot submit or approve/reject claims. It is separate from Employee. |
-| Admin | Full System Access; User Management; Settings; Audit Trail Access | **Claims / Administrator**, implies Manager and Finance. Full module CRUD, configuration, workflow, payment, and audit access. General Odoo user management remains governed by Odoo Administration Settings. |
+| Employee | Submit Claims; View Own Claims; Create Requests | Own claims/requests/advances/payments; create and correct submissions; view own financial history; petty-cash access only when assigned custodian. |
+| Manager | Approve Claims; Reject Claims; View Reports; Manage Team; View All Claims | Company-wide claim/request visibility; approval decisions; reports; team/department operational views; no payment execution or system configuration unless separately granted. |
+| Finance | Process Payments; View All Claims; Generate Reports; View Reports | Company-wide expense visibility; payments/batches; advances; petty cash; subledger; vendors; budgets/periods; reports; no claim/request approval unless a configured rule explicitly assigns the user. |
+| Admin | Full System Access; User Management; Settings; Audit Trail Access | Full CRUD and workflow access across all module areas, role/configuration/theme/integration management, and complete audit visibility. |
 
-All persistent records have a global allowed-company rule. Employee own-record rules use `employee_id.user_id = user.id`. Manager/Finance/Admin group rules widen claim visibility to allowed companies. Workflow methods also check groups server-side; hiding buttons is not the security boundary.
+Security implementation requirements:
 
-## 6. Dashboard/chart definitions
+- Four non-misleading Odoo groups with explicit ACLs; role implication must not
+  accidentally widen permissions.
+- Global allowed-company rules on all persistent models.
+- Employee ownership/custodian rules; Manager and Finance company-wide rules
+  only for the areas granted above.
+- Server methods recheck capabilities for every workflow and batch action.
+- Audit records are append-only to normal users and readable only as permitted.
+- Secret integration credentials, if later added, must use system parameters and
+  never be returned in OWL payloads.
 
-- **Status Distribution:** count of claims by Draft, Submitted, Returned, Approved, Rejected, Paid, Cancelled.
-- **Monthly Trend:** monthly amount submitted, approved, and paid for the most recent six months, attributed respectively by submission, approval, and payment event dates.
-- **Spend by Department:** approved plus paid claim amount grouped by employee department; top departments by value.
-- **Approval KPIs:** approval rate, rejection rate, current pending queue, total approved value, average age of pending claims.
-- **Payment KPIs:** approved payable count/value, overdue count/value using seven days as the prototype threshold, average days from approval to payment.
+## 7. Required OWL pages and visual behavior
 
-## 7. Assumptions and open questions
+Each audited subpage in section 2 is a real OWL screen. Required interaction
+patterns include:
 
-1. The prototype is an entire expense ERP, while the requested deliverable is `hr_claims`. Requests, advances, petty cash, vendors, budgets, and general accounting are treated as integrations/future modules, not duplicated here.
-2. On the Admin Claims Data screen, **Create Claim** opens the seven-step **Create New Claim Type** flow. This is treated as a prototype label/wiring defect; Odoo exposes separate New Claim and New Claim Type actions.
-3. Prototype statuses mix `Pending`, `Pending Approval`, and `Submitted`. They are normalized to one `submitted` state displayed as **Submitted**.
-4. The review drawer includes **Return** and employee messages mention **Pending Employee Response**. This is implemented as `returned`, editable by the employee and resubmittable.
-5. Approval configuration advertises multi-level sequential/parallel/conditional routing but no authoritative approver-building behavior is shown. Version 1 stores the choice but executes the Roles-page-authorized Manager/Admin approval step.
-6. Receipt examples conflict: Mileage says no receipt in the Claim Types cards, while the employee wizard says original receipts are required over ₦10,000. Claim-type receipt policy is authoritative; conditional threshold defaults to ₦10,000 when selected.
-7. Claim windows appear both as duration templates and dated windows. Both are supported; dated boundaries take precedence, otherwise submission-age days are applied.
-8. The prototype displays Naira. The implementation uses each company currency and formats it through Odoo; it works for NGN without hard-coding it.
-9. Employee bank details are shown in the payment queue but no Community `hr.employee` bank field is guaranteed. Payment reference/method are stored without introducing payroll/accounting dependencies; bank-master integration is deferred.
-10. Corporate Card Claim is non-reimbursable in one card but appears in approval workflow. Non-reimbursable claims can be approved for audit but are excluded from the payment queue.
-11. Attachments use Odoo `ir.attachment`/chatter rather than a second document store. File-type/size enforcement follows Odoo server limits; the prototype's 10 MB and HEIC language is advisory.
-12. A user without a linked `hr.employee` cannot create an employee claim; Admin can assign the employee explicitly.
-13. The prototype's four-step claim flow and seven-step claim-type flow are represented by native Odoo forms with clearly separated notebook pages. This keeps browser history, access checks, autosave, and validation idiomatic while retaining every captured data area.
-14. The payment queue supports multiple records and individual/partial payment registration. Automated bank-file generation or a single bulk bank execution is an integration concern because the prototype does not define a banking format or provider.
-15. The Roles page is treated as four distinct capability sets. Manager and Finance therefore do not implicitly receive Employee submission rights; Administrator composes Manager and Finance and retains explicit full module access.
+- KPI cards with drill-down domains.
+- Search, status/date/type/department filters, sorting, pagination, and export.
+- Table/compact/card/kanban switches where shown.
+- Side drawer for claim/request/advance/payment/fund detail and timeline.
+- Step wizards for new claim, claim type, request, fund, petty expense,
+  reconciliation, replenishment, approval rule, vendor, budget line, and report.
+- Approve/reject/return/appeal/write-off/reconcile/issue/pay actions with reason
+  capture and immediate refresh.
+- Receipt/document upload through Odoo attachments.
+- Responsive Bootstrap/Odoo styling matching the prototype's dense cards,
+  rounded panels, pink/violet accents, colored status chips, and mobile stacking.
+- Loading skeletons, permission-denied, empty, validation-error, and retry states.
+- Native Odoo actions may be opened for advanced editing without abandoning the
+  OWL shell's navigation context.
 
-## 8. Implementation phases
+## 8. Dashboard and charts
 
-1. **Requirements and checkpoint foundation**
-   - Requirements, assumptions, state machine, role map, implementation plan, and `PROGRESS.md`.
-2. **Data model, security, and workflow**
-   - Models, sequences, groups, ACLs, record rules, validation, transitions, audit, payment/rejection wizards, and seed categories/types.
-3. **Core Odoo views**
-   - Claims list/form/kanban/search/graph/pivot, configuration, approvals, payments, audit, actions, and menus.
-4. **OWL dashboard and charts**
-   - Role-aware server payload, KPI cards, Chart.js charts, drill-downs, and Bootstrap/Odoo styling.
-5. **Verification and polish**
-   - Clean install/upgrade, automated model workflow tests, view/assets checks, manual role/workflow checklist, fixes, documentation, and final review.
+Chart.js is required for:
 
-## 9. Manual test checklist
+- Overall and per-module status distributions.
+- Monthly submitted/approved/paid claims trend using their respective event
+  dates.
+- Expense category and department spend.
+- Request trend/type/status.
+- Advance aging buckets and outstanding exposure.
+- Approval throughput, SLA, escalation and decision rates.
+- Payment aging, method mix, days-to-pay and batch outcomes.
+- Petty-cash fund utilization, expense categories, reconciliation success and
+  replenishment status.
+- Team role/department distribution and employee financial exposure.
+- Vendor spend, monthly trend and performance.
+- Budget approved/committed/actual/available and variance.
 
-The result of each test is recorded in `FINAL_REVIEW.md`.
+All metrics use the same record-rule-filtered server data as their drill-down.
 
-- [x] Install `hr_claims` on a clean Odoo 17 Community database without traceback.
-- [x] Employee creates a Draft claim with multiple lines and saves it.
-- [x] Employee submits a valid claim; state, submission date, audit, and chatter update.
-- [x] Invalid empty, over-limit, ineligible, outside-window, and missing-required-receipt claims are blocked.
-- [x] Employee sees only own claims/payments; cannot read another employee's claim directly.
-- [x] Manager sees all allowed-company claims and approves a Submitted claim.
-- [x] Manager can add an optional approval comment and read payment history for visible claims without processing payments.
-- [x] Manager rejects a Submitted claim only with a reason.
-- [x] Manager returns a claim; employee edits and resubmits it.
-- [x] Finance sees approved reimbursable claims and cannot approve/reject.
-- [x] Finance registers a partial payment, then completes payment; claim becomes Paid only when covered.
-- [x] Draft payment exposure cannot exceed the claim residual, and confirmation serializes on the claim to prevent concurrent overpayment.
-- [x] Employee can withdraw a Submitted claim and cancel a Draft/Returned claim.
-- [x] Dashboard KPIs and all three charts load with live data and respect employee visibility.
-- [x] Monthly Submitted, Approved, and Paid chart values use their respective event dates.
-- [x] Native graph/pivot reports render and privileged roles can open them.
-- [x] Admin can maintain categories, types, windows, assignments, and view audit events.
-- [x] Multi-company rules prevent cross-company visibility.
+## 9. Community-only integration decisions
+
+- No Enterprise-only model, field, view, widget, spreadsheet, dashboard, or
+  accounting dependency is allowed.
+- Bank/NIBSS, Paystack, payroll, QuickBooks/Sage and cloud storage screens are
+  implemented as configuration/status surfaces and adapter interfaces. They do
+  not claim to transfer money or post externally without a provider module.
+- The internal balanced expense subledger satisfies the Figma GL/journal
+  behavior in Community. External accounting synchronization is additive.
+- Standard `mail`, `hr`, `web`, `base_setup`, and Community `res.partner.bank`
+  capabilities are reused.
+
+## 10. Assumptions and prototype gaps
+
+1. The module's legacy name remains `hr_claims`, while its displayed product
+   name becomes **Expense Management**.
+2. Some prototype subnavigation items visibly fail to change content
+   (`Workflow > Analytics`, `Payments > Reports`, `Petty Cash > Custodians`) and
+   the Admin/Employee demo toggle did not respond during the corrected audit.
+   These are treated as prototype wiring defects; the named screens are still
+   implemented from their surrounding labels and data domain.
+3. Claims mix Pending, Pending Approval, and Under Review. The database uses
+   explicit Draft, Submitted, In Approval, Returned, Approved, Rejected,
+   Appealed, Partially Paid, Paid, Withdrawn, and Cancelled states; the UI may
+   group them into the prototype labels.
+4. The Admin **Create Claim** control appears inconsistent with the separate
+   employee claim wizard and claim-type creation. The product exposes both
+   **New Claim** and **New Claim Type** unambiguously.
+5. Multi-level rules are implemented sequentially first. Parallel approval is
+   represented in the model and UI but completes only when every required step
+   at the level decides.
+6. Accounting codes and example monetary values are seed/demo data, never
+   hard-coded business logic. Company currency drives formatting.
+7. Budget commitment is created from an approved request and actual spend from
+   an approved claim or posted petty-cash expense. Manual budget adjustments
+   require Finance/Admin and audit.
+8. A petty-cash custodian can transact/reconcile only assigned funds; Finance
+   and Admin retain company-wide oversight.
+9. The Figma integrations are configuration concepts, not permission to send
+   financial or personal data to third parties. Provider execution is inactive
+   until separately configured and authorized.
+10. Existing native claim views and tests remain supported while the OWL app is
+    expanded; they are fallback/admin surfaces, not evidence that a Figma page
+    is complete.
+
+## 11. Corrected implementation phases
+
+1. **Corrected audit and requirements**
+   - Reopen progress, revoke the scope reduction, inventory all pages/flows,
+     define full models/security/OWL architecture, checkpoint documentation.
+2. **Shared OWL shell and server gateway**
+   - Application shell, routing/state, reusable components, capability payload,
+     loading/error states, role-aware navigation, theme tokens.
+3. **Requests, advances, and approval engine**
+   - Models, rules/steps, workflows, security, OWL pages/wizards, tests.
+4. **Payments and petty cash**
+   - Methods/batches, funds/transactions/reconciliation/replenishment,
+     accounting effects, OWL pages/wizards, tests.
+5. **Accounts, vendors, budgets, and periods**
+   - Community subledger, mappings/journals, vendor master, commitments/actuals,
+     period cut-offs, OWL pages, tests.
+6. **Teams, reports, audit, settings, and theme**
+   - Operational team views, all charts/reports, audit search, settings,
+     email/integration metadata, branding, scheduled reports.
+7. **Polish and final verification**
+   - Full upgrade and clean install, role/security regression, browser QA against
+     every audited screen and workflow, corrected final review.
+
+Each meaningful unit updates `PROGRESS.md`, passes an Odoo upgrade or clean
+install appropriate to the phase, and receives a descriptive git checkpoint.
+
+## 12. Corrected manual test checklist
+
+### Installation and shell
+
+- [ ] Clean-install and upgrade `hr_claims` on Odoo 17 Community.
+- [ ] OWL app loads without console errors and restores navigation state.
+- [ ] Every sidebar module and audited subpage renders loading, populated and
+  empty states responsively.
+
+### Roles/security
+
+- [ ] Employee sees and mutates only own/custodian-authorized records.
+- [ ] Manager approves/rejects and manages team views but cannot pay or configure.
+- [ ] Finance processes payments/advances/petty cash/accounting/budgets but does
+  not receive unrelated Admin rights.
+- [ ] Admin has full configuration and audit access.
+- [ ] Cross-company reads/writes and direct RPC bypass attempts are blocked.
+
+### End-to-end workflows
+
+- [ ] Claim create -> receipt -> submit -> multi-level approve/return/reject/
+  appeal -> partial/full payment -> journal and audit.
+- [ ] Request create -> approve -> fulfill or issue advance.
+- [ ] Advance issue -> partial retirement by claim -> retirement/write-off.
+- [ ] Payment queue -> individual and batch processing -> history/aging.
+- [ ] Petty fund -> expense -> approval/posting -> reconciliation variance ->
+  replenishment approval/issue.
+- [ ] Vendor and GL mapping feed claims/petty cash and balanced journals.
+- [ ] Requests commit budget; approved/posted expenses update actuals; closed
+  periods block transactions and controlled reopen is audited.
+- [ ] Custom/scheduled reports, email template state, settings and themes persist.
+
+### Analytics and fidelity
+
+- [ ] KPI drill-down counts and chart totals reconcile to filtered records.
+- [ ] All Chart.js instances resize and destroy cleanly on navigation.
+- [ ] Table/card/kanban, filters, pagination, drawers and wizards follow the
+  prototype interaction patterns.
+- [ ] Browser QA results are recorded page-by-page in `FINAL_REVIEW.md`.
