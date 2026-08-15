@@ -67,6 +67,36 @@
         <field name="model_id" ref="model_hr_claim_audit"/>
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
     </record>
+    <record id="rule_hr_expense_request_type_company" model="ir.rule">
+        <field name="name">Request types: allowed companies</field>
+        <field name="model_id" ref="model_hr_expense_request_type"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_hr_expense_request_company" model="ir.rule">
+        <field name="name">Requests: allowed companies</field>
+        <field name="model_id" ref="model_hr_expense_request"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_company" model="ir.rule">
+        <field name="name">Advances: allowed companies</field>
+        <field name="model_id" ref="model_hr_cash_advance"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_retirement_company" model="ir.rule">
+        <field name="name">Advance retirements: allowed companies</field>
+        <field name="model_id" ref="model_hr_cash_advance_retirement"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_hr_expense_approval_rule_company" model="ir.rule">
+        <field name="name">Approval rules: allowed companies</field>
+        <field name="model_id" ref="model_hr_expense_approval_rule"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+    <record id="rule_hr_expense_approval_step_company" model="ir.rule">
+        <field name="name">Approval steps: allowed companies</field>
+        <field name="model_id" ref="model_hr_expense_approval_step"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
 
     <!-- Employee self-service; privileged all-record rules are unioned with these. -->
     <record id="rule_hr_claim_employee_own" model="ir.rule">
@@ -105,6 +135,55 @@
         <field name="name">Claim payments: manager, finance and admin see all</field>
         <field name="model_id" ref="model_hr_claim_payment"/>
         <field name="groups" eval="[(4, ref('group_hr_claim_manager')), (4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_hr_expense_request_employee_own" model="ir.rule">
+        <field name="name">Requests: employee owns record</field>
+        <field name="model_id" ref="model_hr_expense_request"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_hr_expense_request_privileged_all" model="ir.rule">
+        <field name="name">Requests: operational roles see all</field>
+        <field name="model_id" ref="model_hr_expense_request"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_manager')), (4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_employee_own" model="ir.rule">
+        <field name="name">Advances: employee owns record</field>
+        <field name="model_id" ref="model_hr_cash_advance"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_privileged_all" model="ir.rule">
+        <field name="name">Advances: Finance and Admin see all</field>
+        <field name="model_id" ref="model_hr_cash_advance"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_retirement_employee_own" model="ir.rule">
+        <field name="name">Advance retirements: employee owns advance</field>
+        <field name="model_id" ref="model_hr_cash_advance_retirement"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/>
+        <field name="domain_force">[('advance_id.employee_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_hr_cash_advance_retirement_privileged_all" model="ir.rule">
+        <field name="name">Advance retirements: Finance and Admin see all</field>
+        <field name="model_id" ref="model_hr_cash_advance_retirement"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_finance')), (4, ref('group_hr_claim_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+    <record id="rule_hr_expense_approval_step_employee_own" model="ir.rule">
+        <field name="name">Approval steps: employee owns source</field>
+        <field name="model_id" ref="model_hr_expense_approval_step"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_employee'))]"/>
+        <field name="domain_force">['|', ('claim_id.employee_id.user_id', '=', user.id), ('request_id.employee_id.user_id', '=', user.id)]</field>
+    </record>
+    <record id="rule_hr_expense_approval_step_manager_all" model="ir.rule">
+        <field name="name">Approval steps: Managers and Admin see all</field>
+        <field name="model_id" ref="model_hr_expense_approval_step"/>
+        <field name="groups" eval="[(4, ref('group_hr_claim_manager')), (4, ref('group_hr_claim_admin'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 </odoo>

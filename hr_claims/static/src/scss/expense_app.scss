@@ -63,6 +63,13 @@
 .o_expense_table_row { cursor: pointer; }
 .o_expense_table_row:hover { background: #fff7fb; }
 .o_expense_large_icon { display: inline-grid; place-items: center; width: 72px; height: 72px; color: #be185d; border-radius: 22px; background: linear-gradient(135deg, #fce7f3, #ede9fe); font-size: 1.8rem; }
+.o_expense_record_search { width: min(360px, 100%); }
+.o_expense_filter_select { width: 180px; }
+.o_expense_modal_backdrop { position: absolute; inset: 0; z-index: 1050; display: grid; place-items: center; padding: 1rem; background: #17203399; backdrop-filter: blur(3px); }
+.o_expense_modal { width: min(620px, 100%); max-height: calc(100vh - 2rem); overflow: auto; border-radius: 18px; }
+.o_expense_modal .card-header, .o_expense_modal .card-footer { position: sticky; z-index: 1; }
+.o_expense_modal .card-header { top: 0; }
+.o_expense_modal .card-footer { bottom: 0; }
 
 @media (max-width: 767.98px) {
     .o_expense_sidebar { width: 68px; min-width: 68px; }

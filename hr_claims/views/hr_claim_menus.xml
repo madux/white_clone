@@ -5,10 +5,15 @@
     <menuitem id="menu_hr_claim_my" name="My Claims" parent="menu_hr_claim_root" action="action_hr_claim_my" sequence="10" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_admin"/>
     <menuitem id="menu_hr_claim_all" name="All Claims" parent="menu_hr_claim_root" action="action_hr_claim_all" sequence="20" groups="hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
 
+    <menuitem id="menu_hr_expense_requests" name="Requests" parent="menu_hr_claim_root" sequence="25" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_manager,hr_claims.group_hr_claim_admin"/>
+    <menuitem id="menu_hr_expense_request_data" name="Request Data" parent="menu_hr_expense_requests" action="action_hr_expense_requests" sequence="10"/>
+    <menuitem id="menu_hr_cash_advances" name="Advances" parent="menu_hr_claim_root" action="action_hr_cash_advances" sequence="27" groups="hr_claims.group_hr_claim_employee,hr_claims.group_hr_claim_finance,hr_claims.group_hr_claim_admin"/>
+
     <menuitem id="menu_hr_claim_workflow" name="Workflow" parent="menu_hr_claim_root" sequence="30" groups="hr_claims.group_hr_claim_manager"/>
     <menuitem id="menu_hr_claim_pending" name="Pending Approvals" parent="menu_hr_claim_workflow" action="action_hr_claim_pending" sequence="10"/>
     <menuitem id="menu_hr_claim_approved" name="Approved" parent="menu_hr_claim_workflow" action="action_hr_claim_approved" sequence="20"/>
     <menuitem id="menu_hr_claim_rejected" name="Rejected" parent="menu_hr_claim_workflow" action="action_hr_claim_rejected" sequence="30"/>
+    <menuitem id="menu_hr_expense_request_pending" name="Pending Requests" parent="menu_hr_claim_workflow" action="action_hr_expense_requests_pending" sequence="40"/>
 
     <menuitem id="menu_hr_claim_payments" name="Payments" parent="menu_hr_claim_root" sequence="40" groups="hr_claims.group_hr_claim_finance"/>
     <menuitem id="menu_hr_claim_payment_queue" name="Payment Queue" parent="menu_hr_claim_payments" action="action_hr_claim_payment_queue" sequence="10"/>
@@ -20,5 +25,7 @@
     <menuitem id="menu_hr_claim_categories" name="Categories" parent="menu_hr_claim_configuration" action="action_hr_claim_categories" sequence="10"/>
     <menuitem id="menu_hr_claim_types" name="Claim Types" parent="menu_hr_claim_configuration" action="action_hr_claim_types" sequence="20"/>
     <menuitem id="menu_hr_claim_windows" name="Claim Windows" parent="menu_hr_claim_configuration" action="action_hr_claim_windows" sequence="30"/>
+    <menuitem id="menu_hr_expense_request_types" name="Request Types" parent="menu_hr_claim_configuration" action="action_hr_expense_request_types" sequence="40"/>
+    <menuitem id="menu_hr_expense_approval_rules" name="Approval Rules" parent="menu_hr_claim_configuration" action="action_hr_expense_approval_rules" sequence="50"/>
     <menuitem id="menu_hr_claim_audit" name="Audit Trail" parent="menu_hr_claim_root" action="action_hr_claim_audit" sequence="90" groups="hr_claims.group_hr_claim_admin"/>
 </odoo>

@@ -4,4 +4,7 @@ from . import hr_claim_window
 from . import hr_claim
 from . import hr_claim_payment
 from . import hr_claim_audit
+from . import hr_expense_request
+from . import hr_cash_advance
+from . import hr_expense_approval
 from . import hr_expense_app

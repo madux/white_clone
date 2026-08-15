@@ -48,6 +48,12 @@ export class ExpenseApp extends Component {
             activePage: "overview",
             sidebarCollapsed: false,
             moduleSearch: "",
+            recordSearch: "",
+            statusFilter: "all",
+            viewMode: "table",
+            pageLoading: false,
+            pageData: { records: [], kpis: {} },
+            modal: null,
             revision: 0,
         });
 
@@ -77,6 +83,7 @@ export class ExpenseApp extends Component {
         this.state.error = false;
         try {
             this.state.data = await this.orm.call("hr.claim", "get_app_bootstrap", []);
+            await this.loadActivePage();
             this.state.revision += 1;
         } catch (error) {
             this.state.error = true;
@@ -124,6 +131,30 @@ export class ExpenseApp extends Component {
         return this.state.activeModule === "workflow";
     }
 
+    get isRequests() {
+        return this.state.activeModule === "requests";
+    }
+
+    get isAdvances() {
+        return this.state.activeModule === "advances";
+    }
+
+    get pageKpis() {
+        return this.state.pageData?.kpis || {};
+    }
+
+    get pageRecords() {
+        const query = this.state.recordSearch.trim().toLowerCase();
+        const status = this.state.statusFilter;
+        return (this.state.pageData?.records || []).filter((record) => {
+            const matchesStatus = status === "all" || record.state === status;
+            const haystack = [record.name, record.reference, record.employee, record.type,
+                record.purpose, record.description, record.department, record.kind_label]
+                .filter(Boolean).join(" ").toLowerCase();
+            return matchesStatus && (!query || haystack.includes(query));
+        });
+    }
+
     get isPayments() {
         return this.state.activeModule === "payments";
     }
@@ -142,15 +173,40 @@ export class ExpenseApp extends Component {
         return currency.position === "after" ? `${amount} ${currency.symbol}` : `${currency.symbol}${amount}`;
     }
 
-    selectModule(key) {
+    async selectModule(key) {
         const module = (this.state.data?.modules || []).find((item) => item.key === key);
         if (!module) return;
         this.state.activeModule = key;
         this.state.activePage = module.pages[0]?.key || "overview";
+        this.state.recordSearch = "";
+        this.state.statusFilter = "all";
+        await this.loadActivePage();
     }
 
-    selectPage(key) {
+    async selectPage(key) {
         this.state.activePage = key;
+        this.state.recordSearch = "";
+        this.state.statusFilter = "all";
+        await this.loadActivePage();
+    }
+
+    async loadActivePage() {
+        const supported = ["requests", "advances", "workflow"];
+        if (!supported.includes(this.state.activeModule)) {
+            this.state.pageData = { records: [], kpis: {} };
+            return;
+        }
+        this.state.pageLoading = true;
+        try {
+            this.state.pageData = await this.orm.call("hr.claim", "get_app_page", [
+                this.state.activeModule, this.state.activePage,
+            ]);
+        } catch (error) {
+            this.notification.add(error.message || "Unable to load this page.", { type: "danger" });
+            this.state.pageData = { records: [], kpis: {} };
+        } finally {
+            this.state.pageLoading = false;
+        }
     }
 
     toggleSidebar() {
@@ -159,6 +215,129 @@ export class ExpenseApp extends Component {
 
     updateModuleSearch(event) {
         this.state.moduleSearch = event.target.value;
+    }
+
+    updateRecordSearch(event) {
+        this.state.recordSearch = event.target.value;
+    }
+
+    updateStatusFilter(event) {
+        this.state.statusFilter = event.target.value;
+    }
+
+    setViewMode(mode) {
+        this.state.viewMode = mode;
+    }
+
+    formatDate(value) {
+        return value ? new Date(value).toLocaleDateString() : "—";
+    }
+
+    statusClass(state) {
+        if (["approved", "fulfilled", "retired", "paid"].includes(state)) return "text-bg-success";
+        if (["submitted", "outstanding", "partial", "pending"].includes(state)) return "text-bg-warning";
+        if (["rejected", "cancelled", "written_off"].includes(state)) return "text-bg-danger";
+        return "text-bg-light";
+    }
+
+    openRequestModal() {
+        const firstType = this.state.pageData?.request_types?.[0];
+        this.state.modal = {
+            type: "request",
+            values: {
+                request_type_id: firstType?.id || "",
+                purpose: "", description: "", amount: "", needed_date: "",
+            },
+        };
+    }
+
+    openDecisionModal(kind, record, action) {
+        this.state.modal = { type: "decision", kind, record, action, comment: "" };
+    }
+
+    openRetirementModal(record) {
+        this.state.modal = {
+            type: "retire", record,
+            values: { amount: record.outstanding, reference: "" },
+        };
+    }
+
+    closeModal() {
+        this.state.modal = null;
+    }
+
+    updateModalValue(event) {
+        const field = event.target.dataset.field;
+        if (this.state.modal?.values) this.state.modal.values[field] = event.target.value;
+        else if (field === "comment" && this.state.modal) this.state.modal.comment = event.target.value;
+    }
+
+    async createRequest(submit = true) {
+        const values = { ...this.state.modal.values, submit };
+        try {
+            await this.orm.call("hr.claim", "app_create_request", [values]);
+            this.notification.add(submit ? "Request submitted for approval." : "Request saved as draft.", { type: "success" });
+            this.closeModal();
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to save the request.", { type: "danger" });
+        }
+    }
+
+    async requestAction(record, action) {
+        try {
+            await this.orm.call("hr.claim", "app_request_action", [record.id, action, ""]);
+            this.notification.add("Request updated.", { type: "success" });
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to update the request.", { type: "danger" });
+        }
+    }
+
+    async submitDecision() {
+        const modal = this.state.modal;
+        try {
+            await this.orm.call("hr.claim", "app_workflow_decision", [
+                modal.kind, modal.record.id, modal.action, modal.comment,
+            ]);
+            this.notification.add(`${modal.kind === "claim" ? "Claim" : "Request"} ${modal.action}d.`, { type: "success" });
+            this.closeModal();
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to record the decision.", { type: "danger" });
+        }
+    }
+
+    async retireAdvance() {
+        const modal = this.state.modal;
+        try {
+            await this.orm.call("hr.claim", "app_retire_advance", [
+                modal.record.id, Number(modal.values.amount), modal.values.reference,
+            ]);
+            this.notification.add("Advance retirement posted.", { type: "success" });
+            this.closeModal();
+            await this.loadActivePage();
+        } catch (error) {
+            this.notification.add(error.message || "Unable to retire the advance.", { type: "danger" });
+        }
+    }
+
+    openRequest(requestId) {
+        return this.action.doAction({
+            type: "ir.actions.act_window", name: "Request", res_model: "hr.expense.request",
+            res_id: requestId, views: [[false, "form"]],
+        });
+    }
+
+    openAdvance(advanceId) {
+        return this.action.doAction({
+            type: "ir.actions.act_window", name: "Cash Advance", res_model: "hr.cash.advance",
+            res_id: advanceId, views: [[false, "form"]],
+        });
+    }
+
+    openApprovalRules() {
+        return this.action.doAction("hr_claims.action_hr_expense_approval_rules");
     }
 
     openClaims(domain = []) {

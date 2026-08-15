@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo noupdate="1">
+    <record id="request_type_travel" model="hr.expense.request.type">
+        <field name="name">Travel Request</field>
+        <field name="code">TRAVEL</field>
+        <field name="description">Pre-approval for travel and accommodation expenses.</field>
+    </record>
+    <record id="request_type_cash_advance" model="hr.expense.request.type">
+        <field name="name">Cash Advance Request</field>
+        <field name="code">ADVANCE</field>
+        <field name="creates_advance" eval="True"/>
+        <field name="retirement_days">30</field>
+        <field name="description">Request funds before incurring approved business expenses.</field>
+    </record>
     <record id="category_travel" model="hr.claim.category">
         <field name="name">Travel</field><field name="code">TRAVEL</field><field name="sequence">10</field><field name="color">4</field>
     </record>
@@ -68,4 +80,3 @@
         <field name="window_ids" eval="[(4, ref('window_monthly_submission')), (4, ref('window_manager_approval'))]"/>
     </record>
 </odoo>
-

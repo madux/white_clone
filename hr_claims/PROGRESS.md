@@ -33,10 +33,24 @@ prototype is the required scope, and the primary UX must be OWL-led.
   Admin user; the existing 7 workflow methods / 9 Odoo test units passed with
   0 failures and 0 errors after compatibility hardening for private employee
   fields in the installed custom HR module.
+- [x] Phase 3 checkpoint A: implemented expense request types and requests,
+  employee draft/submit/cancel flows, Manager approve/reject/return decisions,
+  Finance advance issuance, partial/full advance retirement, aging and balances,
+  configurable multi-level claim/request approval rules, runtime approval
+  steps, and company/ownership security rules.
+- [x] Phase 3 checkpoint A OWL UX: activated Requests, Advances, and Workflow
+  pages inside the OWL application with KPI cards, search and status filters,
+  table/card switching, request creation modal, combined claim/request approval
+  decisions, advance issuance, retirement modal, and route configuration views.
+- [x] Phase 3 checkpoint A verification: module upgrade passed; the minified
+  `web.assets_backend` bundle compiled with the OWL app and templates; 11 test
+  methods / 15 assertions groups passed with 0 failures and 0 errors, including
+  request-to-advance settlement and two-level approval routing.
 
 ## In progress
 
-- [ ] Phase 3: Requests, cash advances, and multi-level approval engine.
+- [ ] Phase 3 checkpoint B: advance write-off approval, richer request/advance
+  analytics, and final page-specific UX polish.
 
 ## Pending
 
