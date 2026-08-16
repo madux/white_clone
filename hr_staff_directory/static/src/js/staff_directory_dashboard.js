@@ -4,6 +4,12 @@ import { Component, onMounted, onPatched, onWillStart, onWillUnmount, useRef, us
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
+import { StaffDirectoryProfilePanel } from "./../components/profile_panel/profile_panel";
+import { StaffDirectoryPeopleList } from "./../components/people_list/people_list";
+import { StaffDirectoryHeatmap } from "./../components/heatmap/heatmap";
+import { StaffDirectoryBarChart } from "./../components/bar_chart/bar_chart";
+import { StaffDirectoryOrgChart } from "./../components/org_chart/org_chart";
+
 // ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
 // bus_service.subscribe() has no unsubscribe in Odoo 17, so subscribing on every
 // mount would leak listeners and trigger N reloads per notification. Instead we
@@ -25,6 +31,7 @@ let activeSdirHandler = null;
  */
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
+    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart };
 
     setup() {
         this.rpc = useService("rpc");
@@ -121,37 +128,15 @@ export class StaffDirectoryDashboard extends Component {
 
         this.state = useState({
             loading:     true,
-            activeTab:   'people',   // 'people' | 'org' | 'network'
-            activeView:  'list',     // 'list' | 'grid'
-            adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
-            sortBy:      'name',
-            sortDesc:    false,
-            searchQuery: '',
-            currentOffset: 0,
-            currentPage: 1,
-            pageSize: 12,
             selectedPeople: [],
+            activeTab:   'people',   // 'people' | 'org' | 'network'
+            adminMode:   true,       // true = Admin (all cols), false = ESS (Manager + Actions hidden)
+            searchQuery: '',
             
             // Org chart state
-            orgZoom: 1,
-            orgPanX: 0,
-            orgPanY: 0,
-            orgCollapsedNodes: {},
-            orgActiveNodeId: null,
-            orgPopupOffsetX: 0,
-            orgPopupOffsetY: 0,
-            isDraggingOrg: false,
-            isDraggingPopup: false,
             orgSidebarOpen: false,
             showOrgViewDropdown: false,
             activeOrgView: 'org',
-            heatmapActiveSkill: null,
-            heatmapActiveLocation: null,
-            barActiveSkill: null,
-            
-            activeColumns: initialCols,
-            showColumnsModal: false,
-            showMoreColumns: false,
             showFilterModal: false,
             activeFilters: {
                 department: [],
@@ -192,7 +177,6 @@ export class StaffDirectoryDashboard extends Component {
             },
             showProfileModal: false,
             activeProfile: null,
-            profileActiveTab: 'overview',
             messageBox: {
                 isVisible: false,
                 isMinimized: false,
@@ -345,14 +329,6 @@ export class StaffDirectoryDashboard extends Component {
         return Math.floor(this.state.currentOffset / this.state.pageSize) + 1;
     }
 
-    paginatedPeople() {
-        const filtered = this.filteredPeople();
-        const total = filtered.length;
-        if (total === 0) return [];
-        const maxOffset = Math.max(0, total - this.state.pageSize);
-        const safeOffset = Math.min(Math.max(0, this.state.currentOffset), maxOffset);
-        return filtered.slice(safeOffset, safeOffset + this.state.pageSize);
-    }
 
     getTotalPages() {
         return Math.ceil(this.filteredPeople().length / this.state.pageSize) || 1;
@@ -391,97 +367,6 @@ export class StaffDirectoryDashboard extends Component {
 
     // ─── Org Chart Computed Properties ───────────────────────────────────
 
-    get orgRootNodes() {
-        return this.state.people.filter(p => !p.manager_id);
-    }
-
-    getOrgChildren(personId) {
-        return this.state.people.filter(p => p.manager_id === personId);
-    }
-
-    getOrgDirectReportsCount(personId) {
-        return this.state.people.filter(p => p.manager_id === personId).length;
-    }
-
-    getRoleCode(role) {
-        if (!role) return 'EMP';
-        return role.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 3);
-    }
-
-    // ─── Org Chart Actions ─────────────────────────────────────────────
-
-    onOrgCanvasWheel(ev) {
-        // Only zoom if control is held or if we want scroll to zoom
-        // Let's zoom on wheel by default for an org chart
-        ev.preventDefault();
-        const delta = ev.deltaY > 0 ? -0.1 : 0.1;
-        let newZoom = this.state.orgZoom + delta;
-        if (newZoom < 0.2) newZoom = 0.2;
-        if (newZoom > 3) newZoom = 3;
-        this.state.orgZoom = newZoom;
-    }
-
-    onOrgCanvasMouseDown(ev) {
-        // Prevent drag if clicking on a node or popup
-        if (ev.target.closest('.sdir-org-node') || ev.target.closest('.sdir-org-popup')) return;
-        this.state.isDraggingOrg = true;
-        this._lastMouseX = ev.clientX;
-        this._lastMouseY = ev.clientY;
-    }
-
-    onOrgCanvasMouseMove(ev) {
-        if (this.state.isDraggingOrg) {
-            const dx = ev.clientX - this._lastMouseX;
-            const dy = ev.clientY - this._lastMouseY;
-            this.state.orgPanX += dx;
-            this.state.orgPanY += dy;
-            this._lastMouseX = ev.clientX;
-            this._lastMouseY = ev.clientY;
-        } else if (this.state.isDraggingPopup) {
-            const dx = ev.clientX - this._lastMouseX;
-            const dy = ev.clientY - this._lastMouseY;
-            this.state.orgPopupOffsetX += dx;
-            this.state.orgPopupOffsetY += dy;
-            this._lastMouseX = ev.clientX;
-            this._lastMouseY = ev.clientY;
-        }
-    }
-
-    onOrgCanvasMouseUp(ev) {
-        this.state.isDraggingOrg = false;
-        this.state.isDraggingPopup = false;
-    }
-
-    zoomOrgIn() {
-        let newZoom = this.state.orgZoom + 0.1;
-        if (newZoom > 3) newZoom = 3;
-        this.state.orgZoom = newZoom;
-    }
-
-    zoomOrgOut() {
-        let newZoom = this.state.orgZoom - 0.1;
-        if (newZoom < 0.2) newZoom = 0.2;
-        this.state.orgZoom = newZoom;
-    }
-
-    resetOrgZoomPan() {
-        this.state.orgZoom = 1;
-        this.state.orgPanX = 0;
-        this.state.orgPanY = 0;
-    }
-
-    panOrgDirection(dir) {
-        const step = 50;
-        if (dir === 'up') this.state.orgPanY += step;
-        if (dir === 'down') this.state.orgPanY -= step;
-        if (dir === 'left') this.state.orgPanX += step;
-        if (dir === 'right') this.state.orgPanX -= step;
-    }
-
-    toggleOrgNodeCollapse(id) {
-        this.state.orgCollapsedNodes[id] = !this.state.orgCollapsedNodes[id];
-    }
-
     toggleOrgSidebar() {
         this.state.orgSidebarOpen = !this.state.orgSidebarOpen;
     }
@@ -493,202 +378,9 @@ export class StaffDirectoryDashboard extends Component {
     setOrgView(viewName) {
         this.state.activeOrgView = viewName;
         this.state.showOrgViewDropdown = false;
-        this.state.heatmapActiveSkill = null;
-        this.state.heatmapActiveLocation = null;
-        this.state.barActiveSkill = null;
     }
 
-    onHeatmapCellClick(skill, location) {
-        this.state.heatmapActiveSkill = skill;
-        this.state.heatmapActiveLocation = location;
-    }
 
-    clearHeatmapFilter() {
-        this.state.heatmapActiveSkill = null;
-        this.state.heatmapActiveLocation = null;
-    }
-
-    getHeatmapColor(value, max) {
-        if (!value || value === 0) return '#FDF2F8'; // very pale pink (near-white)
-        const minIntensity = 0.2;
-        const intensity = minIntensity + ((value / max) * (1 - minIntensity));
-        // #ec4899 is rgb(236, 72, 153)
-        // Interpolate between white #FFF and pink #EC4899
-        const r = Math.round(255 - (255 - 236) * intensity);
-        const g = Math.round(255 - (255 - 72) * intensity);
-        const b = Math.round(255 - (255 - 153) * intensity);
-        return `rgb(${r}, ${g}, ${b})`;
-    }
-
-    get heatmapData() {
-        const locations = new Set();
-        const skills = new Set();
-        const matrix = {}; // skill -> { location -> count }
-        const colTotals = {};
-        const rowTotals = {};
-        let grandTotal = 0;
-        let maxCount = 0;
-
-        // Iterate through all people (not just filtered, or maybe filtered? The mockup implies all data or filtered data. We'll use filteredPeople() for now to respect sidebar filters, but usually heatmaps use all or current filter context)
-        const people = this.filteredPeople();
-        people.forEach(p => {
-            const pSkillsStr = p.skills || '';
-            const pSkills = pSkillsStr.split(',').map(s => s.trim()).filter(Boolean);
-            const pLoc = p.work_location || 'Unknown';
-            locations.add(pLoc);
-            
-            pSkills.forEach(skill => {
-                skills.add(skill);
-                if (!matrix[skill]) matrix[skill] = {};
-                matrix[skill][pLoc] = (matrix[skill][pLoc] || 0) + 1;
-                
-                colTotals[pLoc] = (colTotals[pLoc] || 0) + 1;
-                rowTotals[skill] = (rowTotals[skill] || 0) + 1;
-                grandTotal++;
-                
-                if (matrix[skill][pLoc] > maxCount) {
-                    maxCount = matrix[skill][pLoc];
-                }
-            });
-        });
-
-        const sortedLocations = Array.from(locations).sort();
-        const sortedSkills = Array.from(skills).sort();
-
-        // Ensure every combination exists even if 0
-        sortedSkills.forEach(skill => {
-            sortedLocations.forEach(loc => {
-                if (!matrix[skill]) matrix[skill] = {};
-                if (matrix[skill][loc] === undefined) matrix[skill][loc] = 0;
-            });
-        });
-
-        // Ensure colTotals has all locations
-        sortedLocations.forEach(loc => {
-            if (colTotals[loc] === undefined) colTotals[loc] = 0;
-        });
-
-        return {
-            locations: sortedLocations,
-            skills: sortedSkills,
-            matrix,
-            colTotals,
-            rowTotals,
-            grandTotal,
-            maxCount
-        };
-    }
-
-    get heatmapDrilldownData() {
-        const skill = this.state.heatmapActiveSkill;
-        const location = this.state.heatmapActiveLocation;
-        if (!skill || !location) return [];
-
-        return this.filteredPeople().filter(p => {
-            const pSkills = (p.skills || '').split(',').map(s => s.trim());
-            const pLoc = p.work_location || 'Unknown';
-            return pSkills.includes(skill) && pLoc === location;
-        });
-    }
-
-    onBarSkillClick(skill) {
-        if (this.state.barActiveSkill === skill) {
-            this.state.barActiveSkill = null;
-        } else {
-            this.state.barActiveSkill = skill;
-        }
-    }
-
-    getLocationColor(index) {
-        const colors = [
-            '#D946EF', // pink/magenta
-            '#8B5CF6', // blue-violet
-            '#10B981', // teal/green
-            '#F59E0B', // orange/amber
-            '#3B82F6', // blue
-            '#EF4444', // red/crimson
-            '#A855F7', // purple
-            '#14B8A6', // teal
-            '#F97316', // orange
-            '#6366F1'  // indigo fallback
-        ];
-        return colors[index % colors.length];
-    }
-
-    get barChartData() {
-        const locationsSet = new Set();
-        const skillTotals = {}; // skill -> total count
-        const matrix = {};      // skill -> { location -> count }
-        
-        const people = this.filteredPeople();
-        people.forEach(p => {
-            const pSkillsStr = p.skills || '';
-            const pSkills = pSkillsStr.split(',').map(s => s.trim()).filter(Boolean);
-            const pLoc = p.work_location || 'Unknown';
-            locationsSet.add(pLoc);
-            
-            pSkills.forEach(skill => {
-                if (!matrix[skill]) matrix[skill] = {};
-                matrix[skill][pLoc] = (matrix[skill][pLoc] || 0) + 1;
-                skillTotals[skill] = (skillTotals[skill] || 0) + 1;
-            });
-        });
-
-        const locations = Array.from(locationsSet).sort();
-        
-        // Sort skills by total descending
-        const sortedSkills = Object.keys(skillTotals).sort((a, b) => skillTotals[b] - skillTotals[a]);
-        
-        // Top 30
-        const top30 = sortedSkills.slice(0, 30);
-        
-        const maxTotal = top30.length > 0 ? skillTotals[top30[0]] : 1;
-        
-        const rows = top30.map(skill => {
-            // build segments
-            const segments = locations.map((loc, idx) => {
-                const count = matrix[skill][loc] || 0;
-                return {
-                    location: loc,
-                    count: count,
-                    color: this.getLocationColor(idx),
-                    widthPercent: (count / maxTotal) * 100
-                };
-            }).filter(s => s.count > 0);
-            
-            return {
-                skill: skill,
-                total: skillTotals[skill],
-                segments: segments
-            };
-        });
-
-        return {
-            locations: locations.map((loc, idx) => ({ name: loc, color: this.getLocationColor(idx) })),
-            rows: rows,
-            maxTotal: maxTotal
-        };
-    }
-
-    openOrgNodePopup(personId, ev) {
-        if (ev) ev.stopPropagation();
-        this.state.orgActiveNodeId = personId;
-        this.state.orgPopupOffsetX = 0;
-        this.state.orgPopupOffsetY = 0;
-    }
-
-    closeOrgPopup(ev) {
-        if (ev) ev.stopPropagation();
-        this.state.orgActiveNodeId = null;
-    }
-
-    onPopupDragStart(ev) {
-        this.state.isDraggingPopup = true;
-        this._lastMouseX = ev.clientX;
-        this._lastMouseY = ev.clientY;
-    }
-
-    // ─── Export & Bulk Actions ─────────────────────────────────────────────
 
     goToPage(page) {
         if (page === '...') return;
@@ -697,17 +389,7 @@ export class StaffDirectoryDashboard extends Component {
         }
     }
 
-    nextPage() {
-        if (this.currentPage < this.getTotalPages()) {
-            this.state.currentOffset += this.state.pageSize;
-        }
-    }
 
-    prevPage() {
-        if (this.currentPage > 1) {
-            this.state.currentOffset = Math.max(0, this.state.currentOffset - this.state.pageSize);
-        }
-    }
 
     onJumpInput(ev) {
         if (ev.key !== 'Enter') return;
@@ -720,8 +402,7 @@ export class StaffDirectoryDashboard extends Component {
             if (total > 0) size = Math.min(Math.max(1, size), total);
             else size = 1;
             this.state.pageSize = size;
-            this.state.currentOffset = 0;
-            ev.target.blur();
+                        ev.target.blur();
         }
         // Match a record range (e.g. 4-9 → show exactly records 4..9)
         else if (/^(\d+)\s*-\s*(\d+)$/.test(val)) {
@@ -960,8 +641,7 @@ export class StaffDirectoryDashboard extends Component {
 
     setDateFilter(type, value) {
         this.state.activeFilters = { ...this.state.activeFilters, [type]: value };
-        this.state.currentOffset = 0;
-    }
+            }
 
     toggleFilterOption(categoryId, optionValue) {
         const arr = this.state.activeFilters[categoryId];
@@ -972,19 +652,16 @@ export class StaffDirectoryDashboard extends Component {
             newArr = [...arr, optionValue];
         }
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
-        this.state.currentOffset = 0;
-    }
+            }
 
     removeFilter(categoryId, optionValue) {
         if (categoryId === 'start_date_from' || categoryId === 'start_date_to') {
             this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: '' };
-            this.state.currentOffset = 0;
-            return;
+                        return;
         }
         const newArr = this.state.activeFilters[categoryId].filter(v => v !== optionValue);
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
-        this.state.currentOffset = 0;
-    }
+            }
 
     clearAllFilters() {
         const reset = {
@@ -998,8 +675,7 @@ export class StaffDirectoryDashboard extends Component {
         }
         this.state.activeFilters = reset;
         this.state.activeFilters.start_date_to = '';
-        this.state.currentOffset = 0;
-    }
+            }
 
     getLifecycleDotClass(val) {
         const lower = val.toLowerCase();
@@ -1039,46 +715,10 @@ export class StaffDirectoryDashboard extends Component {
 
     // ─── Selection Logic ─────────────────────────────────────────────────────
 
-    toggleSort(colId) {
-        if (this.state.sortBy === colId) {
-            this.state.sortDesc = !this.state.sortDesc;
-        } else {
-            this.state.sortBy = colId;
-            this.state.sortDesc = false;
-        }
-        this.state.currentOffset = 0;
-    }
 
-    toggleSelection(id) {
-        if (this.state.selectedPeople.includes(id)) {
-            this.state.selectedPeople = this.state.selectedPeople.filter(item => item !== id);
-        } else {
-            this.state.selectedPeople.push(id);
-        }
-    }
 
-    toggleAll() {
-        const filteredIds = this.filteredPeople().map(p => p.id);
-        if (this.isAllSelected) {
-            // Deselect all filtered
-            this.state.selectedPeople = this.state.selectedPeople.filter(id => !filteredIds.includes(id));
-        } else {
-            // Select all filtered
-            const newSet = new Set([...this.state.selectedPeople, ...filteredIds]);
-            this.state.selectedPeople = Array.from(newSet);
-        }
-    }
 
-    clearSelection() {
-        this.state.selectedPeople = [];
-    }
 
-    get isAllSelected() {
-        if (this.state.people.length === 0) return false;
-        const filteredIds = this.filteredPeople().map(p => p.id);
-        if (filteredIds.length === 0) return false;
-        return filteredIds.every(id => this.state.selectedPeople.includes(id));
-    }
 
     // ─── Export Logic ────────────────────────────────────────────────────────
 
@@ -1119,6 +759,38 @@ export class StaffDirectoryDashboard extends Component {
         document.body.removeChild(link);
         
         this.showToast('success', `Successfully exported ${data.length} records!`);
+    }
+
+    
+    // ─── Selection ───────────────────────────────────────────────────────────
+    toggleSelection(personId) {
+        const idx = this.state.selectedPeople.indexOf(personId);
+        if (idx === -1) {
+            this.state.selectedPeople.push(personId);
+        } else {
+            this.state.selectedPeople.splice(idx, 1);
+        }
+    }
+
+    toggleAll(ev) {
+        const checked = ev.target.checked;
+        if (checked) {
+            this.state.selectedPeople = this.state.people.map(p => p.id);
+        } else {
+            this.state.selectedPeople = [];
+        }
+    }
+
+    clearSelection() {
+        this.state.selectedPeople = [];
+    }
+
+    get isAllSelected() {
+        return this.state.people.length > 0 && this.state.selectedPeople.length === this.state.people.length;
+    }
+
+    get selectedPeopleCount() {
+        return this.state.selectedPeople.length;
     }
 
     exportAll() {
@@ -1187,21 +859,16 @@ export class StaffDirectoryDashboard extends Component {
 
     onSearch(ev) {
         this.state.searchQuery = ev.target.value;
-        this.state.currentOffset = 0;
-    }
+            }
 
     clearSearch() {
         this.state.searchQuery = '';
-        this.state.currentOffset = 0;
-    }
+            }
 
     toggleTab(tab) {
         this.state.activeTab = tab;
     }
 
-    toggleView(view) {
-        this.state.activeView = view;
-    }
 
     toggleAdminMode(isAdmin) {
         this.state.adminMode = isAdmin;
@@ -1228,16 +895,7 @@ export class StaffDirectoryDashboard extends Component {
         return this.ALL_COLUMNS.filter(col => !this.state.activeColumns.includes(col.id));
     }
 
-    get activeColumnObjects() {
-        return this.state.activeColumns.map(id => this.ALL_COLUMNS.find(col => col.id === id)).filter(Boolean);
-    }
 
-    toggleColumnsModal() {
-        this.state.showColumnsModal = !this.state.showColumnsModal;
-        if (!this.state.showColumnsModal) {
-            this.state.showMoreColumns = false;
-        }
-    }
 
     addColumn(colId) {
         if (!this.state.activeColumns.includes(colId)) {
@@ -1263,14 +921,7 @@ export class StaffDirectoryDashboard extends Component {
         }
     }
 
-    resetColumns() {
-        this.state.activeColumns = ['name', 'role', 'department', 'lifecycle', 'work_mode', 'location', 'manager', 'tenure'];
-        this._saveColumns();
-    }
 
-    toggleMoreColumns() {
-        this.state.showMoreColumns = !this.state.showMoreColumns;
-    }
 
     // ─── Profile Modal Logic ────────────────────────────────────────────────
     
@@ -1302,9 +953,6 @@ export class StaffDirectoryDashboard extends Component {
         }, 300); // clear after animation if any
     }
 
-    setProfileTab(tab) {
-        this.state.profileActiveTab = tab;
-    }
 
     // ─── Messaging & Toast Logic ─────────────────────────────────────────────
 

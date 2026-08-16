@@ -39,6 +39,24 @@
             'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
+            
+            'hr_staff_directory/static/src/components/bar_chart/bar_chart.js',
+            'hr_staff_directory/static/src/components/bar_chart/bar_chart.css',
+            'hr_staff_directory/static/src/components/bar_chart/bar_chart.xml',
+            
+            'hr_staff_directory/static/src/components/heatmap/heatmap.js',
+            'hr_staff_directory/static/src/components/heatmap/heatmap.css',
+            'hr_staff_directory/static/src/components/heatmap/heatmap.xml',
+            
+            'hr_staff_directory/static/src/components/org_chart/org_chart.js',
+            'hr_staff_directory/static/src/components/org_chart/org_chart.css',
+            'hr_staff_directory/static/src/components/org_chart/org_chart.xml',
+            
+            'hr_staff_directory/static/src/components/people_list/people_list.js',
+            'hr_staff_directory/static/src/components/people_list/people_list.xml',
+            
+            'hr_staff_directory/static/src/components/profile_panel/profile_panel.js',
+            'hr_staff_directory/static/src/components/profile_panel/profile_panel.xml',
         ],
     },
     'installable': True,

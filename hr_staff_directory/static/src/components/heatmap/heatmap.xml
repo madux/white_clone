@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_staff_directory.Heatmap" owl="1">
+        <!-- Drill-down View -->
+        <t t-if="state.heatmapActiveSkill and state.heatmapActiveLocation">
+            <div class="sdir-heatmap-breadcrumb">
+                <button class="sdir-hm-back-btn" t-on-click="clearHeatmapFilter">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    Back
+                </button>
+                <span class="sdir-hm-divider">/</span>
+                <span class="sdir-hm-crumb-skill">
+                    <t t-esc="state.heatmapActiveSkill"/>
+                    <button class="sdir-hm-clear-btn" t-on-click="clearHeatmapFilter">×</button>
+                </span>
+                <span class="sdir-hm-crumb-location"><t t-esc="state.heatmapActiveLocation"/></span>
+                <span class="sdir-hm-crumb-count">(<t t-esc="this.heatmapDrilldownData.length"/> employees)</span>
+            </div>
+            
+            <div class="sdir-hm-drilldown-wrapper">
+                <table class="sdir-hm-drilldown-table">
+                    <thead>
+                        <tr>
+                            <th>NAME</th>
+                            <th>ROLE</th>
+                            <th>DEPARTMENT</th>
+                            <th>WORK MODE</th>
+                            <th>EXPERIENCE</th>
+                            <th>MANAGER</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="this.heatmapDrilldownData" t-as="p" t-key="p.id">
+                            <td>
+                                <div class="sdir-hm-user-cell" t-on-click="() => this.props.openProfile(p.id)">
+                                    <div class="sdir-avatar sdir-hm-avatar">
+                                        <t t-if="p.has_image">
+                                            <img t-attf-src="/web/image/hr.employee/{{ p.id }}/avatar_128?unique={{ p.avatar_cache_key }}" alt="Profile" />
+                                        </t>
+                                        <t t-else="">
+                                            <div class="sdir-avatar-initials"><t t-esc="p.name.charAt(0)"/></div>
+                                        </t>
+                                    </div>
+                                    <span class="sdir-hm-name-link"><t t-esc="p.name"/></span>
+                                </div>
+                            </td>
+                            <td><span class="sdir-hm-role-link" t-on-click="() => this.props.openProfile(p.id)"><t t-esc="p.job_title || p.role"/></span></td>
+                            <td><t t-esc="p.department"/></td>
+                            <td>
+                                <div t-att-class="'sdir-badge ' + (p.work_mode === 'Remote' || p.work_mode === 'Hybrid' || p.work_mode === 'Office' ? 'sdir-badge-amber' : 'sdir-badge-gray')">
+                                    <t t-esc="p.work_mode"/>
+                                </div>
+                            </td>
+                            <td>—</td>
+                            <td><t t-esc="p.manager_name"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+
+        <!-- Full Heatmap Grid -->
+        <t t-else="">
+            <div class="sdir-heatmap-title-bar">
+                <div class="sdir-heatmap-title">SKILLS × LOCATION HEATMAP</div>
+                <div class="sdir-heatmap-subtitle">Click a cell to see matching employees</div>
+            </div>
+
+            <t t-set="hm" t-value="this.heatmapData"/>
+            <div class="sdir-heatmap-wrapper">
+                <table class="sdir-heatmap-table">
+                    <thead>
+                        <tr>
+                            <th class="sdir-hm-skill-col">Skill / Location</th>
+                            <th t-foreach="hm.locations" t-as="loc" t-key="loc">
+                                <t t-esc="loc.length > 15 ? loc.substring(0,13) + '...' : loc"/>
+                            </th>
+                            <th class="sdir-hm-total-col">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="hm.skills" t-as="skill" t-key="skill">
+                            <td class="sdir-hm-skill-name"><t t-esc="skill"/></td>
+                            
+                            <t t-foreach="hm.locations" t-as="loc" t-key="loc">
+                                <t t-set="val" t-value="hm.matrix[skill][loc]"/>
+                                <td class="sdir-hm-cell">
+                                    <div t-if="val > 0" 
+                                         class="sdir-hm-cell-box sdir-hm-clickable" 
+                                         t-att-style="'background-color: ' + this.getHeatmapColor(val, hm.maxCount) + '; color: ' + (val > (hm.maxCount * 0.6) ? '#fff' : '#000')"
+                                         t-on-click="() => this.onHeatmapCellClick(skill, loc)">
+                                        <t t-esc="val"/>
+                                    </div>
+                                    <div t-else="" class="sdir-hm-cell-box sdir-hm-empty">
+                                        —
+                                    </div>
+                                </td>
+                            </t>
+                            
+                            <td class="sdir-hm-row-total"><t t-esc="hm.rowTotals[skill]"/></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="sdir-hm-footer-label">Total</td>
+                            <td t-foreach="hm.locations" t-as="loc" t-key="loc" class="sdir-hm-col-total">
+                                <t t-esc="hm.colTotals[loc]"/>
+                            </td>
+                            <td class="sdir-hm-grand-total"><t t-esc="hm.grandTotal"/></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </t>
+    </t>
+</templates>
