@@ -87,6 +87,9 @@ The main menu opens one OWL client action, `hr_expense_management.expense_app`, 
 - Module renderer selection, descriptive copy, detail fields, KPI definitions
   and status tones are driven by a single presentation registry rather than
   per-module getters scattered through the root component.
+- QWeb templates are organized by application shell, operational pages,
+  financial pages, governance pages, domain modal groups, and overlays. Named
+  OWL templates compose these files without changing the rendered structure.
 - Sidebar, header, subnavigation, status badges, data tables, card grids, view
   switchers, filters, pagination, empty/loading/error states, record drawer,
   dialogs, step wizard and attachments are OWL-rendered template regions driven

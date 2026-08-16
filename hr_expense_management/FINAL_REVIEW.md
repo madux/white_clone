@@ -50,7 +50,9 @@ Module identity, renderer selection, descriptive copy, KPI definitions, record
 details and status tones are centralized in an OWL presentation registry. The
 server publishes versioned page and action contracts; the client validates
 every page envelope before rendering and builds operational modal payloads from
-the server-owned field definitions.
+the server-owned field definitions. The QWeb surface is split into the shell,
+operational pages, financial pages, governance pages, domain modal groups, and
+overlay composition instead of one application-wide template.
 
 During real browser acceptance, Odoo-specific runtime defects were found and
 fixed: unsupported Sass unit mixing, incorrect component-prop expressions, a

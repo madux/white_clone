@@ -1,0 +1,745 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpensePaymentsPage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label"/>
+                <p class="text-muted">Payables, batch disbursement, methods, and history</p>
+            </div>
+            <button t-if="state.activePage === 'process' and state.data.role.finance" class="btn btn-primary o_expense_primary" t-on-click="processAllPayables">
+                <i class="fa fa-play me-2"/>Process Batch</button>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <ExpenseKpiCard label="'Total Payables'" value="formatMoney(pageKpis.payable_value)" hint="`${pageKpis.payable_count || 0} claims`" icon="'fa-credit-card'" tone="'pink'"/>
+            </div>
+            <div class="col-md-4">
+                <ExpenseKpiCard label="'Paid'" value="formatMoney(pageKpis.paid_value)" hint="`${pageKpis.paid_count || 0} payments`" icon="'fa-check-circle'" tone="'success'"/>
+            </div>
+            <div class="col-md-4">
+                <ExpenseKpiCard label="'Batches'" value="(state.pageData.batches || []).length" hint="'Processing history'" icon="'fa-list'" tone="'violet'"/>
+            </div>
+        </div>
+        <div t-if="state.activePage === 'methods'" class="row g-3">
+            <div t-if="state.data.role.admin" class="col-12 text-end">
+                <button class="btn btn-primary" t-on-click="() =&gt; this.openConfigModal('payment_method')">
+                    <i class="fa fa-plus me-2"/>New Payment Method</button>
+            </div>
+            <div t-foreach="pageRecords" t-as="method" t-key="method.id" class="col-md-6">
+                <div class="card o_expense_panel h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <span class="o_expense_kpi_icon o_expense_tone_violet">
+                                <i class="fa fa-credit-card"/>
+                            </span>
+                            <span class="badge" t-att-class="method.active ? 'text-bg-success' : 'text-bg-light'" t-esc="method.active ? 'Enabled' : 'Disabled'"/>
+                        </div>
+                        <h3 class="h5 fw-bold mt-3" t-esc="method.name"/>
+                        <p class="text-muted mb-0" t-esc="method.type"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div t-elif="state.activePage === 'reports'" class="card o_expense_panel">
+            <div class="card-header bg-white border-0">
+                <h3 class="h6 fw-black mb-0">Payment Batch Outcomes</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Batch</th>
+                            <th>Date</th>
+                            <th>Method</th>
+                            <th>Claims</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.name"/>
+                            <td t-esc="formatDate(record.date)"/>
+                            <td t-esc="record.method"/>
+                            <td t-esc="record.count"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.amount)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="6" class="text-center text-muted py-5">No payment batches have been processed.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div t-else="" class="card o_expense_panel">
+            <div class="card-header bg-white border-0">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search payments" t-on-input="updateRecordSearch"/>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Employee</th>
+                            <th t-if="state.activePage !== 'history'">Department</th>
+                            <th class="text-end">Amount</th>
+                            <th t-if="state.activePage !== 'history'">Days Pending</th>
+                            <th t-else="">Method</th>
+                            <th>Status</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td>
+                                <button class="btn btn-link p-0 fw-bold" t-on-click="() =&gt; this.openDrawer(record)" t-esc="record.name"/>
+                            </td>
+                            <td t-esc="record.employee"/>
+                            <td t-if="state.activePage !== 'history'" t-esc="record.department"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.amount)"/>
+                            <td t-if="state.activePage !== 'history'" t-esc="record.days"/>
+                            <td t-else="" t-esc="record.method"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                            <td class="text-end">
+                                <button t-if="state.activePage !== 'history' and (state.data.role.finance || state.data.role.admin)" class="btn btn-sm btn-primary" t-on-click="() =&gt; this.processOnePayable(record)">Pay</button>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="7" class="text-center text-muted py-5">No payment records on this page.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpensePettyCashPage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label"/>
+                <p class="text-muted">Funds, expenses, cash counts, replenishments, and custodians</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button t-if="state.activePage === 'accounts' and (state.data.role.finance || state.data.role.admin)" class="btn btn-primary" t-on-click="() =&gt; this.openPettyModal('fund')">Create Fund</button>
+                <button t-if="state.activePage === 'transactions'" class="btn btn-primary" t-on-click="() =&gt; this.openPettyModal('transaction')">Record Expense</button>
+                <button t-if="state.activePage === 'reconciliation'" class="btn btn-primary" t-on-click="() =&gt; this.openPettyModal('reconciliation')">Start Reconciliation</button>
+                <button t-if="state.activePage === 'replenishment'" class="btn btn-primary" t-on-click="() =&gt; this.openPettyModal('replenishment')">Request Replenishment</button>
+                <button t-if="state.activePage === 'custodians' and (state.data.role.finance || state.data.role.admin)" class="btn btn-primary" t-on-click="() =&gt; this.openPettyModal('custodian')">Reassign Custodian</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Active Funds'" value="pageKpis.funds || 0" hint="'Visible accounts'" icon="'fa-briefcase'" tone="'pink'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Total Balance'" value="formatMoney(pageKpis.balance)" hint="'Cash on hand'" icon="'fa-money'" tone="'success'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Need Replenishment'" value="pageKpis.low || 0" hint="'Below threshold'" icon="'fa-exclamation-triangle'" tone="'warning'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Pending'" value="(pageKpis.pending || 0) + (pageKpis.replenishments || 0)" hint="'Awaiting Finance'" icon="'fa-clock-o'" tone="'violet'"/>
+            </div>
+        </div>
+        <div class="card o_expense_panel">
+            <div class="card-header bg-white border-0">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search petty cash" t-on-input="updateRecordSearch"/>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th t-if="state.activePage === 'accounts'">Location / Custodian</th>
+                            <th t-else="">Fund</th>
+                            <th t-if="state.activePage === 'transactions'">Payee / Category</th>
+                            <th t-if="state.activePage === 'reconciliation'">System / Physical</th>
+                            <th t-if="state.activePage === 'replenishment'">Justification</th>
+                            <th class="text-end">Amount / Balance</th>
+                            <th>Status</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td>
+                                <strong t-esc="record.code || record.name"/>
+                                <div class="small text-muted" t-esc="formatDate(record.date)"/>
+                            </td>
+                            <td t-if="state.activePage === 'accounts'">
+                                <span t-esc="record.location"/>
+                                <div class="small text-muted" t-esc="record.custodian"/>
+                            </td>
+                            <td t-else="" t-esc="record.fund"/>
+                            <td t-if="state.activePage === 'transactions'">
+                                <span t-esc="record.payee"/>
+                                <div class="small text-muted" t-esc="record.category"/>
+                            </td>
+                            <td t-if="state.activePage === 'reconciliation'">
+                                <t t-esc="formatMoney(record.system)"/> / <t t-esc="formatMoney(record.physical)"/>
+                            </td>
+                            <td t-if="state.activePage === 'replenishment'" t-esc="record.justification"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.balance !== undefined ? record.balance : record.amount !== undefined ? record.amount : record.variance)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state_label || record.state"/>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-light" t-on-click="() =&gt; this.openDrawer(record)">
+                                        <i class="fa fa-eye"/>
+                                    </button>
+                                    <button t-if="state.activePage === 'transactions' and record.can_approve and (state.data.role.finance || state.data.role.admin)" class="btn btn-success" t-on-click="() =&gt; this.pettyAction('transaction', record, 'approve')">Approve &amp; Post</button>
+                                    <button t-if="state.activePage === 'replenishment' and record.can_approve and (state.data.role.finance || state.data.role.admin)" class="btn btn-outline-success" t-on-click="() =&gt; this.pettyAction('replenishment', record, 'approve')">Approve</button>
+                                    <button t-if="state.activePage === 'replenishment' and record.can_issue and (state.data.role.finance || state.data.role.admin)" class="btn btn-primary" t-on-click="() =&gt; this.pettyAction('replenishment', record, 'issue')">Issue</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="8" class="text-center text-muted py-5">No records on this page.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseAccountsPage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label"/>
+                <p class="text-muted mb-0">Odoo Community Accounting chart, mappings, and journal entries</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button t-if="state.activePage === 'accounts' || state.activePage === 'tree'" class="btn btn-primary" t-on-click="() =&gt; this.openAccountingModal('account')">
+                    <i class="fa fa-plus me-2"/>New Account</button>
+                <button t-if="state.activePage === 'mapping' and state.data.role.admin" class="btn btn-primary" t-on-click="() =&gt; this.openAccountingModal('mapping')">
+                    <i class="fa fa-random me-2"/>Configure Mapping</button>
+                <button t-if="state.activePage === 'journals'" class="btn btn-primary" t-on-click="() =&gt; this.openAccountingModal('journal')">
+                    <i class="fa fa-plus me-2"/>New Journal</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Total Accounts'" value="pageKpis.total || 0" hint="'Chart of accounts'" icon="'fa-list'" tone="'pink'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Active'" value="pageKpis.active || 0" hint="'Available accounts'" icon="'fa-check-circle'" tone="'success'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Deprecated / Posting'" value="`${pageKpis.headers || 0} / ${pageKpis.posting || 0}`" hint="'Odoo account status'" icon="'fa-sitemap'" tone="'violet'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Posted Value'" value="formatMoney(pageKpis.posted_value)" hint="`${pageKpis.draft_journals || 0} draft journals`" icon="'fa-book'" tone="'warning'"/>
+            </div>
+        </div>
+        <div class="card o_expense_panel">
+            <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between gap-2">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search code, name, type, or source" t-on-input="updateRecordSearch"/>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-light active">Table</button>
+                    <button class="btn btn-light" t-on-click="() =&gt; this.setViewMode('card')">Card</button>
+                </div>
+            </div>
+            <div t-if="state.activePage === 'mapping'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Mapping</th>
+                            <th>Source</th>
+                            <th>Category</th>
+                            <th>Journal</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.name"/>
+                            <td t-esc="record.source"/>
+                            <td t-esc="record.category"/>
+                            <td t-esc="record.journal"/>
+                            <td t-esc="record.debit"/>
+                            <td t-esc="record.credit"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="7" class="text-center text-muted py-5">No GL mappings have been configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-elif="state.activePage === 'journals'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Journal</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Source</th>
+                            <th class="text-end">Debit</th>
+                            <th>Balanced</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.name"/>
+                            <td t-esc="formatDate(record.date)"/>
+                            <td t-esc="record.description"/>
+                            <td t-esc="record.source"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.debit)"/>
+                            <td>
+                                <i t-att-class="record.balanced ? 'fa fa-check-circle text-success' : 'fa fa-exclamation-circle text-danger'"/>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="7" class="text-center text-muted py-5">No journal entries yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-else="" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Account</th>
+                            <th>Type</th>
+                            <th>Group</th>
+                            <th>Entry Type</th>
+                            <th class="text-end">Balance</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold text-primary" t-esc="record.code"/>
+                            <td>
+                                <span t-att-class="record.header ? 'fw-black' : ''" t-att-style="state.activePage === 'tree' ? `padding-left: ${record.level * 18}px` : ''">
+                                    <i t-if="record.header" class="fa fa-folder-open-o me-2 text-muted"/>
+                                    <t t-esc="record.name"/>
+                                </span>
+                                <div t-if="record.parent" class="small text-muted" t-esc="record.parent"/>
+                            </td>
+                            <td t-esc="record.type"/>
+                            <td t-esc="record.subtype"/>
+                            <td t-esc="record.header ? 'Header' : 'Posting'"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.balance)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="7" class="text-center text-muted py-5">Configure accounts in Odoo Accounting to begin.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseVendorsPage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label"/>
+                <p class="text-muted mb-0">Suppliers, service providers, spend links, and payment terms</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button t-if="state.activePage === 'directory' || state.activePage === 'analytics'" class="btn btn-primary" t-on-click="openVendorModal">
+                    <i class="fa fa-plus me-2"/>Add Vendor</button>
+                <button t-if="state.activePage === 'categories'" class="btn btn-primary" t-on-click="() =&gt; this.openConfigModal('vendor_category')">
+                    <i class="fa fa-plus me-2"/>New Category</button>
+                <button t-if="state.activePage === 'terms'" class="btn btn-primary" t-on-click="() =&gt; this.openConfigModal('payment_term')">
+                    <i class="fa fa-plus me-2"/>New Term</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Total Vendors'" value="pageKpis.total || 0" hint="'Supplier directory'" icon="'fa-building-o'" tone="'pink'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Active'" value="pageKpis.active || 0" hint="'Approved vendors'" icon="'fa-check-circle'" tone="'success'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'High Rating'" value="pageKpis.high_rating || 0" hint="'Four stars or better'" icon="'fa-star'" tone="'warning'"/>
+            </div>
+            <div class="col-6 col-xl-3">
+                <ExpenseKpiCard label="'Approved Spend'" value="formatMoney(pageKpis.spend)" hint="`${pageKpis.claims || 0} claims`" icon="'fa-line-chart'" tone="'violet'"/>
+            </div>
+        </div>
+        <div class="card o_expense_panel">
+            <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between gap-2">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search vendors, categories, or claims" t-on-input="updateRecordSearch"/>
+                </div>
+                <div t-if="state.activePage === 'directory' || state.activePage === 'analytics'" class="btn-group btn-group-sm">
+                    <button class="btn btn-light" t-att-class="state.viewMode === 'table' ? 'active' : ''" t-on-click="() =&gt; this.setViewMode('table')">Table</button>
+                    <button class="btn btn-light" t-att-class="state.viewMode === 'card' ? 'active' : ''" t-on-click="() =&gt; this.setViewMode('card')">Card</button>
+                </div>
+            </div>
+            <div t-if="(state.activePage === 'directory' || state.activePage === 'analytics') and state.viewMode === 'card'" class="card-body">
+                <div class="row g-3">
+                    <div t-foreach="pageRecords" t-as="record" t-key="record.id" class="col-md-6 col-xl-4">
+                        <div class="border rounded-4 p-3 h-100">
+                            <div class="d-flex justify-content-between gap-2">
+                                <div>
+                                    <span class="small text-uppercase text-muted" t-esc="record.code"/>
+                                    <h3 class="h6 fw-black mb-1" t-esc="record.name"/>
+                                </div>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </div>
+                            <p class="text-muted small mb-2" t-esc="record.category"/>
+                            <div class="small">
+                                <i class="fa fa-envelope-o me-2"/>
+                                <t t-esc="record.email || 'No email'"/>
+                            </div>
+                            <div class="small mt-1">
+                                <i class="fa fa-phone me-2"/>
+                                <t t-esc="record.phone || 'No phone'"/>
+                            </div>
+                            <div class="d-flex justify-content-between mt-3 pt-3 border-top">
+                                <span>
+                                    <i class="fa fa-star text-warning me-1"/>
+                                    <t t-esc="record.rating"/> / 5</span>
+                                <strong t-esc="formatMoney(record.spend)"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div t-if="!pageRecords.length" class="text-center text-muted py-5">No vendors match your search.</div>
+            </div>
+            <div t-elif="state.activePage === 'categories'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Category</th>
+                            <th>Tax Rate</th>
+                            <th>Default GL</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.code"/>
+                            <td t-esc="record.name"/>
+                            <td>
+                                <t t-esc="record.tax"/>%</td>
+                            <td t-esc="record.account"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="5" class="text-center text-muted py-5">No vendor categories configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-elif="state.activePage === 'terms'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Payment Term</th>
+                            <th>Due</th>
+                            <th>Early Discount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.code"/>
+                            <td t-esc="record.name"/>
+                            <td>
+                                <t t-esc="record.days"/> days</td>
+                            <td>
+                                <t t-esc="record.discount"/>% within <t t-esc="record.discount_days"/> days</td>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="5" class="text-center text-muted py-5">No vendor payment terms configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-elif="state.activePage === 'claims'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Claim</th>
+                            <th>Vendor</th>
+                            <th>Employee</th>
+                            <th>Description</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th class="text-end">Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.name"/>
+                            <td t-esc="record.vendor"/>
+                            <td t-esc="record.employee"/>
+                            <td t-esc="record.description"/>
+                            <td t-esc="record.category"/>
+                            <td t-esc="formatDate(record.date)"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.amount)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="8" class="text-center text-muted py-5">No claims are linked to vendors.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-else="" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Vendor</th>
+                            <th>Category</th>
+                            <th>Contact</th>
+                            <th>Rating</th>
+                            <th>GL</th>
+                            <th class="text-end">Spend</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold text-primary" t-esc="record.code"/>
+                            <td class="fw-bold" t-esc="record.name"/>
+                            <td t-esc="record.category"/>
+                            <td>
+                                <span t-esc="record.email"/>
+                                <div class="small text-muted" t-esc="record.phone"/>
+                            </td>
+                            <td>
+                                <i class="fa fa-star text-warning me-1"/>
+                                <t t-esc="record.rating"/> / 5</td>
+                            <td t-esc="record.account"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.spend)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="8" class="text-center text-muted py-5">No vendors match your search.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseBudgetPage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label"/>
+                <p class="text-muted mb-0">Approved allocations, commitments, actual spend, and fiscal cut-offs</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button t-if="state.activePage === 'periods'" class="btn btn-primary" t-on-click="() =&gt; this.openBudgetModal('period')">
+                    <i class="fa fa-plus me-2"/>New Period</button>
+                <button t-if="state.activePage === 'departments'" class="btn btn-primary" t-on-click="() =&gt; this.openBudgetModal('budget')">
+                    <i class="fa fa-plus me-2"/>New Budget</button>
+                <button t-if="state.activePage !== 'periods'" class="btn btn-primary" t-on-click="() =&gt; this.openBudgetModal('line')">
+                    <i class="fa fa-plus me-2"/>Add Budget Line</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-xl">
+                <ExpenseKpiCard label="'Total Budget'" value="formatMoney(pageKpis.approved)" hint="'Approved allocation'" icon="'fa-pie-chart'" tone="'pink'"/>
+            </div>
+            <div class="col-6 col-xl">
+                <ExpenseKpiCard label="'Committed'" value="formatMoney(pageKpis.committed)" hint="'Approved requests'" icon="'fa-lock'" tone="'warning'"/>
+            </div>
+            <div class="col-6 col-xl">
+                <ExpenseKpiCard label="'Actual Spend'" value="formatMoney(pageKpis.actual)" hint="'Claims and petty cash'" icon="'fa-credit-card'" tone="'violet'"/>
+            </div>
+            <div class="col-6 col-xl">
+                <ExpenseKpiCard label="'Available'" value="formatMoney(pageKpis.available)" hint="'Remaining capacity'" icon="'fa-check-circle'" tone="'success'"/>
+            </div>
+            <div class="col-6 col-xl">
+                <ExpenseKpiCard label="'Utilization'" value="`${(pageKpis.utilization || 0).toFixed(1)}%`" hint="`${pageKpis.over || 0} over budget`" icon="'fa-line-chart'" tone="'warning'"/>
+            </div>
+        </div>
+        <div t-if="state.activePage !== 'periods'" class="card o_expense_panel mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between small fw-bold mb-2">
+                    <span>Overall Budget Utilization</span>
+                    <span>
+                        <t t-esc="(pageKpis.utilization || 0).toFixed(1)"/>%</span>
+                </div>
+                <div class="progress" style="height: 12px">
+                    <div class="progress-bar bg-success" t-att-style="`width: ${Math.min(pageKpis.utilization || 0, 100)}%`"/>
+                </div>
+                <div class="d-flex flex-wrap gap-4 small text-muted mt-2">
+                    <span>
+                        <i class="fa fa-circle text-warning me-1"/>Committed</span>
+                    <span>
+                        <i class="fa fa-circle text-primary me-1"/>Actual Spend</span>
+                    <span>
+                        <i class="fa fa-circle text-success me-1"/>Available</span>
+                </div>
+            </div>
+        </div>
+        <div class="card o_expense_panel">
+            <div class="card-header bg-white border-0">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search budgets, departments, accounts, or periods" t-on-input="updateRecordSearch"/>
+                </div>
+            </div>
+            <div t-if="state.activePage === 'periods'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Period</th>
+                            <th>Dates</th>
+                            <th>Submission</th>
+                            <th>Approval</th>
+                            <th>Payment</th>
+                            <th>GL</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td class="fw-bold" t-esc="record.code"/>
+                            <td t-esc="record.name"/>
+                            <td>
+                                <t t-esc="formatDate(record.start)"/> – <t t-esc="formatDate(record.end)"/>
+                            </td>
+                            <td t-esc="formatDate(record.submission)"/>
+                            <td t-esc="formatDate(record.approval)"/>
+                            <td t-esc="formatDate(record.payment)"/>
+                            <td t-esc="formatDate(record.gl)"/>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="8" class="text-center text-muted py-5">No fiscal periods are configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-elif="state.activePage === 'departments'" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Budget</th>
+                            <th>Period</th>
+                            <th class="text-end">Approved</th>
+                            <th class="text-end">Committed</th>
+                            <th class="text-end">Actual</th>
+                            <th class="text-end">Available</th>
+                            <th>Used</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td>
+                                <strong t-esc="record.department"/>
+                                <div class="small text-muted" t-esc="record.code"/>
+                            </td>
+                            <td t-esc="record.name"/>
+                            <td t-esc="record.period"/>
+                            <td class="text-end" t-esc="formatMoney(record.approved)"/>
+                            <td class="text-end" t-esc="formatMoney(record.committed)"/>
+                            <td class="text-end" t-esc="formatMoney(record.actual)"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.available)"/>
+                            <td>
+                                <t t-esc="record.utilization.toFixed(1)"/>%</td>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="9" class="text-center text-muted py-5">No department budgets are configured.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div t-else="" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Category</th>
+                            <th>GL</th>
+                            <th class="text-end">Approved</th>
+                            <th class="text-end">Forecast</th>
+                            <th class="text-end">Committed</th>
+                            <th class="text-end">Actual</th>
+                            <th class="text-end">Available</th>
+                            <th>Used</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td>
+                                <strong t-esc="record.department"/>
+                                <div class="small text-muted" t-esc="record.cost_center"/>
+                            </td>
+                            <td t-esc="record.name"/>
+                            <td t-esc="record.account"/>
+                            <td class="text-end" t-esc="formatMoney(record.approved)"/>
+                            <td class="text-end" t-esc="formatMoney(record.forecast)"/>
+                            <td class="text-end" t-esc="formatMoney(record.committed)"/>
+                            <td class="text-end" t-esc="formatMoney(record.actual)"/>
+                            <td class="text-end fw-bold" t-esc="formatMoney(record.available)"/>
+                            <td>
+                                <t t-esc="record.utilization.toFixed(1)"/>%</td>
+                            <td>
+                                <span class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state_label"/>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="10" class="text-center text-muted py-5">Add a budget line to begin tracking exposure.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+</templates>

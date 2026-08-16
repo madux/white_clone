@@ -52,3 +52,10 @@ adds a versioned OWL page/action contract, a registry-driven presentation
 configuration, shared expense-role authorization helpers, and domain-focused
 service extensions without changing business records, menus, RPC model names,
 or the visible workflow.
+
+## Upgrade to 17.0.9.1.0 (OWL template organization)
+
+Run the normal module upgrade command so Odoo rebuilds the backend asset
+bundle. This release splits the OWL application template into domain-focused
+page, modal, and overlay templates. It has no data migration and does not
+change the rendered DOM contract or business behavior.

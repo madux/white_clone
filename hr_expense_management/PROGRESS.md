@@ -39,6 +39,8 @@ models correctly retain the `hr.claim.*` vocabulary.
   serialization now uses explicit field schemas where payloads share a shape.
 - [x] Replaced per-module OWL getters and duplicated modal defaults with a
   presentation registry and server-owned, versioned page/action contracts.
+- [x] Split the OWL QWeb monolith into a small application shell plus
+  operations, financial, governance, modal, and overlay template files.
 - [x] Centralized Employee/Manager/Finance/Admin authorization checks in the
   reusable `hr.expense.security.mixin` used by the gateway and domain models.
 - [x] Completed Teams, Reports, immutable cross-module Audit, policies, email
