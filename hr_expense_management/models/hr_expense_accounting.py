@@ -11,7 +11,9 @@ class HrExpenseGlMap(models.Model):
     _check_company_auto = True
 
     name = fields.Char(required=True)
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(
+        default=10, help="Lower values are considered before higher values."
+    )
     source_type = fields.Selection(
         [
             ("claim", "Claim"),
@@ -22,8 +24,13 @@ class HrExpenseGlMap(models.Model):
         ],
         required=True,
         index=True,
+        help="Business event that uses this accounting mapping.",
     )
-    claim_category_id = fields.Many2one("hr.claim.category", check_company=True)
+    claim_category_id = fields.Many2one(
+        "hr.claim.category",
+        check_company=True,
+        help="Leave empty to use this as the general mapping for the source type.",
+    )
     journal_id = fields.Many2one(
         "account.journal",
         string="Odoo Journal",
@@ -90,6 +97,7 @@ class HrExpenseGlMap(models.Model):
     def create_move_from_mapping(
         self, source, source_type, amount, description=None, auto_post=False
     ):
+        """Create a balanced Odoo journal entry from the best matching map."""
         if not amount or amount <= 0:
             raise ValidationError("The accounting-entry amount must be positive.")
         mapping = self.sudo().search(
@@ -141,6 +149,7 @@ class HrExpenseGlMap(models.Model):
     def create_move_if_configured(
         self, source, source_type, amount, description=None, auto_post=False
     ):
+        """Create an entry when a map exists; otherwise return an empty recordset."""
         if not self.sudo().search_count(self._mapping_domain(source, source_type)):
             return self.env["account.move"]
         return self.create_move_from_mapping(

@@ -25,7 +25,7 @@ class HrExpenseSecurityMixin(models.AbstractModel):
 
     @api.model
     def _expense_check_role(self, *roles, message=None):
+        """Require at least one expense role for the current user."""
         if not self._expense_has_role(*roles):
             raise AccessError(message or _("You do not have access to this expense workspace."))
         return True
-

@@ -13,10 +13,18 @@ class HrExpensePeriod(models.Model):
     code = fields.Char(required=True, tracking=True)
     date_start = fields.Date(required=True, tracking=True)
     date_end = fields.Date(required=True, tracking=True)
-    submission_cutoff = fields.Date(tracking=True)
-    approval_cutoff = fields.Date(tracking=True)
-    payment_cutoff = fields.Date(tracking=True)
-    gl_cutoff = fields.Date(tracking=True)
+    submission_cutoff = fields.Date(
+        tracking=True, help="Last date on which a claim or request may be submitted."
+    )
+    approval_cutoff = fields.Date(
+        tracking=True, help="Last date on which a submission may be approved."
+    )
+    payment_cutoff = fields.Date(
+        tracking=True, help="Last date on which a claim payment may be completed."
+    )
+    gl_cutoff = fields.Date(
+        tracking=True, help="Last date on which an expense journal entry may be created."
+    )
     state = fields.Selection(
         [("future", "Future"), ("open", "Open"), ("closed", "Closed")],
         default="future", required=True, tracking=True, index=True,

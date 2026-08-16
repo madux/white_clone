@@ -5,6 +5,8 @@ from .hr_expense_app_contract import serialize_records, validate_action_values
 
 
 class HrExpenseAppFinancial(models.AbstractModel):
+    """Expose payment, petty-cash, accounting, vendor, and budget pages."""
+
     _inherit = "hr.expense.app"
 
     @api.model
@@ -552,4 +554,3 @@ class HrExpenseAppFinancial(models.AbstractModel):
         module = "vendors" if kind in {"vendor_category", "payment_term"} else "settings"
         self.env["hr.expense.audit"].log_event(module, "%s_created" % kind, _("Configuration created from the OWL application."), record, "configuration", origin="owl")
         return {"id": record.id, "name": record.display_name}
-

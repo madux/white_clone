@@ -50,6 +50,7 @@ class HrClaimType(models.Model):
         [("all", "All Employees"), ("restricted", "Specific Employees/Departments")],
         required=True,
         default="all",
+        help="Restricted types are available only to selected employees or departments.",
     )
     employee_ids = fields.Many2many(
         "hr.employee",
@@ -74,6 +75,7 @@ class HrClaimType(models.Model):
         ],
         required=True,
         default="optional",
+        help="Controls whether supporting documents are required at submission.",
     )
     receipt_threshold = fields.Monetary(
         currency_field="currency_id", default=10000.0
@@ -141,4 +143,3 @@ class HrClaimType(models.Model):
         if self.eligibility == "all":
             return True
         return employee in self.employee_ids or employee.department_id in self.department_ids
-

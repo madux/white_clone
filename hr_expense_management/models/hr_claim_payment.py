@@ -71,6 +71,7 @@ class HrClaimPayment(models.Model):
         )
 
     def _validate_draft_exposure(self, claims=None):
+        """Prevent concurrent draft allocations from exceeding claim balances."""
         claims = claims or self.mapped("claim_id")
         for claim in claims:
             claim.invalidate_recordset(

@@ -43,6 +43,7 @@ class HrExpenseAudit(models.Model):
     @api.model
     def log_event(self, module, action, description, record=None, category="user",
                   details=None, severity="info", origin="server"):
+        """Append an immutable, company-scoped audit event."""
         return self.sudo().create({
             "module": module, "action": action, "description": description,
             "category": category, "severity": severity, "origin": origin,

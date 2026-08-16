@@ -10,7 +10,10 @@ class HrExpenseApprovalRule(models.Model):
 
     name = fields.Char(required=True)
     active = fields.Boolean(default=True)
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(
+        default=10,
+        help="Lower values are considered before higher values when rules overlap.",
+    )
     target = fields.Selection(
         [("claim", "Claim"), ("request", "Request")], required=True, index=True
     )
@@ -35,6 +38,7 @@ class HrExpenseApprovalRule(models.Model):
 
     @api.model
     def _create_steps_for(self, record, target):
+        """Create sequential or parallel steps from the first matching rule."""
         amount = record.amount_total if target == "claim" else record.amount
         domain = [
             ("active", "=", True), ("target", "=", target),
@@ -79,7 +83,10 @@ class HrExpenseApprovalRuleLine(models.Model):
     _order = "sequence, id"
 
     rule_id = fields.Many2one("hr.expense.approval.rule", required=True, ondelete="cascade")
-    sequence = fields.Integer(default=10)
+    sequence = fields.Integer(
+        default=10,
+        help="Levels run in sequence order. Equal values form a parallel level.",
+    )
     name = fields.Char(required=True)
     approver_type = fields.Selection(
         [("manager", "Employee Manager"), ("user", "Specific User"),

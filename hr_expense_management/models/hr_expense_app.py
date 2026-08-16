@@ -40,6 +40,7 @@ class HrExpenseApp(models.AbstractModel):
 
     @api.model
     def get_app_bootstrap(self):
+        """Return user capabilities, navigation, theme, and RPC contracts."""
         user = self.env.user
         role = {
             "employee": self._expense_has_role("employee"),

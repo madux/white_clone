@@ -5,6 +5,8 @@ from .hr_expense_app_contract import serialize_records
 
 
 class HrExpenseAppOperations(models.AbstractModel):
+    """Expose claim, request, advance, and workflow pages to OWL."""
+
     _inherit = "hr.expense.app"
 
     @api.model
@@ -339,4 +341,3 @@ class HrExpenseAppOperations(models.AbstractModel):
         advance.action_retire(amount, reference)
         self.env["hr.expense.audit"].log_event("advances", "advance_retired", _("Cash advance retirement posted."), advance, "workflow", {"amount": amount, "reference": reference or ""}, origin="owl")
         return True
-

@@ -7,6 +7,8 @@ from odoo.exceptions import UserError
 
 
 class HrExpenseAppGovernance(models.AbstractModel):
+    """Expose setup, reporting, audit, settings, and theme pages."""
+
     _inherit = "hr.expense.app"
 
     @api.model
@@ -343,4 +345,3 @@ class HrExpenseAppGovernance(models.AbstractModel):
         else:
             raise UserError(_("Unsupported write-off decision."))
         return True
-

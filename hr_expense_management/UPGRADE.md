@@ -59,3 +59,8 @@ Run the normal module upgrade command so Odoo rebuilds the backend asset
 bundle. This release splits the OWL application template into domain-focused
 page, modal, and overlay templates. It has no data migration and does not
 change the rendered DOM contract or business behavior.
+
+## Upgrade to 17.0.9.2.0 (documentation)
+
+No data migration is required. Upgrade the module to publish the updated field
+help and module description.

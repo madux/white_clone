@@ -84,6 +84,7 @@ class HrExpensePaymentBatch(models.Model):
         return True
 
     def action_process(self):
+        """Process each claim independently and retain a per-claim result log."""
         self._check_finance()
         for batch in self:
             if batch.state != "validated":

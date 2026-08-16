@@ -273,6 +273,7 @@ class HrClaim(models.Model):
                 raise AccessError("You can only perform this action on your own claim.")
 
     def _validate_for_submission(self):
+        """Validate eligibility, limits, receipts, and submission windows."""
         today = fields.Date.context_today(self)
         for claim in self:
             if not claim.line_ids or claim.amount_total <= 0:
@@ -517,6 +518,7 @@ class HrClaim(models.Model):
 
     @api.model
     def get_dashboard_data(self):
+        """Return record-rule-filtered dashboard totals in company currency."""
         claims = self.search([])
         company_currency = self.env.company.currency_id
         dashboard_date = fields.Date.today()
