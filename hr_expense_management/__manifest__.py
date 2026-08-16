@@ -1,7 +1,7 @@
 {
     "name": "Expense Management",
     "summary": "Claims, requests, advances, payments, petty cash, budgets, and analytics",
-    "version": "17.0.8.0.0",
+    "version": "17.0.9.0.0",
     "category": "Human Resources/Expenses",
     "author": "CleonTime",
     "license": "LGPL-3",
@@ -33,6 +33,7 @@
     "assets": {
         "web.assets_backend": [
             "hr_expense_management/static/src/js/claim_dashboard.js",
+            "hr_expense_management/static/src/js/expense_app_registry.js",
             "hr_expense_management/static/src/js/expense_app.js",
             "hr_expense_management/static/src/xml/claim_dashboard.xml",
             "hr_expense_management/static/src/xml/expense_app.xml",

@@ -11,6 +11,13 @@ import {
 import { loadBundle } from "@web/core/assets";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import {
+    detailFields,
+    featureKpis,
+    moduleDescription,
+    moduleView,
+    statusClass,
+} from "./expense_app_registry";
 
 export class ExpenseKpiCard extends Component {
     static template = "hr_expense_management.ExpenseKpiCard";
@@ -165,20 +172,8 @@ export class ExpenseApp extends Component {
         return this.state.activeModule === "dashboard" && this.state.activePage === "overview";
     }
 
-    get isClaims() {
-        return this.state.activeModule === "claims";
-    }
-
-    get isWorkflow() {
-        return this.state.activeModule === "workflow";
-    }
-
-    get isRequests() {
-        return this.state.activeModule === "requests";
-    }
-
-    get isAdvances() {
-        return this.state.activeModule === "advances";
+    get moduleView() {
+        return moduleView(this.state.activeModule, this.state.activePage);
     }
 
     get pageKpis() {
@@ -211,34 +206,6 @@ export class ExpenseApp extends Component {
 
     get pageCount() { return Math.max(1, Math.ceil(this.filteredRecords.length / this.state.pageSize)); }
 
-    get isPayments() {
-        return this.state.activeModule === "payments";
-    }
-
-    get isPettyCash() {
-        return this.state.activeModule === "petty_cash";
-    }
-
-    get isAccounts() {
-        return this.state.activeModule === "accounts";
-    }
-
-    get isVendors() {
-        return this.state.activeModule === "vendors";
-    }
-
-    get isBudget() {
-        return this.state.activeModule === "budget";
-    }
-
-    get isSetup() { return this.state.activeModule === "setup"; }
-    get isTeams() { return this.state.activeModule === "teams"; }
-    get isReports() { return this.state.activeModule === "reports"; }
-    get isAudit() { return this.state.activeModule === "audit"; }
-    get isSettings() { return this.state.activeModule === "settings"; }
-    get isTheme() { return this.state.activeModule === "theme"; }
-    get isDashboardSection() { return this.state.activeModule === "dashboard" && !this.isDashboard; }
-    get isGovernance() { return this.isSetup || this.isTeams || this.isReports || this.isAudit || this.isSettings || this.isTheme || this.isDashboardSection; }
     get hasFeatureChart() {
         return Boolean(this.pageChartRef.el && this.featureChartRows.length);
     }
@@ -280,38 +247,34 @@ export class ExpenseApp extends Component {
     }
 
     get moduleDescription() {
-        return {
-            dashboard: "Quick actions, recent activity, assigned tasks, and announcements",
-            setup: "Company onboarding, policies, and implementation readiness",
-            teams: "Members, departments, role permissions, exposure, and team analytics",
-            reports: "Financial, claims, employee, custom, and scheduled reporting",
-            audit: "Immutable user, workflow, configuration, and system activity",
-            settings: "Policies, workflow defaults, notifications, and integration adapters",
-            theme: "Company branding, density, typography, and a live application preview",
-        }[this.state.activeModule] || "Expense Management";
+        return moduleDescription(this.state.activeModule);
     }
 
     get featureKpis() {
-        const kpis = this.pageKpis;
-        const specs = {
-            setup: [["Progress", `${kpis.percent || 0}%`, "fa-tasks", "pink"], ["Complete", kpis.complete || 0, "fa-check", "success"], ["Remaining", Math.max((kpis.total || 0) - (kpis.complete || 0), 0), "fa-clock-o", "warning"]],
-            teams: [["Members", kpis.members || 0, "fa-users", "pink"], ["Departments", kpis.departments || 0, "fa-sitemap", "violet"], ["Managers", kpis.managers || 0, "fa-user-secret", "success"], ["Exposure", this.formatMoney(kpis.exposure), "fa-money", "warning"]],
-            reports: [["Claims", kpis.claims || 0, "fa-file-text-o", "pink"], ["Submitted", this.formatMoney(kpis.submitted), "fa-line-chart", "violet"], ["Approved", this.formatMoney(kpis.approved), "fa-check", "success"], ["Paid", this.formatMoney(kpis.paid), "fa-credit-card", "warning"]],
-            audit: [["Events", kpis.events || 0, "fa-history", "pink"], ["Users", kpis.users || 0, "fa-users", "violet"], ["Configuration", kpis.configuration || 0, "fa-cog", "success"], ["Critical", kpis.critical || 0, "fa-exclamation-triangle", "warning"]],
-            settings: [["Policies", kpis.policies || 0, "fa-book", "pink"], ["Templates", kpis.templates || 0, "fa-envelope", "violet"], ["Connected", kpis.integrations || 0, "fa-plug", "success"], ["Configured", kpis.configured || 0, "fa-check", "warning"]],
-            theme: [["Theme", kpis.configured ? "Configured" : "Default", "fa-paint-brush", "pink"]],
-            dashboard: [["Claims", this.kpis.total || 0, "fa-file-text-o", "pink"], ["Pending", this.kpis.submitted || 0, "fa-clock-o", "warning"], ["Approved", this.kpis.approved || 0, "fa-check", "success"], ["Paid", this.kpis.paid || 0, "fa-credit-card", "violet"]],
-        };
-        return (specs[this.state.activeModule] || []).map((item, index) => ({ id: index, label: item[0], value: item[1], icon: item[2], tone: item[3] }));
+        return featureKpis(
+            this.state.activeModule,
+            this.pageKpis,
+            this.kpis,
+            (value) => this.formatMoney(value)
+        );
     }
 
     recordDetails(record) {
-        const skip = new Set(["id", "name", "state", "state_label", "description", "permissions", "complete", "can_appeal"]);
-        return Object.entries(record).filter(([key, value]) => !skip.has(key) && value !== "" && value !== false && value !== null && value !== undefined).slice(0, 5).map(([key, value]) => ({ key, label: key.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase()), value: this.formatFeatureValue(key, value) }));
+        return detailFields(this.state.activeModule)
+            .filter((key) => record[key] !== "" && record[key] !== false && record[key] !== null && record[key] !== undefined)
+            .slice(0, 5)
+            .map((key) => ({
+                key,
+                label: key.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase()),
+                value: this.formatFeatureValue(key, record[key]),
+            }));
     }
 
     formatFeatureValue(key, value) {
-        if (["amount", "exposure", "submitted", "approved", "paid", "requests"].includes(key)) return this.formatMoney(value);
+        if (["amount", "balance", "maximum", "threshold", "variance", "issued", "retired",
+            "outstanding", "exposure", "submitted", "approved", "committed", "actual",
+            "available", "paid", "spend", "debit", "credit"].includes(key)) return this.formatMoney(value);
+        if (key === "utilization") return `${Number(value || 0).toFixed(1)}%`;
         if (key.includes("date") || key.includes("run")) return this.formatDate(value);
         if (typeof value === "boolean") return value ? "Yes" : "No";
         return value;
@@ -353,22 +316,32 @@ export class ExpenseApp extends Component {
     }
 
     async loadActivePage() {
-        const supported = ["dashboard", "claims", "requests", "advances", "workflow", "payments", "petty_cash",
-            "accounts", "vendors", "budget", "setup", "teams", "reports", "audit", "settings", "theme"];
+        const supported = this.state.data?.contract?.modules || [];
         if (!supported.includes(this.state.activeModule)) {
             this.state.pageData = { records: [], kpis: {} };
             return;
         }
         this.state.pageLoading = true;
         try {
-            this.state.pageData = await this.orm.call("hr.expense.app", "get_app_page", [
+            const payload = await this.orm.call("hr.expense.app", "get_app_page", [
                 this.state.activeModule, this.state.activePage,
             ]);
+            this._validatePagePayload(payload);
+            this.state.pageData = payload;
         } catch (error) {
             this.notification.add(error.message || "Unable to load this page.", { type: "danger" });
             this.state.pageData = { records: [], kpis: {} };
         } finally {
             this.state.pageLoading = false;
+        }
+    }
+
+    _validatePagePayload(payload) {
+        const version = this.state.data?.contract?.version;
+        if (payload?.contract_version !== version || payload?.module !== this.state.activeModule ||
+            payload?.page !== this.state.activePage || !Array.isArray(payload?.records) ||
+            typeof payload?.kpis !== "object" || typeof payload?.charts !== "object") {
+            throw new Error("Expense page contract mismatch. Refresh the module assets and try again.");
         }
     }
 
@@ -446,9 +419,9 @@ export class ExpenseApp extends Component {
     openDrawerAdvanced() {
         const record = this.state.drawer;
         if (!record || typeof record.id !== "number") return;
-        if (this.isClaims && this.state.activePage === "data") return this.openClaim(record.id);
-        if (this.isRequests) return this.openRequest(record.id);
-        if (this.isAdvances && this.state.activePage !== "writeoffs") return this.openAdvance(record.id);
+        if (this.moduleView === "claims" && this.state.activePage === "data") return this.openClaim(record.id);
+        if (this.moduleView === "requests") return this.openRequest(record.id);
+        if (this.moduleView === "advances" && this.state.activePage !== "writeoffs") return this.openAdvance(record.id);
     }
 
     async runQuickAction(record) {
@@ -475,10 +448,7 @@ export class ExpenseApp extends Component {
     }
 
     statusClass(state) {
-        if (["approved", "fulfilled", "retired", "paid", "posted", "active", "under"].includes(state)) return "text-bg-success";
-        if (["submitted", "appealed", "outstanding", "partial", "pending", "track", "risk", "draft"].includes(state)) return "text-bg-warning";
-        if (["rejected", "cancelled", "written_off", "over"].includes(state)) return "text-bg-danger";
-        return "text-bg-light";
+        return statusClass(state);
     }
 
     openRequestModal() {
@@ -601,48 +571,47 @@ export class ExpenseApp extends Component {
         reader.readAsDataURL(file);
     }
 
+    _contractModalValues(scope, kind, overrides = {}) {
+        const contract = this.state.data?.contract?.actions?.[scope]?.[kind];
+        if (!contract) {
+            throw new Error(`Missing ${scope}/${kind} action contract.`);
+        }
+        const allowedOverrides = Object.fromEntries(
+            Object.entries(overrides).filter(([field]) => contract.fields.includes(field))
+        );
+        return { ...contract.defaults, ...allowedOverrides };
+    }
+
     openPettyModal(kind) {
         const options = this.state.pageData?.petty_options || {};
-        this.state.modal = { type: "petty", kind, values: {
+        this.state.modal = { type: "petty", kind, values: this._contractModalValues("petty", kind, {
             fund_id: options.funds?.[0]?.id || "", custodian_id: options.employees?.[0]?.id || "",
-            name: "", code: "", location: "", maximum_amount: "", minimum_threshold: "",
-            transaction_type: "expense", date: "", payee: "", category: "", description: "", amount: "",
-            period_start: "", physical_count: "", notes: "", requested_amount: "", justification: "", urgent: false,
-        } };
+        }) };
     }
 
     openAccountingModal(kind) {
         const options = this.state.pageData?.account_options || {};
-        this.state.modal = { type: "accounting", kind, values: {
-            code: "", name: "", account_type: "expense",
-            source_type: "claim", category_id: "", debit_account_id: options.accounts?.[0]?.id || "",
+        this.state.modal = { type: "accounting", kind, values: this._contractModalValues("accounting", kind, {
+            debit_account_id: options.accounts?.[0]?.id || "",
             credit_account_id: options.accounts?.[1]?.id || "", journal_id: options.journals?.[0]?.id || "",
-            description: "", date: "", amount: "", post: false,
-        } };
+        }) };
     }
 
     openBudgetModal(kind) {
         const options = this.state.pageData?.budget_options || {};
-        this.state.modal = { type: "budget", kind, values: {
-            name: "", code: "", date_start: "", date_end: "", submission_cutoff: "", approval_cutoff: "", payment_cutoff: "", gl_cutoff: "",
+        this.state.modal = { type: "budget", kind, values: this._contractModalValues("budget", kind, {
             period_id: options.periods?.[0]?.id || "", department_id: options.departments?.[0]?.id || "", cost_center: "",
             budget_id: options.budgets?.[0]?.id || "", category_id: "", account_id: "",
-            approved_amount: "", forecast_amount: "", warning_threshold: "80",
-        } };
+        }) };
     }
 
     openConfigModal(kind) {
         const claimOptions = this.state.pageData?.claim_options || {};
         const vendorOptions = this.state.pageData?.vendor_options || {};
-        this.state.modal = { type: "config", kind, values: {
-            name: "", code: "", description: "", category_id: claimOptions.claim_categories?.[0]?.id || "",
-            amount_type: "open", fixed_amount: "", maximum_amount: "", receipt_policy: "optional",
-            receipt_threshold: "", approval_type: "single", window_type: "submission", duration_days: "30",
-            start_date: "", end_date: "", minimum_amount: "", creates_advance: false, retirement_days: "30",
-            target: "claim", department_id: "", tax_rate: "", account_id: vendorOptions.accounts?.[0]?.id || "",
-            due_days: "30", discount: "", discount_days: "", event: "submitted", subject: "", body_html: "",
-            provider: "other", configuration_summary: "", method_type: "bank", supports_batch: true,
-        } };
+        this.state.modal = { type: "config", kind, values: this._contractModalValues("configuration", kind, {
+            category_id: claimOptions.claim_categories?.[0]?.id || "",
+            account_id: vendorOptions.accounts?.[0]?.id || "",
+        }) };
     }
 
     async submitOperationalModal() {

@@ -109,6 +109,7 @@ class HrExpenseApprovalRuleLine(models.Model):
 class HrExpenseApprovalStep(models.Model):
     _name = "hr.expense.approval.step"
     _description = "Expense Approval Step"
+    _inherit = "hr.expense.security.mixin"
     _order = "sequence, id"
     _check_company_auto = True
 
@@ -162,15 +163,14 @@ class HrExpenseApprovalStep(models.Model):
 
     def _can_current_user_approve(self):
         self.ensure_one()
-        user = self.env.user
         return (
-            user.has_group("hr_expense_management.group_hr_expense_admin")
-            or self.approver_user_id == user
-            or (self.approver_group_id and self.approver_group_id in user.groups_id)
+            self._expense_has_role("admin")
+            or self.approver_user_id == self.env.user
+            or (self.approver_group_id and self.approver_group_id in self.env.user.groups_id)
             or (
                 not self.approver_user_id
                 and not self.approver_group_id
-                and user.has_group("hr_expense_management.group_hr_expense_manager")
+                and self._expense_has_role("manager")
             )
         )
 

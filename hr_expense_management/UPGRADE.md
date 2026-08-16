@@ -44,3 +44,11 @@ versioned migration automatically:
 
 The OWL application continues to open through the same client action, but its
 RPC gateway is now `hr.expense.app`; no client bookmarks or menus change.
+
+## Upgrade to 17.0.9.0.0 (application contract refactor)
+
+Run the normal module upgrade command. This release has no data migration. It
+adds a versioned OWL page/action contract, a registry-driven presentation
+configuration, shared expense-role authorization helpers, and domain-focused
+service extensions without changing business records, menus, RPC model names,
+or the visible workflow.

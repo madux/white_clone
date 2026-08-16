@@ -34,6 +34,13 @@ models correctly retain the `hr.claim.*` vocabulary.
   controlled reopen behavior use the same chart of accounts.
 - [x] Extracted every OWL RPC from `hr.claim` into the dedicated,
   non-persistent `hr.expense.app` application service.
+- [x] Split the application service into a small bootstrap/dispatcher plus
+  operations, financial, and governance extensions; repeated record
+  serialization now uses explicit field schemas where payloads share a shape.
+- [x] Replaced per-module OWL getters and duplicated modal defaults with a
+  presentation registry and server-owned, versioned page/action contracts.
+- [x] Centralized Employee/Manager/Finance/Admin authorization checks in the
+  reusable `hr.expense.security.mixin` used by the gateway and domain models.
 - [x] Completed Teams, Reports, immutable cross-module Audit, policies, email
   templates, non-secret integration metadata, company settings/profile, custom
   and scheduled reports, and live Theme customization.
@@ -47,7 +54,7 @@ models correctly retain the `hr.claim.*` vocabulary.
 ## Final verification
 
 - [x] Python compilation, all XML parsing, and `git diff --check` pass.
-- [x] Upgrade test suite passes: 24 methods / 34 Odoo test units, with zero
+- [x] Upgrade test suite passes: 25 methods / 35 Odoo test units, with zero
   failures or errors.
 - [x] Fresh-database install and the same full suite pass with no failures or
   errors.

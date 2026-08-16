@@ -46,6 +46,12 @@ CSV export, drawers, modals, creation/configuration flows, document inputs,
 status chips, saved navigation/sidebar preferences and native advanced-edit
 handoffs.
 
+Module identity, renderer selection, descriptive copy, KPI definitions, record
+details and status tones are centralized in an OWL presentation registry. The
+server publishes versioned page and action contracts; the client validates
+every page envelope before rendering and builds operational modal payloads from
+the server-owned field definitions.
+
 During real browser acceptance, Odoo-specific runtime defects were found and
 fixed: unsupported Sass unit mixing, incorrect component-prop expressions, a
 Theme-page asynchronous render race, and misplaced petty-cash controls in the
@@ -63,6 +69,9 @@ Claims table. These were not visible to Python unit tests.
   `account.move.line`; no parallel expense ledger remains.
 - The OWL RPC surface is isolated in the non-persistent `hr.expense.app`
   service model instead of extending `hr.claim` with application concerns.
+  Its 192-line bootstrap/dispatcher is extended by separate operations,
+  financial, and governance service files, keeping domain payloads and actions
+  out of a single gateway monolith.
 - External-provider pages accept no secrets and perform no unapproved transfer.
 
 ## Verification results
@@ -71,9 +80,9 @@ Claims table. These were not visible to Python unit tests.
 |---|---|
 | Python compile, XML parse, whitespace | PASS |
 | Odoo module upgrade | PASS |
-| Full upgraded-database regression suite | PASS — 24 methods / 34 Odoo test units, zero failures/errors |
+| Full upgraded-database regression suite | PASS — 25 methods / 35 Odoo test units, zero failures/errors |
 | Fresh Odoo database install | PASS |
-| Full fresh-database regression suite | PASS — 24 methods / 34 Odoo test units, zero failures/errors |
+| Full fresh-database regression suite | PASS — 25 methods / 35 Odoo test units, zero failures/errors |
 | Backend JS/CSS asset generation | PASS |
 | Authenticated OWL startup | PASS — 16 modules, no client/Sass error |
 | Page-by-page browser traversal | PASS — 74/74 routes |

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from odoo import Command, fields
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -34,6 +34,14 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
         cls.employee.parent_id = cls.manager_employee
         cls.department.manager_id = cls.manager_employee
 
+    def assertPageContract(self, payload, module, page):
+        self.assertEqual(payload["contract_version"], 1)
+        self.assertEqual(payload["module"], module)
+        self.assertEqual(payload["page"], page)
+        self.assertIsInstance(payload["records"], list)
+        self.assertIsInstance(payload["kpis"], dict)
+        self.assertIsInstance(payload["charts"], dict)
+
     def test_all_remaining_owl_pages_return_live_payloads(self):
         self.assertFalse(hasattr(self.env["hr.claim"], "get_app_page"))
         admin_claim = self.env["hr.expense.app"].with_user(self.admin_user)
@@ -46,18 +54,46 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
             for page in pages:
                 payload = admin_claim.get_app_page(module, page)
                 self.assertTrue(payload["available"], "%s/%s must be live" % (module, page))
+                self.assertPageContract(payload, module, page)
 
         manager_claim = self.env["hr.expense.app"].with_user(self.manager_user)
         for page in ("members", "departments", "roles", "analytics", "settings"):
-            self.assertTrue(manager_claim.get_app_page("teams", page)["available"])
+            payload = manager_claim.get_app_page("teams", page)
+            self.assertTrue(payload["available"])
+            self.assertPageContract(payload, "teams", page)
         for page in ("financial", "claims", "employees", "custom", "scheduled"):
-            self.assertTrue(manager_claim.get_app_page("reports", page)["available"])
+            payload = manager_claim.get_app_page("reports", page)
+            self.assertTrue(payload["available"])
+            self.assertPageContract(payload, "reports", page)
 
         employee_claim = self.env["hr.expense.app"].with_user(self.employee_user)
         with self.assertRaises(AccessError):
             employee_claim.get_app_page("audit", "activity")
         with self.assertRaises(AccessError):
             employee_claim.get_app_page("reports", "financial")
+
+    def test_bootstrap_publishes_versioned_action_contract(self):
+        gateway = self.env["hr.expense.app"].with_user(self.admin_user)
+        bootstrap = gateway.get_app_bootstrap()
+        contract = bootstrap["contract"]
+        self.assertEqual(contract["version"], 1)
+        self.assertEqual(set(contract["modules"]), {item["key"] for item in bootstrap["modules"]})
+        self.assertEqual(len(contract["modules"]), 16)
+        for scope in ("configuration", "petty", "accounting", "budget"):
+            self.assertTrue(contract["actions"][scope])
+            for action in contract["actions"][scope].values():
+                self.assertTrue(set(action["required"]).issubset(action["fields"]))
+                self.assertEqual(set(action["fields"]), set(action["defaults"]))
+
+        unavailable = gateway.get_app_page("unsupported", "missing")
+        self.assertFalse(unavailable["available"])
+        self.assertPageContract(unavailable, "unsupported", "missing")
+        with self.assertRaises(UserError):
+            gateway.app_create_configuration(
+                "payment_method", {"name": "Invalid", "code": "INVALID", "unexpected": True}
+            )
+        with self.assertRaises(UserError):
+            gateway.app_create_configuration("payment_method", {"name": "", "code": "INVALID"})
 
     def test_theme_settings_reports_and_audit_persist(self):
         gateway = self.env["hr.expense.app"].with_user(self.admin_user)

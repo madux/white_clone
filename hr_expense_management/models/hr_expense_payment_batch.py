@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import UserError
 
 
 class HrExpensePaymentMethod(models.Model):
@@ -30,7 +30,7 @@ class HrExpensePaymentMethod(models.Model):
 class HrExpensePaymentBatch(models.Model):
     _name = "hr.expense.payment.batch"
     _description = "Expense Payment Batch"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "create_date desc, id desc"
     _check_company_auto = True
 
@@ -68,8 +68,9 @@ class HrExpensePaymentBatch(models.Model):
         return super().create(vals_list)
 
     def _check_finance(self):
-        if not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")):
-            raise AccessError("Only Finance can process payment batches.")
+        return self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can process payment batches.")
+        )
 
     def action_validate(self):
         self._check_finance()

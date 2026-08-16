@@ -10,7 +10,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class HrClaim(models.Model):
     _name = "hr.claim"
     _description = "Employee Expense Claim"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "submitted_date desc, id desc"
     _check_company_auto = True
 
@@ -159,7 +159,7 @@ class HrClaim(models.Model):
 
     @api.depends_context("uid")
     def _compute_can_employee_action(self):
-        is_admin = self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
+        is_admin = self._expense_has_role("admin")
         for claim in self:
             owner = claim.employee_id.sudo().user_id
             claim.can_employee_action = is_admin or owner == self.env.user
@@ -197,16 +197,13 @@ class HrClaim(models.Model):
         for vals in vals_list:
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("hr.claim") or "New"
-            if not self.env.su and not self.env.user.has_group(
-                "hr_expense_management.group_hr_expense_admin"
-            ):
+            if not self._expense_has_role("admin"):
                 vals["state"] = "draft"
                 for field_name in self._decision_fields:
                     vals.pop(field_name, None)
             if (
-                not self.env.su
-                and vals.get("employee_id")
-                and not self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
+                vals.get("employee_id")
+                and not self._expense_has_role("admin")
             ):
                 employee = self.env["hr.employee"].browse(vals["employee_id"])
                 if employee.sudo().user_id != self.env.user:
@@ -217,13 +214,13 @@ class HrClaim(models.Model):
         return records
 
     def _is_admin(self):
-        return self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
+        return self._expense_has_role("admin")
 
     def _is_manager(self):
-        return self.env.user.has_group("hr_expense_management.group_hr_expense_manager")
+        return self._expense_has_role("manager")
 
     def _is_finance(self):
-        return self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
+        return self._expense_has_role("finance")
 
     def _is_owner(self):
         self.ensure_one()
@@ -584,12 +581,10 @@ class HrClaim(models.Model):
         return {
             "currency": {"symbol": company_currency.symbol, "position": company_currency.position},
             "role": {
-                "employee": self.env.user.has_group(
-                    "hr_expense_management.group_hr_expense_employee"
-                ),
-                "manager": self.env.user.has_group("hr_expense_management.group_hr_expense_manager"),
-                "finance": self.env.user.has_group("hr_expense_management.group_hr_expense_finance"),
-                "admin": self.env.user.has_group("hr_expense_management.group_hr_expense_admin"),
+                "employee": self._expense_has_role("employee"),
+                "manager": self._expense_has_role("manager"),
+                "finance": self._expense_has_role("finance"),
+                "admin": self._expense_has_role("admin"),
             },
             "kpis": {
                 "total": len(claims),

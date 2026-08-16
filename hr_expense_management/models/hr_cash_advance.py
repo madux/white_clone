@@ -1,11 +1,11 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 class HrCashAdvance(models.Model):
     _name = "hr.cash.advance"
     _description = "Employee Cash Advance"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "issue_date desc, id desc"
     _check_company_auto = True
 
@@ -63,11 +63,9 @@ class HrCashAdvance(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.su and not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance can create cash advances.")
+        self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can create cash advances.")
+        )
         for vals in vals_list:
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("hr.cash.advance") or "New"
@@ -127,11 +125,9 @@ class HrCashAdvance(models.Model):
         return retirement
 
     def _check_finance(self):
-        if not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance can process cash advances.")
+        return self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can process cash advances.")
+        )
 
 
 class HrCashAdvanceRetirement(models.Model):

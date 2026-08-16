@@ -5,7 +5,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class HrPettyCashFund(models.Model):
     _name = "hr.petty.cash.fund"
     _description = "Petty Cash Fund"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "name"
     _check_company_auto = True
 
@@ -39,7 +39,7 @@ class HrPettyCashFund(models.Model):
 class HrPettyCashTransaction(models.Model):
     _name = "hr.petty.cash.transaction"
     _description = "Petty Cash Transaction"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "date desc, id desc"
     _check_company_auto = True
 
@@ -82,14 +82,11 @@ class HrPettyCashTransaction(models.Model):
 
     def _check_custodian_or_finance(self):
         for record in self:
-            if not (record.fund_id.custodian_id.sudo().user_id == self.env.user or self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")):
+            if not (record.fund_id.custodian_id.sudo().user_id == self.env.user or self._expense_has_role("finance", "admin")):
                 raise AccessError("Only the assigned custodian or Finance can manage this fund.")
 
     def write(self, vals):
-        if {"state", "approved_by_id"}.intersection(vals) and not self.env.context.get("petty_workflow") and not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
+        if {"state", "approved_by_id"}.intersection(vals) and not self.env.context.get("petty_workflow") and not self._expense_has_role("finance", "admin"):
             raise AccessError("Use the petty cash workflow actions to change status.")
         return super().write(vals)
 
@@ -101,8 +98,9 @@ class HrPettyCashTransaction(models.Model):
         return True
 
     def action_approve(self):
-        if not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")):
-            raise AccessError("Only Finance can approve petty cash transactions.")
+        self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can approve petty cash transactions.")
+        )
         for tx in self:
             if tx.state != "submitted": raise UserError("Only pending transactions can be approved.")
             if tx.transaction_type in ("expense", "negative_adjustment", "closure") and tx.amount > tx.fund_id.current_balance:
@@ -114,6 +112,7 @@ class HrPettyCashTransaction(models.Model):
 class HrPettyCashReconciliation(models.Model):
     _name = "hr.petty.cash.reconciliation"
     _description = "Petty Cash Reconciliation"
+    _inherit = "hr.expense.security.mixin"
     _order = "date desc, id desc"
     _check_company_auto = True
 
@@ -143,10 +142,7 @@ class HrPettyCashReconciliation(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if {"state", "reconciled_by_id", "system_balance"}.intersection(vals) and not self.env.context.get("petty_workflow") and not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
+        if {"state", "reconciled_by_id", "system_balance"}.intersection(vals) and not self.env.context.get("petty_workflow") and not self._expense_has_role("finance", "admin"):
             raise AccessError("Use the reconciliation action to confirm the cash count.")
         return super().write(vals)
 
@@ -162,7 +158,7 @@ class HrPettyCashReconciliation(models.Model):
 class HrPettyCashReplenishment(models.Model):
     _name = "hr.petty.cash.replenishment"
     _description = "Petty Cash Replenishment"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "request_date desc, id desc"
     _check_company_auto = True
 
@@ -192,7 +188,7 @@ class HrPettyCashReplenishment(models.Model):
             if vals.get("name", "New") == "New": vals["name"] = self.env["ir.sequence"].next_by_code("hr.petty.cash.replenishment") or "New"
         records = super().create(vals_list)
         for record in records:
-            if not (record.fund_id.custodian_id.sudo().user_id == self.env.user or self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")):
+            if not (record.fund_id.custodian_id.sudo().user_id == self.env.user or self._expense_has_role("finance", "admin")):
                 raise AccessError("Only the custodian or Finance can request replenishment.")
         return records
 
@@ -204,22 +200,23 @@ class HrPettyCashReplenishment(models.Model):
 
     def write(self, vals):
         protected = {"state", "approved_by_id", "issued_by_id", "issued_amount", "issued_date"}
-        if protected.intersection(vals) and not self.env.context.get("petty_workflow") and not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
+        if protected.intersection(vals) and not self.env.context.get("petty_workflow") and not self._expense_has_role("finance", "admin"):
             raise AccessError("Use the replenishment workflow actions to change protected fields.")
         return super().write(vals)
 
     def action_approve(self):
-        if not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")): raise AccessError("Only Finance can approve replenishments.")
+        self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can approve replenishments.")
+        )
         for record in self:
             if record.state != "submitted": raise UserError("Only submitted replenishments can be approved.")
             record.write({"state": "approved", "approved_by_id": self.env.user.id})
         return True
 
     def action_issue(self):
-        if not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")): raise AccessError("Only Finance can issue replenishments.")
+        self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can issue replenishments.")
+        )
         for record in self:
             if record.state != "approved": raise UserError("Only approved replenishments can be issued.")
             self.env["hr.petty.cash.transaction"].create({

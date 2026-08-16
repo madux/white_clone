@@ -5,7 +5,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class HrExpensePeriod(models.Model):
     _name = "hr.expense.period"
     _description = "Expense Fiscal Period"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "date_start desc, id desc"
     _check_company_auto = True
 
@@ -57,11 +57,9 @@ class HrExpensePeriod(models.Model):
                     raise ValidationError("Every cutoff must fall inside the expense period.")
 
     def _check_finance(self):
-        if not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance can manage expense periods.")
+        return self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can manage expense periods.")
+        )
 
     def action_open(self):
         self._check_finance()
@@ -84,7 +82,7 @@ class HrExpensePeriod(models.Model):
         return True
 
     def action_reopen(self, reason):
-        if not self.env.user.has_group("hr_expense_management.group_hr_expense_admin"):
+        if not self._expense_has_role("admin"):
             raise AccessError("Only an Expense Administrator can reopen a period.")
         if not reason or not reason.strip():
             raise ValidationError("A reopen reason is required.")
@@ -127,7 +125,7 @@ class HrExpensePeriod(models.Model):
 class HrExpenseBudget(models.Model):
     _name = "hr.expense.budget"
     _description = "Expense Budget"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "period_id desc, department_id, id"
     _check_company_auto = True
 
@@ -174,11 +172,9 @@ class HrExpenseBudget(models.Model):
             )
 
     def _check_finance(self):
-        if not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance can manage budgets.")
+        return self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can manage budgets.")
+        )
 
     def action_approve(self):
         self._check_finance()

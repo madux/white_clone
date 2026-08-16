@@ -84,6 +84,9 @@ The main menu opens one OWL client action, `hr_expense_management.expense_app`, 
 
 - `ExpenseApp` owns the application shell, route state and server interactions;
   `ExpenseKpiCard` is the repeated typed KPI component.
+- Module renderer selection, descriptive copy, detail fields, KPI definitions
+  and status tones are driven by a single presentation registry rather than
+  per-module getters scattered through the root component.
 - Sidebar, header, subnavigation, status badges, data tables, card grids, view
   switchers, filters, pagination, empty/loading/error states, record drawer,
   dialogs, step wizard and attachments are OWL-rendered template regions driven
@@ -98,6 +101,17 @@ The main menu opens one OWL client action, `hr_expense_management.expense_app`, 
 A Community-safe abstract/service model exposes role-filtered payloads and
 small action methods to the OWL client. It uses normal ORM models and record
 rules; no raw SQL or client-trusted domains are security boundaries.
+
+The public service is implemented as a small bootstrap/dispatcher extended by
+operations, financial, and governance service classes. This preserves one
+stable RPC model while preventing unrelated page serializers and mutations
+from accumulating in a single Python file.
+
+The bootstrap publishes a versioned list of module loaders and action-field
+contracts. Every page is normalized to the same records/KPI/chart envelope,
+validated again by the browser before rendering, and covered by unit plus
+authenticated browser tests. Operational modal payloads reject missing and
+unknown fields at the gateway boundary.
 
 ## 4. Data model
 

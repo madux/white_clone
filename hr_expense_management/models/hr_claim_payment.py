@@ -5,7 +5,7 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 class HrClaimPayment(models.Model):
     _name = "hr.claim.payment"
     _description = "Claim Payment"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "payment_date desc, id desc"
     _check_company_auto = True
 
@@ -90,11 +90,10 @@ class HrClaimPayment(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance or an Administrator can create payments.")
+        self._expense_check_role(
+            "finance", "admin",
+            message=_("Only Finance or an Administrator can create payments."),
+        )
         claims = self.env["hr.claim"].browse(
             sorted({vals["claim_id"] for vals in vals_list if vals.get("claim_id")})
         )
@@ -134,11 +133,10 @@ class HrClaimPayment(models.Model):
         return super().write(vals)
 
     def action_confirm(self):
-        if not (
-            self.env.user.has_group("hr_expense_management.group_hr_expense_finance")
-            or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
-        ):
-            raise AccessError("Only Finance or an Administrator can process payments.")
+        self._expense_check_role(
+            "finance", "admin",
+            message=_("Only Finance or an Administrator can process payments."),
+        )
         claims = self.mapped("claim_id")
         self._lock_claims(claims)
         self.invalidate_recordset(["state"])

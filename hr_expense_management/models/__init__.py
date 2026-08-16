@@ -1,3 +1,5 @@
+from . import hr_expense_security
+from . import hr_expense_app_contract
 from . import hr_claim_category
 from . import hr_claim_type
 from . import hr_claim_window
@@ -14,3 +16,6 @@ from . import hr_expense_vendor
 from . import hr_expense_budget
 from . import hr_expense_governance
 from . import hr_expense_app
+from . import hr_expense_app_operations
+from . import hr_expense_app_financial
+from . import hr_expense_app_governance

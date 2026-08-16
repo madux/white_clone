@@ -261,7 +261,7 @@ class ResCompanyExpenseSettings(models.Model):
 class HrCashAdvanceWriteoff(models.Model):
     _name = "hr.cash.advance.writeoff"
     _description = "Cash Advance Write-Off"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "request_date desc, id desc"
     _check_company_auto = True
 
@@ -286,8 +286,9 @@ class HrCashAdvanceWriteoff(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self.env.su and not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self.env.user.has_group("hr_expense_management.group_hr_expense_admin")):
-            raise AccessError(_("Only Finance can request an advance write-off."))
+        self._expense_check_role(
+            "finance", "admin", message=_("Only Finance can request an advance write-off.")
+        )
         for vals in vals_list:
             if vals.get("name", "New") == "New":
                 vals["name"] = self.env["ir.sequence"].next_by_code("hr.cash.advance.writeoff") or "New"
@@ -308,7 +309,7 @@ class HrCashAdvanceWriteoff(models.Model):
         return True
 
     def action_approve(self, note=None):
-        if not self.env.user.has_group("hr_expense_management.group_hr_expense_admin"):
+        if not self._expense_has_role("admin"):
             raise AccessError(_("An Administrator must approve advance write-offs."))
         for item in self:
             if item.state != "submitted":
@@ -326,7 +327,7 @@ class HrCashAdvanceWriteoff(models.Model):
         return True
 
     def action_reject(self, note):
-        if not self.env.user.has_group("hr_expense_management.group_hr_expense_admin"):
+        if not self._expense_has_role("admin"):
             raise AccessError(_("An Administrator must reject advance write-offs."))
         if not (note or "").strip():
             raise ValidationError(_("A rejection reason is required."))

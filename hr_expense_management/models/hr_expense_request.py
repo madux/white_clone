@@ -44,7 +44,7 @@ class HrExpenseRequestType(models.Model):
 class HrExpenseRequest(models.Model):
     _name = "hr.expense.request"
     _description = "Expense Pre-Approval Request"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
+    _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
     _order = "submitted_date desc, id desc"
     _check_company_auto = True
 
@@ -101,10 +101,10 @@ class HrExpenseRequest(models.Model):
         )
 
     def _is_admin(self):
-        return self.env.user.has_group("hr_expense_management.group_hr_expense_admin")
+        return self._expense_has_role("admin")
 
     def _is_manager(self):
-        return self.env.user.has_group("hr_expense_management.group_hr_expense_manager")
+        return self._expense_has_role("manager")
 
     def _is_owner(self):
         self.ensure_one()
@@ -237,7 +237,7 @@ class HrExpenseRequest(models.Model):
 
     def action_issue_advance(self):
         self.ensure_one()
-        if not (self.env.user.has_group("hr_expense_management.group_hr_expense_finance") or self._is_admin()):
+        if not self._expense_has_role("finance", "admin"):
             raise AccessError("Only Finance can issue cash advances.")
         if self.state != "approved" or not self.request_type_id.creates_advance:
             raise UserError("Only approved cash-advance requests can be issued.")
