@@ -128,8 +128,26 @@ export class StaffDirectoryDashboard extends Component {
             sortDesc:    false,
             searchQuery: '',
             currentOffset: 0,
+            currentPage: 1,
             pageSize: 12,
             selectedPeople: [],
+            
+            // Org chart state
+            orgZoom: 1,
+            orgPanX: 0,
+            orgPanY: 0,
+            orgCollapsedNodes: {},
+            orgActiveNodeId: null,
+            orgPopupOffsetX: 0,
+            orgPopupOffsetY: 0,
+            isDraggingOrg: false,
+            isDraggingPopup: false,
+            orgSidebarOpen: false,
+            showOrgViewDropdown: false,
+            activeOrgView: 'org',
+            heatmapActiveSkill: null,
+            heatmapActiveLocation: null,
+            
             activeColumns: initialCols,
             showColumnsModal: false,
             showMoreColumns: false,
@@ -370,7 +388,226 @@ export class StaffDirectoryDashboard extends Component {
         return pages;
     }
 
-    // ─── Pagination Actions ─────────────────────────────────────────────
+    // ─── Org Chart Computed Properties ───────────────────────────────────
+
+    get orgRootNodes() {
+        return this.state.people.filter(p => !p.manager_id);
+    }
+
+    getOrgChildren(personId) {
+        return this.state.people.filter(p => p.manager_id === personId);
+    }
+
+    getOrgDirectReportsCount(personId) {
+        return this.state.people.filter(p => p.manager_id === personId).length;
+    }
+
+    getRoleCode(role) {
+        if (!role) return 'EMP';
+        return role.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 3);
+    }
+
+    // ─── Org Chart Actions ─────────────────────────────────────────────
+
+    onOrgCanvasWheel(ev) {
+        // Only zoom if control is held or if we want scroll to zoom
+        // Let's zoom on wheel by default for an org chart
+        ev.preventDefault();
+        const delta = ev.deltaY > 0 ? -0.1 : 0.1;
+        let newZoom = this.state.orgZoom + delta;
+        if (newZoom < 0.2) newZoom = 0.2;
+        if (newZoom > 3) newZoom = 3;
+        this.state.orgZoom = newZoom;
+    }
+
+    onOrgCanvasMouseDown(ev) {
+        // Prevent drag if clicking on a node or popup
+        if (ev.target.closest('.sdir-org-node') || ev.target.closest('.sdir-org-popup')) return;
+        this.state.isDraggingOrg = true;
+        this._lastMouseX = ev.clientX;
+        this._lastMouseY = ev.clientY;
+    }
+
+    onOrgCanvasMouseMove(ev) {
+        if (this.state.isDraggingOrg) {
+            const dx = ev.clientX - this._lastMouseX;
+            const dy = ev.clientY - this._lastMouseY;
+            this.state.orgPanX += dx;
+            this.state.orgPanY += dy;
+            this._lastMouseX = ev.clientX;
+            this._lastMouseY = ev.clientY;
+        } else if (this.state.isDraggingPopup) {
+            const dx = ev.clientX - this._lastMouseX;
+            const dy = ev.clientY - this._lastMouseY;
+            this.state.orgPopupOffsetX += dx;
+            this.state.orgPopupOffsetY += dy;
+            this._lastMouseX = ev.clientX;
+            this._lastMouseY = ev.clientY;
+        }
+    }
+
+    onOrgCanvasMouseUp(ev) {
+        this.state.isDraggingOrg = false;
+        this.state.isDraggingPopup = false;
+    }
+
+    zoomOrgIn() {
+        let newZoom = this.state.orgZoom + 0.1;
+        if (newZoom > 3) newZoom = 3;
+        this.state.orgZoom = newZoom;
+    }
+
+    zoomOrgOut() {
+        let newZoom = this.state.orgZoom - 0.1;
+        if (newZoom < 0.2) newZoom = 0.2;
+        this.state.orgZoom = newZoom;
+    }
+
+    resetOrgZoomPan() {
+        this.state.orgZoom = 1;
+        this.state.orgPanX = 0;
+        this.state.orgPanY = 0;
+    }
+
+    panOrgDirection(dir) {
+        const step = 50;
+        if (dir === 'up') this.state.orgPanY += step;
+        if (dir === 'down') this.state.orgPanY -= step;
+        if (dir === 'left') this.state.orgPanX += step;
+        if (dir === 'right') this.state.orgPanX -= step;
+    }
+
+    toggleOrgNodeCollapse(id) {
+        this.state.orgCollapsedNodes[id] = !this.state.orgCollapsedNodes[id];
+    }
+
+    toggleOrgSidebar() {
+        this.state.orgSidebarOpen = !this.state.orgSidebarOpen;
+    }
+
+    toggleOrgViewDropdown() {
+        this.state.showOrgViewDropdown = !this.state.showOrgViewDropdown;
+    }
+
+    setOrgView(viewName) {
+        this.state.activeOrgView = viewName;
+        this.state.showOrgViewDropdown = false;
+        this.state.heatmapActiveSkill = null;
+        this.state.heatmapActiveLocation = null;
+    }
+
+    onHeatmapCellClick(skill, location) {
+        this.state.heatmapActiveSkill = skill;
+        this.state.heatmapActiveLocation = location;
+    }
+
+    clearHeatmapFilter() {
+        this.state.heatmapActiveSkill = null;
+        this.state.heatmapActiveLocation = null;
+    }
+
+    getHeatmapColor(value, max) {
+        if (!value || value === 0) return '#FDF2F8'; // very pale pink (near-white)
+        const minIntensity = 0.2;
+        const intensity = minIntensity + ((value / max) * (1 - minIntensity));
+        // #ec4899 is rgb(236, 72, 153)
+        // Interpolate between white #FFF and pink #EC4899
+        const r = Math.round(255 - (255 - 236) * intensity);
+        const g = Math.round(255 - (255 - 72) * intensity);
+        const b = Math.round(255 - (255 - 153) * intensity);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    get heatmapData() {
+        const locations = new Set();
+        const skills = new Set();
+        const matrix = {}; // skill -> { location -> count }
+        const colTotals = {};
+        const rowTotals = {};
+        let grandTotal = 0;
+        let maxCount = 0;
+
+        // Iterate through all people (not just filtered, or maybe filtered? The mockup implies all data or filtered data. We'll use filteredPeople() for now to respect sidebar filters, but usually heatmaps use all or current filter context)
+        const people = this.filteredPeople();
+        people.forEach(p => {
+            const pSkillsStr = p.skills || '';
+            const pSkills = pSkillsStr.split(',').map(s => s.trim()).filter(Boolean);
+            const pLoc = p.work_location || 'Unknown';
+            locations.add(pLoc);
+            
+            pSkills.forEach(skill => {
+                skills.add(skill);
+                if (!matrix[skill]) matrix[skill] = {};
+                matrix[skill][pLoc] = (matrix[skill][pLoc] || 0) + 1;
+                
+                colTotals[pLoc] = (colTotals[pLoc] || 0) + 1;
+                rowTotals[skill] = (rowTotals[skill] || 0) + 1;
+                grandTotal++;
+                
+                if (matrix[skill][pLoc] > maxCount) {
+                    maxCount = matrix[skill][pLoc];
+                }
+            });
+        });
+
+        const sortedLocations = Array.from(locations).sort();
+        const sortedSkills = Array.from(skills).sort();
+
+        // Ensure every combination exists even if 0
+        sortedSkills.forEach(skill => {
+            sortedLocations.forEach(loc => {
+                if (!matrix[skill]) matrix[skill] = {};
+                if (matrix[skill][loc] === undefined) matrix[skill][loc] = 0;
+            });
+        });
+
+        // Ensure colTotals has all locations
+        sortedLocations.forEach(loc => {
+            if (colTotals[loc] === undefined) colTotals[loc] = 0;
+        });
+
+        return {
+            locations: sortedLocations,
+            skills: sortedSkills,
+            matrix,
+            colTotals,
+            rowTotals,
+            grandTotal,
+            maxCount
+        };
+    }
+
+    get heatmapDrilldownData() {
+        const skill = this.state.heatmapActiveSkill;
+        const location = this.state.heatmapActiveLocation;
+        if (!skill || !location) return [];
+
+        return this.filteredPeople().filter(p => {
+            const pSkills = (p.skills || '').split(',').map(s => s.trim());
+            const pLoc = p.work_location || 'Unknown';
+            return pSkills.includes(skill) && pLoc === location;
+        });
+    }
+
+    openOrgNodePopup(personId, ev) {
+        if (ev) ev.stopPropagation();
+        this.state.orgActiveNodeId = personId;
+        this.state.orgPopupOffsetX = 0;
+        this.state.orgPopupOffsetY = 0;
+    }
+
+    closeOrgPopup(ev) {
+        if (ev) ev.stopPropagation();
+        this.state.orgActiveNodeId = null;
+    }
+
+    onPopupDragStart(ev) {
+        this.state.isDraggingPopup = true;
+        this._lastMouseX = ev.clientX;
+        this._lastMouseY = ev.clientY;
+    }
+
+    // ─── Export & Bulk Actions ─────────────────────────────────────────────
 
     goToPage(page) {
         if (page === '...') return;

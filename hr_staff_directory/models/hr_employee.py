@@ -867,6 +867,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 'create_date':       str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
                 'start_date':        str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
                 'retention_priority': getattr(emp, 'retention_priority', ''),
+                # Mocking skills based on ID so it's consistent
+                # Using the mock skills defined in the JS filter plus others
+                'skills':             self._mock_skills_for_employee(emp),
                 'languages':          getattr(emp, 'languages', ''),
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
@@ -876,3 +879,33 @@ class HrEmployeeStaffDirectory(models.Model):
                 'is_pinned':          self.env.user.id in emp.pinned_by_user_ids.ids,
             })
         return result
+
+    @api.model
+    def _mock_skills_for_employee(self, emp):
+        """Mock realistic skills for heatmap visualization."""
+        all_skills = [
+            'AML/KYC', 'AWS', 'Account Management', 'Audit', 'B2B Sales', 
+            'Branch Operations', 'Brand Strategy', 'Budgeting', 'CRM Tools', 
+            'Campaign Management', 'Cash Management', 'Client Retention', 
+            'Cloud Infrastructure', 'Coaching', 'Communication', 
+            'Compensation Design', 'Conflict Resolution', 'Content Strategy',
+            'Operational Risk', 'Process Improvement'
+        ]
+        # Use employee ID to pseudo-randomly pick 1-3 skills
+        seed = (emp.id * 137) ^ 0x5a5a
+        num_skills = (seed % 3) + 1
+        emp_skills = []
+        for i in range(num_skills):
+            skill_idx = (seed + i * 47) % len(all_skills)
+            skill = all_skills[skill_idx]
+            if skill not in emp_skills:
+                emp_skills.append(skill)
+        
+        # Add some department-specific correlation for realism
+        dept_name = emp.department_id.name if emp.department_id else ''
+        if 'Operations' in dept_name and 'Operational Risk' not in emp_skills:
+            if (emp.id % 2) == 0: emp_skills.append('Operational Risk')
+        if 'Sales' in dept_name and 'B2B Sales' not in emp_skills:
+            emp_skills.append('B2B Sales')
+            
+        return ", ".join(emp_skills)
