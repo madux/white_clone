@@ -6,7 +6,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 
 
-class HrExpenseApp(models.Model):
+class HrExpenseApp(models.AbstractModel):
     """Small, security-aware gateway for the OWL expense application.
 
     Business records remain in normal ORM models with ACLs and record rules.
@@ -14,7 +14,8 @@ class HrExpenseApp(models.Model):
     already-filtered dashboard data for the client shell.
     """
 
-    _inherit = "hr.claim"
+    _name = "hr.expense.app"
+    _description = "Expense Management Application Service"
 
     @api.model
     def get_app_bootstrap(self):
@@ -659,15 +660,29 @@ class HrExpenseApp(models.Model):
     @api.model
     def _get_accounts_page(self, page):
         self._check_financial_workspace()
-        accounts = self.env["hr.expense.account"].with_context(active_test=False).search([], order="code, id")
+        company = self.env.company
+        accounts = self.env["account.account"].sudo().with_company(company).search(
+            [("company_id", "=", company.id)], order="code, id"
+        )
         mappings = self.env["hr.expense.gl.map"].with_context(active_test=False).search([], order="source_type, sequence, id")
-        journals = self.env["hr.expense.journal"].search([], order="date desc, id desc", limit=200)
+        moves = self.env["account.move"].sudo().with_company(company).search([
+            ("company_id", "=", company.id),
+            ("move_type", "=", "entry"),
+            ("expense_source_model", "!=", False),
+        ], order="date desc, id desc", limit=200)
+        journals = self.env["account.journal"].sudo().with_company(company).search([
+            ("company_id", "=", company.id), ("type", "=", "general"), ("active", "=", True)
+        ], order="sequence, id")
+        account_type_labels = dict(
+            self.env["account.account"]._fields["account_type"]._description_selection(self.env)
+        )
         if page == "mapping":
             records = [{
                 "id": item.id,
                 "name": item.name,
                 "source": dict(item._fields["source_type"].selection).get(item.source_type),
                 "category": item.claim_category_id.name or _("All Categories"),
+                "journal": item.journal_id.display_name or _("Default Miscellaneous Journal"),
                 "debit": "%s · %s" % (item.debit_account_id.code, item.debit_account_id.name),
                 "credit": "%s · %s" % (item.credit_account_id.code, item.credit_account_id.name),
                 "state": "active" if item.active else "inactive",
@@ -677,67 +692,86 @@ class HrExpenseApp(models.Model):
                 "id": item.id,
                 "name": item.name,
                 "date": item.date,
-                "description": item.description,
-                "source": item.source_reference or _("Manual"),
-                "debit": item.total_debit,
-                "credit": item.total_credit,
-                "balanced": item.balanced,
+                "description": item.ref or item.display_name,
+                "source": item.expense_source_reference or _("Manual"),
+                "debit": sum(item.line_ids.mapped("debit")),
+                "credit": sum(item.line_ids.mapped("credit")),
+                "balanced": item.company_currency_id.is_zero(sum(item.line_ids.mapped("balance"))),
                 "state": item.state,
-            } for item in journals]
+            } for item in moves]
         else:
             records = [{
                 "id": item.id,
                 "code": item.code,
                 "name": item.name,
-                "type": dict(item._fields["account_type"].selection).get(item.account_type),
-                "subtype": item.subtype or "—",
-                "parent": item.parent_id.name or "",
-                "level": len((item.parent_path or "").strip("/").split("/")) - 1,
-                "header": item.is_header,
-                "balance": item.balance,
-                "state": "active" if item.active else "inactive",
+                "type": account_type_labels.get(item.account_type, item.account_type),
+                "subtype": dict(item._fields["internal_group"].selection).get(item.internal_group, "—"),
+                "parent": item.group_id.display_name or "",
+                "level": 0,
+                "header": False,
+                "balance": item.current_balance,
+                "state": "inactive" if item.deprecated else "active",
             } for item in accounts]
-        posting_accounts = accounts.filtered(lambda item: item.active and not item.is_header)
+        posting_accounts = accounts.filtered(lambda item: not item.deprecated and item.account_type != "off_balance")
+        posted_moves = moves.filtered(lambda item: item.state == "posted")
+        draft_moves = moves.filtered(lambda item: item.state == "draft")
         return {
             "available": True,
             "records": records,
             "kpis": {
                 "total": len(accounts),
-                "active": len(accounts.filtered("active")),
-                "headers": len(accounts.filtered("is_header")),
-                "posting": len(accounts.filtered(lambda account: not account.is_header)),
+                "active": len(accounts.filtered(lambda item: not item.deprecated)),
+                "headers": len(accounts.filtered("deprecated")),
+                "posting": len(posting_accounts),
                 "mappings": len(mappings.filtered("active")),
-                "draft_journals": len(journals.filtered(lambda journal: journal.state == "draft")),
-                "posted_value": sum(journals.filtered(lambda journal: journal.state == "posted").mapped("total_debit")),
+                "draft_journals": len(draft_moves),
+                "posted_value": sum(sum(move.line_ids.mapped("debit")) for move in posted_moves),
             },
             "account_options": {
                 "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name), "type": item.account_type} for item in posting_accounts],
-                "parents": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in accounts.filtered("is_header")],
                 "categories": [{"id": item.id, "name": item.name} for item in self.env["hr.claim.category"].search([])],
+                "journals": [{"id": item.id, "name": item.display_name} for item in journals],
             },
-            "charts": {"series": [{"label": _("Posted"), "value": sum(journals.filtered(lambda item: item.state == "posted").mapped("total_debit"))}, {"label": _("Draft"), "value": sum(journals.filtered(lambda item: item.state == "draft").mapped("total_debit"))}]},
+            "charts": {"series": [
+                {"label": _("Posted"), "value": sum(sum(move.line_ids.mapped("debit")) for move in posted_moves)},
+                {"label": _("Draft"), "value": sum(sum(move.line_ids.mapped("debit")) for move in draft_moves)},
+            ]},
         }
 
     @api.model
     def app_create_accounting_record(self, kind, values):
         self._check_financial_workspace()
         if kind == "account":
-            record = self.env["hr.expense.account"].create({
+            record = self.env["account.account"].sudo().with_company(self.env.company).create({
                 "code": (values.get("code") or "").strip(), "name": (values.get("name") or "").strip(),
-                "account_type": values.get("account_type") or "expense", "subtype": values.get("subtype") or False,
-                "parent_id": int(values["parent_id"]) if values.get("parent_id") else False, "is_header": bool(values.get("is_header")),
+                "account_type": values.get("account_type") or "expense", "company_id": self.env.company.id,
             })
         elif kind == "mapping":
             record = self.env["hr.expense.gl.map"].create({
                 "name": (values.get("name") or "").strip(), "source_type": values.get("source_type") or "claim",
                 "claim_category_id": int(values["category_id"]) if values.get("category_id") else False,
+                "journal_id": int(values["journal_id"]) if values.get("journal_id") else False,
                 "debit_account_id": int(values.get("debit_account_id")), "credit_account_id": int(values.get("credit_account_id")),
             })
         elif kind == "journal":
             amount = float(values.get("amount") or 0)
-            record = self.env["hr.expense.journal"].create({
-                "date": values.get("date") or fields.Date.context_today(self), "description": (values.get("description") or "").strip(),
-                "line_ids": [(0, 0, {"account_id": int(values.get("debit_account_id")), "debit": amount}), (0, 0, {"account_id": int(values.get("credit_account_id")), "credit": amount})],
+            if amount <= 0:
+                raise UserError(_("The journal amount must be positive."))
+            journal_id = values.get("journal_id")
+            if not journal_id:
+                journal_id = self.env["hr.expense.gl.map"]._default_journal(self.env.company).id
+            if not journal_id:
+                raise UserError(_("Configure a miscellaneous Odoo journal first."))
+            description = (values.get("description") or "").strip()
+            record = self.env["account.move"].sudo().with_company(self.env.company).create({
+                "move_type": "entry", "journal_id": int(journal_id),
+                "date": values.get("date") or fields.Date.context_today(self), "ref": description,
+                "expense_source_model": "hr.expense.app", "expense_source_id": 0,
+                "expense_source_reference": _("Manual Expense Entry"),
+                "line_ids": [
+                    (0, 0, {"name": description, "account_id": int(values.get("debit_account_id")), "debit": amount}),
+                    (0, 0, {"name": description, "account_id": int(values.get("credit_account_id")), "credit": amount}),
+                ],
             })
             if values.get("post"):
                 record.action_post()
@@ -817,8 +851,10 @@ class HrExpenseApp(models.Model):
             "vendor_options": {
                 "categories": [{"id": item.id, "name": item.name} for item in categories.filtered("active")],
                 "terms": [{"id": item.id, "name": item.name} for item in terms.filtered("active")],
-                "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in self.env["hr.expense.account"].search([
-                    ("account_type", "=", "expense"), ("is_header", "=", False), ("active", "=", True)
+                "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in self.env["account.account"].sudo().search([
+                    ("company_id", "=", self.env.company.id),
+                    ("account_type", "in", ("expense", "expense_depreciation", "expense_direct_cost")),
+                    ("deprecated", "=", False)
                 ], order="code")],
             },
             "kpis": {
@@ -887,7 +923,9 @@ class HrExpenseApp(models.Model):
                 "periods": [{"id": item.id, "name": item.name} for item in periods.filtered(lambda item: item.state != "closed")],
                 "departments": [{"id": item.id, "name": item.name} for item in self.env["hr.department"].sudo().search([("company_id", "in", [False, self.env.company.id])], order="name")],
                 "categories": [{"id": item.id, "name": item.name} for item in self.env["hr.claim.category"].search([])],
-                "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in self.env["hr.expense.account"].search([("is_header", "=", False), ("active", "=", True)])],
+                "accounts": [{"id": item.id, "name": "%s · %s" % (item.code, item.name)} for item in self.env["account.account"].sudo().search([
+                    ("company_id", "=", self.env.company.id), ("deprecated", "=", False),
+                ], order="code")],
             },
             "charts": {"series": [{"label": _("Approved"), "value": approved}, {"label": _("Committed"), "value": committed}, {"label": _("Actual"), "value": actual}, {"label": _("Available"), "value": approved - committed - actual}]},
         }

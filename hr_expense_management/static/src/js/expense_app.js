@@ -91,7 +91,7 @@ export class ExpenseApp extends Component {
         this.state.loading = true;
         this.state.error = false;
         try {
-            this.state.data = await this.orm.call("hr.claim", "get_app_bootstrap", []);
+            this.state.data = await this.orm.call("hr.expense.app", "get_app_bootstrap", []);
             this._restoreNavigation();
             await this.loadActivePage();
             this.state.revision += 1;
@@ -361,7 +361,7 @@ export class ExpenseApp extends Component {
         }
         this.state.pageLoading = true;
         try {
-            this.state.pageData = await this.orm.call("hr.claim", "get_app_page", [
+            this.state.pageData = await this.orm.call("hr.expense.app", "get_app_page", [
                 this.state.activeModule, this.state.activePage,
             ]);
         } catch (error) {
@@ -614,9 +614,10 @@ export class ExpenseApp extends Component {
     openAccountingModal(kind) {
         const options = this.state.pageData?.account_options || {};
         this.state.modal = { type: "accounting", kind, values: {
-            code: "", name: "", account_type: "expense", subtype: "", parent_id: "", is_header: false,
+            code: "", name: "", account_type: "expense",
             source_type: "claim", category_id: "", debit_account_id: options.accounts?.[0]?.id || "",
-            credit_account_id: options.accounts?.[1]?.id || "", description: "", date: "", amount: "", post: false,
+            credit_account_id: options.accounts?.[1]?.id || "", journal_id: options.journals?.[0]?.id || "",
+            description: "", date: "", amount: "", post: false,
         } };
     }
 
@@ -651,7 +652,7 @@ export class ExpenseApp extends Component {
             : modal.type === "accounting" ? ["app_create_accounting_record", [modal.kind, { ...modal.values }]]
                 : ["app_create_budget_record", [modal.kind, { ...modal.values }]];
         try {
-            await this.orm.call("hr.claim", call[0], call[1]);
+            await this.orm.call("hr.expense.app", call[0], call[1]);
             this.notification.add("Record created successfully.", { type: "success" });
             this.closeModal();
             await this.loadActivePage();
@@ -662,7 +663,7 @@ export class ExpenseApp extends Component {
 
     async pettyAction(kind, record, action) {
         try {
-            await this.orm.call("hr.claim", "app_petty_action", [kind, record.id, action]);
+            await this.orm.call("hr.expense.app", "app_petty_action", [kind, record.id, action]);
             this.notification.add(`Petty cash ${action} completed.`, { type: "success" });
             await this.loadActivePage();
         } catch (error) {
@@ -672,7 +673,7 @@ export class ExpenseApp extends Component {
 
     async submitConfigurationModal() {
         try {
-            await this.orm.call("hr.claim", "app_create_configuration", [this.state.modal.kind, { ...this.state.modal.values }]);
+            await this.orm.call("hr.expense.app", "app_create_configuration", [this.state.modal.kind, { ...this.state.modal.values }]);
             this.notification.add("Configuration created.", { type: "success" });
             this.closeModal();
             await this.loadActivePage();
@@ -684,7 +685,7 @@ export class ExpenseApp extends Component {
     async createRequest(submit = true) {
         const values = { ...this.state.modal.values, submit };
         try {
-            await this.orm.call("hr.claim", "app_create_request", [values]);
+            await this.orm.call("hr.expense.app", "app_create_request", [values]);
             this.notification.add(submit ? "Request submitted for approval." : "Request saved as draft.", { type: "success" });
             this.closeModal();
             await this.loadActivePage();
@@ -695,7 +696,7 @@ export class ExpenseApp extends Component {
 
     async createClaim(submit = true) {
         try {
-            const claim = await this.orm.call("hr.claim", "app_create_claim", [{ ...this.state.modal.values, submit }]);
+            const claim = await this.orm.call("hr.expense.app", "app_create_claim", [{ ...this.state.modal.values, submit }]);
             this.notification.add(`${claim.name} ${submit ? "submitted" : "saved"}.`, { type: "success" });
             this.closeModal();
             await this.loadActivePage();
@@ -706,7 +707,7 @@ export class ExpenseApp extends Component {
 
     async createVendor() {
         try {
-            const vendor = await this.orm.call("hr.claim", "app_create_vendor", [
+            const vendor = await this.orm.call("hr.expense.app", "app_create_vendor", [
                 { ...this.state.modal.values },
             ]);
             this.notification.add(`Vendor ${vendor.name} created.`, { type: "success" });
@@ -726,7 +727,7 @@ export class ExpenseApp extends Component {
             company: "app_save_company_profile",
         };
         try {
-            const result = await this.orm.call("hr.claim", methods[modal.type], [{ ...modal.values }]);
+            const result = await this.orm.call("hr.expense.app", methods[modal.type], [{ ...modal.values }]);
             if (modal.type === "theme" && result) this.state.data.theme = result;
             if (modal.type === "company" && result) this.state.data.company = result;
             this.notification.add("Changes saved.", { type: "success" });
@@ -740,7 +741,7 @@ export class ExpenseApp extends Component {
 
     async requestAction(record, action) {
         try {
-            await this.orm.call("hr.claim", "app_request_action", [record.id, action, ""]);
+            await this.orm.call("hr.expense.app", "app_request_action", [record.id, action, ""]);
             this.notification.add("Request updated.", { type: "success" });
             await this.loadActivePage();
         } catch (error) {
@@ -751,7 +752,7 @@ export class ExpenseApp extends Component {
     async submitDecision() {
         const modal = this.state.modal;
         try {
-            await this.orm.call("hr.claim", "app_workflow_decision", [
+            await this.orm.call("hr.expense.app", "app_workflow_decision", [
                 modal.kind, modal.record.id, modal.action, modal.comment,
             ]);
             const actionLabel = modal.action === "appeal" ? "appealed" : `${modal.action}d`;
@@ -766,7 +767,7 @@ export class ExpenseApp extends Component {
     async retireAdvance() {
         const modal = this.state.modal;
         try {
-            await this.orm.call("hr.claim", "app_retire_advance", [
+            await this.orm.call("hr.expense.app", "app_retire_advance", [
                 modal.record.id, Number(modal.values.amount), modal.values.reference,
             ]);
             this.notification.add("Advance retirement posted.", { type: "success" });
@@ -781,10 +782,10 @@ export class ExpenseApp extends Component {
         const modal = this.state.modal;
         try {
             if (modal.type === "writeoff") {
-                await this.orm.call("hr.claim", "app_create_writeoff", [modal.values.advance_id || modal.record.id, Number(modal.values.amount), modal.values.reason]);
+                await this.orm.call("hr.expense.app", "app_create_writeoff", [modal.values.advance_id || modal.record.id, Number(modal.values.amount), modal.values.reason]);
                 this.notification.add("Write-off submitted for independent approval.", { type: "success" });
             } else {
-                await this.orm.call("hr.claim", "app_writeoff_decision", [modal.record.id, modal.decision, modal.values.note]);
+                await this.orm.call("hr.expense.app", "app_writeoff_decision", [modal.record.id, modal.decision, modal.values.note]);
                 this.notification.add(`Write-off ${modal.decision}d.`, { type: "success" });
             }
             this.closeModal();
@@ -820,7 +821,7 @@ export class ExpenseApp extends Component {
             return;
         }
         try {
-            const batch = await this.orm.call("hr.claim", "app_process_payment_batch", [claimIds, method.id]);
+            const batch = await this.orm.call("hr.expense.app", "app_process_payment_batch", [claimIds, method.id]);
             this.notification.add(`Batch ${batch.name} finished with status ${batch.state}.`, { type: batch.state === "completed" ? "success" : "warning" });
             await this.loadActivePage();
         } catch (error) {
@@ -835,7 +836,7 @@ export class ExpenseApp extends Component {
             return;
         }
         try {
-            const batch = await this.orm.call("hr.claim", "app_process_payment_batch", [[record.id], method.id]);
+            const batch = await this.orm.call("hr.expense.app", "app_process_payment_batch", [[record.id], method.id]);
             this.notification.add(`${record.name} processed in ${batch.name}.`, { type: batch.state === "completed" ? "success" : "warning" });
             await this.loadActivePage();
         } catch (error) {

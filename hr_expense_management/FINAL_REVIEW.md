@@ -57,9 +57,12 @@ Claims table. These were not visible to Python unit tests.
   matrix with explicit ACLs and company/ownership/custodian record rules.
 - Server methods recheck role, company, record ownership, state and financial
   constraints; client visibility is not treated as authorization.
-- Audit records and posted journals are immutable to normal users.
-- The module depends only on Community `hr`, `mail` and `web`; its internal
-  balanced subledger avoids an Enterprise accounting dependency.
+- Audit records and posted Odoo journal entries are immutable to normal users.
+- The module depends on Community `account` and posts directly to
+  `account.account`, `account.journal`, `account.move`, and
+  `account.move.line`; no parallel expense ledger remains.
+- The OWL RPC surface is isolated in the non-persistent `hr.expense.app`
+  service model instead of extending `hr.claim` with application concerns.
 - External-provider pages accept no secrets and perform no unapproved transfer.
 
 ## Verification results
@@ -68,9 +71,9 @@ Claims table. These were not visible to Python unit tests.
 |---|---|
 | Python compile, XML parse, whitespace | PASS |
 | Odoo module upgrade | PASS |
-| Full upgraded-database regression suite | PASS — 23 methods / 33 Odoo test units, zero failures/errors |
+| Full upgraded-database regression suite | PASS — 24 methods / 34 Odoo test units, zero failures/errors |
 | Fresh Odoo database install | PASS |
-| Full fresh-database regression suite | PASS — 23 methods / 33 Odoo test units, zero failures/errors |
+| Full fresh-database regression suite | PASS — 24 methods / 34 Odoo test units, zero failures/errors |
 | Backend JS/CSS asset generation | PASS |
 | Authenticated OWL startup | PASS — 16 modules, no client/Sass error |
 | Page-by-page browser traversal | PASS — 74/74 routes |

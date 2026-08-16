@@ -1,11 +1,11 @@
 {
     "name": "Expense Management",
     "summary": "Claims, requests, advances, payments, petty cash, budgets, and analytics",
-    "version": "17.0.7.0.0",
+    "version": "17.0.8.0.0",
     "category": "Human Resources/Expenses",
     "author": "CleonTime",
     "license": "LGPL-3",
-    "depends": ["hr", "mail", "web"],
+    "depends": ["hr", "mail", "web", "account"],
     "data": [
         "security/hr_expense_management_security.xml",
         "security/ir.model.access.csv",

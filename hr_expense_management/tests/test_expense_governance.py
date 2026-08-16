@@ -35,7 +35,8 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
         cls.department.manager_id = cls.manager_employee
 
     def test_all_remaining_owl_pages_return_live_payloads(self):
-        admin_claim = self.env["hr.claim"].with_user(self.admin_user)
+        self.assertFalse(hasattr(self.env["hr.claim"], "get_app_page"))
+        admin_claim = self.env["hr.expense.app"].with_user(self.admin_user)
         for module, pages in {
             "setup": ("progress", "company", "policies", "onboarding"),
             "audit": ("activity", "users", "system", "search", "filters"),
@@ -46,20 +47,20 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
                 payload = admin_claim.get_app_page(module, page)
                 self.assertTrue(payload["available"], "%s/%s must be live" % (module, page))
 
-        manager_claim = self.env["hr.claim"].with_user(self.manager_user)
+        manager_claim = self.env["hr.expense.app"].with_user(self.manager_user)
         for page in ("members", "departments", "roles", "analytics", "settings"):
             self.assertTrue(manager_claim.get_app_page("teams", page)["available"])
         for page in ("financial", "claims", "employees", "custom", "scheduled"):
             self.assertTrue(manager_claim.get_app_page("reports", page)["available"])
 
-        employee_claim = self.env["hr.claim"].with_user(self.employee_user)
+        employee_claim = self.env["hr.expense.app"].with_user(self.employee_user)
         with self.assertRaises(AccessError):
             employee_claim.get_app_page("audit", "activity")
         with self.assertRaises(AccessError):
             employee_claim.get_app_page("reports", "financial")
 
     def test_theme_settings_reports_and_audit_persist(self):
-        gateway = self.env["hr.claim"].with_user(self.admin_user)
+        gateway = self.env["hr.expense.app"].with_user(self.admin_user)
         gateway.app_save_company_settings({
             "require_receipts": True, "receipt_threshold": 250,
             "approval_days": 2, "payment_days": 4,
@@ -106,7 +107,7 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
             event.with_user(self.admin_user).write({"description": "Changed"})
 
     def test_owl_claim_creation_and_advance_writeoff(self):
-        gateway = self.env["hr.claim"].with_user(self.employee_user)
+        gateway = self.env["hr.expense.app"].with_user(self.employee_user)
         claim = gateway.app_create_claim({
             "claim_type_id": self.env.ref("hr_expense_management.claim_type_mileage").id,
             "title": "OWL claim", "description": "Created in the step wizard",
@@ -127,7 +128,7 @@ class TestExpenseGovernanceAndOwlGateway(TransactionCase):
             "retirement_due_date": fields.Date.today() + timedelta(days=14),
         })
         advance.action_issue()
-        writeoff = self.env["hr.claim"].with_user(self.finance_user).app_create_writeoff(
+        writeoff = self.env["hr.expense.app"].with_user(self.finance_user).app_create_writeoff(
             advance.id, 1000, "Unrecoverable balance"
         )
         record = self.env["hr.cash.advance.writeoff"].browse(writeoff["id"])

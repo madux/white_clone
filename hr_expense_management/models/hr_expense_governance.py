@@ -280,7 +280,9 @@ class HrCashAdvanceWriteoff(models.Model):
     decided_by_id = fields.Many2one("res.users", readonly=True)
     decision_date = fields.Datetime(readonly=True)
     decision_note = fields.Text(readonly=True)
-    journal_id = fields.Many2one("hr.expense.journal", readonly=True, check_company=True)
+    expense_move_id = fields.Many2one(
+        "account.move", string="Accounting Entry", readonly=True, check_company=True
+    )
 
     @api.model_create_multi
     def create(self, vals_list):

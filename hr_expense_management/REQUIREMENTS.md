@@ -177,23 +177,23 @@ may automatically retire selected advances up to eligible claim value.
 - `hr.petty.cash.replenishment`: fund, requested/approved/issued amounts,
   requester, approver, justification, urgency, dates, reference, state.
 
-### 4.7 Lightweight Community accounting
+### 4.7 Odoo Community Accounting
 
-The module must not depend on Enterprise accounting. It implements the
-prototype's required ledger as a focused expense subledger:
+The module must use the Community `account` addon and must not maintain a
+parallel ledger:
 
-- `hr.expense.account`: code, name, type/subtype, parent, header/posting,
-  active, company.
-- `hr.expense.gl.map`: transaction/category, debit, credit, optional tax
-  account and cost-center strategy.
-- `hr.expense.journal`: sequence, date, source model/id/reference,
-  description, state, balanced total.
-- `hr.expense.journal.line`: journal, account, debit, credit, department,
-  employee/vendor, currency.
+- `account.account` is the only chart of accounts.
+- `account.journal` supplies the miscellaneous journal used by each mapping.
+- `hr.expense.gl.map` maps an expense source/category to a standard journal,
+  debit account and credit account.
+- `account.move` and `account.move.line` hold every generated journal entry;
+  source model, record ID and reference fields provide traceability back to the
+  expense workflow.
 
-Approval/payment/advance/petty-cash actions create balanced draft or posted
-entries according to configuration. If Community `account` is installed later,
-an adapter can replace this subledger without changing business workflows.
+Claim approval creates a balanced draft move. Completed payments, issued cash
+advances and posted petty-cash expenses create balanced posted moves according
+to configuration. Vendors and budget lines reference the same
+`account.account` records.
 
 ### 4.8 Vendors
 
@@ -293,7 +293,7 @@ receipts, budget, and accounting balance on the server.
 |---|---|---|
 | Employee | Submit Claims; View Own Claims; Create Requests | Own claims/requests/advances/payments; create and correct submissions; view own financial history; petty-cash access only when assigned custodian. |
 | Manager | Approve Claims; Reject Claims; View Reports; Manage Team; View All Claims | Company-wide claim/request visibility; approval decisions; reports; team/department operational views; no payment execution or system configuration unless separately granted. |
-| Finance | Process Payments; View All Claims; Generate Reports; View Reports | Company-wide expense visibility; payments/batches; advances; petty cash; subledger; vendors; budgets/periods; reports; no claim/request approval unless a configured rule explicitly assigns the user. |
+| Finance | Process Payments; View All Claims; Generate Reports; View Reports | Company-wide expense visibility; payments/batches; advances; petty cash; Odoo journal entries; vendors; budgets/periods; reports; no claim/request approval unless a configured rule explicitly assigns the user. |
 | Admin | Full System Access; User Management; Settings; Audit Trail Access | Full CRUD and workflow access across all module areas, role/configuration/theme/integration management, and complete audit visibility. |
 
 Security implementation requirements:
@@ -352,14 +352,14 @@ All metrics use the same record-rule-filtered server data as their drill-down.
 ## 9. Community-only integration decisions
 
 - No Enterprise-only model, field, view, widget, spreadsheet, dashboard, or
-  accounting dependency is allowed.
+  accounting dependency is allowed; the Community `account` addon is required.
 - Bank/NIBSS, Paystack, payroll, QuickBooks/Sage and cloud storage screens are
   implemented as configuration/status surfaces and adapter interfaces. They do
   not claim to transfer money or post externally without a provider module.
-- The internal balanced expense subledger satisfies the Figma GL/journal
-  behavior in Community. External accounting synchronization is additive.
-- Standard `mail`, `hr`, `web`, `base_setup`, and Community `res.partner.bank`
-  capabilities are reused.
+- Standard Odoo Community Accounting satisfies the Figma GL/journal behavior;
+  external accounting synchronization is additive.
+- Standard `mail`, `hr`, `web`, `account`, `base_setup`, and Community
+  `res.partner.bank` capabilities are reused.
 
 ## 10. Assumptions and prototype gaps
 
@@ -403,15 +403,16 @@ All metrics use the same record-rule-filtered server data as their drill-down.
      define full models/security/OWL architecture, checkpoint documentation.
 2. **Shared OWL shell and server gateway**
    - Application shell, routing/state, reusable components, capability payload,
-     loading/error states, role-aware navigation, theme tokens.
+     loading/error states, role-aware navigation, theme tokens, and the
+     dedicated `hr.expense.app` service model.
 3. **Requests, advances, and approval engine**
    - Models, rules/steps, workflows, security, OWL pages/wizards, tests.
 4. **Payments and petty cash**
    - Methods/batches, funds/transactions/reconciliation/replenishment,
      accounting effects, OWL pages/wizards, tests.
 5. **Accounts, vendors, budgets, and periods**
-   - Community subledger, mappings/journals, vendor master, commitments/actuals,
-     period cut-offs, OWL pages, tests.
+   - Odoo Community Accounting integration, mappings/journals, vendor master,
+     commitments/actuals, period cut-offs, OWL pages, tests.
 6. **Teams, reports, audit, settings, and theme**
    - Operational team views, all charts/reports, audit search, settings,
      email/integration metadata, branding, scheduled reports.

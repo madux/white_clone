@@ -28,9 +28,12 @@ models correctly retain the `hr.claim.*` vocabulary.
 - [x] Completed Payments and Petty Cash, including payment methods/batches,
   queue/history/aging/reporting, funds, custodians, expenses, reconciliation,
   replenishment approval and issue.
-- [x] Completed the Community expense subledger, GL mapping, balanced immutable
-  journals, vendors/categories/terms, budgets/lines, commitments/actuals,
-  periods/cut-offs, and controlled reopen behavior.
+- [x] Integrated Odoo Community Accounting directly: expense mappings select
+  standard accounts/journals and workflow events create balanced
+  `account.move` entries; vendors, budgets, commitments/actuals, periods and
+  controlled reopen behavior use the same chart of accounts.
+- [x] Extracted every OWL RPC from `hr.claim` into the dedicated,
+  non-persistent `hr.expense.app` application service.
 - [x] Completed Teams, Reports, immutable cross-module Audit, policies, email
   templates, non-secret integration metadata, company settings/profile, custom
   and scheduled reports, and live Theme customization.
@@ -44,7 +47,7 @@ models correctly retain the `hr.claim.*` vocabulary.
 ## Final verification
 
 - [x] Python compilation, all XML parsing, and `git diff --check` pass.
-- [x] Upgrade test suite passes: 23 methods / 33 Odoo test units, with zero
+- [x] Upgrade test suite passes: 24 methods / 34 Odoo test units, with zero
   failures or errors.
 - [x] Fresh-database install and the same full suite pass with no failures or
   errors.

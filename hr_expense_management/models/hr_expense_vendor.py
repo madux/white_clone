@@ -14,8 +14,8 @@ class HrExpenseVendorCategory(models.Model):
     active = fields.Boolean(default=True)
     tax_rate = fields.Float()
     default_expense_account_id = fields.Many2one(
-        "hr.expense.account", check_company=True,
-        domain="[('company_id', '=', company_id), ('account_type', '=', 'expense'), ('is_header', '=', False)]",
+        "account.account", check_company=True,
+        domain="[('company_id', '=', company_id), ('account_type', 'in', ('expense', 'expense_depreciation', 'expense_direct_cost')), ('deprecated', '=', False)]",
     )
     company_id = fields.Many2one(
         "res.company", required=True, default=lambda self: self.env.company, index=True
@@ -77,8 +77,8 @@ class ResPartnerExpenseVendor(models.Model):
         groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin",
     )
     default_expense_account_id = fields.Many2one(
-        "hr.expense.account", check_company=True,
-        domain="[('company_id', '=', company_id), ('account_type', '=', 'expense'), ('is_header', '=', False)]",
+        "account.account", check_company=True,
+        domain="[('company_id', '=', company_id), ('account_type', 'in', ('expense', 'expense_depreciation', 'expense_direct_cost')), ('deprecated', '=', False)]",
         groups="hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin",
     )
     expense_tax_identifier = fields.Char(

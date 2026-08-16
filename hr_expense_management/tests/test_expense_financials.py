@@ -50,16 +50,27 @@ class TestExpenseFinancialDomains(TransactionCase):
             "gl_cutoff": today + timedelta(days=12),
         })
         cls.period.with_user(cls.finance_user).action_open()
-        cls.expense_account = cls.env["hr.expense.account"].with_user(cls.finance_user).create({
-            "name": "Travel Expense Test", "code": "TST-5010", "account_type": "expense",
+        cls.expense_account = cls.env["account.account"].create({
+            "name": "Travel Expense Test", "code": "TST5010", "account_type": "expense",
+            "company_id": cls.env.company.id,
         })
-        cls.payable_account = cls.env["hr.expense.account"].with_user(cls.finance_user).create({
-            "name": "Employee Payable Test", "code": "TST-2010", "account_type": "liability",
+        cls.payable_account = cls.env["account.account"].create({
+            "name": "Employee Payable Test", "code": "TST2010", "account_type": "liability_current",
+            "company_id": cls.env.company.id,
         })
+        cls.account_journal = cls.env["account.journal"].search([
+            ("company_id", "=", cls.env.company.id), ("type", "=", "general")
+        ], limit=1)
+        if not cls.account_journal:
+            cls.account_journal = cls.env["account.journal"].create({
+                "name": "Expense Tests", "code": "TSTGL", "type": "general",
+                "company_id": cls.env.company.id,
+            })
         cls.env["hr.expense.gl.map"].sudo().create({
             "name": "Test Claim Mapping",
             "source_type": "claim",
             "claim_category_id": cls.claim_category.id,
+            "journal_id": cls.account_journal.id,
             "debit_account_id": cls.expense_account.id,
             "credit_account_id": cls.payable_account.id,
         })
@@ -97,25 +108,33 @@ class TestExpenseFinancialDomains(TransactionCase):
             })],
         })
 
-    def test_balanced_journal_posting_and_immutability(self):
-        journal = self.env["hr.expense.journal"].with_user(self.finance_user).create({
-            "description": "Manual balance test",
+    def test_odoo_account_move_balancing_posting_and_security(self):
+        with self.assertRaises(UserError):
+            self.env["account.move"].with_user(self.finance_user).create({
+                "move_type": "entry", "journal_id": self.account_journal.id,
+                "date": fields.Date.today(), "ref": "Unbalanced expense entry",
+                "line_ids": [
+                    Command.create({"name": "Debit", "account_id": self.expense_account.id, "debit": 100}),
+                    Command.create({"name": "Credit", "account_id": self.payable_account.id, "credit": 90}),
+                ],
+            })
+        move = self.env["account.move"].with_user(self.finance_user).create({
+            "move_type": "entry", "journal_id": self.account_journal.id,
+            "date": fields.Date.today(), "ref": "Manual balance test",
+            "expense_source_model": "hr.expense.app", "expense_source_id": 0,
+            "expense_source_reference": "Manual test",
             "line_ids": [
-                Command.create({"account_id": self.expense_account.id, "debit": 100}),
-                Command.create({"account_id": self.payable_account.id, "credit": 90}),
+                Command.create({"name": "Debit", "account_id": self.expense_account.id, "debit": 100}),
+                Command.create({"name": "Credit", "account_id": self.payable_account.id, "credit": 100}),
             ],
         })
-        with self.assertRaises(ValidationError):
-            journal.with_user(self.finance_user).action_post()
-        journal.line_ids.filtered("credit").with_user(self.finance_user).write({"credit": 100})
-        journal.with_user(self.finance_user).action_post()
-        self.assertEqual(journal.state, "posted")
-        self.assertTrue(journal.balanced)
-        with self.assertRaises(UserError):
-            journal.line_ids.with_user(self.finance_user).write({"label": "Changed"})
+        move.with_user(self.finance_user).action_post()
+        self.assertEqual(move.state, "posted")
+        self.assertTrue(move.company_currency_id.is_zero(sum(move.line_ids.mapped("balance"))))
         with self.assertRaises(AccessError):
-            self.env["hr.expense.journal"].with_user(self.employee_user).create({
-                "description": "Unauthorized journal"
+            self.env["account.move"].with_user(self.employee_user).create({
+                "move_type": "entry", "journal_id": self.account_journal.id,
+                "date": fields.Date.today(), "ref": "Unauthorized journal",
             })
 
     def test_budget_commitment_actual_and_claim_journal(self):
@@ -138,18 +157,47 @@ class TestExpenseFinancialDomains(TransactionCase):
         self.budget_line.invalidate_recordset()
         self.assertEqual(self.budget_line.actual_amount, 300)
         self.assertEqual(self.budget_line.available_amount, 500)
-        self.assertTrue(claim.expense_journal_id)
-        self.assertEqual(claim.expense_journal_id.state, "draft")
-        self.assertTrue(claim.expense_journal_id.balanced)
-        budget_payload = self.env["hr.claim"].with_user(self.finance_user).get_app_page(
+        self.assertTrue(claim.expense_move_id)
+        self.assertEqual(claim.expense_move_id.state, "draft")
+        self.assertEqual(claim.expense_move_id.expense_source_model, "hr.claim")
+        self.assertTrue(claim.expense_move_id.company_currency_id.is_zero(
+            sum(claim.expense_move_id.line_ids.mapped("balance"))
+        ))
+        budget_payload = self.env["hr.expense.app"].with_user(self.finance_user).get_app_page(
             "budget", "overview"
         )
         self.assertEqual(budget_payload["kpis"]["committed"], 200)
         self.assertEqual(budget_payload["kpis"]["actual"], 300)
-        accounts_payload = self.env["hr.claim"].with_user(self.finance_user).get_app_page(
+        accounts_payload = self.env["hr.expense.app"].with_user(self.finance_user).get_app_page(
             "accounts", "accounts"
         )
         self.assertGreaterEqual(accounts_payload["kpis"]["posting"], 2)
+
+    def test_completed_payment_posts_odoo_account_move(self):
+        self.env["hr.expense.gl.map"].sudo().create({
+            "name": "Test Payment Mapping",
+            "source_type": "payment",
+            "journal_id": self.account_journal.id,
+            "debit_account_id": self.payable_account.id,
+            "credit_account_id": self.expense_account.id,
+        })
+        claim = self._make_claim(amount=175)
+        claim.with_user(self.employee_user).action_submit()
+        claim.with_user(self.manager_user).action_approve("Ready for reimbursement")
+        payment = self.env["hr.claim.payment"].with_user(self.finance_user).create({
+            "claim_id": claim.id,
+            "amount": 175,
+            "payment_method": "bank",
+            "payment_date": fields.Date.today(),
+            "reference": "ODOO-ACCOUNT-MOVE-TEST",
+        })
+        payment.with_user(self.finance_user).action_confirm()
+        self.assertEqual(payment.expense_move_id._name, "account.move")
+        self.assertEqual(payment.expense_move_id.state, "posted")
+        self.assertEqual(payment.expense_move_id.expense_source_model, "hr.claim.payment")
+        self.assertTrue(payment.expense_move_id.company_currency_id.is_zero(
+            sum(payment.expense_move_id.line_ids.mapped("balance"))
+        ))
 
     def test_vendor_directory_and_owl_payload(self):
         category = self.env["hr.expense.vendor.category"].with_user(self.finance_user).create({
@@ -159,7 +207,7 @@ class TestExpenseFinancialDomains(TransactionCase):
         term = self.env["hr.expense.payment.term"].with_user(self.finance_user).create({
             "name": "Net 14", "code": "NET14-TEST", "due_days": 14,
         })
-        result = self.env["hr.claim"].with_user(self.finance_user).app_create_vendor({
+        result = self.env["hr.expense.app"].with_user(self.finance_user).app_create_vendor({
             "name": "Test Travel Vendor", "code": "V-TEST-001",
             "category_id": category.id, "term_id": term.id,
             "account_id": self.expense_account.id, "rating": 5,
@@ -168,13 +216,13 @@ class TestExpenseFinancialDomains(TransactionCase):
         claim = self._make_claim(amount=125, vendor=vendor)
         claim.with_user(self.employee_user).action_submit()
         claim.with_user(self.manager_user).action_approve()
-        payload = self.env["hr.claim"].with_user(self.finance_user).get_app_page("vendors", "directory")
+        payload = self.env["hr.expense.app"].with_user(self.finance_user).get_app_page("vendors", "directory")
         vendor_row = next(row for row in payload["records"] if row["id"] == vendor.id)
         self.assertEqual(vendor_row["code"], "V-TEST-001")
         self.assertEqual(vendor_row["spend"], 125)
         self.assertTrue(payload["vendor_options"]["categories"])
         with self.assertRaises(AccessError):
-            self.env["hr.claim"].with_user(self.employee_user).get_app_page("accounts", "accounts")
+            self.env["hr.expense.app"].with_user(self.employee_user).get_app_page("accounts", "accounts")
 
     def test_closed_period_blocks_submission(self):
         self.period.with_user(self.finance_user).action_close()

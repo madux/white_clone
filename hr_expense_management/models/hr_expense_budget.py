@@ -219,7 +219,11 @@ class HrExpenseBudgetLine(models.Model):
     department_id = fields.Many2one(related="budget_id.department_id", store=True, index=True)
     period_id = fields.Many2one(related="budget_id.period_id", store=True, index=True)
     category_id = fields.Many2one("hr.claim.category", check_company=True)
-    account_id = fields.Many2one("hr.expense.account", check_company=True)
+    account_id = fields.Many2one(
+        "account.account",
+        check_company=True,
+        domain="[('company_id', '=', company_id), ('deprecated', '=', False)]",
+    )
     approved_amount = fields.Monetary(required=True, currency_field="currency_id")
     forecast_amount = fields.Monetary(currency_field="currency_id")
     committed_amount = fields.Monetary(compute="_compute_exposure", currency_field="currency_id")

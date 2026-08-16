@@ -29,3 +29,18 @@ technical module records already exist, preventing accidental namespace merges.
 It preserves model tables, business records, user-role assignments, and record
 references. Only the module registry name and renamed external identifiers
 change.
+
+## Upgrade to 17.0.8.0.0 (Community Accounting integration)
+
+Back up the database and run the normal module upgrade command above. The
+versioned migration automatically:
+
+- installs the Community `account` dependency;
+- converts legacy expense accounts to `account.account` records;
+- remaps expense mappings, vendor defaults and budget lines;
+- converts legacy expense journals and lines to traceable `account.move`
+  entries while preserving draft/posted state; and
+- removes the retired custom account/journal tables after successful copying.
+
+The OWL application continues to open through the same client action, but its
+RPC gateway is now `hr.expense.app`; no client bookmarks or menus change.
