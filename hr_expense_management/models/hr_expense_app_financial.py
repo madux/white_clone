@@ -11,6 +11,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def _get_payment_page(self, page):
+        """Return payment records, batches, methods, KPIs, and chart data."""
         claims = self.env["hr.claim"].search([("state", "=", "approved"), ("residual_amount", ">", 0)], order="approved_date")
         payments = self.env["hr.claim.payment"].search([], order="payment_date desc, id desc", limit=200)
         methods = self.env["hr.expense.payment.method"].search([]) if self._expense_has_role("finance", "admin") else self.env["hr.expense.payment.method"]
@@ -70,6 +71,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_process_payment_batch(self, claim_ids, method_id):
+        """Execute the server-authorized process payment batch operation for the OWL application."""
         batch = self.env["hr.expense.payment.batch"].create({"method_id": int(method_id), "claim_ids": [(6, 0, [int(item) for item in claim_ids])]})
         batch.action_validate()
         batch.action_process()
@@ -78,6 +80,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def _get_petty_cash_page(self, page):
+        """Return petty-cash funds, activity, KPIs, and page options."""
         funds = self.env["hr.petty.cash.fund"].search([])
         transactions = self.env["hr.petty.cash.transaction"].search([], order="date desc, id desc", limit=200)
         reconciliations = self.env["hr.petty.cash.reconciliation"].search([], order="date desc", limit=100)
@@ -104,6 +107,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_create_petty_record(self, kind, values):
+        """Execute the server-authorized create petty record operation for the OWL application."""
         values = validate_action_values("petty", kind, values)
         if kind == "fund":
             record = self.env["hr.petty.cash.fund"].create({
@@ -142,6 +146,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_assign_custodian(self, fund_id, employee_id):
+        """Execute the server-authorized assign custodian operation for the OWL application."""
         self._check_financial_workspace()
         values = validate_action_values("petty", "custodian", {
             "fund_id": fund_id, "custodian_id": employee_id,
@@ -156,6 +161,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_petty_action(self, kind, record_id, action):
+        """Execute the server-authorized petty action operation for the OWL application."""
         self._check_financial_workspace()
         if kind == "transaction":
             record = self.env["hr.petty.cash.transaction"].browse(int(record_id)).exists()
@@ -183,6 +189,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def _get_accounts_page(self, page):
+        """Return Odoo accounting mappings, entries, KPIs, and page options."""
         self._check_financial_workspace()
         company = self.env.company
         accounts = self.env["account.account"].sudo().with_company(company).search(
@@ -264,6 +271,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_create_accounting_record(self, kind, values):
+        """Execute the server-authorized create accounting record operation for the OWL application."""
         self._check_financial_workspace()
         values = validate_action_values("accounting", kind, values)
         if kind == "account":
@@ -307,6 +315,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_create_vendor(self, values):
+        """Execute the server-authorized create vendor operation for the OWL application."""
         self._check_financial_workspace()
         name = (values.get("name") or "").strip()
         code = (values.get("code") or "").strip()
@@ -334,6 +343,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def _get_vendors_page(self, page):
+        """Return vendor records, categories, terms, KPIs, and page options."""
         self._check_financial_workspace()
         vendors = self.env["res.partner"].search([("is_expense_vendor", "=", True)], order="name")
         categories = self.env["hr.expense.vendor.category"].with_context(active_test=False).search([], order="sequence, name")
@@ -395,6 +405,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def _get_budget_page(self, page):
+        """Return periods, budgets, utilization KPIs, and page options."""
         self._check_financial_workspace()
         budgets = self.env["hr.expense.budget"].search([], order="period_id desc, department_id")
         lines = self.env["hr.expense.budget.line"].search([], order="department_id, category_id, account_id")
@@ -457,6 +468,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_create_budget_record(self, kind, values):
+        """Execute the server-authorized create budget record operation for the OWL application."""
         self._check_financial_workspace()
         values = validate_action_values("budget", kind, values)
         if kind == "period":
@@ -488,6 +500,7 @@ class HrExpenseAppFinancial(models.AbstractModel):
 
     @api.model
     def app_create_configuration(self, kind, values):
+        """Execute the server-authorized create configuration operation for the OWL application."""
         admin_kinds = {"claim_type", "claim_window", "request_type", "approval_rule", "email", "integration", "payment_method"}
         if kind in admin_kinds:
             self._check_admin_workspace()

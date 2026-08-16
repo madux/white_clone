@@ -3,6 +3,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrClaimPayment(models.Model):
+    """Represent claim payment records in the expense workflow."""
+
     _name = "hr.claim.payment"
     _description = "Claim Payment"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -131,9 +133,11 @@ class HrClaimPayment(models.Model):
         return super().unlink()
 
     def _workflow_write(self, vals):
+        """Apply a protected state transition while preserving workflow guards."""
         return super().write(vals)
 
     def action_confirm(self):
+        """Confirm an eligible record and apply its workflow side effects."""
         self._expense_check_role(
             "finance", "admin",
             message=_("Only Finance or an Administrator can process payments."),
@@ -166,6 +170,7 @@ class HrClaimPayment(models.Model):
         return True
 
     def action_cancel(self):
+        """Cancel an eligible record before its workflow completes."""
         for payment in self:
             if payment.state != "draft":
                 raise UserError("Only Draft payments can be cancelled.")

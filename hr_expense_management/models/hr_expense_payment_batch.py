@@ -3,6 +3,8 @@ from odoo.exceptions import UserError
 
 
 class HrExpensePaymentMethod(models.Model):
+    """Represent expense payment method records in the expense workflow."""
+
     _name = "hr.expense.payment.method"
     _description = "Expense Payment Method"
     _order = "sequence, name"
@@ -28,6 +30,8 @@ class HrExpensePaymentMethod(models.Model):
 
 
 class HrExpensePaymentBatch(models.Model):
+    """Represent expense payment batch records in the expense workflow."""
+
     _name = "hr.expense.payment.batch"
     _description = "Expense Payment Batch"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -73,6 +77,7 @@ class HrExpensePaymentBatch(models.Model):
         )
 
     def action_validate(self):
+        """Allow Finance to validate the record before processing."""
         self._check_finance()
         for batch in self:
             if batch.state != "draft" or not batch.claim_ids:
@@ -113,6 +118,8 @@ class HrExpensePaymentBatch(models.Model):
 
 
 class HrClaimPaymentBatchLink(models.Model):
+    """Link claim payments to the batch that created them."""
+
     _inherit = "hr.claim.payment"
 
     batch_id = fields.Many2one("hr.expense.payment.batch", readonly=True, check_company=True)

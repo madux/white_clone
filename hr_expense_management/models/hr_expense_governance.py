@@ -8,6 +8,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrExpenseAudit(models.Model):
+    """Represent expense management audit event records in the expense workflow."""
+
     _name = "hr.expense.audit"
     _description = "Expense Management Audit Event"
     _order = "event_date desc, id desc"
@@ -65,6 +67,8 @@ class HrExpenseAudit(models.Model):
 
 
 class HrExpensePolicy(models.Model):
+    """Represent expense policy records in the expense workflow."""
+
     _name = "hr.expense.policy"
     _description = "Expense Policy"
     _order = "sequence, name"
@@ -86,6 +90,8 @@ class HrExpensePolicy(models.Model):
 
 
 class HrExpenseEmailTemplate(models.Model):
+    """Represent expense notification template records in the expense workflow."""
+
     _name = "hr.expense.email.template"
     _description = "Expense Notification Template"
     _order = "event, name"
@@ -105,6 +111,8 @@ class HrExpenseEmailTemplate(models.Model):
 
 
 class HrExpenseIntegration(models.Model):
+    """Represent expense integration adapter records in the expense workflow."""
+
     _name = "hr.expense.integration"
     _description = "Expense Integration Adapter"
     _order = "sequence, name"
@@ -129,6 +137,8 @@ class HrExpenseIntegration(models.Model):
 
 
 class HrExpenseTheme(models.Model):
+    """Represent expense application theme records in the expense workflow."""
+
     _name = "hr.expense.theme"
     _description = "Expense Application Theme"
     _check_company_auto = True
@@ -157,6 +167,8 @@ class HrExpenseTheme(models.Model):
 
 
 class HrExpenseCustomReport(models.Model):
+    """Represent expense custom report records in the expense workflow."""
+
     _name = "hr.expense.custom.report"
     _description = "Expense Custom Report"
     _order = "name"
@@ -180,6 +192,8 @@ class HrExpenseCustomReport(models.Model):
 
 
 class HrExpenseScheduledReport(models.Model):
+    """Represent scheduled expense report records in the expense workflow."""
+
     _name = "hr.expense.scheduled.report"
     _description = "Scheduled Expense Report"
     _order = "next_run, name"
@@ -208,6 +222,7 @@ class HrExpenseScheduledReport(models.Model):
         return base + delta
 
     def action_queue_delivery(self):
+        """Queue report email for valid recipients and record the delivery outcome."""
         for schedule in self:
             recipients = schedule.recipient_ids.filtered(lambda user: user.partner_id.email)
             if not recipients:
@@ -241,6 +256,8 @@ class HrExpenseScheduledReport(models.Model):
 
 
 class ResCompanyExpenseSettings(models.Model):
+    """Add Expense Management policy settings to a company."""
+
     _inherit = "res.company"
 
     expense_require_receipts = fields.Boolean(default=True)
@@ -260,6 +277,8 @@ class ResCompanyExpenseSettings(models.Model):
 
 
 class HrCashAdvanceWriteoff(models.Model):
+    """Represent cash advance write-off records in the expense workflow."""
+
     _name = "hr.cash.advance.writeoff"
     _description = "Cash Advance Write-Off"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -302,6 +321,7 @@ class HrCashAdvanceWriteoff(models.Model):
                 raise ValidationError(_("The write-off must be positive and cannot exceed the outstanding advance."))
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         for item in self:
             if item.state != "draft":
                 raise UserError(_("Only draft write-offs can be submitted."))
@@ -310,6 +330,7 @@ class HrCashAdvanceWriteoff(models.Model):
         return True
 
     def action_approve(self, note=None):
+        """Approve eligible records under the model's authorization and routing rules."""
         if not self._expense_has_role("admin"):
             raise AccessError(_("An Administrator must approve advance write-offs."))
         for item in self:
@@ -328,6 +349,7 @@ class HrCashAdvanceWriteoff(models.Model):
         return True
 
     def action_reject(self, note):
+        """Reject eligible records under the model's authorization rules."""
         if not self._expense_has_role("admin"):
             raise AccessError(_("An Administrator must reject advance write-offs."))
         if not (note or "").strip():

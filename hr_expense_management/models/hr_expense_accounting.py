@@ -162,6 +162,8 @@ class HrExpenseGlMap(models.Model):
 
 
 class AccountMoveExpenseSource(models.Model):
+    """Add expense-source traceability to Odoo journal entries."""
+
     _inherit = "account.move"
 
     expense_source_model = fields.Char(readonly=True, copy=False, index=True)
@@ -170,6 +172,8 @@ class AccountMoveExpenseSource(models.Model):
 
 
 class HrClaimExpenseMove(models.Model):
+    """Post claim approval entries through Odoo Accounting."""
+
     _inherit = "hr.claim"
 
     expense_move_id = fields.Many2one(
@@ -177,6 +181,7 @@ class HrClaimExpenseMove(models.Model):
     )
 
     def action_approve(self, comment=None):
+        """Create a mapped journal entry after an authorized claim approval."""
         result = super().action_approve(comment)
         for claim in self.filtered(lambda item: item.state == "approved" and not item.expense_move_id):
             move = self.env["hr.expense.gl.map"].create_move_if_configured(
@@ -191,6 +196,8 @@ class HrClaimExpenseMove(models.Model):
 
 
 class HrClaimPaymentExpenseMove(models.Model):
+    """Post confirmed reimbursement entries through Odoo Accounting."""
+
     _inherit = "hr.claim.payment"
 
     expense_move_id = fields.Many2one(
@@ -198,6 +205,7 @@ class HrClaimPaymentExpenseMove(models.Model):
     )
 
     def action_confirm(self):
+        """Create and post a mapped journal entry after payment confirmation."""
         result = super().action_confirm()
         for payment in self.filtered(
             lambda item: item.state == "completed" and not item.expense_move_id
@@ -215,6 +223,8 @@ class HrClaimPaymentExpenseMove(models.Model):
 
 
 class HrCashAdvanceExpenseMove(models.Model):
+    """Link cash advances to their Odoo accounting entries."""
+
     _inherit = "hr.cash.advance"
 
     expense_move_id = fields.Many2one(
@@ -223,9 +233,12 @@ class HrCashAdvanceExpenseMove(models.Model):
 
 
 class HrExpenseRequestAdvanceMove(models.Model):
+    """Post advance issue entries from approved expense requests."""
+
     _inherit = "hr.expense.request"
 
     def action_issue_advance(self):
+        """Allow Finance to fulfill an approved request by issuing its advance."""
         advance = super().action_issue_advance()
         if advance and not advance.expense_move_id:
             move = self.env["hr.expense.gl.map"].create_move_if_configured(
@@ -241,6 +254,8 @@ class HrExpenseRequestAdvanceMove(models.Model):
 
 
 class HrPettyCashExpenseMove(models.Model):
+    """Post approved petty-cash transactions through Odoo Accounting."""
+
     _inherit = "hr.petty.cash.transaction"
 
     expense_move_id = fields.Many2one(
@@ -248,6 +263,7 @@ class HrPettyCashExpenseMove(models.Model):
     )
 
     def action_approve(self):
+        """Create and post a mapped entry after petty-cash expense approval."""
         result = super().action_approve()
         for transaction in self.filtered(
             lambda item: item.state == "posted"

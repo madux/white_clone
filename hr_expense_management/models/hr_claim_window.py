@@ -3,6 +3,8 @@ from odoo.exceptions import ValidationError
 
 
 class HrClaimWindow(models.Model):
+    """Represent claim processing window records in the expense workflow."""
+
     _name = "hr.claim.window"
     _description = "Claim Processing Window"
     _order = "window_type, name"
@@ -44,4 +46,3 @@ class HrClaimWindow(models.Model):
                 raise ValidationError("Window duration cannot be negative.")
             if window.start_date and window.end_date and window.start_date > window.end_date:
                 raise ValidationError("The window start date must be before its end date.")
-

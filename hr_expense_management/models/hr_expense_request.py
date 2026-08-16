@@ -5,6 +5,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrExpenseRequestType(models.Model):
+    """Represent expense request type records in the expense workflow."""
+
     _name = "hr.expense.request.type"
     _description = "Expense Request Type"
     _order = "sequence, name"
@@ -42,6 +44,8 @@ class HrExpenseRequestType(models.Model):
 
 
 class HrExpenseRequest(models.Model):
+    """Represent expense pre-approval request records in the expense workflow."""
+
     _name = "hr.expense.request"
     _description = "Expense Pre-Approval Request"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -151,6 +155,7 @@ class HrExpenseRequest(models.Model):
         return super().unlink()
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         self.env["hr.expense.period"]._ensure_date_open(
             fields.Date.context_today(self), "submission"
         )
@@ -168,6 +173,7 @@ class HrExpenseRequest(models.Model):
         return True
 
     def action_approve(self, comment=None):
+        """Approve eligible records under the model's authorization and routing rules."""
         self.env["hr.expense.period"]._ensure_date_open(
             fields.Date.context_today(self), "approval"
         )
@@ -189,6 +195,7 @@ class HrExpenseRequest(models.Model):
         return True
 
     def action_reject(self, comment):
+        """Reject eligible records under the model's authorization rules."""
         if not comment:
             raise ValidationError("A rejection reason is required.")
         for request in self:
@@ -208,6 +215,7 @@ class HrExpenseRequest(models.Model):
         return True
 
     def action_return(self, comment):
+        """Return an eligible record for correction under its authorization rules."""
         if not comment:
             raise ValidationError("A return reason is required.")
         for request in self:
@@ -223,6 +231,7 @@ class HrExpenseRequest(models.Model):
         return True
 
     def action_cancel(self):
+        """Cancel an eligible record before its workflow completes."""
         for request in self:
             if not (request._is_owner() or request._is_admin()):
                 raise AccessError("Only the owner can cancel this request.")
@@ -236,6 +245,7 @@ class HrExpenseRequest(models.Model):
         return self.env["hr.expense.approval.rule"]._create_steps_for(self, "request")
 
     def action_issue_advance(self):
+        """Allow Finance to fulfill an approved request by issuing its advance."""
         self.ensure_one()
         if not self._expense_has_role("finance", "admin"):
             raise AccessError("Only Finance can issue cash advances.")

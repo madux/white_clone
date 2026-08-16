@@ -3,6 +3,8 @@ from odoo.exceptions import UserError, ValidationError
 
 
 class HrCashAdvance(models.Model):
+    """Represent employee cash advance records in the expense workflow."""
+
     _name = "hr.cash.advance"
     _description = "Employee Cash Advance"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -93,6 +95,7 @@ class HrCashAdvance(models.Model):
             )
 
     def action_issue(self):
+        """Allow Finance to issue an eligible record and apply its financial side effects."""
         self._check_finance()
         for advance in self:
             if advance.state != "draft":
@@ -102,6 +105,7 @@ class HrCashAdvance(models.Model):
         return True
 
     def action_retire(self, amount, reference=None):
+        """Allow Finance to retire an outstanding advance without exceeding its balance."""
         self.ensure_one()
         self._check_finance()
         if self.state not in ("outstanding", "partial"):
@@ -131,6 +135,8 @@ class HrCashAdvance(models.Model):
 
 
 class HrCashAdvanceRetirement(models.Model):
+    """Represent cash advance retirement records in the expense workflow."""
+
     _name = "hr.cash.advance.retirement"
     _description = "Cash Advance Retirement"
     _order = "date desc, id desc"
@@ -157,6 +163,7 @@ class HrCashAdvanceRetirement(models.Model):
     ]
 
     def action_post(self):
+        """Post an eligible record after validating its financial constraints."""
         for retirement in self:
             retirement.advance_id._check_finance()
             if retirement.state != "draft":

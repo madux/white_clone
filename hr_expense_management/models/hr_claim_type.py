@@ -3,6 +3,8 @@ from odoo.exceptions import ValidationError
 
 
 class HrClaimType(models.Model):
+    """Represent claim type records in the expense workflow."""
+
     _name = "hr.claim.type"
     _description = "Claim Type"
     _order = "category_id, sequence, name"

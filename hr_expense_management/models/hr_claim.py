@@ -8,6 +8,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrClaim(models.Model):
+    """Represent employee expense claim records in the expense workflow."""
+
     _name = "hr.claim"
     _description = "Employee Expense Claim"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -331,6 +333,7 @@ class HrClaim(models.Model):
                 raise UserError("This expense falls outside the allowed submission window.")
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         self._check_owner_or_admin()
         self.env["hr.expense.period"]._ensure_date_open(
             fields.Date.context_today(self), "submission"
@@ -357,6 +360,7 @@ class HrClaim(models.Model):
             raise AccessError("Only a Claims Manager or Administrator can make approval decisions.")
 
     def action_open_approve_wizard(self):
+        """Open the approval dialog after checking workflow authorization."""
         self._check_approver()
         self.ensure_one()
         if self.state not in ("submitted", "appealed"):
@@ -371,6 +375,7 @@ class HrClaim(models.Model):
         }
 
     def action_approve(self, comment=None):
+        """Approve eligible records under the model's authorization and routing rules."""
         self._check_approver()
         self.env["hr.expense.period"]._ensure_date_open(
             fields.Date.context_today(self), "approval"
@@ -403,6 +408,7 @@ class HrClaim(models.Model):
         return True
 
     def action_open_reject_wizard(self):
+        """Open the rejection dialog after checking workflow authorization."""
         self._check_approver()
         self.ensure_one()
         return {
@@ -415,6 +421,7 @@ class HrClaim(models.Model):
         }
 
     def action_open_return_wizard(self):
+        """Open the correction dialog after checking workflow authorization."""
         self._check_approver()
         self.ensure_one()
         return {
@@ -427,6 +434,7 @@ class HrClaim(models.Model):
         }
 
     def _apply_negative_decision(self, decision, reason):
+        """Apply an authorized rejection or return and close pending workflow work."""
         self._check_approver()
         if not reason or not reason.strip():
             raise UserError("A reason is required.")
@@ -445,6 +453,7 @@ class HrClaim(models.Model):
         return True
 
     def action_appeal(self, reason):
+        """Allow the owner to appeal an eligible rejected claim."""
         self._check_owner_or_admin()
         if not self.env.company.expense_enable_appeals:
             raise UserError("Claim appeals are disabled for this company.")
@@ -470,6 +479,7 @@ class HrClaim(models.Model):
         return True
 
     def action_withdraw(self):
+        """Allow the owner to withdraw an eligible submitted claim."""
         self._check_owner_or_admin()
         for claim in self:
             if claim.state not in ("submitted", "appealed"):
@@ -480,6 +490,7 @@ class HrClaim(models.Model):
         return True
 
     def action_cancel(self):
+        """Cancel an eligible record before its workflow completes."""
         self._check_owner_or_admin()
         for claim in self:
             if claim.state not in ("draft", "returned"):
@@ -489,6 +500,7 @@ class HrClaim(models.Model):
         return True
 
     def action_reset_to_draft(self):
+        """Allow an administrator to reset an eligible record to draft."""
         if not self._is_admin():
             raise AccessError("Only a Claims Administrator can reset a decision to Draft.")
         for claim in self:
@@ -498,6 +510,7 @@ class HrClaim(models.Model):
         return True
 
     def action_open_payment_wizard(self):
+        """Open reimbursement for an approved claim with an outstanding balance."""
         if not (self._is_finance() or self._is_admin()):
             raise AccessError("Only Finance or an Administrator can process payments.")
         self.ensure_one()
@@ -646,6 +659,8 @@ class HrClaim(models.Model):
 
 
 class HrClaimLine(models.Model):
+    """Represent claim expense item records in the expense workflow."""
+
     _name = "hr.claim.line"
     _description = "Claim Expense Item"
     _order = "sequence, id"

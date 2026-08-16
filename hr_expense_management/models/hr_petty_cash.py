@@ -3,6 +3,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrPettyCashFund(models.Model):
+    """Represent petty cash fund records in the expense workflow."""
+
     _name = "hr.petty.cash.fund"
     _description = "Petty Cash Fund"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -37,6 +39,8 @@ class HrPettyCashFund(models.Model):
 
 
 class HrPettyCashTransaction(models.Model):
+    """Represent petty cash transaction records in the expense workflow."""
+
     _name = "hr.petty.cash.transaction"
     _description = "Petty Cash Transaction"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -91,6 +95,7 @@ class HrPettyCashTransaction(models.Model):
         return super().write(vals)
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         self._check_custodian_or_finance()
         for tx in self:
             if tx.state != "draft": raise UserError("Only draft transactions can be submitted.")
@@ -98,6 +103,7 @@ class HrPettyCashTransaction(models.Model):
         return True
 
     def action_approve(self):
+        """Approve eligible records under the model's authorization and routing rules."""
         self._expense_check_role(
             "finance", "admin", message=_("Only Finance can approve petty cash transactions.")
         )
@@ -110,6 +116,8 @@ class HrPettyCashTransaction(models.Model):
 
 
 class HrPettyCashReconciliation(models.Model):
+    """Represent petty cash reconciliation records in the expense workflow."""
+
     _name = "hr.petty.cash.reconciliation"
     _description = "Petty Cash Reconciliation"
     _inherit = "hr.expense.security.mixin"
@@ -147,6 +155,7 @@ class HrPettyCashReconciliation(models.Model):
         return super().write(vals)
 
     def action_confirm(self):
+        """Confirm an eligible record and apply its workflow side effects."""
         for record in self:
             record.fund_id.transaction_ids[:1]._check_custodian_or_finance() if record.fund_id.transaction_ids else None
             if record.state != "draft": raise UserError("Only draft reconciliations can be confirmed.")
@@ -156,6 +165,8 @@ class HrPettyCashReconciliation(models.Model):
 
 
 class HrPettyCashReplenishment(models.Model):
+    """Represent petty cash replenishment records in the expense workflow."""
+
     _name = "hr.petty.cash.replenishment"
     _description = "Petty Cash Replenishment"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -193,6 +204,7 @@ class HrPettyCashReplenishment(models.Model):
         return records
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         for record in self:
             if record.state != "draft": raise UserError("Only draft replenishments can be submitted.")
             record.with_context(petty_workflow=True).write({"state": "submitted"})
@@ -205,6 +217,7 @@ class HrPettyCashReplenishment(models.Model):
         return super().write(vals)
 
     def action_approve(self):
+        """Approve eligible records under the model's authorization and routing rules."""
         self._expense_check_role(
             "finance", "admin", message=_("Only Finance can approve replenishments.")
         )
@@ -214,6 +227,7 @@ class HrPettyCashReplenishment(models.Model):
         return True
 
     def action_issue(self):
+        """Allow Finance to issue an eligible record and apply its financial side effects."""
         self._expense_check_role(
             "finance", "admin", message=_("Only Finance can issue replenishments.")
         )

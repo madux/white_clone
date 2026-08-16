@@ -3,6 +3,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrExpenseApprovalRule(models.Model):
+    """Represent expense approval rule records in the expense workflow."""
+
     _name = "hr.expense.approval.rule"
     _description = "Expense Approval Rule"
     _order = "sequence, id"
@@ -78,6 +80,8 @@ class HrExpenseApprovalRule(models.Model):
 
 
 class HrExpenseApprovalRuleLine(models.Model):
+    """Represent expense approval level records in the expense workflow."""
+
     _name = "hr.expense.approval.rule.line"
     _description = "Expense Approval Level"
     _order = "sequence, id"
@@ -114,6 +118,8 @@ class HrExpenseApprovalRuleLine(models.Model):
 
 
 class HrExpenseApprovalStep(models.Model):
+    """Represent expense approval step records in the expense workflow."""
+
     _name = "hr.expense.approval.step"
     _description = "Expense Approval Step"
     _inherit = "hr.expense.security.mixin"
@@ -182,6 +188,7 @@ class HrExpenseApprovalStep(models.Model):
         )
 
     def action_approve(self, comment=None):
+        """Approve eligible records under the model's authorization and routing rules."""
         self.ensure_one()
         if self.state != "pending":
             raise UserError("Only the current pending level can be approved.")
@@ -205,6 +212,8 @@ class HrExpenseApprovalStep(models.Model):
 
 
 class HrClaimApprovalRouting(models.Model):
+    """Apply configured approval routing to expense claims."""
+
     _inherit = "hr.claim"
 
     approval_step_ids = fields.One2many(
@@ -212,6 +221,7 @@ class HrClaimApprovalRouting(models.Model):
     )
 
     def action_submit(self):
+        """Validate and submit an eligible draft record under its authorization rules."""
         result = super().action_submit()
         for claim in self:
             claim.approval_step_ids.filtered(
@@ -221,6 +231,7 @@ class HrClaimApprovalRouting(models.Model):
         return result
 
     def action_approve(self, comment=None):
+        """Approve eligible records under the model's authorization and routing rules."""
         remaining = self.env["hr.claim"]
         for claim in self:
             pending = claim.approval_step_ids.filtered(lambda step: step.state == "pending")[:1]
@@ -230,6 +241,7 @@ class HrClaimApprovalRouting(models.Model):
         return super(HrClaimApprovalRouting, remaining).action_approve(comment) if remaining else True
 
     def _apply_negative_decision(self, decision, reason):
+        """Apply an authorized rejection or return and close pending workflow work."""
         result = super()._apply_negative_decision(decision, reason)
         state = "rejected" if decision == "reject" else "cancelled"
         self.mapped("approval_step_ids").filtered(

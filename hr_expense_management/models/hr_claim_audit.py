@@ -3,6 +3,8 @@ from odoo.exceptions import AccessError
 
 
 class HrClaimAudit(models.Model):
+    """Represent claim audit event records in the expense workflow."""
+
     _name = "hr.claim.audit"
     _description = "Claim Audit Event"
     _order = "date desc, id desc"

@@ -2,6 +2,8 @@ from odoo import fields, models
 
 
 class HrClaimRejectWizard(models.TransientModel):
+    """Support the reject or return claim interaction."""
+
     _name = "hr.claim.reject.wizard"
     _description = "Reject or Return Claim"
 
@@ -14,7 +16,7 @@ class HrClaimRejectWizard(models.TransientModel):
     reason = fields.Text(required=True)
 
     def action_confirm(self):
+        """Confirm an eligible record and apply its workflow side effects."""
         self.ensure_one()
         self.claim_id._apply_negative_decision(self.decision, self.reason)
         return {"type": "ir.actions.act_window_close"}
-

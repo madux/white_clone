@@ -25,6 +25,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_setup_page(self, page):
+        """Return setup progress, configuration records, KPIs, and page options."""
         self._check_admin_workspace()
         company = self.env.company
         policies = self.env["hr.expense.policy"].search([], order="sequence, name")
@@ -64,6 +65,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_teams_page(self, page):
+        """Return expense roles, members, approval rules, and team KPIs."""
         self._expense_check_role("manager", "admin", message=_("Only Managers can access Teams."))
         company_domain = [("company_id", "in", [False, self.env.company.id])]
         employees = self.env["hr.employee"].sudo().search(company_domain, order="name")
@@ -115,6 +117,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_reports_page(self, page):
+        """Return report definitions, schedules, KPIs, and chart data."""
         self._check_report_workspace()
         company = self.env.company
         Claim = self.env["hr.claim"].sudo().with_company(company)
@@ -183,6 +186,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_audit_page(self, page):
+        """Return company audit events, KPIs, and filter options."""
         self._check_admin_workspace()
         domain = []
         if page == "users":
@@ -211,6 +215,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_settings_page(self, page):
+        """Return company expense settings and supporting configuration."""
         self._check_admin_workspace()
         company = self.env.company
         policies = self.env["hr.expense.policy"].search([])
@@ -238,12 +243,14 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def _get_theme_page(self, page):
+        """Return the active company theme and available design options."""
         self._check_admin_workspace()
         theme = self.env["hr.expense.theme"].search([], limit=1)
         return {"available": True, "records": [], "theme": self._serialize_theme(theme), "kpis": {"configured": bool(theme)}}
 
     @api.model
     def app_save_company_settings(self, values):
+        """Execute the server-authorized save company settings operation for the OWL application."""
         self._check_admin_workspace()
         allowed = {
             "expense_require_receipts": bool(values.get("require_receipts")),
@@ -260,6 +267,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_save_company_profile(self, values):
+        """Execute the server-authorized save company profile operation for the OWL application."""
         self._check_admin_workspace()
         name = (values.get("name") or "").strip()
         if not name:
@@ -278,6 +286,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_save_theme(self, values):
+        """Execute the server-authorized save theme operation for the OWL application."""
         self._check_admin_workspace()
         Theme = self.env["hr.expense.theme"]
         theme = Theme.search([], limit=1)
@@ -292,6 +301,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_create_policy(self, values):
+        """Execute the server-authorized create policy operation for the OWL application."""
         self._check_admin_workspace()
         policy = self.env["hr.expense.policy"].create({
             "name": (values.get("name") or "").strip(), "code": (values.get("code") or "").strip().upper(),
@@ -303,6 +313,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_create_custom_report(self, values):
+        """Execute the server-authorized create custom report operation for the OWL application."""
         self._check_report_workspace()
         report = self.env["hr.expense.custom.report"].create({
             "name": (values.get("name") or "").strip(), "report_type": values.get("report_type") or "custom",
@@ -313,6 +324,7 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_create_scheduled_report(self, values):
+        """Execute the server-authorized create scheduled report operation for the OWL application."""
         self._check_report_workspace()
         recipient_id = int(values.get("recipient_id") or 0)
         allowed_recipients = {item["id"] for item in self._get_report_recipient_options()}
@@ -329,12 +341,14 @@ class HrExpenseAppGovernance(models.AbstractModel):
 
     @api.model
     def app_create_writeoff(self, advance_id, amount, reason):
+        """Execute the server-authorized create writeoff operation for the OWL application."""
         item = self.env["hr.cash.advance.writeoff"].create({"advance_id": int(advance_id), "amount": float(amount or 0), "reason": (reason or "").strip()})
         item.action_submit()
         return {"id": item.id, "name": item.name}
 
     @api.model
     def app_writeoff_decision(self, writeoff_id, decision, note=None):
+        """Execute the server-authorized writeoff decision operation for the OWL application."""
         item = self.env["hr.cash.advance.writeoff"].browse(int(writeoff_id)).exists()
         if not item:
             raise UserError(_("The write-off no longer exists."))

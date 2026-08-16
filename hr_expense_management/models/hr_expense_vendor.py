@@ -3,6 +3,8 @@ from odoo.exceptions import ValidationError
 
 
 class HrExpenseVendorCategory(models.Model):
+    """Represent expense vendor category records in the expense workflow."""
+
     _name = "hr.expense.vendor.category"
     _description = "Expense Vendor Category"
     _order = "sequence, name"
@@ -28,6 +30,8 @@ class HrExpenseVendorCategory(models.Model):
 
 
 class HrExpensePaymentTerm(models.Model):
+    """Represent expense vendor payment term records in the expense workflow."""
+
     _name = "hr.expense.payment.term"
     _description = "Expense Vendor Payment Term"
     _order = "due_days, name"
@@ -52,6 +56,8 @@ class HrExpensePaymentTerm(models.Model):
 
 
 class ResPartnerExpenseVendor(models.Model):
+    """Add controlled expense-vendor details to contacts."""
+
     _inherit = "res.partner"
 
     is_expense_vendor = fields.Boolean(
@@ -132,6 +138,8 @@ class ResPartnerExpenseVendor(models.Model):
 
 
 class HrClaimLineVendor(models.Model):
+    """Associate claim lines with approved expense vendors."""
+
     _inherit = "hr.claim.line"
 
     vendor_id = fields.Many2one(
@@ -141,6 +149,8 @@ class HrClaimLineVendor(models.Model):
 
 
 class HrPettyCashTransactionVendor(models.Model):
+    """Associate petty-cash spend with approved expense vendors."""
+
     _inherit = "hr.petty.cash.transaction"
 
     vendor_id = fields.Many2one(

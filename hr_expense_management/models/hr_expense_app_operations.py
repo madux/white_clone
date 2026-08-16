@@ -11,6 +11,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def _get_request_page(self, page):
+        """Return request records, KPIs, options, and chart data for the page."""
         Request = self.env["hr.expense.request"]
         requests = Request.search([], order="submitted_date desc, id desc", limit=200)
         states = {key: 0 for key in ("draft", "submitted", "approved", "fulfilled", "rejected", "returned", "cancelled")}
@@ -36,6 +37,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def _get_dashboard_section(self, page):
+        """Return dashboard KPIs, trends, and recent workflow activity."""
         dashboard = self.env["hr.claim"].get_dashboard_data()
         if page == "quick":
             can_submit = self._expense_has_role("employee", "admin")
@@ -58,6 +60,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def _get_claims_page(self, page):
+        """Return claim records, KPIs, options, and chart data for the page."""
         claims = self.env["hr.claim"].search([], order="create_date desc", limit=200)
         claim_types = self.env["hr.claim.type"].with_context(active_test=False).search([], order="sequence, name")
         windows = self.env["hr.claim.window"].with_context(active_test=False).search([], order="window_type, name")
@@ -105,6 +108,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def app_create_claim(self, values):
+        """Execute the server-authorized create claim operation for the OWL application."""
         employee = self.env["hr.claim"]._default_employee()
         if not employee:
             raise UserError(_("Your user is not linked to an employee in this company."))
@@ -169,6 +173,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def _get_advance_page(self, page):
+        """Return advance records, KPIs, options, and chart data for the page."""
         advances = self.env["hr.cash.advance"].search(
             [], order="issue_date desc, id desc", limit=200
         )
@@ -213,6 +218,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def _get_workflow_page(self, page):
+        """Return approval rules, pending steps, KPIs, and page options."""
         self._expense_check_role(
             "manager", "admin", message=_("Only Managers can access the approval workspace.")
         )
@@ -273,6 +279,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def app_create_request(self, values):
+        """Execute the server-authorized create request operation for the OWL application."""
         employee = self.env["hr.expense.request"]._default_employee()
         if not employee:
             raise UserError("Your user is not linked to an employee in this company.")
@@ -297,6 +304,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def app_request_action(self, request_id, action, comment=None):
+        """Execute the server-authorized request action operation for the OWL application."""
         request = self.env["hr.expense.request"].browse(int(request_id)).exists()
         if not request:
             raise UserError("The request no longer exists.")
@@ -317,6 +325,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def app_workflow_decision(self, kind, record_id, decision, comment=None):
+        """Execute the server-authorized workflow decision operation for the OWL application."""
         if kind == "claim":
             record = self.env["hr.claim"].browse(int(record_id)).exists()
             if decision == "approve":
@@ -335,6 +344,7 @@ class HrExpenseAppOperations(models.AbstractModel):
 
     @api.model
     def app_retire_advance(self, advance_id, amount, reference=None):
+        """Execute the server-authorized retire advance operation for the OWL application."""
         advance = self.env["hr.cash.advance"].browse(int(advance_id)).exists()
         if not advance:
             raise UserError("The cash advance no longer exists.")

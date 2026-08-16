@@ -2,6 +2,8 @@ from odoo import fields, models
 
 
 class HrClaimPaymentWizard(models.TransientModel):
+    """Support the register claim payment interaction."""
+
     _name = "hr.claim.payment.wizard"
     _description = "Register Claim Payment"
 
@@ -24,6 +26,7 @@ class HrClaimPaymentWizard(models.TransientModel):
     notes = fields.Text()
 
     def action_register_payment(self):
+        """Create and confirm the reimbursement, then close the dialog."""
         self.ensure_one()
         payment = self.env["hr.claim.payment"].create(
             {
@@ -37,4 +40,3 @@ class HrClaimPaymentWizard(models.TransientModel):
         )
         payment.action_confirm()
         return {"type": "ir.actions.act_window_close"}
-

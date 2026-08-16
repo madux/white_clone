@@ -13,6 +13,8 @@ EXPENSE_ROLE_GROUPS = {
 
 
 class HrExpenseSecurityMixin(models.AbstractModel):
+    """Represent expense management security helpers records in the expense workflow."""
+
     _name = "hr.expense.security.mixin"
     _description = "Expense Management Security Helpers"
 

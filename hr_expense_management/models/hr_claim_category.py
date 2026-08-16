@@ -2,6 +2,8 @@ from odoo import fields, models
 
 
 class HrClaimCategory(models.Model):
+    """Represent claim category records in the expense workflow."""
+
     _name = "hr.claim.category"
     _description = "Claim Category"
     _order = "sequence, name"
@@ -25,4 +27,3 @@ class HrClaimCategory(models.Model):
             "The category code must be unique per company.",
         )
     ]
-

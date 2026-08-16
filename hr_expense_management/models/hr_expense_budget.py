@@ -3,6 +3,8 @@ from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrExpensePeriod(models.Model):
+    """Represent expense fiscal period records in the expense workflow."""
+
     _name = "hr.expense.period"
     _description = "Expense Fiscal Period"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -70,6 +72,7 @@ class HrExpensePeriod(models.Model):
         )
 
     def action_open(self):
+        """Allow Finance to open an eligible record."""
         self._check_finance()
         for period in self:
             if period.state != "future":
@@ -78,6 +81,7 @@ class HrExpensePeriod(models.Model):
         return True
 
     def action_close(self):
+        """Close an eligible record and record the workflow outcome."""
         self._check_finance()
         for period in self:
             if period.state != "open":
@@ -90,6 +94,7 @@ class HrExpensePeriod(models.Model):
         return True
 
     def action_reopen(self, reason):
+        """Allow an administrator to reopen an eligible record with a reason."""
         if not self._expense_has_role("admin"):
             raise AccessError("Only an Expense Administrator can reopen a period.")
         if not reason or not reason.strip():
@@ -131,6 +136,8 @@ class HrExpensePeriod(models.Model):
 
 
 class HrExpenseBudget(models.Model):
+    """Represent expense budget records in the expense workflow."""
+
     _name = "hr.expense.budget"
     _description = "Expense Budget"
     _inherit = ["mail.thread", "mail.activity.mixin", "hr.expense.security.mixin"]
@@ -185,6 +192,7 @@ class HrExpenseBudget(models.Model):
         )
 
     def action_approve(self):
+        """Approve eligible records under the model's authorization and routing rules."""
         self._check_finance()
         for budget in self:
             if budget.state != "draft" or not budget.line_ids:
@@ -193,6 +201,7 @@ class HrExpenseBudget(models.Model):
         return True
 
     def action_activate(self):
+        """Allow Finance to activate an eligible record."""
         self._check_finance()
         for budget in self:
             if budget.state != "approved" or budget.period_id.state != "open":
@@ -201,6 +210,7 @@ class HrExpenseBudget(models.Model):
         return True
 
     def action_close(self):
+        """Close an eligible record and record the workflow outcome."""
         self._check_finance()
         for budget in self:
             if budget.state != "active":
@@ -210,6 +220,8 @@ class HrExpenseBudget(models.Model):
 
 
 class HrExpenseBudgetLine(models.Model):
+    """Represent expense budget line records in the expense workflow."""
+
     _name = "hr.expense.budget.line"
     _description = "Expense Budget Line"
     _order = "budget_id, category_id, account_id, id"
@@ -287,6 +299,8 @@ class HrExpenseBudgetLine(models.Model):
 
 
 class HrExpenseRequestBudget(models.Model):
+    """Expose request commitments to expense budget calculations."""
+
     _inherit = "hr.expense.request"
 
     budget_line_id = fields.Many2one(
@@ -296,6 +310,8 @@ class HrExpenseRequestBudget(models.Model):
 
 
 class HrClaimBudget(models.Model):
+    """Expose approved claim spend to expense budget calculations."""
+
     _inherit = "hr.claim"
 
     budget_line_id = fields.Many2one(
@@ -305,6 +321,8 @@ class HrClaimBudget(models.Model):
 
 
 class HrPettyCashTransactionBudget(models.Model):
+    """Expose posted petty-cash spend to expense budget calculations."""
+
     _inherit = "hr.petty.cash.transaction"
 
     budget_line_id = fields.Many2one(
