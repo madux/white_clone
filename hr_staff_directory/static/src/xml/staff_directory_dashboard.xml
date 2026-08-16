@@ -1177,6 +1177,66 @@
                             </div>
                         </t>
                     </t>
+
+                    <!-- Bar View -->
+                    <t t-if="state.activeOrgView === 'bar'">
+                            <div class="sdir-bar-view-container">
+                                <!-- Title Bar -->
+                                <div class="sdir-bar-title-bar">
+                                    <div class="sdir-bar-title">SKILLS × LOCATION BAR CHART</div>
+                                    <div class="sdir-bar-subtitle">Top 30 skills by location distribution — click a skill to highlight</div>
+                                </div>
+                                
+                                <t t-set="barData" t-value="this.barChartData"/>
+                                
+                                <!-- Legend Row -->
+                                <div class="sdir-bar-legend">
+                                    <t t-foreach="barData.locations" t-as="loc" t-key="loc.name">
+                                        <div class="sdir-bar-legend-item">
+                                            <div class="sdir-bar-swatch" t-att-style="'background-color: ' + loc.color"></div>
+                                            <span t-esc="loc.name"></span>
+                                        </div>
+                                    </t>
+                                </div>
+                                
+                                <!-- Chart Body -->
+                                <div class="sdir-bar-body">
+                                    <t t-foreach="barData.rows" t-as="row" t-key="row.skill">
+                                        <div t-att-class="'sdir-bar-row ' + (state.barActiveSkill === row.skill ? 'sdir-bar-row-active' : '')"
+                                             t-on-click="() => this.onBarSkillClick(row.skill)">
+                                            
+                                            <div class="sdir-bar-label" t-esc="row.skill"></div>
+                                            
+                                            <div class="sdir-bar-track">
+                                                <t t-foreach="row.segments" t-as="seg" t-key="seg.location">
+                                                    <div class="sdir-bar-segment" 
+                                                         t-att-title="seg.location + ': ' + seg.count"
+                                                         t-att-style="'width: ' + seg.widthPercent + '%; background-color: ' + seg.color">
+                                                    </div>
+                                                </t>
+                                            </div>
+                                            <div class="sdir-bar-count"><t t-esc="row.total"/></div>
+                                        </div>
+                                        
+                                        <!-- Location Breakdown Detail Card -->
+                                        <div t-if="state.barActiveSkill === row.skill" class="sdir-bar-detail-card">
+                                            <div class="sdir-bar-detail-header">
+                                                <t t-esc="row.skill"/> — by location
+                                            </div>
+                                            <div class="sdir-bar-detail-body">
+                                                <t t-foreach="row.segments" t-as="seg" t-key="seg.location">
+                                                    <!-- Use alpha channel hex (1A = 10%, 40 = 25%) to dynamically tint pills based on legend color -->
+                                                    <div class="sdir-bar-detail-pill"
+                                                         t-att-style="'color: ' + seg.color + '; background-color: ' + seg.color + '1A; border-color: ' + seg.color + '40;'">
+                                                        <t t-esc="seg.location"/>: <t t-esc="seg.count"/>
+                                                    </div>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
                 </div> <!-- Close sdir-org-body -->
             </div> <!-- Close sdir-org-content -->
             
