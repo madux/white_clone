@@ -10,27 +10,22 @@
     """,
     'author': 'Maach Software',
     'website': '',
-    'depends': [
-        'base', 'hr', 'calendar', 'resource', 'hr_employee',
-        'base_addons', 
-        'mail', 
-        'ik_multi_branch', 
-        'hr_company_calendar',  
-        'hr_contract', 
-        'hr_attendance',
-        'hr_recruitment',
-        'hr_warning',
-        'hr_leave_dashboard',
-        'cleon_home_menu',
-        'cleon_license',
-        'hr_cleon_recruitment',
-        ],
+    # Keep setup at the bottom of the dependency graph. Feature modules may
+    # depend on it, but making setup depend on those same modules creates a
+    # cycle (notably cleon_settings <-> hr_warning). The licensing module is
+    # also master-database functionality and must not be required by tenants.
+    'depends': ['base', 'hr', 'base_addons', 'cleon_license', 'hr_employee'],
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
+        'views/cleon_login.xml',
+        'views/homepage.xml',
         'views/favicon.xml',
     ],
     'assets': {
+        'web.assets_frontend': [
+            'cleon_settings/static/src/css/cleon_login.css',
+        ],
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
             'cleon_settings/static/src/xml/status_widget.xml',

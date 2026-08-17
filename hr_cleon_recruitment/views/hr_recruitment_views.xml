@@ -79,7 +79,7 @@
                         <field name="job_id" string="ROLE" class="overwrite-field cn-col-role"/>
                         <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role" optional="hide"/>
                         <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
-                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
+                        <!-- <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/> -->
                         <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
                         <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating" optional="hide"/>
                         <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>

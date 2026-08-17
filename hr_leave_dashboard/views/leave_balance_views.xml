@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_hr_leave_balances_custom" model="ir.actions.client">
+        <field name="name">Leave Balance Management</field>
+        <field name="tag">hr_leave_dashboard.LeaveBalancesPage</field>
+    </record>
+</odoo>

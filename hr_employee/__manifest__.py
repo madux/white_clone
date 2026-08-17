@@ -15,7 +15,7 @@
     """,
     'author': 'MAACH SOFTWARE',
     'depends': [
-        'base_addons', 
+        # 'base_addons', 
         'hr', 
         'mail', 
         'hr_administration', 
