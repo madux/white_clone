@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'CLEONHR Staff Directory',
-    'version': '17.0.1.0.2',
+    'version': '17.0.1.0.3',
     'category': 'CleonHR-HR ADMIN',
     'summary': 'Comprehensive Staff Directory Dashboard with workforce analytics',
     'description': """
@@ -33,6 +33,7 @@
         'views/assets.xml',
         'views/staff_directory_actions.xml',
         'views/menu.xml',
+        'data/hr_work_location_cron.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -57,10 +58,15 @@
             
             'hr_staff_directory/static/src/components/profile_panel/profile_panel.js',
             'hr_staff_directory/static/src/components/profile_panel/profile_panel.xml',
+            
+            'hr_staff_directory/static/src/components/geographic_map/geographic_map.js',
+            'hr_staff_directory/static/src/components/geographic_map/geographic_map.css',
+            'hr_staff_directory/static/src/components/geographic_map/geographic_map.xml',
         ],
     },
     'installable': True,
     'auto_install': False,
     'application': False,
     'license': 'LGPL-3',
+    'post_init_hook': 'post_init_hook',
 }

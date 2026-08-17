@@ -849,6 +849,8 @@ class HrEmployeeStaffDirectory(models.Model):
                 'lifecycle_state':   lifecycle_state,
                 'work_mode':         work_mode,
                 'work_location':     work_location,
+                'work_location_lat': emp.work_location_id.latitude if emp.work_location_id else False,
+                'work_location_lng': emp.work_location_id.longitude if emp.work_location_id else False,
                 'manager_name':      emp.parent_id.name if emp.parent_id else 'CEO',
                 'reports_to':        emp.parent_id.name if emp.parent_id else 'CEO',
                 'manager_id':        emp.parent_id.id if emp.parent_id else False,

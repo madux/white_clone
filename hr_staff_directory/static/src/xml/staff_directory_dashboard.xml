@@ -176,6 +176,15 @@
                     <t t-if="state.activeOrgView === 'bar'">
                         <StaffDirectoryBarChart people="this.filteredPeople()"/>
                     </t>
+                    <t t-if="state.activeOrgView === 'geo'">
+                        <StaffDirectoryGeographicMap 
+                            people="this.filteredPeople()" 
+                            openFilterModal="this.toggleFilterModal.bind(this)"
+                            avatarColor="this.avatarColor.bind(this)"
+                            initials="this.initials.bind(this)"
+                            openProfile="this.openProfile.bind(this)"
+                            setOrgView="this.setOrgView.bind(this)"/>
+                    </t>
                 </div> <!-- Close sdir-org-body -->
             </div> <!-- Close sdir-org-content -->
             
