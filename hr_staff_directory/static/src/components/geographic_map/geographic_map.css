@@ -10,8 +10,8 @@
     overflow: hidden;
 }
 
-/* Toolbar */
-.sdir-map-toolbar {
+/* Drill-Down Toolbar */
+.sdir-map-drd-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -21,110 +21,156 @@
     flex-shrink: 0;
 }
 
-.sdir-map-mt-left {
+.sdir-map-drd-tb-left {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.sdir-map-back-btn {
+.sdir-map-drd-back-btn {
     background: none;
     border: none;
     color: #ec4899;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 4px;
     padding: 0;
+    font-size: 14px;
 }
-.sdir-map-back-btn:hover {
+.sdir-map-drd-back-btn:hover {
     text-decoration: underline;
 }
 
-.sdir-map-mt-divider {
+.sdir-map-drd-tb-divider {
     color: #9ca3af;
     font-size: 14px;
 }
-.sdir-map-mt-sub {
+.sdir-map-drd-tb-sub {
     color: #6b7280;
     font-size: 14px;
 }
-.sdir-map-mt-loc {
+.sdir-map-drd-tb-loc {
     color: #111827;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 700;
 }
 
-.sdir-map-mt-right {
+.sdir-map-drd-tb-right {
     display: flex;
     align-items: center;
     gap: 12px;
 }
-
-.sdir-map-mt-label {
-    color: #6b7280;
-    font-size: 13px;
+.sdir-map-drd-export-btn {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #374151;
+    font-weight: 500;
 }
 
 /* Drill-Down Layout */
-.sdir-map-drilldown {
+.sdir-map-drd-container {
     display: flex;
     flex: 1;
     overflow: hidden;
 }
-.sdir-map-md-content {
+.sdir-map-drd-main {
     flex: 1;
-    padding: 32px 40px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     background: #fff;
+    overflow: hidden;
 }
-.sdir-map-md-title {
+
+.sdir-map-drd-header-area {
+    padding: 32px 40px 0 40px;
+    flex-shrink: 0;
+}
+
+.sdir-map-drd-title {
     font-size: 24px;
     font-weight: 700;
     color: #111827;
     margin: 0 0 4px 0;
 }
-.sdir-map-md-subtitle {
+.sdir-map-drd-subtitle {
     font-size: 14px;
     color: #6b7280;
     margin-bottom: 24px;
 }
 
-.sdir-map-md-search-row {
+.sdir-map-drd-search-row {
     display: flex;
     gap: 12px;
     margin-bottom: 24px;
 }
-.sdir-map-search-wrap {
+.sdir-map-drd-search-wrap {
     position: relative;
     flex: 1;
 }
-.sdir-map-search-icon {
+.sdir-map-drd-search-icon {
     position: absolute;
     left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: #9ca3af;
 }
-.sdir-map-search-input {
+.sdir-map-drd-search-input {
     width: 100%;
     padding: 10px 12px 10px 36px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 14px;
 }
-
-.sdir-map-md-table-wrap {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    overflow: hidden;
+.sdir-map-drd-search-input::placeholder {
+    color: #9ca3af;
+    font-style: italic;
 }
-.sdir-map-table {
+.sdir-map-drd-filter-btn {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+}
+
+/* Table */
+.sdir-map-drd-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+    margin: 0 40px;
+}
+/* thin scrollbar for webkit */
+.sdir-map-drd-table-wrap::-webkit-scrollbar {
+    width: 6px;
+}
+.sdir-map-drd-table-wrap::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+.sdir-map-drd-table-wrap::-webkit-scrollbar-thumb {
+    background: #c1c1c1; 
+    border-radius: 4px;
+}
+.sdir-map-drd-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
+}
+
+.sdir-map-drd-table {
     width: 100%;
     border-collapse: collapse;
 }
-.sdir-map-table th {
+.sdir-map-drd-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     background: #f9fafb;
     padding: 12px 16px;
     text-align: left;
@@ -134,50 +180,128 @@
     letter-spacing: 0.05em;
     border-bottom: 1px solid #e5e7eb;
 }
-.sdir-map-table td {
+.sdir-map-drd-table td {
     padding: 12px 16px;
     font-size: 14px;
     color: #111827;
     border-bottom: 1px solid #e5e7eb;
+    background-color: #fff;
 }
-.sdir-map-table tr:hover td {
-    background-color: #fdf2f8; /* pale pink on hover */
-    cursor: pointer;
+.sdir-map-drd-tbl-emp {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sdir-map-drd-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-weight: 600;
+}
+.sdir-map-drd-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.sdir-map-drd-tbl-name {
+    font-weight: 700;
+    color: #111827;
 }
 
-.sdir-map-md-footer {
+/* Badges */
+.sdir-map-drd-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+.sdir-map-drd-badge-hybrid {
+    background-color: #fef3c7; /* pale amber */
+    color: #92400e; /* amber/brown text */
+}
+.sdir-map-drd-badge-office {
+    background-color: #fdf2f8; /* pale pink */
+    color: #ec4899; /* pink/magenta text */
+}
+.sdir-map-drd-badge-remote {
+    background-color: #d1fae5; /* pale green */
+    color: #065f46; /* green text */
+}
+
+/* Footer (Sticky) */
+.sdir-map-drd-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 24px;
+    padding: 16px 40px;
+    background: #fff;
+    flex-shrink: 0;
 }
-.sdir-map-back-link {
+.sdir-map-drd-back-link {
     color: #ec4899;
     background: none;
     border: none;
-    font-weight: 500;
+    font-weight: 700;
     cursor: pointer;
+    font-size: 14px;
 }
-.sdir-map-back-link:hover {
+.sdir-map-drd-back-link:hover {
     text-decoration: underline;
 }
-.sdir-map-md-pagination {
+
+.sdir-map-drd-pagination {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sdir-map-drd-page-info {
     color: #6b7280;
     font-size: 14px;
 }
+.sdir-map-drd-page-btn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+.sdir-map-drd-page-btn[disabled] {
+    color: #d1d5db;
+    cursor: not-allowed;
+}
+.sdir-map-drd-page-active {
+    background-color: #ec4899;
+    color: #fff;
+    font-weight: 700;
+}
 
 /* Drill-Down Sidebar */
-.sdir-map-md-sidebar {
+.sdir-map-drd-sidebar {
     width: 320px;
     border-left: 1px solid #e5e7eb;
     background: #fff;
     padding: 24px;
     overflow-y: auto;
+    flex-shrink: 0;
 }
-.sdir-map-md-sb-header {
+.sdir-map-drd-sb-header {
     margin-bottom: 32px;
 }
-.sdir-map-bullet-lg {
+.sdir-map-drd-bullet-lg {
     display: inline-block;
     width: 10px;
     height: 10px;
@@ -185,47 +309,49 @@
     background-color: #ec4899;
     margin-right: 8px;
 }
-.sdir-map-sb-locname {
+.sdir-map-drd-sb-locname {
     font-size: 16px;
     font-weight: 700;
     color: #111827;
 }
-.sdir-map-sb-sub {
+.sdir-map-drd-sb-sub {
     font-size: 14px;
     color: #6b7280;
     margin-left: 18px;
     margin-top: 4px;
+    font-weight: 700;
 }
-.sdir-map-sb-stat {
+.sdir-map-drd-sb-stat {
     margin-bottom: 24px;
 }
-.sdir-map-sb-stat-label {
+.sdir-map-drd-sb-stat-label {
     font-size: 13px;
     color: #6b7280;
     margin-bottom: 4px;
 }
-.sdir-map-sb-stat-val {
+.sdir-map-drd-sb-stat-val {
     font-size: 32px;
     font-weight: 700;
     color: #111827;
     line-height: 1;
 }
-.sdir-map-sb-stat-sub {
+.sdir-map-drd-sb-stat-sub {
     font-size: 12px;
     color: #9ca3af;
     margin-top: 4px;
 }
-.sdir-map-sb-card {
+.sdir-map-drd-sb-card {
     background: #fdf2f8;
     border-radius: 8px;
     padding: 16px;
     margin-top: 32px;
+    border: none;
 }
-.sdir-map-sb-card-label {
+.sdir-map-drd-sb-card-label {
     font-size: 12px;
     color: #6b7280;
 }
-.sdir-map-sb-card-val {
+.sdir-map-drd-sb-card-val {
     font-size: 28px;
     font-weight: 700;
     color: #ec4899;

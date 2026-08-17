@@ -5,41 +5,43 @@
         <div class="sdir-map-wrapper">
             <!-- Breadcrumb Toolbar (Only visible in Drill-Down) -->
             <t t-if="state.selectedLocation">
-                <div class="sdir-map-toolbar">
-                    <div class="sdir-map-mt-left">
-                        <button type="button" class="sdir-map-back-btn" t-on-click="() => this.clearSelection()">
-                            <span class="sdir-map-back-arrow">←</span> <span class="sdir-map-back-text">Skills × Location</span>
+                <div class="sdir-map-drd-toolbar">
+                    <div class="sdir-map-drd-tb-left">
+                        <button type="button" class="sdir-map-drd-back-btn" t-on-click="() => this.clearSelection()">
+                            <span class="sdir-map-drd-back-arrow">←</span> <span class="sdir-map-drd-back-text">Skills × Location</span>
                         </button>
-                        <span class="sdir-map-mt-divider">›</span>
-                        <span class="sdir-map-mt-sub">(All)</span>
-                        <span class="sdir-map-mt-divider">›</span>
-                        <span class="sdir-map-mt-loc"><t t-esc="state.selectedLocation"/></span>
+                        <span class="sdir-map-drd-tb-divider">›</span>
+                        <span class="sdir-map-drd-tb-sub">(All)</span>
+                        <span class="sdir-map-drd-tb-divider">›</span>
+                        <span class="sdir-map-drd-tb-loc"><t t-esc="state.selectedLocation"/></span>
                     </div>
-                    <div class="sdir-map-mt-right">
-                        <button type="button" class="sdir-btn sdir-btn-outline sdir-map-export-btn">⭳ Export</button>
+                    <div class="sdir-map-drd-tb-right">
+                        <button type="button" class="sdir-btn sdir-btn-outline sdir-map-drd-export-btn">⭳ Export</button>
                     </div>
                 </div>
             </t>
 
             <!-- Drill-Down View -->
             <t t-if="state.selectedLocation">
-                <div class="sdir-map-drilldown">
-                    <div class="sdir-map-md-content">
-                        <h2 class="sdir-map-md-title">(All) Skills in <t t-esc="state.selectedLocation"/></h2>
-                        <div class="sdir-map-md-subtitle"><t t-esc="this.selectedPeople.length"/> Active employees</div>
-                        
-                        <div class="sdir-map-md-search-row">
-                            <div class="sdir-map-search-wrap">
-                                <svg class="sdir-map-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <input type="text" class="sdir-map-search-input" placeholder="Search employees..."/>
+                <div class="sdir-map-drd-container">
+                    <div class="sdir-map-drd-main">
+                        <div class="sdir-map-drd-header-area">
+                            <h2 class="sdir-map-drd-title">(All) Skills in <t t-esc="state.selectedLocation"/></h2>
+                            <div class="sdir-map-drd-subtitle"><t t-esc="this.selectedPeople.length"/> Active employees</div>
+                            
+                            <div class="sdir-map-drd-search-row">
+                                <div class="sdir-map-drd-search-wrap">
+                                    <svg class="sdir-map-drd-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                    <input type="text" class="sdir-map-drd-search-input" placeholder="Search employees..."/>
+                                </div>
+                                <button type="button" class="sdir-btn sdir-btn-outline ms-2 sdir-map-drd-filter-btn" t-on-click="props.openFilterModal">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> Filters
+                                </button>
                             </div>
-                            <button type="button" class="sdir-btn sdir-btn-outline ms-2" t-on-click="props.openFilterModal">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> Filters
-                            </button>
                         </div>
 
-                        <div class="sdir-map-md-table-wrap">
-                            <table class="sdir-map-table">
+                        <div class="sdir-map-drd-table-wrap">
+                            <table class="sdir-map-drd-table">
                                 <thead>
                                     <tr>
                                         <th>NAME</th>
@@ -54,18 +56,23 @@
                                     <t t-foreach="this.selectedPeople" t-as="person" t-key="person.id">
                                         <tr t-on-click="() => this.openProfile(person)">
                                             <td>
-                                                <div class="sdir-map-tbl-emp">
-                                                    <div class="sdir-avatar-sm" t-att-class="props.avatarColor(person.name)">
-                                                        <t t-esc="props.initials(person.name)"/>
+                                                <div class="sdir-map-drd-tbl-emp">
+                                                    <div class="sdir-avatar sdir-hm-avatar sdir-map-drd-avatar">
+                                                        <t t-if="person.has_image">
+                                                            <img t-attf-src="/web/image/hr.employee/{{ person.id }}/avatar_128?unique={{ person.avatar_cache_key }}" alt="Profile" />
+                                                        </t>
+                                                        <t t-else="">
+                                                            <div class="sdir-avatar-initials"><t t-esc="props.initials(person.name)"/></div>
+                                                        </t>
                                                     </div>
-                                                    <span class="sdir-map-tbl-name"><t t-esc="person.name"/></span>
+                                                    <span class="sdir-map-drd-tbl-name"><t t-esc="person.name"/></span>
                                                 </div>
                                             </td>
                                             <td><t t-esc="person.job_title"/></td>
                                             <td><t t-esc="person.department"/></td>
                                             <td>
                                                 <t t-if="person.work_mode">
-                                                    <span t-att-class="'sdir-badge ' + (person.work_mode === 'Remote' ? 'sdir-bg-remote' : 'sdir-bg-hybrid')"><t t-esc="person.work_mode"/></span>
+                                                    <span t-att-class="'sdir-map-drd-badge ' + (person.work_mode === 'Remote' ? 'sdir-map-drd-badge-remote' : (person.work_mode === 'Office' ? 'sdir-map-drd-badge-office' : 'sdir-map-drd-badge-hybrid'))"><t t-esc="person.work_mode"/></span>
                                                 </t>
                                                 <t t-else="">-</t>
                                             </td>
@@ -77,36 +84,39 @@
                             </table>
                         </div>
                         
-                        <div class="sdir-map-md-footer">
-                            <button type="button" class="sdir-map-back-link" t-on-click="() => this.clearSelection()">← Back to map</button>
-                            <div class="sdir-map-md-pagination">
-                                Showing 1 to <t t-esc="this.selectedPeople.length"/> of <t t-esc="this.selectedPeople.length"/>
+                        <div class="sdir-map-drd-footer">
+                            <button type="button" class="sdir-map-drd-back-link" t-on-click="() => this.clearSelection()">← Back to map</button>
+                            <div class="sdir-map-drd-pagination">
+                                <span class="sdir-map-drd-page-info">Showing 1 to <t t-esc="this.selectedPeople.length"/> of <t t-esc="this.selectedPeople.length"/></span>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-prev" disabled="disabled">‹</button>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-num sdir-map-drd-page-active">1</button>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-next">›</button>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Drill-Down Overview Panel -->
-                    <div class="sdir-map-md-sidebar">
-                        <div class="sdir-map-md-sb-header">
-                            <span class="sdir-map-bullet-lg"></span> <span class="sdir-map-sb-locname"><t t-esc="state.selectedLocation"/></span>
-                            <div class="sdir-map-sb-sub">Overview</div>
+                    <div class="sdir-map-drd-sidebar">
+                        <div class="sdir-map-drd-sb-header">
+                            <span class="sdir-map-drd-bullet-lg"></span> <span class="sdir-map-drd-sb-locname"><t t-esc="state.selectedLocation"/></span>
+                            <div class="sdir-map-drd-sb-sub">Overview</div>
                         </div>
                         
-                        <div class="sdir-map-sb-stat">
-                            <div class="sdir-map-sb-stat-label">Skills</div>
-                            <div class="sdir-map-sb-stat-val">42</div>
+                        <div class="sdir-map-drd-sb-stat">
+                            <div class="sdir-map-drd-sb-stat-label">Skills</div>
+                            <div class="sdir-map-drd-sb-stat-val">42</div>
                             <!-- TODO: Replace with real skills data when available -->
                         </div>
                         
-                        <div class="sdir-map-sb-stat">
-                            <div class="sdir-map-sb-stat-label">Total Workforce</div>
-                            <div class="sdir-map-sb-stat-val"><t t-esc="this.selectedPeople.length"/></div>
-                            <div class="sdir-map-sb-stat-sub">Total</div>
+                        <div class="sdir-map-drd-sb-stat">
+                            <div class="sdir-map-drd-sb-stat-label">Total Workforce</div>
+                            <div class="sdir-map-drd-sb-stat-val"><t t-esc="this.selectedPeople.length"/></div>
+                            <div class="sdir-map-drd-sb-stat-sub">Total</div>
                         </div>
                         
-                        <div class="sdir-map-sb-card">
-                            <div class="sdir-map-sb-card-label">% with (All)</div>
-                            <div class="sdir-map-sb-card-val">14.50%</div>
+                        <div class="sdir-map-drd-sb-card">
+                            <div class="sdir-map-drd-sb-card-label">% with (All)</div>
+                            <div class="sdir-map-drd-sb-card-val">14.50%</div>
                             <!-- TODO: Replace with real percentage computation -->
                         </div>
                     </div>
