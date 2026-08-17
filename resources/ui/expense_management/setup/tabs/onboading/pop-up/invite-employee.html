@@ -1,0 +1,142 @@
+<!doctype html>
+<html class="exm-invemp-root" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invite Employee</title>
+    <link rel="stylesheet" href="invite-employee.css" />
+  </head>
+
+  <body class="exm-invemp-page">
+    <!-- Decorative content for the standalone blurred-background preview. -->
+    <div class="exm-invemp-preview" aria-hidden="true">
+      <header class="exm-invemp-preview-header">
+        <span class="exm-invemp-preview-brand"></span>
+        <span class="exm-invemp-preview-search"></span>
+        <span class="exm-invemp-preview-action"></span>
+      </header>
+      <aside class="exm-invemp-preview-sidebar">
+        <span></span><span></span><span></span><span></span><span></span>
+      </aside>
+      <main class="exm-invemp-preview-content">
+        <div class="exm-invemp-preview-title"></div>
+        <div class="exm-invemp-preview-list">
+          <article></article><article></article><article></article><article></article>
+        </div>
+      </main>
+    </div>
+
+    <div class="exm-invemp-modal-layer">
+      <section
+        class="exm-invemp-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exm-invemp-title"
+        aria-describedby="exm-invemp-description"
+      >
+        <header class="exm-invemp-dialog-header">
+          <h1 class="exm-invemp-title" id="exm-invemp-title">Invite Employee</h1>
+          <p class="exm-invemp-description" id="exm-invemp-description">
+            An email invitation will be sent with login instructions
+          </p>
+        </header>
+
+        <form class="exm-invemp-form" action="#" method="post">
+          <div class="exm-invemp-form-body">
+            <label class="exm-invemp-field">
+              <span class="exm-invemp-label">Full Name *</span>
+              <input
+                class="exm-invemp-input"
+                type="text"
+                name="full_name"
+                placeholder="e.g., John Doe"
+                autocomplete="name"
+                required
+              />
+            </label>
+
+            <label class="exm-invemp-field">
+              <span class="exm-invemp-label">Email Address *</span>
+              <input
+                class="exm-invemp-input"
+                type="email"
+                name="email"
+                placeholder="e.g., john@company.com"
+                autocomplete="email"
+                required
+              />
+            </label>
+
+            <label class="exm-invemp-field">
+              <span class="exm-invemp-label">Department</span>
+              <input
+                class="exm-invemp-input"
+                type="text"
+                name="department"
+                placeholder="e.g., Finance"
+                autocomplete="organization-title"
+              />
+            </label>
+
+            <div class="exm-invemp-select-grid">
+              <label class="exm-invemp-field">
+                <span class="exm-invemp-label">Role</span>
+                <span class="exm-invemp-select-wrap">
+                  <select class="exm-invemp-select" name="role">
+                    <option value="employee" selected>Employee</option>
+                    <option value="manager">Manager</option>
+                    <option value="finance">Finance</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <svg class="exm-invemp-select-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m7 9.5 5 5 5-5" />
+                  </svg>
+                </span>
+              </label>
+
+              <label class="exm-invemp-field">
+                <span class="exm-invemp-label">Reporting Manager</span>
+                <span class="exm-invemp-select-wrap">
+                  <select class="exm-invemp-select" name="reporting_manager">
+                    <option value="" selected disabled>Select Manager</option>
+                    <option value="system-administrator">System Administrator</option>
+                  </select>
+                  <svg class="exm-invemp-select-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m7 9.5 5 5 5-5" />
+                  </svg>
+                </span>
+              </label>
+            </div>
+
+            <label class="exm-invemp-field">
+              <span class="exm-invemp-label exm-invemp-date-label">
+                <svg class="exm-invemp-calendar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M8 3v4M16 3v4M3 10h18" />
+                </svg>
+                Employment Start Date
+              </span>
+              <input
+                class="exm-invemp-input"
+                type="text"
+                name="employment_start_date"
+                placeholder="mm/dd/yyyy"
+                inputmode="numeric"
+                aria-label="Employment start date"
+              />
+            </label>
+          </div>
+
+          <footer class="exm-invemp-actions">
+            <button class="exm-invemp-button exm-invemp-button-cancel" type="button">
+              Cancel
+            </button>
+            <button class="exm-invemp-button exm-invemp-button-submit" type="submit">
+              Send Invitation
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>

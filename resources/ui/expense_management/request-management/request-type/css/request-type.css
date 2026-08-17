@@ -1,0 +1,525 @@
+.exm-main-content {
+  display: flex;
+}
+
+* {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+.overflow-x-scroll {
+  overflow-x: scroll;
+}
+
+.exm-breadcrumb-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  padding: 0 24px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e9ecf0;
+  background: #fafbfc;
+  color: #97a2b2;
+  font-size: 10px;
+}
+
+.exm-breadcrumb-left,
+.exm-breadcrumb-right,
+.exm-breadcrumb-home,
+.exm-sync-copy,
+.exm-shortcut-copy {
+  display: flex;
+  align-items: center;
+}
+
+.exm-breadcrumb-left {
+  gap: 9px;
+}
+
+.exm-breadcrumb-right {
+  gap: 12px;
+}
+
+.exm-breadcrumb-icon,
+.exm-sync-icon,
+.exm-shortcut-key-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-icon {
+  color: #aab3c0;
+}
+
+.exm-breadcrumb-separator {
+  width: 1px;
+  height: 16px;
+  background: #dfe3e8;
+}
+
+.exm-breadcrumb-home {
+  gap: 3px;
+  color: #8b96a7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.exm-breadcrumb-home-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-chevron {
+  width: 8px;
+  height: 8px;
+}
+
+.exm-breadcrumb-current {
+  color: #101a2b;
+  font-size: 10px;
+}
+
+.exm-sync-copy,
+.exm-shortcut-copy {
+  gap: 4px;
+  font-weight: 650;
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tab {
+  position: relative;
+  display: flex;
+  height: 55px;
+  padding: 0 17px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #465162;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.exm-dashboard-tab-active {
+  min-width: 158px;
+  background: #ffffff;
+  color: #07162b;
+  box-shadow: 0 4px 12px rgba(32, 42, 54, 0.11);
+}
+
+.exm-dashboard-tab-active::after {
+  position: absolute;
+  right: 46px;
+  bottom: 0;
+  left: 54px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--exm-pink);
+  content: "";
+}
+.exm-tab-icon {
+  display: grid;
+  width: 33px;
+  height: 33px;
+  place-items: center;
+  border-radius: 9px;
+  background: #f0f2f5;
+  color: #4e5969;
+}
+
+.exm-tab-icon-active {
+  background: linear-gradient(145deg, #fb2777, #ef0060);
+  color: #ffffff;
+  box-shadow: 0 5px 10px rgba(246, 28, 110, 0.18);
+}
+
+.exm-tab-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exm-tab-label {
+  white-space: nowrap;
+}
+
+/* Floating Action Button */
+
+.exm-company-page .exm-floating-controls {
+  right: 31px;
+  bottom: 28px;
+}
+
+.exm-company-page .exm-scroll-top {
+  width: 40px;
+  height: 40px;
+}
+
+.exm-company-page .exm-floating-home {
+  width: 45px;
+  height: 45px;
+}
+
+.exm-floating-controls {
+  position: fixed;
+  z-index: 30;
+  right: 34px;
+  bottom: 35px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.exm-scroll-top,
+.exm-floating-home {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.exm-scroll-top {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e1e5e9;
+  background: #ffffff;
+  color: #778295;
+  box-shadow: 0 4px 10px rgba(28, 39, 53, 0.08);
+}
+
+.exm-floating-home {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(145deg, #fb1b74, #ed0061);
+  color: #ffffff !important;
+  box-shadow: 0 12px 21px rgba(232, 0, 91, 0.2);
+}
+
+.exm-up-icon,
+.exm-floating-home-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.exm-setup-tab:focus-visible,
+.exm-back-link:focus-visible,
+.exm-home-crumb:focus-visible,
+.exm-setup-crumb:focus-visible,
+.exm-icon-button:focus-visible,
+.exm-tab-collapse:focus-visible,
+.exm-card-action:focus-visible,
+.exm-explore-link:focus-visible,
+.exm-scroll-top:focus-visible,
+.exm-floating-home:focus-visible {
+  outline: 3px solid rgba(247, 34, 115, 0.24);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .exm-company-page .exm-floating-controls {
+    right: 14px;
+    bottom: 16px;
+  }
+}
+
+.exm-reqtyp-root {
+  min-block-size: 100%;
+}
+
+.exm-reqtyp-page {
+  min-block-size: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background: #ffffff;
+  color: #132139;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-reqtyp-page,
+.exm-reqtyp-page * {
+  box-sizing: border-box;
+}
+
+.exm-reqtyp-svg-library {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+}
+
+.exm-reqtyp-shell {
+  inline-size: min(100%, 96rem);
+  margin-inline: auto;
+  padding: clamp(3rem, 6vw, 5.3rem) clamp(0.9rem, 4vw, 1.75rem)
+    clamp(4rem, 8vw, 6rem);
+}
+
+.exm-reqtyp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-block-end: clamp(1.6rem, 3vw, 2rem);
+}
+
+.exm-reqtyp-heading-group {
+  min-inline-size: 0;
+}
+
+.exm-reqtyp-title {
+  margin: 0;
+  color: #07152a;
+  font-size: clamp(1.1rem, 2.6vw, 1.5rem);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.exm-reqtyp-subtitle {
+  margin: 0.4rem 0 0;
+  color: #35445b;
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  /* font-weight: 550; */
+}
+
+.exm-reqtyp-new-button {
+  display: inline-flex;
+  min-block-size: 3rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-inline: clamp(1rem, 2.5vw, 1.5rem);
+  border: 2px solid #e83f91;
+  border-radius: 0.75rem;
+  background: #e83f91;
+  color: #ffffff;
+  box-shadow: 0 0.3rem 0.8rem rgba(222, 45, 133, 0.13);
+  font: inherit;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.exm-reqtyp-new-button svg {
+  inline-size: 1.25rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqtyp-new-button:hover {
+  filter: brightness(0.97);
+}
+
+.exm-reqtyp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 1.5vw, 1.35rem);
+}
+
+.exm-reqtyp-card {
+  display: flex;
+  min-block-size: clamp(12rem, 20vw, 15rem);
+  justify-content: center;
+  flex-direction: column;
+  gap: 1.3rem;
+  padding-inline: clamp(1rem, 4vw, 1.4rem);
+  border: 1px solid #dfe3e8;
+  border-radius: 0.7rem;
+  background: #ffffff;
+  box-shadow: 0 0.12rem 0.3rem rgba(20, 33, 54, 0.07);
+}
+
+.exm-reqtyp-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.exm-reqtyp-card-icon {
+  display: grid;
+  inline-size: clamp(2rem, 6vw, 3.2rem);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0.5rem;
+  background: linear-gradient(145deg, #b342f0, #f52a91);
+  color: #ffffff;
+}
+
+.exm-reqtyp-card-icon svg {
+  inline-size: 48%;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.exm-reqtyp-card-heading {
+  min-inline-size: 0;
+}
+
+.exm-reqtyp-card-heading h2 {
+  margin: 0;
+  color: #08162b;
+  font-size: clamp(0.8rem, 2.2vw, 1.25rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.exm-reqtyp-active-badge {
+  display: inline-flex;
+  min-block-size: 2rem;
+  margin-block-start: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0.75rem;
+  border-radius: 999px;
+  background: #dfffe9;
+  color: #008d36;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.exm-reqtyp-details {
+  display: flex;
+  margin: 0;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exm-reqtyp-details div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.exm-reqtyp-details dt,
+.exm-reqtyp-details dd {
+  margin: 0;
+  font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+}
+
+.exm-reqtyp-details dt {
+  color: #344258;
+  font-weight: 550;
+}
+
+.exm-reqtyp-details dd {
+  color: #07152a;
+  font-weight: 800;
+  text-align: end;
+}
+
+.exm-reqtyp-home-button {
+  display: grid;
+  position: fixed;
+  z-index: 5;
+  inset-inline-end: clamp(-1.4rem, -1vw, -0.5rem);
+  inset-block-end: clamp(1rem, 5vh, 3rem);
+  inline-size: clamp(3.8rem, 5vw, 4.5rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7006d;
+  color: #ffffff;
+  box-shadow: 0 0.45rem 1rem rgba(247, 0, 109, 0.22);
+}
+
+.exm-reqtyp-home-button svg {
+  inline-size: 42%;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqtyp-new-button:focus-visible,
+.exm-reqtyp-home-button:focus-visible {
+  outline: 3px solid rgba(18, 99, 255, 0.45);
+  outline-offset: 2px;
+}
+
+@media (max-width: 54rem) {
+  .exm-reqtyp-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exm-reqtyp-card {
+    min-block-size: 12.5rem;
+  }
+}
+
+@media (max-width: 34rem) {
+  .exm-reqtyp-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exm-reqtyp-new-button {
+    align-self: flex-start;
+  }
+
+  .exm-reqtyp-card {
+    min-block-size: 11rem;
+    padding: 1.25rem;
+  }
+
+  .exm-reqtyp-card-header {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exm-reqtyp-page * {
+    scroll-behavior: auto !important;
+  }
+}

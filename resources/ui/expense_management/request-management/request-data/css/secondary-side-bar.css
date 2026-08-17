@@ -1,0 +1,261 @@
+.exm-seup-root {
+  min-height: 100%;
+}
+
+.exm-seup-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: #eef0f2;
+  color: #263241;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-seup-sidebar,
+.exm-seup-sidebar * {
+  box-sizing: border-box;
+}
+
+.exm-seup-sidebar {
+  position: sticky;
+  top: 0;
+  --exm-seup-ink: #273342;
+  --exm-seup-line: #d9dce1;
+  display: flex;
+  width: 179px;
+  /* min-width: 199px; */
+  height: 100vh;
+  min-height: 875px;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 4px solid #f1f2f3;
+  border-right: 1px solid #d7dade;
+  background: #ffffff;
+  box-shadow: 1px 0 2px rgba(26, 34, 43, 0.05);
+}
+
+.exm-seup-header {
+  display: flex;
+  flex: 0 0 81px;
+  align-items: center;
+  padding: 0 13px;
+  border-bottom: 1px solid var(--exm-seup-line);
+  background: #f5f5f6;
+}
+
+.exm-seup-heading {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #151b22;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exm-seup-toolbar {
+  display: grid;
+  flex: 0 0 85px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-bottom: 1px solid var(--exm-seup-line);
+  background: #ffffff;
+}
+
+.exm-seup-tool {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 1px 5px;
+  border: 0;
+  background: transparent;
+  color: #3e4a5a;
+  font: inherit;
+  cursor: pointer;
+}
+
+.exm-seup-tool:hover,
+.exm-seup-tool:focus-visible {
+  background: #f6f7f8;
+}
+
+.exm-seup-tool:focus-visible,
+.exm-seup-step:focus-visible,
+.exm-seup-search-input:focus-visible {
+  outline: 2px solid #ff2877;
+  outline-offset: -2px;
+}
+
+.exm-seup-tool-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+}
+
+.exm-seup-tool-icon circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.exm-seup-tool-label {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.exm-seup-search-area {
+  display: flex;
+  flex: 0 0 69px;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid #e1e3e6;
+  background: #ffffff;
+}
+
+.exm-seup-search-box {
+  display: flex;
+  width: 100%;
+  height: 44px;
+  align-items: center;
+  gap: 11px;
+  padding: 0 11px;
+  border: 1px solid #ced2d8;
+  border-radius: 10px;
+  background: #fafbfc;
+  color: #4e5968;
+}
+
+.exm-seup-search-box:focus-within {
+  border-color: #ff2877;
+}
+
+.exm-seup-search-icon {
+  flex: 0 0 19px;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.exm-seup-search-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--exm-seup-ink);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.exm-seup-search-input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.exm-seup-search-input::placeholder {
+  color: #8a9099;
+  opacity: 1;
+}
+
+.exm-seup-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d6d8dc transparent;
+}
+
+.exm-seup-step-list {
+  display: flex;
+  min-height: 598px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 12px 9px 13px;
+}
+
+.exm-seup-step {
+  display: flex;
+  flex: 0 0 123px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 13px;
+  padding: 8px 5px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--exm-seup-ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.exm-seup-step:not(.exm-seup-step-active):hover {
+  background: #f8f8f9;
+}
+
+.exm-seup-step-active {
+  flex-basis: 103px;
+  margin-bottom: 12px;
+  background: linear-gradient(145deg, #ff2d80 0%, #fb1e70 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(249, 31, 110, 0.15);
+}
+
+.exm-seup-step-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #ebecf0;
+  color: var(--exm-seup-ink);
+}
+
+.exm-seup-step-icon-active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.exm-seup-step-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.25;
+}
+
+.exm-seup-step-label {
+  font-size: 13px;
+  line-height: 1.18;
+  text-align: center;
+}
+
+.exm-seup-footer {
+  display: grid;
+  flex: 0 0 42px;
+  place-items: center;
+  border-top: 1px solid var(--exm-seup-line);
+  background: #f8f9fa;
+  color: #364253;
+  font-size: 16px;
+  font-weight: 700;
+}

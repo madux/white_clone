@@ -1,0 +1,347 @@
+.exm-invemp-root {
+  min-block-size: 100%;
+}
+
+.exm-invemp-page {
+  min-block-size: 100dvh;
+  margin: 0;
+  overflow: hidden;
+  background: #f5f6f8;
+  color: #182235;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-invemp-page,
+.exm-invemp-page * {
+  box-sizing: border-box;
+}
+
+.exm-invemp-preview {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #fbfbfc;
+}
+
+.exm-invemp-preview-header {
+  display: flex;
+  min-block-size: 5rem;
+  align-items: center;
+  gap: 2rem;
+  padding-inline: 1.5rem;
+  border-block-end: 1px solid #dfe2e6;
+  background: #ffffff;
+}
+
+.exm-invemp-preview-brand,
+.exm-invemp-preview-action,
+.exm-invemp-preview-sidebar span {
+  display: block;
+  background: #ef1476;
+}
+
+.exm-invemp-preview-brand {
+  inline-size: 3.25rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.exm-invemp-preview-search {
+  display: block;
+  inline-size: min(32rem, 45vw);
+  min-block-size: 2.75rem;
+  margin-inline: auto;
+  border-radius: 0.75rem;
+  background: #e9ecf0;
+}
+
+.exm-invemp-preview-action {
+  inline-size: clamp(7rem, 12vw, 10rem);
+  min-block-size: 3rem;
+  border-radius: 0.75rem;
+}
+
+.exm-invemp-preview-sidebar {
+  display: flex;
+  position: absolute;
+  inset-block: 5rem 0;
+  inset-inline-start: 0;
+  inline-size: clamp(4rem, 7vw, 6rem);
+  align-items: center;
+  flex-direction: column;
+  gap: 2rem;
+  padding-block: 2rem;
+  border-inline-end: 1px solid #e1e4e8;
+  background: #ffffff;
+}
+
+.exm-invemp-preview-sidebar span {
+  inline-size: 2.5rem;
+  aspect-ratio: 1;
+  border-radius: 0.7rem;
+  opacity: 0.18;
+}
+
+.exm-invemp-preview-sidebar span:nth-child(even) {
+  background: #768196;
+}
+
+.exm-invemp-preview-content {
+  margin-inline-start: clamp(4rem, 7vw, 6rem);
+  padding: clamp(2rem, 5vw, 5rem);
+}
+
+.exm-invemp-preview-title {
+  inline-size: min(18rem, 40vw);
+  min-block-size: 2.5rem;
+  margin-block-end: 2.5rem;
+  border-radius: 0.5rem;
+  background: #25344b;
+  opacity: 0.7;
+}
+
+.exm-invemp-preview-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.exm-invemp-preview-list article {
+  min-block-size: clamp(8rem, 18vh, 12rem);
+  border: 1px solid #dce0e5;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 0.2rem 0.5rem rgba(17, 27, 42, 0.06);
+}
+
+.exm-invemp-modal-layer {
+  display: grid;
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  place-items: center;
+  overflow-y: auto;
+  padding: clamp(0.75rem, 3vw, 2rem);
+  background: rgba(20, 23, 27, 0.47);
+  backdrop-filter: blur(0.22rem);
+}
+
+.exm-invemp-dialog {
+  inline-size: min(100%, 38rem);
+  max-block-size: calc(100dvh - 1.5rem);
+  overflow-y: auto;
+  border-radius: clamp(1rem, 2vw, 1.4rem);
+  background: #ffffff;
+  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.26);
+}
+
+.exm-invemp-dialog-header {
+  padding: clamp(1.6rem, 4vw, 2.25rem) clamp(1.25rem, 5vw, 2rem);
+  border-block-end: 1px solid #e3e5e8;
+}
+
+.exm-invemp-title {
+  margin: 0;
+  color: #111b2d;
+  font-size: clamp(1.45rem, 3vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.exm-invemp-description {
+  margin: 0.45rem 0 0;
+  color: #687388;
+  font-size: clamp(0.82rem, 1.7vw, 0.9rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.exm-invemp-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.15rem, 2.5vh, 1.45rem);
+  padding: clamp(1.5rem, 5vw, 2rem);
+}
+
+.exm-invemp-field {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exm-invemp-label {
+  color: #354156;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.exm-invemp-input,
+.exm-invemp-select-wrap {
+  inline-size: 100%;
+  min-block-size: 3.3rem;
+  border: 2px solid #e0e3e8;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.exm-invemp-input {
+  padding-inline: 1rem;
+  outline: 0;
+  color: #273247;
+  font: inherit;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 550;
+}
+
+.exm-invemp-input::placeholder {
+  color: #979eaa;
+  opacity: 1;
+}
+
+.exm-invemp-input:focus,
+.exm-invemp-select-wrap:focus-within {
+  border-color: #fb2c91;
+  box-shadow: 0 0 0 0.18rem rgba(251, 44, 145, 0.12);
+}
+
+.exm-invemp-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.exm-invemp-select-wrap {
+  display: grid;
+  position: relative;
+  align-items: center;
+}
+
+.exm-invemp-select {
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding-inline: 1rem 2.75rem;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: #273247;
+  font: inherit;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.exm-invemp-select-icon {
+  position: absolute;
+  inset-inline-end: 0.8rem;
+  inline-size: 1.15rem;
+  aspect-ratio: 1;
+  pointer-events: none;
+  fill: none;
+  stroke: #172338;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-invemp-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.exm-invemp-calendar-icon {
+  inline-size: 1.05rem;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.exm-invemp-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: clamp(1.35rem, 4vw, 2rem);
+  border-block-start: 1px solid #e3e5e8;
+  background: #fafbfc;
+}
+
+.exm-invemp-button {
+  min-block-size: 3.4rem;
+  padding-inline: 1rem;
+  border-radius: 0.75rem;
+  font: inherit;
+  font-size: clamp(0.95rem, 2vw, 1.05rem);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.exm-invemp-button-cancel {
+  border: 2px solid #ef4195;
+  background: transparent;
+  color: #e83f90;
+}
+
+.exm-invemp-button-submit {
+  border: 2px solid transparent;
+  background: linear-gradient(100deg, #f62b94, #f50052);
+  color: #ffffff;
+  box-shadow: 0 0.45rem 0.85rem rgba(232, 0, 90, 0.13);
+}
+
+.exm-invemp-button:hover {
+  filter: brightness(0.97);
+}
+
+.exm-invemp-button:focus-visible {
+  outline: 3px solid rgba(20, 102, 255, 0.5);
+  outline-offset: 2px;
+}
+
+@media (max-width: 34rem) {
+  .exm-invemp-dialog {
+    max-block-size: calc(100dvh - 1rem);
+  }
+
+  .exm-invemp-select-grid,
+  .exm-invemp-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .exm-invemp-button-submit {
+    grid-row: 1;
+  }
+
+  .exm-invemp-preview-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 45rem) and (min-width: 34.01rem) {
+  .exm-invemp-modal-layer {
+    place-items: start center;
+  }
+
+  .exm-invemp-dialog-header,
+  .exm-invemp-actions {
+    padding-block: 1.1rem;
+  }
+
+  .exm-invemp-form-body {
+    gap: 0.85rem;
+    padding-block: 1.1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exm-invemp-page * {
+    scroll-behavior: auto !important;
+  }
+}
