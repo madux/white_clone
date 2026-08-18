@@ -18,8 +18,13 @@ export class StaffDirectoryRelationshipGraph extends Component {
             mostConnected: 0,
             bridgeEmployees: 0,
             isolated: 0,
-            loading: true
+            loading: true,
+            focusedNodeId: null,
+            focusedNodeData: null
         });
+        
+        this.connectedNodeIds = new Set();
+        this.cachedLinks = [];
 
         this.svgRef = useRef("graphSvg");
         this.d3Loaded = false;
@@ -95,23 +100,88 @@ export class StaffDirectoryRelationshipGraph extends Component {
         this.highlightNodes();
     }
 
+    handleNodeClick(event, d) {
+        event.stopPropagation();
+        
+        if (this.state.focusedNodeId === d.id) {
+            // Deselect if already focused
+            this.clearFocus();
+            return;
+        }
+
+        this.state.focusedNodeId = d.id;
+        this.state.focusedNodeData = d;
+        this.connectedNodeIds.clear();
+        this.connectedNodeIds.add(d.id);
+
+        // Find all connected nodes based on active links
+        this.cachedLinks.forEach(link => {
+            if (link.source.id === d.id) this.connectedNodeIds.add(link.target.id);
+            if (link.target.id === d.id) this.connectedNodeIds.add(link.source.id);
+        });
+
+        this.highlightNodes();
+    }
+
+    clearFocus() {
+        this.state.focusedNodeId = null;
+        this.state.focusedNodeData = null;
+        this.connectedNodeIds.clear();
+        this.highlightNodes();
+    }
+
     highlightNodes() {
         if (!this.d3Loaded || !window.d3) return;
         const q = this.state.searchQuery.toLowerCase().trim();
         const svg = window.d3.select(this.svgRef.el);
+        const focusedId = this.state.focusedNodeId;
         
-        if (!q) {
+        if (!q && !focusedId) {
             svg.selectAll(".r_graph-node-group").style("opacity", 1);
-            svg.selectAll(".r_graph-link").style("opacity", 0.6);
+            svg.selectAll(".r_graph-link")
+                .style("opacity", 0.6)
+                .style("stroke-width", 1)
+                .style("stroke", "#d1d5db");
+            svg.selectAll(".r_graph-node-selection").style("opacity", 0);
             return;
         }
 
         svg.selectAll(".r_graph-node-group").style("opacity", d => {
-            const name = (d.name || '').toLowerCase();
-            return name.includes(q) ? 1 : 0.2;
+            let match = true;
+            if (q) {
+                const name = (d.name || '').toLowerCase();
+                match = name.includes(q);
+            }
+            if (match && focusedId) {
+                match = this.connectedNodeIds.has(d.id);
+            }
+            return match ? 1 : 0.15;
         });
         
-        svg.selectAll(".r_graph-link").style("opacity", 0.1);
+        svg.selectAll(".r_graph-link")
+            .style("opacity", d => {
+                if (focusedId) {
+                    return (d.source.id === focusedId || d.target.id === focusedId) ? 1 : 0;
+                }
+                return 0.1; // If there's a search query but no focus, dim all links
+            })
+            .style("stroke-width", d => {
+                if (focusedId && (d.source.id === focusedId || d.target.id === focusedId)) {
+                    return 2.5; // Thicker lines for focused node
+                }
+                return 1; // Default thickness
+            })
+            .style("stroke", d => {
+                if (focusedId && (d.source.id === focusedId || d.target.id === focusedId)) {
+                    return "#374151"; // Dark slate/gray for focused lines
+                }
+                return "#d1d5db"; // Default light gray
+            });
+
+        // Toggle selection ring
+        svg.selectAll(".r_graph-node-selection").style("opacity", d => {
+            return (focusedId && d.id === focusedId) ? 1 : 0;
+        });
     }
 
     buildGraphData() {
@@ -215,8 +285,18 @@ export class StaffDirectoryRelationshipGraph extends Component {
         svg.selectAll("*").remove(); // Clear previous render
         svg.attr("width", width).attr("height", height);
 
+        // Cache links for fast neighbor lookup
+        this.cachedLinks = data.links;
+
         // Add a master group for the graph elements
         const g = svg.append("g");
+        
+        // Background rect to catch clicks for clearing focus
+        g.append("rect")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("fill", "transparent")
+            .on("click", () => this.clearFocus());
 
         if (this.simulation) {
             this.simulation.stop();
@@ -242,11 +322,21 @@ export class StaffDirectoryRelationshipGraph extends Component {
             .data(data.nodes)
             .enter().append("g")
             .attr("class", "r_graph-node-group")
-            .on("click", (event, d) => this.props.openProfile(d))
+            .on("click", (event, d) => this.handleNodeClick(event, d))
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended));
+
+        // Selection Ring (outermost pink ring)
+        nodeGroup.append("circle")
+            .attr("class", "r_graph-node-selection")
+            .attr("r", d => d.radius + 12)
+            .attr("fill", "none")
+            .attr("stroke", "#E8368F") // Pink/magenta
+            .attr("stroke-width", 3)
+            .attr("opacity", 0)
+            .style("transition", "opacity 0.2s");
 
         // Halo Ring (outer stroke)
         nodeGroup.append("circle")
@@ -277,7 +367,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
         nodeGroup.append("text")
             .attr("class", "r_graph-node-label")
             .attr("text-anchor", "middle")
-            .attr("dy", d => d.radius + 12)
+            .attr("dy", d => d.radius + 24)
             .text(d => d.name.split(' ')[0]); // First name
 
         // Tick function to update positions

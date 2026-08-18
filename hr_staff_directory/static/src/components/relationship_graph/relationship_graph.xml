@@ -55,6 +55,44 @@
                             Node size = connections - color = dept
                         </div>
                     </div>
+                    
+                    <!-- Detail Card (Focus Mode) -->
+                    <div t-if="state.focusedNodeId" class="r_graph-detail-card">
+                        <div class="r_graph-detail-header">
+                            <div class="r_graph-detail-avatar" t-att-style="'background-color: ' + state.focusedNodeData.color">
+                                <t t-esc="state.focusedNodeData.name.split(' ').length &gt; 1 ? (state.focusedNodeData.name.split(' ')[0][0] + state.focusedNodeData.name.split(' ')[1][0]).toUpperCase() : state.focusedNodeData.name.substring(0, 2).toUpperCase()"/>
+                            </div>
+                            <div class="r_graph-detail-title">
+                                <div class="r_graph-detail-name"><t t-esc="state.focusedNodeData.name"/></div>
+                                <!-- In a real implementation we would fetch the full employee record, but here we can just show a placeholder or basic info we have -->
+                                <div class="r_graph-detail-job">Employee</div>
+                            </div>
+                            <button class="r_graph-detail-close" t-on-click="clearFocus">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                        </div>
+                        <div class="r_graph-detail-body">
+                            <div class="r_graph-detail-row">
+                                <span class="r_graph-detail-label">Department</span>
+                                <span class="r_graph-detail-val"><t t-esc="state.focusedNodeData.dept || '—'"/></span>
+                            </div>
+                            <div class="r_graph-detail-row">
+                                <span class="r_graph-detail-label">Connections</span>
+                                <span class="r_graph-detail-val"><t t-esc="state.focusedNodeData.connections"/> direct</span>
+                            </div>
+                            <div class="r_graph-detail-row">
+                                <span class="r_graph-detail-label">Location</span>
+                                <span class="r_graph-detail-val">San Francisco Office</span>
+                            </div>
+                            <div class="r_graph-detail-tags">
+                                <span class="r_graph-detail-tag">Reporting</span>
+                            </div>
+                        </div>
+                        <button class="r_graph-profile-btn" t-on-click="() => this.props.openProfile(state.focusedNodeData)">
+                            View Profile <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+
                 </div>
 
                 <!-- Right Sidebar (Insights) -->
