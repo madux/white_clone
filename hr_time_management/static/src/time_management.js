@@ -29,6 +29,7 @@ export class TimeManagementApp extends Component {
             managerDecision: "", regularizationFilter: "all",
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
+            moduleDropdown: false,
             shiftPage: "dashboard", shiftData: {shifts: [], assignments: [], employees: [], departments: [], kpis: {}},
             shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
             assignmentForm: null,
@@ -273,6 +274,16 @@ export class TimeManagementApp extends Component {
             this.state.gatewayMessage = "";
             this.state.gateway = true;
         }
+    }
+    toggleModuleDropdown() {
+        this.state.moduleDropdown = !this.state.moduleDropdown;
+    }
+    closeModuleDropdown() {
+        this.state.moduleDropdown = false;
+    }
+    async selectFeatureFromDropdown(feature) {
+        this.state.moduleDropdown = false;
+        await this.selectFeature(feature);
     }
     setShiftPage(page) { this.state.shiftPage = page; this.state.shiftDetail = null; }
     async setTrackingPage(page) { this.state.trackingPage = page; await this.load(); }

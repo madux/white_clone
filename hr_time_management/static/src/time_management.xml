@@ -2,156 +2,178 @@
 <t t-name="hr_time_management.App">
     <div class="ctm-app">
         <t t-if="state.mode === 'admin'">
-        <aside class="ctm-sidebar">
-            <button class="ctm-module-title" t-on-click="showGateway"><strong t-esc="featureName()"/><span>⌄</span><small>Time Management</small></button>
-            <p class="ctm-nav-label">MAIN</p>
-            <button t-att-class="'ctm-nav ' + (state.feature === 'attendance' ? 'active' : '')" t-on-click="() => this.selectFeature('attendance')"><i class="fa fa-calendar"/>Attendance Management</button>
-            <button t-att-class="'ctm-nav ' + (state.feature === 'shift' ? 'active' : '')" t-on-click="() => this.selectFeature('shift')"><i class="fa fa-clock-o"/>Shift Management</button>
-            <button t-att-class="'ctm-nav ' + (state.feature === 'tracking' ? 'active' : '')" t-on-click="() => this.selectFeature('tracking')"><i class="fa fa-list-alt"/>Time Tracking</button>
-            <button t-att-class="'ctm-nav ' + (state.feature === 'overtime' ? 'active' : '')" t-on-click="() => this.selectFeature('overtime')"><i class="fa fa-hourglass-half"/>Overtime Management</button>
-            <t t-if="state.feature === 'attendance'">
-            <p class="ctm-nav-label">ATTENDANCE</p>
-            <button t-att-class="'ctm-nav ' + (state.page === 'dashboard' ? 'active' : '')" t-on-click="() => this.setPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-            <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
-            <p class="ctm-nav-label">MANAGEMENT</p>
-            <button t-att-class="'ctm-nav ' + (state.page === 'sheet' ? 'active' : '')" t-on-click="() => this.setPage('sheet')"><i class="fa fa-clipboard"/>Attendance Sheets</button>
-            <button t-att-class="'ctm-nav ' + (state.page === 'regularizations' ? 'active' : '')" t-on-click="() => this.openRegularizations(true)"><i class="fa fa-file-text-o"/>Regularization Requests</button>
-            <p class="ctm-nav-label">SYSTEM</p>
-            <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button>
-            <button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button>
-            <button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
-            </t>
-            <t t-if="state.feature === 'shift'">
-            <p class="ctm-nav-label">SHIFT MANAGEMENT</p>
-            <button t-att-class="'ctm-nav ' + (state.shiftPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setShiftPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-            <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
-            <p class="ctm-nav-label">SCHEDULING</p>
-            <button t-att-class="'ctm-nav ' + (state.shiftPage === 'list' ? 'active' : '')" t-on-click="() => this.setShiftPage('list')"><i class="fa fa-list"/>Shift List</button>
-            <button t-att-class="'ctm-nav ' + (state.shiftPage === 'assignments' ? 'active' : '')" t-on-click="() => this.setShiftPage('assignments')"><i class="fa fa-users"/>Shift Assignments</button>
-            <button t-att-class="'ctm-nav ' + (state.shiftPage === 'swaps' ? 'active' : '')" t-on-click="() => this.setShiftPage('swaps')"><i class="fa fa-exchange"/>Shift Swap</button>
-            <p class="ctm-nav-label">SYSTEM</p>
-            <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
-            </t>
-            <t t-if="state.feature === 'tracking'">
-            <p class="ctm-nav-label">TIME TRACKING</p>
-            <button t-att-class="'ctm-nav ' + (state.trackingPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setTrackingPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-            <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
-            <p class="ctm-nav-label">MANAGEMENT</p>
-            <button t-att-class="'ctm-nav ' + (state.trackingPage === 'timesheets' ? 'active' : '')" t-on-click="() => this.setTrackingPage('timesheets')"><i class="fa fa-users"/>All Timesheets</button>
-            <p class="ctm-nav-label">SYSTEM</p>
-            <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
-            </t>
-            <t t-if="state.feature === 'overtime'">
-            <p class="ctm-nav-label">OVERTIME</p>
-            <button t-att-class="'ctm-nav ' + (state.overtimePage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setOvertimePage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-            <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
-            <p class="ctm-nav-label">MANAGEMENT</p>
-            <button t-att-class="'ctm-nav ' + (state.overtimePage === 'all' ? 'active' : '')" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-users"/>All Overtime</button>
-            <button t-att-class="'ctm-nav ' + (state.overtimePage === 'reports' ? 'active' : '')" t-on-click="() => this.setOvertimePage('reports')"><i class="fa fa-clock-o"/>Overtime Reports</button>
-            <p class="ctm-nav-label">SYSTEM</p>
-            <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
-            </t>
-        </aside>
-        <main class="ctm-main">
-            <div class="ctm-view-switch" t-if="state.isManager"><button class="active"><i class="fa fa-shield"/> Admin View</button><button t-on-click="() => this.setMode('employee')"><i class="fa fa-user-o"/> Employee View</button></div>
-            <t t-if="state.feature === 'shift'">
-                <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Shift Management</span></nav><h1><i class="fa fa-clock-o"/> <t t-esc="state.shiftPage === 'dashboard' ? 'Shift Dashboard' : state.shiftPage === 'list' ? 'Shift Management' : state.shiftPage === 'assignments' ? 'Shift Assignments' : 'Shift Swap Requests'"/></h1><p t-if="state.shiftPage === 'dashboard'">Manage shifts, monitor coverage, and assign work schedules</p><p t-elif="state.shiftPage === 'assignments'">Assign employees or departments to work shifts</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn pink" t-if="state.shiftPage !== 'swaps'" t-on-click="() => this.newShift()"><i class="fa fa-plus"/> Create Shift</button></div></div>
-                <t t-if="state.shiftPage === 'dashboard'">
-                    <div class="ctm-shift-kpis"><article><span>Total Shifts</span><strong t-esc="state.shiftData.kpis.total_shifts || 0"/><i class="fa fa-calendar"/></article><article><span>Active Employees</span><strong t-esc="state.shiftData.kpis.active_employees || 0"/><i class="fa fa-users blue"/></article><article><span>Coverage Rate</span><strong><t t-esc="state.shiftData.kpis.coverage_rate || 0"/>%</strong><i class="fa fa-line-chart green"/><div class="ctm-progress"><b t-att-style="'width:'+(state.shiftData.kpis.coverage_rate || 0)+'%'"/></div></article><article><span>Pending Swap Requests</span><strong t-esc="state.shiftData.kpis.pending_swaps || 0"/><i class="fa fa-exchange orange"/></article></div>
-                    <section class="ctm-panel ctm-coverage"><h3>Shift Coverage</h3><p>Current employee allocation across active shift types</p><div class="ctm-coverage-bars"><div t-foreach="state.shiftData.shifts.slice(0, 7)" t-as="shift" t-key="shift.id"><span t-esc="shift.name"/><b t-att-style="'height:'+Math.max(12, shift.assigned * 5)+'px'"/><small t-esc="shift.assigned"/></div></div></section>
-                    <div class="ctm-section-title"><h2>All Shifts</h2><button class="link" t-on-click="() => this.setShiftPage('list')">View All</button></div><div class="ctm-shift-grid"><t t-foreach="state.shiftData.shifts.slice(0, 4)" t-as="shift" t-key="shift.id"><t t-call="hr_time_management.ShiftCard"/></t><div class="ctm-empty-state" t-if="!state.shiftData.shifts.length"><p>No shifts are configured yet.</p><button class="ctm-btn pink" t-on-click="() => this.newShift()">Create the first shift</button></div></div>
+            <aside class="ctm-sidebar">
+                <div class="ctm-module-title-wrap">
+                    <button class="ctm-module-title" t-on-click="toggleModuleDropdown">
+                        <div class="ctm-module-title-text">
+                            <strong t-esc="featureName()"/>
+                            <small>Time Management</small>
+                        </div>
+                        <i t-att-class="'fa ctm-module-chevron ' + (state.moduleDropdown ? 'fa-chevron-up' : 'fa-chevron-down')"/>
+                    </button>
+                    <div t-if="state.moduleDropdown" class="ctm-module-dropdown">
+                        <button t-att-class="'ctm-module-opt ' + (state.feature === 'attendance' ? 'active' : '')" t-on-click="() => this.selectFeatureFromDropdown('attendance')">
+                            <i class="fa fa-calendar"/>
+                            <span>Attendance</span>
+                        </button>
+                        <button t-att-class="'ctm-module-opt ' + (state.feature === 'shift' ? 'active' : '')" t-on-click="() => this.selectFeatureFromDropdown('shift')">
+                            <i class="fa fa-clock-o"/>
+                            <span>Shift Mgmt</span>
+                        </button>
+                        <button t-att-class="'ctm-module-opt ' + (state.feature === 'overtime' ? 'active' : '')" t-on-click="() => this.selectFeatureFromDropdown('overtime')">
+                            <i class="fa fa-hourglass-half"/>
+                            <span>Overtime</span>
+                        </button>
+                        <button t-att-class="'ctm-module-opt ' + (state.feature === 'tracking' ? 'active' : '')" t-on-click="() => this.selectFeatureFromDropdown('tracking')">
+                            <i class="fa fa-list-alt"/>
+                            <span>Time Tracking</span>
+                        </button>
+                    </div>
+                </div>
+                <t t-if="state.feature === 'attendance'">
+                <p class="ctm-nav-label">MAIN</p>
+                <button t-att-class="'ctm-nav ' + (state.page === 'dashboard' ? 'active' : '')" t-on-click="() => this.setPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
+                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <p class="ctm-nav-label">MANAGEMENT</p>
+                <button t-att-class="'ctm-nav ' + (state.page === 'sheet' ? 'active' : '')" t-on-click="() => this.setPage('sheet')"><i class="fa fa-clipboard"/>Attendance Sheets</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'regularizations' ? 'active' : '')" t-on-click="() => this.openRegularizations(true)"><i class="fa fa-file-text-o"/>Regularization Requests</button>
+                <p class="ctm-nav-label">SYSTEM</p>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button>
+                <button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
-                <t t-elif="state.shiftPage === 'list'">
-                    <section class="ctm-filters"><label>Shift Type<select t-model="state.shiftStatus"><option value="all">All Shifts</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label><label class="grow">Search<input placeholder="Search shifts..." t-model="state.shiftSearch"/></label></section>
-                    <div class="ctm-shift-grid"><t t-foreach="filteredShifts" t-as="shift" t-key="shift.id"><t t-call="hr_time_management.ShiftCard"/></t><div class="ctm-empty-state" t-if="!filteredShifts.length"><p>No shifts match the current filters.</p></div></div>
+                <t t-if="state.feature === 'shift'">
+                <p class="ctm-nav-label">SHIFT MANAGEMENT</p>
+                <button t-att-class="'ctm-nav ' + (state.shiftPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setShiftPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
+                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <p class="ctm-nav-label">SCHEDULING</p>
+                <button t-att-class="'ctm-nav ' + (state.shiftPage === 'list' ? 'active' : '')" t-on-click="() => this.setShiftPage('list')"><i class="fa fa-list"/>Shift List</button>
+                <button t-att-class="'ctm-nav ' + (state.shiftPage === 'assignments' ? 'active' : '')" t-on-click="() => this.setShiftPage('assignments')"><i class="fa fa-users"/>Shift Assignments</button>
+                <button t-att-class="'ctm-nav ' + (state.shiftPage === 'swaps' ? 'active' : '')" t-on-click="() => this.setShiftPage('swaps')"><i class="fa fa-exchange"/>Shift Swap</button>
+                <p class="ctm-nav-label">SYSTEM</p>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
-                <t t-elif="state.shiftPage === 'assignments'">
-                    <section class="ctm-panel ctm-assignment-tool"><h3><i class="fa fa-users"/> Assignment Tool</h3><p>Assignments are effective-dated and checked for overlapping schedules.</p><button class="ctm-btn pink" t-on-click="newAssignment"><i class="fa fa-plus"/> Assign Shift</button></section>
-                    <section class="ctm-panel"><table class="ctm-shift-table"><thead><tr><th>EMPLOYEE / DEPARTMENT</th><th>SHIFT</th><th>TIME</th><th>EFFECTIVE FROM</th><th>UNTIL</th><th>STATUS</th></tr></thead><tbody><tr t-foreach="state.shiftData.assignments" t-as="row" t-key="row.id"><td><strong t-esc="row.employee"/><small t-esc="row.employee_code || row.department"/></td><td t-esc="row.shift"/><td t-esc="row.time"/><td t-esc="row.date_from"/><td t-esc="row.date_to || 'Ongoing'"/><td><span t-att-class="'status '+(row.assignment_type === 'temporary' ? 'on_leave' : 'present')" t-esc="row.assignment_type === 'temporary' ? 'Temporary' : 'Active'"/></td></tr><tr t-if="!state.shiftData.assignments.length"><td colspan="6" class="empty">No shift assignments have been created.</td></tr></tbody></table></section>
+                <t t-if="state.feature === 'tracking'">
+                <p class="ctm-nav-label">TIME TRACKING</p>
+                <button t-att-class="'ctm-nav ' + (state.trackingPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setTrackingPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
+                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <p class="ctm-nav-label">MANAGEMENT</p>
+                <button t-att-class="'ctm-nav ' + (state.trackingPage === 'timesheets' ? 'active' : '')" t-on-click="() => this.setTrackingPage('timesheets')"><i class="fa fa-users"/>All Timesheets</button>
+                <p class="ctm-nav-label">SYSTEM</p>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
-                <t t-else=""><section class="ctm-empty-state"><i class="fa fa-exchange"/><h2>Shift Swap workflow</h2><p>No swap requests exist. The approval workflow model will be activated with the employee Shift Swap specification; this screen intentionally does not display sample records.</p></section></t>
+                <t t-if="state.feature === 'overtime'">
+                <p class="ctm-nav-label">OVERTIME</p>
+                <button t-att-class="'ctm-nav ' + (state.overtimePage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setOvertimePage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
+                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <p class="ctm-nav-label">MANAGEMENT</p>
+                <button t-att-class="'ctm-nav ' + (state.overtimePage === 'all' ? 'active' : '')" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-users"/>All Overtime</button>
+                <button t-att-class="'ctm-nav ' + (state.overtimePage === 'reports' ? 'active' : '')" t-on-click="() => this.setOvertimePage('reports')"><i class="fa fa-clock-o"/>Overtime Reports</button>
+                <p class="ctm-nav-label">SYSTEM</p>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                </t>
+            </aside>
+
+            <main class="ctm-main">
+                <div class="ctm-view-switch" t-if="state.isManager"><button class="active"><i class="fa fa-shield"/> Admin View</button><button t-on-click="() => this.setMode('employee')"><i class="fa fa-user-o"/> Employee View</button></div>
+                <t t-if="state.feature === 'shift'">
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Shift Management</span></nav><h1><i class="fa fa-clock-o"/> <t t-esc="state.shiftPage === 'dashboard' ? 'Shift Dashboard' : state.shiftPage === 'list' ? 'Shift Management' : state.shiftPage === 'assignments' ? 'Shift Assignments' : 'Shift Swap Requests'"/></h1><p t-if="state.shiftPage === 'dashboard'">Manage shifts, monitor coverage, and assign work schedules</p><p t-elif="state.shiftPage === 'assignments'">Assign employees or departments to work shifts</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn pink" t-if="state.shiftPage !== 'swaps'" t-on-click="() => this.newShift()"><i class="fa fa-plus"/> Create Shift</button></div></div>
+                    <t t-if="state.shiftPage === 'dashboard'">
+                        <div class="ctm-shift-kpis"><article><span>Total Shifts</span><strong t-esc="state.shiftData.kpis.total_shifts || 0"/><i class="fa fa-calendar"/></article><article><span>Active Employees</span><strong t-esc="state.shiftData.kpis.active_employees || 0"/><i class="fa fa-users blue"/></article><article><span>Coverage Rate</span><strong><t t-esc="state.shiftData.kpis.coverage_rate || 0"/>%</strong><i class="fa fa-line-chart green"/><div class="ctm-progress"><b t-att-style="'width:'+(state.shiftData.kpis.coverage_rate || 0)+'%'"/></div></article><article><span>Pending Swap Requests</span><strong t-esc="state.shiftData.kpis.pending_swaps || 0"/><i class="fa fa-exchange orange"/></article></div>
+                        <section class="ctm-panel ctm-coverage"><h3>Shift Coverage</h3><p>Current employee allocation across active shift types</p><div class="ctm-coverage-bars"><div t-foreach="state.shiftData.shifts.slice(0, 7)" t-as="shift" t-key="shift.id"><span t-esc="shift.name"/><b t-att-style="'height:'+Math.max(12, shift.assigned * 5)+'px'"/><small t-esc="shift.assigned"/></div></div></section>
+                        <div class="ctm-section-title"><h2>All Shifts</h2><button class="link" t-on-click="() => this.setShiftPage('list')">View All</button></div><div class="ctm-shift-grid"><t t-foreach="state.shiftData.shifts.slice(0, 4)" t-as="shift" t-key="shift.id"><t t-call="hr_time_management.ShiftCard"/></t><div class="ctm-empty-state" t-if="!state.shiftData.shifts.length"><p>No shifts are configured yet.</p><button class="ctm-btn pink" t-on-click="() => this.newShift()">Create the first shift</button></div></div>
+                    </t>
+                    <t t-elif="state.shiftPage === 'list'">
+                        <section class="ctm-filters"><label>Shift Type<select t-model="state.shiftStatus"><option value="all">All Shifts</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label><label class="grow">Search<input placeholder="Search shifts..." t-model="state.shiftSearch"/></label></section>
+                        <div class="ctm-shift-grid"><t t-foreach="filteredShifts" t-as="shift" t-key="shift.id"><t t-call="hr_time_management.ShiftCard"/></t><div class="ctm-empty-state" t-if="!filteredShifts.length"><p>No shifts match the current filters.</p></div></div>
+                    </t>
+                    <t t-elif="state.shiftPage === 'assignments'">
+                        <section class="ctm-panel ctm-assignment-tool"><h3><i class="fa fa-users"/> Assignment Tool</h3><p>Assignments are effective-dated and checked for overlapping schedules.</p><button class="ctm-btn pink" t-on-click="newAssignment"><i class="fa fa-plus"/> Assign Shift</button></section>
+                        <section class="ctm-panel"><table class="ctm-shift-table"><thead><tr><th>EMPLOYEE / DEPARTMENT</th><th>SHIFT</th><th>TIME</th><th>EFFECTIVE FROM</th><th>UNTIL</th><th>STATUS</th></tr></thead><tbody><tr t-foreach="state.shiftData.assignments" t-as="row" t-key="row.id"><td><strong t-esc="row.employee"/><small t-esc="row.employee_code || row.department"/></td><td t-esc="row.shift"/><td t-esc="row.time"/><td t-esc="row.date_from"/><td t-esc="row.date_to || 'Ongoing'"/><td><span t-att-class="'status '+(row.assignment_type === 'temporary' ? 'on_leave' : 'present')" t-esc="row.assignment_type === 'temporary' ? 'Temporary' : 'Active'"/></td></tr><tr t-if="!state.shiftData.assignments.length"><td colspan="6" class="empty">No shift assignments have been created.</td></tr></tbody></table></section>
+                    </t>
+                    <t t-else=""><section class="ctm-empty-state"><i class="fa fa-exchange"/><h2>Shift Swap workflow</h2><p>No swap requests exist. The approval workflow model will be activated with the employee Shift Swap specification; this screen intentionally does not display sample records.</p></section></t>
+                </t>
+                <t t-elif="state.feature === 'tracking'">
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Time Tracking</span></nav><h1><i class="fa fa-list-alt"/> <t t-esc="state.trackingPage === 'dashboard' ? 'Team Time Tracking' : 'Team Timesheets'"/></h1><p>Review weekly work logs, approval status, billable hours, and variance</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportTimesheets"><i class="fa fa-download"/> Export Report</button></div></div>
+                    <div class="ctm-tracking-kpis">
+                        <article class="amber"><i class="fa fa-clock-o"/><span>Pending Approvals</span><strong t-esc="state.trackingData.kpis.pending || 0"/><small>Require action</small></article>
+                        <article class="blue"><i class="fa fa-check-circle-o"/><span>Submitted</span><strong><t t-esc="state.trackingData.kpis.submitted || 0"/>/<t t-esc="state.trackingData.kpis.expected || 0"/></strong><small>Current week</small></article>
+                        <article class="red"><i class="fa fa-exclamation-triangle"/><span>Missing</span><strong t-esc="state.trackingData.kpis.missing || 0"/><small>Timesheets not started</small></article>
+                        <article class="pink"><i class="fa fa-clock-o"/><span>Total Hours</span><strong><t t-esc="state.trackingData.kpis.total_hours || 0"/>h</strong><small>This week</small></article>
+                    </div>
+                    <section class="ctm-filters"><label class="grow">Search employee or work item<input placeholder="Search employee or task..." t-model="state.trackingSearch" t-on-keyup="applyTrackingFilters"/></label><label>Status<select t-model="state.trackingState" t-on-change="applyTrackingFilters"><option value="all">All statuses</option><option value="draft">Draft</option><option value="submitted">Pending</option><option value="approved">Approved</option><option value="correction">Corrections Requested</option><option value="rejected">Rejected</option></select></label></section>
+                    <section class="ctm-panel">
+                        <div class="ctm-status-filter" t-if="state.trackingPage === 'timesheets'"><strong>Timesheet status:</strong><t t-foreach="['all','submitted','approved','correction','rejected']" t-as="status" t-key="status"><button t-att-class="state.trackingState === status ? 'active' : ''" t-on-click="() => this.setTrackingState(status)" t-esc="status === 'all' ? 'All Sheets' : label(status)"/></t></div>
+                        <div class="ctm-section-title ctm-tracking-title" t-if="state.trackingPage === 'dashboard'"><h2>Pending Approvals <span class="ctm-count" t-esc="state.trackingData.kpis.pending || 0"/></h2><button class="link" t-on-click="() => this.setTrackingPage('timesheets')">View All</button></div>
+                        <t t-call="hr_time_management.TimesheetTable"/>
+                    </section>
+                </t>
+                <t t-elif="state.feature === 'overtime'">
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Overtime Management</span></nav><h1><i class="fa fa-hourglass-half"/> <t t-esc="state.overtimePage === 'dashboard' ? 'Overtime Management' : state.overtimePage === 'all' ? 'Team Overtime' : 'Overtime Reports'"/></h1><p>Calculate, review, approve, and report workforce overtime</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportOvertime"><i class="fa fa-download"/> Export Report</button><button class="ctm-btn pink" t-if="state.overtimePage === 'dashboard'" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-check-circle-o"/> Approve Requests</button></div></div>
+                    <div class="ctm-overtime-kpis" t-if="state.overtimePage === 'dashboard'">
+                        <article class="pink"><i class="fa fa-clock-o"/><span>Total Overtime</span><strong><t t-esc="state.overtimeData.kpis.total || 0"/>h</strong><small>This month</small></article>
+                        <article class="orange"><i class="fa fa-sun-o"/><span>Daily Overtime</span><strong><t t-esc="state.overtimeData.kpis.daily || 0"/>h</strong><small>Beyond configured threshold</small></article>
+                        <article class="blue"><i class="fa fa-calendar"/><span>Weekend Overtime</span><strong><t t-esc="state.overtimeData.kpis.weekend || 0"/>h</strong><small>Weekend work</small></article>
+                        <article class="green"><i class="fa fa-star-o"/><span>Holiday Overtime</span><strong><t t-esc="state.overtimeData.kpis.holiday || 0"/>h</strong><small>Public holidays</small></article>
+                    </div>
+                    <div class="ctm-overtime-kpis" t-elif="state.overtimePage === 'all'">
+                        <article class="blue"><span>Total Team OT</span><strong><t t-esc="state.overtimeData.kpis.total || 0"/>h</strong></article><article class="orange"><span>Pending Approvals</span><strong><t t-esc="state.overtimeData.kpis.pending || 0"/> reqs</strong></article><article class="purple"><span>Average OT / Employee</span><strong><t t-esc="state.overtimeData.kpis.average || 0"/>h</strong></article><article class="pink"><span>Estimated Cost</span><strong><t t-esc="state.overtimeData.kpis.cost || 0"/></strong></article>
+                    </div>
+                    <section class="ctm-filters"><label class="grow">Search employee or reason<input placeholder="Search employee or reason..." t-model="state.overtimeSearch" t-on-keyup="applyOvertimeFilters"/></label><label>Category<select t-model="state.overtimeState" t-on-change="applyOvertimeFilters"><option value="all">All statuses</option><option value="auto">Auto-calculated</option><option value="submitted">Pending Approval</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></label></section>
+                    <section class="ctm-panel">
+                        <div class="ctm-section-title"><h2 t-esc="state.overtimePage === 'dashboard' ? 'Recent Pending Overtime' : state.overtimePage === 'all' ? 'All Overtime Requests' : 'Detailed Overtime Report'"/><span><t t-esc="overtimeRows.length"/> records</span></div>
+                        <t t-call="hr_time_management.OvertimeTable"/>
+                    </section>
+                    <section class="ctm-panel ctm-overtime-breakdown" t-if="state.overtimePage === 'reports'"><h3>Month-to-date Breakdown</h3><div><span>Approved Hours<strong><t t-esc="state.overtimeData.kpis.approved || 0"/>h</strong></span><span>Estimated Approved Cost<strong t-esc="state.overtimeData.kpis.cost || 0"/><small>Uses configured multiplier and employee hourly cost</small></span><span>Employees<strong t-esc="state.overtimeData.kpis.employees || 0"/></span></div></section>
+                </t>
+                <t t-elif="state.feature !== 'attendance'">
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span t-esc="featureName()"/></nav><h1><i t-att-class="'fa '+featureIcon()"/> <t t-esc="featureName()"/></h1><p>Dedicated workspace for <t t-esc="featureName().toLowerCase()"/></p></div><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button></div>
+                    <section class="ctm-empty-state"><i t-att-class="'fa '+featureIcon()"/><h2><t t-esc="featureName()"/> foundation</h2><p>This dedicated page and navigation route are ready. Detailed controls will be implemented from the corresponding approved screen specification.</p></section>
+                </t>
+                <t t-elif="state.page === 'dashboard'">
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Attendance Management</span></nav><h1><i class="fa fa-calendar"/> Attendance Dashboard</h1><p>Monitor real-time attendance and workforce presence</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportCsv">⬇ Export Excel</button></div></div>
+                    <div class="ctm-kpis">
+                        <article class="green"><i class="fa fa-user-plus"/><strong t-esc="state.counts.present || 0"/><span>Present Today</span></article>
+                        <article class="red"><i class="fa fa-user-times"/><strong t-esc="state.counts.absent || 0"/><span>Absent Today</span></article>
+                        <article class="amber"><i class="fa fa-exclamation-circle"/><strong t-esc="state.counts.late || 0"/><span>Late Arrivals</span></article>
+                        <article class="blue"><i class="fa fa-line-chart"/><strong><t t-esc="state.attendanceRate"/>%</strong><span>Attendance Rate</span></article>
+                    </div>
+                    <section class="ctm-panel">
+                        <div class="ctm-status-filter"><strong>Filter by Status:</strong><t t-foreach="['all','present','absent','late','on_leave']" t-as="status" t-key="status"><button t-att-class="state.status === status ? 'active' : ''" t-on-click="() => this.setStatus(status)" t-esc="status === 'all' ? 'All' : this.label(status)"/></t></div>
+                        <t t-call="hr_time_management.AttendanceTable"/>
+                    </section>
+                </t>
+                <t t-elif="state.page === 'sheet'">
+                    <div class="ctm-heading"><div><h1>Attendance Sheets</h1><p>Review and correct recorded employee attendance</p></div></div>
+                    <section class="ctm-filters">
+                        <label>Department<select t-model="state.departmentId"><option value="">All</option><t t-foreach="state.departments" t-as="dept" t-key="dept.id"><option t-att-value="dept.id" t-esc="dept.name"/></t></select></label>
+                        <label>From<input type="date" t-model="state.dateFrom"/></label><label>To<input type="date" t-model="state.dateTo"/></label>
+                        <label class="grow">Search Employee<input placeholder="Search by name or ID..." t-model="state.search" t-on-keydown="ev => ev.key === 'Enter' &amp;&amp; this.applyFilters()"/></label>
+                        <button class="ctm-btn pink" t-on-click="applyFilters">Apply</button><button class="ctm-btn pink" t-on-click="exportCsv">⬇ Export CSV</button>
+                    </section>
+                    <section class="ctm-panel"><t t-call="hr_time_management.AttendanceTable"/></section>
+                </t>
+                <t t-elif="state.page === 'regularizations'">
+                    <div class="ctm-heading"><div><h1>Regularization Requests</h1><p>Review attendance corrections from employees</p></div></div>
+                    <section class="ctm-panel"><div class="ctm-status-filter"><strong>Filter:</strong><t t-foreach="['all','submitted','approved','rejected']" t-as="status" t-key="status"><button t-att-class="state.regularizationFilter === status ? 'active' : ''" t-on-click="() => state.regularizationFilter = status" t-esc="status === 'all' ? 'All' : label(status)"/></t></div><t t-call="hr_time_management.RegularizationTable"/></section>
+                </t>
+                <t t-else="">
+                    <div class="ctm-heading"><div><h1>Time Management Policy</h1><p>Configure company-wide attendance, grace period, clocking, and overtime defaults</p></div></div>
+                    <section class="ctm-policy">
+                        <label>Work Week<select t-model="state.policy.work_week"><option value="five">5-day week</option><option value="six">6-day week</option><option value="custom">Custom</option></select></label>
+                        <label>Standard Hours Per Day<input type="number" min="0" step="0.5" t-model="state.policy.standard_hours"/></label>
+                        <label>Default Break (minutes)<input type="number" min="0" t-model="state.policy.default_break_minutes"/></label>
+                        <label>Late Grace Period (minutes)<input type="number" min="0" t-model="state.policy.default_grace_minutes"/></label>
+                        <label>Correction Request Window (days)<input type="number" min="1" max="365" t-model="state.policy.regularization_window_days"/></label>
+                        <label>Clock-in Method<select t-model="state.policy.clock_method"><option value="manual">Manual</option><option value="biometric">Biometric</option><option value="gps">GPS-based</option><option value="ip">IP-based</option><option value="mixed">Multiple Methods</option></select></label>
+                        <label>Daily Overtime Threshold<input type="number" min="0" step="0.5" t-model="state.policy.daily_overtime_threshold"/></label>
+                        <label class="check"><input type="checkbox" t-model="state.policy.weekend_overtime"/> Enable weekend overtime</label>
+                        <label class="check"><input type="checkbox" t-model="state.policy.holiday_overtime"/> Enable holiday overtime</label>
+                        <div class="ctm-policy-actions"><button class="ctm-btn pink" t-on-click="savePolicy">Save Policy</button></div>
+                    </section>
+                </t>
+            </main>
             </t>
-            <t t-elif="state.feature === 'tracking'">
-                <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Time Tracking</span></nav><h1><i class="fa fa-list-alt"/> <t t-esc="state.trackingPage === 'dashboard' ? 'Team Time Tracking' : 'Team Timesheets'"/></h1><p>Review weekly work logs, approval status, billable hours, and variance</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportTimesheets"><i class="fa fa-download"/> Export Report</button></div></div>
-                <div class="ctm-tracking-kpis">
-                    <article class="amber"><i class="fa fa-clock-o"/><span>Pending Approvals</span><strong t-esc="state.trackingData.kpis.pending || 0"/><small>Require action</small></article>
-                    <article class="blue"><i class="fa fa-check-circle-o"/><span>Submitted</span><strong><t t-esc="state.trackingData.kpis.submitted || 0"/>/<t t-esc="state.trackingData.kpis.expected || 0"/></strong><small>Current week</small></article>
-                    <article class="red"><i class="fa fa-exclamation-triangle"/><span>Missing</span><strong t-esc="state.trackingData.kpis.missing || 0"/><small>Timesheets not started</small></article>
-                    <article class="pink"><i class="fa fa-clock-o"/><span>Total Hours</span><strong><t t-esc="state.trackingData.kpis.total_hours || 0"/>h</strong><small>This week</small></article>
-                </div>
-                <section class="ctm-filters"><label class="grow">Search employee or work item<input placeholder="Search employee or task..." t-model="state.trackingSearch" t-on-keyup="applyTrackingFilters"/></label><label>Status<select t-model="state.trackingState" t-on-change="applyTrackingFilters"><option value="all">All statuses</option><option value="draft">Draft</option><option value="submitted">Pending</option><option value="approved">Approved</option><option value="correction">Corrections Requested</option><option value="rejected">Rejected</option></select></label></section>
-                <section class="ctm-panel">
-                    <div class="ctm-status-filter" t-if="state.trackingPage === 'timesheets'"><strong>Timesheet status:</strong><t t-foreach="['all','submitted','approved','correction','rejected']" t-as="status" t-key="status"><button t-att-class="state.trackingState === status ? 'active' : ''" t-on-click="() => this.setTrackingState(status)" t-esc="status === 'all' ? 'All Sheets' : label(status)"/></t></div>
-                    <div class="ctm-section-title ctm-tracking-title" t-if="state.trackingPage === 'dashboard'"><h2>Pending Approvals <span class="ctm-count" t-esc="state.trackingData.kpis.pending || 0"/></h2><button class="link" t-on-click="() => this.setTrackingPage('timesheets')">View All</button></div>
-                    <t t-call="hr_time_management.TimesheetTable"/>
-                </section>
-            </t>
-            <t t-elif="state.feature === 'overtime'">
-                <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Overtime Management</span></nav><h1><i class="fa fa-hourglass-half"/> <t t-esc="state.overtimePage === 'dashboard' ? 'Overtime Management' : state.overtimePage === 'all' ? 'Team Overtime' : 'Overtime Reports'"/></h1><p>Calculate, review, approve, and report workforce overtime</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportOvertime"><i class="fa fa-download"/> Export Report</button><button class="ctm-btn pink" t-if="state.overtimePage === 'dashboard'" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-check-circle-o"/> Approve Requests</button></div></div>
-                <div class="ctm-overtime-kpis" t-if="state.overtimePage === 'dashboard'">
-                    <article class="pink"><i class="fa fa-clock-o"/><span>Total Overtime</span><strong><t t-esc="state.overtimeData.kpis.total || 0"/>h</strong><small>This month</small></article>
-                    <article class="orange"><i class="fa fa-sun-o"/><span>Daily Overtime</span><strong><t t-esc="state.overtimeData.kpis.daily || 0"/>h</strong><small>Beyond configured threshold</small></article>
-                    <article class="blue"><i class="fa fa-calendar"/><span>Weekend Overtime</span><strong><t t-esc="state.overtimeData.kpis.weekend || 0"/>h</strong><small>Weekend work</small></article>
-                    <article class="green"><i class="fa fa-star-o"/><span>Holiday Overtime</span><strong><t t-esc="state.overtimeData.kpis.holiday || 0"/>h</strong><small>Public holidays</small></article>
-                </div>
-                <div class="ctm-overtime-kpis" t-elif="state.overtimePage === 'all'">
-                    <article class="blue"><span>Total Team OT</span><strong><t t-esc="state.overtimeData.kpis.total || 0"/>h</strong></article><article class="orange"><span>Pending Approvals</span><strong><t t-esc="state.overtimeData.kpis.pending || 0"/> reqs</strong></article><article class="purple"><span>Average OT / Employee</span><strong><t t-esc="state.overtimeData.kpis.average || 0"/>h</strong></article><article class="pink"><span>Estimated Cost</span><strong><t t-esc="state.overtimeData.kpis.cost || 0"/></strong></article>
-                </div>
-                <section class="ctm-filters"><label class="grow">Search employee or reason<input placeholder="Search employee or reason..." t-model="state.overtimeSearch" t-on-keyup="applyOvertimeFilters"/></label><label>Category<select t-model="state.overtimeState" t-on-change="applyOvertimeFilters"><option value="all">All statuses</option><option value="auto">Auto-calculated</option><option value="submitted">Pending Approval</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></label></section>
-                <section class="ctm-panel">
-                    <div class="ctm-section-title"><h2 t-esc="state.overtimePage === 'dashboard' ? 'Recent Pending Overtime' : state.overtimePage === 'all' ? 'All Overtime Requests' : 'Detailed Overtime Report'"/><span><t t-esc="overtimeRows.length"/> records</span></div>
-                    <t t-call="hr_time_management.OvertimeTable"/>
-                </section>
-                <section class="ctm-panel ctm-overtime-breakdown" t-if="state.overtimePage === 'reports'"><h3>Month-to-date Breakdown</h3><div><span>Approved Hours<strong><t t-esc="state.overtimeData.kpis.approved || 0"/>h</strong></span><span>Estimated Approved Cost<strong t-esc="state.overtimeData.kpis.cost || 0"/><small>Uses configured multiplier and employee hourly cost</small></span><span>Employees<strong t-esc="state.overtimeData.kpis.employees || 0"/></span></div></section>
-            </t>
-            <t t-elif="state.feature !== 'attendance'">
-                <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span t-esc="featureName()"/></nav><h1><i t-att-class="'fa '+featureIcon()"/> <t t-esc="featureName()"/></h1><p>Dedicated workspace for <t t-esc="featureName().toLowerCase()"/></p></div><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button></div>
-                <section class="ctm-empty-state"><i t-att-class="'fa '+featureIcon()"/><h2><t t-esc="featureName()"/> foundation</h2><p>This dedicated page and navigation route are ready. Detailed controls will be implemented from the corresponding approved screen specification.</p></section>
-            </t>
-            <t t-elif="state.page === 'dashboard'">
-                <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Attendance Management</span></nav><h1><i class="fa fa-calendar"/> Attendance Dashboard</h1><p>Monitor real-time attendance and workforce presence</p></div><div class="ctm-heading-actions"><button class="ctm-btn" t-on-click="showGateway"><i class="fa fa-exchange"/> Change Feature</button><button class="ctm-btn" t-on-click="exportCsv">⬇ Export Excel</button></div></div>
-                <div class="ctm-kpis">
-                    <article class="green"><i class="fa fa-user-plus"/><strong t-esc="state.counts.present || 0"/><span>Present Today</span></article>
-                    <article class="red"><i class="fa fa-user-times"/><strong t-esc="state.counts.absent || 0"/><span>Absent Today</span></article>
-                    <article class="amber"><i class="fa fa-exclamation-circle"/><strong t-esc="state.counts.late || 0"/><span>Late Arrivals</span></article>
-                    <article class="blue"><i class="fa fa-line-chart"/><strong><t t-esc="state.attendanceRate"/>%</strong><span>Attendance Rate</span></article>
-                </div>
-                <section class="ctm-panel">
-                    <div class="ctm-status-filter"><strong>Filter by Status:</strong><t t-foreach="['all','present','absent','late','on_leave']" t-as="status" t-key="status"><button t-att-class="state.status === status ? 'active' : ''" t-on-click="() => this.setStatus(status)" t-esc="status === 'all' ? 'All' : this.label(status)"/></t></div>
-                    <t t-call="hr_time_management.AttendanceTable"/>
-                </section>
-            </t>
-            <t t-elif="state.page === 'sheet'">
-                <div class="ctm-heading"><div><h1>Attendance Sheets</h1><p>Review and correct recorded employee attendance</p></div></div>
-                <section class="ctm-filters">
-                    <label>Department<select t-model="state.departmentId"><option value="">All</option><t t-foreach="state.departments" t-as="dept" t-key="dept.id"><option t-att-value="dept.id" t-esc="dept.name"/></t></select></label>
-                    <label>From<input type="date" t-model="state.dateFrom"/></label><label>To<input type="date" t-model="state.dateTo"/></label>
-                    <label class="grow">Search Employee<input placeholder="Search by name or ID..." t-model="state.search" t-on-keydown="ev => ev.key === 'Enter' &amp;&amp; this.applyFilters()"/></label>
-                    <button class="ctm-btn pink" t-on-click="applyFilters">Apply</button><button class="ctm-btn pink" t-on-click="exportCsv">⬇ Export CSV</button>
-                </section>
-                <section class="ctm-panel"><t t-call="hr_time_management.AttendanceTable"/></section>
-            </t>
-            <t t-elif="state.page === 'regularizations'">
-                <div class="ctm-heading"><div><h1>Regularization Requests</h1><p>Review attendance corrections from employees</p></div></div>
-                <section class="ctm-panel"><div class="ctm-status-filter"><strong>Filter:</strong><t t-foreach="['all','submitted','approved','rejected']" t-as="status" t-key="status"><button t-att-class="state.regularizationFilter === status ? 'active' : ''" t-on-click="() => state.regularizationFilter = status" t-esc="status === 'all' ? 'All' : label(status)"/></t></div><t t-call="hr_time_management.RegularizationTable"/></section>
-            </t>
-            <t t-else="">
-                <div class="ctm-heading"><div><h1>Time Management Policy</h1><p>Configure company-wide attendance, grace period, clocking, and overtime defaults</p></div></div>
-                <section class="ctm-policy">
-                    <label>Work Week<select t-model="state.policy.work_week"><option value="five">5-day week</option><option value="six">6-day week</option><option value="custom">Custom</option></select></label>
-                    <label>Standard Hours Per Day<input type="number" min="0" step="0.5" t-model="state.policy.standard_hours"/></label>
-                    <label>Default Break (minutes)<input type="number" min="0" t-model="state.policy.default_break_minutes"/></label>
-                    <label>Late Grace Period (minutes)<input type="number" min="0" t-model="state.policy.default_grace_minutes"/></label>
-                    <label>Correction Request Window (days)<input type="number" min="1" max="365" t-model="state.policy.regularization_window_days"/></label>
-                    <label>Clock-in Method<select t-model="state.policy.clock_method"><option value="manual">Manual</option><option value="biometric">Biometric</option><option value="gps">GPS-based</option><option value="ip">IP-based</option><option value="mixed">Multiple Methods</option></select></label>
-                    <label>Daily Overtime Threshold<input type="number" min="0" step="0.5" t-model="state.policy.daily_overtime_threshold"/></label>
-                    <label class="check"><input type="checkbox" t-model="state.policy.weekend_overtime"/> Enable weekend overtime</label>
-                    <label class="check"><input type="checkbox" t-model="state.policy.holiday_overtime"/> Enable holiday overtime</label>
-                    <div class="ctm-policy-actions"><button class="ctm-btn pink" t-on-click="savePolicy">Save Policy</button></div>
-                </section>
-            </t>
-        </main>
-        </t>
         <t t-else="">
             <aside t-att-class="'ctm-sidebar employee ' + (state.isPortal ? 'portal-sidebar' : '')">
                 <div class="ctm-employee-brand"><i class="fa fa-user-circle"/><strong t-esc="state.isPortal ? 'EMPLOYEE PORTAL' : 'EMPLOYEE VIEW'"/><small t-esc="state.employeeData?.employee || 'Employee'"/></div>
