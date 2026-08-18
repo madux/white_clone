@@ -185,6 +185,12 @@
                             openProfile="this.openProfile.bind(this)"
                             setOrgView="this.setOrgView.bind(this)"/>
                     </t>
+                    <t t-if="state.activeOrgView === 'graph'">
+                        <StaffDirectoryRelationshipGraph 
+                            people="this.filteredPeople()" 
+                            openProfile="this.openProfile.bind(this)"
+                            deptKey="this.deptKey.bind(this)"/>
+                    </t>
                 </div> <!-- Close sdir-org-body -->
             </div> <!-- Close sdir-org-content -->
             

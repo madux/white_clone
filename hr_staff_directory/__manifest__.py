@@ -62,6 +62,10 @@
             'hr_staff_directory/static/src/components/geographic_map/geographic_map.js',
             'hr_staff_directory/static/src/components/geographic_map/geographic_map.css',
             'hr_staff_directory/static/src/components/geographic_map/geographic_map.xml',
+
+            'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.js',
+            'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.css',
+            'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.xml',
         ],
     },
     'installable': True,

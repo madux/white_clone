@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_staff_directory.RelationshipGraph">
+        <div class="r_graph-container">
+            <!-- Top Toolbar -->
+            <div class="r_graph-toolbar">
+                <div class="r_graph-toolbar-left">
+                    <div class="r_graph-search">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input type="text" placeholder="Focus on person..." t-att-value="state.searchQuery" t-on-input="onSearch"/>
+                        <button t-if="state.searchQuery" t-on-click="clearSearch" class="r_graph-search-clear">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                    <div class="r_graph-toggles">
+                        <button t-att-class="'r_graph-toggle ' + (state.modes.reporting ? 'r_graph-toggle-active' : '')" t-on-click="() => this.toggleMode('reporting')">
+                            Reporting Lines
+                        </button>
+                        <button t-att-class="'r_graph-toggle ' + (state.modes.peer ? 'r_graph-toggle-active' : '')" t-on-click="() => this.toggleMode('peer')">
+                            Peer / Team
+                        </button>
+                    </div>
+                </div>
+                <div class="r_graph-toolbar-right">
+                    <span class="r_graph-stats-text">
+                        <t t-esc="props.people.length"/> people · <t t-esc="state.mostConnected"/> max connections
+                    </span>
+                </div>
+            </div>
+
+            <!-- Main Layout (Graph + Sidebar) -->
+            <div class="r_graph-main">
+                <!-- SVG Canvas -->
+                <div class="r_graph-canvas-wrapper">
+                    <div t-if="state.loading" class="r_graph-loading">
+                        <span>Loading graph...</span>
+                    </div>
+                    <svg t-ref="graphSvg" class="r_graph-svg"></svg>
+                    
+                    <!-- Legend Overlay -->
+                    <div class="r_graph-legend">
+                        <div class="r_graph-legend-row">
+                            <div class="r_graph-legend-line r_graph-legend-line-solid"></div>
+                            <span>Reporting Line</span>
+                        </div>
+                        <div class="r_graph-legend-row">
+                            <div class="r_graph-legend-line r_graph-legend-line-dashed"></div>
+                            <span>Peer / Same Team</span>
+                        </div>
+                        <div class="r_graph-legend-note">
+                            Node size = connections - color = dept
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar (Insights) -->
+                <div class="r_graph-sidebar">
+                    <div class="r_graph-sidebar-header">
+                        GRAPH INSIGHTS
+                    </div>
+                    <div class="r_graph-sidebar-search">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        <input type="text" placeholder="Search employees..." t-att-value="state.searchQuery" t-on-input="onSearch"/>
+                    </div>
+                    
+                    <div class="r_graph-insights-list">
+                        <!-- Most Connected -->
+                        <div class="r_graph-insight-row">
+                            <div class="r_graph-insight-left">
+                                <svg class="r_graph-icon-pink" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                </svg>
+                                <span>Most Connected</span>
+                            </div>
+                            <div class="r_graph-insight-right">
+                                <span class="r_graph-insight-num"><t t-esc="state.mostConnected"/></span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                            </div>
+                        </div>
+
+                        <!-- Bridge Employees -->
+                        <div class="r_graph-insight-row">
+                            <div class="r_graph-insight-left">
+                                <svg class="r_graph-icon-orange" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                </svg>
+                                <span>Bridge Employees</span>
+                            </div>
+                            <div class="r_graph-insight-right">
+                                <span class="r_graph-insight-num"><t t-esc="state.bridgeEmployees"/></span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                            </div>
+                        </div>
+
+                        <!-- Isolated -->
+                        <div class="r_graph-insight-row">
+                            <div class="r_graph-insight-left">
+                                <svg class="r_graph-icon-yellow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                                </svg>
+                                <span>Isolated</span>
+                            </div>
+                            <div class="r_graph-insight-right">
+                                <span class="r_graph-insight-num"><t t-esc="state.isolated"/></span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

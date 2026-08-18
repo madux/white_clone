@@ -10,6 +10,7 @@ import { StaffDirectoryHeatmap } from "./../components/heatmap/heatmap";
 import { StaffDirectoryBarChart } from "./../components/bar_chart/bar_chart";
 import { StaffDirectoryOrgChart } from "./../components/org_chart/org_chart";
 import { StaffDirectoryGeographicMap } from "./../components/geographic_map/geographic_map";
+import { StaffDirectoryRelationshipGraph } from "./../components/relationship_graph/relationship_graph";
 
 // ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
 // bus_service.subscribe() has no unsubscribe in Odoo 17, so subscribing on every
@@ -32,7 +33,7 @@ let activeSdirHandler = null;
  */
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
-    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap };
+    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph };
 
     setup() {
         this.rpc = useService("rpc");
