@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_partner_expense_vendor_tree" model="ir.ui.view">
+        <field name="name">res.partner.expense.vendor.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <tree string="Expense Vendors" create="0" decoration-muted="not expense_vendor_active">
+                <field name="expense_vendor_code" string="Code"/>
+                <field name="name"/>
+                <field name="expense_vendor_category_id"/>
+                <field name="email" optional="show"/>
+                <field name="phone" optional="show"/>
+                <field name="expense_rating"/>
+                <field name="default_expense_account_id" optional="show"/>
+                <field name="expense_claim_count"/>
+                <field name="expense_claim_value" sum="Approved Spend"/>
+                <field name="expense_vendor_active" widget="boolean_toggle"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_res_partner_expense_vendor_form" model="ir.ui.view">
+        <field name="name">res.partner.expense.vendor.form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Expense Vendor" name="expense_vendor" invisible="not is_expense_vendor">
+                    <group>
+                        <group><field name="expense_vendor_code" required="is_expense_vendor"/><field name="expense_vendor_category_id"/><field name="expense_payment_term_id"/><field name="expense_rating"/></group>
+                        <group><field name="default_expense_account_id"/><field name="expense_tax_identifier"/><field name="expense_vendor_active"/><field name="expense_claim_count" readonly="1"/><field name="expense_claim_value" readonly="1"/></group>
+                    </group>
+                    <field name="expense_claim_line_ids" readonly="1"><tree><field name="claim_id"/><field name="expense_date"/><field name="description"/><field name="category"/><field name="amount"/></tree></field>
+                </page>
+            </xpath>
+            <xpath expr="//field[@name='category_id']" position="after"><field name="is_expense_vendor"/></xpath>
+        </field>
+    </record>
+    <record id="action_hr_expense_vendors" model="ir.actions.act_window">
+        <field name="name">Vendor Directory</field><field name="res_model">res.partner</field><field name="view_mode">tree,form</field>
+        <field name="domain">[('is_expense_vendor', '=', True)]</field>
+        <field name="context">{'default_is_expense_vendor': True, 'default_expense_vendor_active': True}</field>
+        <field name="view_id" ref="view_res_partner_expense_vendor_tree"/>
+    </record>
+
+    <record id="view_hr_expense_vendor_category_tree" model="ir.ui.view">
+        <field name="name">hr.expense.vendor.category.list</field><field name="model">hr.expense.vendor.category</field>
+        <field name="arch" type="xml"><tree><field name="sequence" widget="handle"/><field name="code"/><field name="name"/><field name="tax_rate"/><field name="default_expense_account_id"/><field name="active" widget="boolean_toggle"/><field name="company_id" groups="base.group_multi_company"/></tree></field>
+    </record>
+    <record id="view_hr_expense_vendor_category_form" model="ir.ui.view">
+        <field name="name">hr.expense.vendor.category.form</field><field name="model">hr.expense.vendor.category</field>
+        <field name="arch" type="xml"><form string="Vendor Category"><sheet><field name="company_id" invisible="1"/><group><group><field name="code"/><field name="name"/><field name="sequence"/></group><group><field name="tax_rate"/><field name="default_expense_account_id"/><field name="active"/><field name="company_id" groups="base.group_multi_company"/></group></group></sheet></form></field>
+    </record>
+    <record id="action_hr_expense_vendor_categories" model="ir.actions.act_window"><field name="name">Vendor Categories</field><field name="res_model">hr.expense.vendor.category</field><field name="view_mode">tree,form</field></record>
+
+    <record id="view_hr_expense_payment_term_tree" model="ir.ui.view">
+        <field name="name">hr.expense.payment.term.list</field><field name="model">hr.expense.payment.term</field>
+        <field name="arch" type="xml"><tree><field name="code"/><field name="name"/><field name="due_days"/><field name="early_discount_percent"/><field name="early_discount_days"/><field name="active" widget="boolean_toggle"/><field name="company_id" groups="base.group_multi_company"/></tree></field>
+    </record>
+    <record id="view_hr_expense_payment_term_form" model="ir.ui.view">
+        <field name="name">hr.expense.payment.term.form</field><field name="model">hr.expense.payment.term</field>
+        <field name="arch" type="xml"><form string="Payment Term"><sheet><field name="company_id" invisible="1"/><group><group><field name="code"/><field name="name"/><field name="due_days"/></group><group><field name="early_discount_percent"/><field name="early_discount_days"/><field name="active"/><field name="company_id" groups="base.group_multi_company"/></group></group></sheet></form></field>
+    </record>
+    <record id="action_hr_expense_payment_terms" model="ir.actions.act_window"><field name="name">Vendor Payment Terms</field><field name="res_model">hr.expense.payment.term</field><field name="view_mode">tree,form</field></record>
+
+    <record id="view_hr_claim_form_expense_vendor" model="ir.ui.view">
+        <field name="name">hr.claim.form.expense.vendor</field><field name="model">hr.claim</field><field name="inherit_id" ref="view_hr_claim_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='line_ids']//field[@name='category']" position="after"><field name="vendor_id" optional="show"/></xpath></field>
+    </record>
+    <record id="view_hr_petty_cash_transaction_form_expense_vendor" model="ir.ui.view">
+        <field name="name">hr.petty.cash.transaction.form.expense.vendor</field><field name="model">hr.petty.cash.transaction</field><field name="inherit_id" ref="view_hr_petty_cash_transaction_form"/>
+        <field name="arch" type="xml"><xpath expr="//field[@name='payee']" position="after"><field name="vendor_id"/></xpath></field>
+    </record>
+</odoo>

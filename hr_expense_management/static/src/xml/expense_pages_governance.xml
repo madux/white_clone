@@ -1,0 +1,176 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpenseGovernancePage" owl="1">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <h2 class="h3 fw-black mb-1" t-esc="activePage?.label || activeModule?.label"/>
+                <p class="text-muted mb-0" t-esc="moduleDescription"/>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button t-if="(isSetup || isSettings) and state.activePage === 'policies'" class="btn btn-primary o_expense_primary" t-on-click="openPolicyModal">
+                    <i class="fa fa-plus me-2"/>New Policy</button>
+                <button t-if="isSetup and state.activePage === 'company'" class="btn btn-primary o_expense_primary" t-on-click="openCompanyModal">
+                    <i class="fa fa-building-o me-2"/>Edit Company</button>
+                <button t-if="isTeams and state.activePage === 'settings' and state.data.role.admin" class="btn btn-primary o_expense_primary" t-on-click="() =&gt; this.openGlobalAction('base.action_res_users')">
+                    <i class="fa fa-users me-2"/>Manage Users</button>
+                <button t-if="isReports and state.activePage === 'custom'" class="btn btn-primary o_expense_primary" t-on-click="openReportModal">
+                    <i class="fa fa-plus me-2"/>New Report</button>
+                <button t-if="isReports and state.activePage === 'scheduled'" class="btn btn-primary o_expense_primary" t-on-click="openScheduleModal">
+                    <i class="fa fa-calendar-plus-o me-2"/>Schedule Report</button>
+                <button t-if="isSettings and state.activePage === 'workflows'" class="btn btn-primary o_expense_primary" t-on-click="openSettingsModal">
+                    <i class="fa fa-save me-2"/>Edit Defaults</button>
+                <button t-if="isSettings and state.activePage === 'email'" class="btn btn-primary o_expense_primary" t-on-click="() =&gt; this.openConfigModal('email')">
+                    <i class="fa fa-plus me-2"/>New Template</button>
+                <button t-if="isSettings and state.activePage === 'integrations'" class="btn btn-primary o_expense_primary" t-on-click="() =&gt; this.openConfigModal('integration')">
+                    <i class="fa fa-plus me-2"/>Add Adapter</button>
+                <button t-if="isTheme" class="btn btn-primary o_expense_primary" t-on-click="openThemeModal">
+                    <i class="fa fa-paint-brush me-2"/>Customize</button>
+            </div>
+        </div>
+        <div class="row g-3 mb-4">
+            <div t-foreach="featureKpis" t-as="kpi" t-key="kpi.id" class="col-6 col-xl">
+                <ExpenseKpiCard label="kpi.label" value="kpi.value" icon="kpi.icon" tone="kpi.tone"/>
+            </div>
+        </div>
+        <div t-if="isTheme" class="row g-4">
+            <div class="col-xl-5">
+                <div class="card o_expense_panel h-100">
+                    <div class="card-body">
+                        <h3 class="h6 fw-black">Current Theme</h3>
+                        <div class="d-flex gap-3 my-4">
+                            <span class="o_expense_swatch" t-att-style="`background:${currentTheme.primary_color}`"/>
+                            <span class="o_expense_swatch" t-att-style="`background:${currentTheme.secondary_color}`"/>
+                            <span class="o_expense_swatch" t-att-style="`background:${currentTheme.sidebar_color}`"/>
+                            <span class="o_expense_swatch" t-att-style="`background:${currentTheme.surface_color}`"/>
+                        </div>
+                        <dl class="row small mb-0">
+                            <dt class="col-5">Typography</dt>
+                            <dd class="col-7 text-capitalize" t-esc="currentTheme.font_family"/>
+                            <dt class="col-5">Density</dt>
+                            <dd class="col-7 text-capitalize" t-esc="currentTheme.density"/>
+                            <dt class="col-5">Corners</dt>
+                            <dd class="col-7 text-capitalize" t-esc="currentTheme.corner_style"/>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-7">
+                <div class="card o_expense_panel h-100 o_expense_theme_preview">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-muted">Live Preview</div>
+                                <h3 class="h5 fw-black">Expense workspace</h3>
+                            </div>
+                            <button class="btn btn-primary o_expense_primary">Primary action</button>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-6">
+                                <div class="border rounded-4 p-3">
+                                    <span class="small text-muted">Approved</span>
+                                    <div class="h3 fw-black">24</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="border rounded-4 p-3">
+                                    <span class="small text-muted">Pending</span>
+                                    <div class="h3 fw-black">7</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div t-else="" class="card o_expense_panel">
+            <div class="card-header bg-white border-0 d-flex flex-wrap justify-content-between gap-2">
+                <div class="input-group input-group-sm o_expense_record_search">
+                    <span class="input-group-text">
+                        <i class="fa fa-search"/>
+                    </span>
+                    <input class="form-control" placeholder="Search this page" t-att-value="state.recordSearch" t-on-input="updateRecordSearch"/>
+                </div>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-light" t-att-class="state.viewMode === 'table' ? 'active' : ''" t-on-click="() =&gt; this.setViewMode('table')">
+                        <i class="fa fa-table me-1"/>Table</button>
+                    <button class="btn btn-light" t-att-class="state.viewMode === 'card' ? 'active' : ''" t-on-click="() =&gt; this.setViewMode('card')">
+                        <i class="fa fa-th-large me-1"/>Cards</button>
+                </div>
+            </div>
+            <div t-if="state.pageLoading" class="text-center py-5">
+                <span class="spinner-border text-primary"/>
+            </div>
+            <div t-elif="state.viewMode === 'card'" class="card-body">
+                <div class="row g-3">
+                    <div t-foreach="pageRecords" t-as="record" t-key="record.id" class="col-md-6 col-xl-4">
+                        <button class="btn border rounded-4 p-3 h-100 w-100 text-start" t-on-click="() =&gt; isDashboardSection ? this.runQuickAction(record) : this.openDrawer(record)">
+                            <div class="d-flex justify-content-between gap-2">
+                                <div>
+                                    <div class="small text-uppercase text-muted" t-esc="record.code || record.module || record.type || record.category || ''"/>
+                                    <h3 class="h6 fw-black mb-1" t-esc="record.name || record.action || record.reference || 'Record'"/>
+                                </div>
+                                <span t-if="record.state" class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state_label || record.state"/>
+                            </div>
+                            <p t-if="record.description || record.permissions" class="small text-muted mt-2 mb-2" t-esc="record.description || record.permissions"/>
+                            <dl class="row small mb-0">
+                                <t t-foreach="recordDetails(record)" t-as="detail" t-key="detail.key">
+                                    <dt class="col-5 text-capitalize" t-esc="detail.label"/>
+                                    <dd class="col-7 text-end text-truncate" t-esc="detail.value"/>
+                                </t>
+                            </dl>
+                        </button>
+                    </div>
+                    <div t-if="!pageRecords.length" class="col-12 text-center text-muted py-5">
+                        <span class="o_expense_large_icon">
+                            <i t-att-class="'fa ' + (activeModule?.icon || 'fa-inbox')"/>
+                        </span>
+                        <h3 class="h6 fw-bold mt-3">Nothing here yet</h3>
+                        <p class="mb-0">Use the page action to create the first record.</p>
+                    </div>
+                </div>
+            </div>
+            <div t-else="" class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Record</th>
+                            <th>Details</th>
+                            <th>Description / Permissions</th>
+                            <th>Status</th>
+                            <th/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="pageRecords" t-as="record" t-key="record.id">
+                            <td>
+                                <strong t-esc="record.name || record.action || record.reference || 'Record'"/>
+                                <div class="small text-muted" t-esc="record.code || record.module || record.type || record.category || ''"/>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span t-foreach="recordDetails(record)" t-as="detail" t-key="detail.key" class="badge text-bg-light">
+                                        <t t-esc="detail.label"/>: <t t-esc="detail.value"/>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="text-muted" t-esc="record.description || record.permissions || ''"/>
+                            <td>
+                                <span t-if="record.state" class="badge rounded-pill" t-att-class="statusClass(record.state)" t-esc="record.state_label || record.state"/>
+                                <span t-elif="record.complete" class="badge text-bg-success">Complete</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-light" t-on-click="() =&gt; isDashboardSection ? this.runQuickAction(record) : this.openDrawer(record)">
+                                    <i class="fa fa-eye me-1"/>
+                                    <t t-esc="isDashboardSection ? 'Open' : 'View'"/>
+                                </button>
+                            </td>
+                        </tr>
+                        <tr t-if="!pageRecords.length">
+                            <td colspan="5" class="text-center text-muted py-5">No records on this page.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </t>
+</templates>

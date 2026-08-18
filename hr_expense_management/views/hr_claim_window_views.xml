@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_window_tree" model="ir.ui.view">
+        <field name="name">hr.claim.window.tree</field>
+        <field name="model">hr.claim.window</field>
+        <field name="arch" type="xml">
+            <tree string="Claim Windows" decoration-muted="not active">
+                <field name="name"/><field name="window_type"/><field name="duration_days"/>
+                <field name="start_date" optional="show"/><field name="end_date" optional="show"/>
+                <field name="claim_type_ids" widget="many2many_tags" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_window_form" model="ir.ui.view">
+        <field name="name">hr.claim.window.form</field>
+        <field name="model">hr.claim.window</field>
+        <field name="arch" type="xml">
+            <form string="Claim Window">
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div>
+                    <group>
+                        <group><field name="window_type"/><field name="duration_days"/><field name="active"/></group>
+                        <group><field name="start_date"/><field name="end_date"/><field name="company_id" groups="base.group_multi_company"/></group>
+                    </group>
+                    <field name="description"/>
+                    <field name="claim_type_ids" widget="many2many_tags"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_claim_windows" model="ir.actions.act_window">
+        <field name="name">Claim Windows</field><field name="res_model">hr.claim.window</field><field name="view_mode">tree,form</field>
+    </record>
+</odoo>

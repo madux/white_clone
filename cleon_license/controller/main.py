@@ -15,6 +15,7 @@ ICON_PALETTE = [
         "#06B6D4",  # cyan
     ]
 from odoo import http
+from odoo.exceptions import AccessDenied
 from odoo.http import request
 from odoo.modules.registry import Registry
 from odoo import api, SUPERUSER_ID
@@ -123,16 +124,8 @@ class LicensePortal(http.Controller):
         # Local development has no tenant subdomain. Present the databases
         # explicitly so the complete master -> tenant login flow can be tested.
         if db_name in ('localhost', '127'):
-            request.env.cr.execute("""
-                SELECT datname
-                  FROM pg_database
-                 WHERE datname LIKE 'white_clone_%'
-                   AND datallowconn
-                   AND NOT datistemplate
-                 ORDER BY datname
-            """)
-            databases = [row[0] for row in request.env.cr.fetchall()]
-            selected_db = kwargs.get('db') or TARGET_DB
+            databases = http.db_list(force=True)
+            selected_db = kwargs.get('db') or request.session.db or TARGET_DB
             if selected_db not in databases and databases:
                 selected_db = databases[0]
             return request.render('cleon_license.maacherp_login_page', {
@@ -177,20 +170,42 @@ class LicensePortal(http.Controller):
             'company_name': subscription.get('company_name')
         })
         
-    @http.route('/maacherp/autologin', type='http', auth='public', csrf=False)
+    @http.route(
+        '/maacherp/autologin',
+        type='http',
+        auth='public',
+        website=True,
+        csrf=False,
+    )
     def autologin(self, **post):
 
-        db = post.get('database_name')
+        db = (post.get('database_name') or '').strip()
         login = post.get('username')
         password = post.get('password')
 
-        uid = request.session.authenticate(db, login, password)
+        databases = http.db_list(force=True)
+        if not db or db not in databases:
+            selected_db = request.session.db if request.session.db in databases else False
+            return request.render('cleon_license.maacherp_login_page', {
+                'errors': {
+                    'database_name': 'The selected database is not available.'
+                },
+                'db_name': selected_db or (databases[0] if databases else ''),
+                'company_name': post.get('company_name'),
+                'databases': databases,
+            })
+
+        try:
+            uid = request.session.authenticate(db, login, password)
+        except AccessDenied:
+            uid = False
 
         if not uid:
             return request.render('cleon_license.maacherp_login_page', {
                 'errors': {'login': 'Invalid credentials'},
                 'db_name': db,
-                'company_name': post.get('company_name')
+                'company_name': post.get('company_name'),
+                'databases': databases,
             })
 
         request.session.db = db
