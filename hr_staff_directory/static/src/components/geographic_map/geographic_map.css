@@ -187,6 +187,10 @@
     border-bottom: 1px solid #e5e7eb;
     background-color: #fff;
 }
+.sdir-map-drd-table tr:hover td {
+    background-color: rgb(255, 245, 249);
+    cursor: pointer;
+}
 .sdir-map-drd-tbl-emp {
     display: flex;
     align-items: center;
