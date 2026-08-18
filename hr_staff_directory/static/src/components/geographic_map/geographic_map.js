@@ -21,7 +21,8 @@ export class StaffDirectoryGeographicMap extends Component {
     setup() {
         this.state = useState({
             hoveredLocation: null,
-            selectedLocation: null
+            selectedLocation: null,
+            searchQuery: ""
         });
         this.mapCanvas = useRef("mapCanvas");
         this.mapBg = useRef("mapBg");
@@ -156,6 +157,21 @@ export class StaffDirectoryGeographicMap extends Component {
             const loc = p.work_location || 'Remote — Global';
             return loc === this.state.selectedLocation;
         });
+    }
+
+    get filteredPeople() {
+        const people = this.selectedPeople;
+        if (!this.state.searchQuery) return people;
+        const query = this.state.searchQuery.toLowerCase();
+        return people.filter(p => p.name && p.name.toLowerCase().includes(query));
+    }
+
+    onSearchInput(ev) {
+        this.state.searchQuery = ev.target.value;
+    }
+
+    clearSearch() {
+        this.state.searchQuery = "";
     }
 
 

@@ -131,6 +131,22 @@
     color: #9ca3af;
     font-style: italic;
 }
+.sdir-map-drd-search-clear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.sdir-map-drd-search-clear:hover {
+    color: #374151;
+}
 .sdir-map-drd-filter-btn {
     background: #fff;
     border: 1px solid #d1d5db;
@@ -222,6 +238,15 @@
 .sdir-map-drd-tbl-name {
     font-weight: 700;
     color: #111827;
+}
+
+.sdir-map-drd-empty-state {
+    text-align: center;
+    padding: 64px 16px !important;
+    color: #9ca3af !important;
+    font-size: 14px;
+    background-color: #fff !important;
+    border-bottom: none !important;
 }
 
 /* Badges */
