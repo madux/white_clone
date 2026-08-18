@@ -30,6 +30,10 @@ export class TimeManagementApp extends Component {
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
             moduleDropdown: false,
+            settingsTab: "overview",
+            settingsOverview: null,
+            settingsShifts: [],
+            settingsShiftForm: null,
             shiftPage: "dashboard", shiftData: {shifts: [], assignments: [], employees: [], departments: [], kpis: {}},
             shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
             assignmentForm: null,
@@ -234,13 +238,72 @@ export class TimeManagementApp extends Component {
     }
     async openSettings() {
         this.state.page = "settings";
-        this.state.policy = await this.orm.call("cleon.time.policy", "get_cleon_policy", []);
+        this.state.settingsTab = "overview";
+        const [policy, overview] = await Promise.all([
+            this.orm.call("cleon.time.policy", "get_cleon_policy", []),
+            this.orm.call("cleon.time.policy", "get_settings_overview", []),
+        ]);
+        this.state.policy = policy;
+        this.state.settingsOverview = overview;
+        await this.loadSettingsShifts();
     }
     async savePolicy() {
         try {
             this.state.policy = await this.orm.call("cleon.time.policy", "save_cleon_policy", [this.state.policy]);
+            this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
             this.notification.add("Time Management policy saved.", {type:"success"});
         } catch (error) { this.notification.add(error?.data?.message || "Policy could not be saved.", {type:"danger"}); }
+    }
+    async setSettingsTab(tab) {
+        this.state.settingsTab = tab;
+        if (tab === "overview") {
+            this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
+        }
+    }
+    async loadSettingsShifts() {
+        const data = await this.orm.call("cleon.hr.shift", "get_shift_management_data", []);
+        this.state.settingsShifts = data.shifts || [];
+    }
+    openSettingsShiftForm(shift = null) {
+        this.state.settingsShiftForm = shift ? { ...shift, active_days: [...(shift.active_days || [0,1,2,3,4])] }
+            : { id: null, name: "", code: "", shift_type: "fixed", recurrence: "weekly",
+               start_hour: 9, end_hour: 17, break_minutes: 60, grace_minutes: 15,
+               active_days: [0, 1, 2, 3, 4] };
+    }
+    closeSettingsShiftForm() { this.state.settingsShiftForm = null; }
+    toggleSettingsShiftDay(day) {
+        const form = this.state.settingsShiftForm;
+        if (!form) return;
+        const idx = form.active_days.indexOf(day);
+        if (idx >= 0) form.active_days.splice(idx, 1);
+        else form.active_days.push(day);
+    }
+    async saveSettingsShift() {
+        const form = this.state.settingsShiftForm;
+        if (!form || !form.name.trim()) {
+            this.notification.add("Shift name is required.", {type:"warning"}); return;
+        }
+        try {
+            await this.orm.call("cleon.hr.shift", "save_shift", [form]);
+            this.notification.add(form.id ? "Shift updated." : "Shift created.", {type:"success"});
+            this.state.settingsShiftForm = null;
+            await this.loadSettingsShifts();
+            this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
+        } catch (error) { this.notification.add(error?.data?.message || "Shift could not be saved.", {type:"danger"}); }
+    }
+    async deleteSettingsShift(shiftId) {
+        try {
+            await this.orm.unlink("cleon.hr.shift", [shiftId]);
+            this.notification.add("Shift deleted.", {type:"success"});
+            await this.loadSettingsShifts();
+            this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
+        } catch (error) { this.notification.add(error?.data?.message || "Shift could not be deleted.", {type:"danger"}); }
+    }
+    async launchSystem() {
+        this.state.policy.launched = true;
+        this.state.policy.go_live_date = new Date().toISOString().slice(0, 10);
+        await this.savePolicy();
+        this.notification.add("Time Management is now live! 🎉", {type:"success"});
     }
 
     get filteredRows() {

@@ -111,3 +111,78 @@ class CleonTimePolicy(models.Model):
             clean["company_id"] = self.env.company.id
             policy = self.create(clean)
         return policy.get_cleon_policy()
+
+    @api.model
+    def get_settings_overview(self):
+        if not self.env.user.has_group("base.group_system"):
+            raise AccessError(_("Only Settings administrators can view configuration."))
+        company = self.env.company
+        policy = self.search([("company_id", "=", company.id)], limit=1)
+        Shift = self.env["cleon.hr.shift"]
+        Timesheet = self.env["cleon.time.sheet"]
+
+        # --- Attendance status ---
+        att_items = []
+        if policy:
+            clock = dict(self.fields_get(["clock_method"])["clock_method"]["selection"]).get(policy.clock_method, policy.clock_method)
+            att_items = [
+                _("Clock Method: %s") % clock,
+                _("Working Hours: %sh/day") % int(policy.standard_hours),
+                _("Grace Period: %s min") % policy.default_grace_minutes,
+                _("Break: %s min") % policy.default_break_minutes,
+            ]
+            att_status = "configured"
+        else:
+            att_status = "not_set"
+
+        # --- Shift Management status ---
+        shifts = Shift.search([("company_id", "=", company.id)])
+        shift_count = len(shifts)
+        assignments = self.env["cleon.hr.shift.assignment"].search_count([("company_id", "=", company.id)])
+        shift_items = [
+            _("Shifts Created: %d") % shift_count,
+            _("Assignments: %d") % assignments,
+            _("Shift Swapping: Enabled") if shift_count else _("No shifts configured yet"),
+        ]
+        shift_status = "configured" if shift_count >= 2 else ("partial" if shift_count >= 1 else "not_set")
+
+        # --- Overtime status ---
+        ot_rules = self.env["cleon.overtime.request"].search_count([("company_id", "=", company.id)])
+        ot_items = []
+        if policy:
+            ot_items = [
+                _("Daily OT Threshold: %sh") % int(policy.daily_overtime_threshold),
+                _("Daily Rate: %sx") % policy.daily_overtime_rate,
+                _("Weekend: %s") % ((_("%.1fx") % policy.weekend_overtime_rate) if policy.weekend_overtime else _("Disabled")),
+                _("Holiday: %s") % ((_("%.1fx") % policy.holiday_overtime_rate) if policy.holiday_overtime else _("Disabled")),
+            ]
+            ot_status = "configured"
+        else:
+            ot_status = "not_set"
+
+        # --- Time Tracking status ---
+        sheet_count = Timesheet.search_count([("company_id", "=", company.id)]) if "cleon.time.sheet" in self.env else 0
+        track_items = [
+            _("Time Tracking: Enabled"),
+            _("Timesheets Logged: %d") % sheet_count,
+            _("Approval Required: Yes"),
+        ]
+        track_status = "configured"
+
+        # --- Onboarding checklist ---
+        checklist = {
+            "set_shifts": shift_count > 0,
+            "assign_employees": assignments > 0,
+            "configure_ot": bool(policy and policy.daily_overtime_threshold),
+            "enable_timesheets": True,
+            "launched": bool(policy and policy.launched),
+        }
+
+        return {
+            "attendance": {"status": att_status, "items": att_items},
+            "shift": {"status": shift_status, "items": shift_items},
+            "overtime": {"status": ot_status, "items": ot_items},
+            "tracking": {"status": track_status, "items": track_items},
+            "checklist": checklist,
+        }
+
