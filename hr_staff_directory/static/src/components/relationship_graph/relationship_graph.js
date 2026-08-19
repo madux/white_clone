@@ -15,9 +15,16 @@ export class StaffDirectoryRelationshipGraph extends Component {
         this.state = useState({
             modes: { reporting: true, peer: true },
             searchQuery: '',
-            mostConnected: 0,
-            bridgeEmployees: 0,
-            isolated: 0,
+            sidebarSearchQuery: '',
+            maxConnections: 0,
+            mostConnectedNodes: [],
+            bridgeNodes: [],
+            isolatedNodes: [],
+            insightsExpanded: {
+                mostConnected: false,
+                bridge: false,
+                isolated: false
+            },
             loading: true,
             focusedNodeId: null,
             focusedNodeData: null
@@ -85,9 +92,28 @@ export class StaffDirectoryRelationshipGraph extends Component {
         return colors[key] || colors['default'];
     }
 
+    getContrastingColor(hexColor) {
+        const mapping = {
+            '#EC4899': '#F59E0B',
+            '#F59E0B': '#8B5CF6',
+            '#8B5CF6': '#F59E0B',
+            '#F43F5E': '#10B981',
+            '#3B82F6': '#F59E0B',
+            '#10B981': '#F43F5E',
+            '#6366F1': '#EC4899',
+            '#06B6D4': '#F43F5E',
+            '#9CA3AF': '#8B5CF6' 
+        };
+        return mapping[hexColor] || '#F59E0B';
+    }
+
     toggleMode(mode) {
         this.state.modes[mode] = !this.state.modes[mode];
         this.renderGraph();
+    }
+
+    toggleInsight(section) {
+        this.state.insightsExpanded[section] = !this.state.insightsExpanded[section];
     }
 
     onSearch(ev) {
@@ -117,8 +143,28 @@ export class StaffDirectoryRelationshipGraph extends Component {
         this.clearFocus();
     }
 
+    onSidebarSearch(ev) {
+        this.state.sidebarSearchQuery = ev.target.value;
+        // Expand all sections if there's a search query
+        if (this.state.sidebarSearchQuery.trim()) {
+            this.state.insightsExpanded.mostConnected = true;
+            this.state.insightsExpanded.bridge = true;
+            this.state.insightsExpanded.isolated = true;
+        }
+    }
+
+    clearSidebarSearch() {
+        this.state.sidebarSearchQuery = '';
+    }
+
+    getFilteredNodes(nodes) {
+        const q = this.state.sidebarSearchQuery.toLowerCase().trim();
+        if (!q) return nodes;
+        return nodes.filter(n => (n.name || '').toLowerCase().includes(q));
+    }
+
     handleNodeClick(event, d) {
-        event.stopPropagation();
+        if (event) event.stopPropagation();
         
         if (this.state.focusedNodeId === d.id) {
             // Deselect if already focused
@@ -270,14 +316,13 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
         // 3. Size computation and Graph Insights
         let maxCon = 0;
-        let isolatedCount = 0;
-        let bridgeCount = 0; // Simple approximation: high connections across departments
+        let isolatedNodes = [];
+        let bridgeNodes = [];
 
         nodes.forEach(n => {
             // Size mapping based on connections
             if (n.connections === 0) {
                 n.radius = 12;
-                isolatedCount++;
             } else if (n.connections === 1) {
                 n.radius = 15;
             } else if (n.connections <= 3) {
@@ -286,16 +331,25 @@ export class StaffDirectoryRelationshipGraph extends Component {
                 n.radius = 26;
             } else {
                 n.radius = 32;
-                bridgeCount++;
             }
             if (n.connections > maxCon) {
                 maxCon = n.connections;
             }
+            
+            if (n.connections <= 1) {
+                isolatedNodes.push(n);
+                n.ringColor = this.getContrastingColor(n.color);
+            }
+            if (n.connections > 6) {
+                bridgeNodes.push(n);
+            }
         });
 
-        this.state.mostConnected = maxCon;
-        this.state.isolated = isolatedCount;
-        this.state.bridgeEmployees = bridgeCount;
+        const sortedByCon = [...nodes].sort((a, b) => b.connections - a.connections);
+        this.state.mostConnectedNodes = sortedByCon.slice(0, 5);
+        this.state.bridgeNodes = bridgeNodes.sort((a, b) => b.connections - a.connections);
+        this.state.isolatedNodes = isolatedNodes.sort((a, b) => a.connections - b.connections);
+        this.state.maxConnections = maxCon;
 
         return { nodes, links };
     }
@@ -405,11 +459,11 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
         // Tick function to update positions
         const updatePositions = () => {
-            // Keep nodes within bounds gracefully
+            // Keep nodes within bounds gracefully, adding padding for rings and labels
             data.nodes.forEach(d => {
-                // If a node is fixed by drag (fx), x is already fx, but let's bound it too if needed
-                d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
-                d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
+                const padding = d.radius + 30; // accounts for halo (r+6), selection (r+12), and label (r+24)
+                d.x = Math.max(padding, Math.min(width - padding, d.x));
+                d.y = Math.max(padding, Math.min(height - padding, d.y));
             });
 
             link
