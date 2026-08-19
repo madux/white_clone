@@ -34,7 +34,15 @@ export class TimeManagementApp extends Component {
             attSubTab: "policy",
             shiftSubTab: "templates",
             otSubTab: "policies",
-            trackingSubTab: "policies",
+            trackingSubTab: "time_logs",
+            otCalcHours: 0,
+            otCalcRate: 0,
+            otPayrollSyncEnabled: true,
+            jobsTasksList: [
+                { id: 1, name: "Software Development", code: "DEV", department: "IT", tasks: ["Frontend", "Backend", "Testing"] },
+                { id: 2, name: "Client Support", code: "SUP", department: "Support", tasks: ["Email Support", "Phone Support"] }
+            ],
+            timesheetReminders: ["Wednesday 16:00", "Friday 14:00"],
             showWorkflows: false,
             workflowTab: "chains",
             approvalChains: [
@@ -328,6 +336,49 @@ export class TimeManagementApp extends Component {
         } else {
             this.state.policy.weekend_days.push(day);
         }
+    }
+    addJob() {
+        const newId = Date.now();
+        this.state.jobsTasksList.push({
+            id: newId,
+            name: "New Job",
+            code: "JOB",
+            department: "IT",
+            tasks: ["Task 1"]
+        });
+    }
+    deleteJob(id) {
+        this.state.jobsTasksList = this.state.jobsTasksList.filter(j => j.id !== id);
+    }
+    addTask(jobId) {
+        const job = this.state.jobsTasksList.find(j => j.id === jobId);
+        if (job) {
+            job.tasks.push("New Task");
+        }
+    }
+    deleteTask(jobId, taskIndex) {
+        const job = this.state.jobsTasksList.find(j => j.id === jobId);
+        if (job && taskIndex >= 0 && taskIndex < job.tasks.length) {
+            job.tasks.splice(taskIndex, 1);
+        }
+    }
+    addTimesheetReminder() {
+        this.state.timesheetReminders.push("Monday 09:00");
+    }
+    deleteTimesheetReminder(index) {
+        if (index >= 0 && index < this.state.timesheetReminders.length) {
+            this.state.timesheetReminders.splice(index, 1);
+        }
+    }
+    get otEstimatedPay() {
+        const hrs = parseFloat(this.state.otCalcHours) || 0;
+        const rate = parseFloat(this.state.otCalcRate) || 0;
+        return (hrs * rate * 1.5).toFixed(2);
+    }
+    get otMathText() {
+        const hrs = parseFloat(this.state.otCalcHours) || 0;
+        const rate = parseFloat(this.state.otCalcRate) || 0;
+        return `${hrs} hrs × $${rate} / 1.5x rate`;
     }
     openWorkflowsView() {
         this.state.showWorkflows = true;

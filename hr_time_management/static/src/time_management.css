@@ -86,3 +86,167 @@
 .ctm-wf-info small{display:block;color:#748198;margin-top:4px}
 .ctm-wf-actions{display:flex;align-items:center;gap:16px}
 
+/* Two-column grid for forms */
+.ctm-two-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ctm-two-grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3c4b63}
+.ctm-two-grid input,.ctm-two-grid select{width:100%;padding:9px 12px;border:1.5px solid #dde1ec;border-radius:9px;font-size:14px;background:#fff;color:#172033}
+
+/* Attendance Method cards */
+.ctm-method-grid{display:flex;flex-direction:column;gap:14px}
+.ctm-method-card{background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:20px 22px;transition:border-color .2s}
+.ctm-method-card:hover{border-color:#c084fc}
+.ctm-method-top{display:flex;align-items:flex-start;gap:14px}
+.ctm-method-top div{flex:1}
+.ctm-method-top strong{font-size:15px;font-weight:700;color:#172033;display:block}
+.ctm-method-top small{color:#78859e;font-size:13px;margin-top:3px;display:block}
+.ctm-switch.ctm-switch-sm{width:40px;height:22px;flex-shrink:0;margin-top:2px}
+.ctm-switch.ctm-switch-sm span{border-radius:11px}
+.ctm-switch.ctm-switch-sm span::before{width:16px;height:16px;top:3px;left:3px}
+.ctm-switch.ctm-switch-sm input:checked+span::before{transform:translateX(18px)}
+.ctm-method-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.ctm-method-fields label{font-size:13px;font-weight:600;color:#3c4b63;display:flex;flex-direction:column;gap:6px}
+.ctm-method-fields input{padding:8px 11px;border:1.5px solid #dde1ec;border-radius:8px;font-size:13px}
+.ctm-method-hint{font-size:12px;color:#a78bfa;margin-top:10px;background:#f5f3ff;padding:8px 12px;border-radius:8px;border-left:3px solid #a78bfa}
+.ctm-toggle-label{display:flex;align-items:center;gap:8px;font-size:13px;color:#5a6680;margin-top:10px;cursor:pointer}
+
+/* Sub-section titles */
+.ctm-sub-section-title strong{font-size:15px;font-weight:700;color:#172033;display:block;margin-bottom:4px}
+.ctm-sub-section-title p{font-size:13px;color:#78859e;margin:0}
+
+/* Integration cards */
+.ctm-integrations-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:12px}
+.ctm-integration-card{background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.ctm-int-head{display:flex;align-items:center;justify-content:space-between}
+.ctm-int-head strong{font-size:14px;font-weight:700;color:#172033}
+.ctm-int-badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#f1f3f7;color:#6f7b92}
+.ctm-integration-card small{font-size:12px;color:#78859e}
+.ctm-integration-card label{font-size:12px;font-weight:600;color:#3c4b63;display:flex;flex-direction:column;gap:4px}
+.ctm-integration-card input{padding:7px 10px;border:1.5px solid #dde1ec;border-radius:8px;font-size:12px}
+
+/* Overtime Rate cards */
+.ctm-ot-rate-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+.ctm-rate-card{background:linear-gradient(135deg,#f7f4ff 0%,#fff 100%);border:1.5px solid #e4e0f9;border-radius:14px;padding:22px 20px;text-align:center}
+.ctm-rate-card strong{font-size:14px;font-weight:700;color:#172033;display:block;margin-bottom:10px}
+.ctm-rate-card small{font-size:12px;color:#78859e;display:block;margin-top:8px}
+.ctm-rate-val{font-size:36px;font-weight:800;color:#c084fc;line-height:1}
+
+/* Indent field helper */
+.ctm-indent-field{margin-left:20px;margin-top:10px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:#3c4b63}
+.ctm-indent-field select{padding:8px 12px;border:1.5px solid #dde1ec;border-radius:9px;font-size:13px;width:200px}
+
+
+/* Work Mode sub-tab */
+.ctm-wm-section{display:flex;gap:18px;padding:22px 0;border-bottom:1px solid #f0f2f7}
+.ctm-wm-section:last-of-type{border-bottom:none}
+.ctm-wm-section-num{flex-shrink:0;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#c084fc,#e879f9);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ctm-wm-section-body{flex:1}
+.ctm-wm-section-body h3{margin:0 0 4px;font-size:15px;font-weight:700;color:#172033}
+.ctm-wm-section-body p{margin:0 0 8px;font-size:13px;color:#78859e}
+.ctm-wm-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.ctm-wm-sec-head h3{margin:0;font-size:15px;font-weight:700;color:#172033}
+.ctm-btn.sm{padding:7px 14px;font-size:12px;border-radius:8px}
+.ctm-wm-table{width:100%;border-collapse:collapse;font-size:13px}
+.ctm-wm-table th{text-align:left;padding:9px 12px;background:#f7f8fc;color:#5a6680;font-weight:600;border-bottom:1.5px solid #e4e8f2}
+.ctm-wm-table td{padding:9px 12px;border-bottom:1px solid #f0f2f7;color:#2d3a4e}
+.ctm-wm-dept-input{padding:7px 10px;border:1.5px solid #dde1ec;border-radius:8px;font-size:13px;width:90%}
+.ctm-wm-mode-select{padding:7px 10px;border:1.5px solid #dde1ec;border-radius:8px;font-size:13px;width:100%;background:#fff}
+.ctm-wm-hybrid{color:#c084fc;font-style:italic}
+.ctm-wm-ref-table-wrap{margin-top:24px;padding:18px 22px;background:#fafbff;border:1.5px solid #e4e0f9;border-radius:13px}
+.ctm-wm-ref-table-wrap strong{font-size:14px;font-weight:700;color:#172033;display:block;margin-bottom:4px}
+.ctm-wm-ref-table-wrap p{font-size:12px;color:#78859e;margin:0 0 12px}
+.ctm-wm-ref-table td:first-child{font-weight:600;width:140px}
+.ctm-empty-state.sm{padding:16px;font-size:13px}
+
+/* Plain panel for single-content sub-tabs (Assignment, Swapping, Rotation, etc.) */
+.ctm-plain-panel{background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:24px}
+.ctm-plain-panel .ctm-field-title{display:block;font-size:13px;font-weight:700;color:#3c4b63;margin-top:16px}
+.ctm-plain-panel .ctm-field-title:first-child{margin-top:0}
+.ctm-plain-panel select,.ctm-plain-panel input{padding:10px 14px;border:1.5px solid #dde1ec;border-radius:9px;font-size:14px;background:#fff;color:#172033}
+.ctm-plain-panel .ctm-toggle-row{border-bottom:1px solid #f0f2f7;padding:14px 0}
+.ctm-plain-panel .ctm-toggle-row:first-child{padding-top:0}
+.ctm-plain-panel .ctm-toggle-row:last-of-type{border-bottom:none}
+
+/* Scheduling Rule blocks (Scheduling Rules sub-tab) */
+.ctm-sched-rule-block{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:20px 0;border-bottom:1px solid #f0f2f7}
+.ctm-sched-rule-block:last-child{border-bottom:none}
+.ctm-sched-rule-title{flex:1}
+.ctm-sched-rule-title strong{display:block;font-size:15px;font-weight:700;color:#172033;margin-bottom:4px}
+.ctm-sched-rule-title small{font-size:13px;color:#78859e;line-height:1.5}
+.ctm-sched-rule-input{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ctm-sched-hours-input{width:72px;padding:9px 10px;border:1.5px solid #dde1ec;border-radius:9px;font-size:15px;font-weight:600;color:#172033;text-align:center}
+.ctm-sched-unit{font-size:13px;font-weight:500;color:#6f7b92;white-space:nowrap}
+.ctm-sched-rule-sub{margin-left:20px;padding:10px 0;font-size:13px;color:#3c4b63;display:flex;align-items:center;gap:10px}
+
+/* Blackout Dates */
+.ctm-blackout-form{background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:22px 24px;margin-bottom:24px}
+.ctm-blackout-form h3{margin:0 0 16px;font-size:15px;font-weight:700;color:#172033}
+.ctm-blackout-date-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+.ctm-blackout-date-label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3c4b63}
+.ctm-blackout-date-input{padding:9px 12px;border:1.5px solid #dde1ec;border-radius:9px;font-size:13px;color:#172033;width:100%;box-sizing:border-box}
+.ctm-blackout-reason-label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3c4b63;margin-bottom:16px}
+.ctm-blackout-reason-input{padding:9px 12px;border:1.5px solid #dde1ec;border-radius:9px;font-size:13px;color:#172033;width:100%;box-sizing:border-box}
+.ctm-blackout-add-btn{width:100%;justify-content:center;padding:12px;font-size:14px}
+.ctm-blackout-list-head{font-size:14px;font-weight:700;color:#172033;margin-bottom:12px}
+.ctm-blackout-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+.ctm-blackout-item{display:flex;align-items:center;gap:14px;background:#fff;border:1.5px solid #e4e8f2;border-radius:12px;padding:14px 18px}
+.ctm-blackout-item-icon{width:34px;height:34px;border-radius:50%;background:#fff0f6;display:flex;align-items:center;justify-content:center;color:#e879f9;font-size:15px;flex-shrink:0}
+.ctm-blackout-item-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.ctm-blackout-item-info strong{font-size:14px;font-weight:700;color:#172033}
+.ctm-blackout-item-info span{font-size:13px;color:#5a6680}
+.ctm-blackout-item-info small{font-size:12px;color:#a0aec0}
+.ctm-blackout-effects{background:#fffbec;border:1.5px solid #fde68a;border-radius:12px;padding:16px 20px}
+.ctm-blackout-effects strong{font-size:13px;font-weight:700;color:#92400e;display:block;margin-bottom:8px}
+.ctm-blackout-effects ul{margin:0;padding-left:18px}
+.ctm-blackout-effects li{font-size:13px;color:#78350f;line-height:1.7}
+
+/* Overtime Rates & Calculator */
+.ctm-rate-calc-box{display:flex;align-items:center;gap:12px;background:#f0f7ff;border:1.5px solid #bae6fd;border-radius:12px;padding:14px 18px;color:#0369a1}
+.ctm-rate-calc-box i{font-size:18px;color:#0284c7}
+.ctm-rate-calc-box strong{display:block;font-size:14px;color:#0369a1;margin-bottom:2px}
+.ctm-rate-calc-box span{font-size:13px;color:#0284c7}
+.ctm-rate-multi-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+.ctm-rate-multi-row span{font-size:14px;color:#5a6680;font-weight:500}
+
+.ctm-ot-calc-card{background:#fff;border:1.5px solid #f9a8d4;border-radius:16px;padding:24px;margin-top:24px;box-shadow:0 4px 12px #e879f90f}
+.ctm-ot-calc-head{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:#172033;margin-bottom:18px}
+.ctm-ot-calc-head i{color:#e879f9;font-size:16px}
+.ctm-ot-calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.ctm-ot-calc-grid label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3c4b63}
+.ctm-ot-calc-grid input{padding:10px 14px;border:1.5px solid #dde1ec;border-radius:9px;font-size:14px;color:#172033;width:100%;box-sizing:border-box}
+
+.ctm-ot-calc-pink-banner{background:linear-gradient(135deg,#ec4899 0%,#d946ef 100%);border-radius:12px;padding:20px 24px;color:#fff;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 14px #ec489933}
+.ctm-ot-calc-pink-banner small{display:block;font-size:12px;opacity:0.9;text-transform:uppercase;letter-spacing:0.5px}
+.ctm-ot-calc-pink-banner h3{margin:4px 0 0;font-size:32px;font-weight:800;letter-spacing:-0.5px}
+.ctm-ot-calc-pink-right span{font-size:13px;opacity:0.95;background:rgba(255,255,255,0.2);padding:6px 14px;border-radius:20px;font-weight:600}
+.ctm-ot-calc-footnote{font-size:12px;color:#94a3b8;margin:12px 0 0;text-align:center}
+
+/* Jobs & Tasks */
+.ctm-jobs-list{display:flex;flex-direction:column;gap:16px}
+.ctm-job-card{background:#fff;border:1.5px solid #e4e8f2;border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.ctm-job-card-top{display:flex;align-items:flex-end;gap:16px}
+.ctm-job-field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#3c4b63;flex:1}
+.ctm-job-field.sm{flex:0 0 100px}
+.ctm-job-field input,.ctm-job-field select{padding:9px 12px;border:1.5px solid #dde1ec;border-radius:9px;font-size:13px;color:#172033;width:100%;box-sizing:border-box}
+.ctm-job-tasks-row{display:flex;flex-direction:column;gap:8px}
+.ctm-job-tasks-row label{font-size:12px;font-weight:700;color:#6f7b92;text-transform:uppercase;letter-spacing:0.5px}
+
+/* Payroll Integration & Eligibility */
+.ctm-payroll-disabled-card{border:2px dashed #cbd5e1;border-radius:14px;padding:48px 24px;text-align:center;background:#fafbfc;margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.ctm-payroll-disabled-card i{font-size:32px;color:#94a3b8;margin-bottom:4px}
+.ctm-payroll-disabled-card strong{font-size:16px;color:#334155}
+.ctm-payroll-disabled-card p{margin:0;font-size:13px;color:#64748b;max-width:420px;line-height:1.5}
+
+.ctm-budget-table{margin-top:12px;width:100%}
+.ctm-budget-bar-cell{display:flex;align-items:center;gap:12px}
+.ctm-budget-rem{font-weight:700;font-size:13px;width:70px;flex-shrink:0}
+.ctm-budget-rem.green{color:#059669}
+.ctm-budget-track{flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.ctm-budget-fill{height:100%;background:linear-gradient(90deg,#ec4899,#d946ef);border-radius:4px}
+.ctm-budget-bar-cell small{font-size:12px;color:#64748b;width:36px;text-align:right}
+.ctm-budget-footer{display:flex;align-items:center;justify-content:space-between;border-top:1.5px solid #e2e8f0;padding-top:16px;margin-top:16px;font-size:14px}
+.ctm-budget-total{color:#ec4899;font-weight:800;font-size:15px}
+
+.ctm-checkbox-group{display:flex;flex-direction:column;gap:12px}
+.ctm-checkbox-label{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#334155;cursor:pointer}
+.ctm-checkbox-label input[type='checkbox']{display:none}
+.ctm-checkbox-label i{font-size:16px;color:#ec4899}
