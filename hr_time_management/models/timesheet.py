@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 from datetime import timedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
+
+FINANCIAL_GROUPS = "hr_time_management.group_time_management_hr_manager,hr_time_management.group_time_management_hr_admin,base.group_system"
 
 
 class AccountAnalyticLine(models.Model):
@@ -19,58 +22,150 @@ class AccountAnalyticLine(models.Model):
         store=True,
         string="Timesheet Locked",
     )
+    cleon_currency_id = fields.Many2one(
+        related="company_id.currency_id",
+        store=True,
+        readonly=True,
+        string="Cleon Currency",
+    )
+    cleon_billable_rate = fields.Monetary(
+        string="Snapshot Billable Rate",
+        readonly=True,
+        currency_field="cleon_currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
+    cleon_labor_cost_rate = fields.Monetary(
+        string="Snapshot Labor Cost Rate",
+        readonly=True,
+        currency_field="cleon_currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
+    estimated_billable_amount = fields.Monetary(
+        string="Estimated Billable Value",
+        compute="_compute_cleon_financial_valuations",
+        store=True,
+        currency_field="cleon_currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
+    estimated_labor_cost = fields.Monetary(
+        string="Estimated Internal Labor Cost",
+        compute="_compute_cleon_financial_valuations",
+        store=True,
+        currency_field="cleon_currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
 
     @api.depends("cleon_sheet_id.state")
     def _compute_cleon_locked(self):
         for line in self:
             line.cleon_locked = bool(line.cleon_sheet_id and line.cleon_sheet_id.state in ("submitted", "approved"))
 
+    @api.depends("unit_amount", "cleon_billable", "cleon_billable_rate", "cleon_labor_cost_rate")
+    def _compute_cleon_financial_valuations(self):
+        for line in self:
+            rate = line.cleon_billable_rate or 0.0
+            cost_rate = line.cleon_labor_cost_rate or 0.0
+            line.estimated_billable_amount = line.unit_amount * rate if line.cleon_billable else 0.0
+            line.estimated_labor_cost = line.unit_amount * cost_rate
+
     def _is_lock_bypassed(self):
         return bool(self.env.su or self.env.user.has_group("base.group_system"))
 
     @api.model_create_multi
     def create(self, vals_list):
+        # 1. Cheap pre-check and strip client-supplied snapshot fields for server authoritativeness
+        for vals in vals_list:
+            vals.pop("cleon_billable_rate", None)
+            vals.pop("cleon_labor_cost_rate", None)
+
+            emp_id = vals.get("employee_id")
+            c_id = vals.get("company_id")
+            if not c_id and emp_id:
+                emp = self.env["hr.employee"].browse(emp_id).exists()
+                c_id = emp.company_id.id if emp else self.env.company.id
+            if "date" in vals and vals["date"] and c_id:
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["date"], _("Analytic Timesheet Line"))
+
         lines = super().create(vals_list)
-        if not self._is_lock_bypassed():
-            for line in lines:
-                if line.date and line.employee_id:
-                    monday = line.date - timedelta(days=line.date.weekday())
-                    sheet = self.env["cleon.time.sheet"].sudo().search([
-                        ("company_id", "=", line.company_id.id),
-                        ("employee_id", "=", line.employee_id.id),
-                        ("week_start", "=", monday),
-                        ("state", "in", ("submitted", "approved")),
-                    ], limit=1)
-                    if sheet:
-                        raise AccessError(_("Cannot create time entries in a week that is submitted or approved for employee '%s'.") % line.employee_id.name)
+
+        # 2. Authoritative Post-Create Period Lock Check and Server Rate Snapshot Capture
+        for line in lines:
+            if line.date and line.employee_id:
+                c_id = line.company_id.id if line.company_id else (line.employee_id.company_id.id if line.employee_id else self.env.company.id)
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, line.date, _("Analytic Timesheet Line"))
+
+                policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", c_id)], limit=1)
+                b_rate = policy.default_billing_rate if policy else 0.0
+                c_rate = line.employee_id.hourly_cost or 0.0
+                line.sudo().write({
+                    "cleon_billable_rate": b_rate,
+                    "cleon_labor_cost_rate": c_rate,
+                })
+
+            if not self._is_lock_bypassed() and line.date and line.employee_id:
+                monday = line.date - timedelta(days=line.date.weekday())
+                sheet = self.env["cleon.time.sheet"].sudo().search([
+                    ("company_id", "=", line.company_id.id),
+                    ("employee_id", "=", line.employee_id.id),
+                    ("week_start", "=", monday),
+                    ("state", "in", ("submitted", "approved")),
+                ], limit=1)
+                if sheet:
+                    raise AccessError(_("Cannot create time entries in a week that is submitted or approved for employee '%s'.") % line.employee_id.name)
         return lines
 
     def write(self, vals):
         if not self._is_lock_bypassed():
+            if "cleon_billable_rate" in vals or "cleon_labor_cost_rate" in vals:
+                raise AccessError(_("Snapshot billing and labor cost rates are server-authoritative and cannot be modified directly."))
+
             for line in self:
                 if line.cleon_locked:
                     raise AccessError(_("Timesheet entry '%s' is locked under a submitted or approved weekly timesheet envelope.") % line.name)
-                # Compute prospective date and prospective employee
+
+                target_emp_id = vals.get("employee_id") or (line.employee_id.id if line.employee_id else False)
+                emp = self.env["hr.employee"].browse(target_emp_id).exists() if target_emp_id else False
+                target_c_id = vals.get("company_id") or (emp.company_id.id if emp else line.company_id.id or self.env.company.id)
                 target_date = fields.Date.to_date(vals["date"]) if "date" in vals else line.date
-                target_emp_id = vals["employee_id"] if "employee_id" in vals else line.employee_id.id
+
+                if target_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(target_c_id, target_date, _("Analytic Timesheet Line"))
+
                 if target_date and target_emp_id:
                     monday = target_date - timedelta(days=target_date.weekday())
                     sheet = self.env["cleon.time.sheet"].sudo().search([
-                        ("company_id", "=", line.company_id.id),
+                        ("company_id", "=", target_c_id),
                         ("employee_id", "=", target_emp_id),
                         ("week_start", "=", monday),
                         ("state", "in", ("submitted", "approved")),
                     ], limit=1)
                     if sheet and sheet != line.cleon_sheet_id:
                         target_emp_name = self.env["hr.employee"].sudo().browse(target_emp_id).name
-                        raise AccessError(_("Cannot move time entry '%s' into a submitted or approved week for employee '%s'.") % (line.name, target_emp_name))
-        return super().write(vals)
+        res = super().write(vals)
+
+        # Refresh rate snapshots if the line's rate-owning identity (employee_id or company_id) changed
+        if "employee_id" in vals or "company_id" in vals:
+            for line in self:
+                if line.employee_id:
+                    c_id = line.company_id.id if line.company_id else (line.employee_id.company_id.id if line.employee_id else self.env.company.id)
+                    policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", c_id)], limit=1)
+                    b_rate = policy.default_billing_rate if policy else 0.0
+                    c_rate = line.employee_id.hourly_cost or 0.0
+                    line.sudo().write({
+                        "cleon_billable_rate": b_rate,
+                        "cleon_labor_cost_rate": c_rate,
+                    })
+
+        return res
 
     def unlink(self):
         if not self._is_lock_bypassed():
             for line in self:
                 if line.cleon_locked:
                     raise AccessError(_("Timesheet entry '%s' is locked under a submitted or approved weekly timesheet envelope.") % line.name)
+                c_id = line.company_id.id or (line.employee_id.company_id.id if line.employee_id else self.env.company.id)
+                if line.date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, line.date, _("Analytic Timesheet Line"))
         return super().unlink()
 
 
@@ -84,6 +179,7 @@ class CleonTimeSheet(models.Model):
     company_id = fields.Many2one(related="employee_id.company_id", store=True, index=True)
     week_start = fields.Date(required=True, index=True, tracking=True)
     week_end = fields.Date(compute="_compute_week_end", store=True)
+    currency_id = fields.Many2one(related="company_id.currency_id", store=True, readonly=True)
     state = fields.Selection([
         ("draft", "Draft"), ("submitted", "Submitted"),
         ("approved", "Approved"), ("rejected", "Rejected"),
@@ -97,6 +193,20 @@ class CleonTimeSheet(models.Model):
     line_ids = fields.One2many("cleon.time.sheet.line", "sheet_id", string="Legacy Entry Lines")
     total_hours = fields.Float(compute="_compute_totals", store=True)
     billable_hours = fields.Float(compute="_compute_totals", store=True)
+    total_billable_amount = fields.Monetary(
+        compute="_compute_totals",
+        store=True,
+        string="Total Billable Value",
+        currency_field="currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
+    total_labor_cost = fields.Monetary(
+        compute="_compute_totals",
+        store=True,
+        string="Total Labor Cost",
+        currency_field="currency_id",
+        groups=FINANCIAL_GROUPS,
+    )
     submitted_at = fields.Datetime(readonly=True)
     approved_at = fields.Datetime(readonly=True)
     approver_id = fields.Many2one("res.users", readonly=True)
@@ -111,15 +221,23 @@ class CleonTimeSheet(models.Model):
         for sheet in self:
             sheet.week_end = sheet.week_start + timedelta(days=6) if sheet.week_start else False
 
-    @api.depends("analytic_line_ids.unit_amount", "analytic_line_ids.cleon_billable", "line_ids.hours", "line_ids.billable", "entry_source")
+    @api.depends(
+        "analytic_line_ids.unit_amount", "analytic_line_ids.cleon_billable",
+        "analytic_line_ids.estimated_billable_amount", "analytic_line_ids.estimated_labor_cost",
+        "line_ids.hours", "line_ids.billable", "entry_source"
+    )
     def _compute_totals(self):
         for sheet in self:
             if sheet.entry_source == "analytic" and sheet.analytic_line_ids:
                 sheet.total_hours = sum(sheet.analytic_line_ids.mapped("unit_amount"))
                 sheet.billable_hours = sum(sheet.analytic_line_ids.filtered("cleon_billable").mapped("unit_amount"))
+                sheet.total_billable_amount = sum(sheet.analytic_line_ids.mapped("estimated_billable_amount"))
+                sheet.total_labor_cost = sum(sheet.analytic_line_ids.mapped("estimated_labor_cost"))
             else:
                 sheet.total_hours = sum(sheet.line_ids.mapped("hours"))
                 sheet.billable_hours = sum(sheet.line_ids.filtered("billable").mapped("hours"))
+                sheet.total_billable_amount = 0.0
+                sheet.total_labor_cost = 0.0
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -323,10 +441,12 @@ class CleonTimeSheet(models.Model):
         current_monday = fields.Date.context_today(self) - timedelta(days=fields.Date.context_today(self).weekday())
         current = self.search([("company_id", "=", company.id), ("employee_id", "in", allowed_emp_ids), ("week_start", "=", current_monday)])
 
+        is_financial_role = bool(role in ("hr_manager", "hr_admin", "system_admin"))
+
         rows = []
         for sheet in sheets:
             expected_h = Shift._get_expected_hours_for_period(sheet.employee_id.id, sheet.week_start, sheet.week_end)
-            rows.append({
+            row_data = {
                 "id": sheet.id, "employee": sheet.employee_id.sudo().name,
                 "employee_code": sheet.employee_id.sudo().identification_id or "",
                 "department": sheet.employee_id.sudo().department_id.name or "—",
@@ -338,16 +458,26 @@ class CleonTimeSheet(models.Model):
                 "submitted_at": fields.Datetime.to_string(sheet.submitted_at) if sheet.submitted_at else False,
                 "comment": sheet.manager_comment or "",
                 "work_item": (sheet.analytic_line_ids[:1].name if sheet.analytic_line_ids else sheet.line_ids[:1].description) or "—",
-            })
+            }
+            if is_financial_role:
+                row_data["total_billable_amount"] = round(sheet.total_billable_amount, 2)
+                row_data["total_labor_cost"] = round(sheet.total_labor_cost, 2)
+            rows.append(row_data)
+
+        kpis = {
+            "pending": len(current.filtered(lambda row: row.state == "submitted")),
+            "submitted": len(current.filtered(lambda row: row.state in ("submitted", "approved"))),
+            "expected": employee_count,
+            "missing": max(0, employee_count - len(current)),
+            "total_hours": round(sum(current.mapped("total_hours")), 2),
+        }
+        if is_financial_role:
+            kpis["total_billable_amount"] = round(sum(current.mapped("total_billable_amount")), 2)
+            kpis["total_labor_cost"] = round(sum(current.mapped("total_labor_cost")), 2)
+
         return {
             "rows": rows,
-            "kpis": {
-                "pending": len(current.filtered(lambda row: row.state == "submitted")),
-                "submitted": len(current.filtered(lambda row: row.state in ("submitted", "approved"))),
-                "expected": employee_count,
-                "missing": max(0, employee_count - len(current)),
-                "total_hours": round(sum(current.mapped("total_hours")), 2),
-            },
+            "kpis": kpis,
         }
 
     @api.model
@@ -355,38 +485,6 @@ class CleonTimeSheet(models.Model):
         sheet = self.browse(int(sheet_id)).exists()
         sheet.action_decide(decision, comment)
         return True
-
-
-class AccountAnalyticLine(models.Model):
-    _inherit = "account.analytic.line"
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if "date" in vals and vals["date"]:
-                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists() if vals.get("employee_id") else self.env.user.employee_id
-                c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
-                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["date"], _("Analytic Timesheet Line"))
-        return super().create(vals_list)
-
-    def write(self, vals):
-        if not self.env.su and not self.env.user.has_group("base.group_system"):
-            for rec in self:
-                target_emp_id = vals.get("employee_id") or (rec.employee_id.id if rec.employee_id else False)
-                emp = self.env["hr.employee"].browse(target_emp_id).exists() if target_emp_id else False
-                target_c_id = vals.get("company_id") or (emp.company_id.id if emp else rec.company_id.id or self.env.company.id)
-                target_date = vals.get("date") or rec.date
-                if target_date:
-                    self.env["cleon.time.period.lock"].check_period_lock(target_c_id, target_date, _("Analytic Timesheet Line"))
-        return super().write(vals)
-
-    def unlink(self):
-        if not self.env.su and not self.env.user.has_group("base.group_system"):
-            for rec in self:
-                c_id = rec.company_id.id or (rec.employee_id.company_id.id if rec.employee_id else self.env.company.id)
-                if rec.date:
-                    self.env["cleon.time.period.lock"].check_period_lock(c_id, rec.date, _("Analytic Timesheet Line"))
-        return super().unlink()
 
 
 class CleonTimeSheetLine(models.Model):
