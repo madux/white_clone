@@ -31,4 +31,16 @@
         </field>
         <field name="country_id" ref="base.ng"/>
     </record>
+    <record model="hr.level" id="hr_level_jm">
+        <field name="name">Entry-Level</field>
+    </record>
+    <record model="hr.level" id="hr_level_jm2">
+        <field name="name">Intermidate</field>
+    </record>
+    <record model="hr.level" id="hr_level_mm">
+        <field name="name">Advanced</field>
+    </record>
+    <record model="hr.level" id="hr_level_sm">
+        <field name="name">Expert</field>
+    </record>
 </odoo>

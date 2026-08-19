@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_cleon_recruitment.JobTabs">
+        <div class="jb-detail-sub-navigation-tabs">
+            <t t-foreach="TABS" t-as="tab" t-key="tab.id">
+                <button
+                    type="button"
+                    class="jb-sub-tab-item"
+                    t-att-class="{ 'jb-active-line': state.active === tab.id }"
+                    t-on-click="() => this.setActive(tab.id)">
+                    <t t-esc="tab.label"/>
+                </button>
+            </t>
+        </div>
+    </t>
+</templates>

@@ -1,0 +1,113 @@
+/** @odoo-module **/
+
+import { Component, useState, onMounted, useEffect } from "@odoo/owl";
+import { registry } from "@web/core/registry";
+import { standardWidgetProps } from "@web/views/widgets/standard_widget_props";
+
+const TABS = [
+    { id: "overview", label: "Overview" },
+    { id: "candidates", label: "Candidates" },
+    { id: "pipeline", label: "Pipeline" },
+    { id: "collaboration", label: "Collaboration" },
+    { id: "reports", label: "Reports" },
+    { id: "sourcing", label: "Sourcing" },
+    { id: "status", label: "Status" },
+];
+
+export class JobTabs extends Component {
+    static template = "hr_cleon_recruitment.JobTabs";
+    static props = { ...standardWidgetProps };
+
+    setup() {
+        this.state = useState({ 
+            active: "overview" 
+        });
+        this.TABS = TABS;
+        console.log("LOADING JOB FUNCTIONS AUTOMATICALLY")
+        // Re-apply visibility whenever active tab changes, and on (re)mount
+        useEffect(
+            () => {
+                this.applyVisibility();
+            },
+            () => [this.state.active]
+        );
+        onMounted(() => this.applyVisibility());
+    }
+
+    setActive(tabId) {
+        this.state.active = tabId;
+    }
+
+    applyVisibility() {
+        console.group("[JOBS REVIEW] DEBUG — action resolution");
+        document
+            .querySelectorAll(".jb-detail-dashboard-layout-matrix")
+            .forEach((el) => {
+                el.classList.toggle("d-none", el.dataset.section !== this.state.active);
+            });
+    }
+}
+
+registry.category("view").add("job_tabs", {
+    component: JobTabs,
+});
+
+// import { onMounted } from "@odoo/owl";
+
+// $(document).on('click', '#button_overview', function () {
+//     console.log("CLCIKING OVERIVEEW")
+//     $('#overviewSection').removeClass('d-none');
+//     $('#candidateSection').addClass('d-none');
+//     $('#pipelineSection').addClass('d-none');
+//     $('#reportsSection').addClass('d-none');
+//     $('#sourcingSection').addClass('d-none');
+//     $('#statusSection').addClass('d-none');
+// });
+
+// $(document).on('click', '#button_show_candidates', function () {
+//     console.log("CLICKING THE CANDIDATES")
+//     $('#overviewSection').addClass('d-none');
+//     $('#candidateSection').removeClass('d-none');
+//     $('#pipelineSection').addClass('d-none');
+//     $('#reportsSection').addClass('d-none');
+//     $('#sourcingSection').addClass('d-none');
+//     $('#statusSection').addClass('d-none');
+// });
+
+// document.addEventListener("DOMContentLoaded", () => {
+//     console.log("job form loading")
+//     const buttons = document.querySelectorAll(".jb-sub-tab-item");
+//     $(document).on('click', '#btnOverview', function () {
+//         $('#overviewSection').show();
+//         $('#candidateSection').hide();
+//     });
+//     buttons.forEach(button => {
+
+//         button.addEventListener("click", () => {
+
+//             const tab = button.dataset.tab;
+
+//             document
+//                 .querySelectorAll(".jb-detail-dashboard-layout-matrix")
+//                 .forEach(el => el.classList.add("d-none"));
+
+//             const target = document.querySelector(
+//                 `[data-section="${tab}"]`
+//             );
+
+//             if (target) {
+//                 target.classList.remove("d-none");
+//                 console.log("BUTTON OF job form loading")
+
+//             }
+
+//             buttons.forEach(btn =>
+//                 btn.classList.remove("jb-active-line")
+//             );
+
+//             button.classList.add("jb-active-line");
+//         });
+
+//     });
+
+// });

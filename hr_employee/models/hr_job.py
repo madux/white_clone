@@ -9,8 +9,9 @@ _logger = logging.getLogger(__name__)
 
 
 class HrJob(models.Model):
-    _inherit = 'hr.job'
-
+    _inherit = 'hr.job' 
+    
+    is_published = fields.Boolean("Closing Date")
     min_salary_band = fields.Float(
         string="Min Salary Band",
         copy=False,
