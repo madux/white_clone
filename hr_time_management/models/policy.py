@@ -57,6 +57,9 @@ class CleonTimePolicy(models.Model):
     holiday_overtime_approval = fields.Selection([("required", "Required"), ("auto", "Automatic"), ("none", "None")], default="required")
     launched = fields.Boolean(default=False)
     go_live_date = fields.Date()
+    currency_id = fields.Many2one(related="company_id.currency_id", readonly=True)
+    billable_tracking_enabled = fields.Boolean(default=True, string="Enable Billable Tracking")
+    default_billing_rate = fields.Monetary(default=150.0, currency_field="currency_id", string="Default Billing Rate")
 
 
     _sql_constraints = [
@@ -124,6 +127,9 @@ class CleonTimePolicy(models.Model):
             "leave_integration": policy.leave_integration,
             "launched": policy.launched,
             "go_live_date": fields.Date.to_string(policy.go_live_date) if policy.go_live_date else False,
+            "billable_tracking_enabled": policy.billable_tracking_enabled if policy else True,
+            "default_billing_rate": policy.default_billing_rate if policy else 150.0,
+            "currency_symbol": policy.currency_id.symbol if policy and policy.currency_id else (self.env.company.currency_id.symbol or "$"),
         }
 
     @api.model
@@ -144,7 +150,7 @@ class CleonTimePolicy(models.Model):
             "holiday_overtime", "holiday_overtime_rate", "holiday_overtime_approval",
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",
             "performance_integration", "employee_portal", "leave_integration",
-            "launched", "go_live_date",
+            "launched", "go_live_date", "billable_tracking_enabled", "default_billing_rate",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)

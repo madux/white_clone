@@ -277,6 +277,14 @@ export class TimeManagementApp extends Component {
             this.notification.add("Time Management policy saved.", {type:"success"});
         } catch (error) { this.notification.add(error?.data?.message || "Policy could not be saved.", {type:"danger"}); }
     }
+    async resetPolicy() {
+        try {
+            this.state.policy = await this.orm.call("cleon.time.policy", "get_cleon_policy", []);
+            this.notification.add("Changes reset to the last saved values.", {type: "info"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Settings could not be reset.", {type: "danger"});
+        }
+    }
     async setSettingsTab(tab) {
         this.state.settingsTab = tab;
         if (tab === "overview") {
