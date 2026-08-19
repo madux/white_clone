@@ -158,213 +158,378 @@
                     <section class="ctm-panel"><div class="ctm-status-filter"><strong>Filter:</strong><t t-foreach="['all','submitted','approved','rejected']" t-as="status" t-key="status"><button t-att-class="state.regularizationFilter === status ? 'active' : ''" t-on-click="() => state.regularizationFilter = status" t-esc="status === 'all' ? 'All' : label(status)"/></t></div><t t-call="hr_time_management.RegularizationTable"/></section>
                 </t>
                 <t t-else="">
-                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Settings</span></nav><h1><i class="fa fa-cog"/> Time Management Settings</h1><p>Configure all time management modules and policies</p></div></div>
-                    <!-- Tab Bar -->
-                    <div class="ctm-settings-tabs">
-                        <button t-att-class="'ctm-stab ' + (state.settingsTab === 'overview' ? 'active' : '')" t-on-click="() => this.setSettingsTab('overview')"><i class="fa fa-th-large"/> Overview</button>
-                        <button t-att-class="'ctm-stab ' + (state.settingsTab === 'attendance' ? 'active' : '')" t-on-click="() => this.setSettingsTab('attendance')"><i class="fa fa-calendar"/> Attendance</button>
-                        <button t-att-class="'ctm-stab ' + (state.settingsTab === 'shift' ? 'active' : '')" t-on-click="() => this.setSettingsTab('shift')"><i class="fa fa-clock-o"/> Shift Management</button>
-                        <button t-att-class="'ctm-stab ' + (state.settingsTab === 'overtime' ? 'active' : '')" t-on-click="() => this.setSettingsTab('overtime')"><i class="fa fa-hourglass-half"/> Overtime</button>
-                        <button t-att-class="'ctm-stab ' + (state.settingsTab === 'tracking' ? 'active' : '')" t-on-click="() => this.setSettingsTab('tracking')"><i class="fa fa-list-alt"/> Time Tracking</button>
-                    </div>
-
-                    <!-- TAB: Overview -->
-                    <t t-if="state.settingsTab === 'overview'">
-                        <t t-if="state.settingsOverview">
-                            <div class="ctm-settings-section-title"><h2>Settings Overview</h2><p>Configuration status dashboard for all time management modules</p></div>
-                            <div class="ctm-settings-cards">
-                                <t t-foreach="[['attendance','Attendance','fa-calendar'],['shift','Shift Management','fa-clock-o'],['overtime','Overtime','fa-hourglass-half'],['tracking','Time Tracking','fa-list-alt']]" t-as="mod" t-key="mod[0]">
-                                    <div t-att-class="'ctm-settings-card ' + mod[0]">
-                                        <div class="ctm-settings-card-head">
-                                            <i t-att-class="'fa ' + mod[2]"/>
-                                            <span t-att-class="'ctm-cfg-badge ' + state.settingsOverview[mod[0]].status" t-esc="state.settingsOverview[mod[0]].status === 'configured' ? 'Configured' : state.settingsOverview[mod[0]].status === 'partial' ? 'Partial' : 'Not Set'"/>
-                                        </div>
-                                        <h3 t-esc="mod[1]"/>
-                                        <ul class="ctm-settings-card-items">
-                                            <li t-foreach="state.settingsOverview[mod[0]].items" t-as="item" t-key="item_index" t-esc="item"/>
-                                        </ul>
-                                        <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.setSettingsTab(mod[0])">Configure →</button>
-                                    </div>
-                                </t>
+                    <!-- WORKFLOWS & APPROVALS VIEW (Screenshot 2) -->
+                    <t t-if="state.showWorkflows">
+                        <div class="ctm-heading">
+                            <div>
+                                <button class="ctm-btn-back" t-on-click="closeWorkflowsView"><i class="fa fa-arrow-left"/> Back to Settings</button>
+                                <h1>Workflows &amp; Approvals</h1>
+                                <p>Configure approval chains, workflow types, rules, and escalations</p>
                             </div>
-                            <!-- Onboarding Checklist -->
-                            <div class="ctm-settings-section-title" style="margin-top:28px"><h2><i class="fa fa-check-circle" style="color:var(--pink)"/> Onboarding Checklist</h2><p>Complete these steps to go live with time management</p></div>
-                            <div class="ctm-checklist ctm-panel">
-                                <t t-foreach="[['set_shifts','Set Work Shifts','shift'],['assign_employees','Assign Employees to Shifts','shift'],['configure_ot','Configure OT Policies','overtime'],['enable_timesheets','Enable Timesheets','tracking'],['launched','Review &amp; Go Live','']]" t-as="step" t-key="step[0]">
-                                    <div t-att-class="'ctm-checklist-item ' + (state.settingsOverview.checklist[step[0]] ? 'done' : '')">
-                                        <span class="ctm-check-num" t-esc="step_index + 1"/>
-                                        <i t-att-class="'fa ' + (state.settingsOverview.checklist[step[0]] ? 'fa-check-square' : 'fa-square-o')"/>
-                                        <span t-out="step[1]"/>
-                                        <button t-if="!state.settingsOverview.checklist[step[0]] and step[2]" class="ctm-checklist-goto" t-on-click="() => this.setSettingsTab(step[2])">Go to setting →</button>
-                                        <button t-if="!state.settingsOverview.checklist[step[0]] and !step[2]" class="ctm-checklist-goto" t-on-click="launchSystem">Launch →</button>
-                                        <i t-if="state.settingsOverview.checklist[step[0]]" class="fa fa-check-circle ctm-done-icon"/>
-                                    </div>
-                                </t>
-                            </div>
-                        </t>
-                        <div t-else="" class="ctm-empty-state"><i class="fa fa-spinner fa-spin"/><h2>Loading overview...</h2></div>
-                    </t>
-
-                    <!-- TAB: Attendance -->
-                    <t t-elif="state.settingsTab === 'attendance'">
-                        <div class="ctm-settings-section-title"><h2>Attendance Configuration</h2><p>Set up clock-in methods, working hours, break and grace periods</p></div>
-                        <section class="ctm-settings-form">
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-clock-o"/> Work Schedule</h3>
-                                <div class="ctm-settings-fields">
-                                    <label>Work Week<select t-model="state.policy.work_week"><option value="five">5-day week (Mon–Fri)</option><option value="six">6-day week (Mon–Sat)</option><option value="custom">Custom</option></select></label>
-                                    <label>Standard Hours Per Day<input type="number" min="1" max="24" step="0.5" t-model="state.policy.standard_hours"/></label>
-                                    <label>Default Break Duration (minutes)<input type="number" min="0" max="120" t-model="state.policy.default_break_minutes"/></label>
-                                    <label>Late Grace Period (minutes)<input type="number" min="0" max="60" t-model="state.policy.default_grace_minutes"/></label>
-                                    <label>Correction Request Window (days)<input type="number" min="1" max="365" t-model="state.policy.regularization_window_days"/></label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-sign-in"/> Clock-in Method</h3>
-                                <div class="ctm-settings-fields">
-                                    <label class="wide">Method<select t-model="state.policy.clock_method"><option value="manual">Manual (Web / App)</option><option value="biometric">Biometric Device</option><option value="gps">GPS-based</option><option value="ip">IP-based</option><option value="mixed">Multiple Methods</option></select></label>
-                                    <label>Data Sync Frequency<select t-model="state.policy.synchronization_frequency"><option value="realtime">Real-time</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-plug"/> Integrations</h3>
-                                <div class="ctm-settings-fields">
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.leave_integration"/> Sync with Leave Management</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.payroll_integration"/> Payroll Integration</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.employee_portal"/> Show on Employee Portal</label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-actions"><button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Attendance Settings</button></div>
-                        </section>
-                    </t>
-
-                    <!-- TAB: Shift Management -->
-                    <t t-elif="state.settingsTab === 'shift'">
-                        <div class="ctm-settings-section-title">
-                            <div><h2>Shift Management</h2><p>Create and manage work shift templates for your organisation</p></div>
-                            <button class="ctm-btn pink" t-on-click="() => this.openSettingsShiftForm()"><i class="fa fa-plus"/> New Shift</button>
                         </div>
-                        <section class="ctm-panel">
-                            <table class="ctm-settings-shift-table">
-                                <thead><tr><th>NAME</th><th>CODE</th><th>HOURS</th><th>TYPE</th><th>DAYS</th><th>BREAK</th><th>RECURRENCE</th><th>ACTIONS</th></tr></thead>
-                                <tbody>
-                                    <tr t-foreach="state.settingsShifts" t-as="shift" t-key="shift.id">
-                                        <td><strong t-esc="shift.name"/></td>
-                                        <td><span class="ctm-code-badge" t-esc="shift.code"/></td>
-                                        <td><t t-esc="shift.start"/> – <t t-esc="shift.end"/></td>
-                                        <td t-esc="shift.shift_type"/>
-                                        <td>
-                                            <div class="ctm-day-pills-sm">
-                                                <t t-foreach="[['M',0],['T',1],['W',2],['T',3],['F',4],['S',5],['S',6]]" t-as="day" t-key="day[0]+day[1]">
-                                                    <span t-att-class="'ctm-day-pill ' + (shift.active_days.includes(day[1]) ? 'on' : '')" t-esc="day[0]"/>
+                        <div class="ctm-settings-tabs">
+                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'chains' ? 'active' : '')" t-on-click="() => state.workflowTab = 'chains'">Approval Chains</button>
+                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'types' ? 'active' : '')" t-on-click="() => state.workflowTab = 'types'">Workflow Types</button>
+                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'rules' ? 'active' : '')" t-on-click="() => state.workflowTab = 'rules'">Approval Rules</button>
+                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'escalations' ? 'active' : '')" t-on-click="() => state.workflowTab = 'escalations'">Escalations</button>
+                        </div>
+                        <div class="ctm-wf-content">
+                            <div class="ctm-wf-head">
+                                <div><h2>Approval Chains</h2><p>Define multi-level approval workflows for different modules</p></div>
+                                <button class="ctm-btn pink" t-on-click="addApprovalChain"><i class="fa fa-plus"/> Add Approval Chain</button>
+                            </div>
+                            <div class="ctm-wf-list">
+                                <div t-foreach="state.approvalChains" t-as="chain" t-key="chain.id" class="ctm-wf-card">
+                                    <div class="ctm-wf-info">
+                                        <div>
+                                            <strong t-esc="chain.name"/>
+                                            <span t-att-class="'ctm-cfg-badge ' + (chain.active ? 'configured' : 'not_set')" t-esc="chain.active ? 'active' : 'inactive'"/>
+                                        </div>
+                                        <small><t t-esc="chain.module"/> • <t t-esc="chain.levels"/> approval levels</small>
+                                    </div>
+                                    <div class="ctm-wf-actions">
+                                        <button class="link" t-on-click="() => this.toggleApprovalChain(chain.id)" t-esc="chain.active ? 'Deactivate' : 'Activate'"/>
+                                        <button class="link text-danger" t-on-click="() => state.approvalChains = state.approvalChains.filter(c => c.id !== chain.id)"><i class="fa fa-trash-o"/></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- MAIN SETTINGS VIEW -->
+                    <t t-else="">
+                        <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Settings</span></nav><h1><i class="fa fa-cog"/> Time Management Settings</h1><p>Configure all time management modules and policies</p></div></div>
+                        <!-- Top Tab Bar -->
+                        <div class="ctm-settings-tabs">
+                            <button t-att-class="'ctm-stab ' + (state.settingsTab === 'overview' ? 'active' : '')" t-on-click="() => this.setSettingsTab('overview')"><i class="fa fa-th-large"/> Overview</button>
+                            <button t-att-class="'ctm-stab ' + (state.settingsTab === 'attendance' ? 'active' : '')" t-on-click="() => this.setSettingsTab('attendance')"><i class="fa fa-calendar"/> Attendance</button>
+                            <button t-att-class="'ctm-stab ' + (state.settingsTab === 'shift' ? 'active' : '')" t-on-click="() => this.setSettingsTab('shift')"><i class="fa fa-clock-o"/> Shift Management</button>
+                            <button t-att-class="'ctm-stab ' + (state.settingsTab === 'overtime' ? 'active' : '')" t-on-click="() => this.setSettingsTab('overtime')"><i class="fa fa-hourglass-half"/> Overtime</button>
+                            <button t-att-class="'ctm-stab ' + (state.settingsTab === 'tracking' ? 'active' : '')" t-on-click="() => this.setSettingsTab('tracking')"><i class="fa fa-list-alt"/> Time Tracking</button>
+                        </div>
+
+                        <!-- TAB: Overview -->
+                        <t t-if="state.settingsTab === 'overview'">
+                            <t t-if="state.settingsOverview">
+                                <div class="ctm-settings-section-title"><h2>Settings Overview</h2><p>Configuration status dashboard for all time management modules</p></div>
+                                <div class="ctm-settings-cards">
+                                    <t t-foreach="[['attendance','Attendance','fa-calendar'],['shift','Shift Management','fa-clock-o'],['overtime','Overtime','fa-hourglass-half'],['tracking','Time Tracking','fa-list-alt']]" t-as="mod" t-key="mod[0]">
+                                        <div t-att-class="'ctm-settings-card ' + mod[0]">
+                                            <div class="ctm-settings-card-head">
+                                                <i t-att-class="'fa ' + mod[2]"/>
+                                                <span t-att-class="'ctm-cfg-badge ' + state.settingsOverview[mod[0]].status" t-esc="state.settingsOverview[mod[0]].status === 'configured' ? 'Configured' : state.settingsOverview[mod[0]].status === 'partial' ? 'Partial' : 'Not Set'"/>
+                                            </div>
+                                            <h3 t-esc="mod[1]"/>
+                                            <ul class="ctm-settings-card-items">
+                                                <li t-foreach="state.settingsOverview[mod[0]].items" t-as="item" t-key="item_index" t-esc="item"/>
+                                            </ul>
+                                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.setSettingsTab(mod[0])">Configure →</button>
+                                        </div>
+                                    </t>
+                                </div>
+                                <!-- Onboarding Checklist -->
+                                <div class="ctm-settings-section-title" style="margin-top:28px"><h2><i class="fa fa-check-circle" style="color:var(--pink)"/> Onboarding Checklist</h2><p>Complete these steps to go live with time management</p></div>
+                                <div class="ctm-checklist ctm-panel">
+                                    <t t-foreach="[['set_shifts','Set Work Shifts','shift'],['assign_employees','Assign Employees to Shifts','shift'],['configure_ot','Configure OT Policies','overtime'],['enable_timesheets','Enable Timesheets','tracking'],['launched','Review &amp; Go Live','']]" t-as="step" t-key="step[0]">
+                                        <div t-att-class="'ctm-checklist-item ' + (state.settingsOverview.checklist[step[0]] ? 'done' : '')">
+                                            <span class="ctm-check-num" t-esc="step_index + 1"/>
+                                            <i t-att-class="'fa ' + (state.settingsOverview.checklist[step[0]] ? 'fa-check-square' : 'fa-square-o')"/>
+                                            <span t-out="step[1]"/>
+                                            <button t-if="!state.settingsOverview.checklist[step[0]] and step[2]" class="ctm-checklist-goto" t-on-click="() => this.setSettingsTab(step[2])">Go to setting →</button>
+                                            <button t-if="!state.settingsOverview.checklist[step[0]] and !step[2]" class="ctm-checklist-goto" t-on-click="launchSystem">Launch →</button>
+                                            <i t-if="state.settingsOverview.checklist[step[0]]" class="fa fa-check-circle ctm-done-icon"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                            <div t-else="" class="ctm-empty-state"><i class="fa fa-spinner fa-spin"/><h2>Loading overview...</h2></div>
+                        </t>
+
+                        <!-- SPLIT VIEW FOR MODULE TABS (Screenshot 3, 4, 5) -->
+                        <t t-else="">
+                            <div class="ctm-settings-split-view">
+                                <!-- Inner Left Sub-sidebar -->
+                                <aside class="ctm-sub-sidebar">
+                                    <t t-if="state.settingsTab === 'attendance'">
+                                        <button t-att-class="'ctm-subnav ' + (state.attSubTab === 'policy' ? 'active' : '')" t-on-click="() => state.attSubTab = 'policy'"><i class="fa fa-file-text-o"/> Attendance Policy</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.attSubTab === 'method' ? 'active' : '')" t-on-click="() => state.attSubTab = 'method'"><i class="fa fa-clock-o"/> Attendance Method</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.attSubTab === 'permissions' ? 'active' : '')" t-on-click="() => state.attSubTab = 'permissions'"><i class="fa fa-user-circle"/> Permissions</button>
+                                        <button class="ctm-subnav" t-on-click="openWorkflowsView"><i class="fa fa-check-square-o"/> Approvals</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.attSubTab === 'notifications' ? 'active' : '')" t-on-click="() => state.attSubTab = 'notifications'"><i class="fa fa-bell-o"/> Notifications</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.attSubTab === 'work_mode' ? 'active' : '')" t-on-click="() => state.attSubTab = 'work_mode'"><i class="fa fa-briefcase"/> Work Mode</button>
+                                    </t>
+                                    <t t-elif="state.settingsTab === 'shift'">
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'templates' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'templates'"><i class="fa fa-calendar"/> Shift Templates</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'assignment' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'assignment'"><i class="fa fa-users"/> Shift Assignment</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'swapping' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'swapping'"><i class="fa fa-refresh"/> Shift Swapping</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'rotation' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'rotation'"><i class="fa fa-repeat"/> Shift Rotation</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'rules' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'rules'"><i class="fa fa-exclamation-triangle"/> Scheduling Rules</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'opencover' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'opencover'"><i class="fa fa-folder-open-o"/> Open Cover</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.shiftSubTab === 'blackout' ? 'active' : '')" t-on-click="() => state.shiftSubTab = 'blackout'"><i class="fa fa-ban"/> Blackout Dates</button>
+                                    </t>
+                                    <t t-elif="state.settingsTab === 'overtime'">
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'policies' ? 'active' : '')" t-on-click="() => state.otSubTab = 'policies'"><i class="fa fa-line-chart"/> Overtime Policies</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'rates' ? 'active' : '')" t-on-click="() => state.otSubTab = 'rates'"><i class="fa fa-percent"/> Overtime Rates</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'comp_time' ? 'active' : '')" t-on-click="() => state.otSubTab = 'comp_time'"><i class="fa fa-calendar-minus-o"/> Comp-Time (TOIL)</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'payroll' ? 'active' : '')" t-on-click="() => state.otSubTab = 'payroll'"><i class="fa fa-money"/> Payroll Integration</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'eligibility' ? 'active' : '')" t-on-click="() => state.otSubTab = 'eligibility'"><i class="fa fa-user"/> Eligibility</button>
+                                        <button t-att-class="'ctm-subnav ' + (state.otSubTab === 'caps' ? 'active' : '')" t-on-click="() => state.otSubTab = 'caps'"><i class="fa fa-pie-chart"/> Limits &amp; Caps</button>
+                                        <button class="ctm-subnav" t-on-click="openWorkflowsView"><i class="fa fa-check-square-o"/> Approval Workflow</button>
+                                    </t>
+                                    <t t-else="">
+                                        <button t-att-class="'ctm-subnav ' + (state.trackingSubTab === 'policies' ? 'active' : '')" t-on-click="() => state.trackingSubTab = 'policies'"><i class="fa fa-file-text-o"/> Timesheet Policies</button>
+                                        <button class="ctm-subnav" t-on-click="openWorkflowsView"><i class="fa fa-check-square-o"/> Approval Workflow</button>
+                                    </t>
+                                </aside>
+
+                                <!-- Main Right Content Panel -->
+                                <main class="ctm-sub-content">
+                                    <!-- ATTENDANCE -> ATTENDANCE POLICY (Screenshot 3) -->
+                                    <t t-if="state.settingsTab === 'attendance'">
+                                        <div class="ctm-sub-head">
+                                            <h2>Attendance Policy</h2>
+                                            <p>Define your organization's attendance rules</p>
+                                        </div>
+                                        <div class="ctm-sub-body">
+                                            <!-- Policy Type Radio Cards -->
+                                            <label class="ctm-field-title">Policy Type</label>
+                                            <div class="ctm-policy-cards">
+                                                <div t-att-class="'ctm-pcard ' + (state.policy.policy_type === 'strict' ? 'active' : '')" t-on-click="() => state.policy.policy_type = 'strict'">
+                                                    <div class="ctm-pcard-radio"><span t-if="state.policy.policy_type === 'strict'"/></div>
+                                                    <div><strong>Strict Policy</strong><small>Must complete minimum hours</small></div>
+                                                </div>
+                                                <div t-att-class="'ctm-pcard ' + (state.policy.policy_type === 'lenient' ? 'active' : '')" t-on-click="() => state.policy.policy_type = 'lenient'">
+                                                    <div class="ctm-pcard-radio"><span t-if="state.policy.policy_type === 'lenient'"/></div>
+                                                    <div><strong>Lenient Policy</strong><small>Flexible with grace periods</small></div>
+                                                </div>
+                                            </div>
+
+                                            <label class="ctm-field-title" style="margin-top:20px">Select Shift Template</label>
+                                            <select class="ctm-select-full" t-model="state.policy.selected_shift_id">
+                                                <option value="">-- Select Shift --</option>
+                                                <t t-foreach="state.settingsShifts" t-as="shift" t-key="shift.id">
+                                                    <option t-att-value="shift.id" t-esc="shift.name + ' (' + shift.start + ' - ' + shift.end + ')'"/>
+                                                </t>
+                                            </select>
+
+                                            <div class="ctm-three-grid" style="margin-top:20px">
+                                                <label>Full Day Hours<input type="number" min="1" max="24" step="0.5" t-model="state.policy.standard_hours"/></label>
+                                                <label>Half Day Hours<input type="number" min="1" max="12" step="0.5" t-model="state.policy.half_day_hours"/></label>
+                                                <label>Grace Period (mins)<input type="number" min="0" max="60" t-model="state.policy.default_grace_minutes"/></label>
+                                            </div>
+
+                                            <div class="ctm-toggle-row" style="margin-top:24px">
+                                                <div><strong>Enable Time Round-off</strong><small>Round clock times to nearest interval</small></div>
+                                                <label class="ctm-switch"><input type="checkbox" t-model="state.policy.enable_time_round_off"/><span/></label>
+                                            </div>
+                                            <div t-if="state.policy.enable_time_round_off" class="ctm-indent-field">
+                                                <label>Round-off Interval</label>
+                                                <select t-model="state.policy.round_off_interval">
+                                                    <option value="5">5 minutes</option>
+                                                    <option value="15">15 minutes</option>
+                                                    <option value="30">30 minutes</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="ctm-toggle-row" style="margin-top:20px">
+                                                <div><strong>Enable Break Period</strong><small>Set a mandatory break time during working hours</small></div>
+                                                <label class="ctm-switch"><input type="checkbox" t-model="state.policy.enable_break_period"/><span/></label>
+                                            </div>
+
+                                            <label class="ctm-field-title" style="margin-top:24px">Weekend Days</label>
+                                            <div class="ctm-day-pills-row">
+                                                <t t-foreach="[['Sun',0],['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6]]" t-as="day" t-key="day[1]">
+                                                    <button t-att-class="'ctm-day-btn ' + ((state.policy.weekend_days or []).includes(day[1]) ? 'pink' : '')" t-on-click="() => this.toggleWeekendDay(day[1])" t-esc="day[0]"/>
                                                 </t>
                                             </div>
-                                        </td>
-                                        <td><t t-esc="shift.break_minutes"/> min</td>
-                                        <td t-esc="shift.recurrence"/>
-                                        <td>
-                                            <button class="link" t-on-click="() => this.openSettingsShiftForm(shift)"><i class="fa fa-pencil"/></button>
-                                            <button class="link" style="color:#e52d3a" t-on-click="() => this.deleteSettingsShift(shift.id)"><i class="fa fa-trash-o"/></button>
-                                        </td>
-                                    </tr>
-                                    <tr t-if="!state.settingsShifts.length"><td colspan="8" class="empty">No shifts created yet. Click <b>New Shift</b> to add one.</td></tr>
-                                </tbody>
-                            </table>
-                        </section>
-                        <!-- Inline Shift Form Modal -->
-                        <t t-if="state.settingsShiftForm">
-                            <div class="ctm-overlay">
-                                <section class="ctm-modal ctm-shift-form">
-                                    <button class="ctm-close" t-on-click="closeSettingsShiftForm">×</button>
-                                    <h2><t t-esc="state.settingsShiftForm.id ? 'Edit Shift' : 'Create New Shift'"/></h2>
-                                    <div class="ctm-form-grid">
-                                        <label>Shift Name *<input placeholder="e.g. Morning Shift" t-model="state.settingsShiftForm.name"/></label>
-                                        <label>Code<input placeholder="e.g. DAY" t-model="state.settingsShiftForm.code"/></label>
-                                        <label>Start Time (24h)<input type="number" step="0.5" min="0" max="23.5" t-model="state.settingsShiftForm.start_hour"/></label>
-                                        <label>End Time (24h)<input type="number" step="0.5" min="0" max="23.5" t-model="state.settingsShiftForm.end_hour"/></label>
-                                        <label>Break (minutes)<input type="number" min="0" max="120" t-model="state.settingsShiftForm.break_minutes"/></label>
-                                        <label>Grace Period (minutes)<input type="number" min="0" max="60" t-model="state.settingsShiftForm.grace_minutes"/></label>
-                                        <label>Shift Type<select t-model="state.settingsShiftForm.shift_type"><option value="fixed">Fixed</option><option value="rotating">Rotating</option><option value="night">Night</option><option value="split">Split</option></select></label>
-                                        <label>Recurrence<select t-model="state.settingsShiftForm.recurrence"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="biweekly">Bi-weekly</option><option value="monthly">Monthly</option><option value="rotating">Rotating</option></select></label>
-                                    </div>
-                                    <label>Active Days</label>
-                                    <div class="ctm-day-selector">
-                                        <t t-foreach="[['Mon',0],['Tue',1],['Wed',2],['Thu',3],['Fri',4],['Sat',5],['Sun',6]]" t-as="day" t-key="day[1]">
-                                            <button t-att-class="state.settingsShiftForm.active_days.includes(day[1]) ? 'active' : ''" t-on-click="() => this.toggleSettingsShiftDay(day[1])" t-esc="day[0]"/>
+                                        </div>
+
+                                        <!-- Sticky Bottom Bar -->
+                                        <div class="ctm-bottom-bar">
+                                            <button class="ctm-btn" t-on-click="openSettings">Reset</button>
+                                            <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                        </div>
+                                    </t>
+
+                                    <!-- SHIFT MANAGEMENT -> SHIFT TEMPLATES (Screenshot 4) -->
+                                    <t t-elif="state.settingsTab === 'shift'">
+                                        <div class="ctm-sub-head ctm-flex-between">
+                                            <div><h2>Shift Templates</h2><p>Create and manage shifts</p></div>
+                                            <button class="ctm-btn pink" t-on-click="() => this.openSettingsShiftForm()"><i class="fa fa-plus"/> Add Shift</button>
+                                        </div>
+                                        <div class="ctm-sub-body">
+                                            <div class="ctm-shift-cards-list">
+                                                <t t-foreach="state.settingsShifts" t-as="shift" t-key="shift.id">
+                                                    <div t-att-class="'ctm-shift-card-row ' + (shift_index % 2 === 0 ? 'green' : 'purple')">
+                                                        <div class="ctm-scard-top">
+                                                            <div class="ctm-scard-field grow">
+                                                                <label>Shift Name</label>
+                                                                <input t-model="shift.name" placeholder="Shift Name"/>
+                                                            </div>
+                                                            <div class="ctm-scard-field">
+                                                                <label>Start Time</label>
+                                                                <input type="text" t-model="shift.start" placeholder="09:00 AM"/>
+                                                            </div>
+                                                            <div class="ctm-scard-field">
+                                                                <label>End Time</label>
+                                                                <input type="text" t-model="shift.end" placeholder="05:00 PM"/>
+                                                            </div>
+                                                            <button class="ctm-scard-del" t-on-click="() => this.deleteSettingsShift(shift.id)"><i class="fa fa-trash-o"/></button>
+                                                        </div>
+                                                        <div class="ctm-scard-bot">
+                                                            <div class="ctm-scard-field">
+                                                                <label>Break (mins)</label>
+                                                                <input type="number" t-model="shift.break_minutes"/>
+                                                            </div>
+                                                            <div class="ctm-scard-days">
+                                                                <label>Work Days</label>
+                                                                <div class="ctm-day-pills-row sm">
+                                                                    <t t-foreach="[['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6],['Sun',0]]" t-as="day" t-key="day[1]">
+                                                                        <span t-att-class="'ctm-day-btn sm ' + (shift.active_days.includes(day[1]) ? 'pink' : '')" t-esc="day[0]"/>
+                                                                    </t>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </t>
+                                                <div t-if="!state.settingsShifts.length" class="ctm-empty-state"><p>No shift templates. Click <b>+ Add Shift</b> above.</p></div>
+                                            </div>
+                                        </div>
+                                        <!-- Sticky Bottom Bar -->
+                                        <div class="ctm-bottom-bar">
+                                            <button class="ctm-btn" t-on-click="loadSettingsShifts">Reset</button>
+                                            <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                        </div>
+
+                                        <!-- Inline Shift Form Modal -->
+                                        <t t-if="state.settingsShiftForm">
+                                            <div class="ctm-overlay">
+                                                <section class="ctm-modal ctm-shift-form">
+                                                    <button class="ctm-close" t-on-click="closeSettingsShiftForm">×</button>
+                                                    <h2><t t-esc="state.settingsShiftForm.id ? 'Edit Shift' : 'Create New Shift'"/></h2>
+                                                    <div class="ctm-form-grid">
+                                                        <label>Shift Name *<input placeholder="e.g. Morning Shift" t-model="state.settingsShiftForm.name"/></label>
+                                                        <label>Code<input placeholder="e.g. DAY" t-model="state.settingsShiftForm.code"/></label>
+                                                        <label>Start Time (24h)<input type="number" step="0.5" min="0" max="23.5" t-model="state.settingsShiftForm.start_hour"/></label>
+                                                        <label>End Time (24h)<input type="number" step="0.5" min="0" max="23.5" t-model="state.settingsShiftForm.end_hour"/></label>
+                                                        <label>Break (minutes)<input type="number" min="0" max="120" t-model="state.settingsShiftForm.break_minutes"/></label>
+                                                        <label>Grace Period (minutes)<input type="number" min="0" max="60" t-model="state.settingsShiftForm.grace_minutes"/></label>
+                                                    </div>
+                                                    <label>Active Days</label>
+                                                    <div class="ctm-day-selector">
+                                                        <t t-foreach="[['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6],['Sun',0]]" t-as="day" t-key="day[1]">
+                                                            <button t-att-class="state.settingsShiftForm.active_days.includes(day[1]) ? 'active' : ''" t-on-click="() => this.toggleSettingsShiftDay(day[1])" t-esc="day[0]"/>
+                                                        </t>
+                                                    </div>
+                                                    <div class="ctm-shift-form footer">
+                                                        <button class="ctm-btn" t-on-click="closeSettingsShiftForm">Cancel</button>
+                                                        <button class="ctm-btn pink" t-on-click="saveSettingsShift"><i class="fa fa-save"/> Save Shift</button>
+                                                    </div>
+                                                </section>
+                                            </div>
                                         </t>
-                                    </div>
-                                    <div class="ctm-shift-form footer">
-                                        <button class="ctm-btn" t-on-click="closeSettingsShiftForm">Cancel</button>
-                                        <button class="ctm-btn pink" t-on-click="saveSettingsShift"><i class="fa fa-save"/> Save Shift</button>
-                                    </div>
-                                </section>
+                                    </t>
+
+                                    <!-- OVERTIME -> OVERTIME POLICIES (Screenshot 5) -->
+                                    <t t-elif="state.settingsTab === 'overtime'">
+                                        <div class="ctm-sub-head ctm-flex-between">
+                                            <div><h2>Overtime Policies</h2><p>Configure overtime rules</p></div>
+                                            <div class="ctm-toggle-flex">
+                                                <span>Enable Overtime</span>
+                                                <label class="ctm-switch"><input type="checkbox" t-model="state.policy.enable_overtime"/><span/></label>
+                                            </div>
+                                        </div>
+                                        <div class="ctm-sub-body">
+                                            <div class="ctm-ot-rules-list">
+                                                <!-- Daily Overtime -->
+                                                <div class="ctm-ot-rule-card">
+                                                    <div class="ctm-ot-card-top">
+                                                        <label class="ctm-switch"><input type="checkbox" t-model="state.policy.daily_overtime_enabled"/><span/></label>
+                                                        <div><strong>Daily Overtime</strong><small>Daily Overtime</small></div>
+                                                    </div>
+                                                    <div class="ctm-three-grid">
+                                                        <label>Threshold (hrs)<input type="number" step="0.5" min="0" t-model="state.policy.daily_overtime_threshold"/></label>
+                                                        <label>Rate Multiplier<input type="number" step="0.1" min="1" t-model="state.policy.daily_overtime_rate"/></label>
+                                                        <label>Approval<select t-model="state.policy.daily_overtime_approval"><option value="required">Required</option><option value="auto">Automatic</option><option value="none">None</option></select></label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Weekly Overtime -->
+                                                <div class="ctm-ot-rule-card">
+                                                    <div class="ctm-ot-card-top">
+                                                        <label class="ctm-switch"><input type="checkbox" t-model="state.policy.weekly_overtime_enabled"/><span/></label>
+                                                        <div><strong>Weekly Overtime</strong><small>Weekly Overtime</small></div>
+                                                    </div>
+                                                    <div class="ctm-three-grid">
+                                                        <label>Threshold (hrs)<input type="number" step="1" min="0" t-model="state.policy.weekly_overtime_threshold"/></label>
+                                                        <label>Rate Multiplier<input type="number" step="0.1" min="1" t-model="state.policy.weekly_overtime_rate"/></label>
+                                                        <label>Approval<select t-model="state.policy.weekly_overtime_approval"><option value="required">Required</option><option value="auto">Automatic</option><option value="none">None</option></select></label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Weekend Overtime -->
+                                                <div class="ctm-ot-rule-card">
+                                                    <div class="ctm-ot-card-top">
+                                                        <label class="ctm-switch"><input type="checkbox" t-model="state.policy.weekend_overtime"/><span/></label>
+                                                        <div><strong>Weekend Overtime</strong><small>Weekend Overtime</small></div>
+                                                    </div>
+                                                    <div class="ctm-three-grid">
+                                                        <label>Threshold (hrs)<input type="number" step="0.5" min="0" value="0"/></label>
+                                                        <label>Rate Multiplier<input type="number" step="0.1" min="1" t-model="state.policy.weekend_overtime_rate"/></label>
+                                                        <label>Approval<select t-model="state.policy.weekend_overtime_approval"><option value="required">Required</option><option value="auto">Automatic</option><option value="none">None</option></select></label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Holiday Overtime -->
+                                                <div class="ctm-ot-rule-card">
+                                                    <div class="ctm-ot-card-top">
+                                                        <label class="ctm-switch"><input type="checkbox" t-model="state.policy.holiday_overtime"/><span/></label>
+                                                        <div><strong>Holiday Overtime</strong><small>Holiday Overtime</small></div>
+                                                    </div>
+                                                    <div class="ctm-three-grid">
+                                                        <label>Threshold (hrs)<input type="number" step="0.5" min="0" value="0"/></label>
+                                                        <label>Rate Multiplier<input type="number" step="0.1" min="1" t-model="state.policy.holiday_overtime_rate"/></label>
+                                                        <label>Approval<select t-model="state.policy.holiday_overtime_approval"><option value="required">Required</option><option value="auto">Automatic</option><option value="none">None</option></select></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Sticky Bottom Bar -->
+                                        <div class="ctm-bottom-bar">
+                                            <button class="ctm-btn" t-on-click="openSettings">Reset</button>
+                                            <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                        </div>
+                                    </t>
+
+                                    <!-- TIME TRACKING -->
+                                    <t t-else="">
+                                        <div class="ctm-sub-head ctm-flex-between">
+                                            <div><h2>Timesheet Policies</h2><p>Configure time tracking and timesheet settings</p></div>
+                                            <div class="ctm-toggle-flex">
+                                                <span>Enable Time Tracking</span>
+                                                <label class="ctm-switch"><input type="checkbox" checked="checked" disabled="disabled"/><span/></label>
+                                            </div>
+                                        </div>
+                                        <div class="ctm-sub-body">
+                                            <div class="ctm-settings-group">
+                                                <h3><i class="fa fa-check-circle-o"/> Approval Settings</h3>
+                                                <div class="ctm-settings-fields">
+                                                    <label class="wide">Timesheet Approval Mode<select><option>Manager Approval Required</option><option>Auto-approve on submit</option></select></label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Sticky Bottom Bar -->
+                                        <div class="ctm-bottom-bar">
+                                            <button class="ctm-btn" t-on-click="openSettings">Reset</button>
+                                            <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                        </div>
+                                    </t>
+                                </main>
                             </div>
                         </t>
                     </t>
-
-                    <!-- TAB: Overtime -->
-                    <t t-elif="state.settingsTab === 'overtime'">
-                        <div class="ctm-settings-section-title"><h2>Overtime Configuration</h2><p>Set overtime thresholds, multiplier rates and approval preferences</p></div>
-                        <section class="ctm-settings-form">
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-clock-o"/> Overtime Thresholds</h3>
-                                <div class="ctm-settings-fields">
-                                    <label>Daily Overtime Threshold (hours)<br/><small>Hours per day beyond which overtime applies</small><input type="number" min="0" max="24" step="0.5" t-model="state.policy.daily_overtime_threshold"/></label>
-                                    <label>OT Request Mode<select t-model="state.policy.overtime_request_mode"><option value="automatic">Automatic (from attendance)</option><option value="manual">Manual Request Only</option><option value="both">Automatic + Manual</option></select></label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-percent"/> Overtime Multiplier Rates</h3>
-                                <div class="ctm-settings-fields ctm-ot-rates">
-                                    <div class="ctm-ot-rate-card daily">
-                                        <span>Daily Overtime</span>
-                                        <strong>× <input type="number" min="1" max="5" step="0.1" t-model="state.policy.daily_overtime_rate"/></strong>
-                                        <small>Hours beyond daily threshold</small>
-                                    </div>
-                                    <div class="ctm-ot-rate-card weekend">
-                                        <div class="ctm-ot-rate-toggle">
-                                            <span>Weekend Overtime</span>
-                                            <label class="ctm-switch"><input type="checkbox" t-model="state.policy.weekend_overtime"/><span/></label>
-                                        </div>
-                                        <strong>× <input type="number" min="1" max="5" step="0.1" t-model="state.policy.weekend_overtime_rate" t-att-disabled="!state.policy.weekend_overtime"/></strong>
-                                        <small>Work on Saturday / Sunday</small>
-                                    </div>
-                                    <div class="ctm-ot-rate-card holiday">
-                                        <div class="ctm-ot-rate-toggle">
-                                            <span>Holiday Overtime</span>
-                                            <label class="ctm-switch"><input type="checkbox" t-model="state.policy.holiday_overtime"/><span/></label>
-                                        </div>
-                                        <strong>× <input type="number" min="1" max="5" step="0.1" t-model="state.policy.holiday_overtime_rate" t-att-disabled="!state.policy.holiday_overtime"/></strong>
-                                        <small>Work on public holidays</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-actions"><button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Overtime Settings</button></div>
-                        </section>
-                    </t>
-
-                    <!-- TAB: Time Tracking -->
-                    <t t-elif="state.settingsTab === 'tracking'">
-                        <div class="ctm-settings-section-title"><h2>Time Tracking Configuration</h2><p>Control timesheet submission, approvals and integrations</p></div>
-                        <section class="ctm-settings-form">
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-toggle-on"/> Feature Toggles</h3>
-                                <div class="ctm-settings-fields">
-                                    <label class="ctm-toggle-label"><input type="checkbox" checked="checked" disabled="disabled"/> Time Tracking Enabled</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.payroll_integration"/> Payroll Integration</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.performance_integration"/> Performance Integration</label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-group">
-                                <h3><i class="fa fa-check-circle-o"/> Approval Workflow</h3>
-                                <div class="ctm-settings-fields">
-                                    <label class="wide">Timesheet Approval Required<br/><small>Submitted timesheets require manager review before being finalised</small><select disabled="disabled"><option>Required (Manager Approval)</option></select></label>
-                                </div>
-                            </div>
-                            <div class="ctm-settings-actions"><button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Time Tracking Settings</button></div>
-                        </section>
-                    </t>
                 </t>
+
 
             </main>
             </t>

@@ -36,8 +36,28 @@ class CleonTimePolicy(models.Model):
     performance_integration = fields.Boolean()
     employee_portal = fields.Boolean(default=True)
     leave_integration = fields.Boolean(default=True)
+    policy_type = fields.Selection([
+
+        ("strict", "Strict Policy"), ("lenient", "Lenient Policy"),
+    ], default="strict", required=True)
+    selected_shift_id = fields.Many2one("cleon.hr.shift", string="Default Shift Template")
+    half_day_hours = fields.Float(default=4.0)
+    enable_time_round_off = fields.Boolean(default=True)
+    round_off_interval = fields.Integer(default=15)
+    enable_break_period = fields.Boolean(default=False)
+    weekend_days = fields.Char(default="0,6", help="Comma-separated weekday numbers for weekend (0=Sun, 6=Sat)")
+    enable_overtime = fields.Boolean(default=True)
+    daily_overtime_enabled = fields.Boolean(default=True)
+    weekly_overtime_enabled = fields.Boolean(default=True)
+    weekly_overtime_threshold = fields.Float(default=40.0)
+    weekly_overtime_rate = fields.Float(default=1.5)
+    daily_overtime_approval = fields.Selection([("required", "Required"), ("auto", "Automatic"), ("none", "None")], default="required")
+    weekly_overtime_approval = fields.Selection([("required", "Required"), ("auto", "Automatic"), ("none", "None")], default="required")
+    weekend_overtime_approval = fields.Selection([("required", "Required"), ("auto", "Automatic"), ("none", "None")], default="required")
+    holiday_overtime_approval = fields.Selection([("required", "Required"), ("auto", "Automatic"), ("none", "None")], default="required")
     launched = fields.Boolean(default=False)
     go_live_date = fields.Date()
+
 
     _sql_constraints = [
         ("time_policy_company_unique", "unique(company_id)", "Only one Time Management policy is allowed per company."),
@@ -68,18 +88,34 @@ class CleonTimePolicy(models.Model):
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
         return {
             "id": policy.id,
+            "policy_type": policy.policy_type or "strict",
+            "selected_shift_id": policy.selected_shift_id.id if policy.selected_shift_id else False,
             "work_week": policy.work_week or "five",
             "standard_hours": policy.standard_hours or 8,
-            "default_break_minutes": policy.default_break_minutes or 0,
-            "default_grace_minutes": policy.default_grace_minutes or 0,
+            "half_day_hours": policy.half_day_hours or 4.0,
+            "default_break_minutes": policy.default_break_minutes or 60,
+            "default_grace_minutes": policy.default_grace_minutes or 15,
+            "enable_time_round_off": policy.enable_time_round_off,
+            "round_off_interval": policy.round_off_interval or 15,
+            "enable_break_period": policy.enable_break_period,
+            "weekend_days": [int(d) for d in (policy.weekend_days or "0,6").split(",") if d.isdigit()],
             "regularization_window_days": policy.regularization_window_days or 30,
             "clock_method": policy.clock_method or "manual",
+            "enable_overtime": policy.enable_overtime,
+            "daily_overtime_enabled": policy.daily_overtime_enabled,
             "daily_overtime_threshold": policy.daily_overtime_threshold or 8,
             "daily_overtime_rate": policy.daily_overtime_rate or 1.5,
+            "daily_overtime_approval": policy.daily_overtime_approval or "required",
+            "weekly_overtime_enabled": policy.weekly_overtime_enabled,
+            "weekly_overtime_threshold": policy.weekly_overtime_threshold or 40,
+            "weekly_overtime_rate": policy.weekly_overtime_rate or 1.5,
+            "weekly_overtime_approval": policy.weekly_overtime_approval or "required",
             "weekend_overtime": policy.weekend_overtime,
             "weekend_overtime_rate": policy.weekend_overtime_rate or 2.0,
+            "weekend_overtime_approval": policy.weekend_overtime_approval or "required",
             "holiday_overtime": policy.holiday_overtime,
             "holiday_overtime_rate": policy.holiday_overtime_rate or 2.5,
+            "holiday_overtime_approval": policy.holiday_overtime_approval or "required",
             "overtime_request_mode": policy.overtime_request_mode or "both",
             "synchronization_frequency": policy.synchronization_frequency or "realtime",
             "payroll_integration": policy.payroll_integration,
@@ -94,11 +130,18 @@ class CleonTimePolicy(models.Model):
     def save_cleon_policy(self, values):
         if not self.env.user.has_group("base.group_system"):
             raise AccessError(_("Only Settings administrators can change company policy configuration."))
+        values = dict(values)
+        if "weekend_days" in values and isinstance(values["weekend_days"], list):
+            values["weekend_days"] = ",".join(str(d) for d in values["weekend_days"])
         allowed = {
-            "work_week", "standard_hours", "default_break_minutes", "default_grace_minutes",
-            "regularization_window_days",
-            "clock_method", "daily_overtime_threshold", "weekend_overtime", "holiday_overtime",
-            "daily_overtime_rate", "weekend_overtime_rate", "holiday_overtime_rate",
+            "policy_type", "selected_shift_id", "work_week", "standard_hours", "half_day_hours",
+            "default_break_minutes", "default_grace_minutes", "enable_time_round_off",
+            "round_off_interval", "enable_break_period", "weekend_days", "regularization_window_days",
+            "clock_method", "enable_overtime", "daily_overtime_enabled", "daily_overtime_threshold",
+            "daily_overtime_rate", "daily_overtime_approval", "weekly_overtime_enabled",
+            "weekly_overtime_threshold", "weekly_overtime_rate", "weekly_overtime_approval",
+            "weekend_overtime", "weekend_overtime_rate", "weekend_overtime_approval",
+            "holiday_overtime", "holiday_overtime_rate", "holiday_overtime_approval",
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",
             "performance_integration", "employee_portal", "leave_integration",
             "launched", "go_live_date",
@@ -111,6 +154,7 @@ class CleonTimePolicy(models.Model):
             clean["company_id"] = self.env.company.id
             policy = self.create(clean)
         return policy.get_cleon_policy()
+
 
     @api.model
     def get_settings_overview(self):

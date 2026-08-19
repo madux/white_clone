@@ -31,6 +31,19 @@ export class TimeManagementApp extends Component {
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
             moduleDropdown: false,
             settingsTab: "overview",
+            attSubTab: "policy",
+            shiftSubTab: "templates",
+            otSubTab: "policies",
+            trackingSubTab: "policies",
+            showWorkflows: false,
+            workflowTab: "chains",
+            approvalChains: [
+                { id: 1, name: "Leave Approval Chain", module: "Leave Management", levels: 3, active: true },
+                { id: 2, name: "Expense Approval Chain", module: "Compensation Management", levels: 3, active: true },
+                { id: 3, name: "Asset Request Chain", module: "Asset Management", levels: 2, active: true },
+                { id: 4, name: "Overtime Approval Chain", module: "Time Management", levels: 2, active: true },
+                { id: 5, name: "Disciplinary Action Chain", module: "Disciplinary Management", levels: 3, active: true },
+            ],
             settingsOverview: null,
             settingsShifts: [],
             settingsShiftForm: null,
@@ -304,6 +317,41 @@ export class TimeManagementApp extends Component {
         this.state.policy.go_live_date = new Date().toISOString().slice(0, 10);
         await this.savePolicy();
         this.notification.add("Time Management is now live! 🎉", {type:"success"});
+    }
+    toggleWeekendDay(day) {
+        if (!Array.isArray(this.state.policy.weekend_days)) {
+            this.state.policy.weekend_days = [0, 6];
+        }
+        const idx = this.state.policy.weekend_days.indexOf(day);
+        if (idx >= 0) {
+            this.state.policy.weekend_days.splice(idx, 1);
+        } else {
+            this.state.policy.weekend_days.push(day);
+        }
+    }
+    openWorkflowsView() {
+        this.state.showWorkflows = true;
+    }
+    closeWorkflowsView() {
+        this.state.showWorkflows = false;
+    }
+    toggleApprovalChain(chainId) {
+        const chain = this.state.approvalChains.find(c => c.id === chainId);
+        if (chain) {
+            chain.active = !chain.active;
+            this.notification.add(`${chain.name} ${chain.active ? 'activated' : 'deactivated'}.`, {type: "info"});
+        }
+    }
+    addApprovalChain() {
+        const id = this.state.approvalChains.length + 1;
+        this.state.approvalChains.push({
+            id,
+            name: `New Approval Chain #${id}`,
+            module: "Time Management",
+            levels: 2,
+            active: true,
+        });
+        this.notification.add("New approval chain added.", {type: "success"});
     }
 
     get filteredRows() {
