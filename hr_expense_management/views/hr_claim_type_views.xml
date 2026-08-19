@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_type_tree" model="ir.ui.view">
+        <field name="name">hr.claim.type.tree</field>
+        <field name="model">hr.claim.type</field>
+        <field name="arch" type="xml">
+            <tree string="Claim Types" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="category_id"/>
+                <field name="amount_type"/>
+                <field name="reimbursable"/>
+                <field name="receipt_policy"/>
+                <field name="submission_window_days"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_type_search" model="ir.ui.view">
+        <field name="name">hr.claim.type.search</field>
+        <field name="model">hr.claim.type</field>
+        <field name="arch" type="xml">
+            <search string="Claim Types">
+                <field name="name"/><field name="code"/><field name="category_id"/>
+                <filter name="active" string="Active" domain="[('active', '=', True)]"/>
+                <filter name="inactive" string="Inactive" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_category" string="Category" context="{'group_by': 'category_id'}"/>
+                <filter name="group_amount_type" string="Amount Type" context="{'group_by': 'amount_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_hr_claim_type_form" model="ir.ui.view">
+        <field name="name">hr.claim.type.form</field>
+        <field name="model">hr.claim.type</field>
+        <field name="arch" type="xml">
+            <form string="Claim Type">
+                <sheet>
+                    <field name="company_id" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title"><label for="name"/><h1><field name="name" placeholder="e.g. Domestic Travel"/></h1></div>
+                    <group>
+                        <group><field name="code"/><field name="category_id"/><field name="sequence"/></group>
+                        <group><field name="company_id" groups="base.group_multi_company"/><field name="active"/></group>
+                    </group>
+                    <notebook>
+                        <page string="1. Basic Information">
+                            <group><field name="description"/><field name="internal_notes"/></group>
+                        </page>
+                        <page string="2. Claim Configuration">
+                            <group>
+                                <group><field name="amount_type"/><field name="currency_id" invisible="1"/><field name="fixed_amount" invisible="amount_type != 'fixed'"/></group>
+                                <group><field name="minimum_amount"/><field name="maximum_amount"/></group>
+                            </group>
+                        </page>
+                        <page string="3. Eligibility &amp; Scope">
+                            <group><field name="eligibility"/></group>
+                            <group invisible="eligibility != 'restricted'">
+                                <field name="department_ids" widget="many2many_tags"/>
+                                <field name="employee_ids" widget="many2many_tags"/>
+                            </group>
+                        </page>
+                        <page string="4. Documentation">
+                            <group><field name="receipt_policy"/><field name="receipt_threshold" invisible="receipt_policy != 'conditional'"/></group>
+                        </page>
+                        <page string="5. Approval Workflow">
+                            <group><field name="approval_type"/><field name="submission_window_days"/></group>
+                            <div class="alert alert-info" role="alert" invisible="approval_type == 'single'">Multi-level choices are retained for configuration compatibility; executable v1 decisions are made by Claims Managers or Administrators.</div>
+                        </page>
+                        <page string="6. Accounting &amp; Payroll">
+                            <group><field name="reimbursable"/><field name="payment_method" invisible="not reimbursable"/><field name="gl_account_code"/></group>
+                        </page>
+                        <page string="7. Limits &amp; Validations">
+                            <group><field name="maximum_per_claim"/></group>
+                            <field name="window_ids" widget="many2many_tags" domain="[('company_id', '=', company_id)]"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_hr_claim_types" model="ir.actions.act_window">
+        <field name="name">Claim Types</field>
+        <field name="res_model">hr.claim.type</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_hr_claim_type_search"/>
+        <field name="context">{'active_test': False}</field>
+    </record>
+</odoo>

@@ -1,0 +1,45 @@
+.o_hr_claim_dashboard {
+    --claim-primary: #ed3d98;
+
+    .btn-primary {
+        --btn-bg: var(--claim-primary);
+        --btn-border-color: var(--claim-primary);
+        --btn-hover-bg: #d92f86;
+        --btn-hover-border-color: #d92f86;
+    }
+
+    .o_claim_kpi {
+        transition: transform 160ms ease, box-shadow 160ms ease;
+        min-height: 190px;
+        border-radius: 1rem;
+    }
+
+    .o_claim_kpi:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.75rem 1.5rem rgba(15, 23, 42, 0.1) !important;
+    }
+
+    .o_claim_kpi_icon {
+        align-items: center;
+        border-radius: 0.8rem;
+        display: inline-flex;
+        font-size: 1.15rem;
+        height: 2.75rem;
+        justify-content: center;
+        width: 2.75rem;
+    }
+
+    .card {
+        border-radius: 1rem;
+    }
+
+    .o_claim_chart {
+        height: 285px;
+        position: relative;
+    }
+
+    .o_claim_recent {
+        cursor: pointer;
+    }
+}
+

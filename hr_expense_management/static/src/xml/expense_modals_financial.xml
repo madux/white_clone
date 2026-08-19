@@ -1,0 +1,385 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpenseVendorModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Vendor name</label>
+                    <input class="form-control" data-field="name" t-on-input="updateModalValue" placeholder="Supplier or service provider"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Vendor code</label>
+                    <input class="form-control" data-field="code" t-on-input="updateModalValue" placeholder="V-001"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" data-field="email" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input class="form-control" data-field="phone" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" data-field="category_id" t-on-change="updateModalValue">
+                        <option value="">Uncategorized</option>
+                        <option t-foreach="state.pageData.vendor_options?.categories || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Payment term</label>
+                    <select class="form-select" data-field="term_id" t-on-change="updateModalValue">
+                        <option value="">No term</option>
+                        <option t-foreach="state.pageData.vendor_options?.terms || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Default expense GL</label>
+                    <select class="form-select" data-field="account_id" t-on-change="updateModalValue">
+                        <option value="">No default</option>
+                        <option t-foreach="state.pageData.vendor_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Rating</label>
+                    <select class="form-select" data-field="rating" t-on-change="updateModalValue">
+                        <option value="5">5 — Excellent</option>
+                        <option value="4">4 — Strong</option>
+                        <option value="3" selected="selected">3 — Good</option>
+                        <option value="2">2 — Fair</option>
+                        <option value="1">1 — Poor</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpensePettyModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <t t-if="state.modal.kind === 'fund'">
+                    <div class="col-md-8">
+                        <label class="form-label">Fund name</label>
+                        <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Location</label>
+                        <input class="form-control" data-field="location" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Custodian</label>
+                        <select class="form-select" data-field="custodian_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.employees || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Maximum amount</label>
+                        <input type="number" min="0" class="form-control" data-field="maximum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Replenishment threshold</label>
+                        <input type="number" min="0" class="form-control" data-field="minimum_threshold" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'transaction'">
+                    <div class="col-md-6">
+                        <label class="form-label">Fund</label>
+                        <select class="form-select" data-field="fund_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.funds || []" t-as="item" t-key="item.id" t-att-value="item.id">
+                                <t t-esc="item.name"/> · <t t-esc="formatMoney(item.balance)"/>
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" data-field="date" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Payee</label>
+                        <input class="form-control" data-field="payee" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <input class="form-control" data-field="category" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Amount</label>
+                        <input type="number" min="0" class="form-control" data-field="amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Receipt</label>
+                        <input type="file" class="form-control" accept="image/*,.pdf" t-on-change="updateReceipt"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'reconciliation'">
+                    <div class="col-12">
+                        <label class="form-label">Fund</label>
+                        <select class="form-select" data-field="fund_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.funds || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Period start</label>
+                        <input type="date" class="form-control" data-field="period_start" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Physical cash count</label>
+                        <input type="number" min="0" class="form-control" data-field="physical_count" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" data-field="notes" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'custodian'">
+                    <div class="col-12">
+                        <label class="form-label">Fund</label>
+                        <select class="form-select" data-field="fund_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.funds || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">New custodian</label>
+                        <select class="form-select" data-field="custodian_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.employees || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="col-12">
+                        <label class="form-label">Fund</label>
+                        <select class="form-select" data-field="fund_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.petty_options?.funds || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Requested amount</label>
+                        <input type="number" min="0" class="form-control" data-field="requested_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Justification</label>
+                        <textarea class="form-control" data-field="justification" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12">
+                        <label>
+                            <input type="checkbox" class="form-check-input me-2" data-field="urgent" t-on-change="updateModalValue"/>Urgent request</label>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseAccountingModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <t t-if="state.modal.kind === 'account'">
+                    <div class="col-md-4">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">Account name</label>
+                        <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" data-field="account_type" t-on-change="updateModalValue">
+                            <option value="expense">Expense</option>
+                            <option value="expense_direct_cost">Direct Cost</option>
+                            <option value="asset_current">Current Asset</option>
+                            <option value="asset_non_current">Non-current Asset</option>
+                            <option value="asset_cash">Bank and Cash</option>
+                            <option value="liability_current">Current Liability</option>
+                            <option value="liability_payable">Payable</option>
+                            <option value="equity">Equity</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'mapping'">
+                    <div class="col-12">
+                        <label class="form-label">Mapping name</label>
+                        <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Source</label>
+                        <select class="form-select" data-field="source_type" t-on-change="updateModalValue">
+                            <option value="claim">Claim</option>
+                            <option value="payment">Claim Payment</option>
+                            <option value="advance">Cash Advance</option>
+                            <option value="petty_cash">Petty Cash</option>
+                            <option value="vendor">Vendor Expense</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" data-field="category_id" t-on-change="updateModalValue">
+                            <option value="">All categories</option>
+                            <option t-foreach="state.pageData.account_options?.categories || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Odoo journal</label>
+                        <select class="form-select" data-field="journal_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.journals || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Debit account</label>
+                        <select class="form-select" data-field="debit_account_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Credit account</label>
+                        <select class="form-select" data-field="credit_account_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <input class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" data-field="date" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Amount</label>
+                        <input type="number" min="0" class="form-control" data-field="amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Odoo journal</label>
+                        <select class="form-select" data-field="journal_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.journals || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Debit account</label>
+                        <select class="form-select" data-field="debit_account_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Credit account</label>
+                        <select class="form-select" data-field="credit_account_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.account_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label>
+                            <input type="checkbox" class="form-check-input me-2" data-field="post" t-on-change="updateModalValue"/>Post immediately after validation</label>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseBudgetModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <t t-if="state.modal.kind === 'period'">
+                    <div class="col-md-8">
+                        <label class="form-label">Period name</label>
+                        <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Start</label>
+                        <input type="date" class="form-control" data-field="date_start" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End</label>
+                        <input type="date" class="form-control" data-field="date_end" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Submission cut-off</label>
+                        <input type="date" class="form-control" data-field="submission_cutoff" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Approval cut-off</label>
+                        <input type="date" class="form-control" data-field="approval_cutoff" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Payment cut-off</label>
+                        <input type="date" class="form-control" data-field="payment_cutoff" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">GL cut-off</label>
+                        <input type="date" class="form-control" data-field="gl_cutoff" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'budget'">
+                    <div class="col-md-8">
+                        <label class="form-label">Budget name</label>
+                        <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Code</label>
+                        <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Period</label>
+                        <select class="form-select" data-field="period_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.budget_options?.periods || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" data-field="department_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.budget_options?.departments || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Cost centre</label>
+                        <input class="form-control" data-field="cost_center" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="col-12">
+                        <label class="form-label">Budget</label>
+                        <select class="form-select" data-field="budget_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.budget_options?.budgets || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Claim category</label>
+                        <select class="form-select" data-field="category_id" t-on-change="updateModalValue">
+                            <option value="">No category</option>
+                            <option t-foreach="state.pageData.budget_options?.categories || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">GL account</label>
+                        <select class="form-select" data-field="account_id" t-on-change="updateModalValue">
+                            <option value="">No GL account</option>
+                            <option t-foreach="state.pageData.budget_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Approved</label>
+                        <input type="number" min="0" class="form-control" data-field="approved_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Forecast</label>
+                        <input type="number" min="0" class="form-control" data-field="forecast_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Warning %</label>
+                        <input type="number" min="0" max="100" class="form-control" data-field="warning_threshold" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</templates>
