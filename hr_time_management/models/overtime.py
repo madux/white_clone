@@ -163,11 +163,28 @@ class CleonOvertimeRequest(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             self._check_workflow_protection(vals)
+            if vals.get("date"):
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
+                c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["date"], _("Overtime Request"))
         return super().create(vals_list)
 
     def write(self, vals):
         self._check_workflow_protection(vals)
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for req in self:
+                c_id = req.company_id.id
+                target_date = vals.get("date") or req.date
+                if target_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Overtime Request"), vals.get("manager_comment"))
         return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for req in self:
+                if req.date:
+                    self.env["cleon.time.period.lock"].check_period_lock(req.company_id.id, req.date, _("Overtime Request"))
+        return super().unlink()
 
     def _check_workflow_protection(self, vals):
         if self.env.su or self.env.user.has_group("base.group_system"):
@@ -189,6 +206,7 @@ class CleonOvertimeRequest(models.Model):
                 raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
             if request.state not in ("auto", "submitted"):
                 raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
+            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Decision"), comment)
             request.sudo().write({
                 "state": "approved" if decision == "approve" else "rejected",
                 "approver_id": self.env.user.id, "decision_at": fields.Datetime.now(),

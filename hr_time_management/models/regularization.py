@@ -156,11 +156,29 @@ class CleonAttendanceRegularization(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             self._check_workflow_protection(vals)
+            if vals.get("attendance_date"):
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
+                c_id = emp.company_id if emp else self.env.company
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["attendance_date"], _("Attendance Regularization"))
         return super().create(vals_list)
 
     def write(self, vals):
         self._check_workflow_protection(vals)
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id or rec.employee_id.company_id
+                target_date = vals.get("attendance_date") or rec.attendance_date
+                if target_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Attendance Regularization"), vals.get("manager_comment"))
         return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id or rec.employee_id.company_id
+                if rec.attendance_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, rec.attendance_date, _("Attendance Regularization"))
+        return super().unlink()
 
     def _check_workflow_protection(self, vals):
         if self.env.su or self.env.user.has_group("base.group_system"):
@@ -174,6 +192,8 @@ class CleonAttendanceRegularization(models.Model):
     def action_submit(self):
         self._check_reason()
         for record in self.filtered(lambda r: r.state == "draft"):
+            c_id = record.company_id or record.employee_id.company_id
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, record.attendance_date, _("Attendance Regularization Submit"))
             record.sudo().write({"state": "submitted"})
 
     def action_approve(self):
@@ -184,6 +204,8 @@ class CleonAttendanceRegularization(models.Model):
                 raise UserError(_("Only submitted regularization requests can be approved."))
             if not Policy._tm_can_approve(request, user):
                 raise AccessError(_("You are not authorized to approve this attendance regularization request (self-approval is not permitted for Line Managers)."))
+            c_id = request.company_id or request.employee_id.company_id
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Approve"))
             if request.requested_check_out and request.requested_check_out <= request.requested_check_in:
                 raise ValidationError(_("Requested check-out must be after check-in."))
             attendance = request.attendance_id
@@ -228,6 +250,8 @@ class CleonAttendanceRegularization(models.Model):
                 raise UserError(_("Only submitted regularization requests can be rejected."))
             if not Policy._tm_can_approve(request, user):
                 raise AccessError(_("You are not authorized to reject this regularization request."))
+            c_id = request.company_id or request.employee_id.company_id
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Reject"))
             request.sudo().write({
                 "state": "rejected",
                 "manager_comment": reason or request.manager_comment or False,

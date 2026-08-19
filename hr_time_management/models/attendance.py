@@ -1,10 +1,11 @@
 import calendar
 from datetime import datetime, time, timedelta
-
+import ipaddress
+import math
 import pytz
 
-from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
+from odoo import api, fields, models, tools, _
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class HrAttendance(models.Model):
@@ -17,6 +18,22 @@ class HrAttendance(models.Model):
         ("half_day", "Half-day"), ("absent", "Absent"), ("on_leave", "On Leave"),
     ], string="Status Override")
     cleon_edit_reason = fields.Text(string="Last Edit Reason", readonly=True)
+    in_latitude = fields.Float(string="In Latitude", digits=(10, 7))
+    in_longitude = fields.Float(string="In Longitude", digits=(10, 7))
+    out_latitude = fields.Float(string="Out Latitude", digits=(10, 7))
+    out_longitude = fields.Float(string="Out Longitude", digits=(10, 7))
+    in_accuracy = fields.Float(string="In Accuracy (m)")
+    out_accuracy = fields.Float(string="Out Accuracy (m)")
+    in_distance_meters = fields.Float(string="In Distance (m)")
+    out_distance_meters = fields.Float(string="Out Distance (m)")
+    in_mode = fields.Selection(selection_add=[
+        ("biometric", "Biometric Terminal"),
+        ("browser_gps", "Browser GPS"),
+    ], ondelete={"biometric": "set null", "browser_gps": "set null"})
+    out_mode = fields.Selection(selection_add=[
+        ("biometric", "Biometric Terminal"),
+        ("browser_gps", "Browser GPS"),
+    ], ondelete={"biometric": "set null", "browser_gps": "set null"})
 
     @api.model
     def get_cleon_access(self):
@@ -205,36 +222,279 @@ class HrAttendance(models.Model):
             },
         }
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if "check_in" in vals and vals["check_in"]:
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
+                c_id = emp.company_id if emp else self.env.company
+                tz = self._tz_for_employee(emp, vals["check_in"])
+                local_date = pytz.UTC.localize(fields.Datetime.to_datetime(vals["check_in"])).astimezone(tz).date()
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, local_date, _("Attendance"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id or rec.employee_id.company_id
+                target_dt = vals.get("check_in") or rec.check_in
+                if target_dt:
+                    tz = self._tz_for_employee(rec.employee_id, target_dt)
+                    local_date = pytz.UTC.localize(fields.Datetime.to_datetime(target_dt)).astimezone(tz).date()
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, local_date, _("Attendance"), vals.get("cleon_edit_reason"))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id or rec.employee_id.company_id
+                if rec.check_in:
+                    tz = self._tz_for_employee(rec.employee_id, rec.check_in)
+                    local_date = pytz.UTC.localize(rec.check_in).astimezone(tz).date()
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, local_date, _("Attendance"))
+        return super().unlink()
+
     @api.model
-    def cleon_toggle_attendance(self):
-        employee = self.env.user.employee_id
+    def _tz_for_employee(self, employee, target_date=None):
+        """Central schedule-aware timezone resolver with precedence:
+        1. Applicable shift / resource calendar timezone on target_date
+        2. Employee user_id.tz
+        3. Company partner / resource calendar timezone
+        4. UTC
+        """
         if not employee:
-            raise UserError(_("Your user account is not linked to an employee record."))
+            return pytz.UTC
+        t_date = fields.Date.to_date(target_date) if target_date else fields.Date.context_today(self)
+        Shift = self.env["cleon.hr.shift"]
+        exp = Shift._get_expected_working_hours_internal(employee.id, t_date)
+        if exp and exp.get("shift_id"):
+            shift = Shift.browse(exp["shift_id"])
+            if shift.resource_calendar_id and shift.resource_calendar_id.tz:
+                return pytz.timezone(shift.resource_calendar_id.tz)
+        if employee.resource_calendar_id and employee.resource_calendar_id.tz:
+            return pytz.timezone(employee.resource_calendar_id.tz)
+        if employee.sudo().user_id and employee.sudo().user_id.tz:
+            return pytz.timezone(employee.sudo().user_id.tz)
+        company = employee.company_id or self.env.company
+        if company.partner_id and company.partner_id.tz:
+            return pytz.timezone(company.partner_id.tz)
+        return pytz.UTC
+
+    @api.model
+    def _calculate_haversine_distance(self, lat1, lon1, lat2, lon2):
+        """Haversine formula calculating distance in meters between two lat/lon points."""
+        R = 6371000.0  # Earth radius in meters
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+        a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+        return R * c
+
+    @api.model
+    def _verify_clock_policy(self, policy, latitude=None, longitude=None, accuracy=None, client_ip=None):
+        """Central fail-closed clock policy engine evaluating GPS and CIDR IP Whitelist rules.
+
+        Modes:
+        - 'gps': Valid GPS coordinates within geofence and accuracy <= 500m required.
+        - 'ip': Authorized IP in CIDR whitelist required.
+        - 'mixed': Valid GPS OR Authorized CIDR IP required. Fail-closed if NEITHER is satisfied.
+        - 'manual': Allowed.
+        """
+        if not policy or policy.clock_method in (False, "manual"):
+            return True, 0.0, 0.0
+
+        method = policy.clock_method
+        gps_valid = False
+        dist_meters = 0.0
+        acc_val = float(accuracy) if accuracy is not None and accuracy != "" else 0.0
+
+        # 1. Evaluate GPS requirement
+        if latitude is not None and longitude is not None and latitude != "" and longitude != "":
+            try:
+                lat = float(latitude)
+                lon = float(longitude)
+            except (ValueError, TypeError):
+                if method == "gps":
+                    raise UserError(_("Invalid GPS coordinates received."))
+                lat, lon = None, None
+
+            if lat is not None and lon is not None:
+                if not (-90.0 <= lat <= 90.0) or not (-180.0 <= lon <= 180.0):
+                    if method == "gps":
+                        raise ValidationError(_("GPS coordinates out of valid geographic range."))
+                else:
+                    # Check misconfigured geofence policy
+                    office_lat = policy.office_latitude
+                    office_lon = policy.office_longitude
+                    radius = policy.gps_radius_meters or 0.0
+
+                    if not office_lat and not office_lon and radius <= 0:
+                        if method == "gps":
+                            raise AccessError(_("Company GPS attendance policy is misconfigured (office location/radius not set). Contact HR administrator."))
+                    else:
+                        dist_meters = self._calculate_haversine_distance(lat, lon, office_lat, office_lon)
+                        allowed_radius = radius or 200.0
+                        if acc_val > 500.0:
+                            if method == "gps":
+                                raise AccessError(_("GPS fix accuracy (%.0fm) is too inaccurate (maximum allowed: 500m).") % acc_val)
+                        elif dist_meters <= allowed_radius:
+                            gps_valid = True
+                        elif method == "gps":
+                            raise AccessError(_("GPS verification failed: You are %.1fm away from office location (maximum allowed: %.0fm).") % (
+                                dist_meters, allowed_radius
+                            ))
+
+        elif method == "gps":
+            raise UserError(_("Location permission and GPS coordinates are required to clock in under your company attendance policy."))
+
+        # 2. Evaluate IP Whitelist requirement with CIDR support
+        ip_valid = False
+        if client_ip and policy.ip_whitelist and policy.ip_whitelist.strip():
+            try:
+                c_ip = ipaddress.ip_address(client_ip)
+                raw_entries = [ip.strip() for ip in policy.ip_whitelist.replace("\n", ",").split(",") if ip.strip()]
+                for entry in raw_entries:
+                    try:
+                        net = ipaddress.ip_network(entry, strict=False)
+                        if c_ip in net:
+                            ip_valid = True
+                            break
+                    except ValueError:
+                        continue
+            except ValueError:
+                pass
+
+        if method == "ip" and not ip_valid:
+            raise AccessError(_("Clock operation denied: Client IP %s is not in the authorized company IP whitelist.") % (client_ip or "unknown"))
+
+        # 3. Evaluate Mixed mode (GPS OR IP required)
+        if method == "mixed":
+            if not gps_valid and not ip_valid:
+                raise AccessError(_("Clock operation denied: Neither valid GPS location nor authorized company IP whitelist match was satisfied."))
+
+        return True, dist_meters, acc_val
+
+    @api.model
+    def _verify_gps_location(self, policy, latitude, longitude, accuracy=None):
+        """Helper method delegating to _verify_clock_policy."""
+        _valid, dist_meters, _acc = self._verify_clock_policy(policy, latitude, longitude, accuracy, client_ip=None)
+        return _valid, dist_meters
+
+    @api.model
+    def _verify_ip_address(self, policy):
+        """Helper method delegating to _verify_clock_policy."""
+        client_ip = False
+        if hasattr(self.env, "request") and self.env.request:
+            req = self.env.request.httprequest
+            if tools.config.get("proxy_mode") and "X-Forwarded-For" in req.headers:
+                client_ip = req.headers["X-Forwarded-For"].split(",")[0].strip()
+            else:
+                client_ip = req.remote_addr
+        _valid, _dist, _acc = self._verify_clock_policy(policy, latitude=None, longitude=None, accuracy=None, client_ip=client_ip)
+        return _valid
+
+    @api.model
+    def _cleon_attendance_punch_service(self, employee, punch_type="browser", latitude=None, longitude=None, accuracy=None, device_key=None, event_id=None, timestamp=None):
+        """Unified Attendance Punch Service for browser and biometric hardware ingress."""
+        if not employee:
+            raise UserError(_("Employee record is required for attendance clocking."))
+
+        company = employee.company_id or self.env.company
+        server_now = fields.Datetime.now()
+        punch_dt = fields.Datetime.to_datetime(timestamp) if timestamp else server_now
+
+        # Skew validation for biometric terminal punches
+        if punch_type == "biometric":
+            skew_seconds = abs((server_now - punch_dt).total_seconds())
+            if skew_seconds > 900:  # 15 minutes
+                raise ValidationError(_("Biometric punch timestamp skew (%.1f mins) exceeds maximum tolerance (15 mins).") % (skew_seconds / 60.0))
+
+            if event_id:
+                existing = self.env["cleon.time.audit.log"].sudo().search_count([
+                    ("details", "ilike", "event_id:%s" % event_id),
+                    ("company_id", "=", company.id),
+                ])
+                if existing:
+                    return {"status": "duplicate", "message": _("Duplicate punch event %s already processed.") % event_id}
+
+        # Timezone & Period lock verification
+        tz = self._tz_for_employee(employee, punch_dt)
+        local_date = pytz.UTC.localize(punch_dt).astimezone(tz).date()
+        self.env["cleon.time.period.lock"].check_period_lock(company, local_date, _("Attendance Clocking"))
+
+        # Policy validation
+        policy = self.env["cleon.time.policy"].search([("company_id", "=", company.id)], limit=1)
+        client_ip = False
+        if hasattr(self.env, "request") and self.env.request:
+            req = self.env.request.httprequest
+            if tools.config.get("proxy_mode") and "X-Forwarded-For" in req.headers:
+                client_ip = req.headers["X-Forwarded-For"].split(",")[0].strip()
+            else:
+                client_ip = req.remote_addr
+
+        _valid, dist_meters, acc_val = self._verify_clock_policy(policy, latitude, longitude, accuracy, client_ip)
+
+        # Clock action change
         previous_state = employee.attendance_state
-        attendance = employee._attendance_action_change()
+        attendance = employee.sudo()._attendance_action_change()
+
+        lat_val = float(latitude) if latitude is not None and latitude != "" else False
+        lon_val = float(longitude) if longitude is not None and longitude != "" else False
+        mode_str = "biometric" if punch_type == "biometric" else ("browser_gps" if policy and policy.clock_method in ("gps", "mixed") else "manual")
+
         if previous_state == "checked_out":
-            local_date = pytz.UTC.localize(attendance.check_in).astimezone(self._user_tz()).date()
             _expected, _grace, shift = self._expected_start(employee, local_date)
-            policy = self.env["cleon.time.policy"].search([
-                ("company_id", "=", employee.company_id.id),
-            ], limit=1)
-            attendance.write({
+            vals = {
                 "cleon_shift_id": shift.id if shift else False,
-                "cleon_break_minutes": shift.break_minutes if shift else (
-                    policy.default_break_minutes if policy else 0
-                ),
-            })
+                "cleon_break_minutes": shift.break_minutes if shift else (policy.default_break_minutes if policy else 0),
+                "in_mode": mode_str,
+            }
+            if lat_val and lon_val:
+                vals.update({"in_latitude": lat_val, "in_longitude": lon_val, "in_accuracy": acc_val, "in_distance_meters": dist_meters})
+            attendance.sudo().write(vals)
+        else:
+            vals = {"out_mode": mode_str}
+            if lat_val and lon_val:
+                vals.update({"out_latitude": lat_val, "out_longitude": lon_val, "out_accuracy": acc_val, "out_distance_meters": dist_meters})
+            attendance.sudo().write(vals)
+
         action = "created" if previous_state == "checked_out" else "modified"
+        reason_msg = _("Employee clock in") if action == "created" else _("Employee clock out")
+        if punch_type == "biometric":
+            reason_msg = _("Biometric hardware punch (device:%s, event_id:%s)") % (device_key or "N/A", event_id or "N/A")
+        elif lat_val and lon_val:
+            reason_msg += _(" (GPS: %.4f, %.4f, dist: %.1fm)") % (lat_val, lon_val, dist_meters)
+
         self.env["cleon.time.audit.log"].sudo().create({
             "attendance_id": attendance.id, "employee_id": employee.id, "user_id": self.env.user.id,
-            "action": action, "reason": "Employee clock in" if action == "created" else "Employee clock out",
+            "action": action, "reason": reason_msg, "details": "event_id:%s" % event_id if event_id else reason_msg,
             "after_values": {
                 "check_in": fields.Datetime.to_string(attendance.check_in),
                 "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
+                "latitude": lat_val, "longitude": lon_val, "accuracy": acc_val, "distance_meters": dist_meters,
             },
-            "company_id": employee.company_id.id,
+            "company_id": company.id,
         })
+
+        if punch_type == "biometric":
+            return {
+                "status": "success",
+                "attendance_id": attendance.id,
+                "employee": employee.name,
+                "action": "clock_in" if previous_state == "checked_out" else "clock_out",
+                "timestamp": fields.Datetime.to_string(punch_dt),
+            }
+
         return self.get_cleon_employee_data()
+
+    @api.model
+    def cleon_toggle_attendance(self, latitude=None, longitude=None, accuracy=None):
+        employee = self.env.user.employee_id
+        if not employee:
+            raise UserError(_("Your user account is not linked to an employee record."))
+        return self._cleon_attendance_punch_service(employee=employee, punch_type="browser", latitude=latitude, longitude=longitude, accuracy=accuracy)
 
     @api.constrains("cleon_break_minutes")
     def _check_break_minutes(self):
@@ -283,36 +543,81 @@ class HrAttendance(models.Model):
 
     @api.model
     def _status_for(self, attendance, employee, target_date):
+        """Return independent attendance facts using timezone-aware DATETIME night shift math and rest-day absence exclusion:
+        (is_late, late_by, is_early_exit, early_exit_by, is_half_day, summary_status).
+        """
+        expected_start, grace, assigned_shift = self._expected_start(employee, target_date)
+        shift = attendance.cleon_shift_id if attendance and attendance.cleon_shift_id else assigned_shift
+        if shift and hasattr(shift, "start_hour") and shift.start_hour is not False and shift.id:
+            expected_start = shift.start_hour
+            grace = shift.grace_minutes if hasattr(shift, "grace_minutes") else grace
+
+        tz = self._tz_for_employee(employee, target_date)
+
         if attendance and attendance.cleon_status_override:
-            return attendance.cleon_status_override, 0
+            override = attendance.cleon_status_override
+            return override == "late", 0, False, 0, override == "half_day", override
+
+        # Rest day exclusion: missing attendance on rest day is NOT absent
+        if expected_start is False:
+            if not attendance:
+                return False, 0, False, 0, False, "rest_day"
+
         if not attendance:
-            return "absent", 0
-        expected, grace, _shift = self._expected_start(employee, target_date)
-        local_check = pytz.UTC.localize(attendance.check_in).astimezone(self._user_tz())
-        actual_minutes = local_check.hour * 60 + local_check.minute
-        expected_minutes = round(expected * 60) + grace
-        late_by = max(0, actual_minutes - expected_minutes)
+            return False, 0, False, 0, False, "absent"
+
+        # Timezone-aware DATETIME night shift comparison
+        local_check_in = pytz.UTC.localize(attendance.check_in).astimezone(tz)
+        start_hour_int = int(expected_start)
+        start_min_int = int(round((expected_start - start_hour_int) * 60))
+        expected_in_dt = tz.localize(datetime.combine(target_date, time(hour=start_hour_int, minute=start_min_int))) + timedelta(minutes=grace)
+
+        is_late = False
+        late_by = 0
+        if expected_start is not False:
+            if local_check_in > expected_in_dt:
+                late_by = int(round((local_check_in - expected_in_dt).total_seconds() / 60.0))
+                is_late = bool(late_by > 0)
+
+        is_early_exit = False
+        early_exit_by = 0
         if attendance.check_out:
-            integration = self._time_integration_values(attendance, employee, target_date)
-            if integration["expected_hours"] and integration["net_hours"] < integration["expected_hours"] / 2:
-                return "half_day", late_by
-        return ("late" if late_by else "present"), late_by
+            local_check_out = pytz.UTC.localize(attendance.check_out).astimezone(tz)
+            end_hour = shift.end_hour if shift and hasattr(shift, "end_hour") and shift.end_hour else (expected_start + 8.0 if expected_start is not False else 17.0)
+            end_hour_int = int(end_hour) % 24
+            end_min_int = int(round((end_hour - int(end_hour)) * 60))
+            end_date = target_date + timedelta(days=1) if end_hour < expected_start else target_date
+            expected_out_dt = tz.localize(datetime.combine(end_date, time(hour=end_hour_int, minute=end_min_int))) - timedelta(minutes=grace)
+            if local_check_out < expected_out_dt:
+                early_exit_by = int(round((expected_out_dt - local_check_out).total_seconds() / 60.0))
+                is_early_exit = bool(early_exit_by > 0)
+
+        integration = self._time_integration_values(attendance, employee, target_date, shift)
+        is_half_day = False
+        if attendance.check_out and integration["expected_hours"] > 0:
+            if integration["net_hours"] < integration["expected_hours"] / 2.0:
+                is_half_day = True
+
+        if is_half_day:
+            summary = "half_day"
+        elif is_late and is_early_exit:
+            summary = "late_and_early"
+        elif is_late:
+            summary = "late"
+        elif is_early_exit:
+            summary = "early_exit"
+        else:
+            summary = "present"
+
+        return is_late, late_by, is_early_exit, early_exit_by, is_half_day, summary
 
     @api.model
     def _time_integration_values(self, attendance, employee, target_date, shift=False):
-        """Return one normalized view of attendance for downstream features.
-
-        Attendance remains the source of actual hours; shifts/policy provide the
-        expectation, analytic lines provide task hours, and the resource calendar
-        identifies public holidays.  No values are copied between those models.
-        """
-        policy = self.env["cleon.time.policy"].search([
-            ("company_id", "=", employee.company_id.id),
-        ], limit=1)
-        expected_hours = policy.standard_hours if policy else 8.0
-        if shift:
-            expected_hours = (shift.end_hour - shift.start_hour) % 24
-            expected_hours = max(0.0, expected_hours - shift.break_minutes / 60.0)
+        """Return normalized integration view consuming Shift expected working hours service for split/night shifts."""
+        policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
+        Shift = self.env["cleon.hr.shift"]
+        exp = Shift._get_expected_working_hours_internal(employee.id, target_date)
+        expected_hours = exp.get("expected_hours", policy.standard_hours if policy else 8.0) if exp else (policy.standard_hours if policy else 8.0)
 
         net_hours = max(0.0, (attendance.worked_hours or 0.0) - (
             (attendance.cleon_break_minutes or 0) / 60.0
@@ -359,7 +664,7 @@ class HrAttendance(models.Model):
     @api.model
     def _row(self, employee, attendance, target_date, on_leave=False):
         expected, _grace, assigned_shift = self._expected_start(employee, target_date)
-        status, late_by = self._status_for(attendance, employee, target_date)
+        is_late, late_by, is_early_exit, early_exit_by, is_half_day, status = self._status_for(attendance, employee, target_date)
         if on_leave and not attendance:
             status = "on_leave"
         shift = attendance.cleon_shift_id if attendance and attendance.cleon_shift_id else assigned_shift
@@ -368,32 +673,45 @@ class HrAttendance(models.Model):
             "id": attendance.id if attendance else 0,
             "employee_id": employee.id,
             "employee": employee.name,
-            "employee_code": employee.barcode or "EMP-%03d" % employee.id,
+            "employee_code": employee.sudo().barcode or "EMP-%03d" % employee.id,
             "department": employee.department_id.name or "—",
             "date": fields.Date.to_string(target_date),
             "check_in": self._display_time(attendance.check_in) if attendance else "",
             "check_out": self._display_time(attendance.check_out) if attendance else "",
             "check_in_raw": fields.Datetime.to_string(attendance.check_in) if attendance else "",
             "check_out_raw": fields.Datetime.to_string(attendance.check_out) if attendance and attendance.check_out else "",
-            "shift": shift.name if shift else "Day Shift (%s)" % int(expected),
+            "shift": shift.name if shift else "Day Shift (%s)" % (int(expected) if expected is not False else "Off"),
             "shift_id": shift.id if shift else False,
             "status": status,
-            "source": dict(self._fields["in_mode"].selection).get(attendance.in_mode, "Manual") if attendance else "—",
+            "is_late": is_late,
             "late_by": late_by,
+            "is_early_exit": is_early_exit,
+            "early_exit_by": early_exit_by,
+            "is_half_day": is_half_day,
+            "is_on_leave": on_leave,
+            "is_rest_day": expected is False,
+            "source": dict(self._fields["in_mode"].selection).get(attendance.in_mode, "Manual") if attendance else "—",
             "break_minutes": attendance.cleon_break_minutes if attendance else 0,
             "hours": round(hours, 2),
+            "in_latitude": attendance.in_latitude if attendance else False,
+            "in_longitude": attendance.in_longitude if attendance else False,
+            "in_accuracy": attendance.in_accuracy if attendance else 0.0,
+            "in_distance_meters": attendance.in_distance_meters if attendance else 0.0,
         }
         row.update(self._time_integration_values(attendance, employee, target_date, shift))
         return row
 
     @api.model
     def get_cleon_time_data(self, view="dashboard", date_from=False, date_to=False, department_id=False, search=""):
-        if not self.env.user.has_group("base.group_system"):
-            raise UserError(_("Only Settings administrators can view organization-wide attendance."))
+        Policy = self.env["cleon.time.policy"]
+        role = Policy._tm_role()
+        if role not in ("line_manager", "hr_manager", "hr_admin", "system_admin"):
+            raise AccessError(_("Only a Time Management manager or administrator can view organization attendance."))
         today = fields.Date.context_today(self)
         start_date = fields.Date.to_date(date_from) if date_from else today
         end_date = fields.Date.to_date(date_to) if date_to else start_date
-        employee_domain = [("company_id", "=", self.env.company.id), ("active", "=", True)]
+        allowed_emp_ids = Policy._tm_scope_employee_ids()
+        employee_domain = [("company_id", "=", self.env.company.id), ("active", "=", True), ("id", "in", allowed_emp_ids)]
         if department_id:
             employee_domain.append(("department_id", "=", int(department_id)))
         if search:
@@ -416,9 +734,9 @@ class HrAttendance(models.Model):
                 by_employee.setdefault(attendance.employee_id.id, attendance)
             rows = [self._row(emp, by_employee.get(emp.id), start_date, emp.id in leave_employee_ids) for emp in employees]
         else:
-            rows = [self._row(att.employee_id, att, pytz.UTC.localize(att.check_in).astimezone(self._user_tz()).date()) for att in attendances]
-        counts = {key: len([row for row in rows if row["status"] == key]) for key in ("present", "late", "absent", "on_leave")}
-        present_count = counts["present"] + counts["late"]
+            rows = [self._row(att.employee_id, att, pytz.UTC.localize(att.check_in).astimezone(self._tz_for_employee(att.employee_id, att.check_in)).date()) for att in attendances]
+        counts = {key: len([row for row in rows if row["status"] == key]) for key in ("present", "late", "early_exit", "late_and_early", "half_day", "absent", "rest_day", "on_leave")}
+        present_count = counts.get("present", 0) + counts.get("late", 0) + counts.get("early_exit", 0) + counts.get("late_and_early", 0) + counts.get("half_day", 0)
         return {
             "rows": rows,
             "counts": counts,
@@ -429,10 +747,18 @@ class HrAttendance(models.Model):
 
     def cleon_update_attendance(self, values, reason):
         self.ensure_one()
-        if not self.env.user.has_group("base.group_system"):
-            raise UserError(_("Only Settings administrators can edit attendance records."))
+        Policy = self.env["cleon.time.policy"]
+        if Policy._tm_role() not in ("hr_manager", "hr_admin", "system_admin"):
+            raise AccessError(_("Only HR managers or System Admins can edit attendance records."))
         if not reason or not reason.strip():
             raise UserError(_("Please provide a reason for changing this attendance record."))
+
+        c_id = self.company_id or self.employee_id.company_id
+        if self.check_in:
+            tz = self._tz_for_employee(self.employee_id, self.check_in)
+            local_date = pytz.UTC.localize(self.check_in).astimezone(tz).date()
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, local_date, _("Attendance Record Edit"), reason)
+
         allowed = {"check_in", "check_out", "cleon_break_minutes", "cleon_status_override", "cleon_shift_id"}
         clean = {key: value for key, value in values.items() if key in allowed}
         if not clean:
@@ -447,7 +773,7 @@ class HrAttendance(models.Model):
 
         before = {key: audit_value(key) for key in clean}
         clean["cleon_edit_reason"] = reason.strip()
-        self.write(clean)
+        self.sudo().write(clean)
         after = {key: audit_value(key) for key in clean if key != "cleon_edit_reason"}
         self.env["cleon.time.audit.log"].sudo().create({
             "attendance_id": self.id, "employee_id": self.employee_id.id,

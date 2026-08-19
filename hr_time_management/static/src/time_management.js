@@ -249,14 +249,34 @@ export class TimeManagementApp extends Component {
         if (this.state.busy) return;
         this.state.busy = true;
         try {
+            let latitude = null;
+            let longitude = null;
+            let accuracy = null;
+            const method = this.state.policyData?.clock_method;
+            if (navigator.geolocation && method && ["gps", "mixed"].includes(method)) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, enableHighAccuracy: true });
+                    });
+                    latitude = pos.coords.latitude;
+                    longitude = pos.coords.longitude;
+                    accuracy = pos.coords.accuracy;
+                } catch (geoError) {
+                    if (method === "gps") {
+                        this.notification.add("Location permission is required to clock in under your company attendance policy.", { type: "warning" });
+                        this.state.busy = false;
+                        return;
+                    }
+                }
+            }
             const wasCheckedIn = this.state.employeeData?.attendance_state === "checked_in";
-            this.state.employeeData = await this.orm.call("hr.attendance", "cleon_toggle_attendance", []);
+            this.state.employeeData = await this.orm.call("hr.attendance", "cleon_toggle_attendance", [], { latitude, longitude, accuracy });
             const row = this.state.employeeData.today;
             this.notification.add(
                 wasCheckedIn ? `Clocked out successfully. Total hours: ${row?.hours || 0}.` : `Clocked in successfully at ${row?.check_in || "now"}.`,
-                {type: "success"}
+                { type: "success" }
             );
-        } catch (error) { this.notification.add(error?.data?.message || "Attendance could not be recorded.", {type:"danger"}); }
+        } catch (error) { this.notification.add(error?.data?.message || "Attendance could not be recorded.", { type: "danger" }); }
         finally { this.state.busy = false; }
     }
     async openSettings() {

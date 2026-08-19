@@ -125,11 +125,31 @@ class CleonTimeSheet(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             self._check_workflow_protection(vals)
+            if vals.get("week_start"):
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
+                c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
+                week_start = fields.Date.to_date(vals["week_start"])
+                week_end = week_start + timedelta(days=6)
+                self.env["cleon.time.period.lock"].check_period_range(c_id, week_start, week_end, _("Weekly Timesheet"))
         return super().create(vals_list)
 
     def write(self, vals):
         self._check_workflow_protection(vals)
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for sheet in self:
+                c_id = sheet.company_id.id
+                w_start = fields.Date.to_date(vals.get("week_start") or sheet.week_start)
+                w_end = w_start + timedelta(days=6)
+                if w_start:
+                    self.env["cleon.time.period.lock"].check_period_range(c_id, w_start, w_end, _("Weekly Timesheet"), vals.get("manager_comment"))
         return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for sheet in self:
+                if sheet.week_start:
+                    self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet"))
+        return super().unlink()
 
     def _check_workflow_protection(self, vals):
         if self.env.su or self.env.user.has_group("base.group_system"):
@@ -211,6 +231,7 @@ class CleonTimeSheet(models.Model):
         for sheet in self:
             if sheet.state not in ("draft", "rejected", "correction"):
                 raise ValidationError(_("Only a draft, rejected, or correction-requested timesheet can be submitted."))
+            self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet Submit"))
             if sheet.entry_source == "analytic":
                 candidates = AnalyticLine.sudo().search([
                     ("company_id", "=", sheet.company_id.id),
@@ -233,6 +254,7 @@ class CleonTimeSheet(models.Model):
         for sheet in self:
             if sheet.state != "submitted":
                 raise ValidationError(_("Only a submitted timesheet can be withdrawn."))
+            self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet Withdraw"))
             if sheet.analytic_line_ids:
                 sheet.analytic_line_ids.sudo().write({"cleon_sheet_id": False})
             sheet.sudo().write({"state": "draft", "submitted_at": False})
@@ -250,6 +272,7 @@ class CleonTimeSheet(models.Model):
                 raise AccessError(_("You are not authorized to review this timesheet (self-approval is not permitted for Line Managers)."))
             if sheet.state != "submitted":
                 raise ValidationError(_("Only submitted timesheets can be reviewed."))
+            self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet Decision"), comment)
             target_state = {
                 "approve": "approved",
                 "reject": "rejected",
@@ -332,6 +355,36 @@ class CleonTimeSheet(models.Model):
         sheet = self.browse(int(sheet_id)).exists()
         sheet.action_decide(decision, comment)
         return True
+
+
+class AccountAnalyticLine(models.Model):
+    _inherit = "account.analytic.line"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if "date" in vals and vals["date"]:
+                emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists() if vals.get("employee_id") else self.env.user.employee_id
+                c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
+                self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["date"], _("Analytic Timesheet Line"))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id.id or (rec.employee_id.company_id.id if rec.employee_id else self.env.company.id)
+                target_date = vals.get("date") or rec.date
+                if target_date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Analytic Timesheet Line"))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.su and not self.env.user.has_group("base.group_system"):
+            for rec in self:
+                c_id = rec.company_id.id or (rec.employee_id.company_id.id if rec.employee_id else self.env.company.id)
+                if rec.date:
+                    self.env["cleon.time.period.lock"].check_period_lock(c_id, rec.date, _("Analytic Timesheet Line"))
+        return super().unlink()
 
 
 class CleonTimeSheetLine(models.Model):

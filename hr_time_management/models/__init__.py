@@ -5,3 +5,5 @@ from . import regularization
 from . import audit
 from . import timesheet
 from . import overtime
+from . import period_lock
+from . import biometric_device

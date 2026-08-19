@@ -60,6 +60,10 @@ class CleonTimePolicy(models.Model):
     currency_id = fields.Many2one(related="company_id.currency_id", readonly=True)
     billable_tracking_enabled = fields.Boolean(default=True, string="Enable Billable Tracking")
     default_billing_rate = fields.Monetary(default=150.0, currency_field="currency_id", string="Default Billing Rate")
+    office_latitude = fields.Float(string="Office Latitude", digits=(10, 7), default=0.0)
+    office_longitude = fields.Float(string="Office Longitude", digits=(10, 7), default=0.0)
+    gps_radius_meters = fields.Float(string="Allowed GPS Radius (meters)", default=200.0)
+    ip_whitelist = fields.Text(string="Allowed IP Addresses / Subnets", help="Comma or newline separated list of allowed IP addresses or CIDR subnets")
 
 
     _sql_constraints = [
@@ -130,6 +134,10 @@ class CleonTimePolicy(models.Model):
             "billable_tracking_enabled": policy.billable_tracking_enabled if policy else True,
             "default_billing_rate": policy.default_billing_rate if policy else 150.0,
             "currency_symbol": policy.currency_id.symbol if policy and policy.currency_id else (self.env.company.currency_id.symbol or "$"),
+            "office_latitude": policy.office_latitude if policy else 0.0,
+            "office_longitude": policy.office_longitude if policy else 0.0,
+            "gps_radius_meters": policy.gps_radius_meters if policy else 200.0,
+            "ip_whitelist": policy.ip_whitelist or "" if policy else "",
         }
 
     @api.model
