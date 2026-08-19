@@ -26,35 +26,46 @@
 }
 
 .r_graph-search {
-    position: relative;
     display: flex;
     align-items: center;
 }
 
-.r_graph-search svg:first-child {
-    position: absolute;
-    left: 12px;
-}
-
-.r_graph-search input {
+.r_graph-search-inner {
+    position: relative;
     width: 200px;
     height: 36px;
-    padding: 0 32px;
+    display: flex;
+    align-items: center;
     border: 1px solid #e5e7eb;
     border-radius: 9999px;
-    font-size: 14px;
-    color: #374151;
     background-color: #f9fafb;
-    outline: none;
+    padding: 0 32px;
+    box-sizing: border-box;
     transition: all 0.2s;
 }
 
-.r_graph-search input:focus {
+.r_graph-search-inner:focus-within {
     border-color: #d8b4fe;
     background-color: #ffffff;
 }
 
-.r_graph-search input::placeholder {
+.r_graph-search-inner svg:first-child {
+    position: absolute;
+    left: 12px;
+}
+
+.r_graph-search-inner input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #374151;
+    outline: none;
+    padding: 0;
+}
+
+.r_graph-search-inner input::placeholder {
     color: #9ca3af;
 }
 
@@ -66,7 +77,10 @@
     color: #9ca3af;
     cursor: pointer;
     padding: 0;
+    margin: 0;
     display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .r_graph-search-clear:hover {
@@ -236,32 +250,60 @@
 }
 
 .r_graph-sidebar-search {
-    position: relative;
     padding: 0 20px 16px;
 }
 
-.r_graph-sidebar-search svg {
-    position: absolute;
-    left: 30px;
-    top: 9px;
-}
-
-.r_graph-sidebar-search input {
+.r_graph-sidebar-search-inner {
+    position: relative;
     width: 100%;
     height: 32px;
-    padding: 0 12px 0 32px;
+    display: flex;
+    align-items: center;
     border: 1px solid #e5e7eb;
     border-radius: 6px;
-    font-size: 13px;
-    color: #374151;
     background-color: #f9fafb;
-    outline: none;
+    padding: 0 30px;
     box-sizing: border-box;
+    transition: all 0.2s;
 }
 
-.r_graph-sidebar-search input:focus {
+.r_graph-sidebar-search-inner:focus-within {
     border-color: #d8b4fe;
     background-color: #ffffff;
+}
+
+.r_graph-sidebar-search-inner svg:first-child {
+    position: absolute;
+    left: 10px;
+}
+
+.r_graph-sidebar-search-inner input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #374151;
+    outline: none;
+    padding: 0;
+}
+
+.r_graph-sidebar-search-clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.r_graph-sidebar-search-clear:hover {
+    color: #4b5563;
 }
 
 .r_graph-insights-list {
@@ -312,10 +354,10 @@
     position: absolute;
     top: 24px;
     right: 24px;
-    width: 320px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
     z-index: 50;
     overflow: hidden;
     animation: r_graph-slide-in 0.2s ease-out;
@@ -329,22 +371,22 @@
 .r_graph-detail-header {
     display: flex;
     align-items: center;
-    padding: 20px;
+    padding: 24px 24px 12px 24px;
     position: relative;
-    border-bottom: 1px solid #f3f4f6;
 }
 
 .r_graph-detail-avatar {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #ffffff;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
+    background-color: #D6146F;
 }
 
 .r_graph-detail-title {
@@ -354,78 +396,89 @@
 
 .r_graph-detail-name {
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
     color: #111827;
     margin-bottom: 2px;
 }
 
 .r_graph-detail-job {
     font-size: 0.85rem;
-    color: #6b7280;
+    color: #0d9488;
+    font-weight: 500;
 }
 
 .r_graph-detail-close {
     background: none;
     border: none;
-    padding: 8px;
+    padding: 4px;
     cursor: pointer;
     color: #9ca3af;
     position: absolute;
-    top: 12px;
-    right: 12px;
-    border-radius: 4px;
+    top: 16px;
+    right: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: color 0.2s;
 }
 
 .r_graph-detail-close:hover {
     color: #4b5563;
-    background: #f3f4f6;
 }
 
 .r_graph-detail-body {
-    padding: 20px;
+    padding: 12px 24px;
 }
 
 .r_graph-detail-row {
     display: flex;
     justify-content: space-between;
     margin-bottom: 12px;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .r_graph-detail-label {
-    color: #d97706; /* Muted gold/amber */
-    font-weight: 500;
+    color: #b45309; /* Muted gold/tan */
+    font-weight: 400;
 }
 
 .r_graph-detail-val {
-    color: #111827;
-    font-weight: 500;
+    color: #1e3a8a; /* Dark navy */
+    font-weight: 600;
+}
+
+.r_graph-detail-val-teal {
+    color: #0d9488; /* Teal matching job title */
 }
 
 .r_graph-detail-tags {
-    margin-top: 20px;
+    padding: 8px 24px;
+    display: flex;
+    gap: 8px;
 }
 
 .r_graph-detail-tag {
     display: inline-block;
     background: #f3e8ff;
     color: #7e22ce;
-    padding: 4px 10px;
-    border-radius: 12px;
+    padding: 6px 14px;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
 }
 
+.r_graph-detail-footer {
+    padding: 16px 24px 24px 24px;
+}
+
 .r_graph-profile-btn {
     width: 100%;
-    padding: 14px;
-    background: linear-gradient(to right, #E8368F, #db2777);
+    padding: 12px;
+    background-color: #D6146F;
     color: white;
     border: none;
-    font-weight: 600;
+    border-radius: 9999px;
+    font-weight: 700;
     font-size: 0.95rem;
     cursor: pointer;
     display: flex;

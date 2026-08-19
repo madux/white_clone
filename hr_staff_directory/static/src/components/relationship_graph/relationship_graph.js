@@ -13,7 +13,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
     setup() {
         this.state = useState({
-            modes: { reporting: true, peer: false },
+            modes: { reporting: true, peer: true },
             searchQuery: '',
             mostConnected: 0,
             bridgeEmployees: 0,
@@ -92,12 +92,29 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
     onSearch(ev) {
         this.state.searchQuery = ev.target.value;
-        this.highlightNodes();
+        const q = this.state.searchQuery.toLowerCase().trim();
+        
+        if (!q) {
+            this.clearFocus();
+            return;
+        }
+
+        const nodes = this.simulation ? this.simulation.nodes() : [];
+        const match = nodes.find(n => (n.name || '').toLowerCase().includes(q));
+
+        if (match) {
+            this.focusNode(match);
+        } else {
+            this.state.focusedNodeId = null;
+            this.state.focusedNodeData = null;
+            this.connectedNodeIds.clear();
+            this.highlightNodes();
+        }
     }
 
     clearSearch() {
         this.state.searchQuery = '';
-        this.highlightNodes();
+        this.clearFocus();
     }
 
     handleNodeClick(event, d) {
@@ -109,16 +126,29 @@ export class StaffDirectoryRelationshipGraph extends Component {
             return;
         }
 
+        this.focusNode(d);
+    }
+
+    focusNode(d) {
         this.state.focusedNodeId = d.id;
         this.state.focusedNodeData = d;
         this.connectedNodeIds.clear();
         this.connectedNodeIds.add(d.id);
 
+        let hasReporting = false;
+        let hasPeer = false;
+
         // Find all connected nodes based on active links
         this.cachedLinks.forEach(link => {
-            if (link.source.id === d.id) this.connectedNodeIds.add(link.target.id);
-            if (link.target.id === d.id) this.connectedNodeIds.add(link.source.id);
+            if (link.source.id === d.id || link.target.id === d.id) {
+                this.connectedNodeIds.add(link.source.id === d.id ? link.target.id : link.source.id);
+                if (link.type === 'reporting') hasReporting = true;
+                if (link.type === 'peer') hasPeer = true;
+            }
         });
+        
+        d.hasReporting = hasReporting;
+        d.hasPeer = hasPeer;
 
         this.highlightNodes();
     }
@@ -147,15 +177,16 @@ export class StaffDirectoryRelationshipGraph extends Component {
         }
 
         svg.selectAll(".r_graph-node-group").style("opacity", d => {
-            let match = true;
+            if (focusedId) {
+                return this.connectedNodeIds.has(d.id) ? 1 : 0.15;
+            }
+            
             if (q) {
                 const name = (d.name || '').toLowerCase();
-                match = name.includes(q);
+                return name.includes(q) ? 1 : 0.15;
             }
-            if (match && focusedId) {
-                match = this.connectedNodeIds.has(d.id);
-            }
-            return match ? 1 : 0.15;
+            
+            return 1;
         });
         
         svg.selectAll(".r_graph-link")
@@ -194,7 +225,9 @@ export class StaffDirectoryRelationshipGraph extends Component {
             const node = {
                 id: p.id,
                 name: p.name,
+                job_title: p.job_title || 'Employee',
                 dept: p.department,
+                location: p.work_location || 'Remote / Unassigned',
                 color: this.getColor(p.department),
                 radius: 15, // Base radius
                 connections: 0,
