@@ -42,6 +42,8 @@ export class TimeManagementApp extends Component {
                 { id: 1, name: "Software Development", code: "DEV", department: "IT", tasks: ["Frontend", "Backend", "Testing"] },
                 { id: 2, name: "Client Support", code: "SUP", department: "Support", tasks: ["Email Support", "Phone Support"] }
             ],
+            jobModal: null,
+            taskModal: null,
             timesheetReminders: ["Wednesday 16:00", "Friday 14:00"],
             showWorkflows: false,
             workflowTab: "chains",
@@ -337,24 +339,47 @@ export class TimeManagementApp extends Component {
             this.state.policy.weekend_days.push(day);
         }
     }
-    addJob() {
-        const newId = Date.now();
+    openJobModal() {
+        this.state.jobModal = { name: "", code: "", department: "IT" };
+    }
+    closeJobModal() {
+        this.state.jobModal = null;
+    }
+    saveJobModal() {
+        if (!this.state.jobModal || !this.state.jobModal.name.trim()) {
+            this.notification.add("Job name is required.", {type: "warning"});
+            return;
+        }
         this.state.jobsTasksList.push({
-            id: newId,
-            name: "New Job",
-            code: "JOB",
-            department: "IT",
-            tasks: ["Task 1"]
+            id: Date.now(),
+            name: this.state.jobModal.name.trim(),
+            code: (this.state.jobModal.code || "JOB").toUpperCase(),
+            department: this.state.jobModal.department || "IT",
+            tasks: []
         });
+        this.state.jobModal = null;
+        this.notification.add("Job created successfully.", {type: "success"});
     }
     deleteJob(id) {
         this.state.jobsTasksList = this.state.jobsTasksList.filter(j => j.id !== id);
     }
-    addTask(jobId) {
-        const job = this.state.jobsTasksList.find(j => j.id === jobId);
-        if (job) {
-            job.tasks.push("New Task");
+    openTaskModal(jobId) {
+        this.state.taskModal = { jobId: jobId, name: "", code: "" };
+    }
+    closeTaskModal() {
+        this.state.taskModal = null;
+    }
+    saveTaskModal() {
+        if (!this.state.taskModal || !this.state.taskModal.name.trim()) {
+            this.notification.add("Task name is required.", {type: "warning"});
+            return;
         }
+        const job = this.state.jobsTasksList.find(j => j.id === this.state.taskModal.jobId);
+        if (job) {
+            job.tasks.push(this.state.taskModal.name.trim());
+            this.notification.add(`Task '${this.state.taskModal.name}' added to ${job.name}.`, {type: "success"});
+        }
+        this.state.taskModal = null;
     }
     deleteTask(jobId, taskIndex) {
         const job = this.state.jobsTasksList.find(j => j.id === jobId);

@@ -1394,7 +1394,7 @@
                                         <t t-elif="state.trackingSubTab === 'jobs_tasks'">
                                             <div class="ctm-sub-head ctm-flex-between">
                                                 <div><h2>Jobs &amp; Tasks</h2><p>Manage trackable work items</p></div>
-                                                <button class="ctm-btn pink" t-on-click="addJob"><i class="fa fa-plus"/> Add Job</button>
+                                                <button class="ctm-btn pink" t-on-click="openJobModal"><i class="fa fa-plus"/> Add Job</button>
                                             </div>
                                             <div class="ctm-sub-body">
                                                 <div class="ctm-jobs-list">
@@ -1426,7 +1426,7 @@
                                                                             <i class="fa fa-times" style="margin-left:6px;cursor:pointer" t-on-click="() => this.deleteTask(job.id, task_index)"/>
                                                                         </span>
                                                                     </t>
-                                                                    <button class="ctm-btn link pink" t-on-click="() => this.addTask(job.id)"><i class="fa fa-plus"/> Add Task</button>
+                                                                    <button class="ctm-btn link pink" t-on-click="() => this.openTaskModal(job.id)"><i class="fa fa-plus"/> Add Task</button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1437,6 +1437,60 @@
                                                 <button class="ctm-btn">Reset</button>
                                                 <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
                                             </div>
+
+                                            <!-- Add Job Popup Modal -->
+                                            <t t-if="state.jobModal">
+                                                <div class="ctm-overlay">
+                                                    <section class="ctm-modal" style="max-width:440px">
+                                                        <button class="ctm-close" t-on-click="closeJobModal">×</button>
+                                                        <h2>Create New Job</h2>
+                                                        <p style="font-size:13px;color:#78859e;margin-top:-8px;margin-bottom:16px">Add a new trackable job category mapped to employee roles.</p>
+                                                        <div style="display:flex;flex-direction:column;gap:14px">
+                                                            <label class="ctm-field-title">Job Name *
+                                                                <input type="text" placeholder="e.g. Software Development" t-model="state.jobModal.name" style="margin-top:6px;width:100%;padding:10px;border:1.5px solid #dde1ec;border-radius:9px"/>
+                                                            </label>
+                                                            <label class="ctm-field-title">Code
+                                                                <input type="text" placeholder="e.g. DEV" t-model="state.jobModal.code" style="margin-top:6px;width:100%;padding:10px;border:1.5px solid #dde1ec;border-radius:9px"/>
+                                                            </label>
+                                                            <label class="ctm-field-title">Department
+                                                                <select t-model="state.jobModal.department" style="margin-top:6px;width:100%;padding:10px;border:1.5px solid #dde1ec;border-radius:9px;background:#fff">
+                                                                    <option value="IT">IT</option>
+                                                                    <option value="Support">Support</option>
+                                                                    <option value="Operations">Operations</option>
+                                                                    <option value="Sales">Sales</option>
+                                                                </select>
+                                                            </label>
+                                                        </div>
+                                                        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px">
+                                                            <button class="ctm-btn" t-on-click="closeJobModal">Cancel</button>
+                                                            <button class="ctm-btn pink" t-on-click="saveJobModal"><i class="fa fa-plus"/> Save Job</button>
+                                                        </div>
+                                                    </section>
+                                                </div>
+                                            </t>
+
+                                            <!-- Add Task Popup Modal -->
+                                            <t t-if="state.taskModal">
+                                                <div class="ctm-overlay">
+                                                    <section class="ctm-modal" style="max-width:420px">
+                                                        <button class="ctm-close" t-on-click="closeTaskModal">×</button>
+                                                        <h2>Add New Task</h2>
+                                                        <p style="font-size:13px;color:#78859e;margin-top:-8px;margin-bottom:16px">Enter task details to attach to this job position.</p>
+                                                        <div style="display:flex;flex-direction:column;gap:14px">
+                                                            <label class="ctm-field-title">Task Name *
+                                                                <input type="text" placeholder="e.g. Frontend Development" t-model="state.taskModal.name" style="margin-top:6px;width:100%;padding:10px;border:1.5px solid #dde1ec;border-radius:9px"/>
+                                                            </label>
+                                                            <label class="ctm-field-title">Task Code (Optional)
+                                                                <input type="text" placeholder="e.g. FE-01" t-model="state.taskModal.code" style="margin-top:6px;width:100%;padding:10px;border:1.5px solid #dde1ec;border-radius:9px"/>
+                                                            </label>
+                                                        </div>
+                                                        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px">
+                                                            <button class="ctm-btn" t-on-click="closeTaskModal">Cancel</button>
+                                                            <button class="ctm-btn pink" t-on-click="saveTaskModal"><i class="fa fa-plus"/> Add Task</button>
+                                                        </div>
+                                                    </section>
+                                                </div>
+                                            </t>
                                         </t>
 
                                         <!-- Billable Hours sub-tab -->
