@@ -607,8 +607,8 @@
                                                                 <div class="ctm-scard-days">
                                                                     <label>Work Days</label>
                                                                     <div class="ctm-day-pills-row sm">
-                                                                        <t t-foreach="[['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6],['Sun',0]]" t-as="day" t-key="day[1]">
-                                                                            <span t-att-class="'ctm-day-btn sm ' + (shift.active_days.includes(day[1]) ? 'pink' : '')" t-esc="day[0]"/>
+                                                                        <t t-foreach="[['Mon',0],['Tue',1],['Wed',2],['Thu',3],['Fri',4],['Sat',5],['Sun',6]]" t-as="day" t-key="day[1]">
+                                                                            <button type="button" t-att-class="'ctm-day-btn sm ' + ((shift.active_days || []).includes(day[1]) ? 'pink' : '')" t-on-click="() => this.toggleSettingsShiftDay(shift, day[1])" t-esc="day[0]"/>
                                                                         </t>
                                                                     </div>
                                                                 </div>
@@ -638,7 +638,7 @@
                                                         </div>
                                                         <label>Active Days</label>
                                                         <div class="ctm-day-selector">
-                                                            <t t-foreach="[['Mon',1],['Tue',2],['Wed',3],['Thu',4],['Fri',5],['Sat',6],['Sun',0]]" t-as="day" t-key="day[1]">
+                                                            <t t-foreach="[['Mon',0],['Tue',1],['Wed',2],['Thu',3],['Fri',4],['Sat',5],['Sun',6]]" t-as="day" t-key="day[1]">
                                                                 <button t-att-class="state.settingsShiftForm.active_days.includes(day[1]) ? 'active' : ''" t-on-click="() => this.toggleSettingsShiftDay(day[1])" t-esc="day[0]"/>
                                                             </t>
                                                         </div>

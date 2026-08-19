@@ -236,6 +236,8 @@ class CleonTimePolicy(models.Model):
             "checklist": checklist,
         }
 
+    default_shift_id = fields.Many2one("cleon.hr.shift", string="Default Company Shift")
+
     @api.model
     def _tm_role(self, user=None):
         user = user or self.env.user
@@ -258,12 +260,12 @@ class CleonTimePolicy(models.Model):
         if role in ("system_admin", "hr_admin", "hr_manager"):
             return Employee.search([("company_id", "=", company_id), ("active", "=", True)]).ids
         if role == "line_manager":
-            emp = user.employee_id
+            emp = user.employee_id or Employee.sudo().search([("user_id", "=", user.id), ("company_id", "=", company_id)], limit=1)
             if not emp:
                 return []
-            subordinates = Employee.search([("company_id", "=", company_id), ("parent_id", "=", emp.id), ("active", "=", True)]).ids
+            subordinates = Employee.sudo().search([("company_id", "=", company_id), ("parent_id", "=", emp.id), ("active", "=", True)]).ids
             return list(set([emp.id] + subordinates))
-        emp = user.employee_id
+        emp = user.employee_id or Employee.sudo().search([("user_id", "=", user.id), ("company_id", "=", company_id)], limit=1)
         return [emp.id] if emp else []
 
     @api.model
@@ -272,15 +274,38 @@ class CleonTimePolicy(models.Model):
         return role in ("system_admin", "hr_admin")
 
     @api.model
-    def _tm_can_approve(self, record, user=None):
+    def _tm_can_configure_shift_templates(self, user=None):
+        role = self._tm_role(user)
+        return role in ("system_admin", "hr_admin", "hr_manager")
+
+    @api.model
+    def _tm_can_manage_shift_assignment(self, employee=None, user=None):
         user = user or self.env.user
         role = self._tm_role(user)
         if role in ("system_admin", "hr_admin", "hr_manager"):
             return True
+        if role == "line_manager" and employee:
+            user_emp = user.employee_id or self.env["hr.employee"].sudo().search([("user_id", "=", user.id), ("company_id", "=", self.env.company.id)], limit=1)
+            if user_emp and user_emp.id == employee.id:
+                return False
+            allowed_ids = self._tm_scope_employee_ids(user)
+            return employee.id in allowed_ids
+        return False
+
+    @api.model
+    def _tm_can_approve(self, record, user=None):
+        user = user or self.env.user
+        role = self._tm_role(user)
+        if record._name == "cleon.shift.swap.request":
+            user_emp = user.employee_id or self.env["hr.employee"].sudo().search([("user_id", "=", user.id), ("company_id", "=", self.env.company.id)], limit=1)
+            if user_emp and (user_emp.id == record.requester_id.id or user_emp.id == record.target_employee_id.id):
+                return False
+        if role in ("system_admin", "hr_admin", "hr_manager"):
+            return True
         if role == "line_manager":
             allowed_ids = self._tm_scope_employee_ids(user)
-            target_emp = getattr(record, "employee_id", False)
-            return bool(target_emp and target_emp.id in allowed_ids and target_emp.user_id != user)
+            target_emp = getattr(record, "employee_id", False) or getattr(record, "requester_id", False)
+            return bool(target_emp and target_emp.id in allowed_ids and target_emp.sudo().user_id != user)
         return False
 
     @api.model

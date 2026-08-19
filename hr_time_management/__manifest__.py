@@ -14,6 +14,7 @@
         "web",
     ],
     "data": [
+        "data/ir_sequence_data.xml",
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/time_management_action.xml",

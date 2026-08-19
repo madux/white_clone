@@ -302,12 +302,23 @@ export class TimeManagementApp extends Component {
                active_days: [0, 1, 2, 3, 4] };
     }
     closeSettingsShiftForm() { this.state.settingsShiftForm = null; }
-    toggleSettingsShiftDay(day) {
-        const form = this.state.settingsShiftForm;
-        if (!form) return;
-        const idx = form.active_days.indexOf(day);
-        if (idx >= 0) form.active_days.splice(idx, 1);
-        else form.active_days.push(day);
+    toggleSettingsShiftDay(dayOrShift, dayId) {
+        let targetList = [];
+        let dayToToggle;
+        if (dayId !== undefined && typeof dayOrShift === 'object') {
+            if (!dayOrShift.active_days) dayOrShift.active_days = [];
+            targetList = dayOrShift.active_days;
+            dayToToggle = dayId;
+        } else if (this.state.settingsShiftForm) {
+            if (!this.state.settingsShiftForm.active_days) this.state.settingsShiftForm.active_days = [];
+            targetList = this.state.settingsShiftForm.active_days;
+            dayToToggle = dayOrShift;
+        } else {
+            return;
+        }
+        const idx = targetList.indexOf(dayToToggle);
+        if (idx >= 0) targetList.splice(idx, 1);
+        else targetList.push(dayToToggle);
     }
     async saveSettingsShift() {
         const form = this.state.settingsShiftForm;

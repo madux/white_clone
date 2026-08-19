@@ -261,20 +261,15 @@ class HrAttendance(models.Model):
 
     @api.model
     def _expected_start(self, employee, target_date):
-        assignment = self.env["cleon.hr.shift.assignment"].search([
-            ("company_id", "=", employee.company_id.id),
-            ("date_from", "<=", target_date),
-            "|", ("date_to", "=", False), ("date_to", ">=", target_date),
-            "|", ("employee_id", "=", employee.id), ("department_id", "=", employee.department_id.id),
-        ], order="assignment_type desc, employee_id desc, date_from desc", limit=1)
-        if assignment:
-            shift = assignment.shift_id
-            return shift.start_hour, shift.grace_minutes, shift
-        shift = self.env["cleon.hr.shift"].search([
-            ("employee_ids", "in", employee.id), ("company_id", "=", employee.company_id.id)
-        ], limit=1)
-        if shift:
-            return shift.start_hour, shift.grace_minutes, shift
+        Shift = self.env["cleon.hr.shift"]
+        exp = Shift._get_expected_working_hours_internal(employee.id, target_date)
+        if exp:
+            if exp.get("is_rest_day"):
+                return False, 0, Shift
+            if exp.get("shift_id"):
+                shift = Shift.browse(exp["shift_id"])
+                start_hour = exp.get("start_hour", shift.start_hour)
+                return start_hour, shift.grace_minutes, shift
         calendar = employee.resource_calendar_id
         lines = calendar.attendance_ids.filtered(lambda line: int(line.dayofweek) == target_date.weekday() and line.day_period != "lunch")
         policy = self.env["cleon.time.policy"].search([
@@ -283,7 +278,7 @@ class HrAttendance(models.Model):
         return (
             min(lines.mapped("hour_from")) if lines else 9.0,
             policy.default_grace_minutes if policy else 0,
-            self.env["cleon.hr.shift"],
+            Shift,
         )
 
     @api.model

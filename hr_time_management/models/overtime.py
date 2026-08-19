@@ -80,16 +80,21 @@ class CleonOvertimeRequest(models.Model):
 
     @api.model
     def _manager_allowed(self):
-        return self.env.user.has_group("hr_time_management.group_time_management_manager") or self.env.user.has_group("base.group_system")
+        Policy = self.env["cleon.time.policy"]
+        role = Policy._tm_role()
+        return role in ("line_manager", "hr_manager", "hr_admin", "system_admin")
 
     @api.model
     def _sync_attendance_overtime(self):
         """Materialize calculated overtime once, keeping attendance authoritative."""
         if not self._manager_allowed():
             return
+        Policy = self.env["cleon.time.policy"]
+        allowed_emp_ids = Policy._tm_scope_employee_ids()
         cutoff = fields.Datetime.now() - timedelta(days=366)
-        attendances = self.env["hr.attendance"].search([
+        attendances = self.env["hr.attendance"].sudo().search([
             ("employee_id.company_id", "=", self.env.company.id),
+            ("employee_id", "in", allowed_emp_ids),
             ("check_out", "!=", False), ("check_in", ">=", cutoff),
             ("id", "not in", self.sudo().search([("attendance_id", "!=", False)]).mapped("attendance_id").ids),
         ])
@@ -154,6 +159,25 @@ class CleonOvertimeRequest(models.Model):
         request._audit("submitted", _("Manual overtime request submitted."))
         return {"id": request.id, "name": request.name}
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_workflow_protection(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._check_workflow_protection(vals)
+        return super().write(vals)
+
+    def _check_workflow_protection(self, vals):
+        if self.env.su or self.env.user.has_group("base.group_system"):
+            return
+        if "state" in vals:
+            raise AccessError(_("Direct overtime state mutation is prohibited. Use approval/action methods instead."))
+        protected_fields = {"manager_comment", "approver_id", "decision_at", "payroll_state"}
+        if protected_fields.intersection(vals.keys()):
+            raise AccessError(_("Direct decision field mutation is prohibited. Use approval/action methods instead."))
+
     def action_decide(self, decision, comment=False):
         Policy = self.env["cleon.time.policy"]
         if decision not in ("approve", "reject"):
@@ -165,7 +189,7 @@ class CleonOvertimeRequest(models.Model):
                 raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
             if request.state not in ("auto", "submitted"):
                 raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
-            request.write({
+            request.sudo().write({
                 "state": "approved" if decision == "approve" else "rejected",
                 "approver_id": self.env.user.id, "decision_at": fields.Datetime.now(),
                 "manager_comment": comment,
@@ -213,7 +237,7 @@ class CleonOvertimeRequest(models.Model):
             raise AccessError(_("Only a Time Management manager can confirm payroll transfer."))
         for request in self:
             request.get_payroll_ready_values()
-            request.payroll_state = "transferred"
+            request.sudo().write({"payroll_state": "transferred"})
             request._audit("modified", _("Approved overtime marked as transferred to payroll."), "system")
         return True
 
@@ -267,9 +291,11 @@ class CleonOvertimeRequest(models.Model):
         if not self._manager_allowed():
             raise AccessError(_("Only a Time Management manager can view team overtime."))
         self._sync_attendance_overtime()
+        Policy = self.env["cleon.time.policy"]
+        allowed_emp_ids = Policy._tm_scope_employee_ids()
         today = fields.Date.context_today(self)
         month_start = today.replace(day=1)
-        domain = [("company_id", "=", self.env.company.id)]
+        domain = [("company_id", "=", self.env.company.id), ("employee_id", "in", allowed_emp_ids)]
         if state and state != "all":
             domain.append(("state", "=", state))
         if search:

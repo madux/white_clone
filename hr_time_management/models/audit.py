@@ -14,6 +14,7 @@ class CleonTimeAuditLog(models.Model):
         ("regularized", "Regularized"), ("approved", "Approved"),
         ("rejected", "Rejected"), ("submitted", "Submitted"),
         ("withdrawn", "Withdrawn"), ("correction", "Corrections Requested"),
+        ("accepted", "Accepted"),
     ], required=True, default="modified")
     reason = fields.Text()
     module_area = fields.Selection([

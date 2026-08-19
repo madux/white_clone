@@ -56,20 +56,20 @@ class CleonAttendanceRegularization(models.Model):
                 raise ValidationError(_("Attendance corrections can only be requested for the last %s days.") % window)
 
     def _is_manager(self):
-        return self.env.user.has_group("base.group_system") or self.env.user.has_group(
-            "hr_time_management.group_time_management_manager"
-        )
+        Policy = self.env["cleon.time.policy"]
+        role = Policy._tm_role()
+        return role in ("line_manager", "hr_manager", "hr_admin", "system_admin")
 
     def _serialize(self):
         self.ensure_one()
         return {
             "id": self.id,
-            "employee": self.employee_id.name,
+            "employee": self.employee_id.sudo().name,
             "attendance_date": fields.Date.to_string(self.attendance_date),
             "issue_type": self.issue_type,
             "issue_label": dict(self._fields["issue_type"].selection).get(self.issue_type),
             "requested_check_in": fields.Datetime.to_string(self.requested_check_in),
-            "requested_check_out": fields.Datetime.to_string(self.requested_check_out) if self.requested_check_out else False,
+            "requested_check_out": fields.Datetime.to_string(self.requested_check_out),
             "reason": self.reason,
             "state": self.state,
             "submitted_on": fields.Datetime.to_string(self.create_date),
@@ -152,17 +152,38 @@ class CleonAttendanceRegularization(models.Model):
             raise ValidationError(_("Unknown manager decision."))
         return request._serialize()
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_workflow_protection(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        self._check_workflow_protection(vals)
+        return super().write(vals)
+
+    def _check_workflow_protection(self, vals):
+        if self.env.su or self.env.user.has_group("base.group_system"):
+            return
+        if "state" in vals:
+            raise AccessError(_("Direct workflow state mutation is prohibited. Use approval/action methods instead."))
+        protected_fields = {"manager_comment", "approver_id", "decision_date"}
+        if protected_fields.intersection(vals.keys()):
+            raise AccessError(_("Direct decision field mutation is prohibited. Use approval/action methods instead."))
+
     def action_submit(self):
         self._check_reason()
-        self.filtered(lambda record: record.state == "draft").write({"state": "submitted"})
+        for record in self.filtered(lambda r: r.state == "draft"):
+            record.sudo().write({"state": "submitted"})
 
     def action_approve(self):
+        user = self.env.user
         Policy = self.env["cleon.time.policy"]
         for request in self:
-            if not Policy._tm_can_approve(request, self.env.user):
-                raise AccessError(_("You are not authorized to approve this attendance regularization request (self-approval is not permitted for Line Managers)."))
             if request.state != "submitted":
                 raise UserError(_("Only submitted regularization requests can be approved."))
+            if not Policy._tm_can_approve(request, user):
+                raise AccessError(_("You are not authorized to approve this attendance regularization request (self-approval is not permitted for Line Managers)."))
             if request.requested_check_out and request.requested_check_out <= request.requested_check_in:
                 raise ValidationError(_("Requested check-out must be after check-in."))
             attendance = request.attendance_id
@@ -197,31 +218,38 @@ class CleonAttendanceRegularization(models.Model):
                 },
                 "company_id": request.company_id.id,
             })
-            request.write({"state": "approved", "approver_id": self.env.user.id, "decision_date": fields.Datetime.now()})
+            request.sudo().write({"state": "approved", "approver_id": user.id, "decision_date": fields.Datetime.now()})
 
-    def action_reject(self):
-        if not self._is_manager():
-            raise AccessError(_("Only a Settings administrator can reject regularization requests."))
-        if any(request.state != "submitted" for request in self):
-            raise UserError(_("Only submitted regularization requests can be rejected."))
+    def action_reject(self, reason=False):
+        user = self.env.user
+        Policy = self.env["cleon.time.policy"]
         for request in self:
-            request.write({"state": "rejected", "approver_id": self.env.user.id, "decision_date": fields.Datetime.now()})
+            if request.state != "submitted":
+                raise UserError(_("Only submitted regularization requests can be rejected."))
+            if not Policy._tm_can_approve(request, user):
+                raise AccessError(_("You are not authorized to reject this regularization request."))
+            request.sudo().write({
+                "state": "rejected",
+                "manager_comment": reason or request.manager_comment or False,
+                "approver_id": user.id,
+                "decision_date": fields.Datetime.now(),
+            })
             self.env["cleon.time.audit.log"].sudo().create({
                 "attendance_id": request.attendance_id.id or False,
                 "employee_id": request.employee_id.id,
-                "action": "rejected",
-                "reason": request.manager_comment or _("Attendance regularization rejected"),
-                "before_values": {"regularization_state": "submitted"},
-                "after_values": {"regularization_state": "rejected"},
+                "action": "regularization_rejected",
+                "reason": reason or request.reason,
                 "company_id": request.company_id.id,
             })
 
     def action_withdraw(self):
-        if any(request.employee_id.user_id != self.env.user and not self._is_manager() for request in self):
-            raise AccessError(_("You can only withdraw your own regularization requests."))
-        if any(request.state != "submitted" for request in self):
-            raise UserError(_("Only pending regularization requests can be withdrawn."))
-        self.write({"state": "draft"})
+        user = self.env.user
+        for request in self:
+            if request.state != "submitted":
+                raise UserError(_("Only submitted regularization requests can be withdrawn."))
+            if request.employee_id.sudo().user_id != user and not self.env["cleon.time.policy"]._tm_can_configure():
+                raise AccessError(_("You can only withdraw your own regularization request."))
+            request.sudo().write({"state": "draft"})
 
     @api.model
     def withdraw_request(self, request_id):

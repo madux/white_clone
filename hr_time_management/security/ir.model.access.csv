@@ -45,3 +45,16 @@ access_overtime_hr_manager,overtime request hr manager,model_cleon_overtime_requ
 access_overtime_hr_admin,overtime request hr admin,model_cleon_overtime_request,hr_time_management.group_time_management_hr_admin,1,1,1,1
 access_overtime_system,overtime request system,model_cleon_overtime_request,base.group_system,1,1,1,1
 access_overtime_internal,overtime request internal employee,model_cleon_overtime_request,base.group_user,1,1,1,0
+access_shift_swap_user,shift swap user,model_cleon_shift_swap_request,hr_time_management.group_time_management_user,1,1,1,0
+access_shift_swap_line_manager,shift swap line manager,model_cleon_shift_swap_request,hr_time_management.group_time_management_line_manager,1,1,1,0
+access_shift_swap_hr_manager,shift swap hr manager,model_cleon_shift_swap_request,hr_time_management.group_time_management_hr_manager,1,1,1,0
+access_shift_swap_hr_admin,shift swap hr admin,model_cleon_shift_swap_request,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_shift_swap_system,shift swap system,model_cleon_shift_swap_request,base.group_system,1,1,1,1
+access_shift_swap_internal,shift swap internal employee,model_cleon_shift_swap_request,base.group_user,1,1,1,0
+access_shift_segment_user,shift segment user,model_cleon_hr_shift_segment,hr_time_management.group_time_management_user,1,0,0,0
+access_shift_segment_line_manager,shift segment line manager,model_cleon_hr_shift_segment,hr_time_management.group_time_management_line_manager,1,0,0,0
+access_shift_segment_hr_manager,shift segment hr manager,model_cleon_hr_shift_segment,hr_time_management.group_time_management_hr_manager,1,1,1,1
+access_shift_segment_hr_admin,shift segment hr admin,model_cleon_hr_shift_segment,hr_time_management.group_time_management_hr_admin,1,1,1,1
+access_shift_segment_system,shift segment system,model_cleon_hr_shift_segment,base.group_system,1,1,1,1
+access_shift_segment_internal,shift segment internal employee,model_cleon_hr_shift_segment,base.group_user,1,0,0,0
+

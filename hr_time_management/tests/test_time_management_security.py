@@ -262,6 +262,7 @@ class TestTimeManagementSecurity(TransactionCase):
         mgr_sheet = self.env["cleon.time.sheet"].create({
             "employee_id": self.manager_emp.id,
             "week_start": "2026-08-17",
+            "entry_source": "legacy",
             "company_id": self.company.id,
         })
         self.env["cleon.time.sheet.line"].create({
@@ -289,5 +290,155 @@ class TestTimeManagementSecurity(TransactionCase):
         self.assertFalse(Policy._tm_can_approve(mgr_ot, self.line_manager_user))
         with self.assertRaises(AccessError):
             mgr_ot.with_user(self.line_manager_user).action_decide("approve")
+
+    def test_12_direct_state_mutation_denied(self):
+        """Test that non-admin write/create direct state mutation raises AccessError even if context key is passed."""
+        # Regularization direct write with spoofed context key
+        reg = self.env["cleon.attendance.regularization"].create({
+            "employee_id": self.report_emp.id,
+            "attendance_date": "2026-08-10",
+            "issue_type": "forgot_in",
+            "requested_check_in": "2026-08-10 08:00:00",
+            "requested_check_out": "2026-08-10 17:00:00",
+            "reason": "Forgot to clock in on site visit.",
+        })
+        with self.assertRaises(AccessError):
+            reg.with_user(self.employee_user).with_context(_cleon_workflow_transition=True).write({"state": "approved"})
+
+        # Timesheet direct write and entry_source mutation with spoofed context key
+        sheet = self.env["cleon.time.sheet"].create({
+            "employee_id": self.report_emp.id,
+            "week_start": "2026-08-17",
+            "company_id": self.company.id,
+        })
+        with self.assertRaises(AccessError):
+            sheet.with_user(self.employee_user).with_context(_cleon_workflow_transition=True).write({"state": "approved"})
+        with self.assertRaises(AccessError):
+            sheet.with_user(self.employee_user).write({"entry_source": "legacy"})
+
+        # Overtime direct write with spoofed context key
+        ot = self.env["cleon.overtime.request"].create({
+            "employee_id": self.report_emp.id,
+            "date": "2026-08-15",
+            "overtime_hours": 2.0,
+            "justification": "Direct state test justification",
+            "company_id": self.company.id,
+            "state": "submitted",
+        })
+        with self.assertRaises(AccessError):
+            ot.with_user(self.employee_user).with_context(_cleon_workflow_transition=True).write({"state": "approved"})
+
+        # Shift Swap direct write and direct create as approved
+        swap = self.env["cleon.shift.swap.request"].create({
+            "requester_id": self.report_emp.id,
+            "target_employee_id": self.manager_emp.id,
+            "swap_date": "2026-08-20",
+            "reason": "Doctor appointment swap",
+        })
+        with self.assertRaises(AccessError):
+            swap.with_user(self.employee_user).with_context(_cleon_workflow_transition=True).write({"state": "approved"})
+
+        with self.assertRaises(AccessError):
+            self.env["cleon.shift.swap.request"].with_user(self.employee_user).create({
+                "requester_id": self.report_emp.id,
+                "target_employee_id": self.manager_emp.id,
+                "swap_date": "2026-08-21",
+                "reason": "Direct create approved test",
+                "state": "approved",
+            })
+
+    def test_13_get_manager_requests_scoping(self):
+        """Test get_manager_requests returns only team requests for Line Manager."""
+        sub_reg = self.env["cleon.attendance.regularization"].create({
+            "employee_id": self.report_emp.id,
+            "attendance_date": "2026-08-10",
+            "issue_type": "forgot_in",
+            "requested_check_in": "2026-08-10 08:00:00",
+            "requested_check_out": "2026-08-10 17:00:00",
+            "reason": "Subordinate forgot to clock in.",
+        })
+        sub_reg.action_submit()
+
+        unrelated_reg = self.env["cleon.attendance.regularization"].create({
+            "employee_id": self.unrelated_emp.id,
+            "attendance_date": "2026-08-10",
+            "issue_type": "forgot_in",
+            "requested_check_in": "2026-08-10 08:00:00",
+            "requested_check_out": "2026-08-10 17:00:00",
+            "reason": "Unrelated employee forgot clock in.",
+        })
+        unrelated_reg.action_submit()
+
+        manager_data = self.env["cleon.attendance.regularization"].with_user(self.line_manager_user).get_manager_requests()
+        req_ids = [r["id"] for r in manager_data]
+        self.assertIn(sub_reg.id, req_ids)
+        self.assertNotIn(unrelated_reg.id, req_ids)
+
+    def test_14_department_shift_assignment_permissions(self):
+        """Test that Line Manager cannot create/write department shift assignments, but HR Manager can."""
+        dept = self.env["hr.department"].create({"name": "Test Engineering", "company_id": self.company.id})
+        shift = self.env["cleon.hr.shift"].with_user(self.hr_manager_user).create({
+            "name": "Dept Shift Test",
+            "code": "DEPT-T1",
+            "start_hour": 8.0,
+            "end_hour": 16.0,
+        })
+        # Line Manager cannot create department assignment
+        with self.assertRaises(AccessError):
+            self.env["cleon.hr.shift.assignment"].with_user(self.line_manager_user).create({
+                "shift_id": shift.id,
+                "department_id": dept.id,
+                "date_from": "2026-08-20",
+            })
+
+        # HR Manager can create department assignment
+        assignment = self.env["cleon.hr.shift.assignment"].with_user(self.hr_manager_user).create({
+            "shift_id": shift.id,
+            "department_id": dept.id,
+            "date_from": "2026-08-20",
+        })
+        self.assertTrue(assignment.id)
+
+        # Line Manager cannot write department assignment
+        with self.assertRaises(AccessError):
+            assignment.with_user(self.line_manager_user).write({"note": "Line manager update test"})
+
+    def test_15_sync_attendance_overtime_as_line_manager(self):
+        """Test _sync_attendance_overtime executes cleanly as Line Manager and materializes team overtime."""
+        # Create attendance record for subordinate
+        attendance = self.env["hr.attendance"].sudo().create({
+            "employee_id": self.report_emp.id,
+            "check_in": "2026-08-10 08:00:00",
+            "check_out": "2026-08-10 19:00:00",
+        })
+        # Call overtime data as Line Manager
+        ot_data = self.env["cleon.overtime.request"].with_user(self.line_manager_user).get_overtime_data()
+        self.assertTrue(isinstance(ot_data.get("rows"), list))
+        emp_names = [r["employee"] for r in ot_data["rows"]]
+        self.assertIn(self.report_emp.name, emp_names)
+
+    def test_16_manager_get_tracking_data_expected_hours(self):
+        """Test calling get_tracking_data() as Line Manager correctly computes weekly expected hours and variance without TypeError."""
+        sheet = self.env["cleon.time.sheet"].create({
+            "employee_id": self.report_emp.id,
+            "week_start": "2026-08-17",
+            "entry_source": "legacy",
+            "company_id": self.company.id,
+        })
+        self.env["cleon.time.sheet.line"].create({
+            "sheet_id": sheet.id,
+            "date": "2026-08-17",
+            "hours": 8.0,
+            "description": "Weekly tracking test line",
+        })
+        sheet.action_submit()
+
+        tracking_data = self.env["cleon.time.sheet"].with_user(self.line_manager_user).get_tracking_data()
+        self.assertTrue(isinstance(tracking_data.get("rows"), list))
+        row_ids = [r["id"] for r in tracking_data["rows"]]
+        self.assertIn(sheet.id, row_ids)
+        target_row = next(r for r in tracking_data["rows"] if r["id"] == sheet.id)
+        self.assertEqual(target_row["total"], 8.0)
+        self.assertIn("variance", target_row)
 
 
