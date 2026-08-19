@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="menu_hr_claim_root" name="Expense Management" sequence="45" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    <menuitem id="menu_hr_claim_root" name="Claims &amp; Expense Management" sequence="45" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
     <menuitem id="menu_hr_claim_dashboard" name="Expense App" parent="menu_hr_claim_root" action="action_hr_claim_dashboard" sequence="1" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
+    
+    <record id="hr_expense_management.menu_hr_claim_dashboard" model="ir.ui.menu">
+        <field name="icon_class">fa fa-bank</field>
+        <field name="category_name">CleonHR-FINANCE</field>
+    </record>
+
+    <menuitem id="menu_hr_compensation_root" name="Compensation" sequence="46"/>
+    <record id="hr_expense_management.menu_hr_compensation_root" model="ir.ui.menu">
+        <field name="icon_class">fa fa-credit-card</field>
+        <field name="category_name">CleonHR-FINANCE</field>
+    </record>
+
+    
     <menuitem id="menu_hr_claim_my" name="My Claims" parent="menu_hr_claim_root" action="action_hr_claim_my" sequence="10" groups="hr_expense_management.group_hr_expense_employee,hr_expense_management.group_hr_expense_admin"/>
     <menuitem id="menu_hr_claim_all" name="All Claims" parent="menu_hr_claim_root" action="action_hr_claim_all" sequence="20" groups="hr_expense_management.group_hr_expense_manager,hr_expense_management.group_hr_expense_finance,hr_expense_management.group_hr_expense_admin"/>
 
