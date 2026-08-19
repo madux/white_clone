@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo> 
+    
     <record id="action_hr_recruitment_add_custom_job" model="ir.actions.act_window">
         <field name="name">Add job</field>
         <field name="res_model">hr.job</field>

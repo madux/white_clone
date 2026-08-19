@@ -179,8 +179,8 @@
                                        nolabel="1"/>
                             </div>
                             <div class="cc_filters">
-                                <field name="filter_category" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Category"/>
-                                <field name="filter_visibility" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Visibility"/>
+                                <field name="filter_category" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Category" options="{'no_create': True}"/>
+                                <field name="filter_visibility" widget="selection" nolabel="1" class="cc_filter_select" placeholder="Visibility" options="{'no_create': True}"/>
                                 <field name="filter_sort" widget="selection" nolabel="1" class="cc_filter_select"/>
                                 <span class="cc_result_count">
                                     <field name="event_count" readonly="1" nolabel="1"/> events
@@ -291,11 +291,11 @@
                         <field name="meeting_ids" readonly="1" nolabel="1">
                             <tree>
                                 <field name="name"/>
-                                <field name="location"/>
+                                <field name="location" options="{'no_create': True}"/>
                                 <field name="start"/>
                                 <field name="stop"/>
-                                <field name="attendee_ids"/>
-                                <field name="user_id"/>
+                                <field name="attendee_ids" options="{'no_create': True}"/>
+                                <field name="user_id" options="{'no_create': True}"/>
                                 <field name="videocall_location"/>
                             </tree>
                         </field>

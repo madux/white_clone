@@ -21,7 +21,7 @@
     <menuitem
         id="hr_job_dashboard_menu"
         name="Job Dashboard"
-        action="hr_job_dashboard.action_hr_job_dashboardx"
+        action="hr_cleon_recruitment.action_hr_job_recruitment"
         parent="hr_recruitment_base"
         sequence="11"
     />
