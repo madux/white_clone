@@ -1,16 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-
-    <!-- ═══════════════════════════════════════════
-         MAIN CANDIDATE WIZARD FORM VIEW
-    ════════════════════════════════════════════ -->
-    <record id="hr_recruitment_job_process_form_view" model="ir.ui.view">
-        <field name="name">hr.job.process.form</field>
+<odoo> 
+    <record id="job_creation_form_view" model="ir.ui.view">
+        <field name="name">hr.job.form</field>
         <field name="model">hr.job</field>
         <field name="arch" type="xml">
-            <form string="Create a Job posting" create="0" edit="1">
-
-                <field name="mode" invisible="0"/>
+            <form string="Create a Job">
+                <field name="mode" invisible="1"/>
                 <field name="name" invisible="1" default="/" />
                 <field name="active" invisible="1" default="0" />
                 <field name="workflow_setup" invisible="1" default="0" />
@@ -18,7 +13,7 @@
                     <field name="workflow_setup" widget="statusbar" readonly="0" options="{'clickable': '1'}"
                     invisible="mode not in ['second_intro1']"/>
                 </header>
-                 <!-- ══════════════════════════════
+                <!-- ══════════════════════════════
                      SCREEN 1: SELECTION GRID
                 ══════════════════════════════ -->
                 <div class="rc_modal_wrapper" invisible="mode not in ['first_intro']">
@@ -472,7 +467,6 @@
                         </div> 
                     </div> 
                 </div>
-
                 <!-- 5 fifth workflow Job checklist part -->
                 <div class="rc_section" invisible="workflow_setup != 'Job Checklist'">
                     <h3 class="rc_section_title">Job checklist</h3>
@@ -494,21 +488,40 @@
                             </tree>
                         </field>
                     </div>
-                </div> 
+                </div>
             </form>
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         ACTION TO OPEN THE WIZARD
-    ════════════════════════════════════════════ -->
+    <record id="hr_cleon_recruitment.action_hr_job_recruitment" model="ir.actions.act_window">
+        <field name="name">Add job</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.hr_job_recruitment_custom_tree_view"/>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {
+                'view_mode': 'tree',
+                'view_id': ref('hr_cleon_recruitment.hr_job_recruitment_custom_tree_view'),
+            }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_cleon_recruitment.cleon_job_form_view'),
+            }),
+            
+        ]"/>
+        <field name="help" type="html">
+            <p class="sendHtmlToMiddle">
+                Create a new job
+            </p>
+        </field>
+    </record> 
     <record id="action_hr_recruitment_add_custom_job" model="ir.actions.act_window">
         <field name="name">Add job</field>
         <field name="res_model">hr.job</field>
         <field name="view_mode">form</field>
-        <field name="view_id" ref="hr_cleon_recruitment.hr_recruitment_job_process_form_view"/>
+        <field name="view_id" ref="hr_cleon_recruitment.job_creation_form_view"/>
         <field name="target">new</field>
         <field name="context">{'default_mode': 'first_intro', 'default_name': '/', 'default_active': False, }</field>
     </record>
-
 </odoo>

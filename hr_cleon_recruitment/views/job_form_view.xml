@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <record id="action_hr_recruitment_add_custom_job" model="ir.actions.act_window">
+        <field name="name">Add job</field>
+        <field name="res_model">hr.job</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="hr_cleon_recruitment.job_creation_form_view"/>
+        <field name="target">new</field>
+        <field name="context">{'default_mode': 'first_intro', 'default_name': '/', 'default_active': False, }</field>
+    </record>
+    <record id="cleon_job_form_view" model="ir.ui.view">
+        <field name="name">hr.job.form</field>
+        <field name="model">hr.job</field>
+        <field name="arch" type="xml">
+            <form string="Create a Job" create="0">
+                <sheet>
+                <!-- <div class="jb-jobs-view-wrapper"> -->
+                    <div class="jb-bulk-action-toast-panel" id="bulkActionToast">
+                        <div class="jb-toast-left-meta">
+                            <span class="jb-selection-badge" id="selectedCountBadge">1</span>
+                            <span class="jb-selection-lbl">job selected</span>
+                            <field name="active_tab" nolabel="1" invisible="1" readonly="not is_editable"/> 
+                                 <field name="is_editable" nolabel="1" invisible="1"/> 
+                                <field name="is_published" widget="boolean_toggle" nolabel="1" invisible="1" readonly="1"/> 
+                                <field name="active" invisible="1"/>
+                                <field name="allowed_user_ids" invisible="1"/>
+                        </div>
+                    </div>
+                    <div class="jb-toast-action-btn-group">
+                            <button class="jb-btn-toast jb-active-green" type="object" name="edit_btn"><i class="fa fa-globe"></i>Edit</button>
+                            <button class="jb-btn-toast jb-active-green" type="object" name="button_publish_job" invisible="not is_published"><i class = "fa fa-globe"></i>Publish</button>
+                            <button class="jb-btn-toast jb-active-green" type="object" name="button_unpublish_job" invisible="is_published"><i class = "fa fa-globe"></i>UnPublish</button>
+                            <button class="jb-btn-toast jb-warning-gold" type="object" name="button_pause_job"><i class = "fa fa-pause-circle"></i>Pause</button>
+                            <button class="jb-btn-toast jb-dark-slate" type="object" name="button_close_job"><i class = "fa fa-x-circle"></i>Close</button>
+                            <button class="jb-btn-toast jb-standard-border" type="object" name="button_duplicate_job"><i class = "fa fa-copy"></i>Duplicate</button>
+                            <button class="jb-btn-toast jb-standard-border" type="object" name="button_archive" invisible="not active"><i class = "fa fa-bars"></i>Archive</button>
+                            <button class="jb-btn-toast jb-standard-border" type="object" name="button_unarchive" invisible="active"><i class = "fa fa-bars"></i>UnArchive</button>
+                            <button class="jb-btn-toast jb-standard-border" type="object" name="button_auto_expire_job"><i class = "fa fa-download"></i>Auto Expire</button>
+                            <button class="jb-btn-toast jb-critical-danger" type="object" name="button_delete_job" confirm="Are you sure to delete?"><i class = "fa fa-trash-2"></i>Delete</button>
+                    </div>
+                    <button class="jb-toast-close-trigger" type="object" name="button_delete_job"><i class = "fa fa-x"></i></button>
+
+                     
+                    <div id="jobDetailViewContext">
+                        <div class="jb-job-detail-header-banner">
+                            <button class="jb-btn-back-to-jobs" type="object" name="button_goback">
+                                <i class = "fa fa-arrow-left"></i> Back to Jobs
+                            </button>
+
+                            <div class="jb-job-main-profile-row">
+                                <div class="jb-profile-left-meta">
+                                    <div class="jb-job-detail-avatar-square">
+                                        <i class = "fa fa-building-2"></i>
+                                    </div>
+                                    <div class="jb-profile-title-text-stack">
+                                        <div class="jb-title-status-inline">
+                                            <field name="name" nolabel="1" readonly="not is_editable" class="is_editable font-size-20-white"/>
+                                            <div class="jb-status-badge-indicator-pill jb-state-published">
+                                                <field name="job_stage" nolabel="1" readonly="1" class="font-size-14-white jb-state-published"/>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="jb-metadata-tags-row">
+                                            <span class="jb-status-badge-indicator-pill jb-state-published"><i class = "fa fa-bank"></i><field name="location_id" nolabel="1" readonly="not is_editable" class="is_editable font-size-14-white jb-state-published"/></span>
+                                            <span class="jb-status-badge-indicator-pill jb-state-published"><i class = "fa fa-map"></i><field name="country_id" nolabel="1" readonly="not is_editable" class="is_editable font-size-14-white jb-state-published"/></span>
+                                            <span class="jb-status-badge-indicator-pill jb-state-published"><i class = "fa fa-map-marker"></i> <field name="job_nature" nolabel="1" readonly="not is_editable" class="is_editable font-size-14-white jb-state-published"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="jb-profile-right-actions">
+                                    <button class="jb-btn-icon-square" type="object" name="button_auto_expire_job"><i class ="fa fa-low-vision"></i></button>
+                                    <button class="jb-btn-create-job-action jb-text-pink-bg" type="object" name="button_create_candidate"><i class = "fa fa-user-plus"></i> Add Candidate</button>
+                                    <button class="jb-btn-icon-square" type="object" name="button_create_job"><i class = "fa fa-user-plus"></i></button>
+                                </div>
+                            </div>
+                            <div class="jb-job-metrics-summary-grid">
+                                <div class="jb-metric-summary-card">
+                                    <label for="total_candidate" class="font-size-14-white">Total Candidates</label>
+                                    <div class="jb-metric-val"><field name="total_candidate" nolabel="1" readonly="1" class="jb-metric-val"/></div>
+                                </div>
+                                <div class="jb-metric-summary-card">
+                                    <label for="interview_scheduled_count" class="font-size-14-white">Interviewing</label>
+                                    <div class="jb-metric-val"><field name="interview_scheduled_count" nolabel="1" readonly="1" class="jb-metric-val"/></div>
+                                </div>
+                                <div class="jb-metric-summary-card">
+                                    <label for="applicant_count" class="font-size-14-white">Views</label>
+                                    <div class="jb-metric-val"><field name="applicant_count" nolabel="1" readonly="1" class="jb-metric-val" string="Views"/></div>
+                                </div>
+                            </div>
+
+                            <!-- <div class="jb-detail-sub-navigation-tabs">
+                                <button class="jb-sub-tab-item jb-active-line" type="object" name="button_publish_job">Overview</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_candidates">Candidates</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_candidates">Pipeline</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_pipeline">Collaboration</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_reports">Reports</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_sourcing">Sourcing</button>
+                                <button class="jb-sub-tab-item" type="object" name="button_show_status">Status</button>
+                            </div> -->
+                            <!-- <div class="jb-detail-sub-navigation-tabs">
+                                <button class="jb-sub-tab-item jb-active-line" id="button_overview">Overview</button>
+                                <button class="jb-sub-tab-item" id="button_show_candidates">Candidates</button>
+                                <button class="jb-sub-tab-item" id="button_show_pipeline">Pipeline</button>
+                                <button class="jb-sub-tab-item" id="button_show_collaboration">Collaboration</button>
+                                <button class="jb-sub-tab-item" id="button_show_reports">Reports</button>
+                                <button class="jb-sub-tab-item" id="button_show_sourcing">Sourcing</button>
+                                <button class="jb-sub-tab-item" id="button_show_status">Status</button>
+                            </div>  -->
+                            <widget name="job_tabs"/>
+                        </div>
+
+                        <div class="jb-detail-dashboard-layout-matrix" id="overviewSection" data-section="overview">
+                            <div class="jb-matrix-left-column" >
+                                <div class="jb-double-card-row-flex">
+                                    <div class="jb-dashboard-widget-card">
+                                        <h3>Job Health Score <i class ="fa fa-trending-up jb-header-widget-icon"></i></h3>
+                                        <div class="jb-radial-progress-container-frame">
+                                            <div class="jb-radial-progress-circle">
+                                                <span class="jb-score-number-bold"><field name="job_health_score" nolabel="1" readonly="1" class="jb-score-number-bold"/></span>
+                                                <span class="jb-score-lbl-sub">Score</span>
+                                            </div>
+                                        </div>
+                                        <div class="jb-score-card-footer-metrics">
+                                            <div><span class="jb-lbl">Candidates </span><strong><field name="job_health_score" nolabel="1" readonly="1" class="jb-lbl"/></strong></div>
+                                            <div><span class="jb-lbl">Days Open </span><strong><field name="job_open_days" nolabel="1" readonly="1" class="jb-lbl"/></strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="jb-dashboard-widget-card">
+                                        <h3>Job Timeline</h3>
+                                        <div class="jb-vertical-stepper-line-wrapper">
+                                            <div class="jb-step-node-item">
+                                                <div class="jb-step-icon-status jb-active-check"><i class = "fa fa-check"></i></div>
+                                                <div class="jb-step-details-meta">
+                                                    <h4>Job Posted</h4>
+                                                    <span class="jb-step-time-lbl"><field name="job_open_days" nolabel="1" readonly="1" class="jb-step-time-lbl"/> days ago</span>
+                                                </div>
+                                            </div>
+                                            <div class="jb-step-node-item">
+                                                <div class="jb-step-icon-status jb-blue-users"><i class = "fa fa-users"></i></div>
+                                                <div class="jb-step-details-meta">
+                                                    <h4>First Applicants</h4>
+                                                    <span class="jb-step-time-lbl"><field name="total_candidate" nolabel="1" readonly="1" class="jb-step-time-lbl"/> total candidates</span>
+                                                </div>
+                                            </div>
+                                            <div class="jb-step-node-item">
+                                                <div class="jb-step-icon-status jb-neutral-target"><i class = "fa fa-calendar"></i></div>
+                                                <div class="jb-step-details-meta">
+                                                    <h4>Target Close Date</h4>
+                                                    <span class="jb-step-time-lbl"><field name="deadline_date_char" nolabel="1" readonly="1" class="jb-step-time-lbl"/> days from now</span>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="jb-dashboard-widget-card">
+                                    <div class="jb-widget-header-with-action">
+                                        <h3>Pipeline Overview</h3>
+                                        <button class="jb-btn-silent-icon"><i class = "fa fa-trello"></i></button>
+                                    </div>
+                                    <div class="jb-pipeline-bar-chart-visualization">
+                                        <div class="jb-pipeline-bar-column">
+                                            <div class="jb-bar-fill-empty-zero">
+                                            </div>
+                                            <span class="jb-count-metric">
+                                                <field name="initiation_count" nolabel="1" readonly="1" class="jb-count-metric"/>
+                                            </span>
+                                            <span class="jb-stage-name-lbl">Applied</span>
+                                        </div>
+                                        <div class="jb-pipeline-bar-column">
+                                            <div class="jb-bar-fill-empty-zero">
+                                            </div>
+                                            <span class="jb-count-metric">
+                                                <field name="initiation_count" class="jb-count-metric" nolabel="1" readonly="1" />
+                                            </span>
+                                            <span class="jb-stage-name-lbl">
+                                                Screening
+                                            </span>
+                                        </div>
+                                        <div class="jb-pipeline-bar-column">
+                                            <div class="jb-bar-fill-empty-zero">
+                                            </div>
+                                            <span class="jb-count-metric">
+                                                <field name="interview_count" class="jb-count-metric" nolabel="1" readonly="1"/>
+                                            </span>
+                                            <span class="jb-stage-name-lbl">
+                                                Interview
+                                            </span>
+                                        </div>
+                                        <div class="jb-pipeline-bar-column">
+                                            <div class="jb-bar-fill-empty-zero">
+                                            </div>
+                                            <span class="jb-count-metric">
+                                                <field name="documentation_count" class="jb-count-metric" nolabel="1" readonly="1"/>
+                                            </span>
+                                            <span class="jb-stage-name-lbl">
+                                                Offer
+                                            </span>
+                                        </div>
+                                        <div class="jb-pipeline-bar-column">
+                                            <div class="jb-bar-fill-empty-zero">
+                                            </div>
+                                            <span class="jb-count-metric">
+                                                <field name="hired_count" class="jb-count-metric" nolabel="1" readonly="1"/>
+                                            </span>
+                                            <span class="jb-stage-name-lbl">
+                                                Hired
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="jb-dashboard-widget-card">
+                                    <div class="jb-widget-header-with-action">
+                                        <h3>Hiring Team</h3>
+                                        <button class="jb-btn-silent-icon"><i class = "fa fa-user-plus"></i></button>
+                                    </div>
+                                    <div class="jb-hiring-team-list-stack">
+                                        <div class="jb-team-member-list-item">
+                                            <span class="jb-avatar-circle-text jb-bg-p1">JD</span>
+                                            <div class="jb-member-info-text">
+                                                <strong><field name="hiring_manager" class="jb-count-metric is_editable" nolabel="1" readonly="not is_editable"/></strong>
+                                                <span class="font-size-14-black">Hiring Manager</span>
+                                            </div>
+                                            <span class="jb-status-indicator-dot jb-online"></span>
+                                        </div>
+                                        <div class="jb-team-member-list-item">
+                                            <span class="jb-avatar-circle-text jb-bg-p2">SK</span>
+                                            <div class="jb-member-info-text">
+                                                <strong><field name="hiring_manager" class="jb-count-metric is_editable_black" nolabel="1" readonly="not is_editable"/></strong>
+                                                <span class="font-size-14-black">Recruiter</span>
+                                            </div>
+                                            <span class="jb-status-indicator-dot jb-online"></span>
+                                        </div>
+                                        <div class="jb-team-member-list-item">
+                                            <span class="jb-avatar-circle-text jb-bg-p3">ML</span>
+                                            <div class="jb-member-info-text">
+                                                <strong><field name="user_id" class="jb-count-metric is_editable_black" nolabel="1" readonly="not is_editable"/></strong>
+                                                <span class="font-size-14-black">Interviewer</span>
+                                            </div>
+                                            <span class="jb-status-indicator-dot jb-offline"></span>
+                                        </div>
+                                        <div class="jb-team-member-list-item">
+                                            <span class="jb-avatar-circle-text jb-bg-p2">LV</span>
+                                            <div class="jb-member-info-text">
+                                                <strong><field name="level_id" class="jb-count-metric is_editable_black" nolabel="1" readonly="not is_editable"/></strong>
+                                                <span class="font-size-14-black">Level</span>
+                                            </div>
+                                            <span class="jb-status-indicator-dot jb-online"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="jb-matrix-right-column">
+                                <div class="jb-ai-insights-purple-card-panel">
+                                    <div class="jb-ai-panel-header">
+                                        <i class = "fa fa-sparkles"></i>
+                                        <h3 class="jobtext-lighter">AI Insights</h3>
+                                    </div>
+                                    <div class="jb-ai-insight-block-item jb-shadow-tint">
+                                        <div class="jb-insight-title-row">
+                                            <i class = "fa fa-trending-up"></i>
+                                            <h4 class="jobtext-lighter">Total interview scheduled today</h4>
+                                        </div>
+                                        <p class="font-size-14-white">You have <field name="interview_scheduled_today" class="jb-count-metric-white" nolabel="1" readonly="1"/> interview(s) scheduled today</p>
+                                    </div>
+                                    <div class="jb-ai-insight-block-item jb-transparent-tint">
+                                        <div class="jb-insight-title-row">
+                                            <i class = "fa fa-zap"></i>
+                                            <h4 class="jobtext-lighter">Quick Tip</h4>
+                                        </div>
+                                        <p class="font-size-14-white">Average days to interview: <field name="avg_days_to_interview" class="jb-count-metric-white" nolabel="1" readonly="1"/> days</p>
+                                    </div>
+                                </div>
+
+                                <div class="jb-dashboard-widget-card">
+                                    <h3>Recent Activity <i class="fa fa-activity jb-header-widget-icon"></i></h3>
+                                    <div class="jb-activity-feed-timeline-stack">
+                                        <div class="jb-activity-feed-item">
+                                            <div class="jb-activity-icon-container jb-green-bg"><i class = "fa fa-user-plus"></i></div>
+                                            <div class="jb-activity-text-content-block">
+                                                <p class="font-size-14-black">New candidate applied</p>
+                                                <span class="jb-timestamp-lbl"><field name="application_count" class="jb-timestamp-lbl" nolabel="1" readonly="1"/></span>
+                                            </div>
+                                        </div>
+                                        <div class="jb-activity-feed-item">
+                                            <div class="jb-activity-icon-container jb-blue-bg"><i class = "fa fa-calendar"></i></div>
+                                            <div class="jb-activity-text-content-block">
+                                                <p class="font-size-14-black">Interview scheduled</p>
+                                                <span class="jb-timestamp-lbl"><field name="next_interview_days" class="jb-timestamp-lbl is_editable_black" nolabel="1" readonly="1"/></span>
+                                            </div>
+                                        </div>
+                                        <div class="jb-activity-feed-item">
+                                            <div class="jb-activity-icon-container jb-purple-bg"><i class = "fa fa-message-square"></i></div>
+                                            <div class="jb-activity-text-content-block">
+                                                <p class="font-size-14-black">Next Interview days</p>
+                                                <span class="jb-timestamp-lbl"><field name="next_interview_days" class="jb-timestamp-lbl" nolabel="1" readonly="1"/> Days</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="jb-detail-dashboard-layout-matrix d-none" id="candidateSection" data-section="candidates">
+                        </div>
+                        <div class="jb-detail-dashboard-layout-matrix d-none" id="pipelineSection" data-section="pipeline">
+                        </div>
+                        <div class="jb-detail-dashboard-layout-matrix d-none" id="reportsSection" data-section="reports">
+                        </div>
+                        <div class="jb-detail-dashboard-layout-matrix d-none" id="sourcingSection" data-section="sourcing">
+                        </div>
+                        <div class="jb-detail-dashboard-layout-matrix d-none" id="statusSection" data-section="status">
+                        </div>
+                    </div>
+                        
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>
+     

@@ -1,0 +1,20 @@
+<templates xml:space="preserve">
+       <t
+            t-name="hr_cleon_recruitment.JobFormViewController"
+            t-inherit="web.FormView"
+            owl="1"
+        >
+            <xpath expr="//div[hasclass('jb-detail-sub-navigation-tabs')]" position="inside">
+                <!-- <div class="o_form_view_container o_cc_layout_wrapper d-flex"> -->
+                <button class="jb-sub-tab-item" id="button_show_candidates">Candidatesssss</button>
+                <button class="jb-sub-tab-item" id="button_show_pipeline">Pipelinesss</button>
+                <button class="jb-sub-tab-item" id="button_show_collaboration">Collaboration</button>
+                <button class="jb-sub-tab-item" id="button_show_reports">Reports</button>
+                <button class="jb-sub-tab-item" id="button_show_sourcing">Sourcing</button>
+                <button class="jb-sub-tab-item" id="button_show_status">Status</button>
+            </xpath>
+
+    </t>
+
+</templates>
+ 

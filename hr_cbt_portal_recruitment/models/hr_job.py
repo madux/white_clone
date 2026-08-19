@@ -11,7 +11,7 @@ class HrJob(models.Model):
     request_id = fields.Many2one('hr.job.recruitment.request', string="Recruitment Request", store=True)
     datetime_publish = fields.Date("Date Published")
     close_date = fields.Date("Closing Date")
-    is_published = fields.Date("Closing Date")
+    is_published = fields.Boolean("Is Publish")
     
     skills_text = fields.Text(string='Extracted Skills')
     qualifications_text = fields.Text(string='Extracted Qualifications')
