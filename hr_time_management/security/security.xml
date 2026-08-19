@@ -1,14 +1,96 @@
 <odoo>
+    <!-- Module Category -->
+    <record id="module_category_time_management" model="ir.module.category">
+        <field name="name">Time Management</field>
+        <field name="description">Manage employee attendance, shift schedules, overtime, and time tracking.</field>
+        <field name="sequence">15</field>
+    </record>
+
+    <!-- 1. Employee / User Group -->
     <record id="group_time_management_user" model="res.groups">
-        <field name="name">Time Management User</field>
-        <field name="category_id" ref="base.module_category_human_resources"/>
-        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_own_reader'))]"/>
+        <field name="name">Employee / User</field>
+        <field name="category_id" ref="module_category_time_management"/>
+        <field name="implied_ids" eval="[(4, ref('hr_attendance.group_hr_attendance_own_reader')), (4, ref('hr_timesheet.group_hr_timesheet_user'))]"/>
     </record>
+
+    <!-- 2. Line Manager Group -->
+    <record id="group_time_management_line_manager" model="res.groups">
+        <field name="name">Line Manager</field>
+        <field name="category_id" ref="module_category_time_management"/>
+        <field name="implied_ids" eval="[(4, ref('hr_time_management.group_time_management_user'))]"/>
+    </record>
+
+    <!-- Backward compatibility alias for legacy group_time_management_manager -->
     <record id="group_time_management_manager" model="res.groups">
-        <field name="name">Time Management Manager</field>
-        <field name="category_id" ref="base.module_category_human_resources"/>
-        <field name="implied_ids" eval="[(4, ref('hr_time_management.group_time_management_user')), (4, ref('hr_attendance.group_hr_attendance_manager'))]"/>
+        <field name="name">Time Management Manager (Legacy Alias)</field>
+        <field name="category_id" eval="False"/>
+        <field name="implied_ids" eval="[(4, ref('hr_time_management.group_time_management_line_manager')), (4, ref('hr_attendance.group_hr_attendance_officer'))]"/>
     </record>
+
+    <!-- 3. HR Manager Group -->
+    <record id="group_time_management_hr_manager" model="res.groups">
+        <field name="name">HR Manager</field>
+        <field name="category_id" ref="module_category_time_management"/>
+        <field name="implied_ids" eval="[(4, ref('hr_time_management.group_time_management_line_manager')), (4, ref('hr_attendance.group_hr_attendance_manager'))]"/>
+    </record>
+
+    <!-- 4. HR Administrator Group -->
+    <record id="group_time_management_hr_admin" model="res.groups">
+        <field name="name">HR Administrator</field>
+        <field name="category_id" ref="module_category_time_management"/>
+        <field name="implied_ids" eval="[(4, ref('hr_time_management.group_time_management_hr_manager'))]"/>
+    </record>
+
+    <!-- Global Defense-in-Depth Company Record Rules (Applied Across All Groups) -->
+    <record id="rule_cleon_shift_company" model="ir.rule">
+        <field name="name">Shift Company Rule</field>
+        <field name="model_id" ref="model_cleon_hr_shift"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_cleon_shift_assignment_company" model="ir.rule">
+        <field name="name">Shift Assignment Company Rule</field>
+        <field name="model_id" ref="model_cleon_hr_shift_assignment"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_cleon_time_policy_company" model="ir.rule">
+        <field name="name">Time Policy Company Rule</field>
+        <field name="model_id" ref="model_cleon_time_policy"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_cleon_time_audit_log_company" model="ir.rule">
+        <field name="name">Time Audit Log Company Rule</field>
+        <field name="model_id" ref="model_cleon_time_audit_log"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_regularization_company_global" model="ir.rule">
+        <field name="name">Regularization Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_time_sheet_company_global" model="ir.rule">
+        <field name="name">Timesheet Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_time_sheet"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_time_sheet_line_company_global" model="ir.rule">
+        <field name="name">Timesheet Line Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_time_sheet_line"/>
+        <field name="domain_force">[('sheet_id.company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <record id="rule_overtime_company_global" model="ir.rule">
+        <field name="name">Overtime Global Company Rule</field>
+        <field name="model_id" ref="model_cleon_overtime_request"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+    </record>
+
+    <!-- Regularization Record Rules -->
     <record id="rule_regularization_employee_own" model="ir.rule">
         <field name="name">Employees see their own attendance regularizations</field>
         <field name="model_id" ref="model_cleon_attendance_regularization"/>
@@ -17,42 +99,66 @@
         <field name="perm_read" eval="True"/><field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/><field name="perm_unlink" eval="False"/>
     </record>
-    <record id="rule_regularization_manager_all" model="ir.rule">
-        <field name="name">Time managers see company attendance regularizations</field>
+
+    <record id="rule_regularization_line_manager_team" model="ir.rule">
+        <field name="name">Line Managers see team attendance regularizations</field>
         <field name="model_id" ref="model_cleon_attendance_regularization"/>
-        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_manager'))]"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_line_manager'))]"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_regularization_hr_manager_all" model="ir.rule">
+        <field name="name">HR Managers see company attendance regularizations</field>
+        <field name="model_id" ref="model_cleon_attendance_regularization"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]"/>
         <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
     </record>
-    <record id="rule_regularization_system_all" model="ir.rule">
-        <field name="name">Settings administrators see company attendance regularizations</field>
-        <field name="model_id" ref="model_cleon_attendance_regularization"/>
-        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
-        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
-    </record>
+
+    <!-- Weekly Timesheet Record Rules -->
     <record id="rule_time_sheet_employee_own" model="ir.rule">
         <field name="name">Employees manage their own weekly timesheets</field>
         <field name="model_id" ref="model_cleon_time_sheet"/>
         <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_user')), (4, ref('base.group_user'))]"/>
         <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
     </record>
-    <record id="rule_time_sheet_manager_company" model="ir.rule">
-        <field name="name">Time managers manage company weekly timesheets</field>
+
+    <record id="rule_time_sheet_line_manager_team" model="ir.rule">
+        <field name="name">Line Managers manage team weekly timesheets</field>
         <field name="model_id" ref="model_cleon_time_sheet"/>
-        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_manager')), (4, ref('base.group_system'))]"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_line_manager'))]"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_time_sheet_hr_manager_company" model="ir.rule">
+        <field name="name">HR Managers manage company weekly timesheets</field>
+        <field name="model_id" ref="model_cleon_time_sheet"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]"/>
         <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
     </record>
+
+    <!-- Timesheet Entry Line Rules -->
     <record id="rule_time_sheet_line_employee_own" model="ir.rule">
         <field name="name">Employees manage entries on their own timesheets</field>
         <field name="model_id" ref="model_cleon_time_sheet_line"/>
         <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_user')), (4, ref('base.group_user'))]"/>
         <field name="domain_force">[('sheet_id.employee_id.user_id', '=', user.id)]</field>
     </record>
-    <record id="rule_time_sheet_line_manager_company" model="ir.rule">
-        <field name="name">Time managers manage company timesheet entries</field>
+
+    <record id="rule_time_sheet_line_line_manager_team" model="ir.rule">
+        <field name="name">Line Managers manage team timesheet entries</field>
         <field name="model_id" ref="model_cleon_time_sheet_line"/>
-        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_manager')), (4, ref('base.group_system'))]"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_line_manager'))]"/>
+        <field name="domain_force">['|', ('sheet_id.employee_id.user_id', '=', user.id), ('sheet_id.employee_id.parent_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_time_sheet_line_hr_manager_company" model="ir.rule">
+        <field name="name">HR Managers manage company timesheet entries</field>
+        <field name="model_id" ref="model_cleon_time_sheet_line"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]"/>
         <field name="domain_force">[('sheet_id.company_id', 'in', user.company_ids.ids)]</field>
     </record>
+
+    <!-- Overtime Record Rules -->
     <record id="rule_overtime_employee_own" model="ir.rule">
         <field name="name">Employees manage their own overtime requests</field>
         <field name="model_id" ref="model_cleon_overtime_request"/>
@@ -60,10 +166,18 @@
         <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
         <field name="perm_unlink" eval="False"/>
     </record>
-    <record id="rule_overtime_manager_company" model="ir.rule">
-        <field name="name">Time managers manage company overtime</field>
+
+    <record id="rule_overtime_line_manager_team" model="ir.rule">
+        <field name="name">Line Managers manage team overtime</field>
         <field name="model_id" ref="model_cleon_overtime_request"/>
-        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_manager')), (4, ref('base.group_system'))]"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_line_manager'))]"/>
+        <field name="domain_force">['|', ('employee_id.user_id', '=', user.id), ('employee_id.parent_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_overtime_hr_manager_company" model="ir.rule">
+        <field name="name">HR Managers manage company overtime</field>
+        <field name="model_id" ref="model_cleon_overtime_request"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]"/>
         <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
     </record>
 </odoo>

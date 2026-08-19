@@ -236,3 +236,88 @@ class CleonTimePolicy(models.Model):
             "checklist": checklist,
         }
 
+    @api.model
+    def _tm_role(self, user=None):
+        user = user or self.env.user
+        if user.has_group("base.group_system"):
+            return "system_admin"
+        if user.has_group("hr_time_management.group_time_management_hr_admin"):
+            return "hr_admin"
+        if user.has_group("hr_time_management.group_time_management_hr_manager"):
+            return "hr_manager"
+        if user.has_group("hr_time_management.group_time_management_line_manager") or user.has_group("hr_time_management.group_time_management_manager"):
+            return "line_manager"
+        return "employee"
+
+    @api.model
+    def _tm_scope_employee_ids(self, user=None):
+        user = user or self.env.user
+        role = self._tm_role(user)
+        company_id = self.env.company.id
+        Employee = self.env["hr.employee"]
+        if role in ("system_admin", "hr_admin", "hr_manager"):
+            return Employee.search([("company_id", "=", company_id), ("active", "=", True)]).ids
+        if role == "line_manager":
+            emp = user.employee_id
+            if not emp:
+                return []
+            subordinates = Employee.search([("company_id", "=", company_id), ("parent_id", "=", emp.id), ("active", "=", True)]).ids
+            return list(set([emp.id] + subordinates))
+        emp = user.employee_id
+        return [emp.id] if emp else []
+
+    @api.model
+    def _tm_can_configure(self, user=None):
+        role = self._tm_role(user)
+        return role in ("system_admin", "hr_admin")
+
+    @api.model
+    def _tm_can_approve(self, record, user=None):
+        user = user or self.env.user
+        role = self._tm_role(user)
+        if role in ("system_admin", "hr_admin", "hr_manager"):
+            return True
+        if role == "line_manager":
+            allowed_ids = self._tm_scope_employee_ids(user)
+            target_emp = getattr(record, "employee_id", False)
+            return bool(target_emp and target_emp.id in allowed_ids and target_emp.user_id != user)
+        return False
+
+    @api.model
+    def _tm_capabilities(self):
+        company = self.env.company
+        policy = self.search([("company_id", "=", company.id)], limit=1)
+        analytic_fields = self.env["account.analytic.line"]._fields if "account.analytic.line" in self.env else {}
+        return {
+            "payroll": "hr.payslip" in self.env or "cleon.payroll.entry" in self.env,
+            "sales_timesheet": "sale.order.line" in self.env and "so_line" in analytic_fields,
+            "project": "project.project" in self.env and "project.task" in self.env,
+            "leave": "hr.leave" in self.env,
+            "gps_configured": bool(policy and policy.clock_method in ("gps", "mixed")),
+            "browser_geolocation_supported": True,
+            "biometric_configured": bool(policy and policy.clock_method in ("biometric", "mixed")),
+            "webauthn_supported_by_app": True,
+            "biometric_terminal_connector": False,
+        }
+
+    @api.model
+    def get_cleon_access(self):
+        role = self._tm_role()
+        capabilities = self._tm_capabilities()
+        can_config = self._tm_can_configure()
+        is_manager = role in ("system_admin", "hr_admin", "hr_manager", "line_manager")
+        return {
+            "role": role,
+            "can_configure": can_config,
+            "is_manager": is_manager,
+            "capabilities": capabilities,
+            "featureAccess": {
+                "attendance": True,
+                "shift": True,
+                "tracking": True,
+                "overtime": True,
+                "settings": can_config,
+            },
+        }
+
+

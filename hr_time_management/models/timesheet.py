@@ -4,6 +4,42 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
 
+class AccountAnalyticLine(models.Model):
+    _inherit = "account.analytic.line"
+
+    cleon_sheet_id = fields.Many2one(
+        "cleon.time.sheet",
+        string="Weekly Timesheet Envelope",
+        ondelete="set null",
+        index=True,
+    )
+    cleon_billable = fields.Boolean(default=True, string="Billable Entry")
+    cleon_locked = fields.Boolean(
+        compute="_compute_cleon_locked",
+        store=True,
+        string="Timesheet Locked",
+    )
+
+    @api.depends("cleon_sheet_id.state")
+    def _compute_cleon_locked(self):
+        for line in self:
+            line.cleon_locked = bool(line.cleon_sheet_id and line.cleon_sheet_id.state in ("submitted", "approved"))
+
+    def write(self, vals):
+        if not self.env.user.has_group("base.group_system") and not self.env.context.get("bypass_cleon_lock"):
+            for line in self:
+                if line.cleon_locked:
+                    raise AccessError(_("Timesheet entry '%s' is locked under a submitted or approved weekly timesheet envelope.") % line.name)
+        return super().write(vals)
+
+    def unlink(self):
+        if not self.env.user.has_group("base.group_system") and not self.env.context.get("bypass_cleon_lock"):
+            for line in self:
+                if line.cleon_locked:
+                    raise AccessError(_("Timesheet entry '%s' is locked under a submitted or approved weekly timesheet envelope.") % line.name)
+        return super().unlink()
+
+
 class CleonTimeSheet(models.Model):
     _name = "cleon.time.sheet"
     _description = "CleonHR Weekly Timesheet"
@@ -19,7 +55,8 @@ class CleonTimeSheet(models.Model):
         ("approved", "Approved"), ("rejected", "Rejected"),
         ("correction", "Corrections Requested"),
     ], default="draft", required=True, index=True, tracking=True)
-    line_ids = fields.One2many("cleon.time.sheet.line", "sheet_id", string="Entries")
+    analytic_line_ids = fields.One2many("account.analytic.line", "cleon_sheet_id", string="Analytic Timesheet Entries")
+    line_ids = fields.One2many("cleon.time.sheet.line", "sheet_id", string="Legacy Entry Lines")
     total_hours = fields.Float(compute="_compute_totals", store=True)
     billable_hours = fields.Float(compute="_compute_totals", store=True)
     submitted_at = fields.Datetime(readonly=True)
@@ -36,11 +73,15 @@ class CleonTimeSheet(models.Model):
         for sheet in self:
             sheet.week_end = sheet.week_start + timedelta(days=6) if sheet.week_start else False
 
-    @api.depends("line_ids.hours", "line_ids.billable")
+    @api.depends("analytic_line_ids.unit_amount", "analytic_line_ids.cleon_billable", "line_ids.hours", "line_ids.billable")
     def _compute_totals(self):
         for sheet in self:
-            sheet.total_hours = sum(sheet.line_ids.mapped("hours"))
-            sheet.billable_hours = sum(sheet.line_ids.filtered("billable").mapped("hours"))
+            if sheet.analytic_line_ids:
+                sheet.total_hours = sum(sheet.analytic_line_ids.mapped("unit_amount"))
+                sheet.billable_hours = sum(sheet.analytic_line_ids.filtered("cleon_billable").mapped("unit_amount"))
+            else:
+                sheet.total_hours = sum(sheet.line_ids.mapped("hours"))
+                sheet.billable_hours = sum(sheet.line_ids.filtered("billable").mapped("hours"))
 
     @api.constrains("week_start")
     def _check_monday(self):
@@ -67,25 +108,45 @@ class CleonTimeSheet(models.Model):
                 "details": details,
                 "status": "success",
                 "source": "web",
+                "company_id": sheet.company_id.id,
             })
 
     def _validate_entries(self):
         for sheet in self:
-            if not sheet.line_ids:
+            all_lines = sheet.analytic_line_ids or sheet.line_ids
+            if not all_lines:
                 raise ValidationError(_("Add at least one time entry before submitting."))
-            if any(not (line.description or "").strip() for line in sheet.line_ids):
-                raise ValidationError(_("Every time entry must have a work description."))
-            for day in set(sheet.line_ids.mapped("date")):
-                total = sum(sheet.line_ids.filtered(lambda line: line.date == day).mapped("hours"))
-                if total > 24:
-                    raise ValidationError(_("Invalid entry: hours cannot exceed 24 in a day."))
+            if sheet.analytic_line_ids:
+                if any(not (line.name or "").strip() for line in sheet.analytic_line_ids):
+                    raise ValidationError(_("Every time entry must have a work description."))
+                for day in set(sheet.analytic_line_ids.mapped("date")):
+                    total = sum(sheet.analytic_line_ids.filtered(lambda l: l.date == day).mapped("unit_amount"))
+                    if total > 24:
+                        raise ValidationError(_("Invalid entry: hours cannot exceed 24 in a day."))
+            else:
+                if any(not (line.description or "").strip() for line in sheet.line_ids):
+                    raise ValidationError(_("Every time entry must have a work description."))
+                for day in set(sheet.line_ids.mapped("date")):
+                    total = sum(sheet.line_ids.filtered(lambda l: l.date == day).mapped("hours"))
+                    if total > 24:
+                        raise ValidationError(_("Invalid entry: hours cannot exceed 24 in a day."))
 
     def action_submit(self):
         self._assert_owner_or_manager()
-        self._validate_entries()
+        AnalyticLine = self.env["account.analytic.line"]
         for sheet in self:
             if sheet.state not in ("draft", "rejected", "correction"):
                 raise ValidationError(_("Only a draft, rejected, or correction-requested timesheet can be submitted."))
+            # Discover and link unlinked candidate analytic lines for employee/week range
+            candidates = AnalyticLine.sudo().search([
+                ("employee_id", "=", sheet.employee_id.id),
+                ("date", ">=", sheet.week_start),
+                ("date", "<=", sheet.week_end),
+                "|", ("cleon_sheet_id", "=", False), ("cleon_sheet_id", "=", sheet.id),
+            ])
+            if candidates:
+                candidates.with_context(bypass_cleon_lock=True).write({"cleon_sheet_id": sheet.id})
+            sheet._validate_entries()
             sheet.write({"state": "submitted", "submitted_at": fields.Datetime.now(), "manager_comment": False})
             sheet._audit("submitted", _("Timesheet submitted for manager approval."))
         return True
@@ -95,18 +156,21 @@ class CleonTimeSheet(models.Model):
         for sheet in self:
             if sheet.state != "submitted":
                 raise ValidationError(_("Only a submitted timesheet can be withdrawn."))
+            if sheet.analytic_line_ids:
+                sheet.analytic_line_ids.sudo().with_context(bypass_cleon_lock=True).write({"cleon_sheet_id": False})
             sheet.write({"state": "draft", "submitted_at": False})
             sheet._audit("modified", _("Timesheet withdrawn to draft."))
         return True
 
     def action_decide(self, decision, comment=False):
-        if not (self.env.user.has_group("hr_time_management.group_time_management_manager") or self.env.user.has_group("base.group_system")):
-            raise AccessError(_("Only a Time Management manager can approve timesheets."))
+        Policy = self.env["cleon.time.policy"]
         if decision not in ("approve", "reject", "request_changes"):
             raise ValidationError(_("Invalid timesheet decision."))
         if decision in ("reject", "request_changes") and not (comment or "").strip():
             raise ValidationError(_("A reason is required when rejecting or requesting corrections."))
         for sheet in self:
+            if not Policy._tm_can_approve(sheet, self.env.user):
+                raise AccessError(_("You are not authorized to review this timesheet (self-approval is not permitted for Line Managers)."))
             if sheet.state != "submitted":
                 raise ValidationError(_("Only submitted timesheets can be reviewed."))
             target_state = {
@@ -121,7 +185,10 @@ class CleonTimeSheet(models.Model):
                 "manager_comment": comment,
             }
             sheet.write(values)
-            if decision == "approve":
+            if decision in ("reject", "request_changes"):
+                if sheet.analytic_line_ids:
+                    sheet.analytic_line_ids.with_context(bypass_cleon_lock=True).write({"cleon_sheet_id": False})
+            if decision == "approve" and sheet.line_ids:
                 sheet.line_ids._sync_analytic_lines()
             sheet._audit(target_state, comment or _("Timesheet approved."))
         return True

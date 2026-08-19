@@ -157,9 +157,10 @@ class CleonAttendanceRegularization(models.Model):
         self.filtered(lambda record: record.state == "draft").write({"state": "submitted"})
 
     def action_approve(self):
-        if not self._is_manager():
-            raise AccessError(_("Only a Settings administrator can approve regularization requests."))
+        Policy = self.env["cleon.time.policy"]
         for request in self:
+            if not Policy._tm_can_approve(request, self.env.user):
+                raise AccessError(_("You are not authorized to approve this attendance regularization request (self-approval is not permitted for Line Managers)."))
             if request.state != "submitted":
                 raise UserError(_("Only submitted regularization requests can be approved."))
             if request.requested_check_out and request.requested_check_out <= request.requested_check_in:
@@ -171,19 +172,19 @@ class CleonAttendanceRegularization(models.Model):
                     "check_in": fields.Datetime.to_string(attendance.check_in),
                     "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
                 }
-                attendance.write({
+                attendance.sudo().write({
                     "check_in": request.requested_check_in,
                     "check_out": request.requested_check_out,
                     "cleon_edit_reason": request.reason,
                 })
             else:
-                attendance = self.env["hr.attendance"].create({
+                attendance = self.env["hr.attendance"].sudo().create({
                     "employee_id": request.employee_id.id,
                     "check_in": request.requested_check_in,
                     "check_out": request.requested_check_out,
                     "cleon_edit_reason": request.reason,
                 })
-                request.attendance_id = attendance
+                request.sudo().attendance_id = attendance
             self.env["cleon.time.audit.log"].sudo().create({
                 "attendance_id": attendance.id,
                 "employee_id": request.employee_id.id,
@@ -194,6 +195,7 @@ class CleonAttendanceRegularization(models.Model):
                     "check_in": fields.Datetime.to_string(attendance.check_in),
                     "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
                 },
+                "company_id": request.company_id.id,
             })
             request.write({"state": "approved", "approver_id": self.env.user.id, "decision_date": fields.Datetime.now()})
 

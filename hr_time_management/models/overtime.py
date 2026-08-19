@@ -155,13 +155,14 @@ class CleonOvertimeRequest(models.Model):
         return {"id": request.id, "name": request.name}
 
     def action_decide(self, decision, comment=False):
-        if not self._manager_allowed():
-            raise AccessError(_("Only a Time Management manager can review overtime."))
+        Policy = self.env["cleon.time.policy"]
         if decision not in ("approve", "reject"):
             raise ValidationError(_("Invalid overtime decision."))
         if decision == "reject" and not (comment or "").strip():
             raise ValidationError(_("A rejection reason is required."))
         for request in self:
+            if not Policy._tm_can_approve(request, self.env.user):
+                raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
             if request.state not in ("auto", "submitted"):
                 raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
             request.write({
