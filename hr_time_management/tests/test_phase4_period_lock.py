@@ -143,3 +143,61 @@ class TestPhase4PeriodLock(TransactionCase):
         })
         with self.assertRaises(AccessError):
             reg.with_user(self.emp_user).action_submit()
+
+    def test_09_regularization_withdraw_blocked_in_locked_period(self):
+        """Test action_withdraw is blocked when attendance_date is locked."""
+        reg = self.env["cleon.attendance.regularization"].sudo().create({
+            "employee_id": self.employee.id,
+            "attendance_date": "2026-08-05",
+            "issue_type": "forgot_in",
+            "requested_check_in": "2026-08-05 08:00:00",
+            "requested_check_out": "2026-08-05 17:00:00",
+            "reason": "Test withdraw period lock block verification reason message",
+        })
+        reg.with_user(self.emp_user).action_submit()
+
+        # Create period lock covering August 1 to August 10, 2026
+        self.env["cleon.time.period.lock"].sudo().create({
+            "company_id": self.company.id,
+            "date_from": "2026-08-01",
+            "date_to": "2026-08-10",
+            "state": "locked",
+            "reason": "August lock",
+        })
+        with self.assertRaises(AccessError):
+            reg.with_user(self.emp_user).action_withdraw()
+
+    def test_10_overtime_payroll_transfer_blocked_in_locked_period(self):
+        """Test mark_payroll_transferred is blocked when overtime date is locked."""
+        ot = self.env["cleon.overtime.request"].sudo().create({
+            "employee_id": self.employee.id,
+            "company_id": self.company.id,
+            "date": "2026-08-05",
+            "overtime_hours": 3.0,
+            "state": "approved",
+            "payroll_state": "ready",
+        })
+        # Lock August 1 to August 10, 2026
+        self.env["cleon.time.period.lock"].sudo().create({
+            "company_id": self.company.id,
+            "date_from": "2026-08-01",
+            "date_to": "2026-08-10",
+            "state": "locked",
+            "reason": "August lock",
+        })
+        with self.assertRaises(AccessError):
+            ot.mark_payroll_transferred()
+
+    def test_11_prospective_analytic_line_write_check(self):
+        """Test moving an unlocked analytic line to a locked date/company raises AccessError."""
+        if "account.analytic.line" in self.env:
+            line = self.env["account.analytic.line"].sudo().create({
+                "name": "Unlocked Date Line",
+                "date": "2026-11-15",
+                "unit_amount": 2.0,
+                "employee_id": self.employee.id,
+                "company_id": self.company.id,
+            })
+            # Lock July 2026 (July 1 - July 31 is locked by setUp)
+            with self.assertRaises(AccessError):
+                line.with_user(self.emp_user).write({"date": "2026-07-15"})

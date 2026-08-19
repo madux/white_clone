@@ -273,6 +273,8 @@ class CleonAttendanceRegularization(models.Model):
                 raise UserError(_("Only submitted regularization requests can be withdrawn."))
             if request.employee_id.sudo().user_id != user and not self.env["cleon.time.policy"]._tm_can_configure():
                 raise AccessError(_("You can only withdraw your own regularization request."))
+            c_id = request.company_id or request.employee_id.company_id
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Withdraw"))
             request.sudo().write({"state": "draft"})
 
     @api.model

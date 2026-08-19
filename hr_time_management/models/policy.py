@@ -45,7 +45,7 @@ class CleonTimePolicy(models.Model):
     enable_time_round_off = fields.Boolean(default=True)
     round_off_interval = fields.Integer(default=15)
     enable_break_period = fields.Boolean(default=False)
-    weekend_days = fields.Char(default="0,6", help="Comma-separated weekday numbers for weekend (0=Sun, 6=Sat)")
+    weekend_days = fields.Char(default="5,6", help="Comma-separated weekday numbers for weekend (0=Mon, 5=Sat, 6=Sun)")
     enable_overtime = fields.Boolean(default=True)
     daily_overtime_enabled = fields.Boolean(default=True)
     weekly_overtime_enabled = fields.Boolean(default=True)
@@ -105,7 +105,7 @@ class CleonTimePolicy(models.Model):
             "enable_time_round_off": policy.enable_time_round_off,
             "round_off_interval": policy.round_off_interval or 15,
             "enable_break_period": policy.enable_break_period,
-            "weekend_days": [int(d) for d in (policy.weekend_days or "0,6").split(",") if d.isdigit()],
+            "weekend_days": [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()],
             "regularization_window_days": policy.regularization_window_days or 30,
             "clock_method": policy.clock_method or "manual",
             "enable_overtime": policy.enable_overtime,

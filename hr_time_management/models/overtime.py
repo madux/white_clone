@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 import pytz
 
@@ -21,9 +21,9 @@ class CleonOvertimeRequest(models.Model):
     regular_hours = fields.Float(readonly=True)
     overtime_hours = fields.Float(required=True, tracking=True)
     category = fields.Selection([
-        ("daily", "Daily Overtime"), ("weekend", "Weekend Overtime"),
-        ("holiday", "Holiday Overtime"), ("special", "Special Assignment"),
-        ("on_call", "On-call Work"),
+        ("daily", "Daily Overtime"), ("weekly", "Weekly Overtime"),
+        ("weekend", "Weekend Overtime"), ("holiday", "Holiday Overtime"),
+        ("special", "Special Assignment"), ("on_call", "On-call Work"),
     ], required=True, default="daily", index=True, tracking=True)
     source = fields.Selection([
         ("attendance", "Auto Attendance"), ("employee", "Employee Request"),
@@ -84,45 +84,300 @@ class CleonOvertimeRequest(models.Model):
         role = Policy._tm_role()
         return role in ("line_manager", "hr_manager", "hr_admin", "system_admin")
 
+    SERVER_CONTROLLED_FIELDS = {
+        "category", "multiplier", "source", "attendance_id",
+        "regular_hours", "overtime_hours", "approver_id", "decision_at", "manager_comment", "payroll_state"
+    }
+
+    @api.model
+    def _sudo_create_service(self, vals_list):
+        """Private server helper executing authoritative backend creation via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).create(vals_list)
+
+    def _sudo_write_service(self, vals):
+        """Private server helper executing authoritative backend write via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).write(vals)
+
+    def _sudo_unlink_service(self):
+        """Private server helper executing authoritative backend unlink via sudo()."""
+        return super(CleonOvertimeRequest, self.sudo()).unlink()
+
+    @api.model
+    def _derive_overtime_category_and_multiplier(self, employee, target_date, is_weekly=False):
+        """Server-side authority deriving overtime category and multiplier from company policy and calendar boundaries."""
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", employee.company_id.id)], limit=1)
+        if not policy or not policy.enable_overtime:
+            raise ValidationError(_("Overtime is disabled for your company under current policy."))
+
+        if is_weekly:
+            if not policy.weekly_overtime_enabled:
+                raise ValidationError(_("Weekly overtime is disabled by company policy."))
+            return "weekly", policy.weekly_overtime_rate or 1.5
+
+        calendar = employee.resource_calendar_id
+        target_date_obj = fields.Date.to_date(target_date)
+        day_start = datetime.combine(target_date_obj, time.min)
+        day_end = datetime.combine(target_date_obj, time.max)
+
+        # 1. Public Holiday Check
+        is_holiday = bool(calendar and calendar.global_leave_ids.filtered(
+            lambda leave: leave.date_from < day_end and leave.date_to > day_start
+        ))
+        if is_holiday:
+            if not policy.holiday_overtime:
+                raise ValidationError(_("Holiday overtime is disabled by company policy."))
+            return "holiday", policy.holiday_overtime_rate or 2.5
+
+        # 2. Weekend / Scheduled Rest Day Check
+        Shift = self.env["cleon.hr.shift"]
+        exp = Shift._get_expected_working_hours_internal(employee.id, target_date_obj)
+        weekend_days = [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()]
+        is_rest_day = (exp.get("is_rest_day") if exp else False) or (target_date_obj.weekday() in weekend_days)
+
+        if is_rest_day:
+            if not policy.weekend_overtime:
+                raise ValidationError(_("Weekend and rest-day overtime is disabled by company policy."))
+            return "weekend", policy.weekend_overtime_rate or 2.0
+
+        # 3. Daily Overtime Check
+        if not policy.daily_overtime_enabled:
+            raise ValidationError(_("Daily overtime is disabled by company policy."))
+        return "daily", policy.daily_overtime_rate or 1.5
+
     @api.model
     def _sync_attendance_overtime(self):
-        """Materialize calculated overtime once, keeping attendance authoritative."""
+        """Materialize calculated daily and weekly overtime by aggregating attendance intervals per (employee_id, work_date)."""
         if not self._manager_allowed():
             return
         Policy = self.env["cleon.time.policy"]
         allowed_emp_ids = Policy._tm_scope_employee_ids()
-        cutoff = fields.Datetime.now() - timedelta(days=366)
+        cutoff_dt = fields.Datetime.now() - timedelta(days=366)
+        cutoff_date = fields.Date.today() - timedelta(days=366)
+
+        # 1. Fetch completed attendances within sync window
         attendances = self.env["hr.attendance"].sudo().search([
             ("employee_id.company_id", "=", self.env.company.id),
             ("employee_id", "in", allowed_emp_ids),
-            ("check_out", "!=", False), ("check_in", ">=", cutoff),
-            ("id", "not in", self.sudo().search([("attendance_id", "!=", False)]).mapped("attendance_id").ids),
+            ("check_out", "!=", False), ("check_in", ">=", cutoff_dt),
         ])
-        for attendance in attendances:
-            local_date = pytz.UTC.localize(attendance.check_in).astimezone(
-                pytz.timezone(self.env.user.tz or "UTC")
-            ).date()
-            values = self.env["hr.attendance"]._time_integration_values(
-                attendance, attendance.employee_id, local_date, attendance.cleon_shift_id
+
+        # 2. Group attendances by (employee_id, work_date)
+        Attendance = self.env["hr.attendance"]
+        emp_work_dates = {}
+        for att in attendances:
+            w_date = Attendance._work_date_for_punch(att.employee_id, att.check_in)
+            key = (att.employee_id, w_date)
+            emp_work_dates.setdefault(key, []).append(att)
+
+        processed_auto_keys = set()
+        emp_weekly_regular_hours = {}  # (employee, (iso_year, iso_week)) -> list of (work_date, regular_hours, total_net_hours, att_list)
+
+        for (employee, w_date), att_list in emp_work_dates.items():
+            company_id = employee.company_id.id
+            policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", company_id)], limit=1)
+
+            is_eligible = bool(
+                policy and policy.enable_overtime and policy.overtime_request_mode != "manual"
             )
-            if values["overtime_hours"] <= 0:
+
+            # Check period lock before any auto mutation on this date
+            is_locked = False
+            try:
+                self.env["cleon.time.period.lock"].check_period_lock(company_id, w_date, _("Overtime Auto Sync"))
+            except AccessError:
+                is_locked = True
+
+            existing_auto_daily = self.sudo().search([
+                ("employee_id", "=", employee.id),
+                ("date", "=", w_date),
+                ("category", "!=", "weekly"),
+                ("source", "=", "attendance"),
+            ], limit=1)
+
+            if not is_eligible or is_locked:
+                if not is_eligible and not is_locked and existing_auto_daily and existing_auto_daily.state == "auto":
+                    existing_auto_daily._sudo_unlink_service()
                 continue
-            request = self.sudo().create({
-                "employee_id": attendance.employee_id.id, "date": local_date,
-                "start_time": attendance.check_in, "end_time": attendance.check_out,
-                "regular_hours": max(0.0, values["net_hours"] - values["overtime_hours"]),
-                "overtime_hours": values["overtime_hours"], "category": values["overtime_category"],
-                "source": "attendance", "state": "auto", "attendance_id": attendance.id,
-                "multiplier": values["overtime_rate"],
-                "justification": _("Automatically calculated from attendance."),
-            })
-            request._audit("created", _("Overtime automatically calculated from attendance."), "system")
+
+            # Compute gross worked hours & single daily break deduction across multi-punch / split shifts
+            gross_hours = sum((a.check_out - a.check_in).total_seconds() / 3600 for a in att_list)
+            if policy and policy.enable_break_period and gross_hours >= (policy.half_day_hours or 4.0):
+                break_hours = (policy.default_break_minutes or 60) / 60.0
+                total_net_hours = max(0.0, gross_hours - break_hours)
+            else:
+                total_net_hours = gross_hours
+
+            earliest_in = min(a.check_in for a in att_list)
+            latest_out = max(a.check_out for a in att_list)
+
+            # Check calendar & shift boundaries
+            calendar = employee.resource_calendar_id
+            day_start = datetime.combine(w_date, time.min)
+            day_end = datetime.combine(w_date, time.max)
+            is_holiday = bool(calendar and calendar.global_leave_ids.filtered(
+                lambda leave: leave.date_from < day_end and leave.date_to > day_start
+            ))
+            Shift = self.env["cleon.hr.shift"]
+            exp = Shift._get_expected_working_hours_internal(employee.id, w_date)
+            weekend_days = [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()]
+            is_rest_day = (exp.get("is_rest_day") if exp else False) or (w_date.weekday() in weekend_days)
+
+            if is_holiday:
+                category = "holiday"
+                multiplier = policy.holiday_overtime_rate or 2.5
+                daily_ot_hours = total_net_hours if policy.holiday_overtime else 0.0
+                regular_hours = 0.0
+            elif is_rest_day:
+                category = "weekend"
+                multiplier = policy.weekend_overtime_rate or 2.0
+                daily_ot_hours = total_net_hours if policy.weekend_overtime else 0.0
+                regular_hours = 0.0
+            else:
+                category = "daily"
+                multiplier = policy.daily_overtime_rate or 1.5
+                if policy.daily_overtime_enabled:
+                    daily_threshold = policy.daily_overtime_threshold or 8.0
+                    daily_ot_hours = max(0.0, total_net_hours - daily_threshold)
+                    regular_hours = max(0.0, total_net_hours - daily_ot_hours)
+                else:
+                    daily_ot_hours = 0.0
+                    regular_hours = total_net_hours
+
+            if existing_auto_daily:
+                if existing_auto_daily.state == "auto":
+                    if daily_ot_hours > 0:
+                        existing_auto_daily._sudo_write_service({
+                            "overtime_hours": daily_ot_hours,
+                            "regular_hours": regular_hours,
+                            "category": category,
+                            "multiplier": multiplier,
+                            "start_time": earliest_in,
+                            "end_time": latest_out,
+                        })
+                        processed_auto_keys.add((employee, w_date, category))
+                    else:
+                        existing_auto_daily._sudo_unlink_service()
+            elif daily_ot_hours > 0:
+                request = self._sudo_create_service([{
+                    "employee_id": employee.id, "date": w_date,
+                    "start_time": earliest_in, "end_time": latest_out,
+                    "regular_hours": regular_hours,
+                    "overtime_hours": daily_ot_hours, "category": category,
+                    "source": "attendance", "state": "auto", "attendance_id": att_list[0].id,
+                    "multiplier": multiplier,
+                    "justification": _("Automatically calculated from attendance."),
+                }])
+                request._audit("created", _("Overtime automatically calculated from attendance."), "system")
+                processed_auto_keys.add((employee, w_date, category))
+
+            # Store for weekly overtime threshold calculation
+            iso_year, iso_week, day_idx = w_date.isocalendar()
+            emp_weekly_regular_hours.setdefault((employee, (iso_year, iso_week)), []).append(
+                (w_date, regular_hours, total_net_hours, att_list)
+            )
+
+        # 3. Weekly Overtime Engine (component-aware, frozen weekly record accounting, no double counting)
+        for (employee, (iso_year, iso_week)), day_records in emp_weekly_regular_hours.items():
+            company_id = employee.company_id.id
+            policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", company_id)], limit=1)
+            if not policy or not policy.enable_overtime or not policy.weekly_overtime_enabled or policy.overtime_request_mode == "manual":
+                continue
+
+            # Authoritative ISO week boundary: Monday (1) through Sunday (7)
+            week_start_date = date.fromisocalendar(iso_year, iso_week, 1)
+            week_end_date = date.fromisocalendar(iso_year, iso_week, 7)
+            existing_weekly_recs = self.sudo().search([
+                ("employee_id", "=", employee.id),
+                ("category", "=", "weekly"),
+                ("date", ">=", week_start_date),
+                ("date", "<=", week_end_date),
+            ])
+
+            # Intentional Business Logic: Non-auto weekly records (submitted, approved, rejected, withdrawn)
+            # are treated as frozen to suppress duplicate regeneration of decided/withdrawn weekly entitlements.
+            frozen_weekly_hours = sum(r.overtime_hours for r in existing_weekly_recs if r.state != "auto")
+
+            weekly_threshold = policy.weekly_overtime_threshold or 40.0
+            total_week_regular = sum(rec[1] for rec in day_records)
+            total_weekly_entitlement = max(0.0, total_week_regular - weekly_threshold)
+
+            weekly_ot_needed = max(0.0, total_weekly_entitlement - frozen_weekly_hours)
+
+            if weekly_ot_needed > 0:
+                weekly_rate = policy.weekly_overtime_rate or 1.5
+                sorted_days = sorted(day_records, key=lambda x: x[0], reverse=True)
+
+                for w_date, reg_h, net_h, att_list in sorted_days:
+                    if weekly_ot_needed <= 0:
+                        break
+                    if reg_h <= 0:
+                        continue
+
+                    # Skip day if it has a frozen non-auto weekly record
+                    if any(r.date == w_date and r.state != "auto" for r in existing_weekly_recs):
+                        continue
+
+                    # Check period lock before mutating for weekly OT
+                    try:
+                        self.env["cleon.time.period.lock"].check_period_lock(company_id, w_date, _("Weekly Overtime Sync"))
+                    except AccessError:
+                        continue
+
+                    ot_to_materialize = min(weekly_ot_needed, reg_h)
+                    existing_auto_weekly = existing_weekly_recs.filtered(lambda r: r.date == w_date and r.state == "auto")
+
+                    earliest_in = min(a.check_in for a in att_list)
+                    latest_out = max(a.check_out for a in att_list)
+
+                    if existing_auto_weekly:
+                        existing_auto_weekly[0]._sudo_write_service({
+                            "overtime_hours": ot_to_materialize,
+                            "multiplier": weekly_rate,
+                        })
+                        weekly_ot_needed -= ot_to_materialize
+                        processed_auto_keys.add((employee, w_date, "weekly"))
+                    else:
+                        req = self._sudo_create_service([{
+                            "employee_id": employee.id, "date": w_date,
+                            "start_time": earliest_in, "end_time": latest_out,
+                            "regular_hours": max(0.0, reg_h - ot_to_materialize),
+                            "overtime_hours": ot_to_materialize, "category": "weekly",
+                            "source": "attendance", "state": "auto", "attendance_id": False,
+                            "multiplier": weekly_rate,
+                            "justification": _("Automatically calculated weekly overtime."),
+                        }])
+                        req._audit("created", _("Weekly overtime automatically calculated from attendance."), "system")
+                        weekly_ot_needed -= ot_to_materialize
+                        processed_auto_keys.add((employee, w_date, "weekly"))
+
+        # 4. Reconcile stale auto records SCOPED STRICTLY to allowed_emp_ids, sync horizon, and component keys
+        stale_auto_records = self.sudo().search([
+            ("source", "=", "attendance"),
+            ("state", "=", "auto"),
+            ("company_id", "=", self.env.company.id),
+            ("employee_id", "in", allowed_emp_ids),
+            ("date", ">=", cutoff_date),
+        ])
+        for record in stale_auto_records:
+            comp_key = (record.employee_id, record.date, record.category)
+            if comp_key not in processed_auto_keys:
+                try:
+                    self.env["cleon.time.period.lock"].check_period_lock(record.company_id.id, record.date, _("Overtime Reconcile"))
+                    record._sudo_unlink_service()
+                except AccessError:
+                    pass
 
     @api.model
     def submit_manual_request(self, values):
         employee = self.env.user.employee_id
         if not employee:
             raise ValidationError(_("Your user is not linked to an employee record."))
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", employee.company_id.id)], limit=1)
+        if not policy or not policy.enable_overtime:
+            raise ValidationError(_("Overtime is disabled for your company under current policy."))
+        if policy.overtime_request_mode == "automatic":
+            raise ValidationError(_("Manual overtime requests are disabled by company policy."))
+
         target_date = fields.Date.to_date(values.get("date"))
         if not target_date:
             raise ValidationError(_("Select an overtime date."))
@@ -137,6 +392,7 @@ class CleonOvertimeRequest(models.Model):
         if not start or not end or end <= start:
             raise ValidationError(_("End time must be after start time."))
         hours = (end - start).total_seconds() / 3600
+
         duplicate = self.search_count([
             ("employee_id", "=", employee.id), ("date", "=", target_date),
             ("start_time", "<", end), ("end_time", ">", start),
@@ -144,25 +400,34 @@ class CleonOvertimeRequest(models.Model):
         ])
         if duplicate:
             raise ValidationError(_("An overtime request already covers this date and time period."))
-        policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
-        category = values.get("category", "daily")
-        multiplier = {
-            "daily": policy.daily_overtime_rate or 1.5,
-            "weekend": policy.weekend_overtime_rate or 2.0,
-            "holiday": policy.holiday_overtime_rate or 2.5,
-        }.get(category, policy.daily_overtime_rate or 1.5) if policy else 1.5
-        request = self.create({
+
+        # Server-derive category and multiplier
+        category, multiplier = self._derive_overtime_category_and_multiplier(employee, target_date)
+
+        request = self._sudo_create_service([{
             "employee_id": employee.id, "date": target_date, "start_time": start, "end_time": end,
             "overtime_hours": hours, "category": category, "source": "employee",
             "state": "submitted", "justification": justification, "multiplier": multiplier,
-        })
+        }])
         request._audit("submitted", _("Manual overtime request submitted."))
         return {"id": request.id, "name": request.name}
+
+    def action_withdraw(self):
+        """Allow an employee to withdraw their pending or auto-calculated overtime request."""
+        for request in self:
+            if not self.env.su and request.employee_id.user_id != self.env.user:
+                raise AccessError(_("You can only withdraw your own overtime request."))
+            if request.state not in ("submitted", "auto"):
+                raise ValidationError(_("Only pending or auto-calculated overtime requests can be withdrawn."))
+            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Withdrawal"))
+            request._sudo_write_service({"state": "withdrawn"})
+            request._audit("withdrawn", _("Overtime request withdrawn by employee."))
+        return True
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            self._check_workflow_protection(vals)
+            self._check_workflow_protection(vals, is_create=True)
             if vals.get("date"):
                 emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
                 c_id = vals.get("company_id") or (emp.company_id.id if emp else self.env.company.id)
@@ -170,7 +435,7 @@ class CleonOvertimeRequest(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        self._check_workflow_protection(vals)
+        self._check_workflow_protection(vals, is_create=False)
         if not self.env.su and not self.env.user.has_group("base.group_system"):
             for req in self:
                 c_id = req.company_id.id
@@ -186,14 +451,20 @@ class CleonOvertimeRequest(models.Model):
                     self.env["cleon.time.period.lock"].check_period_lock(req.company_id.id, req.date, _("Overtime Request"))
         return super().unlink()
 
-    def _check_workflow_protection(self, vals):
+    def _check_workflow_protection(self, vals, is_create=False):
         if self.env.su or self.env.user.has_group("base.group_system"):
             return
-        if "state" in vals:
-            raise AccessError(_("Direct overtime state mutation is prohibited. Use approval/action methods instead."))
-        protected_fields = {"manager_comment", "approver_id", "decision_at", "payroll_state"}
-        if protected_fields.intersection(vals.keys()):
-            raise AccessError(_("Direct decision field mutation is prohibited. Use approval/action methods instead."))
+        if is_create:
+            supplied_server_fields = self.SERVER_CONTROLLED_FIELDS.intersection(vals.keys())
+            if supplied_server_fields:
+                raise AccessError(_("Server-controlled overtime fields (%s) cannot be supplied directly. Use submit_manual_request().") % ", ".join(supplied_server_fields))
+            if "state" in vals and vals.get("state") != "draft":
+                raise AccessError(_("Direct creation of non-draft overtime requests is prohibited. Use submit_manual_request()."))
+        else:
+            if "state" in vals:
+                raise AccessError(_("Direct overtime state mutation is prohibited. Use approval/action methods instead."))
+            if self.SERVER_CONTROLLED_FIELDS.intersection(vals.keys()):
+                raise AccessError(_("Direct mutation of decision or server-controlled fields is prohibited."))
 
     def action_decide(self, decision, comment=False):
         Policy = self.env["cleon.time.policy"]
@@ -255,6 +526,7 @@ class CleonOvertimeRequest(models.Model):
             raise AccessError(_("Only a Time Management manager can confirm payroll transfer."))
         for request in self:
             request.get_payroll_ready_values()
+            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Payroll Transfer"))
             request.sudo().write({"payroll_state": "transferred"})
             request._audit("modified", _("Approved overtime marked as transferred to payroll."), "system")
         return True
@@ -294,15 +566,8 @@ class CleonOvertimeRequest(models.Model):
 
     @api.model
     def withdraw_request(self, request_id):
-        employee = self.env.user.employee_id
         request = self.browse(int(request_id)).exists()
-        if not employee or request.employee_id != employee:
-            raise AccessError(_("You can only withdraw your own overtime request."))
-        if request.state != "submitted":
-            raise ValidationError(_("Only a pending overtime request can be withdrawn."))
-        request.state = "withdrawn"
-        request._audit("withdrawn", _("Employee withdrew the overtime request."))
-        return True
+        return request.action_withdraw()
 
     @api.model
     def get_overtime_data(self, page="dashboard", state="all", search=""):
@@ -324,9 +589,9 @@ class CleonOvertimeRequest(models.Model):
         pending = month.filtered(lambda row: row.state in ("auto", "submitted"))
         employees = month.mapped("employee_id")
         rows = [{
-            "id": row.id, "name": row.name, "employee": row.employee_id.name,
-            "employee_code": row.employee_id.identification_id or "",
-            "department": row.employee_id.department_id.name or _("Unassigned"),
+            "id": row.id, "name": row.name, "employee": row.employee_id.sudo().name,
+            "employee_code": row.employee_id.sudo().identification_id or "",
+            "department": row.employee_id.sudo().department_id.name or _("Unassigned"),
             "date": fields.Date.to_string(row.date), "regular_hours": round(row.regular_hours, 2),
             "hours": round(row.overtime_hours, 2), "category": row.category,
             "source": row.source, "state": row.state, "reason": row.justification or "",

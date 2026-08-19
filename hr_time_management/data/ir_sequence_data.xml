@@ -8,5 +8,13 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
+
+        <record id="seq_cleon_time_period_lock" model="ir.sequence">
+            <field name="name">Administrative Period Lock Sequence</field>
+            <field name="code">cleon.time.period.lock</field>
+            <field name="prefix">LOCK/%(year)s/</field>
+            <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
+        </record>
     </data>
 </odoo>

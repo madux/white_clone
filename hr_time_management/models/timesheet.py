@@ -372,10 +372,12 @@ class AccountAnalyticLine(models.Model):
     def write(self, vals):
         if not self.env.su and not self.env.user.has_group("base.group_system"):
             for rec in self:
-                c_id = rec.company_id.id or (rec.employee_id.company_id.id if rec.employee_id else self.env.company.id)
+                target_emp_id = vals.get("employee_id") or (rec.employee_id.id if rec.employee_id else False)
+                emp = self.env["hr.employee"].browse(target_emp_id).exists() if target_emp_id else False
+                target_c_id = vals.get("company_id") or (emp.company_id.id if emp else rec.company_id.id or self.env.company.id)
                 target_date = vals.get("date") or rec.date
                 if target_date:
-                    self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Analytic Timesheet Line"))
+                    self.env["cleon.time.period.lock"].check_period_lock(target_c_id, target_date, _("Analytic Timesheet Line"))
         return super().write(vals)
 
     def unlink(self):
