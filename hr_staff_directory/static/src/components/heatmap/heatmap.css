@@ -1,0 +1,254 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   HEATMAP VIEW
+══════════════════════════════════════════════════════════════════════════ */
+
+.sdir-heatmap-title-bar {
+    background: #F3F4F6;
+    padding: 16px 24px;
+    border-bottom: 1px solid #E5E7EB;
+}
+.sdir-heatmap-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.sdir-heatmap-subtitle {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 4px;
+}
+
+.sdir-heatmap-wrapper {
+    flex: 1;
+    overflow: auto;
+    background: #fff;
+    position: relative;
+}
+
+.sdir-heatmap-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: center;
+}
+
+/* Sticky Header */
+.sdir-heatmap-table thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4B5563;
+    padding: 12px 8px;
+    border-bottom: 1px solid #E5E7EB;
+}
+.sdir-heatmap-table thead th.sdir-hm-skill-col {
+    text-align: left;
+    padding-left: 24px;
+    min-width: 180px;
+    z-index: 11;
+}
+.sdir-heatmap-table thead th.sdir-hm-total-col {
+    text-align: right;
+    padding-right: 24px;
+    border-left: 2px solid rgb(243, 244, 246);
+}
+
+/* Body */
+.sdir-heatmap-table tbody td {
+    padding: 2px 4px;
+    border-bottom: 1px solid rgb(243, 244, 246);
+}
+.sdir-heatmap-table tbody td.sdir-hm-skill-name {
+    text-align: left;
+    padding-left: 24px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #111827;
+}
+.sdir-heatmap-table tbody tr {
+    transition: background 0.12s;
+}
+.sdir-heatmap-table tbody tr:nth-child(even) {
+    background: rgba(233, 30, 99, 0.025);
+}
+
+/* Cells */
+.sdir-hm-cell-box {
+    border-radius: 6px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+}
+.sdir-hm-clickable {
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.sdir-hm-clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.sdir-hm-empty {
+    background-color: #FDF2F8;
+    color: #F9A8D4;
+    font-weight: 400;
+}
+
+.sdir-hm-row-total {
+    text-align: right;
+    padding-right: 24px !important;
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+    border-left: 2px solid rgb(243, 244, 246);
+}
+
+/* Sticky Footer */
+.sdir-heatmap-table tfoot td {
+    position: sticky;
+    bottom: 0px;
+    z-index: 3;
+    background-color: rgb(249, 250, 251);
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    padding: 12px 8px;
+    border-top: 2px solid #E5E7EB;
+}
+.sdir-hm-footer-label {
+    text-align: left;
+    padding-left: 24px !important;
+}
+.sdir-heatmap-table tfoot td.sdir-hm-grand-total {
+    text-align: right;
+    padding-right: 24px !important;
+    color: rgb(233, 30, 140) !important;
+    border-left: 2px solid rgb(243, 244, 246);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HEATMAP DRILL-DOWN VIEW
+══════════════════════════════════════════════════════════════════════════ */
+.sdir-heatmap-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #fff;
+    border-bottom: 1px solid #E5E7EB;
+    font-size: 14px;
+}
+.sdir-hm-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #6B7280;
+    font-weight: 500;
+    cursor: pointer;
+}
+.sdir-hm-back-btn:hover { color: #374151; }
+.sdir-hm-divider {
+    color: #D1D5DB;
+}
+.sdir-hm-crumb-skill {
+    font-weight: 600;
+    color: #111827;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sdir-hm-clear-btn {
+    background: none;
+    border: none;
+    color: #9CA3AF;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 4px;
+}
+.sdir-hm-clear-btn:hover { color: #EF4444; }
+.sdir-hm-crumb-location {
+    font-weight: 600;
+    color: var(--pink);
+}
+.sdir-hm-crumb-count {
+    color: #9CA3AF;
+}
+
+.sdir-hm-drilldown-wrapper {
+    flex: 1;
+    background: #F3F4F6;
+    overflow: auto;
+}
+.sdir-hm-drilldown-table {
+    width: 100%;
+    background: #fff;
+    border-collapse: collapse;
+}
+.sdir-hm-drilldown-table th {
+    background: #F9FAFB;
+    padding: 12px 24px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #E5E7EB;
+}
+.sdir-hm-drilldown-table td {
+    padding: 12px 24px;
+    font-size: 13px;
+    color: #374151;
+    border-bottom: 1px solid #F3F4F6;
+}
+.sdir-hm-drilldown-table tr:hover td {
+    background: #F9FAFB;
+}
+
+.sdir-hm-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+.sdir-hm-avatar {
+    width: 32px;
+    height: 32px;
+}
+.sdir-hm-name-link {
+    font-weight: 600;
+    color: var(--pink);
+}
+.sdir-hm-role-link {
+    color: var(--pink);
+    cursor: pointer;
+}
+
+.sdir-badge-amber {
+    background: #FEF3C7;
+    color: #B45309;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+.sdir-badge-gray {
+    background: #F3F4F6;
+    color: #4B5563;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}

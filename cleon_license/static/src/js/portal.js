@@ -89,72 +89,77 @@ $(function () {
     });
 
     /* ── 4. Register form client-side validation ──────────────────────────── */
-    var $regForm   = $('#hc-register-form');
-    var $regSubmit = $('#hc-register-submit');
+    // var $regForm   = $('#hc-register-form');
+    // var $regSubmit = $('#hc-register-submit');
 
-    if ($regForm.length) {
-        $regForm.on('submit', function (e) {
-            var valid  = true;
-            var errors = {};
+    // if ($regForm.length) {
+    //     console.log("1 Issues while registering")
+    //     $regForm.on('submit', function (e) {
+    //         var valid  = true;
+    //         var errors = {};
+    //         console.log("2 Issues while registering")
 
-            // Company name
-            var company = $.trim($('#company_name').val());
-            if (!company) { errors.company_name = 'Company name is required.'; valid = false; }
+    //         // Company name
+    //         var company = $.trim($('#company_name').val());
+    //         if (!company) { 
+    //             errors.company_name = 'Company name is required.'; valid = false; }
 
-            // Database name
-            var dbName = $.trim($('#database_name').val());
-            if (!dbName) { errors.database_name = 'Database name is required.'; valid = false; }
+    //         // Database name
+    //         var dbName = $.trim($('#database_name').val());
+    //         if (!dbName) { errors.database_name = 'Database name is required.'; valid = false; }
 
-            // Username
-            var username = $.trim($('#username').val());
-            if (!username) { errors.username = 'Username is required.'; valid = false; }
+    //         // Username
+    //         var username = $.trim($('#username').val());
+    //         if (!username) { errors.username = 'Username is required.'; valid = false; }
 
-            // Email
-            var email = $.trim($('#email').val());
-            if (!email || email.indexOf('@') === -1) { errors.email = 'Valid email required.'; valid = false; }
+    //         // Email
+    //         var email = $.trim($('#email').val());
+    //         if (!email || email.indexOf('@') === -1) { errors.email = 'Valid email required.'; valid = false; }
 
-            // Phone
-            var phone = $.trim($('#phone').val());
-            if (!phone) { errors.phone = 'Phone number is required.'; valid = false; }
+    //         // Phone
+    //         var phone = $.trim($('#phone').val());
+    //         if (!phone) { errors.phone = 'Phone number is required.'; valid = false; }
 
-            // Months
-            var months = parseInt($('#months').val(), 10);
-            if (isNaN(months) || months < 8) { errors.months = 'Minimum 8 months required.'; valid = false; }
+    //         // Months
+    //         var months = parseInt($('#months').val(), 10);
+    //         if (isNaN(months) || months < 8) { errors.months = 'Minimum 8 months required.'; valid = false; }
 
-            // Password
-            var pwd  = $('#password').val();
-            var conf = $('#password_confirmation').val();
-            if (!pwd || pwd.length < 8) { errors.password = 'Password must be at least 8 characters.'; valid = false; }
-            if (pwd !== conf)            { errors.password_confirmation = 'Passwords do not match.'; valid = false; }
+    //         // Password
+    //         var pwd  = $('#password').val();
+    //         var conf = $('#password_confirmation').val();
+    //         if (!pwd || pwd.length < 8) { errors.password = 'Password must be at least 8 characters.'; valid = false; }
+    //         if (pwd !== conf)            { errors.password_confirmation = 'Passwords do not match.'; valid = false; }
 
-            // Modules
-            var checkedModules = $regForm.find('input[name="modules"]:checked').length;
-            if (checkedModules === 0) { errors.modules = 'Select at least one module.'; valid = false; }
+    //         // Modules
+    //         var checkedModules = $regForm.find('input[name="modules"]:checked').length;
+    //         if (checkedModules === 0) { errors.modules = 'Select at least one module.'; valid = false; }
 
-            // Clear previous inline JS errors
-            $regForm.find('.hc-js-error').remove();
+    //         // Clear previous inline JS errors
+    //         $regForm.find('.hc-js-error').remove();
 
-            if (!valid) {
-                e.preventDefault();
-                $.each(errors, function (field, msg) {
-                    var $field = $regForm.find('[name="' + field + '"]');
-                    if ($field.length) {
-                        $('<span class="hc-field-error hc-js-error">' + msg + '</span>')
-                            .insertAfter($field);
-                    }
-                });
-                // Scroll to first error
-                var $firstErr = $regForm.find('.hc-js-error').first();
-                if ($firstErr.length) {
-                    $('html, body').animate({ scrollTop: $firstErr.offset().top - 120 }, 300);
-                }
-                return;
-            }
-            // Show loading state on submit button
-            $regSubmit.html('<i class="fa fa-spinner fa-spin me-2"></i> Submitting…')
-                      .prop('disabled', true);
-        });
-    }
+    //         if (!valid) {
+    //             console.log("2 Issues while registering")
+
+    //             e.preventDefault();
+    //             $.each(errors, function (field, msg) {
+    //                 var $field = $regForm.find('[name="' + field + '"]');
+    //                 if ($field.length) {
+    //                     $('<span class="hc-field-error hc-js-error">' + msg + '</span>')
+    //                         .insertAfter($field);
+    //                 }
+    //             });
+    //             // Scroll to first error
+    //             var $firstErr = $regForm.find('.hc-js-error').first();
+    //             if ($firstErr.length) {
+    //                 $('html, body').animate({ scrollTop: $firstErr.offset().top - 120 }, 300);
+    //             }
+    //             return;
+    //         }
+    //         // Show loading state on submit button
+    //         $regSubmit.html('<i class="fa fa-spinner fa-spin me-2"></i> Submitting…')
+    //                   .prop('disabled', true);
+    //     });
+    // }
 
      /* ── 4. Register form client-side validation ──────────────────────────── */
     var $regForm   = $('#hc-login-form');
