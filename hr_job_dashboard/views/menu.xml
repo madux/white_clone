@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    <record id="action_hr_job_dashboardx" model="ir.actions.client">
+        <field name="name">Job Dashboard</field>
+        <field name="tag">hr_job_dashboard</field>
+    </record>
+</odoo>

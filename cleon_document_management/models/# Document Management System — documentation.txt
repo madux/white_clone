@@ -1,0 +1,341 @@
+# Document Management System — Requirements & Technical Design
+
+## 1. Overview
+
+A Document Management System (DMS) built on top of Odoo's native `ir.attachment` model, extending it with folder structures, employee-specific document areas, governance controls (locking, sharing, retention), department/role-based access, and a compliance engine that tracks required documents per employee and computes organization-wide compliance.
+
+**Reference modules used:** `ir.attachment`, `res.groups`, `hr.employee`, `hr.department`, `mail.thread` (for activity logging).
+
+---
+
+## 2. Core Objectives
+
+| # | Objective |
+|---|---|
+| 1 | Central repository for all organizational and employee documents |
+| 2 | Folder-based organization mirroring departments/categories |
+| 3 | Per-employee document vaults (contracts, certificates, leave forms, etc.) |
+| 4 | Granular access control by department and role |
+| 5 | Document lifecycle governance (lock, retention, auto-delete, archive) |
+| 6 | Secure external/internal sharing with expiry |
+| 7 | In-app preview without download |
+| 8 | Compliance checklist engine — define required docs per employee/role, track completion |
+| 9 | Real-time compliance scoring and reporting |
+
+---
+
+## 3. Data Model / Structure
+
+### 3.1 `doc.folder` (Folder / Category)
+Represents a folder such as "HR Policies & Procedures", "Compliance Documents", or an employee's personal folder.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | Char | Folder name |
+| `description` | Text | Short description |
+| `parent_id` | Many2one(`doc.folder`) | Supports nested folders |
+| `folder_type` | Selection | `organizational`, `employee`, `template`, `system` |
+| `employee_id` | Many2one(`hr.employee`) | Set only if `folder_type = employee` |
+| `department_ids` | Many2many(`hr.department`) | Departments allowed to access this folder |
+| `allowed_group_ids` | Many2many(`res.groups`) | Roles allowed to access |
+| `owner_id` | Many2one(`res.users`) | Folder owner |
+| `is_locked` | Boolean | Prevents upload/delete/edit when true |
+| `locked_by` | Many2one(`res.users`) | Audit of who locked it |
+| `retention_policy_id` | Many2one(`doc.retention.policy`) | Optional default policy applied to files inside |
+| `document_count` | Integer (computed) | Count of attachments linked |
+| `color` / `icon` | Char | UI display |
+
+### 3.2 `doc.attachment` (extends `ir.attachment`)
+Rather than duplicating storage, extend `ir.attachment` with a delegation/inheritance model (`_inherit = 'ir.attachment'`) or a wrapper model `doc.attachment` that has a `attachment_id = Many2one('ir.attachment')` and holds DMS-specific metadata. Wrapper is recommended — keeps `ir.attachment` untouched and avoids core-model risk.
+
+| Field | Type | Notes |
+|---|---|---|
+| `attachment_id` | Many2one(`ir.attachment`) | The actual binary/file record |
+| `name` | Char (related, store) | Display name |
+| `folder_id` | Many2one(`doc.folder`) | Parent folder |
+| `employee_id` | Many2one(`hr.employee`) | Document subject (for employee docs) |
+| `document_type_id` | Many2one(`doc.document.type`) | e.g. "Employee Contract", "Medical Certificate" |
+| `state` | Selection | `draft`, `pending`, `approved`, `signed`, `rejected`, `expired` |
+| `is_locked` | Boolean | Prevents edits/replacement/deletion |
+| `locked_by` / `locked_date` | Many2one / Datetime | Audit |
+| `expiry_date` | Date | Used for "Expiring Soon" widget & retention triggers |
+| `visibility` | Selection | `private`, `department`, `organization`, `shared_link` |
+| `allowed_group_ids` | Many2many(`res.groups`) | Overrides folder-level roles if set |
+| `share_ids` | One2many(`doc.share.link`) | Active share links |
+| `version_ids` | One2many(`doc.attachment.version`) | Version history |
+| `uploaded_by` | Many2one(`res.users`) | Audit |
+| `signature_required` | Boolean | Drives "Pending Signatures" KPI |
+| `compliance_requirement_id` | Many2one(`doc.compliance.requirement`) | Links doc to a compliance rule it satisfies |
+
+### 3.3 `doc.document.type`
+Master list of document categories used across folders and compliance rules (Employee Contract, Tax Form, Training Certificate, Leave Request Form, Medical Certificate…).
+
+| Field | Type |
+|---|---|
+| `name` | Char |
+| `category` | Selection/Many2one(`doc.folder.category`) e.g. HR Documents, Finance, Compliance |
+| `is_mandatory_default` | Boolean |
+| `default_retention_years` | Integer |
+
+### 3.4 `doc.retention.policy`
+Matches the "Retention Policies" screen.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | Char | e.g. "Employee Contracts Retention" |
+| `description` | Text | |
+| `document_type_id` | Many2one(`doc.document.type`) | Which doc type this applies to |
+| `retention_value` | Integer | e.g. `7` |
+| `retention_unit` | Selection | `days`, `months`, `years` |
+| `trigger_event` | Selection | `upload_date`, `expiry_date`, `termination_date` |
+| `action_after_expiry` | Selection | `archive`, `delete`, `flag_for_review`, `notify_owner` |
+| `active` | Boolean | Active/Inactive toggle |
+| `affected_document_count` | Integer (computed) | |
+| `applies_to_folder_ids` | Many2many(`doc.folder`) | Scope |
+
+**Cron job** (`ir.cron`, daily): scans attachments whose `create_date`/`expiry_date` + retention period has elapsed and applies `action_after_expiry`.
+
+### 3.5 `doc.share.link`
+| Field | Type | Notes |
+|---|---|---|
+| `attachment_id` | Many2one(`doc.attachment`) | |
+| `token` | Char | Random UUID, used in public URL |
+| `access_type` | Selection | `view_only`, `download` |
+| `expiry_date` | Datetime | Nullable = never expires |
+| `password_protected` | Boolean | |
+| `password` | Char | Hashed |
+| `shared_with_email` | Char | Optional restriction |
+| `created_by` | Many2one(`res.users`) | |
+| `access_count` | Integer | Track opens |
+| `is_revoked` | Boolean | |
+
+### 3.6 `doc.attachment.version`
+| Field | Type |
+|---|---|
+| `attachment_id` | Many2one(`doc.attachment`) |
+| `version_number` | Integer |
+| `file_binary` | Binary (linked ir.attachment copy) |
+| `uploaded_by` | Many2one(`res.users`) |
+| `upload_date` | Datetime |
+| `change_note` | Char |
+
+### 3.7 Compliance Engine
+
+#### `doc.compliance.requirement`
+Defines a rule: "Employee Contract is mandatory for all employees."
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | Char | |
+| `document_type_id` | Many2one(`doc.document.type`) | |
+| `category` | Selection | HR Documents, Finance, Compliance, etc. |
+| `is_mandatory` | Boolean | Required vs. optional |
+| `applies_to` | Selection | `all_employees`, `department`, `job_position`, `specific_employees` |
+| `department_ids` | Many2many(`hr.department`) | If scoped |
+| `job_position_ids` | Many2many(`hr.job`) | If scoped |
+| `employee_ids` | Many2many(`hr.employee`) | If scoped |
+| `deadline_days` | Integer | Days after hire/trigger date to submit |
+| `active` | Boolean | |
+
+#### `doc.compliance.record` (computed/generated join table)
+One record per (employee × requirement). Auto-generated when requirements or employees change.
+
+| Field | Type | Notes |
+|---|---|---|
+| `employee_id` | Many2one(`hr.employee`) | |
+| `requirement_id` | Many2one(`doc.compliance.requirement`) | |
+| `attachment_id` | Many2one(`doc.attachment`) | Linked doc once uploaded |
+| `status` | Selection (computed) | `completed`, `pending`, `missing` |
+| `uploaded_date` | Date | |
+| `due_date` | Date (computed) | hire date/trigger + deadline_days |
+
+**Status computation logic:**
+```
+if attachment_id and attachment_id.state in ('approved', 'signed'):
+    status = 'completed'
+elif attachment_id and attachment_id.state in ('draft', 'pending'):
+    status = 'pending'
+else:
+    status = 'missing'
+```
+
+**Compliance rate (per employee or org-wide):**
+```
+compliance_rate = completed_count / total_requirement_count * 100
+```
+This feeds the "Compliance Rate" KPI (target 85%) and the per-employee/document matrix on the Compliance Checklist screen.
+
+---
+
+## 4. Security Model
+
+### 4.1 Roles (`res.groups`)
+Create a dedicated category `Document Management` with groups:
+
+| Group (XML ID) | Access |
+|---|---|
+| `dms_group_employee` | View/upload own employee folder only; view org files marked `organization` visibility |
+| `dms_group_department_manager` | Full access to folders where `department_ids` includes their department |
+| `dms_group_hr_admin` | Full access to all Employee Files, Compliance Checklist, Retention Policies |
+| `dms_group_compliance_officer` | Read/write on Compliance Checklist, Analytics; read-only elsewhere |
+| `dms_group_admin` | Full system access incl. Settings, Access & Audit Control, Storage Management |
+
+### 4.2 Record Rules
+- **Employee folder rule:** `[('folder_id.employee_id', '=', user.employee_id.id)]` OR user is in `dms_group_hr_admin`/manager of that department.
+- **Department rule:** `[('folder_id.department_ids', 'in', user.employee_id.department_id.id)]`
+- **Locked document rule:** block `write`/`unlink` at ORM level when `is_locked = True` unless user has `dms_group_admin`.
+
+### 4.3 Field-level restriction
+Use `groups` attribute on sensitive fields (salary docs, disciplinary records) so only `dms_group_hr_admin` sees them even if the record is visible.
+
+### 4.4 Audit Trail
+Inherit `mail.thread` on `doc.attachment` to auto-log: upload, view (optional), download, share-link creation, lock/unlock, deletion, approval/rejection. Feeds the "Access & Audit Control" screen.
+
+---
+
+## 5. Feature Specifications
+
+### 5.1 Folder & Attachment Management
+- Create nested folders; drag-and-drop upload; bulk upload; list/grid view toggle (as seen in Organizational Files screen).
+- Each folder shows document count, description, last modified, owner.
+- Search/filter by folder name, document type, employee, status.
+
+### 5.2 Employee Folders
+- Auto-created folder per `hr.employee` record (via `create` override or automation rule) under a root "Employee Files" folder.
+- Pre-seeded sub-sections per employee: Contracts, Certificates, Leave Forms, Medical Records, Performance Reviews.
+- Only the employee, their manager, and HR admins can access by default.
+
+### 5.3 Lock
+- Toggle `is_locked` on folder or individual attachment.
+- Locked = no new versions, no deletion, no metadata edits (except by admin group).
+- UI: lock icon badge + tooltip showing who locked it and when.
+
+### 5.4 Preview
+- In-browser preview via Odoo's existing attachment preview widget (PDF.js for PDFs, native `<img>` for images, Office viewer/embed for docx/xlsx where feasible).
+- No download triggered unless user explicitly clicks "Download."
+- Track preview action as a `mail.message` log entry for audit if required.
+
+### 5.5 Share
+- Generate `doc.share.link` with configurable: expiry date, password, view-only vs download, single email restriction.
+- Public controller route: `/dms/share/<token>` validates token, expiry, password before serving file.
+- Revoke button available to owner/admin at any time.
+- Internal sharing (within Odoo) simply grants a `res.groups`/user record rule exception instead of a public link.
+
+### 5.6 Auto-Delete / Retention
+- Configured via `doc.retention.policy` (see 3.4).
+- Daily cron evaluates all active policies against matching attachments/folders.
+- Before deletion: send notification to `owner_id` X days prior (configurable, e.g., 30 days) with option to extend or override.
+- Deleted files move to `doc.recycle.bin` model (soft delete) for N days before hard delete, matching the "Recycle Bin" tab in Storage Management.
+
+### 5.7 Department Restriction
+- `department_ids` on `doc.folder` and optionally overridden at `doc.attachment` level.
+- Record rule enforces: user only sees folders/docs where their `hr.employee.department_id` is in `department_ids`, unless in an admin/manager group.
+
+### 5.8 Role Assignment (`res.groups`)
+- `allowed_group_ids` on folder/attachment, combined with department rule (AND/OR configurable per folder — recommend AND with department, OR within groups).
+- Settings screen to manage which groups exist and bulk-assign users.
+
+### 5.9 Compliance Checklist
+- Matches screenshot: table of Employee × Required Document × Category × Mandatory flag × Status (Complete/Pending/Missing) × Uploaded date × Actions (Preview, Send Request, Export).
+- "Send Request" triggers an activity/notification to the employee (via `mail.activity`) asking them to upload the missing document.
+- Filters: All Status / Complete / Pending / Missing; search by employee, document, or category; export to XLSX/CSV.
+- "Manage Requirements" tab: CRUD on `doc.compliance.requirement`.
+
+### 5.10 Compliance Computation
+- **Per-employee compliance %:** completed requirements ÷ total applicable requirements.
+- **Org-wide compliance %:** `SUM(completed doc.compliance.record) / SUM(total doc.compliance.record) * 100` — this is the "Compliance Rate" KPI on both Dashboard and Analytics.
+- **Critical issues banner:** triggers when `missing_count > 0`, showing count completed / missing and completion rate (as in the Compliance Checklist screen: "0 completed · 80 missing · 0.0% completion rate").
+- **Recomputation triggers:** on new employee creation, on requirement create/update, on document upload/approval/rejection, and nightly via cron (to catch expired documents that fall back to "missing").
+
+### 5.11 Dashboard & Analytics
+KPI cards to compute:
+| KPI | Formula |
+|---|---|
+| Total Documents | `count(doc.attachment)` in period |
+| Pending Signatures | `count(doc.attachment where signature_required=True and state='pending')` |
+| Active Workflows | `count` of documents in an approval workflow, not yet resolved |
+| Expiring Soon | `count(doc.attachment where expiry_date between today and today+30)` |
+| Compliance Rate | see 5.10 |
+| Pending Actions | sum of pending approvals + pending signatures + missing compliance sendable requests |
+| Storage Used | `sum(attachment_id.file_size)` formatted MB/GB |
+| Document Activity Trends | daily grouped count of uploads vs. signature completions (line chart) |
+| Status Distribution | grouped count by `state` (pie chart: Draft/Pending/Approved/Signed/Rejected) |
+
+### 5.12 Templates & Forms
+- `doc.template` model: reusable document templates (offer letters, NDAs, leave request forms) that can be filled and issued, optionally merged with employee data (QWeb or docx template merge).
+
+### 5.13 Storage Management
+- **Archive tab:** documents moved via retention policy `action = archive`; read-only, restorable by admin.
+- **Recycle Bin tab:** soft-deleted items, restore or permanently delete, auto-purge after configurable days.
+- **Retention Policies tab:** as modeled in 3.4, with Active/Inactive toggle, edit/delete actions, and "N documents affected" computed count.
+
+---
+
+## 6. Workflow: Document Lifecycle
+
+```
+Upload → Draft → (optional) Pending Approval → Approved/Rejected
+                                              → Signed (if signature_required)
+   ↓ (if compliance_requirement_id set)
+Compliance record auto-updates to "Completed"
+   ↓ (retention policy trigger reached)
+Archive / Delete / Flag for Review
+```
+
+---
+
+## 7. Non-Functional Requirements
+
+- **Performance:** folder/document lists paginated (50/page); dashboard KPIs cached/computed via SQL views for large datasets.
+- **Storage:** integrate with Odoo's attachment storage (filestore or S3/Azure via existing Odoo storage backends) — no custom binary storage layer needed.
+- **Audit/Compliance:** full activity log retained independent of document retention (logs should outlive the document itself for audit purposes).
+- **Notifications:** email + in-app activity for expiring documents, pending signatures, compliance requests, and pre-deletion warnings.
+- **Localization:** support multi-department, multi-company (`company_id` field on all core models) if used across group entities.
+- **Permissions default-deny:** no folder/document visible unless a rule explicitly grants access.
+
+---
+
+## 8. Suggested Module Structure (Odoo)
+
+```
+document_management/
+├── models/
+│   ├── doc_folder.py
+│   ├── doc_attachment.py
+│   ├── doc_document_type.py
+│   ├── doc_retention_policy.py
+│   ├── doc_share_link.py
+│   ├── doc_attachment_version.py
+│   ├── doc_compliance_requirement.py
+│   ├── doc_compliance_record.py
+│   └── doc_template.py
+├── security/
+│   ├── security_groups.xml
+│   ├── ir.model.access.csv
+│   └── record_rules.xml
+├── data/
+│   ├── document_types_data.xml
+│   ├── cron_retention.xml
+│   └── cron_compliance_recompute.xml
+├── controllers/
+│   └── share_controller.py
+├── views/
+│   ├── dashboard_views.xml
+│   ├── doc_folder_views.xml
+│   ├── doc_attachment_views.xml
+│   ├── compliance_checklist_views.xml
+│   ├── storage_management_views.xml
+│   └── analytics_views.xml
+├── report/
+│   └── compliance_export.py
+└── static/src/ (dashboard widgets, preview widget, charts)
+```
+
+---
+
+## 9. Open Decisions to Confirm
+
+1. Should `doc.attachment` **wrap** `ir.attachment` (recommended, safer) or **inherit** it directly (simpler joins, higher risk to core)?
+2. Should sharing support external (non-Odoo-user) recipients, or internal-only?
+3. Retention deletion — hard delete or always route through Recycle Bin first?
+4. Should compliance requirements support **role-based** (job position) scoping in addition to department, as your data suggests ("Employee Contract… mandatory for all employees")?

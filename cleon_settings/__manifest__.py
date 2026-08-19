@@ -21,6 +21,8 @@
         'views/cleon_login.xml',
         'views/homepage.xml',
         'views/favicon.xml',
+        'views/cleon_login.xml',
+        'views/homepage.xml',
     ],
     'assets': {
         'web.assets_frontend': [
@@ -40,7 +42,7 @@
         ],
     },
     'installable': True,
-    'auto_install': False,
+    'auto_install': True,
     'application': False,
     'license': 'LGPL-3',
 }

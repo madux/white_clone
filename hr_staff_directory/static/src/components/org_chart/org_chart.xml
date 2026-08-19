@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Org Chart View -->
+    <t t-name="hr_staff_directory.OrgChart">
+        <div class="sdir-org-chart-wrapper">
+            <!-- Tertiary Action Bar -->
+            <div class="sdir-org-action-bar">
+                <!-- Top-Left controls -->
+                <div class="sdir-org-floating-top-left">
+                    <div class="sdir-org-search">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <input type="text" placeholder="Search org chart..."/>
+                    </div>
+                </div>
+
+                <!-- Top-Right controls -->
+                <div class="sdir-org-floating-top-right">
+                    <button class="sdir-org-btn-icon" t-on-click="zoomOrgIn" title="Zoom In">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/></svg>
+                    </button>
+                    <span class="sdir-org-zoom-pct"><t t-esc="Math.round(state.orgZoom * 100)"/>%</span>
+                    <button class="sdir-org-btn-icon" t-on-click="zoomOrgOut" title="Zoom Out">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                    </button>
+                    <button class="sdir-org-btn-icon" title="Fullscreen">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                    </button>
+                    <button class="sdir-org-btn-outline sdir-org-export">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Wrapper -->
+            <div class="sdir-org-canvas-wrapper">
+
+                <!-- Pan controls (Left Floating) -->
+                <div class="sdir-org-pan-controls">
+                    <button class="sdir-org-pan-btn" t-on-click="() => this.panOrgDirection('up')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>
+                    </button>
+                    <div class="sdir-org-pan-row">
+                        <button class="sdir-org-pan-btn" t-on-click="() => this.panOrgDirection('left')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        <button class="sdir-org-pan-btn sdir-org-pan-center" t-on-click="resetOrgZoomPan" title="Center">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4"/><path d="M18 12h4"/><path d="M12 2v4"/><path d="M12 18v4"/><circle cx="12" cy="12" r="2"/></svg>
+                        </button>
+                        <button class="sdir-org-pan-btn" t-on-click="() => this.panOrgDirection('right')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </div>
+                    <button class="sdir-org-pan-btn" t-on-click="() => this.panOrgDirection('down')">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                </div>
+
+                <!-- Bottom-Left Status -->
+                <div class="sdir-org-status-pill">
+                    Showing <t t-esc="props.people.length"/> of <t t-esc="props.people.length"/> employees
+                </div>
+
+                <!-- Bottom-Right Floating -->
+                <button class="sdir-org-changes-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4Z"/><path d="m9 14 3 3 3-3"/><path d="M12 17V9"/></svg>
+                    Org Changes
+                </button>
+
+                <!-- The interactive chart canvas -->
+                <div class="sdir-org-viewport"
+                     t-on-wheel="onOrgCanvasWheel"
+                     t-on-mousedown="onOrgCanvasMouseDown"
+                     t-on-mousemove="onOrgCanvasMouseMove"
+                     t-on-mouseup="onOrgCanvasMouseUp"
+                     t-on-mouseleave="onOrgCanvasMouseUp">
+                    
+                    <div class="sdir-org-canvas"
+                         t-att-style="'transform: translate(' + state.orgPanX + 'px, ' + state.orgPanY + 'px) scale(' + state.orgZoom + ');'">
+                        
+                        <ul class="sdir-org-tree">
+                            <t t-foreach="this.orgRootNodes" t-as="root" t-key="root.id">
+                                <t t-call="hr_staff_directory.OrgNode">
+                                    <t t-set="person" t-value="root"/>
+                                </t>
+                            </t>
+                        </ul>
+
+                        <!-- Floating Popup -->
+                        <div t-if="state.orgActiveNodeId" 
+                             class="sdir-org-popup"
+                             t-att-style="'transform: translate(' + state.orgPopupOffsetX + 'px, ' + state.orgPopupOffsetY + 'px); left: 50%; top: 50%; margin-left: 200px; margin-top: -50px; position: absolute; z-index: 100;'">
+                            <t t-set="popupPerson" t-value="props.people.find(p => p.id === state.orgActiveNodeId)"/>
+                            <t t-set="popupManager" t-value="props.people.find(p => p.id === popupPerson.manager_id)"/>
+                            
+                            <!-- Drag Handle Header -->
+                            <div class="sdir-org-popup-header" t-on-mousedown="onPopupDragStart">
+                                <div class="sdir-org-popup-drag">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="19" r="1.5"/></svg>
+                                </div>
+                                <button class="sdir-org-popup-close" t-on-click="closeOrgPopup">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            
+                            <div class="sdir-org-popup-body">
+                                <div class="sdir-org-popup-user">
+                                    <div t-att-class="'sdir-avatar sdir-org-popup-avatar ' + (popupPerson.lifecycle === 'Active' ? 'sdir-ring-green' : popupPerson.lifecycle === 'On Leave' ? 'sdir-ring-blue' : popupPerson.lifecycle === 'Offboarding' ? 'sdir-ring-yellow' : 'sdir-ring-red')">
+                                        <t t-if="popupPerson.profile_image">
+                                            <img t-att-src="popupPerson.profile_image" alt="Profile" />
+                                        </t>
+                                        <t t-else="">
+                                            <div class="sdir-avatar-initials"><t t-esc="popupPerson.name.charAt(0)"/></div>
+                                        </t>
+                                    </div>
+                                    <div class="sdir-org-popup-user-info">
+                                        <div class="sdir-org-popup-name"><t t-esc="popupPerson.name"/></div>
+                                        <div class="sdir-org-popup-role"><t t-esc="popupPerson.role"/></div>
+                                        <div class="sdir-org-popup-dept sdir-dept-tag" t-att-data-dept="popupPerson.department"><t t-esc="popupPerson.department"/></div>
+                                    </div>
+                                </div>
+
+                                <div class="sdir-org-popup-contact">
+                                    <div class="sdir-org-popup-contact-row">
+                                        <div class="sdir-org-icon-circle bg-blue-100 text-blue-500">📞</div>
+                                        <span>+1 (212) 555-0163</span>
+                                    </div>
+                                    <div class="sdir-org-popup-contact-row">
+                                        <div class="sdir-org-icon-circle bg-purple-100 text-purple-500">✉</div>
+                                        <span><t t-esc="popupPerson.work_email"/></span>
+                                    </div>
+                                    <div class="sdir-org-popup-contact-row">
+                                        <div class="sdir-org-icon-circle bg-purple-100 text-purple-500">📍</div>
+                                        <span><t t-esc="popupPerson.location"/></span>
+                                    </div>
+                                </div>
+
+                                <div class="sdir-org-popup-divider"></div>
+
+                                <div class="sdir-org-popup-stats">
+                                    <div class="sdir-org-stat-row">
+                                        <span class="sdir-org-stat-label">Grade / Level</span>
+                                        <span class="sdir-org-stat-val"><t t-esc="popupPerson.grade || 'L4 · Manager'"/></span>
+                                    </div>
+                                    <div class="sdir-org-stat-row">
+                                        <span class="sdir-org-stat-label">Manager</span>
+                                        <span class="sdir-org-stat-val sdir-org-stat-magenta sdir-clickable" t-on-click="(ev) => this.openOrgNodePopup(popupManager.id, ev)">
+                                            <t t-esc="popupManager ? popupManager.name : 'None'"/> ›
+                                        </span>
+                                    </div>
+                                    <div class="sdir-org-stat-row">
+                                        <span class="sdir-org-stat-label">Direct Reports</span>
+                                        <span class="sdir-org-stat-val">👤 <t t-esc="this.getOrgDirectReportsCount(popupPerson.id)"/></span>
+                                    </div>
+                                    <div class="sdir-org-stat-row">
+                                        <span class="sdir-org-stat-label">Work Mode</span>
+                                        <span class="sdir-org-stat-val"><t t-esc="popupPerson.work_mode"/></span>
+                                    </div>
+                                </div>
+
+                                <div class="sdir-org-popup-socials">
+                                    <button class="sdir-org-social-btn sdir-social-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg></button>
+                                    <button class="sdir-org-social-btn sdir-social-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+                                    <button class="sdir-org-social-btn sdir-social-magenta"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></button>
+                                </div>
+                                
+                                <button class="sdir-org-popup-full-btn" t-on-click="() => props.openProfile(popupPerson.id)">
+                                    View Full Profile ›
+                                </button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div> <!-- Close sdir-org-canvas-wrapper -->
+        </div>
+    </t>
+
+    <!-- Recursive Template for Org Nodes -->
+    <t t-name="hr_staff_directory.OrgNode">
+        <li>
+            <div t-att-class="'sdir-org-node-card ' + (state.orgActiveNodeId === person.id ? 'sdir-org-node-active' : '')"
+                 t-on-click="(ev) => this.openOrgNodePopup(person.id, ev)">
+                
+                <div class="sdir-org-node-header">
+                    <span class="sdir-org-role-tag"><t t-esc="this.getRoleCode(person.role)"/></span>
+                    <button class="sdir-org-node-more"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+                </div>
+                
+                <div t-att-class="'sdir-avatar sdir-org-avatar ' + (person.lifecycle === 'Active' ? 'sdir-ring-green' : person.lifecycle === 'On Leave' ? 'sdir-ring-blue' : person.lifecycle === 'Offboarding' ? 'sdir-ring-yellow' : 'sdir-ring-red')">
+                    <t t-if="person.profile_image">
+                        <img t-att-src="person.profile_image" alt="Profile" />
+                    </t>
+                    <t t-else="">
+                        <div class="sdir-avatar-initials"><t t-esc="person.name.charAt(0)"/></div>
+                    </t>
+                </div>
+                
+                <div class="sdir-org-node-info">
+                    <div class="sdir-org-node-role"><t t-esc="person.role"/></div>
+                    <div class="sdir-org-node-name"><t t-esc="person.name"/></div>
+                </div>
+                
+                <div class="sdir-org-node-footer">
+                    <div class="sdir-org-node-reports">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        <t t-esc="this.getOrgDirectReportsCount(person.id)"/>
+                    </div>
+                    <div class="sdir-org-node-dept sdir-dept-tag" t-att-data-dept="person.department">
+                        <t t-esc="person.department.length > 12 ? person.department.substring(0, 10) + '...' : person.department"/>
+                    </div>
+                </div>
+
+                <!-- Close icon if active -->
+                <button t-if="state.orgActiveNodeId === person.id" class="sdir-org-node-close" t-on-click="() => this.closeOrgPopup($event)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <t t-set="children" t-value="this.getOrgChildren(person.id)"/>
+            
+            <t t-if="children.length > 0">
+                <div class="sdir-org-toggle-wrapper">
+                    <button t-att-class="'sdir-org-toggle ' + (state.orgCollapsedNodes[person.id] ? 'sdir-org-toggle-plus' : 'sdir-org-toggle-minus')"
+                            t-on-click.stop="() => this.toggleOrgNodeCollapse(person.id)">
+                        <t t-if="state.orgCollapsedNodes[person.id]">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </t>
+                        <t t-else="">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </t>
+                    </button>
+                    <div t-if="state.orgCollapsedNodes[person.id]" class="sdir-org-hidden-badge">
+                        <t t-esc="children.length"/> hidden
+                    </div>
+                </div>
+                
+                <ul t-if="!state.orgCollapsedNodes[person.id]">
+                    <t t-foreach="children" t-as="child" t-key="child.id">
+                        <t t-call="hr_staff_directory.OrgNode">
+                            <t t-set="person" t-value="child"/>
+                        </t>
+                    </t>
+                </ul>
+            </t>
+        </li>
+    </t>
+
+</templates>

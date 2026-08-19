@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_staff_directory.StaffDirectoryGeographicMap">
+        <div class="sdir-map-wrapper">
+            <!-- Breadcrumb Toolbar (Only visible in Drill-Down) -->
+            <t t-if="state.selectedLocation">
+                <div class="sdir-map-drd-toolbar">
+                    <div class="sdir-map-drd-tb-left">
+                        <button type="button" class="sdir-map-drd-back-btn" t-on-click="() => this.clearSelection()">
+                            <span class="sdir-map-drd-back-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></span> <span class="sdir-map-drd-back-text">Skills × Location</span>
+                        </button>
+                        <span class="sdir-map-drd-tb-divider">›</span>
+                        <span class="sdir-map-drd-tb-sub">(All)</span>
+                        <span class="sdir-map-drd-tb-divider">›</span>
+                        <span class="sdir-map-drd-tb-loc"><t t-esc="state.selectedLocation"/></span>
+                    </div>
+                    <div class="sdir-map-drd-tb-right">
+                        <button type="button" class="sdir-btn sdir-btn-outline sdir-map-drd-export-btn"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download me-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>Export</button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Drill-Down View -->
+            <t t-if="state.selectedLocation">
+                <div class="sdir-map-drd-container">
+                    <div class="sdir-map-drd-main">
+                        <div class="sdir-map-drd-header-area">
+                            <h2 class="sdir-map-drd-title">(All) Skills in <t t-esc="state.selectedLocation"/></h2>
+                            <div class="sdir-map-drd-subtitle"><t t-esc="this.filteredPeople.length"/> Active employees</div>
+                            
+                            <div class="sdir-map-drd-search-row">
+                                <div class="sdir-map-drd-search-wrap">
+                                    <svg class="sdir-map-drd-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                    <input type="text" class="sdir-map-drd-search-input" placeholder="Search employees..." t-att-value="state.searchQuery" t-on-input="onSearchInput"/>
+                                    <t t-if="state.searchQuery">
+                                        <button class="sdir-map-drd-search-clear" t-on-click="clearSearch">×</button>
+                                    </t>
+                                </div>
+                                <button type="button" class="sdir-btn sdir-btn-outline ms-2 sdir-map-drd-filter-btn" t-on-click="props.openFilterModal">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="me-1"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg> Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="sdir-map-drd-table-wrap">
+                            <table class="sdir-map-drd-table">
+                                <thead>
+                                    <tr>
+                                        <th>NAME</th>
+                                        <th>ROLE</th>
+                                        <th>DEPARTMENT</th>
+                                        <th>WORK MODE</th>
+                                        <th>EXPERIENCE</th>
+                                        <th>MANAGER</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="this.filteredPeople" t-as="person" t-key="person.id">
+                                        <tr t-on-click="() => this.openProfile(person)">
+                                            <td>
+                                                <div class="sdir-map-drd-tbl-emp">
+                                                    <div class="sdir-avatar sdir-hm-avatar sdir-map-drd-avatar">
+                                                        <t t-if="person.has_image">
+                                                            <img t-attf-src="/web/image/hr.employee/{{ person.id }}/avatar_128?unique={{ person.avatar_cache_key }}" alt="Profile" />
+                                                        </t>
+                                                        <t t-else="">
+                                                            <div class="sdir-avatar-initials"><t t-esc="props.initials(person.name)"/></div>
+                                                        </t>
+                                                    </div>
+                                                    <span class="sdir-map-drd-tbl-name"><t t-esc="person.name"/></span>
+                                                </div>
+                                            </td>
+                                            <td><t t-esc="person.job_title"/></td>
+                                            <td><t t-esc="person.department"/></td>
+                                            <td>
+                                                <t t-if="person.work_mode">
+                                                    <span t-att-class="'sdir-map-drd-badge ' + (person.work_mode === 'Remote' ? 'sdir-map-drd-badge-remote' : (person.work_mode === 'Office' ? 'sdir-map-drd-badge-office' : 'sdir-map-drd-badge-hybrid'))"><t t-esc="person.work_mode"/></span>
+                                                </t>
+                                                <t t-else="">-</t>
+                                            </td>
+                                            <td class="sdir-text-muted"><t t-esc="person.tenure || '-'"/></td>
+                                            <td class="sdir-text-muted"><t t-esc="person.manager_name"/></td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="this.filteredPeople.length === 0">
+                                        <tr>
+                                            <td colspan="6" class="sdir-map-drd-empty-state">No employees found.</td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="sdir-map-drd-footer">
+                            <button type="button" class="sdir-map-drd-back-link" t-on-click="() => this.clearSelection()"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left me-1"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>Back to map</button>
+                            <div class="sdir-map-drd-pagination">
+                                <span class="sdir-map-drd-page-info">Showing 1 to <t t-esc="this.filteredPeople.length"/> of <t t-esc="this.filteredPeople.length"/></span>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-prev" disabled="disabled">‹</button>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-num sdir-map-drd-page-active">1</button>
+                                <button class="sdir-map-drd-page-btn sdir-map-drd-page-next">›</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Drill-Down Overview Panel -->
+                    <div class="sdir-map-drd-sidebar">
+                        <div class="sdir-map-drd-sb-header">
+                            <span class="sdir-map-drd-bullet-lg"></span> <span class="sdir-map-drd-sb-locname"><t t-esc="state.selectedLocation"/></span>
+                            <div class="sdir-map-drd-sb-sub">Overview</div>
+                        </div>
+                        
+                        <div class="sdir-map-drd-sb-stat">
+                            <div class="sdir-map-drd-sb-stat-label">Skills</div>
+                            <div class="sdir-map-drd-sb-stat-val">42</div>
+                            <!-- TODO: Replace with real skills data when available -->
+                        </div>
+                        
+                        <div class="sdir-map-drd-sb-stat">
+                            <div class="sdir-map-drd-sb-stat-label">Total Workforce</div>
+                            <div class="sdir-map-drd-sb-stat-val"><t t-esc="this.filteredPeople.length"/></div>
+                            <div class="sdir-map-drd-sb-stat-sub">Total</div>
+                        </div>
+                        
+                        <div class="sdir-map-drd-sb-card">
+                            <div class="sdir-map-drd-sb-card-label">% with (All)</div>
+                            <div class="sdir-map-drd-sb-card-val">14.50%</div>
+                            <!-- TODO: Replace with real percentage computation -->
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Map View -->
+            <t t-else="">
+                <div class="sdir-map-container">
+                    <div class="sdir-map-canvas" t-ref="mapCanvas">
+                        <div class="sdir-map-bg" t-ref="mapBg"></div>
+                        
+                        <!-- Map Markers -->
+                        <t t-foreach="this.locationData" t-as="loc" t-key="loc.name">
+                            <div class="sdir-map-marker-wrap" 
+                                 t-att-class="loc.unmapped ? 'sdir-map-marker-wrap-unmapped' : ''"
+                                 t-att-style="'left: ' + loc.x + '%; top: ' + loc.y + '%;'"
+                                 t-on-mouseenter="() => this.hoverLocation(loc.name)"
+                                 t-on-mouseleave="() => this.hoverLocation(null)"
+                                 t-on-click="() => this.selectLocation(loc.name)">
+                                 
+                                 <div class="sdir-map-halo" t-att-style="'width: ' + loc.size * 1.6 + 'px; height: ' + loc.size * 1.6 + 'px; margin-left: ' + (-loc.size * 0.8) + 'px; margin-top: ' + (-loc.size * 0.8) + 'px; background-color: ' + loc.color + '33; box-shadow: 0 0 15px ' + loc.color + '66;'"></div>
+                                <div class="sdir-map-marker" t-att-style="'width: ' + loc.size + 'px; height: ' + loc.size + 'px; margin-left: ' + (-loc.size/2) + 'px; margin-top: ' + (-loc.size/2) + 'px; line-height: ' + loc.size + 'px; background-color: ' + loc.color + ';'">
+                                    <t t-esc="loc.count"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Hover Tooltip -->
+                        <t t-if="state.hoveredLocation">
+                            <t t-set="hoverLoc" t-value="this.getHoveredLocationData()"/>
+                            <div t-attf-class="sdir-map-tooltip {{ this.tooltipPositionClass }}" t-att-style="'left: ' + hoverLoc.x + '%; top: ' + hoverLoc.y + '%; --bubble-offset: ' + ((hoverLoc.size/2) + 12) + 'px;'">
+                                <div class="sdir-map-tt-header">
+                                    <span class="sdir-map-bullet"></span>
+                                    <span class="sdir-map-tt-title"><t t-esc="hoverLoc.name"/></span>
+                                    <span class="sdir-map-tt-count"><t t-esc="hoverLoc.count"/></span>
+                                </div>
+                                <div class="sdir-map-tt-section">SKILLS</div>
+                                <div class="sdir-map-tt-list">
+                                    <!-- TODO: Mock skills data, replace when real skills are available -->
+                                    <div class="sdir-map-tt-row"><span>Node.js</span><span>1</span></div>
+                                    <div class="sdir-map-tt-row"><span>PostgreSQL</span><span>1</span></div>
+                                    <div class="sdir-map-tt-row"><span>AWS</span><span>1</span></div>
+                                    <div class="sdir-map-tt-row"><span>Docker</span><span>1</span></div>
+                                    <div class="sdir-map-tt-row"><span>Python</span><span>1</span></div>
+                                </div>
+                                <div class="sdir-map-tt-footer">
+                                    <a href="#" t-on-click.prevent="() => this.selectLocation(hoverLoc.name)">Click to see employees</a>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Legend -->
+                        <div class="sdir-map-legend">
+                            <span class="sdir-map-ml-label">Few</span>
+                            <div class="sdir-map-ml-swatches">
+                                <span class="sdir-map-swatch" style="background: #FCE7F3;"></span>
+                                <span class="sdir-map-swatch" style="background: #FBCFE8;"></span>
+                                <span class="sdir-map-swatch" style="background: #F9A8D4;"></span>
+                                <span class="sdir-map-swatch" style="background: #F472B6;"></span>
+                                <span class="sdir-map-swatch" style="background: #EC4899;"></span>
+                            </div>
+                            <span class="sdir-map-ml-label">Many</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Locations Panel -->
+                    <div class="sdir-map-sidebar">
+                        <div class="sdir-map-sb-header">LOCATIONS</div>
+                        <div class="sdir-map-sb-list">
+                            <t t-foreach="this.locationData" t-as="loc" t-key="loc.name">
+                                <div class="sdir-map-sb-row" 
+                                     t-att-class="state.hoveredLocation === loc.name ? 'sdir-map-sb-row-active' : ''"
+                                     t-on-mouseenter="() => this.hoverLocation(loc.name)"
+                                     t-on-mouseleave="() => this.hoverLocation(null)"
+                                     t-on-click="() => this.selectLocation(loc.name)">
+                                    <span class="sdir-map-bullet"></span>
+                                    <span class="sdir-map-sb-name"><t t-esc="loc.name"/></span>
+                                    <span class="sdir-map-sb-count"><t t-esc="loc.count"/></span>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+            
+        </div>
+    </t>
+
+</templates>

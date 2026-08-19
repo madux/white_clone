@@ -1469,6 +1469,14 @@
 //     padding-left: calc(var(--formView-sheet-padding-x) + 183px) !important;
 // }
 
+.o_form_view.o_form_nosheet, .o_form_view .o_form_nosheet {
+    --formView-sheet-padding-y: 24px;
+    --formView-sheet-padding-x: 16px;
+    // padding: var(--formView-sheet-padding-y) var(--formView-sheet-padding-x);
+    padding: 0px;
+    background-color: white;
+}
+
 html .o_web_client > .o_action_manager:has(.o_recruitment_sidebar_items_view) {
     margin-left: 185px !important;
 }
