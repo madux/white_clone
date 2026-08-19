@@ -51,7 +51,14 @@ export class StaffDirectoryRelationshipGraph extends Component {
                 const svgEl = this.svgRef.el;
                 if (svgEl && svgEl.parentElement) {
                     this._resizeObs = new ResizeObserver(() => {
-                        this.renderGraph();
+                        if (!this.d3Loaded || !window.d3 || !this.simulation) return;
+                        
+                        this.canvasWidth = svgEl.parentElement.clientWidth;
+                        this.canvasHeight = svgEl.parentElement.clientHeight;
+                        
+                        if (this.canvasWidth > 0 && this.canvasHeight > 0) {
+                            window.d3.select(svgEl).attr("width", this.canvasWidth).attr("height", this.canvasHeight);
+                        }
                     });
                     this._resizeObs.observe(svgEl.parentElement);
                 }
@@ -109,7 +116,10 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
     toggleMode(mode) {
         this.state.modes[mode] = !this.state.modes[mode];
-        this.renderGraph();
+        if (this.state.focusedNodeId) {
+            this.recalculateConnections(this.state.focusedNodeId);
+        }
+        this.highlightNodes();
     }
 
     toggleInsight(section) {
@@ -178,25 +188,32 @@ export class StaffDirectoryRelationshipGraph extends Component {
     focusNode(d) {
         this.state.focusedNodeId = d.id;
         this.state.focusedNodeData = d;
+        this.recalculateConnections(d.id);
+        this.highlightNodes();
+    }
+
+    recalculateConnections(nodeId) {
         this.connectedNodeIds.clear();
-        this.connectedNodeIds.add(d.id);
+        this.connectedNodeIds.add(nodeId);
 
         let hasReporting = false;
         let hasPeer = false;
 
         // Find all connected nodes based on active links
         this.cachedLinks.forEach(link => {
-            if (link.source.id === d.id || link.target.id === d.id) {
-                this.connectedNodeIds.add(link.source.id === d.id ? link.target.id : link.source.id);
-                if (link.type === 'reporting') hasReporting = true;
-                if (link.type === 'peer') hasPeer = true;
+            if (this.state.modes[link.type]) {
+                if (link.source.id === nodeId || link.target.id === nodeId) {
+                    this.connectedNodeIds.add(link.source.id === nodeId ? link.target.id : link.source.id);
+                    if (link.type === 'reporting') hasReporting = true;
+                    if (link.type === 'peer') hasPeer = true;
+                }
             }
         });
         
-        d.hasReporting = hasReporting;
-        d.hasPeer = hasPeer;
-
-        this.highlightNodes();
+        if (this.state.focusedNodeData && this.state.focusedNodeData.id === nodeId) {
+            this.state.focusedNodeData.hasReporting = hasReporting;
+            this.state.focusedNodeData.hasPeer = hasPeer;
+        }
     }
 
     clearFocus() {
@@ -215,6 +232,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
         if (!q && !focusedId) {
             svg.selectAll(".r_graph-node-group").style("opacity", 1);
             svg.selectAll(".r_graph-link")
+                .style("display", d => this.state.modes[d.type] ? "block" : "none")
                 .style("opacity", 0.6)
                 .style("stroke-width", 1)
                 .style("stroke", "#d1d5db");
@@ -236,6 +254,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
         });
         
         svg.selectAll(".r_graph-link")
+            .style("display", d => this.state.modes[d.type] ? "block" : "none")
             .style("opacity", d => {
                 if (focusedId) {
                     return (d.source.id === focusedId || d.target.id === focusedId) ? 1 : 0;
@@ -284,35 +303,31 @@ export class StaffDirectoryRelationshipGraph extends Component {
             idMap.set(p.id, node);
         });
 
-        // 2. Create edges based on active modes
-        if (this.state.modes.reporting) {
-            nodes.forEach(n => {
-                if (n.manager_id && idMap.has(n.manager_id)) {
-                    links.push({ source: n.id, target: n.manager_id, type: 'reporting' });
-                    n.connections++;
-                    idMap.get(n.manager_id).connections++;
-                    idMap.get(n.manager_id).is_manager = true;
-                }
-            });
-        }
+        // 2. Create edges (always create both types so physics layout remains stable when toggling visibility)
+        nodes.forEach(n => {
+            if (n.manager_id && idMap.has(n.manager_id)) {
+                links.push({ source: n.id, target: n.manager_id, type: 'reporting' });
+                n.connections++;
+                idMap.get(n.manager_id).connections++;
+                idMap.get(n.manager_id).is_manager = true;
+            }
+        });
         
-        if (this.state.modes.peer) {
-            // Peers: share the same manager. Create a chain instead of a full clique (O(N) instead of O(N^2))
-            const mgrGroups = {};
-            nodes.forEach(n => {
-                const mid = n.manager_id || 'no_manager';
-                if (!mgrGroups[mid]) mgrGroups[mid] = [];
-                mgrGroups[mid].push(n.id);
-            });
-            Object.values(mgrGroups).forEach(group => {
-                // Connect peers in a simple line/chain to keep them clustered without freezing the browser
-                for (let i = 0; i < group.length - 1; i++) {
-                    links.push({ source: group[i], target: group[i+1], type: 'peer' });
-                    idMap.get(group[i]).connections++;
-                    idMap.get(group[i+1]).connections++;
-                }
-            });
-        }
+        // Peers: share the same manager. Create a chain instead of a full clique (O(N) instead of O(N^2))
+        const mgrGroups = {};
+        nodes.forEach(n => {
+            const mid = n.manager_id || 'no_manager';
+            if (!mgrGroups[mid]) mgrGroups[mid] = [];
+            mgrGroups[mid].push(n.id);
+        });
+        Object.values(mgrGroups).forEach(group => {
+            // Connect peers in a simple line/chain to keep them clustered without freezing the browser
+            for (let i = 0; i < group.length - 1; i++) {
+                links.push({ source: group[i], target: group[i+1], type: 'peer' });
+                idMap.get(group[i]).connections++;
+                idMap.get(group[i+1]).connections++;
+            }
+        });
 
         // 3. Size computation and Graph Insights
         let maxCon = 0;
@@ -360,17 +375,17 @@ export class StaffDirectoryRelationshipGraph extends Component {
         const container = this.svgRef.el.parentElement;
         if (!container) return;
         
-        const width = container.clientWidth;
-        const height = container.clientHeight;
+        this.canvasWidth = container.clientWidth;
+        this.canvasHeight = container.clientHeight;
         
-        if (width === 0 || height === 0) return;
+        if (this.canvasWidth === 0 || this.canvasHeight === 0) return;
 
         const data = this.buildGraphData();
         const d3 = window.d3;
 
         const svg = d3.select(this.svgRef.el);
         svg.selectAll("*").remove(); // Clear previous render
-        svg.attr("width", width).attr("height", height);
+        svg.attr("width", this.canvasWidth).attr("height", this.canvasHeight);
 
         // Cache links for fast neighbor lookup
         this.cachedLinks = data.links;
@@ -380,8 +395,8 @@ export class StaffDirectoryRelationshipGraph extends Component {
         
         // Background rect to catch clicks for clearing focus
         g.append("rect")
-            .attr("width", width)
-            .attr("height", height)
+            .attr("width", this.canvasWidth)
+            .attr("height", this.canvasHeight)
             .attr("fill", "transparent")
             .on("click", () => this.clearFocus());
 
@@ -391,9 +406,9 @@ export class StaffDirectoryRelationshipGraph extends Component {
 
         // Setup physics simulation
         this.simulation = d3.forceSimulation(data.nodes)
-            .force("link", d3.forceLink(data.links).id(d => d.id).distance(80))
-            .force("charge", d3.forceManyBody().strength(-300)) // Stronger repulsion to push isolated nodes to walls
-            .force("center", d3.forceCenter(width / 2, height / 2).strength(0.05)) // Weak center force so repulsion wins
+            .force("link", d3.forceLink(data.links).id(d => d.id).distance(120))
+            .force("charge", d3.forceManyBody().strength(-600)) // Stronger repulsion to spread nodes out
+            .force("center", d3.forceCenter(this.canvasWidth / 2, this.canvasHeight / 2).strength(0.02)) // Very weak center gravity
             .force("collide", d3.forceCollide().radius(d => d.radius + 2).iterations(3));
 
         // Draw Links
@@ -461,9 +476,11 @@ export class StaffDirectoryRelationshipGraph extends Component {
         const updatePositions = () => {
             // Keep nodes within bounds gracefully, adding padding for rings and labels
             data.nodes.forEach(d => {
-                const padding = d.radius + 30; // accounts for halo (r+6), selection (r+12), and label (r+24)
-                d.x = Math.max(padding, Math.min(width - padding, d.x));
-                d.y = Math.max(padding, Math.min(height - padding, d.y));
+                const paddingX = d.radius + 30; // accounts for halo and selection
+                const paddingYTop = d.radius + 30;
+                const paddingYBottom = d.radius + 60; // Extra room for the text label and rings
+                d.x = Math.max(paddingX, Math.min(this.canvasWidth - paddingX, d.x));
+                d.y = Math.max(paddingYTop, Math.min(this.canvasHeight - paddingYBottom, d.y));
             });
 
             link

@@ -9,15 +9,17 @@
                 <div class="r_graph-toolbar">
                 <div class="r_graph-toolbar-left">
                     <div class="r_graph-search">
-                        <div class="r_graph-search-inner">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+                        <div class="r_graph-search-wrap">
+                            <svg class="r_graph-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="m21 21-4.3-4.3"/>
                             </svg>
-                            <input type="text" placeholder="Focus on person..." t-att-value="state.searchQuery" t-on-input="onSearch"/>
-                            <button t-if="state.searchQuery" t-on-click="clearSearch" class="r_graph-search-clear">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
+                            <input type="text" class="r_graph-search-input" placeholder="Focus on person..." t-att-value="state.searchQuery" t-on-input="onSearch"/>
+                            <t t-if="state.searchQuery">
+                                <button t-on-click="clearSearch" class="r_graph-search-clear">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </t>
                         </div>
                     </div>
                     <div class="r_graph-toggles">
@@ -107,15 +109,17 @@
                         GRAPH INSIGHTS
                     </div>
                     <div class="r_graph-sidebar-search">
-                        <div class="r_graph-sidebar-search-inner" t-att-class="state.sidebarSearchQuery ? 'r_graph-sidebar-search-active' : ''">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="r_graph-sidebar-search-wrap" t-att-class="state.sidebarSearchQuery ? 'r_graph-sidebar-search-active' : ''">
+                            <svg class="r_graph-sidebar-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="m21 21-4.3-4.3"/>
                             </svg>
-                            <input type="text" placeholder="Search employees..." t-att-value="state.sidebarSearchQuery" t-on-input="onSidebarSearch"/>
-                            <button t-if="state.sidebarSearchQuery" t-on-click="clearSidebarSearch" class="r_graph-sidebar-search-clear">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
+                            <input type="text" class="r_graph-sidebar-search-input" placeholder="Search employees..." t-att-value="state.sidebarSearchQuery" t-on-input="onSidebarSearch"/>
+                            <t t-if="state.sidebarSearchQuery">
+                                <button t-on-click="clearSidebarSearch" class="r_graph-sidebar-search-clear">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </t>
                         </div>
                     </div>
                     
@@ -123,14 +127,8 @@
                         <!-- Most Connected -->
                         <div class="r_graph-insight-section">
                             <div class="r_graph-insight-header" t-on-click="() => this.toggleInsight('mostConnected')">
-                                <div class="r_graph-insight-header-left">
-                                    <svg class="r_graph-icon-pink" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="18" cy="5" r="3"></circle>
-                                        <circle cx="6" cy="12" r="3"></circle>
-                                        <circle cx="18" cy="19" r="3"></circle>
-                                        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                                        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                                    </svg>
+                                <div class="r_graph-insight-header-left">                                    
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-network"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
                                     <span>Most Connected</span>
                                 </div>
                                 <div class="r_graph-insight-header-right">
@@ -139,7 +137,7 @@
                                 </div>
                             </div>
                             <div t-if="state.insightsExpanded.mostConnected" class="r_graph-insight-body">
-                                <t t-set="filteredMostConnected" t-value="this.getFilteredNodes(state.mostConnectedNodes)"/>
+                                <t t-set="filteredMostConnected" t-value="getFilteredNodes(state.mostConnectedNodes)"/>
                                 <div t-if="filteredMostConnected.length === 0" class="r_graph-insight-nomatch">No match.</div>
                                 <div class="r_graph-insight-item" t-foreach="filteredMostConnected" t-as="node" t-key="node.id" t-on-click="() => this.handleNodeClick(null, node)">
                                     <span class="r_graph-insight-rank"><t t-esc="node_index + 1"/></span>
@@ -170,7 +168,7 @@
                             </div>
                             <div t-if="state.insightsExpanded.bridge" class="r_graph-insight-body">
                                 <div class="r_graph-insight-desc">Remove them and the graph splits into disconnected clusters.</div>
-                                <t t-set="filteredBridge" t-value="this.getFilteredNodes(state.bridgeNodes)"/>
+                                <t t-set="filteredBridge" t-value="getFilteredNodes(state.bridgeNodes)"/>
                                 <div t-if="filteredBridge.length === 0" class="r_graph-insight-nomatch">No match.</div>
                                 <div class="r_graph-insight-item" t-foreach="filteredBridge" t-as="node" t-key="node.id" t-on-click="() => this.handleNodeClick(null, node)">
                                     <div class="r_graph-insight-avatar" t-attf-style="background-color: {{ node.color }}">
@@ -202,7 +200,7 @@
                             </div>
                             <div t-if="state.insightsExpanded.isolated" class="r_graph-insight-body">
                                 <div class="r_graph-insight-desc">Degree ≤ 1 — few or no connections in the current graph.</div>
-                                <t t-set="filteredIsolated" t-value="this.getFilteredNodes(state.isolatedNodes)"/>
+                                <t t-set="filteredIsolated" t-value="getFilteredNodes(state.isolatedNodes)"/>
                                 <div t-if="filteredIsolated.length === 0" class="r_graph-insight-nomatch">No match.</div>
                                 <div class="r_graph-insight-item" t-foreach="filteredIsolated" t-as="node" t-key="node.id" t-on-click="() => this.handleNodeClick(null, node)">
                                     <div class="r_graph-insight-avatar r_graph-insight-avatar-ringed" t-attf-style="background-color: {{ node.color }}; border-color: {{ node.ringColor }};">
