@@ -64,7 +64,7 @@
                 <field name="expected_employees" optional="hide"/>
                 <field name="no_of_hired_employee" optional="hide"/>
                 <field name="company_id" column_invisible="True" on_change="1"/>
-                <button name="%(hr_job_dashboard.action_hr_job_dashboardx)d"
+                <button name="%(hr_cleon_recruitment.action_hr_job_recruitment)d"
                         type="action"
                         class="btn-sm btn-success"
                         icon="fa-eye"
