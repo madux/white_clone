@@ -7,7 +7,7 @@
     'category': '',
     "sequence":-1,
     'summary': 'License application to manage subscriptions',
-    'depends': ['base','web', 'website', 'website_mass_mailing'],#, 'home_menu_overlay'],
+    'depends': ['base','web', 'website', 'website_mass_mailing', 'base_addons'],#, 'home_menu_overlay'],
     'author': 'Chris Maduka [MAACH SOFTWARE]',
     'data': [ 
         # 'data/account_view.xml',

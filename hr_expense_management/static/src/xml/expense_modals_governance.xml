@@ -1,0 +1,401 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpensePolicyModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Policy name</label>
+                    <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Code</label>
+                    <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Area</label>
+                    <select class="form-select" data-field="policy_type" t-on-change="updateModalValue">
+                        <option value="general">General</option>
+                        <option value="claim">Claims</option>
+                        <option value="request">Requests</option>
+                        <option value="advance">Advances</option>
+                        <option value="payment">Payments</option>
+                        <option value="petty_cash">Petty Cash</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Effective date</label>
+                    <input type="date" class="form-control" data-field="effective_date" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Policy text</label>
+                    <textarea rows="5" class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseReportModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Report name</label>
+                    <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Report type</label>
+                    <select class="form-select" data-field="report_type" t-on-change="updateModalValue">
+                        <option value="custom">Custom</option>
+                        <option value="financial">Financial</option>
+                        <option value="claims">Claims</option>
+                        <option value="employees">Employees</option>
+                        <option value="vendors">Vendors</option>
+                        <option value="budgets">Budgets</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Date basis</label>
+                    <select class="form-select" data-field="date_basis" t-on-change="updateModalValue">
+                        <option value="current_month">Current Month</option>
+                        <option value="current_quarter">Current Quarter</option>
+                        <option value="current_year">Current Year</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea rows="4" class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseScheduleModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Schedule name</label>
+                    <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Report</label>
+                    <select class="form-select" data-field="report_id" t-on-change="updateModalValue">
+                        <option t-foreach="state.pageData.report_options || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Recipient</label>
+                    <select class="form-select" data-field="recipient_id" t-on-change="updateModalValue">
+                        <option t-foreach="state.pageData.recipient_options || []" t-as="item" t-key="item.id" t-att-value="item.id">
+                            <t t-esc="item.name"/> · <t t-esc="item.email"/>
+                        </option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Frequency</label>
+                    <select class="form-select" data-field="frequency" t-on-change="updateModalValue">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Format</label>
+                    <select class="form-select" data-field="format" t-on-change="updateModalValue">
+                        <option value="pdf">PDF</option>
+                        <option value="xlsx">Excel</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">First run</label>
+                    <input type="datetime-local" class="form-control" data-field="next_run" t-on-input="updateModalValue"/>
+                </div>
+                <div t-if="!(state.pageData.recipient_options || []).length" class="col-12 alert alert-warning mb-0">Add an email address to a Manager, Finance, or Admin user before scheduling delivery.</div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseSettingsModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Receipt threshold</label>
+                    <input type="number" min="0" class="form-control" data-field="receipt_threshold" t-att-value="state.modal.values.receipt_threshold" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Approval days</label>
+                    <input type="number" min="0" class="form-control" data-field="approval_days" t-att-value="state.modal.values.approval_days" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Payment days</label>
+                    <input type="number" min="0" class="form-control" data-field="payment_days" t-att-value="state.modal.values.payment_days" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12 d-flex flex-column gap-2">
+                    <label>
+                        <input type="checkbox" class="form-check-input me-2" data-field="require_receipts" t-att-checked="state.modal.values.require_receipts" t-on-change="updateModalValue"/>Require receipts</label>
+                    <label>
+                        <input type="checkbox" class="form-check-input me-2" data-field="allow_over_budget" t-att-checked="state.modal.values.allow_over_budget" t-on-change="updateModalValue"/>Allow over-budget submissions</label>
+                    <label>
+                        <input type="checkbox" class="form-check-input me-2" data-field="enable_email" t-att-checked="state.modal.values.enable_email" t-on-change="updateModalValue"/>Enable email notifications</label>
+                    <label>
+                        <input type="checkbox" class="form-check-input me-2" data-field="enable_appeals" t-att-checked="state.modal.values.enable_appeals" t-on-change="updateModalValue"/>Enable appeals</label>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseCompanyModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Company name</label>
+                    <input class="form-control" data-field="name" t-att-value="state.modal.values.name" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Expense contact email</label>
+                    <input type="email" class="form-control" data-field="email" t-att-value="state.modal.values.email" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input class="form-control" data-field="phone" t-att-value="state.modal.values.phone" t-on-input="updateModalValue"/>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseThemeModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Theme name</label>
+                    <input class="form-control" data-field="name" t-att-value="state.modal.values.name" t-on-input="updateModalValue"/>
+                </div>
+                <div t-foreach="['primary_color','secondary_color','sidebar_color','surface_color']" t-as="field" t-key="field" class="col-md-6">
+                    <label class="form-label text-capitalize" t-esc="field.replaceAll('_', ' ')"/>
+                    <input type="color" class="form-control form-control-color w-100" t-att-data-field="field" t-att-value="state.modal.values[field]" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Typography</label>
+                    <select class="form-select" data-field="font_family" t-on-change="updateModalValue">
+                        <option value="system">System</option>
+                        <option value="inter">Inter</option>
+                        <option value="roboto">Roboto</option>
+                        <option value="serif">Serif</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Density</label>
+                    <select class="form-select" data-field="density" t-on-change="updateModalValue">
+                        <option value="comfortable">Comfortable</option>
+                        <option value="compact">Compact</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Corners</label>
+                    <select class="form-select" data-field="corner_style" t-on-change="updateModalValue">
+                        <option value="rounded">Rounded</option>
+                        <option value="soft">Soft</option>
+                        <option value="square">Square</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseConfigurationModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Name</label>
+                    <input class="form-control" data-field="name" t-on-input="updateModalValue"/>
+                </div>
+                <div t-if="!['approval_rule','email','integration'].includes(state.modal.kind)" class="col-md-4">
+                    <label class="form-label">Code</label>
+                    <input class="form-control" data-field="code" t-on-input="updateModalValue"/>
+                </div>
+                <t t-if="state.modal.kind === 'claim_type'">
+                    <div class="col-md-6">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" data-field="category_id" t-on-change="updateModalValue">
+                            <option t-foreach="state.pageData.claim_options?.claim_categories || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Amount type</label>
+                        <select class="form-select" data-field="amount_type" t-on-change="updateModalValue">
+                            <option value="open">Open amount</option>
+                            <option value="fixed">Fixed amount</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Fixed / maximum amount</label>
+                        <input type="number" min="0" class="form-control" data-field="maximum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Receipt policy</label>
+                        <select class="form-select" data-field="receipt_policy" t-on-change="updateModalValue">
+                            <option value="required">Always Required</option>
+                            <option value="conditional">Required Above Threshold</option>
+                            <option value="optional">Optional</option>
+                            <option value="none">Not Applicable</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Receipt threshold</label>
+                        <input type="number" min="0" class="form-control" data-field="receipt_threshold" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Approval route</label>
+                        <select class="form-select" data-field="approval_type" t-on-change="updateModalValue">
+                            <option value="single">Single level</option>
+                            <option value="sequential">Sequential</option>
+                            <option value="parallel">Parallel</option>
+                            <option value="conditional">Amount based</option>
+                        </select>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'claim_window'">
+                    <div class="col-md-6">
+                        <label class="form-label">Window type</label>
+                        <select class="form-select" data-field="window_type" t-on-change="updateModalValue">
+                            <option value="submission">Submission</option>
+                            <option value="approval">Approval</option>
+                            <option value="payment">Payment</option>
+                            <option value="cutoff">Cut-off</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Duration days</label>
+                        <input type="number" min="0" class="form-control" data-field="duration_days" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Start date</label>
+                        <input type="date" class="form-control" data-field="start_date" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">End date</label>
+                        <input type="date" class="form-control" data-field="end_date" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'request_type'">
+                    <div class="col-md-6">
+                        <label class="form-label">Minimum</label>
+                        <input type="number" min="0" class="form-control" data-field="minimum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Maximum</label>
+                        <input type="number" min="0" class="form-control" data-field="maximum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label>
+                            <input type="checkbox" class="form-check-input me-2" data-field="creates_advance" t-on-change="updateModalValue"/>Creates cash advance</label>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Retirement days</label>
+                        <input type="number" min="1" class="form-control" data-field="retirement_days" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'approval_rule'">
+                    <div class="col-md-4">
+                        <label class="form-label">Target</label>
+                        <select class="form-select" data-field="target" t-on-change="updateModalValue">
+                            <option value="claim">Claim</option>
+                            <option value="request">Request</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Minimum</label>
+                        <input type="number" min="0" class="form-control" data-field="minimum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Maximum</label>
+                        <input type="number" min="0" class="form-control" data-field="maximum_amount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12 small text-muted">Creates the first manager approval level. Additional sequential levels can be added from Advanced View.</div>
+                </t>
+                <t t-elif="state.modal.kind === 'vendor_category'">
+                    <div class="col-md-6">
+                        <label class="form-label">Tax rate %</label>
+                        <input type="number" min="0" class="form-control" data-field="tax_rate" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Default GL</label>
+                        <select class="form-select" data-field="account_id" t-on-change="updateModalValue">
+                            <option value="">No default</option>
+                            <option t-foreach="state.pageData.vendor_options?.accounts || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                        </select>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'payment_term'">
+                    <div class="col-md-4">
+                        <label class="form-label">Due days</label>
+                        <input type="number" min="0" class="form-control" data-field="due_days" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Discount %</label>
+                        <input type="number" min="0" class="form-control" data-field="discount" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Discount days</label>
+                        <input type="number" min="0" class="form-control" data-field="discount_days" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'email'">
+                    <div class="col-md-5">
+                        <label class="form-label">Event</label>
+                        <select class="form-select" data-field="event" t-on-change="updateModalValue">
+                            <option value="submitted">Submitted</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="returned">Returned</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                            <option value="scheduled_report">Scheduled Report</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label">Subject</label>
+                        <input class="form-control" data-field="subject" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Message</label>
+                        <textarea rows="5" class="form-control" data-field="body_html" t-on-input="updateModalValue"/>
+                    </div>
+                </t>
+                <t t-elif="state.modal.kind === 'integration'">
+                    <div class="col-md-5">
+                        <label class="form-label">Provider</label>
+                        <select class="form-select" data-field="provider" t-on-change="updateModalValue">
+                            <option value="bank">Bank / NIBSS</option>
+                            <option value="paystack">Paystack</option>
+                            <option value="payroll">Payroll</option>
+                            <option value="quickbooks">QuickBooks</option>
+                            <option value="sage">Sage</option>
+                            <option value="storage">Document Storage</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <label class="form-label">Non-secret configuration summary</label>
+                        <textarea class="form-control" data-field="configuration_summary" t-on-input="updateModalValue"/>
+                    </div>
+                    <div class="col-12 alert alert-warning mb-0">Credentials are intentionally not accepted here. Provider execution remains disabled until an authorized adapter stores secrets outside the OWL payload.</div>
+                </t>
+                <t t-else="">
+                    <div class="col-md-6">
+                        <label class="form-label">Method type</label>
+                        <select class="form-select" data-field="method_type" t-on-change="updateModalValue">
+                            <option value="bank">Bank Transfer</option>
+                            <option value="payroll">Payroll</option>
+                            <option value="cash">Cash</option>
+                            <option value="cheque">Cheque</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label>
+                            <input type="checkbox" class="form-check-input me-2" data-field="supports_batch" t-att-checked="state.modal.values.supports_batch" t-on-change="updateModalValue"/>Supports batches</label>
+                    </div>
+                </t>
+                <div t-if="!['email','integration'].includes(state.modal.kind)" class="col-12">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

@@ -5,31 +5,38 @@ resources/ui/AGENTS.md
 .opencode/plans/recruitment-schedule-tasks.md
 .opencode/plans/create-job-modal-comprehensive.md
 .opencode/plans/create-job-modal.md
-**/__pycache__/
+
+# Python / Odoo generated files
+__pycache__/
+*.py[cod]
+*.pyo
+*$py.class
+*.log
+*.pot
+*.mo
+
+# Local runtime/state
+.env
+.venv/
+venv/
+sessions/
+filestore/
+.odoo/
+conf/
+
 # Testing and coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
-# IDEs and Editors
+# Editors and operating-system noise
 .vscode/
 .idea/
 *.swp
 *.swo
-# Byte-compiled / optimized / DLL files
-**/__pycache__/
-*.py[cod]
-*$py.class
+.DS_Store
 
-
-# Michael's personal feature TODO (pending fix, see file)
-.opencode/plans/feature-todo-hr-job-dashboard-dep.md
-hr_staff_directory/hr_staff_directory_study.md
-
-# Dev-only staff seed data (not needed in production)
-hr_staff_directory/dev_seed.sql
-hr_staff_directory/dev_gender_update.sql
-hr_staff_directory/dev_seed_people_block.sql
-hr_staff_directory/dev_generate_seed_all.py
-hr_staff_directory/staff-export-2026-08-05.csv
-hr_staff_directory/staff-export-2026-08-05-with-gender.csv
+# Local implementation notes
+hr_expense_management/APP_CONTRACT.md
+hr_expense_management/FINAL_REVIEW.md
+hr_expense_management/PROGRESS.md

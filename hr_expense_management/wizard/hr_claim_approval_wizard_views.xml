@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_approval_wizard_form" model="ir.ui.view">
+        <field name="name">hr.claim.approval.wizard.form</field>
+        <field name="model">hr.claim.approval.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Approve Claim">
+                <group>
+                    <field name="claim_id"/>
+                    <field name="comment" placeholder="Optional approval note for the employee..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Approve" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

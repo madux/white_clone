@@ -1,0 +1,707 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeaveBalancesPage">
+    <div class="leaveapp o_lb_page" t-on-click="closeMoreOptions">
+      <CalendarSidebar activeMenu="'balances'"/>
+      <main class="o_leave_dashboard o_lb_main">
+        <!-- Amber expiry alert banner -->
+        <div t-if="state.expiryBanner and state.kpis.expiring_employees" class="o_lb_alert">
+          <span><i class="fa fa-clock-o"/> <b><t t-esc="state.kpis.expiring_employees"/> employees</b> have leave expiring within 30 days</span>
+          <span>
+            <button t-on-click="showExpiring">View Details →</button>
+            <button t-on-click="() => state.expiryBanner = false">&#215;</button>
+          </span>
+        </div>
+
+        <!-- Page header + toolbar -->
+        <header class="o_lb_header">
+          <div>
+            <h2>Leave Balance Management <i class="fa fa-info-circle o_lb_info_icon" title="View and manage employee leave allocations and balances"/></h2>
+            <p>View and manage employee leave allocations and balances</p>
+          </div>
+          <div class="o_lb_tools">
+            <input t-model="state.search" placeholder="Search by name or ID..."/>
+            <!-- Filters button with active badge -->
+            <button t-on-click="openFilters" class="o_lb_btn_filters">
+              <i class="fa fa-sliders"/> Filters
+              <b t-if="activeFilterCount" class="o_lb_filter_badge"><t t-esc="activeFilterCount"/></b>
+            </button>
+            <!-- Export button -->
+            <button t-on-click="exportRows"><i class="fa fa-download"/> Export</button>
+            <!-- Allocate Leave button -->
+            <button class="o_lb_primary" t-on-click="openAllocation">+ Allocate Leave</button>
+            <!-- More Options ⋮ button -->
+            <div class="o_lb_more_wrap" t-on-click.stop="">
+              <button class="o_lb_more_btn" t-on-click="() => state.moreOptionsOpen = !state.moreOptionsOpen" title="More Options">&#8942;</button>
+              <div t-if="state.moreOptionsOpen" class="o_lb_more_menu">
+                <button t-on-click="doYearEndReset"><i class="fa fa-refresh"/> Bulk Year-End Reset</button>
+                <button t-on-click="doCarryForward"><i class="fa fa-arrow-right"/> Bulk Carry-Forward</button>
+                <button t-on-click="importBalances"><i class="fa fa-upload"/> Import Balances</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <!-- 258: KPI summary cards -->
+        <section class="o_lb_kpis">
+          <t t-foreach="kpiCards" t-as="card" t-key="card.key">
+            <article t-att-class="(card.highlight ? 'o_lb_kpi_highlight ' : '') + (card.clickable ? 'o_lb_kpi_clickable' : '')" t-on-click="() => onKpiClick(card)">
+              <div class="o_lb_kpi_top">
+                <small t-esc="card.label"/>
+                <span t-att-class="'o_lb_kpi_icon '+card.color">
+                  <i t-att-class="'fa '+card.icon"/>
+                </span>
+              </div>
+              <!-- red count text when negative_employees > 0 -->
+              <strong t-att-class="card.redCount ? 'o_lb_kpi_red' : ''" t-esc="card.displayValue"/>
+              <!-- green for positive trends, red for negative -->
+              <span t-if="card.trendLabel" t-att-class="'o_lb_kpi_trend ' + card.trendDirection" t-esc="card.trendLabel"/>
+              <span t-else="" class="o_lb_kpi_trend neutral">Current rolling window</span>
+            </article>
+          </t>
+        </section>
+
+        <div t-if="state.selectedKeys.length" class="o_lb_selected">
+          <b><t t-esc="state.selectedKeys.length"/> selected</b>
+          <span>Use the row menu to view, adjust, or inspect history.</span>
+          <button t-on-click="() => state.selectedKeys = []">Clear</button>
+        </div>
+
+        <!-- Main data table -->
+        <section class="o_lb_table_wrap">
+          <div t-if="state.loading" class="o_lb_empty"><i class="fa fa-spinner fa-spin"/> Loading balances...</div>
+          <table t-else="">
+            <thead>
+              <tr>
+                <th><input type="checkbox" t-on-change="toggleAll"/></th>
+                <th t-on-click="() => sortBy('employee_name')">Employee <i t-att-class="'fa '+sortIcon('employee_name')"/></th>
+                <th t-on-click="() => sortBy('department')">Department</th>
+                <!-- Leave Type column header with quick-filter funnel icon -->
+                <th class="o_lb_th_filter" t-on-click.stop="">
+                  <div class="o_lb_th_wrap">
+                    <span>Leave Type</span>
+                    <button class="o_lb_lt_filter_btn" t-att-class="state.ltQuickFilter !== null ? 'active' : ''" t-on-click="toggleLtFilter" title="Filter by leave type">
+                      <i class="fa fa-filter"/>
+                    </button>
+                  </div>
+                  <!-- Quick-filter active indicator -->
+                  <div t-if="state.ltQuickFilter !== null" class="o_lb_lt_active_pill">
+                    <span t-esc="ltFilterOptions.find(o => o.id === state.ltQuickFilter)?.name || ''"/>
+                    <button t-on-click="clearLtFilter">&#215;</button>
+                  </div>
+                  <!-- Quick-filter dropdown -->
+                  <div t-if="state.ltFilterOpen" class="o_lb_lt_dropdown" t-on-click.stop="">
+                    <div class="o_lb_lt_dropdown_hdr">
+                      <span>Filter by Leave Type</span>
+                      <button t-if="state.ltQuickFilter !== null" t-on-click="clearLtFilter">Clear</button>
+                    </div>
+                    <label t-foreach="ltFilterOptions" t-as="opt" t-key="opt.id" class="o_lb_lt_opt" t-att-class="state.ltQuickFilter === opt.id ? 'selected' : ''" t-on-click="() => setLtFilter(opt.id)">
+                      <span class="o_lb_dot" t-att-style="'background:'+opt.color_hex"/>
+                      <t t-esc="opt.name"/>
+                      <i t-if="state.ltQuickFilter === opt.id" class="fa fa-check o_lb_lt_check"/>
+                    </label>
+                  </div>
+                </th>
+                <th>Allocated</th>
+                <th t-on-click="() => sortBy('used')">Used <i t-att-class="'fa '+sortIcon('used')"/></th>
+                <th>Pending</th>
+                <th t-on-click="() => sortBy('remaining')">Remaining <i t-att-class="'fa '+sortIcon('remaining')"/></th>
+                <th>Carried Fwd</th>
+                <th>Expiring</th>
+                <th t-on-click="() => sortBy('last_updated')">Last Updated <i t-att-class="'fa '+sortIcon('last_updated')"/></th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr t-foreach="visibleRows" t-as="row" t-key="row.key">
+                <td><input type="checkbox" t-att-checked="state.selectedKeys.includes(row.key)" t-on-change="() => toggleSelected(row.key)"/></td>
+                <td>
+                  <div class="o_lb_employee">
+                    <img t-att-src="row.avatar_url"/>
+                    <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
+                  </div>
+                </td>
+                <td t-esc="row.department"/>
+                <td>
+                  <span class="o_lb_dot" t-att-style="'background:'+row.color_hex"/>
+                  <t t-esc="row.leave_type"/>
+                </td>
+                <td t-esc="row.allocated"/>
+                <td t-esc="row.used"/>
+                <td t-esc="row.pending"/>
+                <td><b t-att-class="'o_lb_balance '+row.health" t-esc="row.remaining"/></td>
+                <td t-esc="row.carried_forward"/>
+                <td>
+                  <span t-if="row.expiry_countdown !== false" class="o_lb_expiry"><t t-esc="row.expiry_countdown"/>d</span>
+                  <span t-else="">—</span>
+                </td>
+                <td t-esc="row.last_updated || '—'"/>
+                <td class="o_lb_actions">
+                  <button t-on-click="() => state.actionKey = state.actionKey === row.key ? null : row.key">&#8942;</button>
+                  <div t-if="state.actionKey === row.key" class="o_lb_menu">
+                    <button t-on-click="() => openDetails(row)">View Details</button>
+                    <button t-on-click="() => openAdjust(row)">Adjust Balance</button>
+                    <button t-on-click="() => openDetails(row, true)">View Transactions</button>
+                    <button t-on-click="() => openHistory(row)">View Leave History</button>
+                  </div>
+                </td>
+              </tr>
+              <tr t-if="!visibleRows.length">
+                <td colspan="12" class="o_lb_empty">No leave balances match these filters.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+
+      <!-- Filters side panel -->
+      <div t-if="state.filtersOpen" class="o_lb_overlay" t-on-click.self="() => state.filtersOpen = false">
+        <aside class="o_lb_drawer o_lb_filter_drawer">
+          <header>
+            <div>
+              <h3>Filters</h3>
+              <small><t t-esc="activeFilterCount"/> filter(s) active</small>
+            </div>
+            <button t-on-click="() => state.filtersOpen = false">&#215;</button>
+          </header>
+          <div class="o_lb_drawer_body">
+            <h4>Employee Name</h4>
+            <input class="o_lb_filter_search" t-model="state.filterDraft.employee_search" placeholder="Search employee..."/>
+
+            <h4>Department</h4>
+            <label t-foreach="state.departments" t-as="item" t-key="item.id" class="o_lb_filter_check">
+              <input type="checkbox" t-att-checked="state.filterDraft.department_ids.includes(item.id)" t-on-change="() => toggleArray('department_ids', item.id)"/>
+              <t t-esc="item.name"/>
+            </label>
+
+            <h4>Location</h4>
+            <label t-foreach="state.locations" t-as="item" t-key="item.id" class="o_lb_filter_check">
+              <input type="checkbox" t-att-checked="state.filterDraft.location_ids.includes(item.id)" t-on-change="() => toggleArray('location_ids', item.id)"/>
+              <t t-esc="item.name"/>
+            </label>
+
+            <!-- Leave Type: colour dot inline with checkbox label -->
+            <h4>Leave Type</h4>
+            <label t-foreach="state.leaveTypes" t-as="item" t-key="item.id" class="o_lb_filter_check o_lb_filter_lt">
+              <input type="checkbox" t-att-checked="state.filterDraft.leave_type_ids.includes(item.id)" t-on-change="() => toggleArray('leave_type_ids', item.id)"/>
+              <span class="o_lb_dot" t-att-style="'background:'+item.color_hex"/>
+              <t t-esc="item.name"/>
+            </label>
+
+            <h4>Policy Assigned</h4>
+            <label t-foreach="state.leaveTypes" t-as="policy" t-key="policy.id" class="o_lb_filter_check">
+              <input type="checkbox" t-att-checked="state.filterDraft.policy_ids.includes(policy.id)" t-on-change="() => toggleArray('policy_ids', policy.id)"/>
+              <t t-esc="policy.name"/>
+            </label>
+          </div>
+          <footer>
+            <button class="o_lb_primary" t-on-click="applyFilters">Apply Filters</button>
+            <button t-on-click="clearFilters">Clear All</button>
+          </footer>
+        </aside>
+      </div>
+
+      <!-- Allocate Leave wizard (3-step) -->
+      <div t-if="state.allocationOpen" class="o_lb_overlay">
+        <section class="o_lb_modal o_lb_allocate">
+          <!-- Modal header -->
+          <header class="o_lb_alloc_header">
+            <div>
+              <h3>Allocate Leave</h3>
+              <small>Step <t t-esc="state.allocationStep"/> of 3</small>
+            </div>
+            <button t-on-click="() => state.allocationOpen = false">&#215;</button>
+          </header>
+
+          <!-- Progress stepper with numbered circles -->
+          <div class="o_lb_alloc_steps">
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 1 ? ' active' : '') + (state.allocationStep > 1 ? ' done' : '')">
+              <span class="o_lb_step_num">1</span>
+              <span class="o_lb_step_label">Select Employees</span>
+            </div>
+            <div class="o_lb_step_connector"/>
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 2 ? ' active' : '') + (state.allocationStep > 2 ? ' done' : '')">
+              <span class="o_lb_step_num">2</span>
+              <span class="o_lb_step_label">Allocation Details</span>
+            </div>
+            <div class="o_lb_step_connector"/>
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 3 ? ' active' : '')">
+              <span class="o_lb_step_num">3</span>
+              <span class="o_lb_step_label">Review &amp; Apply</span>
+            </div>
+          </div>
+
+          <div class="o_lb_modal_body">
+
+            <!-- ── STEP 1: Select Employees ── -->
+            <div t-if="state.allocationStep === 1">
+              <!-- mode tabs -->
+              <div class="o_lb_tabs">
+                <button t-att-class="state.selectionMode === 'individual' ? 'active' : ''" t-on-click="() => setSelectionMode('individual')">Individual</button>
+                <button t-att-class="state.selectionMode === 'department' ? 'active' : ''" t-on-click="() => setSelectionMode('department')">Department</button>
+                <button disabled="disabled" title="Unit field not yet configured">Unit</button>
+                <button t-att-class="state.selectionMode === 'grade' ? 'active' : ''" t-on-click="() => setSelectionMode('grade')">Grade Level</button>
+              </div>
+
+              <!-- Group pickers for Department / Grade modes -->
+              <div t-if="state.selectionMode === 'department'" class="o_lb_group_picker">
+                <label t-foreach="state.departments" t-as="group" t-key="group.id">
+                  <input type="checkbox" t-att-checked="state.allocationGroupIds.includes(group.id)" t-on-change="() => toggleAllocationGroup(group.id)"/>
+                  <t t-esc="group.name"/>
+                </label>
+              </div>
+              <div t-if="state.selectionMode === 'grade'" class="o_lb_group_picker">
+                <label t-foreach="state.grades" t-as="grade" t-key="grade.id">
+                  <input type="checkbox" t-att-checked="state.allocationGroupIds.includes(grade.id)" t-on-change="() => toggleAllocationGroup(grade.id)"/>
+                  <t t-esc="grade.name"/>
+                </label>
+              </div>
+
+              <!-- Search and Select All / Deselect All link -->
+              <div class="o_lb_alloc_search_row">
+                <input class="o_lb_alloc_search_input" t-model="state.employeeSearch" placeholder="Search employees..."/>
+                <!-- pink toggle link -->
+                <button class="o_lb_select_all_link" t-on-click="selectAllEmployees">
+                  <t t-if="state.selectedEmployeeIds.length === filteredEmployees.length and filteredEmployees.length > 0">Deselect All</t>
+                  <t t-else="">Select All</t>
+                </button>
+              </div>
+
+              <!-- employee list -->
+              <div class="o_lb_person_list">
+                <label class="o_lb_person" t-foreach="filteredEmployees" t-as="e" t-key="e.employee_id">
+                  <input type="checkbox" t-att-checked="state.selectedEmployeeIds.includes(e.employee_id)" t-on-change="() => toggleEmployee(e.employee_id)"/>
+                  <img t-att-src="e.avatar_url"/>
+                  <span>
+                    <b t-esc="e.employee_name"/>
+                    <small><t t-esc="e.department"/> · <t t-esc="e.employee_code"/></small>
+                  </span>
+                </label>
+              </div>
+
+              <!-- teal selection counter bar -->
+              <div class="o_lb_selection_bar">
+                <i class="fa fa-users"/>
+                <span><b><t t-esc="state.selectedEmployeeIds.length"/></b> employee(s) selected</span>
+              </div>
+            </div>
+
+            <!-- ── STEP 2: Allocation Details ── -->
+            <div t-elif="state.allocationStep === 2" class="o_lb_form o_lb_alloc_form">
+              <h4 class="o_lb_alloc_section_title">Allocation Details</h4>
+
+              <label class="o_lb_field_label">
+                Leave Type <span class="o_lb_required">*</span>
+                <select t-model="state.allocation.leave_type_id" t-att-class="!state.allocation.leave_type_id ? 'o_lb_field_empty' : ''">
+                  <option value="">Select leave type...</option>
+                  <option t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/>
+                </select>
+              </label>
+
+              <label class="o_lb_field_label">
+                Allocation Amount (days) <span class="o_lb_required">*</span>
+                <input type="number" min="0.5" step="0.5" placeholder="Enter number of days" t-model.number="state.allocation.amount" t-att-class="!state.allocation.amount ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Reason <span class="o_lb_required">*</span>
+                <textarea placeholder="Enter reason for this allocation..." t-model="state.allocation.reason" t-att-class="!state.allocation.reason ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Effective Date <span class="o_lb_required">*</span>
+                <input type="date" t-model="state.allocation.effective_date" t-att-class="!state.allocation.effective_date ? 'o_lb_field_empty' : ''"/>
+              </label>
+
+              <label class="o_lb_field_label">
+                Notes <span class="o_lb_optional">(optional)</span>
+                <textarea placeholder="Add any additional notes..." t-model="state.allocation.notes"/>
+              </label>
+            </div>
+
+            <!-- ── STEP 3: Review & Apply ── -->
+            <div t-else="" class="o_lb_review">
+              <h4>Review Allocation</h4>
+              <div class="o_lb_review_card">
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Employees</span>
+                  <span class="o_lb_review_value"><b><t t-esc="state.selectedEmployeeIds.length"/> employee(s)</b>: <t t-esc="selectedEmployees.map(e => e.employee_name).join(', ')"/></span>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Leave Type</span>
+                  <span class="o_lb_review_value" t-esc="selectedAllocationLeaveTypeName"/>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Amount</span>
+                  <span class="o_lb_review_value"><b><t t-esc="state.allocation.amount"/> days</b></span>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Effective Date</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.effective_date"/>
+                </div>
+                <div class="o_lb_review_row">
+                  <span class="o_lb_review_label">Reason</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.reason"/>
+                </div>
+                <div t-if="state.allocation.notes" class="o_lb_review_row">
+                  <span class="o_lb_review_label">Notes</span>
+                  <span class="o_lb_review_value" t-esc="state.allocation.notes"/>
+                </div>
+              </div>
+              <p class="o_lb_review_hint"><i class="fa fa-info-circle"/> Clicking "Apply" will create validated allocations for each employee. This cannot be undone.</p>
+            </div>
+
+          </div>
+
+          <!-- Footer navigation -->
+          <footer class="o_lb_alloc_footer">
+            <div>
+              <button t-if="state.allocationStep === 1" t-on-click="() => state.allocationOpen = false">Cancel</button>
+              <button t-else="" t-on-click="() => state.allocationStep--"><i class="fa fa-arrow-left"/> Back</button>
+            </div>
+            <div>
+              <button t-if="state.allocationStep &lt; 3" class="o_lb_primary"
+                t-att-disabled="state.allocationStep === 1 ? !state.selectedEmployeeIds.length : !allocationValid"
+                t-on-click="() => state.allocationStep++">
+                Next <i class="fa fa-arrow-right"/>
+              </button>
+              <button t-else="" class="o_lb_primary" t-on-click="applyAllocation">
+                <i class="fa fa-check"/> Apply
+              </button>
+            </div>
+          </footer>
+        </section>
+      </div>
+
+      <!-- Balance Detail drawer -->
+      <div t-if="state.detailsOpen" class="o_lb_overlay" t-on-click.self="() => state.detailsOpen=false">
+        <aside class="o_lb_drawer o_lb_details">
+          <!-- Header with Title 'Balance Details' and sub-label 'Employee Name • Leave Type' -->
+          <header class="o_lb_details_header">
+            <div>
+              <h3>Balance Details</h3>
+              <small><t t-esc="state.details.employee_name"/> • <t t-esc="state.details.leave_type"/></small>
+            </div>
+            <button t-on-click="() => state.detailsOpen=false">&#215;</button>
+          </header>
+
+          <div class="o_lb_drawer_body">
+            <!-- & : Unified Balance Summary Soft Pink Box (2x2 grid + Projected Balance row) -->
+            <div class="o_lb_summary_container">
+              <h4 class="o_lb_summary_title">Balance Summary</h4>
+              <div class="o_lb_summary_grid">
+                <div class="o_lb_summary_cell">
+                  <small>Allocated</small>
+                  <b t-esc="state.details.allocated"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Used</small>
+                  <b t-esc="state.details.used"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Pending</small>
+                  <b class="o_lb_text_amber" t-esc="state.details.pending"/>
+                </div>
+                <div class="o_lb_summary_cell">
+                  <small>Remaining</small>
+                  <b class="o_lb_text_green" t-esc="state.details.remaining"/>
+                </div>
+              </div>
+              <div class="o_lb_projected_row">
+                <div>
+                  <b>Projected Balance</b>
+                  <small>After pending requests are approved</small>
+                </div>
+                <strong class="o_lb_projected_val"><t t-esc="state.details.projected"/> days</strong>
+              </div>
+            </div>
+
+            <!-- Linked Information inside container box matching design screenshot 2 -->
+            <h4 class="o_lb_drawer_subtitle">Linked Information</h4>
+            <div class="o_lb_linked_container">
+              <div class="o_lb_linked_row">
+                <span>Assigned Policy</span>
+                <b t-esc="state.details.assigned_policy"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Accrual Plan</span>
+                <b t-esc="state.details.accrual_plan"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Last Accrual Date</span>
+                <b t-esc="state.details.last_accrual_date || '—'"/>
+              </div>
+              <div class="o_lb_linked_row">
+                <span>Next Accrual Date</span>
+                <b t-esc="state.details.next_accrual_date || '—'"/>
+              </div>
+              <div class="o_lb_linked_expiring_row">
+                <span class="o_lb_expiring_lbl"><i class="fa fa-clock-o o_lb_text_amber"/> Expiring Soon</span>
+                <b t-if="state.details.expiring_days" class="o_lb_text_amber">
+                  <t t-esc="state.details.expiring_days"/> days on <t t-esc="state.details.expiry_date"/>
+                </b>
+                <b t-else="">—</b>
+              </div>
+            </div>
+
+            <!-- Transaction Timeline -->
+            <div class="o_lb_section_title">
+              <h4 class="o_lb_drawer_subtitle">Transaction Timeline</h4>
+              <button class="o_lb_audit_link" t-on-click="openBalanceAudit">
+                View Audit Log <span class="o_lb_audit_icon">↗</span>
+              </button>
+            </div>
+            <div class="balance-transaction-list">
+              <article t-foreach="state.details.transactions" t-as="tx" t-key="tx.id" class="o_lb_tx_card">
+                <span t-att-class="'o_lb_tx_circle ' + (tx.delta >= 0 ? 'positive' : 'negative')"/>
+                <div class="o_lb_tx_main">
+                  <div class="o_lb_tx_top">
+                    <b class="o_lb_tx_title" t-esc="tx.label"/>
+                    <span t-att-class="'o_lb_tx_delta ' + (tx.delta >= 0 ? 'positive' : 'negative')">
+                      <t t-esc="tx.delta >= 0 ? '+' : ''"/><t t-esc="tx.delta"/> days
+                    </span>
+                  </div>
+                  <div class="o_lb_tx_date" t-esc="tx.date"/>
+                  <div class="o_lb_tx_bottom">
+                    <span t-if="tx.request_ref" class="o_lb_tx_req_wrap">
+                      Request <span class="o_lb_tx_req_link" t-on-click="() => state.requestDetailId = tx.leave_id" t-esc="tx.request_ref"/>
+                    </span>
+                    <span t-else=""/>
+                    <span class="o_lb_tx_bal">Balance: <t t-esc="tx.balance_after"/></span>
+                  </div>
+                </div>
+              </article>
+              <p t-if="!state.details.transactions.length" class="o_lb_empty">No recorded balance transactions yet.</p>
+            </div>
+
+          </div>
+
+          <!-- & : Drawer Footer -->
+          <footer class="o_lb_details_footer">
+            <button class="o_lb_primary o_lb_btn_block" t-on-click="() => openAdjust(state.details)">Adjust Balance</button>
+            <button class="o_lb_btn_ghost o_lb_btn_block" t-on-click="() => openHistory(state.details)">View Full History</button>
+          </footer>
+        </aside>
+      </div>
+
+      <!-- Balance Adjustment modal -->
+      <div t-if="state.adjustmentOpen" class="o_lb_overlay">
+        <section class="o_lb_modal o_lb_adjust_modal">
+          <!-- Header with Title, Subtitle and Employee Avatar/Info Card -->
+          <header class="o_lb_adjust_header">
+            <div>
+              <h3>Adjust Leave Balances</h3>
+              <small>Modify individual leave type balances for the selected employee</small>
+            </div>
+            <button t-on-click="() => state.adjustmentOpen = false">&#215;</button>
+          </header>
+
+          <div class="o_lb_modal_body">
+            <!-- Employee Header Card -->
+            <div class="o_lb_adjust_emp_card">
+              <img t-att-src="state.adjustmentEmployee.avatar_url" class="o_lb_emp_avatar"/>
+              <div>
+                <b class="o_lb_emp_name" t-esc="state.adjustmentEmployee.employee_name"/>
+                <small class="o_lb_emp_sub"><t t-esc="state.adjustmentEmployee.employee_code"/> • <t t-esc="state.adjustmentEmployee.department"/></small>
+              </div>
+            </div>
+
+            <!-- Multi-Leave-Type Adjustment Grid -->
+            <div class="o_lb_adjust_table_wrap">
+              <table class="o_lb_adjust_table">
+                <thead>
+                  <tr>
+                    <th class="text-start">Leave Type</th>
+                    <th class="text-center">Allocated</th>
+                    <th class="text-center">Used</th>
+                    <th class="text-center">Pending</th>
+                    <th class="text-center">Current Balance</th>
+                    <th class="text-center">Adjustment</th>
+                    <th class="text-center">New Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="state.adjustments" t-as="item" t-key="item.leave_type_id">
+                    <td class="text-start">
+                      <span class="o_lb_dot" t-att-style="'background:'+item.color_hex"/>
+                      <b t-esc="item.leave_type"/>
+                    </td>
+                    <td class="text-center" t-esc="item.allocated"/>
+                    <td class="text-center" t-esc="item.used"/>
+                    <td class="text-center" t-esc="item.pending"/>
+                    <td class="text-center"><b><t t-esc="item.remaining"/> days</b></td>
+                    <td class="text-center">
+                      <div class="o_lb_adj_control">
+                        <button type="button" t-on-click="() => decrementAdjustment(item)">−</button>
+                        <input type="number" step="1" t-model.number="item.adjustment"/>
+                        <button type="button" t-on-click="() => incrementAdjustment(item)">+</button>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <strong t-att-class="item.adjustment !== 0 ? 'text-primary font-weight-bold' : 'text-muted'" t-esc="adjustedBalance(item)"/>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Positive/Negative Helper Text -->
+            <p class="o_lb_adjust_hint">Enter a positive number to add days, or a negative number to subtract days.</p>
+
+            <!-- Mandatory Reason Field (100% width, inline label header) -->
+            <div class="o_lb_reason_wrap">
+              <label class="o_lb_field_label">
+                <span class="o_lb_field_title">
+                  Reason for Adjustment <span class="o_lb_required">*</span> <small class="text-muted">(recorded in audit log)</small>
+                </span>
+                <textarea class="o_lb_reason_textarea" t-model="state.adjustmentReason" placeholder="Enter reason for adjustment..."/>
+              </label>
+            </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <footer class="o_lb_adjust_footer">
+            <div class="o_lb_adjust_status">
+              <span t-if="!hasAdjustments" class="text-muted font-italic">No adjustments entered yet</span>
+            </div>
+            <div class="o_lb_adjust_actions">
+              <button class="o_lb_btn_ghost" t-on-click="() => state.adjustmentOpen = false">Cancel</button>
+              <button class="o_lb_primary" t-att-disabled="!adjustmentReady()" t-on-click="applyAdjustments">Apply Adjustments</button>
+            </div>
+          </footer>
+        </section>
+      </div>
+
+      <!-- Complete Leave History modal -->
+      <div t-if="state.historyOpen" class="o_lb_overlay">
+        <section class="o_lb_modal o_lb_hist_modal">
+
+          <!-- Gradient Header -->
+          <header class="o_lb_hist_header">
+            <div class="o_lb_hist_emp_info">
+              <img t-att-src="state.history.employee.avatar_url" class="o_lb_hist_avatar"/>
+              <div>
+                <h3 class="o_lb_hist_emp_name" t-esc="state.history.employee.name"/>
+                <small class="o_lb_hist_emp_sub"><t t-esc="state.history.employee.code"/> • <t t-esc="state.history.employee.department"/></small>
+                <div class="o_lb_hist_title_badge"><i class="fa fa-calendar"/> Complete Leave History</div>
+              </div>
+            </div>
+            <button class="o_lb_hist_close_btn" t-on-click="() => state.historyOpen = false">&#215;</button>
+          </header>
+
+          <div class="o_lb_modal_body o_lb_hist_body">
+
+            <!-- 4 Summary Stat Cards -->
+            <div class="o_lb_hist_stats_row">
+              <div class="o_lb_hist_stat_card">
+                <small>TOTAL APPROVED</small>
+                <b class="text-success" t-esc="state.history.summary.approved"/>
+                <span><t t-esc="state.history.summary.approved_days"/> days</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>PENDING</small>
+                <b class="o_lb_text_amber" t-esc="state.history.summary.pending"/>
+                <span>Awaiting approval</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>REJECTED</small>
+                <b class="text-danger" t-esc="state.history.summary.rejected"/>
+                <span>Not approved</span>
+              </div>
+              <div class="o_lb_hist_stat_card">
+                <small>TOTAL REQUESTS</small>
+                <b class="text-dark" t-esc="state.history.summary.total"/>
+                <span>All time</span>
+              </div>
+            </div>
+
+            <!-- Toolbar (Search field taking majority length + filter + export in 1 row) -->
+            <div class="o_lb_hist_toolbar">
+              <!-- Search box with magnifying glass icon inside -->
+              <div class="o_lb_hist_search_box">
+                <i class="fa fa-search o_lb_hist_search_icon"/>
+                <input class="o_lb_hist_search_input" t-model="state.historySearch" placeholder="Search leave requests..."/>
+              </div>
+
+              <!-- Filter dropdown with funnel icon -->
+              <div class="o_lb_hist_select_box">
+                <i class="fa fa-filter o_lb_hist_filter_icon"/>
+                <select class="o_lb_hist_select" t-model="state.historyStatus">
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <!-- Export button -->
+              <button class="o_lb_hist_export_btn" t-on-click="exportHistory">
+                <i class="fa fa-download"/> Export
+              </button>
+            </div>
+
+            <!-- Leave Request Cards list -->
+            <div class="o_lb_hist_card_list">
+              <article class="o_lb_hist_card" t-foreach="filteredHistory" t-as="req" t-key="req.id"
+                       t-att-style="'border-left-color:' + (req.color_hex || '#ed1970')"
+                       t-on-click="() => state.requestDetailId = req.id">
+                
+                <!-- Card Header -->
+                <div class="o_lb_hist_card_header">
+                  <div>
+                    <h4 class="o_lb_hist_card_title" t-esc="req.leave_type"/>
+                    <div class="o_lb_hist_card_sub" t-esc="req.reason || 'Leave Request'"/>
+                  </div>
+                  <span t-att-class="'o_lb_status ' + req.status">
+                    <t t-if="req.status === 'approved'"><i class="fa fa-check"/> Approved</t>
+                    <t t-elif="req.status === 'pending'"><i class="fa fa-clock-o"/> Pending</t>
+                    <t t-elif="req.status === 'rejected'"><i class="fa fa-times"/> Rejected</t>
+                    <t t-else=""><i class="fa fa-ban"/> <t t-esc="req.status"/></t>
+                  </span>
+                </div>
+
+                <!-- Meta info: Period & Applied On -->
+                <div class="o_lb_hist_card_meta">
+                  <div class="o_lb_hist_meta_item">
+                    <small><i class="fa fa-calendar-o"/> Leave Period</small>
+                    <b><t t-esc="req.date_from"/> – <t t-esc="req.date_to"/> · <t t-esc="req.duration"/> days</b>
+                  </div>
+                  <div class="o_lb_hist_meta_item">
+                    <small><i class="fa fa-clock-o"/> Applied On</small>
+                    <b><t t-esc="req.applied_on || '—'"/></b>
+                  </div>
+                </div>
+
+                <!-- Approved By (if approved) -->
+                <div t-if="req.approved_by" class="o_lb_hist_card_extra">
+                  <small class="text-muted"><i class="fa fa-user-o"/> Approved By: </small>
+                  <b><t t-esc="req.approved_by"/><t t-if="req.approved_on"> · <t t-esc="req.approved_on"/></t></b>
+                </div>
+
+                <!-- Notes field (if notes exist) -->
+                <div t-if="req.reason" class="o_lb_hist_card_notes">
+                  <small class="text-muted"><i class="fa fa-file-text-o"/> Notes: </small>
+                  <em t-esc="req.reason"/>
+                </div>
+
+              </article>
+
+              <p t-if="!filteredHistory.length" class="o_lb_empty">No leave requests match the selected search or filter.</p>
+            </div>
+
+          </div>
+
+          <!-- Footer bar with count & Close button -->
+          <footer class="o_lb_hist_footer">
+            <span class="o_lb_hist_count">Showing <t t-esc="filteredHistory.length"/> of <t t-esc="state.history.requests.length"/> leave requests</span>
+            <button class="o_lb_btn_ghost" t-on-click="() => state.historyOpen = false">Close</button>
+          </footer>
+
+        </section>
+      </div>
+
+      <LeaveRequestDetailModal t-if="state.requestDetailId" requestId="state.requestDetailId" close.bind="() => state.requestDetailId=null"/>
+    </div>
+  </t>
+</templates>

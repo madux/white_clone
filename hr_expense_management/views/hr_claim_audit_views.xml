@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_audit_tree" model="ir.ui.view">
+        <field name="name">hr.claim.audit.tree</field><field name="model">hr.claim.audit</field>
+        <field name="arch" type="xml"><tree string="Claim Activity Log" create="0" edit="0" delete="0" decoration-success="action in ('approved', 'paid')" decoration-danger="action == 'rejected'" decoration-warning="action == 'returned'"><field name="date"/><field name="action" widget="badge"/><field name="claim_id"/><field name="description"/><field name="user_id"/><field name="company_id" groups="base.group_multi_company"/></tree></field>
+    </record>
+    <record id="view_hr_claim_audit_search" model="ir.ui.view">
+        <field name="name">hr.claim.audit.search</field><field name="model">hr.claim.audit</field>
+        <field name="arch" type="xml"><search><field name="claim_id"/><field name="user_id"/><field name="description"/><filter name="submitted" string="Submitted" domain="[('action', 'in', ('submitted', 'resubmitted'))]"/><filter name="approved" string="Approved" domain="[('action', '=', 'approved')]"/><filter name="rejected" string="Rejected" domain="[('action', '=', 'rejected')]"/><filter name="payments" string="Payments" domain="[('action', 'in', ('payment', 'paid'))]"/><filter name="group_action" string="Action" context="{'group_by': 'action'}"/><filter name="group_day" string="Day" context="{'group_by': 'date:day'}"/></search></field>
+    </record>
+    <record id="action_hr_claim_audit" model="ir.actions.act_window">
+        <field name="name">Activity Log</field><field name="res_model">hr.claim.audit</field><field name="view_mode">tree</field><field name="search_view_id" ref="view_hr_claim_audit_search"/>
+    </record>
+</odoo>
+

@@ -1,3 +1,10 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_hr_insurance_user,hr_insurance.line.user,model_cleon_setting,,1,1,0,0
-access_hr_insurance_manager,cleon_setting.user,model_cleon_setting,base.group_system,1,1,1,1
+access_hr_leave_setup_manager,hr.leave.setup.progress manager,model_hr_leave_setup_progress,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_setup_system,hr.leave.setup.progress system,model_hr_leave_setup_progress,base.group_system,1,1,1,1
+access_hr_leave_audit_log_manager,hr.leave.audit.log manager,model_hr_leave_audit_log,hr_holidays.group_hr_holidays_manager,1,0,0,0
+access_hr_leave_audit_log_system,hr.leave.audit.log system,model_hr_leave_audit_log,base.group_system,1,0,0,0
+access_hr_leave_type_tenure_tier_user,hr.leave.type.tenure.tier user,model_hr_leave_type_tenure_tier,base.group_user,1,0,0,0
+access_hr_leave_type_tenure_tier_officer,hr.leave.type.tenure.tier officer,model_hr_leave_type_tenure_tier,hr_holidays.group_hr_holidays_user,1,1,1,1
+access_hr_leave_type_tenure_tier_manager,hr.leave.type.tenure.tier manager,model_hr_leave_type_tenure_tier,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_balance_transaction_manager,hr.leave.balance.transaction manager,model_hr_leave_balance_transaction,hr_holidays.group_hr_holidays_manager,1,0,0,0
+access_hr_leave_balance_transaction_system,hr.leave.balance.transaction system,model_hr_leave_balance_transaction,base.group_system,1,0,0,0

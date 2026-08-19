@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_leave_dashboard.LeaveRequestDetailModal" owl="1">
+        <div class="cleon-welcome-backdrop leave-detail-backdrop" t-on-click="close"/>
+
+        <div class="leave-detail-modal-box" role="dialog" aria-modal="true">
+
+            <!-- Modal Header -->
+            <div class="leave-detail-modal-header">
+                <div class="leave-detail-title-wrap">
+                    <div class="leave-detail-title-icon">
+                        <i class="fa fa-calendar-o"/>
+                    </div>
+                    <div>
+                        <h3 class="leave-detail-title">Leave Request Details</h3>
+                        <span class="leave-detail-request-id" t-if="state.detail">
+                            Request ID: <t t-esc="state.detail.request_ref"/>
+                        </span>
+                    </div>
+                </div>
+                <button type="button" class="leave-detail-close-x" t-on-click="close" aria-label="Close">
+                    <i class="fa fa-times"/>
+                </button>
+            </div>
+
+            <!-- Modal Body Container -->
+            <div class="leave-detail-modal-body">
+                <t t-if="state.loading">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
+                        <p class="mb-0">Loading leave details...</p>
+                    </div>
+                </t>
+
+                <t t-elif="state.detail">
+
+                    <!-- Status and Submission Row -->
+                    <div class="leave-detail-status-row">
+                        <span t-att-class="'leave-detail-status-pill ' + state.detail.status">
+                            <t t-if="state.detail.status === 'pending'">
+                                <i class="fa fa-clock-o me-1"/> Pending
+                            </t>
+                            <t t-elif="state.detail.status === 'approved'">
+                                <i class="fa fa-check me-1"/> Approved
+                            </t>
+                            <t t-elif="state.detail.status === 'rejected'">
+                                <i class="fa fa-times me-1"/> Rejected
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-ban me-1"/> Cancelled
+                            </t>
+                        </span>
+
+                        <t t-if="state.detail.status === 'pending'">
+                            <span class="leave-detail-submitted-date">
+                                Submitted on <t t-esc="this.formatDateTime(state.detail.submitted_at)"/>
+                            </span>
+                        </t>
+                    </div>
+
+                    <!-- Employee Identity Banner and 2x2 Grid -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="employee-identity-banner">
+                            <div class="employee-avatar-circle">
+                                <t t-esc="state.detail.employee.name.charAt(0)"/>
+                            </div>
+                            <div class="employee-banner-info">
+                                <h4 class="employee-banner-name"><t t-esc="state.detail.employee.name"/></h4>
+                                <span class="employee-banner-meta">
+                                    <t t-esc="state.detail.employee.employee_number || '—'"/> · <t t-esc="state.detail.employee.department"/>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="detail-section-title">Employee Information</div>
+                        <div class="employee-info-grid">
+                            <div class="info-cell">
+                                <label>Name</label>
+                                <strong><t t-esc="state.detail.employee.name"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Department</label>
+                                <strong><t t-esc="state.detail.employee.department"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Position / Job Title</label>
+                                <strong><t t-esc="state.detail.employee.job_title"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Email Address</label>
+                                <strong><t t-esc="state.detail.employee.email || '—'"/></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leave Details Section -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="detail-section-title">Leave Details</div>
+                        <div class="leave-details-grid">
+                            <div class="info-cell">
+                                <label>Leave Type</label>
+                                <strong>
+                                    <span class="leave-type-dot" t-att-style="'background-color: ' + this.getLeaveTypeColor(state.detail.leave_type.color_hex)"/>
+                                    <t t-esc="state.detail.leave_type.name"/>
+                                </strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Duration</label>
+                                <strong>
+                                    <t t-esc="state.detail.duration"/> days
+                                    <t t-if="state.detail.half_day">
+                                        <span class="badge bg-light text-dark ms-1">
+                                            <t t-esc="state.detail.half_day_period === 'am' ? 'Morning' : 'Afternoon'"/>
+                                        </span>
+                                    </t>
+                                </strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Start Date</label>
+                                <strong><t t-esc="this.formatDate(state.detail.date_from)"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>End Date</label>
+                                <strong><t t-esc="this.formatDate(state.detail.date_to)"/></strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reason Section -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="detail-section-title">Reason</div>
+                        <div class="reason-content-box">
+                            <p class="mb-2"><t t-esc="state.detail.notes || 'No reason provided.'"/></p>
+
+                            <t t-if="state.detail.attachments and state.detail.attachments.length">
+                                <div class="attachments-list mt-2">
+                                    <t t-foreach="state.detail.attachments" t-as="att" t-key="att.id">
+                                        <a t-att-href="'/web/content/' + att.id" target="_blank" class="attachment-chip me-2 mb-1 d-inline-flex align-items-center">
+                                            <i class="fa fa-file-text-o me-1 text-primary"/>
+                                            <span><t t-esc="att.name"/></span>
+                                        </a>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible Balance Impact Section -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="detail-section-header-toggle" t-on-click="toggleBalanceImpact">
+                            <div class="detail-section-title mb-0">
+                                <i class="fa fa-balance-scale me-1 text-muted"/> Balance Impact
+                            </div>
+                            <button type="button" class="btn btn-sm btn-link text-muted p-0">
+                                <i t-att-class="state.balanceExpanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                            </button>
+                        </div>
+
+                        <t t-if="state.balanceExpanded">
+                            <div class="balance-impact-panel mt-2">
+                                <div class="balance-impact-col">
+                                    <span class="balance-impact-value current"><t t-esc="state.detail.balance_impact.current"/></span>
+                                    <label class="balance-impact-label">Current Balance</label>
+                                </div>
+                                <div class="balance-impact-col">
+                                    <span class="balance-impact-value used">-<t t-esc="state.detail.balance_impact.used"/></span>
+                                    <label class="balance-impact-label">Used</label>
+                                </div>
+                                <div class="balance-impact-col">
+                                    <span class="balance-impact-value remaining"><t t-esc="state.detail.balance_impact.remaining"/></span>
+                                    <label class="balance-impact-label">Remaining</label>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+
+                    <!-- Team Coverage Impact Section -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="detail-section-title">Team Coverage Impact</div>
+                        <div class="coverage-impact-box">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="coverage-label font-weight-bold">Department Coverage</span>
+                                <span t-att-class="'coverage-percent-badge ' + state.detail.coverage_impact.level">
+                                    <t t-esc="state.detail.coverage_impact.percentage"/>%
+                                </span>
+                            </div>
+                            <div class="coverage-progress-track mb-2">
+                                <div t-att-class="'coverage-progress-fill ' + state.detail.coverage_impact.level"
+                                     t-att-style="'width:' + state.detail.coverage_impact.percentage + '%'"/>
+                            </div>
+                            <p class="coverage-info-note mb-0 text-muted">
+                                <t t-if="state.detail.coverage_impact.other_on_leave > 0">
+                                    <t t-esc="state.detail.coverage_impact.other_on_leave"/> other employee(s) from <t t-esc="state.detail.coverage_impact.department"/> will be on leave during this period.
+                                </t>
+                                <t t-else="">
+                                    No other employees from <t t-esc="state.detail.coverage_impact.department"/> are on leave during this period.
+                                </t>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Approval Workflow Timeline -->
+                    <div class="leave-detail-section mb-4">
+                        <div class="detail-section-title">Approval Workflow</div>
+                        <div class="workflow-timeline">
+                            <t t-foreach="state.detail.workflow" t-as="step" t-key="step.key">
+                                <div class="timeline-step-item">
+                                    <div class="timeline-step-icon-col">
+                                        <div t-att-class="'step-dot ' + step.state">
+                                            <t t-if="step.state === 'done'">✓</t>
+                                            <t t-elif="step.state === 'rejected'">✕</t>
+                                            <t t-else=""></t>
+                                        </div>
+                                    </div>
+                                    <div class="timeline-step-content">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <strong class="step-label"><t t-esc="step.label"/></strong>
+                                            <t t-if="step.state === 'pending'">
+                                                <span class="badge bg-light text-muted font-weight-normal ms-2">Pending</span>
+                                            </t>
+                                        </div>
+                                        <div class="step-actor text-muted">
+                                            <t t-esc="step.actor"/> <t t-if="step.role and step.role !== 'Automated'">(<t t-esc="step.role"/>)</t>
+                                        </div>
+                                        <t t-if="step.timestamp">
+                                            <small class="step-time text-muted"><t t-esc="this.formatDateTime(step.timestamp)"/></small>
+                                        </t>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Request History Section -->
+                    <div class="leave-detail-section">
+                        <div class="detail-section-title">Request History</div>
+                        <t t-if="state.detail.history and state.detail.history.length">
+                            <ul class="history-list">
+                                <t t-foreach="state.detail.history" t-as="item" t-key="item_index">
+                                    <li class="history-item mb-2">
+                                        <strong class="d-block text-dark" style="font-size: 12.5px;"><t t-esc="item.title"/></strong>
+                                        <small class="text-muted"><t t-esc="this.formatDateTime(item.timestamp)"/></small>
+                                        <t t-if="item.note">
+                                            <p class="mb-0 text-muted fst-italic" style="font-size: 11.5px;"><t t-esc="item.note"/></p>
+                                        </t>
+                                    </li>
+                                </t>
+                            </ul>
+                        </t>
+                    </div>
+
+                </t>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <t t-if="state.detail">
+                <div class="leave-detail-modal-footer">
+                    <!-- Pending Actions -->
+                    <t t-if="!props.readOnly and state.detail.actions.can_reject">
+                        <button type="button" class="btn-detail-reject" t-on-click="openReject" t-att-disabled="state.processing">
+                            Reject
+                        </button>
+                    </t>
+                    <t t-if="!props.readOnly and state.detail.actions.can_approve">
+                        <button type="button" class="btn-detail-approve" t-on-click="approve" t-att-disabled="state.processing">
+                            <i class="fa fa-check me-1"/> Approve
+                        </button>
+                    </t>
+
+                    <!-- Approved Action -->
+                    <t t-if="!props.readOnly and state.detail.actions.can_cancel">
+                        <button type="button" class="btn-detail-cancel" t-on-click="openCancel" t-att-disabled="state.processing">
+                            <i class="fa fa-exclamation-triangle me-1"/> Cancel Leave
+                        </button>
+                    </t>
+
+                    <!-- Close Button (Every state) -->
+                    <button type="button" class="btn-detail-close" t-on-click="close">
+                        Close
+                    </button>
+                </div>
+            </t>
+
+            <!-- Nested Rejection Reason Modal -->
+            <t t-if="state.showRejectModal">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeReject"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
+                    <button type="button" class="cleon-welcome-close" t-on-click="closeReject"><i class="fa fa-times"/></button>
+                    <div class="cleon-detail-header">
+                        <h4 class="text-danger"><i class="fa fa-exclamation-triangle me-1"/> Reject Leave Request</h4>
+                        <span class="text-muted">Specify the reason for rejection</span>
+                    </div>
+                    <div class="py-3">
+                        <label class="form-label font-weight-bold">Rejection Reason * (min 3 chars)</label>
+                        <textarea class="form-control" rows="3"
+                                  placeholder="Provide a clear reason for rejecting this leave request..."
+                                  t-model="state.rejectReason"/>
+                    </div>
+                    <div class="cleon-detail-footer">
+                        <button type="button" class="btn btn-secondary" t-on-click="closeReject">Cancel</button>
+                        <button type="button" class="btn btn-danger ms-2" t-on-click="confirmReject" t-att-disabled="state.processing">
+                            Confirm Rejection
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Nested Cancellation Reason Modal -->
+            <t t-if="state.showCancelModal">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeCancel"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
+                    <button type="button" class="cleon-welcome-close" t-on-click="closeCancel"><i class="fa fa-times"/></button>
+                    <div class="cleon-detail-header">
+                        <h4 class="text-warning"><i class="fa fa-exclamation-triangle me-1"/> Cancel Approved Leave</h4>
+                        <span class="text-muted">Cancel this approved request and restore employee leave balance</span>
+                    </div>
+                    <div class="py-3">
+                        <label class="form-label font-weight-bold">Cancellation Reason * (min 3 chars)</label>
+                        <textarea class="form-control" rows="3"
+                                  placeholder="Explain why this approved leave is being cancelled..."
+                                  t-model="state.cancelReason"/>
+                    </div>
+                    <div class="cleon-detail-footer">
+                        <button type="button" class="btn btn-secondary" t-on-click="closeCancel">Dismiss</button>
+                        <button type="button" class="btn btn-warning ms-2 text-dark font-weight-bold" t-on-click="confirmCancel" t-att-disabled="state.processing">
+                            Confirm Cancellation
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+        </div>
+    </t>
+
+</templates>

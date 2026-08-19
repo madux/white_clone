@@ -23,7 +23,7 @@ Features
     'category': 'Technical',
     'author': 'Custom',
     'license': 'LGPL-3',
-    'depends': ['web'],
+    'depends': ['web','base_addons'],
     'data': [
     ],
     'assets': {

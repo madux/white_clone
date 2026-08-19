@@ -1,0 +1,147 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpenseDrawer" owl="1">
+        <div t-if="state.drawer" class="o_expense_drawer_backdrop" t-on-click.self="closeDrawer">
+            <aside class="o_expense_drawer shadow-lg">
+                <div class="o_expense_drawer_header d-flex align-items-start justify-content-between gap-3 p-4 border-bottom">
+                    <div>
+                        <div class="small text-uppercase text-muted" t-esc="activeModule?.label + ' · ' + activePage?.label"/>
+                        <h2 class="h4 fw-black mb-0" t-esc="drawerTitle"/>
+                    </div>
+                    <button class="btn btn-light rounded-circle" t-on-click="closeDrawer">
+                        <i class="fa fa-times"/>
+                    </button>
+                </div>
+                <div class="p-4 overflow-auto flex-grow-1">
+                    <div t-if="state.drawer.state" class="mb-4">
+                        <span class="badge rounded-pill" t-att-class="statusClass(state.drawer.state)" t-esc="state.drawer.state_label || state.drawer.state"/>
+                    </div>
+                    <p t-if="state.drawer.description || state.drawer.purpose" class="text-muted" t-esc="state.drawer.description || state.drawer.purpose"/>
+                    <dl class="row g-0 mb-0">
+                        <t t-foreach="recordDetails(state.drawer)" t-as="detail" t-key="detail.key">
+                            <dt class="col-5 py-3 border-bottom text-muted" t-esc="detail.label"/>
+                            <dd class="col-7 py-3 border-bottom text-end fw-bold mb-0" t-esc="detail.value"/>
+                        </t>
+                    </dl>
+                    <div class="mt-4 small text-muted">
+                        <i class="fa fa-shield me-2"/>Only fields and actions allowed for your current role are shown.</div>
+                </div>
+                <div class="p-3 border-top d-flex justify-content-end gap-2">
+                    <button class="btn btn-light" t-on-click="closeDrawer">Close</button>
+                    <button t-if="(moduleView === 'claims' and state.activePage === 'data') || moduleView === 'requests' || (moduleView === 'advances' and state.activePage !== 'writeoffs')" class="btn btn-primary" t-on-click="openDrawerAdvanced">Open Full Record</button>
+                </div>
+            </aside>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseModalShell" owl="1">
+        <div t-if="state.modal" class="o_expense_modal_backdrop" t-on-click.self="closeModal">
+            <div class="card o_expense_modal shadow-lg border-0">
+                <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between">
+                    <h3 class="h5 fw-black mb-0">
+                        <t t-if="state.modal.type === 'claim'">New Claim</t>
+                        <t t-elif="state.modal.type === 'request'">New Request</t>
+                        <t t-elif="state.modal.type === 'decision'">
+                            <t t-esc="state.modal.action"/>
+                            <t t-esc="state.modal.kind"/>
+                        </t>
+                        <t t-elif="state.modal.type === 'vendor'">Add Vendor</t>
+                        <t t-elif="state.modal.type === 'policy'">New Policy</t>
+                        <t t-elif="state.modal.type === 'report'">New Custom Report</t>
+                        <t t-elif="state.modal.type === 'schedule'">Schedule Report</t>
+                        <t t-elif="state.modal.type === 'settings'">Workflow Defaults</t>
+                        <t t-elif="state.modal.type === 'company'">Company Profile</t>
+                        <t t-elif="state.modal.type === 'theme'">Customize Theme</t>
+                        <t t-elif="state.modal.type === 'config'">New <t t-esc="state.modal.kind.replaceAll('_', ' ')"/>
+                        </t>
+                        <t t-elif="state.modal.type === 'petty'">Petty Cash · <t t-esc="state.modal.kind"/>
+                        </t>
+                        <t t-elif="state.modal.type === 'accounting'">Accounting · <t t-esc="state.modal.kind"/>
+                        </t>
+                        <t t-elif="state.modal.type === 'budget'">Budget · <t t-esc="state.modal.kind"/>
+                        </t>
+                        <t t-elif="state.modal.type === 'writeoff'">Request Advance Write-Off</t>
+                        <t t-elif="state.modal.type === 'writeoff_decision'">
+                            <t t-esc="state.modal.decision"/> Write-Off</t>
+                        <t t-else="">Retire Advance</t>
+                    </h3>
+                    <button class="btn btn-light rounded-circle" t-on-click="closeModal">
+                        <i class="fa fa-times"/>
+                    </button>
+                </div>
+                <t t-if="state.modal.type === 'claim'">
+                    <t t-call="hr_expense_management.ExpenseClaimModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'request'">
+                    <t t-call="hr_expense_management.ExpenseRequestModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'decision'">
+                    <t t-call="hr_expense_management.ExpenseDecisionModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'vendor'">
+                    <t t-call="hr_expense_management.ExpenseVendorModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'policy'">
+                    <t t-call="hr_expense_management.ExpensePolicyModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'report'">
+                    <t t-call="hr_expense_management.ExpenseReportModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'schedule'">
+                    <t t-call="hr_expense_management.ExpenseScheduleModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'settings'">
+                    <t t-call="hr_expense_management.ExpenseSettingsModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'company'">
+                    <t t-call="hr_expense_management.ExpenseCompanyModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'theme'">
+                    <t t-call="hr_expense_management.ExpenseThemeModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'config'">
+                    <t t-call="hr_expense_management.ExpenseConfigurationModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'petty'">
+                    <t t-call="hr_expense_management.ExpensePettyModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'accounting'">
+                    <t t-call="hr_expense_management.ExpenseAccountingModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'budget'">
+                    <t t-call="hr_expense_management.ExpenseBudgetModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'writeoff'">
+                    <t t-call="hr_expense_management.ExpenseWriteoffModal"/>
+                </t>
+                <t t-elif="state.modal.type === 'writeoff_decision'">
+                    <t t-call="hr_expense_management.ExpenseWriteoffDecisionModal"/>
+                </t>
+                <t t-else="">
+                    <t t-call="hr_expense_management.ExpenseRetirementModal"/>
+                </t>
+                <div class="card-footer bg-white border-0 d-flex justify-content-end gap-2">
+                    <button class="btn btn-light" t-on-click="closeModal">Cancel</button>
+                    <t t-if="state.modal.type === 'claim'">
+                        <button t-if="state.modal.step &gt; 1" class="btn btn-outline-secondary" t-on-click="() =&gt; this.claimStep(-1)">Back</button>
+                        <button t-if="state.modal.step &lt; 3" class="btn btn-primary" t-on-click="() =&gt; this.claimStep(1)">Continue</button>
+                        <t t-else="">
+                            <button class="btn btn-outline-primary" t-on-click="() =&gt; this.createClaim(false)">Save Draft</button>
+                            <button class="btn btn-primary" t-on-click="() =&gt; this.createClaim(true)">Submit Claim</button>
+                        </t>
+                    </t>
+                    <t t-elif="state.modal.type === 'request'">
+                        <button class="btn btn-outline-primary" t-on-click="() =&gt; this.createRequest(false)">Save Draft</button>
+                        <button class="btn btn-primary" t-on-click="() =&gt; this.createRequest(true)">Submit Request</button>
+                    </t>
+                    <button t-elif="state.modal.type === 'decision'" class="btn btn-primary text-capitalize" t-on-click="submitDecision" t-esc="state.modal.action"/>
+                    <button t-elif="state.modal.type === 'vendor'" class="btn btn-primary" t-on-click="createVendor">Create Vendor</button>
+                    <button t-elif="['policy','report','schedule','settings','company','theme'].includes(state.modal.type)" class="btn btn-primary" t-on-click="submitGovernanceModal">Save</button>
+                    <button t-elif="state.modal.type === 'config'" class="btn btn-primary" t-on-click="submitConfigurationModal">Create</button>
+                    <button t-elif="['petty','accounting','budget'].includes(state.modal.type)" class="btn btn-primary" t-on-click="submitOperationalModal">Create</button>
+                    <button t-elif="['writeoff','writeoff_decision'].includes(state.modal.type)" class="btn btn-primary text-capitalize" t-on-click="submitWriteoff" t-esc="state.modal.type === 'writeoff' ? 'Submit for Approval' : state.modal.decision"/>
+                    <button t-else="" class="btn btn-primary" t-on-click="retireAdvance">Post Retirement</button>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

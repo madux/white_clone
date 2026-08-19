@@ -1,0 +1,399 @@
+/* =========================================================
+   Screen 13 — Leave Balance Management
+   ========================================================= */
+
+/* Page shell */
+.o_lb_page{display:flex;height:100%;min-height:calc(100vh - 46px);background:#f5f7fb;color:#172033;font-size:13px}
+.o_lb_main{flex:1;padding:18px 22px;overflow:auto;min-width:0;overflow-x:auto}
+
+/* Alert banner */
+.o_lb_alert{display:flex;align-items:center;justify-content:space-between;background:#fff7e9;border:1px solid #f4d69f;border-radius:8px;padding:12px 16px;margin-bottom:14px;color:#965e16}
+.o_lb_alert button{border:0;background:transparent;cursor:pointer;color:#965e16;font-size:13px;padding:4px 8px}
+.o_lb_alert button:hover{text-decoration:underline}
+
+/* Header / toolbar */
+.o_lb_header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.o_lb_header h2{margin:0;font-size:20px;font-weight:700}
+.o_lb_header p{display:block;color:#8490a5;margin:3px 0;font-size:12px}
+.o_lb_info_icon{font-size:13px;color:#b0bac9;margin-left:5px;cursor:help}
+.o_lb_tools{display:flex;align-items:center;gap:8px}
+.o_lb_tools input{width:200px;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px}
+
+/* Shared button base */
+.o_lb_page button{border:1px solid #dce2ec;border-radius:7px;padding:7px 12px;background:white;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.o_lb_page button:hover{background:#f8fafc}
+.o_lb_page button:disabled{opacity:.45;cursor:not-allowed}
+.o_lb_primary{background:#ed1970!important;color:white!important;border-color:#ed1970!important;font-weight:600}
+.o_lb_primary:hover{background:#c91260!important}
+
+/* Filters button with badge */
+.o_lb_btn_filters{position:relative}
+.o_lb_filter_badge{background:#ed1970;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px;font-weight:700}
+
+/* More Options ⋮ button + dropdown */
+.o_lb_more_wrap{position:relative}
+.o_lb_more_btn{border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;cursor:pointer;font-size:18px;line-height:1;font-weight:700;color:#555}
+.o_lb_more_btn:hover{background:#f8fafc}
+.o_lb_more_menu{position:absolute;right:0;top:calc(100% + 4px);z-index:200;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:210px;padding:6px;white-space:nowrap}
+.o_lb_more_menu button{border:0;display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 12px;border-radius:7px;font-size:13px;background:transparent;cursor:pointer;color:#172033}
+.o_lb_more_menu button:hover{background:#fff0f6;color:#ed1970}
+
+/* KPI cards */
+.o_lb_kpis{display:grid;grid-template-columns:repeat(6,minmax(145px,1fr));gap:12px;margin:18px 0}
+.o_lb_kpis article{min-width:0;background:#fff;border:1px solid #e5e9f0;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;cursor:default}
+.o_lb_kpis article.o_lb_kpi_clickable{cursor:pointer}
+.o_lb_kpis article.o_lb_kpi_clickable:hover{border-color:#ed1970;box-shadow:0 4px 14px #ed197018}
+.o_lb_kpis article.o_lb_kpi_highlight{background:#fff8ec;border-color:#f5deae}
+.o_lb_kpi_top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.o_lb_kpis small{color:#7f8ba1;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.02em;line-height:1.3}
+.o_lb_kpis strong{font-size:23px;font-weight:700;color:#172033;margin:0}
+/* KPI icon bubble */
+.o_lb_kpi_icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.o_lb_kpi_icon.blue{background:#e8effe;color:#3d5afe}
+.o_lb_kpi_icon.rose{background:#ffeaf3;color:#ed1970}
+.o_lb_kpi_icon.green{background:#e6faf3;color:#00b884}
+.o_lb_kpi_icon.amber{background:#fff3d6;color:#c17700}
+.o_lb_kpi_icon.orange{background:#fff0e6;color:#e8590c}
+/* Trend:  — green for positive, red for negative */
+.o_lb_kpi_trend{font-size:11px;font-weight:600}
+.o_lb_kpi_trend.up{color:#16874d}
+.o_lb_kpi_trend.down{color:#cb2639}
+.o_lb_kpi_trend.neutral{color:#8490a5;font-weight:500}
+/* red count text on negative balance card when count > 0 */
+.o_lb_kpi_red{color:#cb2639!important}
+
+/* Table */
+.o_lb_table_wrap{background:white;border:1px solid #e1e6ef;border-radius:10px;overflow:visible;margin-top:12px}
+.o_lb_page table{width:100%;border-collapse:collapse}
+.o_lb_page th{background:#f8fafc;text-transform:uppercase;font-size:11px;text-align:left;font-weight:700;color:#6e7d92;letter-spacing:.03em;position:relative}
+.o_lb_page th,.o_lb_page td{padding:10px 9px;border-bottom:1px solid #edf0f5;white-space:nowrap}
+.o_lb_page tbody tr:last-child td{border-bottom:0}
+.o_lb_page tbody tr:hover{background:#fafbfd}
+
+/* Leave Type column quick-filter */
+.o_lb_th_filter{overflow:visible!important;position:relative}
+.o_lb_th_wrap{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.o_lb_lt_filter_btn{border:0;background:transparent;cursor:pointer;padding:1px 3px;border-radius:4px;color:#b0bbc9;font-size:10px;display:inline-flex;align-items:center;transition:color .15s,background .15s;line-height:1}
+.o_lb_lt_filter_btn:hover{color:#ed1970;background:#fff0f6}
+.o_lb_lt_filter_btn.active{color:#ed1970;background:#fde4ef}
+/* Active pill shown under the header text when a filter is set */
+.o_lb_lt_active_pill{display:inline-flex;align-items:center;gap:4px;margin-top:3px;background:#fde4ef;color:#c01257;border-radius:8px;padding:1px 6px;font-size:10px;font-weight:600;text-transform:none;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+.o_lb_lt_active_pill button{border:0;background:transparent;color:#c01257;cursor:pointer;padding:0 2px;font-size:11px;line-height:1}
+/* Dropdown panel */
+.o_lb_lt_dropdown{position:absolute;left:0;top:calc(100% + 2px);z-index:300;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:210px;padding:6px;white-space:normal;text-transform:none;letter-spacing:0;font-weight:400;font-size:13px;color:#172033}
+.o_lb_lt_dropdown_hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 8px;border-bottom:1px solid #f0f3f8;margin-bottom:4px;font-weight:600;font-size:12px;color:#8490a5}
+.o_lb_lt_dropdown_hdr button{border:0;background:transparent;cursor:pointer;color:#ed1970;font-size:12px;font-weight:600;padding:0}
+.o_lb_lt_opt{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;transition:background .12s;user-select:none}
+.o_lb_lt_opt:hover{background:#f8fafc}
+.o_lb_lt_opt.selected{background:#fff0f6;color:#c01257;font-weight:600}
+.o_lb_lt_check{margin-left:auto;color:#ed1970;font-size:11px}
+
+/* Employee column */
+.o_lb_employee{display:flex;align-items:center;gap:8px}
+.o_lb_employee img{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_employee span{display:block}
+.o_lb_employee b{font-weight:600;font-size:13px}
+.o_lb_employee small{display:block;color:#8490a5;font-size:11px}
+/* Colour dot */
+.o_lb_dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;flex-shrink:0;vertical-align:middle}
+/* Balance pill */
+.o_lb_balance{border-radius:12px;padding:2px 8px;font-size:12px;font-weight:600}
+.o_lb_balance.green{background:#e7f8ee;color:#16874d}
+.o_lb_balance.amber{background:#fff5d9;color:#b17400}
+.o_lb_balance.red{background:#fde8ea;color:#cb2639}
+/* Expiry countdown */
+.o_lb_expiry{color:#b36d00;background:#fff1d6;padding:2px 7px;border-radius:10px;font-size:12px;font-weight:600}
+/* Row action menu */
+.o_lb_actions{position:relative}
+.o_lb_actions>button{border:0;background:transparent;font-size:16px;color:#888;padding:4px 8px}
+.o_lb_menu{position:absolute;right:22px;top:35px;z-index:8;background:white;border:1px solid #dfe4ec;border-radius:8px;box-shadow:0 8px 25px #18203425;min-width:180px;padding:5px}
+.o_lb_menu button{border:0;display:block;width:100%;text-align:left;padding:8px 12px;border-radius:6px;background:transparent;cursor:pointer;font-size:13px}
+.o_lb_menu button:hover{background:#fff0f6;color:#ed1970}
+/* Selection banner */
+.o_lb_selected{display:flex;align-items:center;gap:12px;background:#fff0f6;color:#c3135c;padding:9px 13px;margin:10px 0;border-radius:8px;font-size:13px}
+.o_lb_empty{text-align:center!important;padding:40px!important;color:#8490a5}
+
+/* Overlay + drawer/modal shell */
+.o_lb_overlay{position:fixed;inset:0;z-index:1100;background:#1418249c;display:flex;justify-content:center;align-items:center}
+.o_lb_drawer{position:absolute;right:0;top:0;height:100%;width:400px;background:white;display:flex;flex-direction:column}
+.o_lb_filter_drawer{width:340px}
+.o_lb_drawer header,.o_lb_modal header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid #e6e9ef}
+.o_lb_drawer h3,.o_lb_modal h3{margin:0;font-size:16px;font-weight:700}
+.o_lb_drawer header button,.o_lb_modal header button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888;line-height:1}
+.o_lb_drawer_body,.o_lb_modal_body{padding:18px;overflow:auto;flex:1}
+/* Filter section headings */
+.o_lb_drawer_body h4{font-size:11px;font-weight:700;text-transform:uppercase;color:#8490a5;letter-spacing:.04em;margin:16px 0 8px}
+.o_lb_drawer_body h4:first-child{margin-top:0}
+/* Generic filter checkbox row */
+.o_lb_filter_check{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;color:#172033;user-select:none}
+.o_lb_filter_check input[type="checkbox"]{margin:0;flex-shrink:0;cursor:pointer;accent-color:#ed1970}
+/* Leave Type filter row: dot is between checkbox and label text */
+.o_lb_filter_lt .o_lb_dot{margin-right:0}
+.o_lb_filter_search{width:100%;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px;margin-bottom:4px}
+/* Group picker (bulk allocation) */
+.o_lb_group_picker{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:#f8fafc;border:1px solid #e4e8ef;border-radius:8px;margin-top:10px}
+.o_lb_group_picker label{display:flex;align-items:center;gap:6px;padding:5px 8px;background:white;border-radius:6px;font-size:13px}
+/* Drawer footer */
+.o_lb_drawer footer,.o_lb_modal footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #e3e7ee}
+.o_lb_drawer footer{flex-direction:column}
+
+/* Modal */
+.o_lb_modal{width:min(600px,90vw);max-height:88vh;background:white;border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.o_lb_allocate{width:520px}
+/* Allocation wizard steps */
+.o_lb_steps{display:flex;justify-content:space-around;padding:14px;border-bottom:1px solid #eee;color:#9aa3b4;font-size:13px}
+.o_lb_steps .active{color:#ed1970;font-weight:700}
+.o_lb_tabs{display:flex}
+.o_lb_tabs button{flex:1;border-radius:0;border:0;border-bottom:2px solid #eee;background:transparent}
+.o_lb_tabs .active{color:#ed1970;border-bottom-color:#ed1970}
+.o_lb_search{display:flex;margin:12px 0;gap:8px}
+.o_lb_search input{flex:1}
+.o_lb_person{display:flex;align-items:center;gap:9px;padding:9px;border-bottom:1px solid #eee;cursor:pointer}
+.o_lb_person img{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_person span{flex:1}
+.o_lb_person small{display:block;color:#8490a5;font-size:11px}
+.o_lb_count{background:#edf6ff;color:#3676b5;padding:10px;margin-top:10px;border-radius:7px;font-size:13px}
+/* ── Allocate Leave Wizard ──  ──────────────────── */
+.o_lb_allocate{width:min(560px,94vw);max-height:90vh}
+
+/* Numbered step progress bar */
+.o_lb_alloc_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
+.o_lb_alloc_header h3{margin:0;font-size:16px;font-weight:700}
+.o_lb_alloc_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
+.o_lb_alloc_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
+.o_lb_alloc_steps{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid #eef1f7;gap:0}
+.o_lb_alloc_step{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.o_lb_step_num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#e5e9f0;color:#9aa3b4;flex-shrink:0;transition:background .2s,color .2s}
+.o_lb_step_label{font-size:12px;font-weight:600;color:#9aa3b4;white-space:nowrap;transition:color .2s}
+.o_lb_alloc_step.active .o_lb_step_num{background:#ed1970;color:white}
+.o_lb_alloc_step.active .o_lb_step_label{color:#ed1970}
+.o_lb_alloc_step.done .o_lb_step_num{background:#e8faf0;color:#14954d}
+.o_lb_alloc_step.done .o_lb_step_label{color:#14954d}
+.o_lb_step_connector{flex:1;height:2px;background:#e5e9f0;margin:0 8px;min-width:20px}
+
+/* Mode selection tabs */
+.o_lb_tabs{display:flex;border-bottom:2px solid #eee;margin-bottom:12px}
+.o_lb_tabs button{flex:1;border:0;border-bottom:2px solid transparent;margin-bottom:-2px;background:transparent;padding:9px 6px;font-size:13px;font-weight:600;color:#8490a5;cursor:pointer;transition:color .15s,border-color .15s}
+.o_lb_tabs button:hover{color:#ed1970}
+.o_lb_tabs button.active{color:#ed1970;border-bottom-color:#ed1970}
+.o_lb_tabs button:disabled{opacity:.4;cursor:not-allowed}
+
+/* Employee search row + : Select All / Deselect All */
+.o_lb_alloc_search_row{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+.o_lb_alloc_search_input{flex:1;border:1px solid #dce2ec;border-radius:7px;padding:8px 10px;font-size:13px;background:white}
+.o_lb_alloc_search_input:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+/* pink text link — no button border */
+.o_lb_select_all_link{border:0;background:transparent;color:#ed1970;font-size:13px;font-weight:600;cursor:pointer;padding:0;white-space:nowrap;text-decoration:underline;text-underline-offset:2px}
+.o_lb_select_all_link:hover{color:#c01257}
+
+/* Scrollable employee list */
+.o_lb_person_list{max-height:240px;overflow-y:auto;border:1px solid #eef1f7;border-radius:8px;margin-bottom:6px}
+.o_lb_person{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid #f0f3f8;cursor:pointer;transition:background .12s}
+.o_lb_person:last-child{border-bottom:0}
+.o_lb_person:hover{background:#fff8fb}
+.o_lb_person img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_person span{flex:1}
+.o_lb_person b{font-weight:600;font-size:13px;display:block}
+.o_lb_person small{display:block;color:#8490a5;font-size:11px}
+.o_lb_person input[type="checkbox"]{accent-color:#ed1970;width:15px;height:15px;flex-shrink:0;cursor:pointer}
+
+/* Teal selection counter bar */
+.o_lb_selection_bar{display:flex;align-items:center;gap:8px;background:#e6faf8;color:#1a8a7f;border:1px solid #b2ebe4;border-radius:8px;padding:9px 14px;font-size:13px}
+.o_lb_selection_bar i{font-size:14px}
+.o_lb_selection_bar b{font-weight:700}
+
+/* Step 2 form */
+.o_lb_alloc_form{display:flex;flex-direction:column;gap:14px}
+.o_lb_alloc_section_title{font-size:15px;font-weight:700;color:#172033;margin:0 0 4px}
+.o_lb_field_label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:600;color:#444}
+.o_lb_required{color:#ed1970;font-weight:700}
+.o_lb_optional{font-size:11px;font-weight:400;color:#8490a5}
+/* Input/select/textarea shared base */
+.o_lb_alloc_form input,.o_lb_alloc_form select,.o_lb_alloc_form textarea{border:1px solid #dce2ec;border-radius:8px;padding:9px 12px;font-size:13px;background:white;width:100%;box-sizing:border-box;transition:border-color .15s,box-shadow .15s;color:#172033}
+.o_lb_alloc_form textarea{resize:vertical;min-height:80px}
+/* Pink focus highlight — the red/pink ring from the design */
+.o_lb_alloc_form input:focus,.o_lb_alloc_form select:focus,.o_lb_alloc_form textarea:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+/* Empty/required field subtle pink tint */
+.o_lb_alloc_form .o_lb_field_empty{border-color:#f7b8d2;background:#fff8fb}
+
+/* Step 3 review card */
+.o_lb_review{padding:0}
+.o_lb_review h4{font-size:15px;font-weight:700;margin:0 0 12px;color:#172033}
+.o_lb_review_card{border:1px solid #e5e9f0;border-radius:10px;overflow:hidden;background:white}
+.o_lb_review_row{display:flex;gap:12px;padding:11px 16px;border-bottom:1px solid #f0f3f8}
+.o_lb_review_row:last-child{border-bottom:0}
+.o_lb_review_label{font-size:12px;font-weight:600;color:#8490a5;text-transform:uppercase;letter-spacing:.03em;min-width:110px;flex-shrink:0;padding-top:1px}
+.o_lb_review_value{font-size:13px;color:#172033;flex:1}
+.o_lb_review_hint{font-size:12px;color:#8490a5;margin:10px 0 0;display:flex;align-items:center;gap:6px}
+.o_lb_review_hint i{color:#c17700}
+
+/* Wizard footer layout */
+.o_lb_alloc_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-top:1px solid #e3e7ee;gap:8px}
+.o_lb_alloc_footer div{display:flex;gap:8px}
+
+/* ── : Balance Details Side Drawer ──────────────────── */
+.o_lb_details{width:440px}
+.o_lb_details_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
+.o_lb_details_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
+.o_lb_details_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
+.o_lb_details_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
+
+.o_lb_drawer_subtitle{font-size:12px;font-weight:700;color:#8490a5;margin:16px 0 10px;letter-spacing:.02em}
+.o_lb_drawer_subtitle.uppercase{text-transform:uppercase;letter-spacing:.04em}
+
+/* & : Unified Balance Summary Soft Pink Container Box */
+.o_lb_summary_container{background:#fdf2f7;border-radius:12px;padding:16px;margin-bottom:18px}
+.o_lb_summary_title{font-size:13px;font-weight:700;color:#172033;margin:0 0 14px 0}
+.o_lb_summary_grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px;margin-bottom:16px}
+.o_lb_summary_cell small{display:block;font-size:11px;font-weight:600;color:#8490a5;text-transform:uppercase;letter-spacing:.02em;margin-bottom:3px}
+.o_lb_summary_cell b{font-size:22px;font-weight:700;color:#172033}
+.o_lb_text_amber{color:#d97706!important}
+.o_lb_text_green{color:#16874d!important}
+
+.o_lb_projected_row{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid #f7e0ed}
+.o_lb_projected_row b{display:block;font-size:12px;font-weight:700;color:#172033}
+.o_lb_projected_row small{display:block;font-size:11px;color:#8490a5}
+.o_lb_projected_val{font-size:16px;font-weight:700;color:#16874d}
+
+/* Linked Information Soft Neutral Container Box */
+.o_lb_linked_container{background:#f8fafc;border-radius:12px;padding:14px 16px;margin-bottom:18px}
+.o_lb_linked_row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:12px}
+.o_lb_linked_row span{color:#8490a5}
+.o_lb_linked_row b{color:#172033;font-weight:600;text-align:right}
+.o_lb_linked_expiring_row{display:flex;align-items:center;justify-content:space-between;padding-top:10px;margin-top:4px;border-top:1px solid #edf0f5;font-size:12px}
+.o_lb_expiring_lbl{color:#8490a5;display:flex;align-items:center;gap:6px}
+
+/* Transaction Timeline */
+.o_lb_section_title{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+.o_lb_audit_link{border:0;background:transparent;color:#ed1970;font-size:12px;font-weight:600;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
+.o_lb_audit_link:hover{text-decoration:underline}
+.o_lb_audit_icon{font-size:11px}
+
+.balance-transaction-list{margin-top:10px}
+.o_lb_tx_card{display:flex;align-items:flex-start;gap:12px;background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.o_lb_tx_circle{width:12px;height:12px;border-radius:50%;margin-top:4px;flex-shrink:0;box-sizing:border-box}
+.o_lb_tx_circle.positive{border:2px solid #16874d;background:white}
+.o_lb_tx_circle.negative{border:2px solid #cb2639;background:white}
+.o_lb_tx_main{flex:1}
+.o_lb_tx_top{display:flex;align-items:center;justify-content:space-between}
+.o_lb_tx_title{font-size:13px;font-weight:700;color:#172033}
+.o_lb_tx_delta{font-size:13px;font-weight:700}
+.o_lb_tx_delta.positive{color:#16874d}
+.o_lb_tx_delta.negative{color:#cb2639}
+.o_lb_tx_date{font-size:11px;color:#8490a5;margin:2px 0 6px}
+.o_lb_tx_bottom{display:flex;align-items:center;justify-content:space-between;font-size:11px}
+.o_lb_tx_req_wrap{color:#8490a5}
+.o_lb_tx_req_link{color:#ed1970!important;font-weight:600;cursor:pointer}
+.o_lb_tx_req_link:hover{text-decoration:underline}
+.o_lb_tx_bal{color:#8490a5;font-style:normal}
+
+/* Drawer Footer */
+.o_lb_details_footer{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-top:1px solid #e3e7ee}
+.o_lb_btn_block{width:100%!important;display:flex;justify-content:center;text-align:center;box-sizing:border-box;border-radius:8px;padding:10px;font-size:13px;font-weight:600}
+.o_lb_btn_ghost{background:white;border:1px solid #dce2ec;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
+/* ── : Adjust Leave Balances Modal ──────────────────── */
+.o_lb_adjust_modal{width:min(760px,94vw);max-height:90vh}
+.o_lb_adjust_header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e9ef}
+.o_lb_adjust_header h3{margin:0;font-size:16px;font-weight:700;color:#172033}
+.o_lb_adjust_header small{display:block;color:#8490a5;font-size:12px;margin-top:2px}
+.o_lb_adjust_header>button{border:0;background:transparent;font-size:22px;cursor:pointer;color:#888}
+
+/* Employee Card */
+.o_lb_adjust_emp_card{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;margin-bottom:16px}
+.o_lb_emp_avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_emp_name{display:block;font-size:13px;font-weight:700;color:#172033}
+.o_lb_emp_sub{display:block;font-size:11px;color:#8490a5}
+
+/* Table Grid */
+.o_lb_adjust_table_wrap{overflow:hidden;margin-bottom:8px;border:1px solid #edf0f5;border-radius:10px}
+.o_lb_adjust_table{width:100%;border-collapse:collapse}
+.o_lb_adjust_table th{background:#f8fafc;font-size:11px;font-weight:700;text-transform:uppercase;color:#6e7d92;letter-spacing:.02em;padding:9px 6px}
+.o_lb_adjust_table td{padding:8px 6px;border-bottom:1px solid #edf0f5;font-size:12px;color:#172033;white-space:nowrap}
+.o_lb_adjust_table tbody tr:last-child td{border-bottom:0}
+
+/* Adjustment +/- control input group */
+.o_lb_adj_control{display:inline-flex;align-items:center;border:1px solid #dce2ec;border-radius:6px;overflow:hidden;background:white}
+.o_lb_adj_control button{border:0;background:#f8fafc;width:24px;height:26px;font-size:13px;font-weight:700;color:#555;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s,color .15s}
+.o_lb_adj_control button:hover{background:#fff0f6;color:#ed1970}
+.o_lb_adj_control input{border:0;width:34px;height:26px;text-align:center;font-size:12px;font-weight:600;color:#172033;padding:0;outline:none;background:transparent}
+.o_lb_adj_control input::-webkit-outer-spin-button,
+.o_lb_adj_control input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.o_lb_adj_control input[type=number]{-moz-appearance:textfield}
+
+/* Helper text */
+.o_lb_adjust_hint{font-size:11px;color:#8490a5;margin:8px 0 14px}
+
+/* Reason field (100% width) */
+.o_lb_reason_wrap{width:100%}
+.o_lb_field_title{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:#172033}
+.o_lb_reason_textarea{width:100%!important;box-sizing:border-box;min-height:70px;border:1px solid #dce2ec;border-radius:8px;padding:9px 12px;font-size:13px;resize:vertical;margin-top:6px;transition:border-color .15s,box-shadow .15s}
+.o_lb_reason_textarea:focus{outline:none;border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+
+/* Modal Footer */
+.o_lb_adjust_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee}
+.o_lb_adjust_actions{display:flex;align-items:center;gap:10px}
+
+/* ── : Complete Leave History Modal ─────────────────── */
+.o_lb_hist_modal{width:min(760px,94vw);max-height:90vh;border-radius:16px;overflow:hidden}
+
+/* Gradient Header */
+.o_lb_hist_header{background:linear-gradient(135deg,#d91b6c 0%,#a822b3 100%);color:white;padding:18px 24px;display:flex;align-items:flex-start;justify-content:space-between}
+.o_lb_hist_emp_info{display:flex;align-items:center;gap:14px}
+.o_lb_hist_avatar{width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,0.4);object-fit:cover;flex-shrink:0}
+.o_lb_hist_emp_name{font-size:16px;font-weight:700;margin:0;color:white}
+.o_lb_hist_emp_sub{font-size:12px;color:rgba(255,255,255,0.85);display:block;margin:2px 0 6px}
+.o_lb_hist_title_badge{font-size:12px;font-weight:600;color:white;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:12px}
+.o_lb_hist_close_btn{border:0;background:transparent;color:white;font-size:24px;cursor:pointer;line-height:1;opacity:.8;transition:opacity .15s}
+.o_lb_hist_close_btn:hover{opacity:1}
+
+.o_lb_hist_body{padding:20px;overflow-y:auto;flex:1}
+
+/* 4 Summary Stat Cards */
+.o_lb_hist_stats_row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.o_lb_hist_stat_card{background:#f8fafc;border:1px solid #edf0f5;border-radius:10px;padding:12px 14px;text-align:center}
+.o_lb_hist_stat_card small{display:block;font-size:10px;font-weight:700;color:#8490a5;text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px}
+.o_lb_hist_stat_card b{display:block;font-size:22px;font-weight:700;line-height:1.1}
+.o_lb_hist_stat_card span{display:block;font-size:11px;color:#8490a5;margin-top:4px}
+
+/* Toolbar (Search taking majority length, filter, export in 1 row) */
+.o_lb_hist_toolbar{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.o_lb_hist_search_box{flex:1;display:flex;align-items:center;background:white;border:1px solid #dce2ec;border-radius:8px;padding:0 12px;height:38px;transition:border-color .15s,box-shadow .15s}
+.o_lb_hist_search_box:focus-within{border-color:#ed1970;box-shadow:0 0 0 3px #ed197018}
+.o_lb_hist_search_icon{color:#9aa3b4;font-size:13px;margin-right:8px}
+.o_lb_hist_search_input{border:0;background:transparent;width:100%;font-size:13px;color:#172033;outline:none}
+
+.o_lb_hist_select_box{display:flex;align-items:center;background:white;border:1px solid #dce2ec;border-radius:8px;padding:0 10px;height:38px;transition:border-color .15s}
+.o_lb_hist_filter_icon{color:#8490a5;font-size:12px;margin-right:6px}
+.o_lb_hist_select{border:0;background:transparent;font-size:13px;font-weight:600;color:#172033;outline:none;cursor:pointer}
+
+.o_lb_hist_export_btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;background:white;border:1px solid #dce2ec;border-radius:8px;font-size:13px;font-weight:600;color:#172033;cursor:pointer;transition:background .15s,border-color .15s}
+.o_lb_hist_export_btn:hover{background:#f8fafc;border-color:#b0bbc9}
+
+/* Leave Request Cards list */
+.o_lb_hist_card_list{display:flex;flex-direction:column;gap:12px}
+.o_lb_hist_card{background:white;border:1px solid #e5e9f0;border-left:4px solid #ed1970;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.o_lb_hist_card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);border-color:#dce2ec}
+.o_lb_hist_card_header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
+.o_lb_hist_card_title{font-size:14px;font-weight:700;color:#172033;margin:0}
+.o_lb_hist_card_sub{font-size:12px;color:#8490a5;margin-top:2px}
+
+.o_lb_hist_card_meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;padding:10px 12px;border-radius:8px;margin-bottom:8px}
+.o_lb_hist_meta_item small{display:flex;align-items:center;gap:5px;font-size:11px;color:#8490a5;margin-bottom:2px}
+.o_lb_hist_meta_item b{font-size:12px;color:#172033;font-weight:600}
+
+.o_lb_hist_card_extra,.o_lb_hist_card_notes{font-size:12px;color:#444;margin-top:6px;display:flex;align-items:center;gap:6px}
+.o_lb_hist_card_extra i,.o_lb_hist_card_notes i{color:#8490a5}
+
+/* Footer */
+.o_lb_hist_footer{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid #e3e7ee;background:white}
+.o_lb_hist_count{font-size:12px;color:#8490a5}
+
+/* Status badges */
+.o_lb_status{padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;text-transform:capitalize}
+.o_lb_status.approved{background:#e4f7ec;color:#14854b}
+.o_lb_status.pending{background:#fff1cf;color:#986400}
+.o_lb_status.rejected,.o_lb_status.cancelled{background:#fbe6e8;color:#c42b3d}
+
+/* Responsive */
+@media(max-width:1200px){.o_lb_kpis{grid-template-columns:repeat(3,1fr)}.o_lb_table_wrap{overflow:auto}}
+@media(max-width:760px){.o_lb_header{align-items:flex-start;gap:10px;flex-direction:column}.o_lb_tools{flex-wrap:wrap}.o_lb_kpis{grid-template-columns:repeat(2,1fr)}}

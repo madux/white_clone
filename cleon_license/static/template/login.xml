@@ -63,10 +63,18 @@
                                 <label class="hc-label" for="database_name">
                                     <i class="fa fa-database me-1"/> Database Name
                                 </label>
-                                <input type="text" id="database_name" name="database_name"
+                                <select t-if="databases" id="database_name" name="database_name"
+                                        class="hc-input" required="required">
+                                    <option t-foreach="databases" t-as="database"
+                                            t-att-value="database"
+                                            t-att-selected="database == db_name">
+                                        <t t-esc="database"/>
+                                    </option>
+                                </select>
+                                <input t-else="" type="text" id="database_name" name="database_name"
                                        class="hc-input"
                                        t-att-value="form_data.get('database_name','') if form_data else db_name if db_name else ''"
-                                       placeholder="MAACH SOFTWARE"
+                                       placeholder="white_clone_db"
                                        required="required"
                                        readonly="true"/>
                                 <t t-if="errors and errors.get('database_name')">
