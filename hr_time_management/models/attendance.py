@@ -60,11 +60,15 @@ class HrAttendance(models.Model):
             ("employee_id", "=", employee.id), ("check_in", ">=", start_dt), ("check_in", "<", end_dt)
         ], order="check_in desc")
         rows = [self._row(employee, record, pytz.UTC.localize(record.check_in).astimezone(self._user_tz()).date()) for record in attendances]
-        open_attendance = attendances.filtered(lambda record: not record.check_out)[:1]
         today_start, today_end = self._day_bounds(today)
         today_attendance = self.search([
             ("employee_id", "=", employee.id), ("check_in", ">=", today_start), ("check_in", "<", today_end)
         ], order="check_in desc", limit=1)
+        # The employee portal must only expose today's active attendance as the
+        # current clock session.  An older incomplete record belongs in the
+        # correction workflow; presenting it as today's session would make the
+        # Clock Out button close the wrong workday.
+        open_attendance = today_attendance.filtered(lambda record: not record.check_out)
         expected, _grace, shift = self._expected_start(employee, today)
         policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
         week_start = today - timedelta(days=today.weekday())
@@ -468,6 +472,21 @@ class HrAttendance(models.Model):
         # Timezone & Work date resolution & Period lock verification
         local_date = self._work_date_for_punch(employee, punch_dt)
         self.env["cleon.time.period.lock"].check_period_lock(company, local_date, _("Attendance Clocking"))
+
+        open_attendance = self.sudo().search([
+            ("employee_id", "=", employee.id),
+            ("check_out", "=", False),
+        ], order="check_in desc", limit=1)
+        if open_attendance:
+            open_check_in = fields.Datetime.to_datetime(open_attendance.check_in)
+            if punch_dt - open_check_in > timedelta(hours=24):
+                open_date = pytz.UTC.localize(open_check_in).astimezone(
+                    self._tz_for_employee(employee, open_check_in)
+                ).date()
+                raise UserError(_(
+                    "Your attendance from %s is still open. Please submit an attendance "
+                    "correction before starting a new workday."
+                ) % fields.Date.to_string(open_date))
 
         # Policy validation
         policy = self.env["cleon.time.policy"].search([("company_id", "=", company.id)], limit=1)

@@ -78,6 +78,12 @@ class CleonTimePolicy(models.Model):
         ("hr_manager", "HR Manager"),
     ], default="manager", string="Overtime Fallback Approver")
     overtime_notify_employee = fields.Boolean(default=True, string="Notify Employee on Overtime Decision")
+    wizard_step = fields.Integer(default=1, string="Wizard Current Step")
+    wizard_completed_steps = fields.Char(default="1", string="Wizard Completed Steps")
+    wizard_status = fields.Selection([
+        ("in_progress", "In Progress"),
+        ("completed", "Completed"),
+    ], default="in_progress", string="Wizard Status")
 
     @api.model
     def get_approval_chain_summary(self, workflow_code="time_overtime"):
@@ -217,11 +223,95 @@ class CleonTimePolicy(models.Model):
             "overtime_require_approval": policy.overtime_require_approval if policy else True,
             "overtime_fallback_approver": policy.overtime_fallback_approver if policy else "manager",
             "overtime_notify_employee": policy.overtime_notify_employee if policy else True,
+            "wizard_step": policy.wizard_step if policy else 1,
+            "wizard_completed_steps": [int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()] if policy else [1],
+            "wizard_status": policy.wizard_status if policy else "in_progress",
         }
 
     @api.model
+    def get_wizard_state(self):
+        if not (self.env.su or self._tm_can_configure()):
+            raise AccessError(_("Only Settings administrators can view setup wizard progress."))
+        policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        if not policy:
+            policy = self.create({"company_id": self.env.company.id})
+
+        completed_list = [int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()]
+
+        return {
+            "wizard_step": policy.wizard_step or 1,
+            "wizard_completed_steps": completed_list,
+            "wizard_status": policy.wizard_status or "in_progress",
+            "launched": policy.launched or False,
+            "go_live_date": fields.Date.to_string(policy.go_live_date) if policy.go_live_date else False,
+            "policy": policy.get_cleon_policy(),
+            "shifts": self.env["cleon.hr.shift"].get_shift_management_data().get("shifts", []),
+            "approval_overtime_chain": self.get_approval_chain_summary("time_overtime"),
+            "approval_regularization_chain": self.get_approval_chain_summary("time_regularization"),
+            "approval_timesheet_chain": self.get_approval_chain_summary("time_timesheet"),
+        }
+
+    @api.model
+    def save_wizard_step(self, step_number, step_data=None):
+        if not (self.env.su or self._tm_can_configure()):
+            raise AccessError(_("Only Settings administrators can update setup wizard configuration."))
+        step_number = int(step_number)
+        if step_number < 1 or step_number > 8:
+            raise ValidationError(_("Invalid wizard step number: %s") % step_number)
+
+        policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        if not policy:
+            policy = self.create({"company_id": self.env.company.id})
+
+        if step_data:
+            self.save_cleon_policy(step_data)
+
+        completed_set = set([int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()])
+        completed_set.add(step_number)
+        completed_str = ",".join(str(s) for s in sorted(completed_set))
+
+        policy.write({
+            "wizard_step": step_number,
+            "wizard_completed_steps": completed_str,
+        })
+        return self.get_wizard_state()
+
+    @api.model
+    def launch_policy(self, launch_data=None):
+        if not (self.env.su or self._tm_can_configure()):
+            raise AccessError(_("Only Settings administrators can launch system go-live."))
+        policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        if not policy:
+            policy = self.create({"company_id": self.env.company.id})
+
+        launch_data = launch_data or {}
+        go_live_date_str = launch_data.get("go_live_date") or fields.Date.to_string(fields.Date.today())
+
+        policy.write({
+            "launched": True,
+            "go_live_date": fields.Date.from_string(go_live_date_str),
+            "wizard_status": "completed",
+            "wizard_step": 8,
+            "wizard_completed_steps": "1,2,3,4,5,6,7,8",
+        })
+
+        if "cleon.time.audit.log" in self.env:
+            self.env["cleon.time.audit.log"].sudo().create({
+                "company_id": self.env.company.id,
+                "user_id": self.env.user.id,
+                "action": "modified",
+                "module_area": "settings",
+                "entity_type": "cleon.time.policy",
+                "entity_id": policy.id,
+                "entity_name": _("System Go-Live Launch"),
+                "details": _("System Go-Live launched on %s") % go_live_date_str,
+            })
+
+        return self.get_wizard_state()
+
+    @api.model
     def save_cleon_policy(self, values):
-        if not self.env.user.has_group("base.group_system"):
+        if not (self.env.su or self._tm_can_configure()):
             raise AccessError(_("Only Settings administrators can change company policy configuration."))
         values = dict(values)
         if "weekend_days" in values and isinstance(values["weekend_days"], list):
@@ -240,6 +330,8 @@ class CleonTimePolicy(models.Model):
             "launched", "go_live_date", "billable_tracking_enabled", "default_billing_rate",
             "overtime_auto_approve_max_hours", "regularization_require_approval", "regularization_fallback_approver",
             "overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee",
+            "wizard_step", "wizard_completed_steps", "wizard_status",
+            "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)

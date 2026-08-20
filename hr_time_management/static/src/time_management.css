@@ -252,3 +252,55 @@
 .ctm-checkbox-label{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:#334155;cursor:pointer}
 .ctm-checkbox-label input[type='checkbox']{display:none}
 .ctm-checkbox-label i{font-size:16px;color:#ec4899}
+
+/* 8-Step Setup Wizard CSS */
+.ctm-wizard-container{display:flex;flex-direction:column;gap:24px;background:#fff;border:1px solid #e2e6ed;border-radius:16px;padding:28px;box-shadow:0 2px 6px #18243b0c}
+.ctm-wizard-stepper{display:grid;grid-template-columns:repeat(8,1fr);gap:8px;border-bottom:1px solid #e8ecf2;padding-bottom:20px}
+.ctm-wizard-step-pill{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:#f8f9fc;border:1px solid #e2e6ed;border-radius:10px;padding:10px 4px;cursor:pointer;transition:all .15s}
+.ctm-wizard-step-pill:hover{border-color:var(--pink)}
+.ctm-wizard-step-pill.active{background:#fef0f7;border-color:var(--pink);box-shadow:0 0 0 1px var(--pink)}
+.ctm-wizard-step-pill.completed{background:#f0fdf4;border-color:#bbf7d0}
+.ctm-wizard-step-num{width:24px;height:24px;border-radius:50%;background:#cbd5e1;color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center}
+.ctm-wizard-step-pill.active .ctm-wizard-step-num{background:var(--pink);color:#fff}
+.ctm-wizard-step-pill.completed .ctm-wizard-step-num{background:#16a34a;color:#fff}
+.ctm-wizard-step-title{font-size:11px;font-weight:600;color:#475569;line-height:1.2}
+.ctm-wizard-step-pill.active .ctm-wizard-step-title{color:var(--pink);font-weight:700}
+.ctm-wizard-body{min-height:360px;display:flex;flex-direction:column;gap:20px}
+.ctm-wizard-body-head{border-bottom:1px solid #f1f5f9;padding-bottom:14px;margin-bottom:10px}
+.ctm-wizard-body-head h2{margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px}
+.ctm-wizard-body-head p{margin:4px 0 0;color:#64748b;font-size:14px}
+.ctm-wizard-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e2e8f0;padding-top:20px;margin-top:20px}
+.ctm-wizard-footer-right{display:flex;gap:12px}
+.ctm-review-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.ctm-review-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.ctm-review-card-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:8px}
+.ctm-review-card-head h4{margin:0;font-size:15px;color:#1e293b;display:flex;align-items:center;gap:8px}
+.ctm-review-card-head button{border:0;background:none;color:var(--pink);font-size:12px;font-weight:600;cursor:pointer}
+.ctm-review-card-body{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#475569}
+.ctm-review-card-body strong{color:#0f172a}
+.ctm-launch-card{background:linear-gradient(135deg,#ec4899,#d946ef);border-radius:14px;padding:24px;color:#fff;display:flex;align-items:center;justify-content:space-between;grid-column:1/-1}
+.ctm-launch-card h3{margin:0;font-size:22px}
+.ctm-launch-card p{margin:4px 0 0;opacity:0.9;font-size:14px}
+.ctm-launch-btn{background:#fff;color:#be185d;border:0;border-radius:10px;padding:12px 24px;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 12px #0002;transition:transform .15s}
+.ctm-launch-btn:hover{transform:scale(1.03)}
+
+/* Get Started Onboarding Hub CSS */
+.ctm-onboarding-hero{background:linear-gradient(135deg,#fff7fb 0%,#fdf2f8 35%,#f5f3ff 100%);border:1px solid #f3d7e6;border-radius:20px;padding:28px 32px;color:#1f2937;display:flex;justify-content:space-between;align-items:center;box-shadow:0 10px 30px rgba(236,72,153,0.08);margin-bottom:24px;position:relative;overflow:hidden}
+.ctm-onboarding-hero::before{content:"";position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(236,72,153,0.14) 0%,rgba(236,72,153,0.04) 45%,transparent 70%);border-radius:50%;pointer-events:none}
+.ctm-onboarding-hero-left h2{margin:4px 0 6px;font-size:24px;font-weight:800;color:#111827}
+.ctm-onboarding-hero-left p{margin:0;color:#475569;font-size:15px;line-height:1.5}
+.ctm-onboarding-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:#ec4899;color:#fff;font-size:12px;font-weight:700;letter-spacing:0.02em;margin-bottom:8px}
+.ctm-onboarding-hero .ctm-progress{background:#ffffff!important;border:1px solid #e5e7eb;border-radius:999px!important;overflow:hidden}
+.ctm-onboarding-hero .ctm-progress b{background:linear-gradient(90deg,#ec4899 0%,#db2777 100%)!important;border-radius:999px!important}
+.ctm-hero-start-btn{background:linear-gradient(135deg,#ec4899 0%,#db2777 100%)!important;color:#fff!important;border:none!important;padding:14px 24px!important;font-size:15px!important;font-weight:700!important;border-radius:14px!important;box-shadow:0 8px 20px rgba(236,72,153,0.20)!important;transition:all 0.2s ease!important}
+.ctm-hero-start-btn:hover{transform:translateY(-1px)!important;box-shadow:0 12px 26px rgba(236,72,153,0.28)!important}
+.ctm-onboarding-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:24px}
+.ctm-onboarding-card{background:#fff;border:1px solid #e2e6ed;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px #18243b08;transition:transform .15s,box-shadow .15s}
+.ctm-onboarding-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px #18243b12;border-color:#ec3b9160}
+.ctm-onboarding-card-head{display:flex;align-items:center;justify-content:space-between}
+.ctm-onboarding-card-head i{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;font-size:16px;background:#fde8f3;color:var(--pink)}
+.ctm-onboarding-card h3{margin:4px 0 0;font-size:15px;color:#1e293b}
+.ctm-onboarding-card p{margin:0;font-size:13px;color:#64748b;line-height:1.4;flex:1}
+.ctm-onboarding-card button{margin-top:auto}
+@media(max-width:1100px){.ctm-onboarding-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.ctm-onboarding-hero{flex-direction:column;align-items:flex-start;gap:18px}.ctm-onboarding-grid{grid-template-columns:1fr}}

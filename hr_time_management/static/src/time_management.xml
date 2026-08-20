@@ -33,7 +33,9 @@
                 <t t-if="state.feature === 'attendance'">
                 <p class="ctm-nav-label">MAIN</p>
                 <button t-att-class="'ctm-nav ' + (state.page === 'dashboard' ? 'active' : '')" t-on-click="() => this.setPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <p class="ctm-nav-label">ONBOARDING</p>
+                <button t-att-class="'ctm-nav ' + (state.page === 'get_started' ? 'active' : '')" t-on-click="() => this.openGetStarted()"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'wizard' ? 'active' : '')" t-on-click="() => this.openWizard()"><i class="fa fa-magic"/>Setup Wizard</button>
                 <p class="ctm-nav-label">MANAGEMENT</p>
                 <button t-att-class="'ctm-nav ' + (state.page === 'sheet' ? 'active' : '')" t-on-click="() => this.setPage('sheet')"><i class="fa fa-clipboard"/>Attendance Sheets</button>
                 <button t-att-class="'ctm-nav ' + (state.page === 'regularizations' ? 'active' : '')" t-on-click="() => this.openRegularizations(true)"><i class="fa fa-file-text-o"/>Regularization Requests</button>
@@ -45,27 +47,30 @@
                 <t t-if="state.feature === 'shift'">
                 <p class="ctm-nav-label">SHIFT MANAGEMENT</p>
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setShiftPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'get_started' ? 'active' : '')" t-on-click="() => this.openGetStarted()"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'wizard' ? 'active' : '')" t-on-click="() => this.openWizard()"><i class="fa fa-magic"/>Setup Wizard</button>
                 <p class="ctm-nav-label">SCHEDULING</p>
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'list' ? 'active' : '')" t-on-click="() => this.setShiftPage('list')"><i class="fa fa-list"/>Shift List</button>
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'assignments' ? 'active' : '')" t-on-click="() => this.setShiftPage('assignments')"><i class="fa fa-users"/>Shift Assignments</button>
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'swaps' ? 'active' : '')" t-on-click="() => this.setShiftPage('swaps')"><i class="fa fa-exchange"/>Shift Swap</button>
                 <p class="ctm-nav-label">SYSTEM</p>
-                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
                 <t t-if="state.feature === 'tracking'">
                 <p class="ctm-nav-label">TIME TRACKING</p>
                 <button t-att-class="'ctm-nav ' + (state.trackingPage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setTrackingPage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'get_started' ? 'active' : '')" t-on-click="() => this.openGetStarted()"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'wizard' ? 'active' : '')" t-on-click="() => this.openWizard()"><i class="fa fa-magic"/>Setup Wizard</button>
                 <p class="ctm-nav-label">MANAGEMENT</p>
                 <button t-att-class="'ctm-nav ' + (state.trackingPage === 'timesheets' ? 'active' : '')" t-on-click="() => this.setTrackingPage('timesheets')"><i class="fa fa-users"/>All Timesheets</button>
                 <p class="ctm-nav-label">SYSTEM</p>
-                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
                 <t t-if="state.feature === 'overtime'">
                 <p class="ctm-nav-label">OVERTIME</p>
                 <button t-att-class="'ctm-nav ' + (state.overtimePage === 'dashboard' ? 'active' : '')" t-on-click="() => this.setOvertimePage('dashboard')"><i class="fa fa-th-large"/>Dashboard</button>
-                <button class="ctm-nav"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'get_started' ? 'active' : '')" t-on-click="() => this.openGetStarted()"><i class="fa fa-rocket"/>Get Started</button>
+                <button t-att-class="'ctm-nav ' + (state.page === 'wizard' ? 'active' : '')" t-on-click="() => this.openWizard()"><i class="fa fa-magic"/>Setup Wizard</button>
                 <p class="ctm-nav-label">MANAGEMENT</p>
                 <button t-att-class="'ctm-nav ' + (state.overtimePage === 'all' ? 'active' : '')" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-users"/>All Overtime</button>
                 <button t-att-class="'ctm-nav ' + (state.overtimePage === 'reports' ? 'active' : '')" t-on-click="() => this.setOvertimePage('reports')"><i class="fa fa-clock-o"/>Overtime Reports</button>
@@ -157,6 +162,450 @@
                     <div class="ctm-heading"><div><h1>Regularization Requests</h1><p>Review attendance corrections from employees</p></div></div>
                     <section class="ctm-panel"><div class="ctm-status-filter"><strong>Filter:</strong><t t-foreach="['all','submitted','approved','rejected']" t-as="status" t-key="status"><button t-att-class="state.regularizationFilter === status ? 'active' : ''" t-on-click="() => state.regularizationFilter = status" t-esc="status === 'all' ? 'All' : label(status)"/></t></div><t t-call="hr_time_management.RegularizationTable"/></section>
                 </t>
+                <t t-elif="state.page === 'get_started'">
+                    <!-- GET STARTED ONBOARDING READINESS HUB -->
+                    <div class="ctm-heading">
+                        <div>
+                            <nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Get Started</span></nav>
+                            <h1><i class="fa fa-rocket"/> Get Started with Time Management</h1>
+                            <p>Complete initial setup and launch your company's time management system</p>
+                        </div>
+                    </div>
+
+                    <!-- READINESS PROGRESS BANNER -->
+                    <div class="ctm-onboarding-hero">
+                        <div class="ctm-onboarding-hero-left">
+                            <span class="ctm-onboarding-badge" t-esc="state.wizardData &amp;&amp; state.wizardData.launched ? 'System Live' : 'Setup In Progress'"/>
+                            <h2>Company Readiness Overview</h2>
+                            <p t-if="state.wizardData &amp;&amp; state.wizardData.launched">System was launched on <b t-esc="state.wizardData.go_live_date"/>. All 8 onboarding areas are configured.</p>
+                            <p t-else="">Complete the 8 configuration areas to go live. Progress: <b t-esc="state.wizardData ? state.wizardData.wizard_completed_steps.length : 1"/>/8 areas configured (<t t-esc="Math.round((state.wizardData ? state.wizardData.wizard_completed_steps.length : 1) / 8 * 100)"/>%)</p>
+                            <div class="ctm-progress" style="height:10px;margin-top:12px;width:100%;max-width:400px">
+                                <b t-att-style="'width:' + (state.wizardData ? Math.round(state.wizardData.wizard_completed_steps.length / 8 * 100) : 12) + '%'"/>
+                            </div>
+                        </div>
+                        <div class="ctm-onboarding-hero-right">
+                            <button class="ctm-btn pink ctm-hero-start-btn" t-on-click="() => this.openWizard()"><i class="fa fa-magic"/> Start / Continue Setup Wizard (Step <t t-esc="state.wizardData ? state.wizardData.wizard_step : 1"/>) →</button>
+                        </div>
+                    </div>
+
+                    <!-- 8 SETUP AREA CARDS GRID -->
+                    <div class="ctm-settings-section-title" style="margin-top:24px">
+                        <h2>Setup Areas &amp; Configuration Progress</h2>
+                        <p>Click any area to jump directly to its wizard step</p>
+                    </div>
+
+                    <div class="ctm-onboarding-grid">
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-calendar"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(1) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(1) ? 'Configured' : 'Step 1'"/>
+                            </div>
+                            <h3>1. Work Schedule &amp; Hours</h3>
+                            <p>Standard working hours, 5/6-day week model, and half-day thresholds.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(1)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-clock-o"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(2) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(2) ? 'Configured' : 'Step 2'"/>
+                            </div>
+                            <h3>2. Shift Templates</h3>
+                            <p>Default shift templates, break minutes, and grace periods.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(2)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-map-marker"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(3) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(3) ? 'Configured' : 'Step 3'"/>
+                            </div>
+                            <h3>3. Attendance Ingress</h3>
+                            <p>Clock-in methods, GPS geofencing parameters, and CIDR IP whitelists.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(3)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-hourglass-half"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(4) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(4) ? 'Configured' : 'Step 4'"/>
+                            </div>
+                            <h3>4. Overtime Rules</h3>
+                            <p>Thresholds, rate multipliers, and auto-approve hours cap.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(4)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-edit"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(5) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(5) ? 'Configured' : 'Step 5'"/>
+                            </div>
+                            <h3>5. Regularization Window</h3>
+                            <p>Attendance correction window limits and approval policies.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(5)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-check-square-o"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(6) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(6) ? 'Configured' : 'Step 6'"/>
+                            </div>
+                            <h3>6. Approval Routing</h3>
+                            <p>Multi-tier approval chains and default fallback approvers.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(6)">Manage →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-plug"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(7) ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(7) ? 'Configured' : 'Step 7'"/>
+                            </div>
+                            <h3>7. Module Integrations</h3>
+                            <p>Billable tracking, Payroll, Leave, and Employee Portal sync.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(7)">Configure →</button>
+                        </div>
+
+                        <div class="ctm-onboarding-card">
+                            <div class="ctm-onboarding-card-head">
+                                <i class="fa fa-rocket"/>
+                                <span t-att-class="'ctm-cfg-badge ' + (state.wizardData &amp;&amp; state.wizardData.launched ? 'configured' : 'not_set')" t-esc="state.wizardData &amp;&amp; state.wizardData.launched ? 'Launched' : 'Step 8'"/>
+                            </div>
+                            <h3>8. Review &amp; Go-Live</h3>
+                            <p>Summary review, target go-live date, and launch execution.</p>
+                            <button class="ctm-btn ctm-cfg-btn" t-on-click="() => this.openWizard(8)">Review &amp; Launch →</button>
+                        </div>
+                    </div>
+                </t>
+
+                <t t-elif="state.page === 'wizard'">
+                    <!-- 8-STEP SETUP WIZARD VIEW -->
+                    <div class="ctm-heading">
+                        <div>
+                            <nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><button t-on-click="openGetStarted">Get Started</button><b>›</b><span>Setup Wizard</span></nav>
+                            <h1><i class="fa fa-magic"/> Time Management Setup Wizard</h1>
+                            <p>Step-by-step configuration wizard for company onboarding</p>
+                        </div>
+                        <button class="ctm-btn" t-on-click="openGetStarted">← Back to Overview</button>
+                    </div>
+
+                    <div class="ctm-wizard-container">
+                        <!-- Stepper Header -->
+                        <div class="ctm-wizard-stepper">
+                            <t t-foreach="[[1,'Schedule','fa-calendar'],[2,'Shifts','fa-clock-o'],[3,'Ingress','fa-map-marker'],[4,'Overtime','fa-hourglass-half'],[5,'Regularization','fa-edit'],[6,'Approvals','fa-check-square-o'],[7,'Integrations','fa-plug'],[8,'Go Live','fa-rocket']]" t-as="wizStep" t-key="wizStep[0]">
+                                <div t-att-class="'ctm-wizard-step-pill ' + (state.currentWizardStep === wizStep[0] ? 'active ' : '') + (state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(wizStep[0]) ? 'completed' : '')" t-on-click="() => this.goToWizardStep(wizStep[0])">
+                                    <span class="ctm-wizard-step-num">
+                                        <i t-if="state.wizardData &amp;&amp; state.wizardData.wizard_completed_steps.includes(wizStep[0]) &amp;&amp; state.currentWizardStep !== wizStep[0]" class="fa fa-check"/>
+                                        <t t-else="" t-esc="wizStep[0]"/>
+                                    </span>
+                                    <span class="ctm-wizard-step-title"><i t-att-class="'fa ' + wizStep[2]"/> <t t-esc="wizStep[1]"/></span>
+                                </div>
+                            </t>
+                        </div>
+                        <!-- Step Body -->
+                        <div class="ctm-wizard-body">
+                            <!-- STEP 1: Work Week & Standard Working Hours -->
+                            <t t-if="state.currentWizardStep === 1">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-calendar" style="color:var(--pink)"/> Step 1: Work Week &amp; Schedule Policy</h2>
+                                    <p>Define standard company working hours, work week model, and weekend schedule.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label>Policy Strictness Mode
+                                        <select t-model="state.wizardFormPolicy.policy_type">
+                                            <option value="strict">Strict Policy</option>
+                                            <option value="lenient">Lenient Policy</option>
+                                        </select>
+                                    </label>
+                                    <label>Work Week Model
+                                        <select t-model="state.wizardFormPolicy.work_week">
+                                            <option value="five">5-Day Week</option>
+                                            <option value="six">6-Day Week</option>
+                                            <option value="custom">Custom Schedule</option>
+                                        </select>
+                                    </label>
+                                    <label>Standard Working Hours / Day
+                                        <input type="number" step="0.5" t-model.number="state.wizardFormPolicy.standard_hours"/>
+                                    </label>
+                                    <label>Half Day Threshold Hours
+                                        <input type="number" step="0.5" t-model.number="state.wizardFormPolicy.half_day_hours"/>
+                                    </label>
+                                </div>
+                            </t>
+
+                            <!-- STEP 2: Shift Templates & Default Assignment -->
+                            <t t-elif="state.currentWizardStep === 2">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-clock-o" style="color:var(--pink)"/> Step 2: Shift Templates &amp; Default Assignments</h2>
+                                    <p>Configure company shifts, default shift template, and grace/break periods.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label>Default Break Period (Minutes)
+                                        <input type="number" t-model.number="state.wizardFormPolicy.default_break_minutes"/>
+                                    </label>
+                                    <label>Default Grace Period (Minutes)
+                                        <input type="number" t-model.number="state.wizardFormPolicy.default_grace_minutes"/>
+                                    </label>
+                                    <label>Time Rounding Interval (Minutes)
+                                        <input type="number" t-model.number="state.wizardFormPolicy.round_off_interval"/>
+                                    </label>
+                                </div>
+                                <div class="ctm-settings-group" style="margin-top:16px">
+                                    <h3><i class="fa fa-list"/> Configured Shift Templates</h3>
+                                    <t t-if="state.wizardData &amp;&amp; state.wizardData.shifts &amp;&amp; state.wizardData.shifts.length">
+                                        <ul style="margin:0;padding-left:20px;color:#334155">
+                                            <t t-foreach="state.wizardData.shifts" t-as="s" t-key="s.id">
+                                                <li><b t-esc="s.name"/> (<t t-esc="s.shift_type"/>) — <t t-esc="s.start_hour"/>:00 to <t t-esc="s.end_hour"/>:00</li>
+                                            </t>
+                                        </ul>
+                                    </t>
+                                    <t t-else=""><p class="ctm-error" style="background:#fff8dc;color:#9d6900">No custom shifts configured yet. Standard 9:00–17:00 shift will apply by default.</p></t>
+                                </div>
+                            </t>
+
+                            <!-- STEP 3: Attendance Ingress & Ingress Rules -->
+                            <t t-elif="state.currentWizardStep === 3">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-map-marker" style="color:var(--pink)"/> Step 3: Attendance Ingress &amp; Security Rules</h2>
+                                    <p>Select allowed clock-in channels, GPS geofencing parameters, and IP whitelist subnets.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label>Primary Attendance Clock Method
+                                        <select t-model="state.wizardFormPolicy.clock_method">
+                                            <option value="manual">Browser Manual Punch</option>
+                                            <option value="biometric">Biometric Terminal Only</option>
+                                            <option value="gps">GPS Geofenced Only</option>
+                                            <option value="ip">IP Whitelist Only</option>
+                                            <option value="mixed">Multiple Allowed Methods</option>
+                                        </select>
+                                    </label>
+                                    <label>Office Latitude
+                                        <input type="number" step="0.000001" t-model.number="state.wizardFormPolicy.office_latitude"/>
+                                    </label>
+                                    <label>Office Longitude
+                                        <input type="number" step="0.000001" t-model.number="state.wizardFormPolicy.office_longitude"/>
+                                    </label>
+                                    <label>Allowed GPS Radius (Meters)
+                                        <input type="number" t-model.number="state.wizardFormPolicy.gps_radius_meters"/>
+                                    </label>
+                                    <label class="wide">CIDR IP Whitelist / Allowed Subnets
+                                        <textarea placeholder="e.g. 192.168.1.0/24, 10.0.0.1" t-model="state.wizardFormPolicy.ip_whitelist"/>
+                                    </label>
+                                </div>
+                            </t>
+
+                            <!-- STEP 4: Overtime Rules & Rates -->
+                            <t t-elif="state.currentWizardStep === 4">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-hourglass-half" style="color:var(--pink)"/> Step 4: Overtime Rules &amp; Multiplier Rates</h2>
+                                    <p>Enable overtime calculation, set daily/weekly thresholds, and multiplier rates.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.enable_overtime"/> Enable Company Overtime Tracking</label>
+                                    <label>Daily Overtime Threshold (Hours)
+                                        <input type="number" step="0.5" t-model.number="state.wizardFormPolicy.daily_overtime_threshold"/>
+                                    </label>
+                                    <label>Daily Overtime Rate Multiplier
+                                        <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.daily_overtime_rate"/>
+                                    </label>
+                                    <label>Weekend Overtime Multiplier
+                                        <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.weekend_overtime_rate"/>
+                                    </label>
+                                    <label>Holiday Overtime Multiplier
+                                        <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.holiday_overtime_rate"/>
+                                    </label>
+                                    <label>Max Auto-Approve Overtime Hours
+                                        <input type="number" step="0.5" t-model.number="state.wizardFormPolicy.overtime_auto_approve_max_hours"/>
+                                    </label>
+                                </div>
+                            </t>
+
+                            <!-- STEP 5: Regularization Window & Submission Policies -->
+                            <t t-elif="state.currentWizardStep === 5">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-edit" style="color:var(--pink)"/> Step 5: Regularization Window &amp; Policies</h2>
+                                    <p>Set employee attendance correction window limits and approval requirements.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label>Regularization Window (Days)
+                                        <input type="number" t-model.number="state.wizardFormPolicy.regularization_window_days"/>
+                                    </label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.regularization_require_approval"/> Require Approval for Regularizations</label>
+                                    <label>Regularization Fallback Approver
+                                        <select t-model="state.wizardFormPolicy.regularization_fallback_approver">
+                                            <option value="direct_manager">Direct Manager</option>
+                                            <option value="department_head">Department Head</option>
+                                            <option value="hr_manager">HR Manager</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </t>
+
+                            <!-- STEP 6: Approval Chains & Routing Overview -->
+                            <t t-elif="state.currentWizardStep === 6">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-check-square-o" style="color:var(--pink)"/> Step 6: Approval Workflows &amp; Routing</h2>
+                                    <p>Review multi-tier approval chains and default fallback approver settings.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.overtime_require_approval"/> Require Approval for Overtime Requests</label>
+                                    <label>Overtime Fallback Approver Role
+                                        <select t-model="state.wizardFormPolicy.overtime_fallback_approver">
+                                            <option value="manager">Direct Manager</option>
+                                            <option value="dept">Department Head</option>
+                                            <option value="hr_manager">HR Manager</option>
+                                        </select>
+                                    </label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.overtime_notify_employee"/> Notify Employee on Decision</label>
+                                </div>
+                                <div class="ctm-settings-group" style="margin-top:16px">
+                                    <h3><i class="fa fa-sitemap"/> Active Approval Chain Previews</h3>
+                                    <div style="display:flex;flex-direction:column;gap:10px">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px 16px;border-radius:8px">
+                                            <span><b>Overtime Workflow Chain:</b> <t t-esc="state.wizardData &amp;&amp; state.wizardData.approval_overtime_chain.has_chain ? state.wizardData.approval_overtime_chain.step_flow : 'Fallback Direct Manager'"/></span>
+                                            <button class="ctm-btn pink" t-on-click="() => this.openApprovalChain('time_overtime')">Manage Chain →</button>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px 16px;border-radius:8px">
+                                            <span><b>Regularization Workflow Chain:</b> <t t-esc="state.wizardData &amp;&amp; state.wizardData.approval_regularization_chain.has_chain ? state.wizardData.approval_regularization_chain.step_flow : 'Fallback Direct Manager'"/></span>
+                                            <button class="ctm-btn pink" t-on-click="() => this.openApprovalChain('time_regularization')">Manage Chain →</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
+                            <!-- STEP 7: Integrations & Billable Rates -->
+                            <t t-elif="state.currentWizardStep === 7">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-plug" style="color:var(--pink)"/> Step 7: Module Integrations &amp; Billable Rates</h2>
+                                    <p>Configure cross-module synchronization, employee portal access, and billable rate defaults.</p>
+                                </div>
+                                <div class="ctm-settings-fields">
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.billable_tracking_enabled"/> Enable Billable Time Tracking</label>
+                                    <label>Default Billing Hourly Rate
+                                        <input type="number" step="1" t-model.number="state.wizardFormPolicy.default_billing_rate"/>
+                                    </label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.payroll_integration"/> Payroll Module Integration</label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.performance_integration"/> Performance Module Integration</label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.employee_portal"/> Employee Self-Service Portal</label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.leave_integration"/> Leave &amp; Absence Integration</label>
+                                </div>
+                            </t>
+
+                            <!-- STEP 8: Final Review & Go-Live Launch -->
+                            <t t-elif="state.currentWizardStep === 8">
+                                <div class="ctm-wizard-body-head">
+                                    <h2><i class="fa fa-rocket" style="color:var(--pink)"/> Step 8: Final Review &amp; Go-Live Launch</h2>
+                                    <p>Review full company configuration summary and launch system go-live.</p>
+                                </div>
+
+                                <div class="ctm-review-grid">
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-calendar" style="color:var(--pink)"/> Schedule Policy</h4>
+                                            <button t-on-click="() => this.goToWizardStep(1)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Work Week: <strong><t t-esc="state.wizardFormPolicy.work_week"/></strong></div>
+                                            <div>Standard Hours: <strong><t t-esc="state.wizardFormPolicy.standard_hours"/>h/day</strong></div>
+                                            <div>Policy Mode: <strong><t t-esc="state.wizardFormPolicy.policy_type"/></strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-clock-o" style="color:var(--pink)"/> Shift Rules</h4>
+                                            <button t-on-click="() => this.goToWizardStep(2)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Break Period: <strong><t t-esc="state.wizardFormPolicy.default_break_minutes"/> min</strong></div>
+                                            <div>Grace Period: <strong><t t-esc="state.wizardFormPolicy.default_grace_minutes"/> min</strong></div>
+                                            <div>Round Off: <strong><t t-esc="state.wizardFormPolicy.round_off_interval"/> min</strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-map-marker" style="color:var(--pink)"/> Ingress &amp; Security</h4>
+                                            <button t-on-click="() => this.goToWizardStep(3)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Clock Method: <strong><t t-esc="state.wizardFormPolicy.clock_method"/></strong></div>
+                                            <div>GPS Radius: <strong><t t-esc="state.wizardFormPolicy.gps_radius_meters"/>m</strong></div>
+                                            <div>IP Whitelist: <strong><t t-esc="state.wizardFormPolicy.ip_whitelist ? 'Configured' : 'None'"/></strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-hourglass-half" style="color:var(--pink)"/> Overtime &amp; Rates</h4>
+                                            <button t-on-click="() => this.goToWizardStep(4)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Daily Overtime: <strong><t t-esc="state.wizardFormPolicy.daily_overtime_rate"/>x (after <t t-esc="state.wizardFormPolicy.daily_overtime_threshold"/>h)</strong></div>
+                                            <div>Weekend / Holiday: <strong><t t-esc="state.wizardFormPolicy.weekend_overtime_rate"/>x / <t t-esc="state.wizardFormPolicy.holiday_overtime_rate"/>x</strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-edit" style="color:var(--pink)"/> Regularization</h4>
+                                            <button t-on-click="() => this.goToWizardStep(5)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Window Days: <strong><t t-esc="state.wizardFormPolicy.regularization_window_days"/> days</strong></div>
+                                            <div>Require Approval: <strong><t t-esc="state.wizardFormPolicy.regularization_require_approval ? 'Yes' : 'No'"/></strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-review-card">
+                                        <div class="ctm-review-card-head">
+                                            <h4><i class="fa fa-plug" style="color:var(--pink)"/> Integrations</h4>
+                                            <button t-on-click="() => this.goToWizardStep(7)">Edit</button>
+                                        </div>
+                                        <div class="ctm-review-card-body">
+                                            <div>Billable Tracking: <strong><t t-esc="state.wizardFormPolicy.billable_tracking_enabled ? 'Enabled (' + state.wizardFormPolicy.default_billing_rate + '/h)' : 'Disabled'"/></strong></div>
+                                            <div>Payroll / Leave: <strong><t t-esc="state.wizardFormPolicy.payroll_integration ? 'Enabled' : 'Disabled'"/> / <t t-esc="state.wizardFormPolicy.leave_integration ? 'Enabled' : 'Disabled'"/></strong></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="ctm-launch-card">
+                                        <div>
+                                            <h3>Ready for Go-Live!</h3>
+                                            <p>Target Go-Live Date: <input type="date" style="margin-left:8px;padding:4px 8px;border-radius:6px;border:0;color:#1e293b" t-model="state.wizardFormPolicy.go_live_date"/></p>
+                                        </div>
+                                        <button class="ctm-launch-btn" t-on-click="openLaunchModal">🚀 Launch System</button>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+
+                        <!-- Stepper Footer Controls -->
+                        <div class="ctm-wizard-footer">
+                            <button class="ctm-btn" t-att-disabled="state.currentWizardStep === 1" t-on-click="prevWizardStep">← Back</button>
+                            <div class="ctm-wizard-footer-right">
+                                <button class="ctm-btn" t-on-click="() => this.saveWizardStepProgress()">Save Progress</button>
+                                <button t-if="state.currentWizardStep &lt; 8" class="ctm-btn pink" t-on-click="nextWizardStep">Next Step →</button>
+                                <button t-else="" class="ctm-btn pink" t-on-click="openLaunchModal">Launch System 🚀</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Launch Confirmation Modal -->
+                    <t t-if="state.launchModalOpen">
+                        <div class="ctm-overlay">
+                            <div class="ctm-modal" style="width:min(520px,94vw);text-align:center">
+                                <button class="ctm-close" t-on-click="closeLaunchModal">×</button>
+                                <div style="font-size:48px;margin-bottom:12px">🚀</div>
+                                <h2 style="margin-bottom:10px">Confirm System Go-Live</h2>
+                                <p style="color:#64748b;margin-bottom:24px">You are about to launch Time Management policy for your company. Go-live date is set to <b><t t-esc="state.wizardFormPolicy.go_live_date"/></b>.</p>
+                                <div style="display:flex;justify-content:center;gap:12px">
+                                    <button class="ctm-btn" t-on-click="closeLaunchModal">Cancel</button>
+                                    <button class="ctm-btn pink" style="padding:10px 24px" t-on-click="confirmGoLiveLaunch">Confirm &amp; Launch Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+
                 <t t-else="">
                     <!-- MAIN SETTINGS VIEW -->
                     <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Settings</span></nav><h1><i class="fa fa-cog"/> Time Management Settings</h1><p>Configure all time management modules and policies</p></div></div>
@@ -197,7 +646,7 @@
                                             <i t-att-class="'fa ' + (state.settingsOverview.checklist[step[0]] ? 'fa-check-square' : 'fa-square-o')"/>
                                             <span t-out="step[1]"/>
                                             <button t-if="!state.settingsOverview.checklist[step[0]] and step[2]" class="ctm-checklist-goto" t-on-click="() => this.setSettingsTab(step[2])">Go to setting →</button>
-                                            <button t-if="!state.settingsOverview.checklist[step[0]] and !step[2]" class="ctm-checklist-goto" t-on-click="launchSystem">Launch →</button>
+                                            <button t-if="!state.settingsOverview.checklist[step[0]] and !step[2]" class="ctm-checklist-goto" t-on-click="() => this.openWizard(8)">Launch →</button>
                                             <i t-if="state.settingsOverview.checklist[step[0]]" class="fa fa-check-circle ctm-done-icon"/>
                                         </div>
                                     </t>

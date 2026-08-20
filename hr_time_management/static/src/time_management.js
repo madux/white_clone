@@ -58,6 +58,7 @@ export class TimeManagementApp extends Component {
             overtimePage: "dashboard", overtimeState: "all", overtimeSearch: "",
             overtimeData: {rows: [], kpis: {}}, overtimeDetail: null,
             employeeOvertime: {rows: [], kpis: {}}, overtimeForm: null, overtimeDecision: null,
+            wizardData: null, currentWizardStep: 1, wizardFormPolicy: {}, launchModalOpen: false,
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
@@ -320,6 +321,89 @@ export class TimeManagementApp extends Component {
         this.state.settingsTab = tab;
         if (tab === "overview") {
             this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
+        }
+    }
+    async openGetStarted() {
+        this.state.page = "get_started";
+        this.state.loading = true;
+        try {
+            const wizardData = await this.orm.call("cleon.time.policy", "get_wizard_state", []);
+            this.state.wizardData = wizardData;
+            this.state.wizardFormPolicy = { ...wizardData.policy };
+            if (!this.state.wizardFormPolicy.go_live_date) {
+                this.state.wizardFormPolicy.go_live_date = new Date().toISOString().slice(0, 10);
+            }
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Failed to load onboarding status.", { type: "danger" });
+        } finally {
+            this.state.loading = false;
+        }
+    }
+    async openWizard(step = null) {
+        this.state.page = "wizard";
+        this.state.loading = true;
+        try {
+            const wizardData = await this.orm.call("cleon.time.policy", "get_wizard_state", []);
+            this.state.wizardData = wizardData;
+            this.state.currentWizardStep = step || wizardData.wizard_step || 1;
+            this.state.wizardFormPolicy = { ...wizardData.policy };
+            if (!this.state.wizardFormPolicy.go_live_date) {
+                this.state.wizardFormPolicy.go_live_date = new Date().toISOString().slice(0, 10);
+            }
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Failed to load wizard progress.", { type: "danger" });
+        } finally {
+            this.state.loading = false;
+        }
+    }
+    async goToWizardStep(stepNumber) {
+        if (stepNumber < 1 || stepNumber > 8) return;
+        this.state.currentWizardStep = stepNumber;
+        await this.saveWizardStepProgress(stepNumber);
+    }
+    async nextWizardStep() {
+        if (this.state.currentWizardStep < 8) {
+            const nextStep = this.state.currentWizardStep + 1;
+            await this.saveWizardStepProgress(nextStep);
+            this.state.currentWizardStep = nextStep;
+        }
+    }
+    async prevWizardStep() {
+        if (this.state.currentWizardStep > 1) {
+            this.state.currentWizardStep -= 1;
+        }
+    }
+    async saveWizardStepProgress(stepNumber = null) {
+        const stepToSave = stepNumber || this.state.currentWizardStep;
+        try {
+            const updatedState = await this.orm.call("cleon.time.policy", "save_wizard_step", [stepToSave, this.state.wizardFormPolicy]);
+            this.state.wizardData = updatedState;
+            this.state.policy = updatedState.policy;
+            this.notification.add(`Wizard Step ${this.state.currentWizardStep} progress saved.`, { type: "success" });
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Failed to save wizard progress.", { type: "danger" });
+        }
+    }
+    openLaunchModal() {
+        this.state.launchModalOpen = true;
+    }
+    closeLaunchModal() {
+        this.state.launchModalOpen = false;
+    }
+    async confirmGoLiveLaunch() {
+        try {
+            this.state.loading = true;
+            const updatedState = await this.orm.call("cleon.time.policy", "launch_policy", [{
+                go_live_date: this.state.wizardFormPolicy.go_live_date || new Date().toISOString().slice(0, 10),
+            }]);
+            this.state.wizardData = updatedState;
+            this.state.policy = updatedState.policy;
+            this.state.launchModalOpen = false;
+            this.notification.add("System Go-Live successfully launched!", { type: "success" });
+        } catch (error) {
+            this.notification.add(error?.data?.message || "Go-Live launch failed.", { type: "danger" });
+        } finally {
+            this.state.loading = false;
         }
     }
     async loadSettingsShifts() {
