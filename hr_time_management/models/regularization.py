@@ -1,59 +1,152 @@
-from odoo import api, fields, models, _
-from datetime import datetime, time, timedelta
-
+# -*- coding: utf-8 -*-
+from datetime import datetime, timedelta, time
 import pytz
 
+from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class CleonAttendanceRegularization(models.Model):
     _name = "cleon.attendance.regularization"
-    _description = "Attendance Regularization Request"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "create_date desc"
+    _description = "CleonHR Attendance Regularization Request"
+    _order = "create_date desc, id desc"
 
-    employee_id = fields.Many2one("hr.employee", required=True, default=lambda self: self.env.user.employee_id)
-    attendance_id = fields.Many2one("hr.attendance")
-    attendance_date = fields.Date(required=True, default=fields.Date.context_today, index=True)
+    employee_id = fields.Many2one("hr.employee", required=True, index=True)
+    company_id = fields.Many2one("res.company", related="employee_id.company_id", store=True, index=True)
+    attendance_date = fields.Date(required=True, index=True)
     issue_type = fields.Selection([
-        ("forgot_in", "Forgot to Clock In"), ("forgot_out", "Forgot to Clock Out"),
-        ("incorrect_status", "Incorrect Attendance Status"),
-        ("system_error", "System Error"), ("other", "Other"),
-    ], required=True, default="other")
+        ("forgot_in", "Forgot Check-In"),
+        ("forgot_out", "Forgot Check-Out"),
+        ("forgot_check_in", "Forgot Check-In"),
+        ("forgot_check_out", "Forgot Check-Out"),
+        ("system_glitch", "System Glitch"),
+        ("other", "Other"),
+    ], default="other", required=True)
     requested_check_in = fields.Datetime(required=True)
     requested_check_out = fields.Datetime()
     reason = fields.Text(required=True)
-    attachment_ids = fields.Many2many("ir.attachment", string="Supporting Documents")
-    manager_comment = fields.Text()
+    state = fields.Selection([
+        ("draft", "Draft"),
+        ("submitted", "Submitted"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ], default="draft", required=True, index=True)
     approver_id = fields.Many2one("res.users", readonly=True)
     decision_date = fields.Datetime(readonly=True)
-    state = fields.Selection([
-        ("draft", "Draft"), ("submitted", "Submitted"),
-        ("approved", "Approved"), ("rejected", "Rejected"),
-    ], default="draft", required=True, tracking=True)
-    company_id = fields.Many2one(related="employee_id.company_id", store=True)
+    manager_comment = fields.Text(readonly=True)
+    attendance_id = fields.Many2one("hr.attendance", readonly=True, ondelete="set null")
+    attachment_ids = fields.Many2many("ir.attachment", string="Supporting Documents")
 
     _sql_constraints = [
-        ("employee_attendance_date_unique", "unique(employee_id, attendance_date)", "Only one regularization request is allowed per employee and attendance date."),
+        ("employee_date_unique", "unique(employee_id, attendance_date)", "A regularization request already exists for this employee on this date."),
     ]
+
+    def _approval_fallback_config(self):
+        self.ensure_one()
+        c_id = self._approval_company().id
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", c_id)], limit=1)
+        require_approval = policy.regularization_require_approval if policy else True
+        fallback_type = policy.regularization_fallback_approver if policy else "direct_manager"
+
+        fallback_users = self.env["res.users"]
+        employee = self._approval_employee()
+        if fallback_type in ("direct_manager", "manager"):
+            parent_user = employee.sudo().parent_id.sudo().user_id
+            if parent_user and parent_user.active:
+                fallback_users = parent_user
+        elif fallback_type in ("department_head", "dept"):
+            dept_user = employee.sudo().department_id.sudo().manager_id.sudo().user_id
+            if dept_user and dept_user.active:
+                fallback_users = dept_user
+
+        if not fallback_users:
+            group = self.env.ref("hr_time_management.group_time_management_hr_manager", raise_if_not_found=False)
+            if group:
+                fallback_users = group.users.filtered(lambda u: u.active and c_id in u.sudo().company_ids.ids)
+
+        return {
+            "require_approval": require_approval,
+            "fallback_users": fallback_users,
+        }
+
+    def _approval_workflow_code(self):
+        return "time_regularization"
+
+    def _approval_employee(self):
+        self.ensure_one()
+        return self.employee_id
+
+    def _approval_company(self):
+        self.ensure_one()
+        return self.company_id or self.employee_id.sudo().company_id or self.env.company
+
+    def _approval_period(self):
+        self.ensure_one()
+        return self.attendance_date, self.attendance_date
+
+    def _approval_validate_decision(self, decision, automated=False, comment=False):
+        self.ensure_one()
+        c_id = self._approval_company()
+        self.env["cleon.time.period.lock"].check_period_lock(c_id, self.attendance_date, _("Attendance Regularization Decision"), override_reason=comment, allow_override=not automated)
+        if decision == "approve" and self.requested_check_out and self.requested_check_out <= self.requested_check_in:
+            raise ValidationError(_("Requested check-out must be after check-in."))
+        return True
+
+    def _approval_finalize_approve(self):
+        for request in self:
+            user = self.env.user
+            attendance = request.attendance_id
+            if not attendance:
+                attendance = self.env["hr.attendance"].sudo().search([
+                    ("employee_id", "=", request.employee_id.id),
+                    ("check_in", ">=", datetime.combine(request.attendance_date, time.min)),
+                    ("check_in", "<=", datetime.combine(request.attendance_date, time.max)),
+                ], limit=1)
+            before = {}
+            if attendance:
+                before = {
+                    "check_in": fields.Datetime.to_string(attendance.check_in),
+                    "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
+                }
+                attendance.sudo().write({
+                    "check_in": request.requested_check_in,
+                    "check_out": request.requested_check_out or attendance.check_out,
+                })
+            else:
+                attendance = self.env["hr.attendance"].sudo().create({
+                    "employee_id": request.employee_id.id,
+                    "check_in": request.requested_check_in,
+                    "check_out": request.requested_check_out,
+                })
+            after = {
+                "check_in": fields.Datetime.to_string(request.requested_check_in),
+                "check_out": fields.Datetime.to_string(request.requested_check_out) if request.requested_check_out else False,
+            }
+            request.sudo().write({
+                "state": "approved",
+                "attendance_id": attendance.id,
+                "approver_id": user.id,
+                "decision_date": fields.Datetime.now(),
+            })
+            request._audit("approved", "Attendance regularization approved.", before=before, after=after)
+
+    def _approval_finalize_reject(self, comment):
+        for request in self:
+            user = self.env.user
+            request.sudo().write({
+                "state": "rejected",
+                "approver_id": user.id,
+                "decision_date": fields.Datetime.now(),
+                "manager_comment": comment or False,
+            })
+            request._audit("rejected", comment or "Attendance regularization rejected.")
 
     @api.constrains("reason")
     def _check_reason(self):
-        for request in self:
-            length = len((request.reason or "").strip())
-            if length < 20 or length > 500:
-                raise ValidationError(_("Regularization reason must contain between 20 and 500 characters."))
-
-    @api.constrains("attendance_date")
-    def _check_attendance_date(self):
-        today = fields.Date.context_today(self)
-        for request in self:
-            policy = self.env["cleon.time.policy"].search([
-                ("company_id", "=", request.employee_id.company_id.id),
-            ], limit=1)
-            window = (policy.regularization_window_days if policy else 0) or 30
-            if request.attendance_date > today or request.attendance_date < today - timedelta(days=window):
-                raise ValidationError(_("Attendance corrections can only be requested for the last %s days.") % window)
+        for record in self:
+            reason = (record.reason or "").strip()
+            if len(reason) < 20 or len(reason) > 500:
+                raise ValidationError(_("The reason for attendance regularization must be between 20 and 500 characters."))
 
     def _is_manager(self):
         Policy = self.env["cleon.time.policy"]
@@ -121,17 +214,21 @@ class CleonAttendanceRegularization(models.Model):
             raise ValidationError(_("Requested times must fall on the selected attendance date."))
         if requested_out and requested_out <= requested_in:
             raise ValidationError(_("Requested check-out must be after check-in."))
-        attendance = self.env["hr.attendance"].search([
-            ("employee_id", "=", employee.id), ("check_in", ">=", day_start), ("check_in", "<", day_end),
+
+        att = self.env["hr.attendance"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("check_in", ">=", day_start),
+            ("check_in", "<", day_end),
         ], limit=1)
+
         request = self.create({
             "employee_id": employee.id,
-            "attendance_id": attendance.id or False,
             "attendance_date": attendance_date,
             "issue_type": values.get("issue_type") or "other",
             "requested_check_in": requested_in,
             "requested_check_out": requested_out,
             "reason": (values.get("reason") or "").strip(),
+            "attendance_id": att.id if att else False,
         })
         request.action_submit()
         return request._serialize()
@@ -143,11 +240,10 @@ class CleonAttendanceRegularization(models.Model):
             raise UserError(_("The regularization request no longer exists."))
         if not self._is_manager():
             raise AccessError(_("Only Time Management managers can review attendance corrections."))
-        request.manager_comment = comment or False
         if decision == "approve":
             request.action_approve()
         elif decision == "reject":
-            request.action_reject()
+            request.action_reject(comment=comment)
         else:
             raise ValidationError(_("Unknown manager decision."))
         return request._serialize()
@@ -158,7 +254,7 @@ class CleonAttendanceRegularization(models.Model):
             self._check_workflow_protection(vals)
             if vals.get("attendance_date"):
                 emp = self.env["hr.employee"].browse(vals.get("employee_id")).exists()
-                c_id = emp.company_id if emp else self.env.company
+                c_id = emp.sudo().company_id if emp else self.env.company
                 self.env["cleon.time.period.lock"].check_period_lock(c_id, vals["attendance_date"], _("Attendance Regularization"))
         return super().create(vals_list)
 
@@ -166,7 +262,7 @@ class CleonAttendanceRegularization(models.Model):
         self._check_workflow_protection(vals)
         if not self.env.su and not self.env.user.has_group("base.group_system"):
             for rec in self:
-                c_id = rec.company_id or rec.employee_id.company_id
+                c_id = rec.company_id or rec.employee_id.sudo().company_id
                 target_date = vals.get("attendance_date") or rec.attendance_date
                 if target_date:
                     self.env["cleon.time.period.lock"].check_period_lock(c_id, target_date, _("Attendance Regularization"), vals.get("manager_comment"))
@@ -175,7 +271,7 @@ class CleonAttendanceRegularization(models.Model):
     def unlink(self):
         if not self.env.su and not self.env.user.has_group("base.group_system"):
             for rec in self:
-                c_id = rec.company_id or rec.employee_id.company_id
+                c_id = rec.company_id or rec.employee_id.sudo().company_id
                 if rec.attendance_date:
                     self.env["cleon.time.period.lock"].check_period_lock(c_id, rec.attendance_date, _("Attendance Regularization"))
         return super().unlink()
@@ -192,95 +288,73 @@ class CleonAttendanceRegularization(models.Model):
     def action_submit(self):
         self._check_reason()
         for record in self.filtered(lambda r: r.state == "draft"):
-            c_id = record.company_id or record.employee_id.company_id
+            c_id = record.company_id or record.employee_id.sudo().company_id
             self.env["cleon.time.period.lock"].check_period_lock(c_id, record.attendance_date, _("Attendance Regularization Submit"))
+            policy = self.env["cleon.time.policy"].sudo().get_runtime_policy()
+            cutoff_days = policy.get("regularization_window_days") or 7
+            cutoff_date = fields.Date.context_today(self) - timedelta(days=cutoff_days)
+            if record.attendance_date < cutoff_date:
+                raise ValidationError(_("Submission blocked: Attendance date %s exceeds the cutoff window of %s days.") % (record.attendance_date, cutoff_days))
             record.sudo().write({"state": "submitted"})
-
-    def action_approve(self):
-        user = self.env.user
-        Policy = self.env["cleon.time.policy"]
-        for request in self:
-            if request.state != "submitted":
-                raise UserError(_("Only submitted regularization requests can be approved."))
-            if not Policy._tm_can_approve(request, user):
-                raise AccessError(_("You are not authorized to approve this attendance regularization request (self-approval is not permitted for Line Managers)."))
-            c_id = request.company_id or request.employee_id.company_id
-            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Approve"))
-            if request.requested_check_out and request.requested_check_out <= request.requested_check_in:
-                raise ValidationError(_("Requested check-out must be after check-in."))
-            attendance = request.attendance_id
-            before = {}
-            if attendance:
-                before = {
-                    "check_in": fields.Datetime.to_string(attendance.check_in),
-                    "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
-                }
-                attendance.sudo().write({
-                    "check_in": request.requested_check_in,
-                    "check_out": request.requested_check_out,
-                    "cleon_edit_reason": request.reason,
-                })
-            else:
-                attendance = self.env["hr.attendance"].sudo().create({
-                    "employee_id": request.employee_id.id,
-                    "check_in": request.requested_check_in,
-                    "check_out": request.requested_check_out,
-                    "cleon_edit_reason": request.reason,
-                })
-                request.sudo().attendance_id = attendance
-            self.env["cleon.time.audit.log"].sudo().create({
-                "attendance_id": attendance.id,
-                "employee_id": request.employee_id.id,
-                "action": "regularized",
-                "reason": request.reason,
-                "before_values": before,
-                "after_values": {
-                    "check_in": fields.Datetime.to_string(attendance.check_in),
-                    "check_out": fields.Datetime.to_string(attendance.check_out) if attendance.check_out else False,
-                },
-                "company_id": request.company_id.id,
-            })
-            request.sudo().write({"state": "approved", "approver_id": user.id, "decision_date": fields.Datetime.now()})
-
-    def action_reject(self, reason=False):
-        user = self.env.user
-        Policy = self.env["cleon.time.policy"]
-        for request in self:
-            if request.state != "submitted":
-                raise UserError(_("Only submitted regularization requests can be rejected."))
-            if not Policy._tm_can_approve(request, user):
-                raise AccessError(_("You are not authorized to reject this regularization request."))
-            c_id = request.company_id or request.employee_id.company_id
-            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Reject"))
-            request.sudo().write({
-                "state": "rejected",
-                "manager_comment": reason or request.manager_comment or False,
-                "approver_id": user.id,
-                "decision_date": fields.Datetime.now(),
-            })
-            self.env["cleon.time.audit.log"].sudo().create({
-                "attendance_id": request.attendance_id.id or False,
-                "employee_id": request.employee_id.id,
-                "action": "regularization_rejected",
-                "reason": reason or request.reason,
-                "company_id": request.company_id.id,
-            })
+            instance = self.env["cleon.approval.instance"].action_start(record)
 
     def action_withdraw(self):
-        user = self.env.user
-        for request in self:
-            if request.state != "submitted":
-                raise UserError(_("Only submitted regularization requests can be withdrawn."))
-            if request.employee_id.sudo().user_id != user and not self.env["cleon.time.policy"]._tm_can_configure():
-                raise AccessError(_("You can only withdraw your own regularization request."))
-            c_id = request.company_id or request.employee_id.company_id
-            self.env["cleon.time.period.lock"].check_period_lock(c_id, request.attendance_date, _("Attendance Regularization Withdraw"))
-            request.sudo().write({"state": "draft"})
+        for record in self:
+            user = self.env.user
+            is_owner = (record.employee_id.sudo().user_id == user)
+            Policy = self.env["cleon.time.policy"]
+            role = Policy._tm_role(user)
+            is_authorized_admin = role in ("system_admin", "hr_admin") or user.has_group("base.group_system")
+            if not (is_owner or is_authorized_admin or self.env.su):
+                raise AccessError(_("You are not authorized to withdraw this regularization request. Only the requesting employee or an HR/System Administrator can withdraw."))
+            c_id = record.company_id or record.employee_id.sudo().company_id
+            self.env["cleon.time.period.lock"].check_period_lock(c_id, record.attendance_date, _("Attendance Regularization Withdraw"))
+            if record.state not in ("submitted", "draft"):
+                raise UserError(_("Only submitted or draft regularizations can be withdrawn."))
+            self.env["cleon.approval.instance"].action_cancel_for_target(record, reason=_("Withdrawn by employee."))
+            record.sudo().write({"state": "draft"})
 
-    @api.model
-    def withdraw_request(self, request_id):
-        request = self.browse(request_id).exists()
-        if not request:
-            raise UserError(_("The regularization request no longer exists."))
-        request.action_withdraw()
-        return True
+    def action_approve(self):
+        for request in self:
+            instance = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", request._name),
+                ("res_id", "=", request.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if instance:
+                instance.with_user(self.env.user).action_decide("approve")
+            else:
+                if request.state != "submitted":
+                    raise UserError(_("Only submitted regularization requests can be approved."))
+                if not self.env["cleon.time.policy"]._tm_can_approve(request, self.env.user):
+                    raise AccessError(_("You are not authorized to approve this attendance regularization request."))
+                request._approval_validate_decision("approve")
+                request._approval_finalize_approve()
+
+    def action_reject(self, comment=False):
+        for request in self:
+            instance = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", request._name),
+                ("res_id", "=", request.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if instance:
+                instance.with_user(self.env.user).action_decide("reject", comment=comment)
+            else:
+                if request.state != "submitted":
+                    raise UserError(_("Only submitted regularization requests can be rejected."))
+                if not self.env["cleon.time.policy"]._tm_can_approve(request, self.env.user):
+                    raise AccessError(_("You are not authorized to reject this attendance regularization request."))
+                request._approval_validate_decision("reject", comment=comment)
+                request._approval_finalize_reject(comment)
+
+    def _audit(self, action, details, before=None, after=None):
+        valid_action = action if action in ("created", "modified", "regularized", "approved", "rejected", "submitted", "withdrawn", "correction", "accepted") else "modified"
+        self.env["cleon.time.audit.log"].sudo().create({
+            "employee_id": self.employee_id.id,
+            "action": valid_action,
+            "module_area": "regularization",
+            "entity_type": self._name,
+            "entity_id": self.id,
+            "details": details,
+        })

@@ -55,6 +55,34 @@ class CleonOvertimeRequest(models.Model):
         ("positive_hours", "check(overtime_hours > 0 AND overtime_hours <= 24)", "Overtime must be greater than zero and no more than 24 hours."),
     ]
 
+    def _approval_fallback_config(self):
+        self.ensure_one()
+        c_id = self._approval_company().id
+        policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", c_id)], limit=1)
+        require_approval = policy.overtime_require_approval if policy else True
+        fallback_type = policy.overtime_fallback_approver if policy else "manager"
+
+        fallback_users = self.env["res.users"]
+        employee = self._approval_employee()
+        if fallback_type in ("direct_manager", "manager"):
+            parent_user = employee.sudo().parent_id.sudo().user_id
+            if parent_user and parent_user.active:
+                fallback_users = parent_user
+        elif fallback_type in ("department_head", "dept"):
+            dept_user = employee.sudo().department_id.sudo().manager_id.sudo().user_id
+            if dept_user and dept_user.active:
+                fallback_users = dept_user
+
+        if not fallback_users:
+            group = self.env.ref("hr_time_management.group_time_management_hr_manager", raise_if_not_found=False)
+            if group:
+                fallback_users = group.users.filtered(lambda u: u.active and c_id in u.sudo().company_ids.ids)
+
+        return {
+            "require_approval": require_approval,
+            "fallback_users": fallback_users,
+        }
+
     @api.depends("overtime_hours", "multiplier", "employee_id")
     def _compute_estimated_cost(self):
         for request in self:
@@ -367,6 +395,66 @@ class CleonOvertimeRequest(models.Model):
                 except AccessError:
                     pass
 
+    def _approval_workflow_code(self):
+        return "time_overtime"
+
+    def _approval_employee(self):
+        self.ensure_one()
+        return self.employee_id
+
+    def _approval_company(self):
+        self.ensure_one()
+        return self.company_id or self.employee_id.company_id or self.env.company
+
+    def _approval_period(self):
+        self.ensure_one()
+        return self.date, self.date
+
+    def _approval_validate_decision(self, decision, automated=False, comment=False):
+        self.ensure_one()
+        c_id = self._approval_company()
+        self.env["cleon.time.period.lock"].check_period_lock(c_id, self.date, _("Overtime Request Decision"), override_reason=comment, allow_override=not automated)
+        if decision == "reject" and not (comment or "").strip():
+            raise ValidationError(_("A manager comment is required when rejecting overtime."))
+        return True
+
+    def _approval_finalize_approve(self):
+        policy = self.env["cleon.time.policy"].sudo().get_runtime_policy()
+        notify = policy.get("overtime_notify_employee", True)
+        for req in self:
+            user = self.env.user
+            req._sudo_write_service({
+                "state": "approved",
+                "payroll_state": "ready",
+                "approver_id": user.id,
+                "decision_at": fields.Datetime.now(),
+            })
+            req._audit("approved", _("Overtime request approved."))
+            if notify and req.employee_id.sudo().user_id:
+                req.message_post(
+                    body=_("Your overtime request for %s (%.2f hrs) has been approved.") % (req.date, req.overtime_hours),
+                    partner_ids=req.employee_id.sudo().user_id.partner_id.ids,
+                )
+
+    def _approval_finalize_reject(self, comment):
+        policy = self.env["cleon.time.policy"].sudo().get_cleon_policy()
+        notify = policy.get("overtime_notify_employee", True)
+        for req in self:
+            user = self.env.user
+            req._sudo_write_service({
+                "state": "rejected",
+                "payroll_state": "not_ready",
+                "approver_id": user.id,
+                "decision_at": fields.Datetime.now(),
+                "manager_comment": comment,
+            })
+            req._audit("rejected", comment or _("Overtime request rejected."))
+            if notify and req.employee_id.sudo().user_id:
+                req.message_post(
+                    body=_("Your overtime request for %s has been rejected. Reason: %s") % (req.date, comment or _("No comment provided.")),
+                    partner_ids=req.employee_id.sudo().user_id.partner_id.ids,
+                )
+
     @api.model
     def submit_manual_request(self, values):
         employee = self.env.user.employee_id
@@ -410,6 +498,14 @@ class CleonOvertimeRequest(models.Model):
             "state": "submitted", "justification": justification, "multiplier": multiplier,
         }])
         request._audit("submitted", _("Manual overtime request submitted."))
+
+        # Business Rule Auto-Approve check (Overtime Max Auto-Approve Hours)
+        if policy and policy.overtime_auto_approve_max_hours and hours <= policy.overtime_auto_approve_max_hours:
+            reason_msg = _("Auto-approved by policy business rule: overtime hours %.2f <= max %.2f.") % (hours, policy.overtime_auto_approve_max_hours)
+            self.env["cleon.approval.instance"].action_start(request, decision_source="business_rule", auto_approve_reason=reason_msg)
+            return {"id": request.id, "name": request.name}
+
+        instance = self.env["cleon.approval.instance"].action_start(request)
         return {"id": request.id, "name": request.name}
 
     def action_withdraw(self):
@@ -420,6 +516,7 @@ class CleonOvertimeRequest(models.Model):
             if request.state not in ("submitted", "auto"):
                 raise ValidationError(_("Only pending or auto-calculated overtime requests can be withdrawn."))
             self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Withdrawal"))
+            self.env["cleon.approval.instance"].action_cancel_for_target(request, reason=_("Withdrawn by employee."))
             request._sudo_write_service({"state": "withdrawn"})
             request._audit("withdrawn", _("Overtime request withdrawn by employee."))
         return True
@@ -467,25 +564,25 @@ class CleonOvertimeRequest(models.Model):
                 raise AccessError(_("Direct mutation of decision or server-controlled fields is prohibited."))
 
     def action_decide(self, decision, comment=False):
-        Policy = self.env["cleon.time.policy"]
-        if decision not in ("approve", "reject"):
-            raise ValidationError(_("Invalid overtime decision."))
-        if decision == "reject" and not (comment or "").strip():
-            raise ValidationError(_("A rejection reason is required."))
         for request in self:
-            if not Policy._tm_can_approve(request, self.env.user):
-                raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
-            if request.state not in ("auto", "submitted"):
-                raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
-            self.env["cleon.time.period.lock"].check_period_lock(request.company_id.id, request.date, _("Overtime Decision"), comment)
-            request.sudo().write({
-                "state": "approved" if decision == "approve" else "rejected",
-                "approver_id": self.env.user.id, "decision_at": fields.Datetime.now(),
-                "manager_comment": comment,
-                "payroll_state": "ready" if decision == "approve" else "not_ready",
-            })
-            request._audit("approved" if decision == "approve" else "rejected", comment or _("Overtime approved."))
-            request._notify_employee_decision(decision, comment)
+            instance = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", request._name),
+                ("res_id", "=", request.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if instance:
+                instance.with_user(self.env.user).action_decide(decision, comment=comment)
+            else:
+                Policy = self.env["cleon.time.policy"]
+                if not Policy._tm_can_approve(request, self.env.user):
+                    raise AccessError(_("You are not authorized to review this overtime request (self-approval is not permitted for Line Managers)."))
+                if request.state not in ("auto", "submitted"):
+                    raise ValidationError(_("Only pending or auto-calculated overtime can be reviewed."))
+                request._approval_validate_decision(decision, comment=comment)
+                if decision == "approve":
+                    request._approval_finalize_approve()
+                elif decision == "reject":
+                    request._approval_finalize_reject(comment)
         return True
 
     def _notify_employee_decision(self, decision, comment=False):

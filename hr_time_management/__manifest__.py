@@ -4,6 +4,7 @@
     "category": "CleonHR-HR ADMIN",
     "summary": "Attendance, shifts, overtime and timesheet management",
     "depends": [
+        "cleon_approval",
         "hr_attendance",
         "hr_holidays",
         "hr_timesheet",
@@ -15,6 +16,7 @@
     ],
     "data": [
         "data/ir_sequence_data.xml",
+        "data/cleon_approval_data.xml",
         "security/security.xml",
         "security/ir.model.access.csv",
         "views/time_management_action.xml",

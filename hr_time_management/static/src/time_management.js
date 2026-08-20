@@ -45,15 +45,8 @@ export class TimeManagementApp extends Component {
             jobModal: null,
             taskModal: null,
             timesheetReminders: ["Wednesday 16:00", "Friday 14:00"],
-            showWorkflows: false,
-            workflowTab: "chains",
-            approvalChains: [
-                { id: 1, name: "Leave Approval Chain", module: "Leave Management", levels: 3, active: true },
-                { id: 2, name: "Expense Approval Chain", module: "Compensation Management", levels: 3, active: true },
-                { id: 3, name: "Asset Request Chain", module: "Asset Management", levels: 2, active: true },
-                { id: 4, name: "Overtime Approval Chain", module: "Time Management", levels: 2, active: true },
-                { id: 5, name: "Disciplinary Action Chain", module: "Disciplinary Management", levels: 3, active: true },
-            ],
+            regChainSummary: null,
+            otChainSummary: null,
             settingsOverview: null,
             settingsShifts: [],
             settingsShiftForm: null,
@@ -78,6 +71,12 @@ export class TimeManagementApp extends Component {
             this.state.mode = !forceEmployeePortal && access.is_manager && savedMode !== "employee" ? "admin" : "employee";
             this.state.gateway = access.is_manager && this.state.mode === "admin";
             this.state.employeePage = this.state.isPortal ? "dashboard" : "clock";
+            if (this.props.action?.params?.show_workflows) {
+                this.state.showWorkflows = true;
+                this.state.workflowTab = "chains";
+                this.state.feature = "attendance";
+                this.state.page = "settings";
+            }
             await this.load();
         });
         this.onInterfaceModeChange = async (event) => {
@@ -177,6 +176,7 @@ export class TimeManagementApp extends Component {
     openTimesheets() {
         return this.action.doAction("hr_timesheet.act_hr_timesheet_line", {clearBreadcrumbs: true});
     }
+
     deferredFeature(name) {
         this.notification.add(`${name} is recorded in the implementation backlog and will be enabled with its approved workflow screen.`, {
             type: "info",
@@ -282,13 +282,24 @@ export class TimeManagementApp extends Component {
     async openSettings() {
         this.state.page = "settings";
         this.state.settingsTab = "overview";
-        const [policy, overview] = await Promise.all([
+        const [policy, overview, regChain, otChain] = await Promise.all([
             this.orm.call("cleon.time.policy", "get_cleon_policy", []),
             this.orm.call("cleon.time.policy", "get_settings_overview", []),
+            this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_regularization"]),
+            this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_overtime"]),
         ]);
         this.state.policy = policy;
         this.state.settingsOverview = overview;
+        this.state.regChainSummary = regChain;
+        this.state.otChainSummary = otChain;
         await this.loadSettingsShifts();
+    }
+    async openApprovalChain(workflowCode) {
+        return this.action.doAction({
+            type: "ir.actions.client",
+            tag: "cleon_approval.WorkflowsApp",
+            params: { workflowCode: workflowCode || "time_overtime" },
+        });
     }
     async savePolicy() {
         try {
@@ -444,30 +455,7 @@ export class TimeManagementApp extends Component {
         const rate = parseFloat(this.state.otCalcRate) || 0;
         return `${hrs} hrs × $${rate} / 1.5x rate`;
     }
-    openWorkflowsView() {
-        this.state.showWorkflows = true;
-    }
-    closeWorkflowsView() {
-        this.state.showWorkflows = false;
-    }
-    toggleApprovalChain(chainId) {
-        const chain = this.state.approvalChains.find(c => c.id === chainId);
-        if (chain) {
-            chain.active = !chain.active;
-            this.notification.add(`${chain.name} ${chain.active ? 'activated' : 'deactivated'}.`, {type: "info"});
-        }
-    }
-    addApprovalChain() {
-        const id = this.state.approvalChains.length + 1;
-        this.state.approvalChains.push({
-            id,
-            name: `New Approval Chain #${id}`,
-            module: "Time Management",
-            levels: 2,
-            active: true,
-        });
-        this.notification.add("New approval chain added.", {type: "success"});
-    }
+
 
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);

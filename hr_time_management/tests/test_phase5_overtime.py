@@ -140,21 +140,26 @@ class TestPhase5Overtime(TransactionCase):
             "weekend_overtime_rate": 1.75,
             "holiday_overtime_rate": 2.25,
         })
-        # Add public holiday on Aug 5, 2026
+        today = fields.Date.today()
+        holiday_date = today - timedelta(days=3)
+        daily_date = today - timedelta(days=2)
+        weekend_date = today - timedelta(days=1)
+
+        # Add public holiday
         self.env["resource.calendar.leaves"].create({
             "name": "Summer National Holiday",
             "calendar_id": self.calendar.id,
-            "date_from": "2026-08-05 00:00:00",
-            "date_to": "2026-08-05 23:59:59",
+            "date_from": datetime.combine(holiday_date, datetime.min.time()),
+            "date_to": datetime.combine(holiday_date, datetime.max.time()),
         })
 
         Overtime = self.env["cleon.overtime.request"]
 
-        # 1. Public Holiday (Aug 5, 2026) -> Server derives category 'holiday' and 2.25x multiplier
+        # 1. Public Holiday -> Server derives category 'holiday' and 2.25x multiplier
         ot_holiday = Overtime.with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-05",
-            "start_time": "2026-08-05 09:00:00",
-            "end_time": "2026-08-05 13:00:00",
+            "date": fields.Date.to_string(holiday_date),
+            "start_time": "%s 09:00:00" % holiday_date,
+            "end_time": "%s 13:00:00" % holiday_date,
             "justification": "Emergency holiday shift coverage for system release",
         })
         rec_holiday = Overtime.sudo().browse(ot_holiday["id"])
@@ -162,11 +167,11 @@ class TestPhase5Overtime(TransactionCase):
         self.assertEqual(rec_holiday.multiplier, 2.25)
         self.assertEqual(rec_holiday.estimated_cost, 4.0 * 2.25 * 50.0)
 
-        # 2. Regular weekday (Aug 6, 2026 is Thursday) -> Server derives 'daily' and 1.4x multiplier
+        # 2. Regular weekday -> Server derives 'daily' and 1.4x multiplier
         ot_daily = Overtime.with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-06",
-            "start_time": "2026-08-06 17:00:00",
-            "end_time": "2026-08-06 19:00:00",
+            "date": fields.Date.to_string(daily_date),
+            "start_time": "%s 17:00:00" % daily_date,
+            "end_time": "%s 19:00:00" % daily_date,
             "justification": "Extensive project deadline completion required",
         })
         rec_daily = Overtime.sudo().browse(ot_daily["id"])

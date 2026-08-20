@@ -45,7 +45,7 @@ class CleonTimePeriodLock(models.Model):
                 ))
 
     @api.model
-    def check_period_range(self, company_id, date_from, date_to, model_display_name="record", override_reason=False):
+    def check_period_range(self, company_id, date_from, date_to, model_display_name="record", override_reason=False, allow_override=True):
         """Server-side administrative period lock range check helper.
 
         Blocks mutation if any locked period overlaps with [date_from, date_to] for company.
@@ -71,7 +71,7 @@ class CleonTimePeriodLock(models.Model):
         role = Policy._tm_role(user)
         is_authorized_admin = role in ("system_admin", "hr_admin") or user.has_group("base.group_system")
 
-        if is_authorized_admin and override_reason and str(override_reason).strip():
+        if allow_override and is_authorized_admin and override_reason and str(override_reason).strip():
             self.env["cleon.time.audit.log"].sudo().create({
                 "user_id": user.id,
                 "action": "modified",
@@ -96,12 +96,12 @@ class CleonTimePeriodLock(models.Model):
         })
 
     @api.model
-    def check_period_lock(self, company_id, target_date, model_display_name="record", override_reason=False):
+    def check_period_lock(self, company_id, target_date, model_display_name="record", override_reason=False, allow_override=True):
         """Server-side administrative period lock check helper.
 
         Blocks mutation of Attendance, Regularization, Timesheets, and Overtime
         if target_date falls inside a locked period for the company.
-        Supports authorized HR Admin / System Admin override with audit log.
+        Supports authorized HR Admin / System Admin override with audit log when allow_override=True.
         """
         if not target_date or not company_id:
             return True
@@ -124,7 +124,7 @@ class CleonTimePeriodLock(models.Model):
         role = Policy._tm_role(user)
         is_authorized_admin = role in ("system_admin", "hr_admin") or user.has_group("base.group_system")
 
-        if is_authorized_admin and override_reason and str(override_reason).strip():
+        if allow_override and is_authorized_admin and override_reason and str(override_reason).strip():
             # Log audit trail of administrative override
             self.env["cleon.time.audit.log"].sudo().create({
                 "user_id": user.id,

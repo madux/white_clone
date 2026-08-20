@@ -158,47 +158,8 @@
                     <section class="ctm-panel"><div class="ctm-status-filter"><strong>Filter:</strong><t t-foreach="['all','submitted','approved','rejected']" t-as="status" t-key="status"><button t-att-class="state.regularizationFilter === status ? 'active' : ''" t-on-click="() => state.regularizationFilter = status" t-esc="status === 'all' ? 'All' : label(status)"/></t></div><t t-call="hr_time_management.RegularizationTable"/></section>
                 </t>
                 <t t-else="">
-                    <!-- WORKFLOWS & APPROVALS VIEW (Screenshot 2) -->
-                    <t t-if="state.showWorkflows">
-                        <div class="ctm-heading">
-                            <div>
-                                <button class="ctm-btn-back" t-on-click="closeWorkflowsView"><i class="fa fa-arrow-left"/> Back to Settings</button>
-                                <h1>Workflows &amp; Approvals</h1>
-                                <p>Configure approval chains, workflow types, rules, and escalations</p>
-                            </div>
-                        </div>
-                        <div class="ctm-settings-tabs">
-                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'chains' ? 'active' : '')" t-on-click="() => state.workflowTab = 'chains'">Approval Chains</button>
-                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'types' ? 'active' : '')" t-on-click="() => state.workflowTab = 'types'">Workflow Types</button>
-                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'rules' ? 'active' : '')" t-on-click="() => state.workflowTab = 'rules'">Approval Rules</button>
-                            <button t-att-class="'ctm-stab ' + (state.workflowTab === 'escalations' ? 'active' : '')" t-on-click="() => state.workflowTab = 'escalations'">Escalations</button>
-                        </div>
-                        <div class="ctm-wf-content">
-                            <div class="ctm-wf-head">
-                                <div><h2>Approval Chains</h2><p>Define multi-level approval workflows for different modules</p></div>
-                                <button class="ctm-btn pink" t-on-click="addApprovalChain"><i class="fa fa-plus"/> Add Approval Chain</button>
-                            </div>
-                            <div class="ctm-wf-list">
-                                <div t-foreach="state.approvalChains" t-as="chain" t-key="chain.id" class="ctm-wf-card">
-                                    <div class="ctm-wf-info">
-                                        <div>
-                                            <strong t-esc="chain.name"/>
-                                            <span t-att-class="'ctm-cfg-badge ' + (chain.active ? 'configured' : 'not_set')" t-esc="chain.active ? 'active' : 'inactive'"/>
-                                        </div>
-                                        <small><t t-esc="chain.module"/> • <t t-esc="chain.levels"/> approval levels</small>
-                                    </div>
-                                    <div class="ctm-wf-actions">
-                                        <button class="link" t-on-click="() => this.toggleApprovalChain(chain.id)" t-esc="chain.active ? 'Deactivate' : 'Activate'"/>
-                                        <button class="link text-danger" t-on-click="() => state.approvalChains = state.approvalChains.filter(c => c.id !== chain.id)"><i class="fa fa-trash-o"/></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </t>
-
                     <!-- MAIN SETTINGS VIEW -->
-                    <t t-else="">
-                        <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Settings</span></nav><h1><i class="fa fa-cog"/> Time Management Settings</h1><p>Configure all time management modules and policies</p></div></div>
+                    <div class="ctm-heading"><div><nav class="ctm-breadcrumb"><span>HR Admin</span><b>›</b><button t-on-click="showGateway">Time Management</button><b>›</b><span>Settings</span></nav><h1><i class="fa fa-cog"/> Time Management Settings</h1><p>Configure all time management modules and policies</p></div></div>
                         <!-- Top Tab Bar -->
                         <div class="ctm-settings-tabs">
                             <button t-att-class="'ctm-stab ' + (state.settingsTab === 'overview' ? 'active' : '')" t-on-click="() => this.setSettingsTab('overview')"><i class="fa fa-th-large"/> Overview</button>
@@ -430,32 +391,43 @@
                                             </div>
                                         </t>
 
-                                        <!-- Approvals sub-tab -->
-                                        <t t-elif="state.attSubTab === 'approvals'">
-                                            <div class="ctm-sub-head"><h2>Approval Workflow</h2><p>Configure regularisation approvals</p></div>
-                                            <div class="ctm-sub-body">
-                                                <div class="ctm-toggle-row">
-                                                    <div><strong>Require Approval</strong><small>Regularisation needs approval</small></div>
-                                                    <label class="ctm-switch"><input type="checkbox" t-model="state.policy.leave_integration"/><span/></label>
-                                                </div>
-                                                <div class="ctm-two-grid" style="margin-top:20px">
-                                                    <label>Approver
-                                                        <select t-model="state.policy.clock_method">
-                                                            <option value="direct_manager">Direct Manager</option>
-                                                            <option value="department_head">Department Head</option>
-                                                            <option value="hr_manager">HR Manager</option>
-                                                        </select>
-                                                    </label>
-                                                    <label>Cutoff Days
-                                                        <input type="number" min="1" max="30" t-model="state.policy.regularization_window_days"/>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="ctm-bottom-bar">
-                                                <button class="ctm-btn" t-on-click="openSettings">Reset</button>
-                                                <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
-                                            </div>
-                                        </t>
+                                         <!-- Attendance Approvals sub-tab -->
+                                         <t t-elif="state.attSubTab === 'approvals'">
+                                             <div class="ctm-sub-head"><h2>Attendance Approvals</h2><p>Configure approval rules for attendance regularizations</p></div>
+                                             <div class="ctm-sub-body">
+                                                 <div class="ctm-toggle-row">
+                                                     <div><strong>Require Approval</strong><small>Require manager approval for regularization requests</small></div>
+                                                     <label class="ctm-switch"><input type="checkbox" t-model="state.policy.regularization_require_approval"/><span/></label>
+                                                 </div>
+
+                                                 <t t-if="state.regChainSummary and state.regChainSummary.has_chain">
+                                                     <div class="ctm-sched-rule-block" style="margin-top:20px;background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+                                                         <div>
+                                                             <strong style="font-size:14px;color:#1e293b"><t t-esc="state.regChainSummary.chain_name"/></strong>
+                                                             <div style="font-size:12px;color:#64748b;margin-top:4px"><t t-esc="state.regChainSummary.level_count"/> approval levels: <t t-esc="state.regChainSummary.step_flow"/></div>
+                                                         </div>
+                                                         <button class="ctm-btn pink sm" t-on-click="() => this.openApprovalChain('time_regularization')">Manage Chain →</button>
+                                                     </div>
+                                                 </t>
+
+                                                 <div class="ctm-two-grid" style="margin-top:20px">
+                                                     <label>Fallback Approver
+                                                         <select t-model="state.policy.regularization_fallback_approver">
+                                                             <option value="direct_manager">Direct Manager</option>
+                                                             <option value="department_head">Department Head</option>
+                                                             <option value="hr_manager">HR Manager</option>
+                                                         </select>
+                                                     </label>
+                                                     <label>Cutoff Days
+                                                         <input type="number" min="1" max="30" t-model="state.policy.regularization_window_days"/>
+                                                     </label>
+                                                 </div>
+                                             </div>
+                                             <div class="ctm-bottom-bar">
+                                                 <button class="ctm-btn" t-on-click="openSettings">Reset</button>
+                                                 <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                             </div>
+                                         </t>
 
                                         <!-- Notifications sub-tab -->
                                         <t t-elif="state.attSubTab === 'notifications'">
@@ -1242,19 +1214,29 @@
                                                         <strong>Require Approval</strong>
                                                         <small>Overtime requests need manager approval</small>
                                                     </div>
-                                                    <label class="ctm-switch"><input type="checkbox" checked="checked"/><span/></label>
+                                                    <label class="ctm-switch"><input type="checkbox" t-model="state.policy.overtime_require_approval"/><span/></label>
                                                 </div>
 
+                                                <t t-if="state.otChainSummary and state.otChainSummary.has_chain">
+                                                    <div class="ctm-sched-rule-block" style="margin-top:20px;background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+                                                        <div>
+                                                            <strong style="font-size:14px;color:#1e293b"><t t-esc="state.otChainSummary.chain_name"/></strong>
+                                                            <div style="font-size:12px;color:#64748b;margin-top:4px"><t t-esc="state.otChainSummary.level_count"/> approval levels: <t t-esc="state.otChainSummary.step_flow"/></div>
+                                                        </div>
+                                                        <button class="ctm-btn pink sm" t-on-click="() => this.openApprovalChain('time_overtime')">Manage Chain →</button>
+                                                    </div>
+                                                </t>
+
                                                 <div class="ctm-two-grid" style="margin-top:20px;background:#fff;border:1.5px solid #e4e8f2;border-radius:13px;padding:20px 24px">
-                                                    <label>Approver
-                                                        <select class="ctm-select-full">
+                                                    <label>Fallback Approver
+                                                        <select class="ctm-select-full" t-model="state.policy.overtime_fallback_approver">
                                                             <option value="manager">Direct Manager</option>
                                                             <option value="dept">Department Head</option>
-                                                            <option value="hr">HR Manager</option>
+                                                            <option value="hr_manager">HR Manager</option>
                                                         </select>
                                                     </label>
                                                     <label>Max Auto-Approve (hrs)
-                                                        <input type="number" min="0" value="2" placeholder="2"/>
+                                                        <input type="number" min="0" t-model="state.policy.overtime_auto_approve_max_hours" placeholder="2"/>
                                                     </label>
                                                 </div>
 
@@ -1263,7 +1245,7 @@
                                                         <strong>Notify Employee on Decision</strong>
                                                         <small>Send notification when request is approved or rejected</small>
                                                     </div>
-                                                    <label class="ctm-switch"><input type="checkbox" checked="checked"/><span/></label>
+                                                    <label class="ctm-switch"><input type="checkbox" t-model="state.policy.overtime_notify_employee"/><span/></label>
                                                 </div>
                                             </div>
                                             <div class="ctm-bottom-bar">
@@ -1535,7 +1517,6 @@
                             </div>
                         </t>
                     </t>
-                </t>
 
 
             </main>

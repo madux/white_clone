@@ -216,6 +216,23 @@ class CleonTimeSheet(models.Model):
         ("employee_week_unique", "unique(employee_id, week_start)", "An employee can have only one timesheet per week."),
     ]
 
+    def _approval_fallback_config(self):
+        self.ensure_one()
+        c_id = self._approval_company().id
+        employee = self._approval_employee()
+        parent_user = employee.sudo().parent_id.sudo().user_id
+        fallback_users = parent_user if parent_user and parent_user.active else self.env["res.users"]
+
+        if not fallback_users:
+            group = self.env.ref("hr_time_management.group_time_management_hr_manager", raise_if_not_found=False)
+            if group:
+                fallback_users = group.users.filtered(lambda u: u.active and c_id in u.sudo().company_ids.ids)
+
+        return {
+            "require_approval": True,
+            "fallback_users": fallback_users,
+        }
+
     @api.depends("week_start")
     def _compute_week_end(self):
         for sheet in self:
@@ -343,6 +360,70 @@ class CleonTimeSheet(models.Model):
                     if total > 24:
                         raise ValidationError(_("Invalid entry: hours cannot exceed 24 in a day."))
 
+    def _approval_workflow_code(self):
+        return "time_timesheet"
+
+    def _approval_employee(self):
+        self.ensure_one()
+        return self.employee_id
+
+    def _approval_company(self):
+        self.ensure_one()
+        return self.company_id or self.employee_id.company_id or self.env.company
+
+    def _approval_period(self):
+        self.ensure_one()
+        return self.week_start, self.week_end
+
+    def _approval_validate_decision(self, decision, automated=False, comment=False):
+        self.ensure_one()
+        c_id = self._approval_company()
+        self.env["cleon.time.period.lock"].check_period_range(c_id, self.week_start, self.week_end, _("Weekly Timesheet Decision"), override_reason=comment, allow_override=not automated)
+        if decision in ("reject", "request_changes") and not (comment or "").strip():
+            raise ValidationError(_("A reason is required when rejecting or requesting corrections."))
+        return True
+
+    def _approval_finalize_approve(self):
+        for sheet in self:
+            user = self.env.user
+            values = {
+                "state": "approved",
+                "approver_id": user.id,
+                "approved_at": fields.Datetime.now(),
+            }
+            sheet.sudo().write(values)
+            if sheet.line_ids:
+                sheet.line_ids._sync_analytic_lines()
+            sheet._audit("approved", _("Timesheet approved."))
+
+    def _approval_finalize_reject(self, comment):
+        for sheet in self:
+            user = self.env.user
+            values = {
+                "state": "rejected",
+                "approver_id": user.id,
+                "approved_at": fields.Datetime.now(),
+                "manager_comment": comment,
+            }
+            sheet.sudo().write(values)
+            if sheet.analytic_line_ids:
+                sheet.analytic_line_ids.sudo().write({"cleon_sheet_id": False})
+            sheet._audit("rejected", comment or _("Timesheet rejected."))
+
+    def _approval_finalize_request_changes(self, comment):
+        for sheet in self:
+            user = self.env.user
+            values = {
+                "state": "correction",
+                "approver_id": user.id,
+                "approved_at": fields.Datetime.now(),
+                "manager_comment": comment,
+            }
+            sheet.sudo().write(values)
+            if sheet.analytic_line_ids:
+                sheet.analytic_line_ids.sudo().write({"cleon_sheet_id": False})
+            sheet._audit("correction", comment or _("Correction requested for timesheet."))
+
     def action_submit(self):
         self._assert_owner_or_manager()
         AnalyticLine = self.env["account.analytic.line"]
@@ -365,6 +446,7 @@ class CleonTimeSheet(models.Model):
                 "state": "submitted", "submitted_at": fields.Datetime.now(), "manager_comment": False
             })
             sheet._audit("submitted", _("Timesheet submitted for manager approval."))
+            instance = self.env["cleon.approval.instance"].action_start(sheet)
         return True
 
     def action_withdraw(self):
@@ -373,6 +455,7 @@ class CleonTimeSheet(models.Model):
             if sheet.state != "submitted":
                 raise ValidationError(_("Only a submitted timesheet can be withdrawn."))
             self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet Withdraw"))
+            self.env["cleon.approval.instance"].action_cancel_for_target(sheet, reason=_("Withdrawn by employee."))
             if sheet.analytic_line_ids:
                 sheet.analytic_line_ids.sudo().write({"cleon_sheet_id": False})
             sheet.sudo().write({"state": "draft", "submitted_at": False})
@@ -380,35 +463,27 @@ class CleonTimeSheet(models.Model):
         return True
 
     def action_decide(self, decision, comment=False):
-        Policy = self.env["cleon.time.policy"]
-        if decision not in ("approve", "reject", "request_changes"):
-            raise ValidationError(_("Invalid timesheet decision."))
-        if decision in ("reject", "request_changes") and not (comment or "").strip():
-            raise ValidationError(_("A reason is required when rejecting or requesting corrections."))
         for sheet in self:
-            if not Policy._tm_can_approve(sheet, self.env.user):
-                raise AccessError(_("You are not authorized to review this timesheet (self-approval is not permitted for Line Managers)."))
-            if sheet.state != "submitted":
-                raise ValidationError(_("Only submitted timesheets can be reviewed."))
-            self.env["cleon.time.period.lock"].check_period_range(sheet.company_id.id, sheet.week_start, sheet.week_end, _("Weekly Timesheet Decision"), comment)
-            target_state = {
-                "approve": "approved",
-                "reject": "rejected",
-                "request_changes": "correction",
-            }[decision]
-            values = {
-                "state": target_state,
-                "approver_id": self.env.user.id,
-                "approved_at": fields.Datetime.now(),
-                "manager_comment": comment,
-            }
-            sheet.sudo().write(values)
-            if decision in ("reject", "request_changes"):
-                if sheet.analytic_line_ids:
-                    sheet.analytic_line_ids.sudo().write({"cleon_sheet_id": False})
-            if decision == "approve" and sheet.line_ids:
-                sheet.line_ids._sync_analytic_lines()
-            sheet._audit(target_state, comment or _("Timesheet approved."))
+            instance = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", sheet._name),
+                ("res_id", "=", sheet.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if instance:
+                instance.with_user(self.env.user).action_decide(decision, comment=comment)
+            else:
+                Policy = self.env["cleon.time.policy"]
+                if not Policy._tm_can_approve(sheet, self.env.user):
+                    raise AccessError(_("You are not authorized to review this timesheet (self-approval is not permitted for Line Managers)."))
+                if sheet.state != "submitted":
+                    raise ValidationError(_("Only submitted timesheets can be reviewed."))
+                sheet._approval_validate_decision(decision, comment=comment)
+                if decision == "approve":
+                    sheet._approval_finalize_approve()
+                elif decision == "request_changes":
+                    sheet._approval_finalize_request_changes(comment)
+                elif decision == "reject":
+                    sheet._approval_finalize_reject(comment)
         return True
 
     def unlink(self):

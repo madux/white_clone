@@ -64,6 +64,59 @@ class CleonTimePolicy(models.Model):
     office_longitude = fields.Float(string="Office Longitude", digits=(10, 7), default=0.0)
     gps_radius_meters = fields.Float(string="Allowed GPS Radius (meters)", default=200.0)
     ip_whitelist = fields.Text(string="Allowed IP Addresses / Subnets", help="Comma or newline separated list of allowed IP addresses or CIDR subnets")
+    overtime_auto_approve_max_hours = fields.Float(string="Max Auto-Approve Hours", default=2.0)
+    regularization_require_approval = fields.Boolean(default=True, string="Require Regularization Approval")
+    regularization_fallback_approver = fields.Selection([
+        ("direct_manager", "Direct Manager"),
+        ("department_head", "Department Head"),
+        ("hr_manager", "HR Manager"),
+    ], default="direct_manager", string="Regularization Fallback Approver")
+    overtime_require_approval = fields.Boolean(default=True, string="Require Overtime Approval")
+    overtime_fallback_approver = fields.Selection([
+        ("manager", "Direct Manager"),
+        ("dept", "Department Head"),
+        ("hr_manager", "HR Manager"),
+    ], default="manager", string="Overtime Fallback Approver")
+    overtime_notify_employee = fields.Boolean(default=True, string="Notify Employee on Overtime Decision")
+
+    @api.model
+    def get_approval_chain_summary(self, workflow_code="time_overtime"):
+        company = self.env.company
+        wft = self.env["cleon.approval.workflow.type"].sudo().search([("code", "=", workflow_code)], limit=1)
+        if not wft:
+            return {"has_chain": False, "chain_name": "", "level_count": 0, "steps": []}
+        chain = self.env["cleon.approval.chain"].sudo().search([
+            ("company_id", "=", company.id),
+            ("workflow_type_id", "=", wft.id),
+            ("active", "=", True),
+            ("is_default", "=", True),
+        ], limit=1)
+        if not chain:
+            return {"has_chain": False, "chain_name": "", "level_count": 0, "steps": []}
+        steps = []
+        for step in chain.step_ids.sorted("sequence"):
+            approver_label = step.name
+            if step.approver_type == "line_manager":
+                approver_label = _("Direct Manager")
+            elif step.approver_type == "group" and step.approver_group_id:
+                approver_label = step.approver_group_id.name
+            elif step.approver_type == "specific_user" and step.specific_user_id:
+                approver_label = step.specific_user_id.name
+            steps.append({
+                "sequence": step.sequence,
+                "name": step.name,
+                "label": approver_label,
+                "sla_timeout_hours": step.sla_timeout_hours,
+                "sla_action": step.sla_action,
+            })
+        return {
+            "has_chain": True,
+            "chain_id": chain.id,
+            "chain_name": chain.name,
+            "level_count": len(steps),
+            "steps": steps,
+            "step_flow": " → ".join(s["label"] for s in steps),
+        }
 
 
     _sql_constraints = [
@@ -89,48 +142,68 @@ class CleonTimePolicy(models.Model):
                 raise ValidationError(_("Overtime multiplier rates cannot be negative."))
 
     @api.model
-    def get_cleon_policy(self):
-        if not self.env.user.has_group("base.group_system"):
-            raise AccessError(_("Only Settings administrators can view company policy configuration."))
+    def get_runtime_policy(self):
+        """Safe non-sensitive policy RPC callable by ordinary employees for UI/runtime behavior."""
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
         return {
-            "id": policy.id,
-            "policy_type": policy.policy_type or "strict",
-            "selected_shift_id": policy.selected_shift_id.id if policy.selected_shift_id else False,
-            "work_week": policy.work_week or "five",
-            "standard_hours": policy.standard_hours or 8,
-            "half_day_hours": policy.half_day_hours or 4.0,
-            "default_break_minutes": policy.default_break_minutes or 60,
-            "default_grace_minutes": policy.default_grace_minutes or 15,
-            "enable_time_round_off": policy.enable_time_round_off,
-            "round_off_interval": policy.round_off_interval or 15,
-            "enable_break_period": policy.enable_break_period,
-            "weekend_days": [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()],
-            "regularization_window_days": policy.regularization_window_days or 30,
-            "clock_method": policy.clock_method or "manual",
-            "enable_overtime": policy.enable_overtime,
-            "daily_overtime_enabled": policy.daily_overtime_enabled,
-            "daily_overtime_threshold": policy.daily_overtime_threshold or 8,
-            "daily_overtime_rate": policy.daily_overtime_rate or 1.5,
-            "daily_overtime_approval": policy.daily_overtime_approval or "required",
-            "weekly_overtime_enabled": policy.weekly_overtime_enabled,
-            "weekly_overtime_threshold": policy.weekly_overtime_threshold or 40,
-            "weekly_overtime_rate": policy.weekly_overtime_rate or 1.5,
-            "weekly_overtime_approval": policy.weekly_overtime_approval or "required",
-            "weekend_overtime": policy.weekend_overtime,
-            "weekend_overtime_rate": policy.weekend_overtime_rate or 2.0,
-            "weekend_overtime_approval": policy.weekend_overtime_approval or "required",
-            "holiday_overtime": policy.holiday_overtime,
-            "holiday_overtime_rate": policy.holiday_overtime_rate or 2.5,
-            "holiday_overtime_approval": policy.holiday_overtime_approval or "required",
-            "overtime_request_mode": policy.overtime_request_mode or "both",
-            "synchronization_frequency": policy.synchronization_frequency or "realtime",
-            "payroll_integration": policy.payroll_integration,
-            "performance_integration": policy.performance_integration,
-            "employee_portal": policy.employee_portal,
-            "leave_integration": policy.leave_integration,
-            "launched": policy.launched,
-            "go_live_date": fields.Date.to_string(policy.go_live_date) if policy.go_live_date else False,
+            "standard_hours": policy.standard_hours if policy else 8.0,
+            "half_day_hours": policy.half_day_hours if policy else 4.0,
+            "default_break_minutes": policy.default_break_minutes if policy else 60,
+            "default_grace_minutes": policy.default_grace_minutes if policy else 15,
+            "regularization_window_days": policy.regularization_window_days if policy else 30,
+            "clock_method": policy.clock_method if policy else "manual",
+            "enable_overtime": policy.enable_overtime if policy else True,
+            "overtime_auto_approve_max_hours": policy.overtime_auto_approve_max_hours if policy else 2.0,
+            "regularization_require_approval": policy.regularization_require_approval if policy else True,
+            "overtime_require_approval": policy.overtime_require_approval if policy else True,
+            "overtime_notify_employee": policy.overtime_notify_employee if policy else True,
+            "weekend_days": [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()] if policy else [5, 6],
+        }
+
+    @api.model
+    def get_cleon_policy(self):
+        """Restricted administrative policy object containing financial billing rates and security configs."""
+        if not (self.env.su or self._tm_can_configure()):
+            raise AccessError(_("Only Settings administrators can view administrative policy configuration."))
+        policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        return {
+            "id": policy.id if policy else False,
+            "policy_type": policy.policy_type if policy else "strict",
+            "selected_shift_id": policy.selected_shift_id.id if policy and policy.selected_shift_id else False,
+            "work_week": policy.work_week if policy else "five",
+            "standard_hours": policy.standard_hours if policy else 8,
+            "half_day_hours": policy.half_day_hours if policy else 4.0,
+            "default_break_minutes": policy.default_break_minutes if policy else 60,
+            "default_grace_minutes": policy.default_grace_minutes if policy else 15,
+            "enable_time_round_off": policy.enable_time_round_off if policy else False,
+            "round_off_interval": policy.round_off_interval if policy else 15,
+            "enable_break_period": policy.enable_break_period if policy else False,
+            "weekend_days": [int(d.strip()) for d in (policy.weekend_days or "5,6").split(",") if d.strip().isdigit()] if policy else [5, 6],
+            "regularization_window_days": policy.regularization_window_days if policy else 30,
+            "clock_method": policy.clock_method if policy else "manual",
+            "enable_overtime": policy.enable_overtime if policy else True,
+            "daily_overtime_enabled": policy.daily_overtime_enabled if policy else True,
+            "daily_overtime_threshold": policy.daily_overtime_threshold if policy else 8,
+            "daily_overtime_rate": policy.daily_overtime_rate if policy else 1.5,
+            "daily_overtime_approval": policy.daily_overtime_approval if policy else "required",
+            "weekly_overtime_enabled": policy.weekly_overtime_enabled if policy else True,
+            "weekly_overtime_threshold": policy.weekly_overtime_threshold if policy else 40,
+            "weekly_overtime_rate": policy.weekly_overtime_rate if policy else 1.5,
+            "weekly_overtime_approval": policy.weekly_overtime_approval if policy else "required",
+            "weekend_overtime": policy.weekend_overtime if policy else True,
+            "weekend_overtime_rate": policy.weekend_overtime_rate if policy else 2.0,
+            "weekend_overtime_approval": policy.weekend_overtime_approval if policy else "required",
+            "holiday_overtime": policy.holiday_overtime if policy else True,
+            "holiday_overtime_rate": policy.holiday_overtime_rate if policy else 2.5,
+            "holiday_overtime_approval": policy.holiday_overtime_approval if policy else "required",
+            "overtime_request_mode": policy.overtime_request_mode if policy else "both",
+            "synchronization_frequency": policy.synchronization_frequency if policy else "realtime",
+            "payroll_integration": policy.payroll_integration if policy else True,
+            "performance_integration": policy.performance_integration if policy else True,
+            "employee_portal": policy.employee_portal if policy else True,
+            "leave_integration": policy.leave_integration if policy else True,
+            "launched": policy.launched if policy else False,
+            "go_live_date": fields.Date.to_string(policy.go_live_date) if policy and policy.go_live_date else False,
             "billable_tracking_enabled": policy.billable_tracking_enabled if policy else True,
             "default_billing_rate": policy.default_billing_rate if policy else 150.0,
             "currency_symbol": policy.currency_id.symbol if policy and policy.currency_id else (self.env.company.currency_id.symbol or "$"),
@@ -138,6 +211,12 @@ class CleonTimePolicy(models.Model):
             "office_longitude": policy.office_longitude if policy else 0.0,
             "gps_radius_meters": policy.gps_radius_meters if policy else 200.0,
             "ip_whitelist": policy.ip_whitelist or "" if policy else "",
+            "overtime_auto_approve_max_hours": policy.overtime_auto_approve_max_hours if policy else 2.0,
+            "regularization_require_approval": policy.regularization_require_approval if policy else True,
+            "regularization_fallback_approver": policy.regularization_fallback_approver if policy else "direct_manager",
+            "overtime_require_approval": policy.overtime_require_approval if policy else True,
+            "overtime_fallback_approver": policy.overtime_fallback_approver if policy else "manager",
+            "overtime_notify_employee": policy.overtime_notify_employee if policy else True,
         }
 
     @api.model
@@ -159,6 +238,8 @@ class CleonTimePolicy(models.Model):
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",
             "performance_integration", "employee_portal", "leave_integration",
             "launched", "go_live_date", "billable_tracking_enabled", "default_billing_rate",
+            "overtime_auto_approve_max_hours", "regularization_require_approval", "regularization_fallback_approver",
+            "overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
