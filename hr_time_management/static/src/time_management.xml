@@ -54,7 +54,7 @@
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'assignments' ? 'active' : '')" t-on-click="() => this.setShiftPage('assignments')"><i class="fa fa-users"/>Shift Assignments</button>
                 <button t-att-class="'ctm-nav ' + (state.shiftPage === 'swaps' ? 'active' : '')" t-on-click="() => this.setShiftPage('swaps')"><i class="fa fa-exchange"/>Shift Swap</button>
                 <p class="ctm-nav-label">SYSTEM</p>
-                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
                 <t t-if="state.feature === 'tracking'">
                 <p class="ctm-nav-label">TIME TRACKING</p>
@@ -64,7 +64,7 @@
                 <p class="ctm-nav-label">MANAGEMENT</p>
                 <button t-att-class="'ctm-nav ' + (state.trackingPage === 'timesheets' ? 'active' : '')" t-on-click="() => this.setTrackingPage('timesheets')"><i class="fa fa-users"/>All Timesheets</button>
                 <p class="ctm-nav-label">SYSTEM</p>
-                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
                 <t t-if="state.feature === 'overtime'">
                 <p class="ctm-nav-label">OVERTIME</p>
@@ -75,7 +75,7 @@
                 <button t-att-class="'ctm-nav ' + (state.overtimePage === 'all' ? 'active' : '')" t-on-click="() => this.setOvertimePage('all')"><i class="fa fa-users"/>All Overtime</button>
                 <button t-att-class="'ctm-nav ' + (state.overtimePage === 'reports' ? 'active' : '')" t-on-click="() => this.setOvertimePage('reports')"><i class="fa fa-clock-o"/>Overtime Reports</button>
                 <p class="ctm-nav-label">SYSTEM</p>
-                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button class="ctm-nav" t-on-click="openSettings"><i class="fa fa-cog"/>Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
+                <button class="ctm-nav"><i class="fa fa-bar-chart"/>Reports</button><button t-att-class="'ctm-nav ' + (state.page === 'settings' ? 'active' : '')" t-on-click="openSettings"><i class="fa fa-cog"/>Policy &amp; Settings</button><button class="ctm-nav"><i class="fa fa-shield"/>Audit Trail</button>
                 </t>
             </aside>
 

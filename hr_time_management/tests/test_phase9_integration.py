@@ -125,7 +125,7 @@ class TestPhase9Integration(TransactionCase):
         self.assertTrue(preview["preview_mode"])
 
     def test_04_missing_employee_code_readiness_flag(self):
-        """Test that employees missing employee_code are flagged without inventing fake EMP-ids."""
+        """Employees missing Identification No. are not assigned invented payroll codes."""
         self.policy.sudo().write({"payroll_integration": True})
 
         ot = self.Overtime.sudo().create({
