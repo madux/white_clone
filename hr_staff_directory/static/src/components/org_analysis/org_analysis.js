@@ -106,7 +106,7 @@ export class StaffDirectoryOrgAnalysis extends Component {
             const d = p.department || 'Unknown';
             deptCount[d] = (deptCount[d] || 0) + 1;
 
-            const g = (p.job_title && p.job_title.match(/L\d/)) ? p.job_title.match(/L\d/)[0] : 'Other';
+            const g = p.grade || 'Other';
             gradeCount[g] = (gradeCount[g] || 0) + 1;
 
             const l = p.work_location || 'Remote — Global';

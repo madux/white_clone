@@ -47,3 +47,7 @@ The Rationale: In most organizational structures, a "team" is defined by a group
 The Logic: I divide the Total Headcount by the Total Teams (the unique manager count from above).
 The Rationale: "Span of control" is an HR metric that represents the average number of direct reports a manager is responsible for. For example, if you have 100 employees and 20 managers (teams), the average span of control is 100 / 20 = 5.0. This gives leadership a quick pulse on whether managers are stretched too thin or if the organization is too top-heavy.
 If your organization has a different specific definition for what constitutes a "Team" (for example, if you have a dedicated team_id field on the employee record that differs from their manager), or if you want "Span of Control" calculated differently, we can easily tweak that logic before we move on to the charts!
+
+3. Employment Type Mix (Backend Note)
+Currently, the backend Python model simply passes the raw `employee_type` field directly to the frontend. If `employee_type` is empty or lacks robust contract/employment status checking, the frontend is forced to guess using fallback logic (e.g., checking if `contract_id` exists). 
+**Note for Backend Developer:** Please ensure that any business logic for calculating the exact "Employment Type" (Permanent, Contract, Intern, etc.) is implemented in the `models/hr_employee.py` backend model. The `hr_staff_directory` module strictly relies on the **Single Source of Truth** approach—the frontend should only be responsible for rendering the data, not deducing it.
