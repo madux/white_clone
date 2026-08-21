@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, useRef } from "@odoo/owl";
+import { Component, useState, useRef, onWillUpdateProps } from "@odoo/owl";
 
 export class StaffDirectoryOrgChart extends Component {
     static template = "hr_staff_directory.OrgChart";
@@ -35,14 +35,22 @@ export class StaffDirectoryOrgChart extends Component {
         this._lastMouseX = 0;
         this._lastMouseY = 0;
 
-        this.initializeCollapsedState();
+        this.initializeCollapsedState(this.props.people);
+
+        onWillUpdateProps((nextProps) => {
+            if (this.props.people !== nextProps.people) {
+                // When people change (filters applied), re-initialize collapsed states 
+                // for any newly discovered roots/nodes.
+                this.initializeCollapsedState(nextProps.people);
+            }
+        });
     }
 
-    initializeCollapsedState() {
-        const rootNodes = this.orgRootNodes;
+    initializeCollapsedState(peopleList) {
+        const rootNodes = this.getOrgRootNodes(peopleList);
         
         const setDepths = (personId, currentDepth) => {
-            const children = this.getOrgChildren(personId);
+            const children = this.getOrgChildren(personId, peopleList);
             
             // Depth 1 (CEO) and Depth 2 (Immediate lower hierarchy) are uncollapsed.
             // Depth 3 and beyond are collapsed by default.
@@ -60,15 +68,21 @@ export class StaffDirectoryOrgChart extends Component {
 
     // ─── Org Chart Computed Properties ───────────────────────────────────
 
-    get orgRootNodes() {
-        let roots = this.props.people.filter(p => !p.manager_id);
+    getOrgRootNodes(peopleList) {
+        if (!peopleList || peopleList.length === 0) return [];
+        const peopleIds = new Set(peopleList.map(p => p.id));
+        let roots = peopleList.filter(p => !p.manager_id || !peopleIds.has(p.manager_id));
+        
         if (roots.length > 1) {
             const ceo = roots.find(p => p.job_title && p.job_title.toLowerCase().includes('chief executive'));
             if (ceo) return [ceo];
-            roots = roots.sort((a, b) => this.getOrgDirectReportsCount(b.id) - this.getOrgDirectReportsCount(a.id));
-            return [roots[0]];
+            roots.sort((a, b) => this.getOrgDirectReportsCount(b.id, peopleList) - this.getOrgDirectReportsCount(a.id, peopleList));
         }
         return roots;
+    }
+
+    get orgRootNodes() {
+        return this.getOrgRootNodes(this.props.people);
     }
     
     get orgSearchMatches() {
@@ -87,12 +101,12 @@ export class StaffDirectoryOrgChart extends Component {
         return matches;
     }
 
-    getOrgChildren(personId) {
-        return this.props.people.filter(p => p.manager_id === personId);
+    getOrgChildren(personId, peopleList = this.props.people) {
+        return peopleList.filter(p => p.manager_id === personId);
     }
 
-    getOrgDirectReportsCount(personId) {
-        return this.props.people.filter(p => p.manager_id === personId).length;
+    getOrgDirectReportsCount(personId, peopleList = this.props.people) {
+        return peopleList.filter(p => p.manager_id === personId).length;
     }
 
     getRoleCode(role) {

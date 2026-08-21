@@ -136,8 +136,10 @@ export class StaffDirectoryDashboard extends Component {
             searchQuery: '',
             
             // Org chart state
+            isOrgChartVisible: true,
             orgSidebarOpen: false,
             showOrgViewDropdown: false,
+            showOrgFilterDropdown: false,
             activeOrgView: 'org',
             showFilterModal: false,
             activeFilters: {
@@ -382,6 +384,25 @@ export class StaffDirectoryDashboard extends Component {
         this.state.showOrgViewDropdown = false;
     }
 
+    toggleOrgChartVisibility() {
+        this.state.isOrgChartVisible = !this.state.isOrgChartVisible;
+    }
+
+    toggleOrgFilterDropdown() {
+        this.state.showOrgFilterDropdown = !this.state.showOrgFilterDropdown;
+        if (this.state.showOrgFilterDropdown) {
+            this.state.showOrgViewDropdown = false;
+        }
+    }
+
+    get orgSavedFilterText() {
+        const depts = this.state.activeFilters.department || [];
+        const locs = this.state.activeFilters.location || [];
+        const deptStr = depts.join(', ');
+        const locStr = locs.join(', ');
+        if (deptStr && locStr) return `${deptStr} · ${locStr}`;
+        return deptStr || locStr || '';
+    }
 
 
     goToPage(page) {

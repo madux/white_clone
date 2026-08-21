@@ -133,33 +133,78 @@
                     <!-- Secondary Toolbar -->
                     <div class="sdir-org-toolbar">
                         <div class="sdir-org-toolbar-left"></div>
-                        <div class="sdir-org-toolbar-right">
-                            <span class="sdir-org-view-label">View option</span>
-                            <div class="sdir-org-view-select-wrapper">
-                                <div class="sdir-org-view-select" t-on-click="toggleOrgViewDropdown">
-                                    <span t-if="state.activeOrgView === 'org'">Org Chart</span>
-                                    <span t-if="state.activeOrgView === 'heatmap'">Heatmap View</span>
-                                    <span t-if="state.activeOrgView === 'bar'">Bar View</span>
-                                    <span t-if="state.activeOrgView === 'geo'">Geographic Map</span>
-                                    <span t-if="state.activeOrgView === 'graph'">Relationship Graph</span>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <div class="sdir-org-toolbar-actions" style="display: flex; gap: 12px; align-items: center;">
+                            <div class="sdir-org-toolbar-right" t-if="state.isOrgChartVisible">
+                                <span class="sdir-org-view-label">View option</span>
+                                <div class="sdir-org-view-select-wrapper">
+                                    <div class="sdir-org-view-select" t-on-click="toggleOrgViewDropdown">
+                                        <span t-if="state.activeOrgView === 'org'">Org Chart</span>
+                                        <span t-if="state.activeOrgView === 'heatmap'">Heatmap View</span>
+                                        <span t-if="state.activeOrgView === 'bar'">Bar View</span>
+                                        <span t-if="state.activeOrgView === 'geo'">Geographic Map</span>
+                                        <span t-if="state.activeOrgView === 'graph'">Relationship Graph</span>
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                    </div>
+                                    <div t-if="state.showOrgViewDropdown" class="sdir-org-view-dropdown">
+                                        <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'org' ? 'active' : ''" t-on-click="() => this.setOrgView('org')">Org Chart</div>
+                                        <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'heatmap' ? 'active' : ''" t-on-click="() => this.setOrgView('heatmap')">Heatmap View</div>
+                                        <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'bar' ? 'active' : ''" t-on-click="() => this.setOrgView('bar')">Bar View</div>
+                                        <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'geo' ? 'active' : ''" t-on-click="() => this.setOrgView('geo')">Geographic Map</div>
+                                        <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'graph' ? 'active' : ''" t-on-click="() => this.setOrgView('graph')">Relationship Graph</div>
+                                    </div>
                                 </div>
-                                <div t-if="state.showOrgViewDropdown" class="sdir-org-view-dropdown">
-                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'org' ? 'active' : ''" t-on-click="() => this.setOrgView('org')">Org Chart</div>
-                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'heatmap' ? 'active' : ''" t-on-click="() => this.setOrgView('heatmap')">Heatmap View</div>
-                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'bar' ? 'active' : ''" t-on-click="() => this.setOrgView('bar')">Bar View</div>
-                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'geo' ? 'active' : ''" t-on-click="() => this.setOrgView('geo')">Geographic Map</div>
-                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'graph' ? 'active' : ''" t-on-click="() => this.setOrgView('graph')">Relationship Graph</div>
+                                <button class="sdir-org-btn-icon" title="Stats">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M18 20V10"/><path d="M6 20V4"/></svg>
+                                </button>
+                                <div style="position: relative;">
+                                    <button class="sdir-org-btn-outline" style="position: relative;" t-on-click="toggleOrgFilterDropdown">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                        Filters
+                                        <span t-if="this.activeFilterCount > 0" class="sdir-filter-badge" style="position: absolute; top: -6px; right: -6px; border: 2px solid white; background-color: rgb(233, 30, 140); color: white; border-radius: 50%; font-size: 11px; font-weight: 600; min-width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;"><t t-esc="this.activeFilterCount"/></span>
+                                    </button>
+                                    
+                                    <div t-if="state.showOrgFilterDropdown" style="position: absolute; top: 100%; right: 0px; z-index: 200; margin-top: 4px; width: 300px; background: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(229, 231, 235); box-shadow: rgba(0, 0, 0, 0.12) 0px 8px 24px; padding: 12px 0px;">
+                                        <div style="padding: 0px 12px 8px; display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-size: 12px; font-weight: 700; color: rgb(17, 24, 39);">Filter Org Chart</span>
+                                            <button t-on-click="clearAllFilters" style="font-size: 11px; color: rgb(233, 30, 140); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background: none; cursor: pointer; font-weight: 600;">Clear all</button>
+                                        </div>
+                                        
+                                        <div t-if="this.orgSavedFilterText" style="margin: 0px 12px 8px; padding: 8px 10px; background: rgba(233, 30, 140, 0.03); border: 1px solid rgba(233, 30, 140, 0.145); border-radius: 8px;">
+                                            <div style="font-size: 10px; font-weight: 700; color: rgb(233, 30, 140); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em;">Saved filter</div>
+                                            <div style="font-size: 11px; color: rgb(55, 65, 81); font-weight: 500; line-height: 1.5;" t-esc="this.orgSavedFilterText"></div>
+                                        </div>
+
+                                        <div style="border-top: 1px solid rgb(243, 244, 246); padding: 10px 12px 4px;">
+                                            <div style="font-size: 11px; font-weight: 700; color: rgb(55, 65, 81); margin-bottom: 6px;">Department</div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 5px; max-height: 120px; overflow-y: auto;">
+                                                <t t-foreach="this.filterDefinitions[0][0].options" t-as="dept" t-key="dept">
+                                                    <button t-on-click="() => this.toggleFilterOption('department', dept)"
+                                                            t-att-style="state.activeFilters.department.includes(dept) ? 'height: 24px; padding: 0px 9px; border-radius: 99px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid rgb(233, 30, 140); background: rgba(233, 30, 140, 0.07); color: rgb(233, 30, 140);' : 'height: 24px; padding: 0px 9px; border-radius: 99px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); color: rgb(55, 65, 81);'">
+                                                        <t t-esc="dept"/>
+                                                    </button>
+                                                </t>
+                                            </div>
+                                        </div>
+
+                                        <div style="border-top: 1px solid rgb(243, 244, 246); padding: 10px 12px 4px; margin-top: 6px;">
+                                            <div style="font-size: 11px; font-weight: 700; color: rgb(55, 65, 81); margin-bottom: 6px;">Location</div>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 5px; max-height: 100px; overflow-y: auto;">
+                                                <t t-foreach="this.filterDefinitions[0][2].options" t-as="loc" t-key="loc">
+                                                    <button t-on-click="() => this.toggleFilterOption('location', loc)"
+                                                            t-att-style="state.activeFilters.location.includes(loc) ? 'height: 24px; padding: 0px 9px; border-radius: 99px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid rgb(233, 30, 140); background: rgba(233, 30, 140, 0.07); color: rgb(233, 30, 140);' : 'height: 24px; padding: 0px 9px; border-radius: 99px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid rgb(229, 231, 235); background: rgb(255, 255, 255); color: rgb(55, 65, 81);'">
+                                                        <t t-esc="loc"/>
+                                                    </button>
+                                                </t>
+                                            </div>
+                                        </div>
+
+                                        <div style="padding: 10px 12px 0px; border-top: 1px solid rgb(243, 244, 246); margin-top: 6px;">
+                                            <button t-on-click="toggleOrgFilterDropdown" style="width: 100%; height: 30px; background: rgb(233, 30, 140); color: rgb(255, 255, 255); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer;">Save</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <button class="sdir-org-btn-icon" title="Stats">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M18 20V10"/><path d="M6 20V4"/></svg>
-                            </button>
-                            <button class="sdir-org-btn-outline">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                                Filters
-                            </button>
-                            <button class="sdir-org-btn-solid">
+                            <button t-att-class="'sdir-org-btn-solid ' + (state.isOrgChartVisible ? '' : 'inactive')" t-on-click="toggleOrgChartVisibility">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                                 Org Chart
                             </button>
@@ -167,31 +212,33 @@
                     </div>
 
                     <!-- View Switcher -->
-                    <t t-if="state.activeOrgView === 'org'">
-                        <StaffDirectoryOrgChart people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
-                    </t>
-                    <t t-if="state.activeOrgView === 'heatmap'">
-                        <StaffDirectoryHeatmap people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
-                    </t>
-                    <t t-if="state.activeOrgView === 'bar'">
-                        <StaffDirectoryBarChart people="this.filteredPeople()"/>
-                    </t>
-                    <t t-if="state.activeOrgView === 'geo'">
-                        <StaffDirectoryGeographicMap 
-                            people="this.filteredPeople()" 
-                            openFilterModal="this.toggleFilterModal.bind(this)"
-                            avatarColor="this.avatarColor.bind(this)"
-                            initials="this.initials.bind(this)"
-                            openProfile="this.openProfile.bind(this)"
-                            setOrgView="this.setOrgView.bind(this)"/>
-                    </t>
-                    <t t-if="state.activeOrgView === 'graph'">
-                        <StaffDirectoryRelationshipGraph 
-                            people="this.filteredPeople()" 
-                            openProfile="this.openProfile.bind(this)"
-                            deptKey="this.deptKey.bind(this)"/>
-                    </t>
-                </div> <!-- Close sdir-org-body -->
+                    <div class="sdir-org-canvas-wrapper" t-if="state.isOrgChartVisible" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                        <t t-if="state.activeOrgView === 'org'">
+                            <StaffDirectoryOrgChart people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
+                        </t>
+                        <t t-if="state.activeOrgView === 'heatmap'">
+                            <StaffDirectoryHeatmap people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
+                        </t>
+                        <t t-if="state.activeOrgView === 'bar'">
+                            <StaffDirectoryBarChart people="this.filteredPeople()"/>
+                        </t>
+                        <t t-if="state.activeOrgView === 'geo'">
+                            <StaffDirectoryGeographicMap 
+                                people="this.filteredPeople()" 
+                                openFilterModal="this.toggleFilterModal.bind(this)"
+                                avatarColor="this.avatarColor.bind(this)"
+                                initials="this.initials.bind(this)"
+                                openProfile="this.openProfile.bind(this)"
+                                setOrgView="this.setOrgView.bind(this)"/>
+                        </t>
+                        <t t-if="state.activeOrgView === 'graph'">
+                            <StaffDirectoryRelationshipGraph 
+                                people="this.filteredPeople()" 
+                                openProfile="this.openProfile.bind(this)"
+                                deptKey="this.deptKey.bind(this)"/>
+                        </t>
+                    </div>
+                </div> <!-- Close sdir-org-main -->
             </div> <!-- Close sdir-org-content -->
             
             <!-- ═══ WORKFORCE INTELLIGENCE TAB ═══════════════════════════════════ -->

@@ -121,6 +121,10 @@
     color: #fff;
 }
 .sdir-org-btn-solid:hover { opacity: 0.9; }
+.sdir-org-btn-solid.inactive {
+    background: rgb(31, 41, 55);
+    border: none;
+}
 
 /* Main Layout */
 .sdir-org-main {
