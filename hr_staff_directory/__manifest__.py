@@ -37,6 +37,7 @@
     ],
     'assets': {
         'web.assets_backend': [
+            '/web/static/lib/Chart/Chart.js',
             'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',

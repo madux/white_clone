@@ -1,0 +1,12 @@
+# Meta files
+meta.json
+*.meta.json
+*.metadata.json
+
+# Seed Data Files
+dev_seed.sql
+dev_gender_update.sql
+dev_generate_seed_all.py
+seed_data/
+*.csv
+*.sql
