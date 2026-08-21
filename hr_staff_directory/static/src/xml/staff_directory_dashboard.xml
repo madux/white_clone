@@ -154,16 +154,16 @@
                                     </div>
                                 </div>
                                 <button class="sdir-org-btn-icon" title="Stats">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M18 20V10"/><path d="M6 20V4"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-column"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
                                 </button>
                                 <div style="position: relative;">
-                                    <button class="sdir-org-btn-outline" style="position: relative;" t-on-click="toggleOrgFilterDropdown">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                    <button class="sdir-org-btn-outline" t-att-style="this.activeFilterCount > 0 ? 'position: relative; border-color: #E91E63;' : 'position: relative;'" t-on-click="toggleOrgFilterDropdown">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sliders-horizontal"><line x1="21" x2="14" y1="4" y2="4"></line><line x1="10" x2="3" y1="4" y2="4"></line><line x1="21" x2="12" y1="12" y2="12"></line><line x1="8" x2="3" y1="12" y2="12"></line><line x1="21" x2="16" y1="20" y2="20"></line><line x1="12" x2="3" y1="20" y2="20"></line><line x1="14" x2="14" y1="2" y2="6"></line><line x1="8" x2="8" y1="10" y2="14"></line><line x1="16" x2="16" y1="18" y2="22"></line></svg>
                                         Filters
                                         <span t-if="this.activeFilterCount > 0" class="sdir-filter-badge" style="position: absolute; top: -6px; right: -6px; border: 2px solid white; background-color: rgb(233, 30, 140); color: white; border-radius: 50%; font-size: 11px; font-weight: 600; min-width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1;"><t t-esc="this.activeFilterCount"/></span>
                                     </button>
                                     
-                                    <div t-if="state.showOrgFilterDropdown" style="position: absolute; top: 100%; right: 0px; z-index: 200; margin-top: 4px; width: 300px; background: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(229, 231, 235); box-shadow: rgba(0, 0, 0, 0.12) 0px 8px 24px; padding: 12px 0px;">
+                                    <div t-if="state.showOrgFilterDropdown" class="sdir-org-filter-dropdown" style="position: absolute; top: 100%; right: 0px; z-index: 200; margin-top: 4px; width: 300px; background: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(229, 231, 235); box-shadow: rgba(0, 0, 0, 0.12) 0px 8px 24px; padding: 12px 0px;">
                                         <div style="padding: 0px 12px 8px; display: flex; justify-content: space-between; align-items: center;">
                                             <span style="font-size: 12px; font-weight: 700; color: rgb(17, 24, 39);">Filter Org Chart</span>
                                             <button t-on-click="clearAllFilters" style="font-size: 11px; color: rgb(233, 30, 140); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background: none; cursor: pointer; font-weight: 600;">Clear all</button>
@@ -205,7 +205,7 @@
                                 </div>
                             </div>
                             <button t-att-class="'sdir-org-btn-solid ' + (state.isOrgChartVisible ? '' : 'inactive')" t-on-click="toggleOrgChartVisibility">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-network"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
                                 Org Chart
                             </button>
                         </div>

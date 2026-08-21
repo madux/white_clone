@@ -76,9 +76,15 @@ export class StaffDirectoryRelationshipGraph extends Component {
             }
         });
 
+        let lastHash = this.props.people.map(p => p.id).join(',');
         onPatched(() => {
-            // Re-render when properties or active mode change, but we have to manage the D3 lifecycle carefully
-            // Actually, we should probably manually call renderGraph when props.people changes or mode changes.
+            const currentHash = this.props.people.map(p => p.id).join(',');
+            if (currentHash !== lastHash) {
+                lastHash = currentHash;
+                if (this.d3Loaded && window.d3) {
+                    this.renderGraph(this.props.people);
+                }
+            }
         });
     }
 
@@ -280,13 +286,13 @@ export class StaffDirectoryRelationshipGraph extends Component {
         });
     }
 
-    buildGraphData() {
+    buildGraphData(peopleData = this.props.people) {
         const nodes = [];
         const links = [];
         const idMap = new Map();
 
         // 1. Create nodes
-        this.props.people.forEach(p => {
+        peopleData.forEach(p => {
             const node = {
                 id: p.id,
                 name: p.name,
@@ -369,7 +375,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
         return { nodes, links };
     }
 
-    renderGraph() {
+    renderGraph(peopleData = this.props.people) {
         if (!this.d3Loaded || !window.d3 || !this.svgRef.el) return;
 
         const container = this.svgRef.el.parentElement;
@@ -380,7 +386,7 @@ export class StaffDirectoryRelationshipGraph extends Component {
         
         if (this.canvasWidth === 0 || this.canvasHeight === 0) return;
 
-        const data = this.buildGraphData();
+        const data = this.buildGraphData(peopleData);
         const d3 = window.d3;
 
         const svg = d3.select(this.svgRef.el);

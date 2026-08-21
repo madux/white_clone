@@ -912,6 +912,22 @@ export class StaffDirectoryDashboard extends Component {
             this.state.showColumnsModal = false;
             this.state.showMoreColumns = false;
         }
+
+        if (this.state.showOrgFilterDropdown) {
+            const btn = ev.target.closest('.sdir-org-btn-outline');
+            const dropdown = ev.target.closest('.sdir-org-filter-dropdown');
+            if (!btn && !dropdown) {
+                this.state.showOrgFilterDropdown = false;
+            }
+        }
+
+        if (this.state.showOrgViewDropdown) {
+            const btn = ev.target.closest('.sdir-org-view-select');
+            const dropdown = ev.target.closest('.sdir-org-view-dropdown');
+            if (!btn && !dropdown) {
+                this.state.showOrgViewDropdown = false;
+            }
+        }
     }
 
     get inactiveColumns() {
