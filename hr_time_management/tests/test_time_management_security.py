@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+from datetime import timedelta
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import AccessError
 
@@ -332,7 +333,7 @@ class TestTimeManagementSecurity(TransactionCase):
         swap = self.env["cleon.shift.swap.request"].create({
             "requester_id": self.report_emp.id,
             "target_employee_id": self.manager_emp.id,
-            "swap_date": "2026-08-20",
+            "swap_date": fields.Date.today() + timedelta(days=7),
             "reason": "Doctor appointment swap",
         })
         with self.assertRaises(AccessError):

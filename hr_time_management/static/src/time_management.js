@@ -59,9 +59,15 @@ export class TimeManagementApp extends Component {
             overtimeData: {rows: [], kpis: {}}, overtimeDetail: null,
             employeeOvertime: {rows: [], kpis: {}}, overtimeForm: null, overtimeDecision: null,
             wizardData: null, currentWizardStep: 1, wizardFormPolicy: {}, launchModalOpen: false,
+            capabilities: {},
+            browserGeolocationSupported: typeof navigator !== "undefined" && Boolean(navigator.geolocation),
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
+            try {
+                const cleonAccess = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
+                this.state.capabilities = cleonAccess.capabilities || {};
+            } catch (e) { this.state.capabilities = {}; }
             const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
             this.state.isManager = access.is_manager;
             this.state.featureAccess = access.features || this.state.featureAccess;
@@ -283,13 +289,15 @@ export class TimeManagementApp extends Component {
     async openSettings() {
         this.state.page = "settings";
         this.state.settingsTab = "overview";
-        const [policy, overview, regChain, otChain] = await Promise.all([
+        const [policy, overview, regChain, otChain, access] = await Promise.all([
             this.orm.call("cleon.time.policy", "get_cleon_policy", []),
             this.orm.call("cleon.time.policy", "get_settings_overview", []),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_regularization"]),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_overtime"]),
+            this.orm.call("cleon.time.policy", "get_cleon_access", []),
         ]);
         this.state.policy = policy;
+        this.state.capabilities = access.capabilities || {};
         this.state.settingsOverview = overview;
         this.state.regChainSummary = regChain;
         this.state.otChainSummary = otChain;
@@ -305,9 +313,26 @@ export class TimeManagementApp extends Component {
     async savePolicy() {
         try {
             this.state.policy = await this.orm.call("cleon.time.policy", "save_cleon_policy", [this.state.policy]);
+            const access = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
+            this.state.capabilities = access.capabilities || {};
             this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
             this.notification.add("Time Management policy saved.", {type:"success"});
         } catch (error) { this.notification.add(error?.data?.message || "Policy could not be saved.", {type:"danger"}); }
+    }
+    async saveClockMethods() {
+        try {
+            const res = await this.orm.call("cleon.time.policy", "save_clock_method_settings", [], {
+                clock_method: this.state.policy.clock_method || "manual",
+                office_latitude: this.state.policy.office_latitude ?? 0.0,
+                office_longitude: this.state.policy.office_longitude ?? 0.0,
+                gps_radius_meters: this.state.policy.gps_radius_meters ?? 200.0,
+                ip_whitelist: this.state.policy.ip_whitelist || "",
+            });
+            this.state.policy = res.policy;
+            this.state.capabilities = res.capabilities || {};
+            this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
+            this.notification.add("Clock method settings and capability status updated.", { type: "success" });
+        } catch (error) { this.notification.add(error?.data?.message || "Clock method settings could not be saved.", { type: "danger" }); }
     }
     async resetPolicy() {
         try {
@@ -359,13 +384,12 @@ export class TimeManagementApp extends Component {
     async goToWizardStep(stepNumber) {
         if (stepNumber < 1 || stepNumber > 8) return;
         this.state.currentWizardStep = stepNumber;
-        await this.saveWizardStepProgress(stepNumber);
     }
     async nextWizardStep() {
-        if (this.state.currentWizardStep < 8) {
-            const nextStep = this.state.currentWizardStep + 1;
-            await this.saveWizardStepProgress(nextStep);
-            this.state.currentWizardStep = nextStep;
+        const activeStep = this.state.currentWizardStep;
+        const saved = await this.saveWizardStepProgress(activeStep);
+        if (saved) {
+            this.state.currentWizardStep = this.state.wizardData?.wizard_step ?? Math.min(activeStep + 1, 8);
         }
     }
     async prevWizardStep() {
@@ -376,13 +400,35 @@ export class TimeManagementApp extends Component {
     async saveWizardStepProgress(stepNumber = null) {
         const stepToSave = stepNumber || this.state.currentWizardStep;
         try {
-            const updatedState = await this.orm.call("cleon.time.policy", "save_wizard_step", [stepToSave, this.state.wizardFormPolicy]);
+            const payload = this.wizardStepPayload(stepToSave);
+            const updatedState = await this.orm.call("cleon.time.policy", "save_wizard_step", [stepToSave, payload]);
             this.state.wizardData = updatedState;
             this.state.policy = updatedState.policy;
-            this.notification.add(`Wizard Step ${this.state.currentWizardStep} progress saved.`, { type: "success" });
+            for (const field of Object.keys(payload)) {
+                this.state.wizardFormPolicy[field] = updatedState.policy[field];
+            }
+            this.notification.add(`Wizard Step ${stepToSave} configuration saved.`, { type: "success" });
+            return true;
         } catch (error) {
             this.notification.add(error?.data?.message || "Failed to save wizard progress.", { type: "danger" });
+            return false;
         }
+    }
+    wizardStepPayload(stepNumber) {
+        const fieldsByStep = {
+            1: ["policy_type", "work_week", "standard_hours", "half_day_hours"],
+            2: ["default_break_minutes", "default_grace_minutes", "round_off_interval"],
+            3: ["clock_method", "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist"],
+            4: ["enable_overtime", "daily_overtime_threshold", "daily_overtime_rate", "weekly_overtime_enabled", "weekly_overtime_threshold", "weekly_overtime_rate", "weekend_overtime_rate", "holiday_overtime_rate", "overtime_auto_approve_max_hours"],
+            5: ["regularization_window_days", "regularization_require_approval", "regularization_fallback_approver"],
+            6: ["overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee"],
+            7: ["billable_tracking_enabled", "default_billing_rate", "payroll_integration"],
+        };
+        return Object.fromEntries(
+            (fieldsByStep[stepNumber] || [])
+                .filter((field) => Object.prototype.hasOwnProperty.call(this.state.wizardFormPolicy, field))
+                .map((field) => [field, this.state.wizardFormPolicy[field]])
+        );
     }
     openLaunchModal() {
         this.state.launchModalOpen = true;

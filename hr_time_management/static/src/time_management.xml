@@ -393,10 +393,10 @@
                                 </div>
                             </t>
 
-                            <!-- STEP 4: Overtime Rules & Rates -->
+                            <!-- STEP 4: Overtime Rules & Multiplier Rates -->
                             <t t-elif="state.currentWizardStep === 4">
                                 <div class="ctm-wizard-body-head">
-                                    <h2><i class="fa fa-hourglass-half" style="color:var(--pink)"/> Step 4: Overtime Rules &amp; Multiplier Rates</h2>
+                                    <h2><i class="fa fa-clock-o" style="color:var(--pink)"/> Step 4: Overtime Rules &amp; Multipliers</h2>
                                     <p>Enable overtime calculation, set daily/weekly thresholds, and multiplier rates.</p>
                                 </div>
                                 <div class="ctm-settings-fields">
@@ -406,6 +406,13 @@
                                     </label>
                                     <label>Daily Overtime Rate Multiplier
                                         <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.daily_overtime_rate"/>
+                                    </label>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.weekly_overtime_enabled"/> Enable Weekly Overtime Tracking</label>
+                                    <label>Weekly Overtime Threshold (Hours)
+                                        <input type="number" step="1.0" t-model.number="state.wizardFormPolicy.weekly_overtime_threshold"/>
+                                    </label>
+                                    <label>Weekly Overtime Rate Multiplier
+                                        <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.weekly_overtime_rate"/>
                                     </label>
                                     <label>Weekend Overtime Multiplier
                                         <input type="number" step="0.1" t-model.number="state.wizardFormPolicy.weekend_overtime_rate"/>
@@ -468,6 +475,10 @@
                                             <span><b>Regularization Workflow Chain:</b> <t t-esc="state.wizardData &amp;&amp; state.wizardData.approval_regularization_chain.has_chain ? state.wizardData.approval_regularization_chain.step_flow : 'Fallback Direct Manager'"/></span>
                                             <button class="ctm-btn pink" t-on-click="() => this.openApprovalChain('time_regularization')">Manage Chain →</button>
                                         </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;background:#f8fafc;padding:12px 16px;border-radius:8px">
+                                            <span><b>Weekly Timesheet Workflow Chain:</b> <t t-esc="state.wizardData &amp;&amp; state.wizardData.approval_timesheet_chain &amp;&amp; state.wizardData.approval_timesheet_chain.has_chain ? state.wizardData.approval_timesheet_chain.step_flow : 'Fallback Direct Manager'"/></span>
+                                            <button class="ctm-btn pink" t-on-click="() => this.openApprovalChain('time_timesheet')">Manage Chain →</button>
+                                        </div>
                                     </div>
                                 </div>
                             </t>
@@ -483,10 +494,28 @@
                                     <label>Default Billing Hourly Rate
                                         <input type="number" step="1" t-model.number="state.wizardFormPolicy.default_billing_rate"/>
                                     </label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.payroll_integration"/> Payroll Module Integration</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.performance_integration"/> Performance Module Integration</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.employee_portal"/> Employee Self-Service Portal</label>
-                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.leave_integration"/> Leave &amp; Absence Integration</label>
+
+                                    <div class="ctm-sub-section-title" style="margin-top:16px"><strong>Payroll Handoff Contract</strong></div>
+                                    <label class="ctm-toggle-label"><input type="checkbox" t-model="state.wizardFormPolicy.payroll_integration"/> Payroll Handoff Integration</label>
+                                    <p style="font-size:12px;color:#475569;margin:-4px 0 12px 24px">
+                                        Status: <b t-esc="state.capabilities.payroll_engine_installed ? 'Payroll Engine Detected — Data Contract Ready' : 'CSV Contract Export Ready'"/>
+                                    </p>
+
+                                    <div class="ctm-sub-section-title" style="margin-top:16px"><strong>System Capabilities &amp; Integrations Status</strong></div>
+                                    <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:8px">
+                                            <div><strong>Employee Self-Service Portal</strong><small style="display:block;color:#64748b">Clock-in and attendance request access</small></div>
+                                            <span class="ctm-cfg-badge configured">Active &amp; Enabled</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:8px">
+                                            <div><strong>Leave &amp; Absence Integration</strong><small style="display:block;color:#64748b">Syncs approved leaves with attendance sheet records</small></div>
+                                            <span t-att-class="'ctm-cfg-badge ' + (state.capabilities.leave ? 'configured' : 'not_set')" t-esc="state.capabilities.leave ? 'Available' : 'Module Needed'"/>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:8px">
+                                            <div><strong>Performance Module Integration</strong><small style="display:block;color:#64748b">Syncs overtime &amp; punctuality KPIs to performance reviews</small></div>
+                                            <span class="ctm-cfg-badge partial">Planned Feature</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </t>
 
@@ -757,42 +786,97 @@
 
                                         <!-- Attendance Method sub-tab -->
                                         <t t-elif="state.attSubTab === 'method'">
-                                            <div class="ctm-sub-head"><h2>Attendance Method</h2><p>Choose how employees clock in and out. Available methods depend on your Work Mode settings.</p></div>
+                                            <div class="ctm-sub-head"><h2>Attendance Method &amp; Ingress Capability</h2><p>Choose allowed clock-in channels and configure real-time GPS geofencing, CIDR subnets, and biometric device connectors.</p></div>
                                             <div class="ctm-sub-body">
+                                                <div class="ctm-settings-fields" style="margin-bottom:20px">
+                                                    <label>Active Company Primary Clock Method
+                                                        <select t-model="state.policy.clock_method" t-on-change="saveClockMethods">
+                                                            <option value="manual">Manual / Web Clock-In Only</option>
+                                                            <option value="biometric">Biometric Terminal Only</option>
+                                                            <option value="gps">GPS Geofenced Only</option>
+                                                            <option value="ip">IP Whitelist Subnet Only</option>
+                                                            <option value="mixed">Multiple Allowed Methods (Mixed)</option>
+                                                        </select>
+                                                    </label>
+                                                </div>
+
                                                 <div class="ctm-method-grid">
+                                                    <!-- CARD 1: Manual / Web Punch -->
                                                     <div class="ctm-method-card">
                                                         <div class="ctm-method-top">
-                                                            <label class="ctm-switch ctm-switch-sm"><input type="checkbox" checked="checked"/><span/></label>
-                                                            <div><strong>Manual / Web Clock-In</strong><small>Employees clock in via their CleonHR account. Requires employees to be within a set distance of the office.</small></div>
+                                                            <span t-att-class="'ctm-cfg-badge ' + (['manual','mixed'].includes(state.policy.clock_method) ? 'configured' : 'not_set')" t-esc="['manual','mixed'].includes(state.policy.clock_method) ? 'Active Method' : 'Disabled'"/>
+                                                            <div><strong>Manual / Web Clock-In</strong><small>Employees clock in via their CleonHR web portal or mobile browser.</small></div>
+                                                        </div>
+                                                        <p class="ctm-method-hint"><i class="fa fa-info-circle"/> Browser Geolocation API: <b t-esc="state.browserGeolocationSupported ? 'Supported &amp; Detected' : 'Browser Detection Pending'"/></p>
+                                                    </div>
+
+                                                    <!-- CARD 2: GPS Geofencing -->
+                                                    <div class="ctm-method-card">
+                                                        <div class="ctm-method-top">
+                                                            <span t-att-class="'ctm-cfg-badge ' + (state.capabilities.gps_configured ? 'configured' : 'not_set')" t-esc="state.capabilities.gps_configured ? 'Active &amp; Geofenced' : 'Coordinates Required'"/>
+                                                            <div><strong>GPS Geofenced Clock-In</strong><small>Restricts clock-ins to a precise GPS radius around company office coordinates.</small></div>
                                                         </div>
                                                         <div class="ctm-method-fields">
-                                                            <label>Office Latitude<input type="text" placeholder="e.g. 40.17.26"/></label>
-                                                            <label>Office Longitude<input type="text" placeholder="e.g. -75.0060"/></label>
+                                                            <label>Office Latitude<input type="number" step="0.000001" t-model.number="state.policy.office_latitude"/></label>
+                                                            <label>Office Longitude<input type="number" step="0.000001" t-model.number="state.policy.office_longitude"/></label>
                                                         </div>
-                                                        <label class="ctm-toggle-label"><input type="checkbox"/> Use My Current Location</label>
-                                                        <label style="margin-top:12px">Allowed Radius (metres)<input type="number" value="100" style="margin-top:6px"/></label>
-                                                        <p class="ctm-method-hint"><i class="fa fa-info-circle"/> Employees outside the radius will be blocked from clocking in and prompted to submit a regularization request.</p>
+                                                        <label style="margin-top:12px">Allowed Radius (meters)<input type="number" t-model.number="state.policy.gps_radius_meters" style="margin-top:6px"/></label>
+                                                        <button class="ctm-btn pink" style="margin-top:10px" t-on-click="saveClockMethods">Save GPS Settings</button>
                                                     </div>
+
+                                                    <!-- CARD 3: IP Subnet Whitelist -->
                                                     <div class="ctm-method-card">
                                                         <div class="ctm-method-top">
-                                                            <label class="ctm-switch ctm-switch-sm"><input type="checkbox"/><span/></label>
-                                                            <div><strong>Manual / Web Clock-In with MFA</strong><small>Employees verify their identity before clocking in. Recommended for remote workers.</small></div>
+                                                            <span t-att-class="'ctm-cfg-badge ' + (state.capabilities.ip_configured ? 'configured' : 'not_set')" t-esc="state.capabilities.ip_configured ? 'Subnet Whitelisted' : 'Whitelist Empty / Invalid'"/>
+                                                            <div><strong>CIDR IP Whitelist Ingress</strong><small>Restricts clock-in requests to specified corporate network IP subnets or office gateways.</small></div>
                                                         </div>
+                                                        <label style="margin-top:10px">Allowed IP Addresses / CIDR Subnets
+                                                            <textarea placeholder="e.g. 192.168.1.0/24, 10.0.0.1" t-model="state.policy.ip_whitelist" style="margin-top:6px;min-height:60px"/>
+                                                        </label>
+                                                        <button class="ctm-btn pink" style="margin-top:10px" t-on-click="saveClockMethods">Save IP Whitelist</button>
                                                     </div>
+
+                                                    <!-- CARD 4: Biometric Terminal -->
                                                     <div class="ctm-method-card">
                                                         <div class="ctm-method-top">
-                                                            <label class="ctm-switch ctm-switch-sm"><input type="checkbox"/><span/></label>
-                                                            <div><strong>Biometrics</strong><small>Employees clock in via a fingerprint, facial scan, or retina device installed at the office.</small></div>
+                                                            <span t-att-class="'ctm-cfg-badge ' + (state.capabilities.biometric_terminal_connector ? 'configured' : 'partial')" t-esc="state.capabilities.biometric_terminal_connector ? 'Hardware Device Connected' : 'No Devices Registered'"/>
+                                                            <div><strong>Biometric Terminal Integration</strong><small>Syncs attendance punches automatically from physical fingerprint, facial scan, or RFID card devices.</small></div>
                                                         </div>
+                                                        <p class="ctm-method-hint"><i class="fa fa-info-circle"/> Status: <b t-esc="state.capabilities.biometric_configured ? 'Enabled in Policy' : 'Select Biometric Method Above'"/></p>
                                                     </div>
-                                                    <div class="ctm-method-card">
-                                                        <div class="ctm-method-top">
-                                                            <label class="ctm-switch ctm-switch-sm"><input type="checkbox"/><span/></label>
-                                                            <div><strong>Smart Card / RFID</strong><small>Employees tap a card on a reader device to clock in and out.</small></div>
+                                                </div>
+                                            </div>
+                                            <div class="ctm-bottom-bar">
+                                                <button class="ctm-btn" t-on-click="openSettings">Reset</button>
+                                                <button class="ctm-btn pink" t-on-click="savePolicy"><i class="fa fa-save"/> Save Changes</button>
+                                            </div>
+                                        </t>
+
+                                        <!-- Module Integrations & Handoffs sub-tab -->
+                                        <t t-elif="state.attSubTab === 'integrations'">
+                                            <div class="ctm-sub-head"><h2>Module Integrations &amp; Handoff Contracts</h2><p>Manage outbound payroll handoff contracts and third-party time tracking integrations.</p></div>
+                                            <div class="ctm-sub-body">
+                                                <div class="ctm-sub-section-title"><strong>Outbound Payroll Handoff Contract</strong><p>Export approved overtime data to HR Payroll or CSV contracts.</p></div>
+                                                <div class="ctm-integrations-grid" style="margin-bottom:24px">
+                                                    <div class="ctm-integration-card" style="grid-column: span 3">
+                                                        <div class="ctm-int-head">
+                                                            <strong><i class="fa fa-money" style="color:var(--pink)"/> CleonHR Payroll Handoff Contract</strong>
+                                                            <span t-att-class="'ctm-int-badge ' + (state.capabilities.payroll_contract_ready ? 'connected' : '')" t-esc="state.capabilities.payroll_contract_ready ? 'Contract Active' : 'Integration Disabled'"/>
+                                                        </div>
+                                                        <p style="margin:6px 0;font-size:13px;color:#475569">
+                                                            Target Engine: <b t-esc="state.capabilities.payroll_handoff ? state.capabilities.payroll_handoff.target_engine : 'csv_contract'"/> | 
+                                                            Approved Overtime Ready for Handoff: <b t-esc="state.capabilities.payroll_handoff ? state.capabilities.payroll_handoff.ready_overtime_count : 0"/> records
+                                                        </p>
+                                                        <p style="margin:4px 0 10px;font-size:12px;color:#64748b">
+                                                            Status: <t t-esc="state.capabilities.payroll_engine_installed ? 'HR Payroll detected — data contract ready — transfer adapter not configured' : 'CSV Contract Handoff Ready'"/>
+                                                        </p>
+                                                        <div style="display:flex;gap:12px;margin-top:10px">
+                                                            <label class="ctm-toggle-label"><input type="checkbox" t-model="state.policy.payroll_integration" t-on-change="savePolicy"/> Enable Payroll Integration</label>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div class="ctm-sub-section-title" style="margin-top:28px"><strong>Third-Party Time Tracking Integrations</strong><p>Connect external tools to enrich attendance records with active time, project logs, or screenshots.</p></div>
+
+                                                <div class="ctm-sub-section-title"><strong>Third-Party Time Tracking Integrations</strong><p>Connect external tools to enrich attendance records with active time, project logs, or screenshots.</p></div>
                                                 <div class="ctm-integrations-grid">
                                                     <div class="ctm-integration-card">
                                                         <div class="ctm-int-head"><strong>Clockify</strong><span class="ctm-int-badge">Not Connected</span></div>
@@ -813,7 +897,6 @@
                                                         <button class="ctm-btn pink" style="width:100%;margin-top:10px">Connect</button>
                                                     </div>
                                                 </div>
-                                                <button class="ctm-btn" style="margin-top:16px"><i class="fa fa-plus"/> Add Custom Integration</button>
                                             </div>
                                             <div class="ctm-bottom-bar">
                                                 <button class="ctm-btn">Reset</button>

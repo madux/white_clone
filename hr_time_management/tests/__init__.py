@@ -8,3 +8,4 @@ from . import test_phase5_overtime
 from . import test_phase6_billable_project
 from . import test_phase7_approval_workflow
 from . import test_phase8_wizard
+from . import test_phase9_integration

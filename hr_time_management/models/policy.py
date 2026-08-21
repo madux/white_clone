@@ -1,11 +1,28 @@
+import ipaddress
+from datetime import timedelta
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class CleonTimePolicy(models.Model):
     _name = "cleon.time.policy"
     _description = "CleonHR Time Management Company Policy"
     _rec_name = "company_id"
+
+    _WIZARD_STEP_FIELDS = {
+        1: {"policy_type", "work_week", "standard_hours", "half_day_hours"},
+        2: {"default_break_minutes", "default_grace_minutes", "round_off_interval"},
+        3: {"clock_method", "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist"},
+        4: {
+            "enable_overtime", "daily_overtime_threshold", "daily_overtime_rate",
+            "weekly_overtime_enabled", "weekly_overtime_threshold", "weekly_overtime_rate",
+            "weekend_overtime_rate", "holiday_overtime_rate", "overtime_auto_approve_max_hours",
+        },
+        5: {"regularization_window_days", "regularization_require_approval", "regularization_fallback_approver"},
+        6: {"overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee"},
+        7: {"billable_tracking_enabled", "default_billing_rate", "payroll_integration"},
+    }
+    _CLOCK_METHOD_FIELDS = {"clock_method", "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist"}
 
     company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True)
     active = fields.Boolean(default=True)
@@ -79,7 +96,7 @@ class CleonTimePolicy(models.Model):
     ], default="manager", string="Overtime Fallback Approver")
     overtime_notify_employee = fields.Boolean(default=True, string="Notify Employee on Overtime Decision")
     wizard_step = fields.Integer(default=1, string="Wizard Current Step")
-    wizard_completed_steps = fields.Char(default="1", string="Wizard Completed Steps")
+    wizard_completed_steps = fields.Char(default="", string="Wizard Completed Steps")
     wizard_status = fields.Selection([
         ("in_progress", "In Progress"),
         ("completed", "Completed"),
@@ -224,7 +241,7 @@ class CleonTimePolicy(models.Model):
             "overtime_fallback_approver": policy.overtime_fallback_approver if policy else "manager",
             "overtime_notify_employee": policy.overtime_notify_employee if policy else True,
             "wizard_step": policy.wizard_step if policy else 1,
-            "wizard_completed_steps": [int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()] if policy else [1],
+            "wizard_completed_steps": [int(s.strip()) for s in (policy.wizard_completed_steps or "").split(",") if s.strip().isdigit()] if policy else [],
             "wizard_status": policy.wizard_status if policy else "in_progress",
         }
 
@@ -236,10 +253,11 @@ class CleonTimePolicy(models.Model):
         if not policy:
             policy = self.create({"company_id": self.env.company.id})
 
-        completed_list = [int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()]
+        completed_list = [int(s.strip()) for s in (policy.wizard_completed_steps or "").split(",") if s.strip().isdigit()]
 
+        next_incomplete = next((step for step in range(1, 8) if step not in completed_list), 8)
         return {
-            "wizard_step": policy.wizard_step or 1,
+            "wizard_step": 8 if policy.wizard_status == "completed" else next_incomplete,
             "wizard_completed_steps": completed_list,
             "wizard_status": policy.wizard_status or "in_progress",
             "launched": policy.launched or False,
@@ -256,25 +274,100 @@ class CleonTimePolicy(models.Model):
         if not (self.env.su or self._tm_can_configure()):
             raise AccessError(_("Only Settings administrators can update setup wizard configuration."))
         step_number = int(step_number)
-        if step_number < 1 or step_number > 8:
+        if step_number < 1 or step_number > 7:
             raise ValidationError(_("Invalid wizard step number: %s") % step_number)
 
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
         if not policy:
             policy = self.create({"company_id": self.env.company.id})
 
-        if step_data:
-            self.save_cleon_policy(step_data)
+        allowed = self._WIZARD_STEP_FIELDS[step_number]
+        clean = {key: value for key, value in dict(step_data or {}).items() if key in allowed}
+        self._validate_wizard_step(policy, step_number, clean)
+        if clean:
+            self.save_cleon_policy(clean)
 
-        completed_set = set([int(s.strip()) for s in (policy.wizard_completed_steps or "1").split(",") if s.strip().isdigit()])
+        completed_set = set([int(s.strip()) for s in (policy.wizard_completed_steps or "").split(",") if s.strip().isdigit()])
         completed_set.add(step_number)
         completed_str = ",".join(str(s) for s in sorted(completed_set))
 
+        next_incomplete = next((step for step in range(1, 8) if step not in completed_set), 8)
         policy.write({
-            "wizard_step": step_number,
+            "wizard_step": next_incomplete,
             "wizard_completed_steps": completed_str,
         })
         return self.get_wizard_state()
+
+    def _validated_clock_method_values(self, policy, values):
+        """Validate and normalize clock settings for every administrative save path."""
+        candidate = {
+            key: values.get(key, policy[key])
+            for key in self._CLOCK_METHOD_FIELDS
+        }
+        valid_methods = {item[0] for item in self._fields["clock_method"].selection}
+        method = candidate["clock_method"]
+        if method not in valid_methods:
+            raise ValidationError(_("Unsupported attendance clock method: %s") % method)
+        try:
+            latitude = float(candidate["office_latitude"] or 0.0)
+            longitude = float(candidate["office_longitude"] or 0.0)
+            radius = float(candidate["gps_radius_meters"] if candidate["gps_radius_meters"] is not None else 200.0)
+        except (TypeError, ValueError):
+            raise ValidationError(_("GPS coordinates and radius must be numeric."))
+
+        if method in ("gps", "mixed"):
+            if not -90.0 <= latitude <= 90.0:
+                raise ValidationError(_("Latitude must be between -90.0 and 90.0 degrees."))
+            if not -180.0 <= longitude <= 180.0:
+                raise ValidationError(_("Longitude must be between -180.0 and 180.0 degrees."))
+            if latitude == 0.0 and longitude == 0.0:
+                raise ValidationError(_("GPS attendance requires configured office coordinates."))
+            if radius <= 0.0:
+                raise ValidationError(_("GPS radius must be greater than 0 meters."))
+
+        whitelist = str(candidate["ip_whitelist"] or "")
+        if method in ("ip", "mixed"):
+            entries = [entry.strip() for entry in whitelist.replace("\n", ",").split(",") if entry.strip()]
+            if not entries:
+                raise ValidationError(_("IP attendance requires at least one allowed IP address or subnet."))
+            for entry in entries:
+                try:
+                    ipaddress.ip_network(entry, strict=False)
+                except ValueError:
+                    raise ValidationError(_("Invalid IP address or subnet: %s") % entry)
+
+        return {
+            "clock_method": method,
+            "office_latitude": latitude,
+            "office_longitude": longitude,
+            "gps_radius_meters": radius,
+            "ip_whitelist": whitelist,
+        }
+
+    def _validate_wizard_step(self, policy, step_number, values):
+        candidate = lambda field: values.get(field, policy[field])
+        if step_number == 1:
+            if not 0 < float(candidate("standard_hours")) <= 24:
+                raise ValidationError(_("Standard working hours must be greater than 0 and no more than 24."))
+            if not 0 < float(candidate("half_day_hours")) < float(candidate("standard_hours")):
+                raise ValidationError(_("Half-day hours must be greater than 0 and less than standard working hours."))
+        elif step_number == 2:
+            if min(int(candidate("default_break_minutes")), int(candidate("default_grace_minutes")), int(candidate("round_off_interval"))) < 0:
+                raise ValidationError(_("Break, grace, and rounding values cannot be negative."))
+        elif step_number == 3:
+            self._validated_clock_method_values(policy, values)
+        elif step_number == 4:
+            numeric_fields = (
+                "daily_overtime_threshold", "daily_overtime_rate", "weekly_overtime_threshold",
+                "weekly_overtime_rate", "weekend_overtime_rate", "holiday_overtime_rate",
+                "overtime_auto_approve_max_hours",
+            )
+            if min(float(candidate(field)) for field in numeric_fields) < 0:
+                raise ValidationError(_("Overtime thresholds, limits, and multiplier rates cannot be negative."))
+        elif step_number == 5 and not 1 <= int(candidate("regularization_window_days")) <= 365:
+            raise ValidationError(_("The regularization window must be between 1 and 365 days."))
+        elif step_number == 7 and float(candidate("default_billing_rate")) < 0:
+            raise ValidationError(_("The default billing rate cannot be negative."))
 
     @api.model
     def launch_policy(self, launch_data=None):
@@ -284,15 +377,24 @@ class CleonTimePolicy(models.Model):
         if not policy:
             policy = self.create({"company_id": self.env.company.id})
 
+        completed_set = set([int(s.strip()) for s in (policy.wizard_completed_steps or "").split(",") if s.strip().isdigit()])
+        required_steps = {1, 2, 3, 4, 5, 6, 7}
+        if not required_steps.issubset(completed_set):
+            missing = sorted(list(required_steps - completed_set))
+            raise ValidationError(_("Cannot launch go-live: Setup wizard steps 1–7 must all be completed prior to launch. Missing steps: %s") % missing)
+
         launch_data = launch_data or {}
         go_live_date_str = launch_data.get("go_live_date") or fields.Date.to_string(fields.Date.today())
+
+        completed_set.add(8)
+        completed_str = ",".join(str(s) for s in sorted(completed_set))
 
         policy.write({
             "launched": True,
             "go_live_date": fields.Date.from_string(go_live_date_str),
             "wizard_status": "completed",
             "wizard_step": 8,
-            "wizard_completed_steps": "1,2,3,4,5,6,7,8",
+            "wizard_completed_steps": completed_str,
         })
 
         if "cleon.time.audit.log" in self.env:
@@ -327,19 +429,20 @@ class CleonTimePolicy(models.Model):
             "holiday_overtime", "holiday_overtime_rate", "holiday_overtime_approval",
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",
             "performance_integration", "employee_portal", "leave_integration",
-            "launched", "go_live_date", "billable_tracking_enabled", "default_billing_rate",
+            "billable_tracking_enabled", "default_billing_rate",
             "overtime_auto_approve_max_hours", "regularization_require_approval", "regularization_fallback_approver",
             "overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee",
-            "wizard_step", "wizard_completed_steps", "wizard_status",
             "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        if not policy:
+            policy = self.create({"company_id": self.env.company.id})
+        if self._CLOCK_METHOD_FIELDS.intersection(clean):
+            normalized = self._validated_clock_method_values(policy, clean)
+            clean.update({key: normalized[key] for key in self._CLOCK_METHOD_FIELDS if key in clean})
         if policy:
             policy.write(clean)
-        else:
-            clean["company_id"] = self.env.company.id
-            policy = self.create(clean)
         return policy.get_cleon_policy()
 
 
@@ -494,16 +597,254 @@ class CleonTimePolicy(models.Model):
         company = self.env.company
         policy = self.search([("company_id", "=", company.id)], limit=1)
         analytic_fields = self.env["account.analytic.line"]._fields if "account.analytic.line" in self.env else {}
+
+        has_hr_payroll = "hr.payslip" in self.env
+        has_cleon_payroll = "cleon.payroll.entry" in self.env
+        payroll_engine_installed = has_hr_payroll or has_cleon_payroll
+
+        has_biometric_connector = False
+        if "cleon.biometric.device" in self.env:
+            device_model = self.env["cleon.biometric.device"]
+            if "company_id" in device_model._fields:
+                has_biometric_connector = bool(device_model.search_count([("company_id", "=", company.id)]))
+            else:
+                has_biometric_connector = bool(device_model.search_count([]))
+        elif "hr.attendance.device" in self.env:
+            device_model = self.env["hr.attendance.device"]
+            if "company_id" in device_model._fields:
+                has_biometric_connector = bool(device_model.search_count([("company_id", "=", company.id)]))
+            else:
+                has_biometric_connector = bool(device_model.search_count([]))
+
+        ready_ot_count = self.env["cleon.overtime.request"].search_count([
+            ("company_id", "=", company.id),
+            ("state", "=", "approved"),
+            ("payroll_state", "=", "ready"),
+            ("employee_id.employee_code", "!=", False),
+        ]) if "cleon.overtime.request" in self.env else 0
+
+        target_engine = "hr_payroll" if has_hr_payroll else ("cleon_payroll" if has_cleon_payroll else "csv_contract")
+        payroll_enabled = bool(policy and policy.payroll_integration)
+
+        # Strict GPS Validation: non-zero lat/long and positive radius
+        gps_configured = bool(
+            policy and policy.clock_method in ("gps", "mixed")
+            and policy.office_latitude != 0.0
+            and policy.office_longitude != 0.0
+            and (policy.gps_radius_meters or 0) > 0
+        )
+
+        # Strict IP CIDR Validation: every entry must parse as a valid IP or subnet
+        ip_configured = False
+        if policy and policy.clock_method in ("ip", "mixed") and policy.ip_whitelist and policy.ip_whitelist.strip():
+            raw_entries = [e.strip() for e in policy.ip_whitelist.replace("\n", ",").split(",") if e.strip()]
+            if raw_entries:
+                ip_configured = True
+                for entry in raw_entries:
+                    try:
+                        ipaddress.ip_network(entry, strict=False)
+                    except ValueError:
+                        try:
+                            ipaddress.ip_address(entry)
+                        except ValueError:
+                            ip_configured = False
+                            break
+
         return {
-            "payroll": "hr.payslip" in self.env or "cleon.payroll.entry" in self.env,
+            "payroll_engine_installed": payroll_engine_installed,
+            "payroll_contract_available": True,
+            "payroll_integration_enabled": payroll_enabled,
+            "payroll_adapter_available": False,
+            "payroll": payroll_engine_installed,
+            "payroll_contract_ready": payroll_enabled,
+            "payroll_handoff": {
+                "enabled": payroll_enabled,
+                "target_engine": target_engine,
+                "contract_available": True,
+                "adapter_available": False,
+                "ready_overtime_count": ready_ot_count,
+                "supported_exports": ["overtime"],
+            },
             "sales_timesheet": "sale.order.line" in self.env and "so_line" in analytic_fields,
             "project": "project.project" in self.env and "project.task" in self.env,
             "leave": "hr.leave" in self.env,
-            "gps_configured": bool(policy and policy.clock_method in ("gps", "mixed")),
+            "gps_configured": gps_configured,
+            "ip_configured": ip_configured,
             "browser_geolocation_supported": True,
             "biometric_configured": bool(policy and policy.clock_method in ("biometric", "mixed")),
             "webauthn_supported_by_app": True,
-            "biometric_terminal_connector": False,
+            "biometric_terminal_connector": has_biometric_connector,
+        }
+
+    @api.model
+    def save_clock_method_settings(self, clock_method, office_latitude=0.0, office_longitude=0.0, gps_radius_meters=200.0, ip_whitelist=""):
+        """Targeted RPC method saving only clock-method configuration parameters with range validation."""
+        if not self._tm_can_configure():
+            raise AccessError(_("Only HR Administrators can configure clock method settings."))
+
+        policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
+        if not policy:
+            policy = self.create({"company_id": self.env.company.id})
+        clean = self._validated_clock_method_values(policy, {
+            "clock_method": clock_method,
+            "office_latitude": office_latitude,
+            "office_longitude": office_longitude,
+            "gps_radius_meters": gps_radius_meters,
+            "ip_whitelist": str(ip_whitelist or ""),
+        })
+        policy.sudo().write(clean)
+
+        return {
+            "policy": policy.get_cleon_policy(),
+            "capabilities": self._tm_capabilities(),
+        }
+
+    @api.model
+    def get_payroll_handoff_data(self, date_from=None, date_to=None, state_filter="ready", preview_mode=False):
+        """Outbound payroll handoff contract for approved overtime records.
+
+        Preview calls without dates are scoped to the current calendar month. A final
+        handoff must always name its exact accounting period. Any overlap with an
+        administratively locked period blocks the complete final handoff; records are
+        never silently omitted from a requested range.
+        """
+        if not self._tm_can_configure() and self._tm_role() not in ("hr_manager", "system_admin"):
+            raise AccessError(_("Only HR Administrators and Managers can export payroll handoff data."))
+
+        company = self.env.company
+        policy = self.search([("company_id", "=", company.id)], limit=1)
+
+        if not preview_mode and not (policy and policy.payroll_integration):
+            raise UserError(_("Payroll integration is disabled in Time Management policy settings."))
+
+        if not date_from and not date_to:
+            if not preview_mode:
+                raise ValidationError(_("A date range is required for a final payroll handoff."))
+            date_from = fields.Date.today().replace(day=1)
+            next_month = (date_from.replace(day=28) + timedelta(days=4)).replace(day=1)
+            date_to = next_month - timedelta(days=1)
+        elif not date_from or not date_to:
+            raise ValidationError(_("Both start and end dates are required for payroll handoff."))
+
+        date_from = fields.Date.to_date(date_from)
+        date_to = fields.Date.to_date(date_to)
+        if date_from > date_to:
+            raise ValidationError(_("Payroll handoff start date cannot be after its end date."))
+
+        target_state_filter = state_filter if state_filter in ("ready", "transferred", "all") else "ready"
+        domain = [("company_id", "=", company.id), ("state", "=", "approved")]
+        if target_state_filter == "ready":
+            domain.append(("payroll_state", "=", "ready"))
+        elif target_state_filter == "transferred":
+            domain.append(("payroll_state", "=", "transferred"))
+        else:
+            domain.append(("payroll_state", "in", ["ready", "transferred"]))
+
+        if date_from:
+            domain.append(("date", ">=", date_from))
+        if date_to:
+            domain.append(("date", "<=", date_to))
+
+        ot_records = self.env["cleon.overtime.request"].search(domain)
+        ApprovalInstance = self.env.get("cleon.approval.instance")
+        StepModel = self.env.get("cleon.approval.instance.step")
+
+        items = []
+        unresolved_codes_count = 0
+
+        for ot in ot_records:
+            emp = ot.employee_id.sudo()
+            code = getattr(emp, "employee_code", False) or False
+            has_missing_code = not bool(code)
+            if has_missing_code:
+                unresolved_codes_count += 1
+
+            app_inst = False
+            if "approval_instance_id" in ot._fields and ot.approval_instance_id:
+                app_inst = ot.approval_instance_id
+            elif ApprovalInstance is not None:
+                app_inst = ApprovalInstance.sudo().search([
+                    ("res_model", "=", "cleon.overtime.request"),
+                    ("res_id", "=", ot.id),
+                ], limit=1, order="id desc")
+
+            decision_src = app_inst.decision_source if (app_inst and app_inst.decision_source) else "human"
+
+            final_step = False
+            if app_inst and StepModel is not None:
+                steps = StepModel.sudo().search([("instance_id", "=", app_inst.id)])
+                if steps:
+                    decided = steps.filtered(lambda s: s.state in ("approved", "rejected") or s.decision_user_id)
+                    if decided:
+                        final_step = decided.sorted(lambda s: (s.sequence, s.id), reverse=True)[0]
+
+            final_approver_name = "System Automation Engine"
+            if final_step and final_step.decision_user_id:
+                final_approver_name = final_step.decision_user_id.sudo().name
+            elif ot.approver_id:
+                final_approver_name = ot.approver_id.sudo().name
+
+            decision_time = False
+            if final_step and final_step.decision_at:
+                decision_time = fields.Datetime.to_string(final_step.decision_at)
+            elif app_inst and app_inst.write_date:
+                decision_time = fields.Datetime.to_string(app_inst.write_date)
+            elif ot.decision_at:
+                decision_time = fields.Datetime.to_string(ot.decision_at)
+            else:
+                decision_time = fields.Datetime.to_string(ot.create_date)
+
+            approval_ref = app_inst.name if hasattr(app_inst, "name") and app_inst.name else (f"APP-INST-{app_inst.id}" if app_inst else f"OT-APPROVAL-{ot.id}")
+
+            items.append({
+                "id": ot.id,
+                "employee_id": emp.id,
+                "employee_name": emp.name,
+                "employee_code": code,
+                "missing_code": has_missing_code,
+                "readiness_error": _("Missing payroll employee code") if has_missing_code else False,
+                "date": fields.Date.to_string(ot.date),
+                "overtime_hours": ot.overtime_hours,
+                "regular_hours": ot.regular_hours,
+                "overtime_type": getattr(ot, "category", "daily"),
+                "payroll_state": ot.payroll_state,
+                "approval_instance_id": app_inst.id if app_inst else False,
+                "approval_reference": approval_ref,
+                "final_decision_at": decision_time,
+                "decision_source": decision_src,
+                "final_approver": final_approver_name,
+            })
+
+        period_lock_records = []
+        if "cleon.time.period.lock" in self.env:
+            lock_domain = [("company_id", "=", company.id), ("state", "=", "locked")]
+            if date_from:
+                lock_domain.append(("date_to", ">=", date_from))
+            if date_to:
+                lock_domain.append(("date_from", "<=", date_to))
+            period_lock_records = self.env["cleon.time.period.lock"].search(lock_domain)
+
+        is_period_locked = len(period_lock_records) > 0
+        locked_lock_name = period_lock_records[0].name if period_lock_records else False
+
+        if is_period_locked and not preview_mode:
+            raise UserError(_("Selected handoff date range overlaps with locked period '%s'. Final payroll export is blocked.") % locked_lock_name)
+
+        return {
+            "company_id": company.id,
+            "company_name": company.name,
+            "payroll_integration": bool(policy and policy.payroll_integration),
+            "preview_mode": preview_mode,
+            "state_filter": target_state_filter,
+            "date_from": date_from,
+            "date_to": date_to,
+            "total_records": len(items),
+            "total_overtime_hours": sum(i["overtime_hours"] for i in items),
+            "unresolved_employee_codes_count": unresolved_codes_count,
+            "period_locked": is_period_locked,
+            "period_locked_count": len(period_lock_records),
+            "period_lock_name": locked_lock_name,
+            "records": items,
         }
 
     @api.model
@@ -525,5 +866,3 @@ class CleonTimePolicy(models.Model):
                 "settings": can_config,
             },
         }
-
-

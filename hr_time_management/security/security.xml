@@ -201,7 +201,7 @@
     <record id="rule_overtime_hr_manager_company" model="ir.rule">
         <field name="name">HR Managers manage company overtime</field>
         <field name="model_id" ref="model_cleon_overtime_request"/>
-        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('base.group_system'))]"/>
+        <field name="groups" eval="[(4, ref('hr_time_management.group_time_management_hr_manager')), (4, ref('hr_time_management.group_time_management_hr_admin')), (4, ref('base.group_system'))]"/>
         <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
     </record>
 
