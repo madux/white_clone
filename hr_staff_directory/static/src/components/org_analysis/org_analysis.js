@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillStart, onWillUpdateProps, onWillUnmount, useState, useRef } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUpdateProps, onWillUnmount, useState, useRef, useExternalListener } from "@odoo/owl";
 import { loadJS } from "@web/core/assets";
 
 export class StaffDirectoryOrgAnalysis extends Component {
@@ -35,8 +35,12 @@ export class StaffDirectoryOrgAnalysis extends Component {
             locationData: [], // { name, count, pct, color, cx, cy }
             gradeData: [],
             typeData: [],
-            modeData: []
+            modeData: [],
+            isDateDropdownOpen: false,
+            selectedDateRange: "Jan 1 – Dec 31, 2026"
         });
+
+        useExternalListener(window, "click", this.onWindowClick);
 
         // Fixed location coordinates for the world map SVG (400x200 viewBox)
         this.LOC_COORDS = {
@@ -77,6 +81,21 @@ export class StaffDirectoryOrgAnalysis extends Component {
                 if (c) c.destroy();
             });
         });
+    }
+
+    onWindowClick(ev) {
+        if (this.state.isDateDropdownOpen && !ev.target.closest('.sdir-oa-date-container')) {
+            this.state.isDateDropdownOpen = false;
+        }
+    }
+
+    toggleDateDropdown() {
+        this.state.isDateDropdownOpen = !this.state.isDateDropdownOpen;
+    }
+
+    selectDateRange(range) {
+        this.state.selectedDateRange = range;
+        this.state.isDateDropdownOpen = false;
     }
 
     processData(people) {
