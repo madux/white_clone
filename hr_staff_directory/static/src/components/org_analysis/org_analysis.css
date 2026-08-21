@@ -1,0 +1,214 @@
+/* ============================================================================
+   Organization Analysis Styles
+   Prefix: sdir-oa-
+   ============================================================================ */
+
+.sdir-oa-container {
+    flex: 1 1 0%;
+    overflow: auto;
+    background: #F6F7FA;
+    display: flex;
+    flex-direction: column;
+}
+
+.sdir-oa-header {
+    background: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+.sdir-oa-btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background: #FFFFFF;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.sdir-oa-btn-back:hover {
+    background: #F9FAFB;
+}
+
+.sdir-oa-title-wrap {
+    flex: 1 1 0%;
+    min-width: 0px;
+}
+
+.sdir-oa-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0px;
+    line-height: 1.2;
+}
+
+.sdir-oa-subtitle {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin: 3px 0px 0px;
+    line-height: 1;
+}
+
+.sdir-oa-btn-date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    background: #FFFFFF;
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.sdir-oa-btn-date:hover {
+    background: #F9FAFB;
+}
+
+.sdir-oa-btn-export {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #E91E8C;
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+.sdir-oa-btn-export:hover {
+    background: #D81B60;
+}
+
+.sdir-oa-content {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* KPIs */
+.sdir-oa-kpi-grid {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.sdir-oa-kpi-card {
+    flex: 1 1 0%;
+    background: #FFFFFF;
+    border-radius: 14px;
+    border: 1px solid #EFF0F5;
+    padding: 18px 20px;
+    box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.06);
+    min-width: 0px;
+}
+
+.sdir-oa-kpi-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+}
+
+.sdir-oa-kpi-val-wrap {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.sdir-oa-kpi-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sdir-oa-kpi-icon-blue { background-color: #EEF2FF; color: #6366F1; }
+.sdir-oa-kpi-icon-green { background-color: #F0FDF4; color: #22C55E; }
+.sdir-oa-kpi-icon-orange { background-color: #FFF7ED; color: #F97316; }
+.sdir-oa-kpi-icon-purple { background-color: #FDF4FF; color: #A855F7; }
+
+.sdir-oa-kpi-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: #111827;
+    line-height: 1;
+}
+
+.sdir-oa-kpi-subtext {
+    margin-top: 10px;
+    font-size: 11px;
+    color: #9CA3AF;
+}
+
+/* Charts */
+.sdir-oa-chart-grid-top {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1.3fr;
+    gap: 16px;
+}
+.sdir-oa-chart-grid-bottom {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.2fr;
+    gap: 16px;
+}
+
+@media (max-width: 1200px) {
+    .sdir-oa-chart-grid-top, .sdir-oa-chart-grid-bottom {
+        grid-template-columns: 1fr;
+    }
+}
+
+.sdir-oa-chart-card {
+    background: #FFFFFF;
+    border-radius: 14px;
+    border: 1px solid #EFF0F5;
+    padding: 18px 20px;
+    box-shadow: 0px 1px 4px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+}
+.sdir-oa-chart-card-lg { min-height: 320px; }
+.sdir-oa-chart-card-sm { min-height: 260px; }
+
+.sdir-oa-chart-header {
+    margin-bottom: 14px;
+}
+.sdir-oa-chart-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+.sdir-oa-chart-subtitle {
+    font-size: 11px;
+    color: #9CA3AF;
+    margin-top: 2px;
+}
+
+.sdir-oa-chart-body {
+    flex: 1 1 0%;
+}

@@ -1,4 +1,4 @@
-﻿# hr_staff_directory Module Study Notes
+# hr_staff_directory Module Study Notes
 
 ## 1. Overview
 The hr_staff_directory module is a custom Odoo 17 addon designed to provide a comprehensive **Staff Directory Dashboard** alongside workforce analytics. It acts as an interactive, highly visual frontend for exploring and analyzing employee data within the CleonHR suite.
@@ -39,3 +39,11 @@ The **relationship_graph** component uses d3.js (specifically d3-force) to simul
 *   **Peer / Team Lines (Chain Optimization):** Instead of creating a complete graph (a clique) where every team member is connected to every other team member—which creates an (N^2)$ explosion of intersecting lines that crushes browser physics engines—peers are grouped by their shared manager and linked sequentially in a **single continuous chain** (A ➔ B ➔ C). This (N)$ optimization keeps the physics simulation incredibly lightweight while still ensuring the forces pull the entire team into a distinct, cohesive visual cluster on the canvas.
 * If you ever want to change this logic (for instance, if you want peers to mean "people in the same Department" instead of "people with the same Manager"), that logic lives right inside the buildGraphData() function in **relationship_graph.js**
 
+## 6. Organization Analysis KPIs
+1. Total Teams
+The Logic: I count the number of unique managers across the currently filtered list of employees.
+The Rationale: In most organizational structures, a "team" is defined by a group of people reporting to a single manager. By counting how many distinct manager_ids exist in the current data, we get a highly accurate proxy for the number of active teams.
+2. Avg. Span of Control
+The Logic: I divide the Total Headcount by the Total Teams (the unique manager count from above).
+The Rationale: "Span of control" is an HR metric that represents the average number of direct reports a manager is responsible for. For example, if you have 100 employees and 20 managers (teams), the average span of control is 100 / 20 = 5.0. This gives leadership a quick pulse on whether managers are stretched too thin or if the organization is too top-heavy.
+If your organization has a different specific definition for what constitutes a "Team" (for example, if you have a dedicated team_id field on the employee record that differs from their manager), or if you want "Span of Control" calculated differently, we can easily tweak that logic before we move on to the charts!

@@ -66,6 +66,10 @@
             'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.js',
             'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.css',
             'hr_staff_directory/static/src/components/relationship_graph/relationship_graph.xml',
+
+            'hr_staff_directory/static/src/components/org_analysis/org_analysis.js',
+            'hr_staff_directory/static/src/components/org_analysis/org_analysis.css',
+            'hr_staff_directory/static/src/components/org_analysis/org_analysis.xml',
         ],
     },
     'installable': True,

@@ -100,11 +100,15 @@
             />
             </div><!-- /.sdir-people-content -->
 
-            <!-- ═══ ORG STRUCTURE TAB ════════════════════════════════════════════ -->
+            <!-- ═══ ORGANIZATION TAB ═════════════════════════════════════════════ -->
             <div class="sdir-org-content" t-if="state.activeTab === 'org'">
                 
-                <!-- Left Sidebar -->
-                <div t-att-class="'sdir-org-sidebar ' + (state.orgSidebarOpen ? '' : 'sdir-org-sidebar-closed')">
+                <t t-if="state.showOrgAnalysis">
+                    <StaffDirectoryOrgAnalysis people="this.filteredPeople()" closeAnalysis="this.toggleOrgAnalysis.bind(this)"/>
+                </t>
+                <t t-else="">
+                    <!-- Org Sidebar -->
+                    <div t-att-class="'sdir-org-sidebar ' + (state.orgSidebarOpen ? '' : 'sdir-org-sidebar-closed')">
                     <t t-if="state.orgSidebarOpen">
                         <div class="sdir-org-sidebar-header">
                             <div class="sdir-org-sidebar-search">
@@ -153,7 +157,7 @@
                                         <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'graph' ? 'active' : ''" t-on-click="() => this.setOrgView('graph')">Relationship Graph</div>
                                     </div>
                                 </div>
-                                <button class="sdir-org-btn-icon" title="Stats">
+                                <button class="sdir-org-btn-icon" title="Stats" t-on-click="toggleOrgAnalysis">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-column"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
                                 </button>
                                 <div style="position: relative;">
@@ -239,6 +243,7 @@
                         </t>
                     </div>
                 </div> <!-- Close sdir-org-main -->
+                </t>
             </div> <!-- Close sdir-org-content -->
             
             <!-- ═══ WORKFORCE INTELLIGENCE TAB ═══════════════════════════════════ -->

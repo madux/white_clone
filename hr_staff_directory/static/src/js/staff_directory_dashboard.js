@@ -11,6 +11,7 @@ import { StaffDirectoryBarChart } from "./../components/bar_chart/bar_chart";
 import { StaffDirectoryOrgChart } from "./../components/org_chart/org_chart";
 import { StaffDirectoryGeographicMap } from "./../components/geographic_map/geographic_map";
 import { StaffDirectoryRelationshipGraph } from "./../components/relationship_graph/relationship_graph";
+import { StaffDirectoryOrgAnalysis } from "./../components/org_analysis/org_analysis";
 
 // ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
 // bus_service.subscribe() has no unsubscribe in Odoo 17, so subscribing on every
@@ -33,7 +34,7 @@ let activeSdirHandler = null;
  */
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
-    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph };
+    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis };
 
     setup() {
         this.rpc = useService("rpc");
@@ -205,6 +206,8 @@ export class StaffDirectoryDashboard extends Component {
                 retention_priority: 0,
                 probation:          0,
             },
+            adminMode: false,
+            showOrgAnalysis: false,
         });
 
         onWillStart(async () => {
@@ -892,6 +895,14 @@ export class StaffDirectoryDashboard extends Component {
         this.state.activeTab = tab;
     }
 
+
+    toggleOrgChangesPanel() {
+        this.state.isOrgChangesPanelOpen = !this.state.isOrgChangesPanelOpen;
+    }
+
+    toggleOrgAnalysis() {
+        this.state.showOrgAnalysis = !this.state.showOrgAnalysis;
+    }
 
     toggleAdminMode(isAdmin) {
         this.state.adminMode = isAdmin;

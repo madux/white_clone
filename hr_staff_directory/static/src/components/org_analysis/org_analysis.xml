@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_staff_directory.OrgAnalysis">
+        <div class="sdir-oa-container" id="__FPSC_ID_1_1787311835854">
+            <div class="sdir-oa-header">
+                <button class="sdir-oa-btn-back" t-on-click="props.closeAnalysis">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                    Back to Organizational Structure
+                </button>
+                <div class="sdir-oa-title-wrap">
+                    <h2 class="sdir-oa-title">Organization Analysis</h2>
+                    <p class="sdir-oa-subtitle">Analyze and compare your organizational data across multiple dimensions</p>
+                </div>
+                <div style="position: relative; flex-shrink: 0;">
+                    <button class="sdir-oa-btn-date">
+                        Jan 1 – Dec 31, 2026
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg>
+                    </button>
+                </div>
+                <button class="sdir-oa-btn-export">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                    Export
+                </button>
+            </div>
+            
+            <div class="sdir-oa-content">
+                <!-- KPI Grid -->
+                <div class="sdir-oa-kpi-grid">
+                    <div class="sdir-oa-kpi-card">
+                        <div class="sdir-oa-kpi-title">Total Headcount</div>
+                        <div class="sdir-oa-kpi-val-wrap">
+                            <div class="sdir-oa-kpi-icon-wrap sdir-oa-kpi-icon-blue">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <span class="sdir-oa-kpi-value"><t t-esc="state.kpi.headcount"/></span>
+                        </div>
+                        <div class="sdir-oa-kpi-subtext">— No historical comparison</div>
+                    </div>
+                    
+                    <div class="sdir-oa-kpi-card">
+                        <div class="sdir-oa-kpi-title">Total Departments</div>
+                        <div class="sdir-oa-kpi-val-wrap">
+                            <div class="sdir-oa-kpi-icon-wrap sdir-oa-kpi-icon-green">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building2 lucide-building-2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                            </div>
+                            <span class="sdir-oa-kpi-value"><t t-esc="state.kpi.departments"/></span>
+                        </div>
+                        <div class="sdir-oa-kpi-subtext">— No historical comparison</div>
+                    </div>
+                    
+                    <div class="sdir-oa-kpi-card">
+                        <div class="sdir-oa-kpi-title">Total Teams</div>
+                        <div class="sdir-oa-kpi-val-wrap">
+                            <div class="sdir-oa-kpi-icon-wrap sdir-oa-kpi-icon-orange">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                            </div>
+                            <span class="sdir-oa-kpi-value"><t t-esc="state.kpi.teams"/></span>
+                        </div>
+                        <div class="sdir-oa-kpi-subtext">— No historical comparison</div>
+                    </div>
+                    
+                    <div class="sdir-oa-kpi-card">
+                        <div class="sdir-oa-kpi-title">Avg. Span of Control</div>
+                        <div class="sdir-oa-kpi-val-wrap">
+                            <div class="sdir-oa-kpi-icon-wrap sdir-oa-kpi-icon-purple">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-briefcase"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
+                            </div>
+                            <span class="sdir-oa-kpi-value"><t t-esc="state.kpi.spanOfControl"/></span>
+                        </div>
+                        <div class="sdir-oa-kpi-subtext">— No historical comparison</div>
+                    </div>
+                </div>
+                
+                <!-- Chart Grid Top -->
+                <div class="sdir-oa-chart-grid-top">
+                    <!-- Headcount by Dept -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-lg">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Headcount by Department</div>
+                            <div class="sdir-oa-chart-subtitle">Active employees per department</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <div class="recharts-responsive-container" style="width: 100%; height: 250px; min-width: 0px;"><div class="recharts-wrapper" style="position: relative; cursor: default; width: 100%; height: 100%; max-height: 250px; max-width: 478px;"><svg class="recharts-surface" width="478" height="250" viewBox="0 0 478 250" style="width: 100%; height: 100%;"><title></title><desc></desc><defs><clipPath id="recharts13-clip"><rect x="138" y="0" height="220" width="324"></rect></clipPath></defs><g class="recharts-layer recharts-cartesian-axis recharts-xAxis xAxis"><g class="recharts-cartesian-axis-ticks"><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="324" height="30" stroke="none" font-size="10" x="138" y="228" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="138" dy="0.71em">0</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="324" height="30" stroke="none" font-size="10" x="219" y="228" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="219" dy="0.71em">9</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="324" height="30" stroke="none" font-size="10" x="300" y="228" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="300" dy="0.71em">18</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="324" height="30" stroke="none" font-size="10" x="381" y="228" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="381" dy="0.71em">27</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="324" height="30" stroke="none" font-size="10" x="462" y="228" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="462" dy="0.71em">36</tspan></text></g></g></g><g class="recharts-layer recharts-cartesian-axis recharts-yAxis yAxis"><g class="recharts-cartesian-axis-ticks"><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="11" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Operations</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="33" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Engineering</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="55" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="-0.14500000000000002em">Sales &amp; Business</tspan><tspan x="130" dy="1em">Development</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="77" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Customer Service</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="99" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Finance</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="121" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Compliance &amp; Risk</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="143" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Human Resources</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="165" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Marketing</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="187" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Design</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="130" height="220" stroke="none" font-size="11" x="130" y="209" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#374151"><tspan x="130" dy="0.355em">Legal</tspan></text></g></g></g><g class="recharts-layer recharts-bar"><g class="recharts-layer recharts-bar-rectangles"><g class="recharts-layer"><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="4" width="315" height="14" radius="0,4,4,0" name="Operations" fill="#E91E8C" opacity="1" class="recharts-rectangle" d="M138,4L 449,4A 4,4,0,0,1,
+                            453,8L 453,14A 4,4,0,0,1,
+                            449,18L 138,18Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="26" width="270" height="14" radius="0,4,4,0" name="Engineering" fill="#8B9CF0" opacity="0.94" class="recharts-rectangle" d="M138,26L 404,26A 4,4,0,0,1,
+                            408,30L 408,36A 4,4,0,0,1,
+                            404,40L 138,40Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="48" width="225" height="14" radius="0,4,4,0" name="Sales &amp; Business Development" fill="#8B9CF0" opacity="0.88" class="recharts-rectangle" d="M138,48L 359,48A 4,4,0,0,1,
+                            363,52L 363,58A 4,4,0,0,1,
+                            359,62L 138,62Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="70" width="225" height="14" radius="0,4,4,0" name="Customer Service" fill="#8B9CF0" opacity="0.8200000000000001" class="recharts-rectangle" d="M138,70L 359,70A 4,4,0,0,1,
+                            363,74L 363,80A 4,4,0,0,1,
+                            359,84L 138,84Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="92" width="180" height="14" radius="0,4,4,0" name="Finance" fill="#8B9CF0" opacity="0.76" class="recharts-rectangle" d="M138,92L 314,92A 4,4,0,0,1,
+                            318,96L 318,102A 4,4,0,0,1,
+                            314,106L 138,106Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="114" width="135" height="14" radius="0,4,4,0" name="Compliance &amp; Risk" fill="#8B9CF0" opacity="0.7" class="recharts-rectangle" d="M138,114L 269,114A 4,4,0,0,1,
+                            273,118L 273,124A 4,4,0,0,1,
+                            269,128L 138,128Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="136" width="108" height="14" radius="0,4,4,0" name="Human Resources" fill="#8B9CF0" opacity="0.64" class="recharts-rectangle" d="M138,136L 242,136A 4,4,0,0,1,
+                            246,140L 246,146A 4,4,0,0,1,
+                            242,150L 138,150Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="158" width="90" height="14" radius="0,4,4,0" name="Marketing" fill="#8B9CF0" opacity="0.5800000000000001" class="recharts-rectangle" d="M138,158L 224,158A 4,4,0,0,1,
+                            228,162L 228,168A 4,4,0,0,1,
+                            224,172L 138,172Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="180" width="72" height="14" radius="0,4,4,0" name="Design" fill="#8B9CF0" opacity="0.52" class="recharts-rectangle" d="M138,180L 206,180A 4,4,0,0,1,
+                            210,184L 210,190A 4,4,0,0,1,
+                            206,194L 138,194Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="138" y="202" width="72" height="14" radius="0,4,4,0" name="Legal" fill="#8B9CF0" opacity="0.45999999999999996" class="recharts-rectangle" d="M138,202L 206,202A 4,4,0,0,1,
+                            210,206L 210,212A 4,4,0,0,1,
+                            206,216L 138,216Z"></path></g></g></g><g class="recharts-layer"></g></g></svg></div></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grade Distribution -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-lg">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Grade Distribution</div>
+                            <div class="sdir-oa-chart-subtitle">Employees by grade level</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <div style="display: flex; gap: 20px; align-items: center; height: 100%;">
+                                <div style="position: relative; width: 150px; height: 150px; flex-shrink: 0;">
+                                    <div class="recharts-responsive-container" style="width: 100%; height: 100%; min-width: 0px;"><div class="recharts-wrapper" style="position: relative; cursor: default; width: 100%; height: 100%; max-height: 150px; max-width: 150px;"><svg cx="50%" cy="50%" class="recharts-surface" width="150" height="150" viewBox="0 0 150 150" style="width: 100%; height: 100%;"><title></title><desc></desc><defs><clipPath id="recharts16-clip"><rect x="5" y="5" height="140" width="140"></rect></clipPath></defs><g class="recharts-layer recharts-pie" tabindex="0"><g class="recharts-layer"><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L1" stroke="none" fill="#F4A460" tabindex="-1" class="recharts-sector" d="M 75,7
+                        A 68,68,0,
+                        1,1,
+                        65.6302602334446,142.35137694737227
+                    L 68.66164662850665,120.56122558204595
+                                A 46,46,0,
+                                1,0,
+                                75,29 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L3" stroke="none" fill="#4ECDC4" tabindex="-1" class="recharts-sector" d="M 63.285438868064766,141.98334910622305
+                        A 68,68,0,
+                        0,1,
+                        7.122523691816866,70.9197781883778
+                    L 29.08288367387612,72.23984995096146
+                                A 46,46,0,
+                                0,0,
+                                67.07544394016146,120.31226557185677 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L4" stroke="none" fill="#F7D560" tabindex="-1" class="recharts-sector" d="M 7.306270504055959,68.55337398867002
+                        A 68,68,0,
+                        0,1,
+                        28.797991310216865,25.10636921380442
+                    L 43.74570000397023,41.2484262328677
+                                A 46,46,0,
+                                0,0,
+                                29.207182988037857,70.63904710998266 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L5" stroke="none" fill="#6C7FD4" tabindex="-1" class="recharts-sector" d="M 30.567398928672816,23.52433621568057
+                        A 68,68,0,
+                        0,1,
+                        55.755244147345024,9.780069210618592
+                    L 61.98148868790987,30.880635054241985
+                                A 46,46,0,
+                                0,0,
+                                44.942652216455144,40.178227440019214 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L6" stroke="none" fill="#E7736A" tabindex="-1" class="recharts-sector" d="M 58.043110292155944,9.14816713685174
+                        A 68,68,0,
+                        0,1,
+                        68.19902043816963,7.340952733580664
+                    L 70.39933735523239,29.230644496245745
+                                A 46,46,0,
+                                0,0,
+                                63.52916284469373,30.453171886693823 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="L7" stroke="none" fill="#9B7CD4" tabindex="-1" class="recharts-sector" d="M 70.5644301081311,7.144818033297213
+                        A 68,68,0,
+                        0,1,
+                        72.62683422422995,7.041423762701484
+                    L 73.39462315168497,29.028021957121595
+                                A 46,46,0,
+                                0,0,
+                                71.99946742608869,29.097965140171652 Z" role="img"></path></g></g></g></svg></div></div>
+                                    <div style="position: absolute; inset: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+                                        <span style="font-size: 22px; font-weight: 800; color: rgb(17, 24, 39); line-height: 1;"><t t-esc="state.kpi.headcount"/></span>
+                                        <span style="font-size: 10px; color: rgb(156, 163, 175); margin-top: 2px;">total</span>
+                                    </div>
+                                </div>
+                                <div style="flex: 1 1 0%; min-width: 0px;">
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(244, 164, 96); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L1</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">108</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">54%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(78, 205, 196); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L3</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">48</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">24%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(247, 213, 96); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L4</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">24</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">12%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(108, 127, 212); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L5</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">14</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">7%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(231, 115, 106); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L6</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">5</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">3%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(155, 124, 212); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">L7</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">1</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">1%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Location Distribution -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-lg">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Headcount by Location</div>
+                            <div class="sdir-oa-chart-subtitle">Employee distribution across offices</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <svg viewBox="0 0 400 200" style="width: 100%; height: auto; display: block;"><rect width="400" height="200" fill="#EEF3F8" rx="6"></rect><path d="M 107,8 L 140,4 L 158,10 L 152,24 L 128,28 L 104,22 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 22,18 L 148,18 L 152,34 L 142,47 L 132,54 L 120,68 L 106,87 L 93,90 L 75,83 L 55,77 L 43,62 L 22,40 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 93,90 L 108,92 L 104,104 L 94,102 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 100,104 L 163,98 L 166,118 L 150,133 L 125,148 L 109,152 L 102,140 L 98,118 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 148,26 L 160,24 L 165,30 L 156,35 L 144,32 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 162,22 L 196,12 L 220,10 L 244,20 L 246,36 L 238,50 L 216,54 L 198,58 L 180,52 L 162,40 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 176,64 L 212,56 L 248,58 L 264,66 L 260,90 L 248,104 L 222,118 L 196,118 L 172,94 L 170,72 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 238,50 L 270,46 L 282,58 L 278,80 L 264,84 L 246,76 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 244,20 L 262,14 L 308,10 L 372,12 L 400,18 L 395,36 L 372,48 L 358,62 L 330,72 L 304,80 L 286,84 L 278,80 L 268,64 L 248,58 L 246,36 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 278,80 L 298,75 L 310,88 L 302,106 L 284,108 L 270,94 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 304,80 L 324,77 L 332,88 L 320,96 L 300,90 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 356,58 L 364,50 L 370,56 L 367,65 L 358,66 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 325,130 L 374,122 L 386,136 L 383,158 L 360,168 L 328,165 L 316,150 L 318,136 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><path d="M 382,158 L 390,152 L 395,160 L 390,166 Z" fill="#D2DCE8" stroke="#C4CDD9" stroke-width="0.5"></path><g><circle cx="117.7" cy="56.1" r="16.3" fill="#E91E8C" opacity="0.12"></circle><circle cx="117.7" cy="56.1" r="12.3" fill="#E91E8C" opacity="0.85"></circle><circle cx="117.7" cy="56.1" r="2.5" fill="#fff"></circle></g><g><circle cx="208" cy="101.2" r="15.5" fill="#E91E8C" opacity="0.12"></circle><circle cx="208" cy="101.2" r="11.5" fill="#E91E8C" opacity="0.85"></circle><circle cx="208" cy="101.2" r="2.5" fill="#fff"></circle></g><g><circle cx="64" cy="60.2" r="15.1" fill="#E91E8C" opacity="0.12"></circle><circle cx="64" cy="60.2" r="11.1" fill="#E91E8C" opacity="0.85"></circle><circle cx="64" cy="60.2" r="2.5" fill="#fff"></circle></g><g><circle cx="207.7" cy="107.4" r="13.6" fill="#E91E8C" opacity="0.12"></circle><circle cx="207.7" cy="107.4" r="9.6" fill="#E91E8C" opacity="0.85"></circle><circle cx="207.7" cy="107.4" r="2.5" fill="#fff"></circle></g><g><circle cx="209.4" cy="97.1" r="13.2" fill="#E91E8C" opacity="0.12"></circle><circle cx="209.4" cy="97.1" r="9.2" fill="#E91E8C" opacity="0.85"></circle><circle cx="209.4" cy="97.1" r="2.5" fill="#fff"></circle></g></svg>
+                            <div style="margin-top: 10px;">
+                                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 5px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(108, 127, 212); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Remote — Global</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">39</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 32px; text-align: right; flex-shrink: 0;">20%</span></div>
+                                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 5px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(244, 164, 96); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">HQ New York</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">32</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 32px; text-align: right; flex-shrink: 0;">16%</span></div>
+                                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 5px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(78, 205, 196); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Abuja Regional Office</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">30</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 32px; text-align: right; flex-shrink: 0;">15%</span></div>
+                                <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 5px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(231, 115, 106); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">San Francisco Office</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">29</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 32px; text-align: right; flex-shrink: 0;">14%</span></div>
+                                <div style="display: flex; align-items: center; gap: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(209, 213, 219);"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(156, 163, 175);">4 other locations</span><span style="font-size: 11px; font-weight: 700; color: rgb(156, 163, 175);">45</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chart Grid Bottom -->
+                <div class="sdir-oa-chart-grid-bottom">
+                    <!-- Employment Type -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-sm">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Employment Type Mix</div>
+                            <div class="sdir-oa-chart-subtitle">Breakdown by contract type</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <div style="display: flex; gap: 20px; align-items: center; height: 100%;">
+                                <div style="position: relative; width: 150px; height: 150px; flex-shrink: 0;">
+                                    <div class="recharts-responsive-container" style="width: 100%; height: 100%; min-width: 0px;"><div class="recharts-wrapper" style="position: relative; cursor: default; width: 100%; height: 100%; max-height: 150px; max-width: 150px;"><svg cx="50%" cy="50%" class="recharts-surface" width="150" height="150" viewBox="0 0 150 150" style="width: 100%; height: 100%;"><title></title><desc></desc><defs><clipPath id="recharts18-clip"><rect x="5" y="5" height="140" width="140"></rect></clipPath></defs><g class="recharts-layer recharts-pie" tabindex="0"><g class="recharts-layer"><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Permanent Full-Time" stroke="none" fill="#4A90E2" tabindex="-1" class="recharts-sector" d="M 75,7
+                        A 68,68,0,
+                        1,1,
+                        26.967117908006585,26.866412579814316
+                    L 42.507167996592685,42.439043803992035
+                                A 46,46,0,
+                                1,0,
+                                75,29 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Contract" stroke="none" fill="#F4A460" tabindex="-1" class="recharts-sector" d="M 28.6762162174223,25.219410850563534
+                        A 68,68,0,
+                        0,1,
+                        53.80632869433995,10.387088777956748
+                    L 60.66310470499467,31.291265938029568
+                                A 46,46,0,
+                                0,0,
+                                43.66332273531509,41.32489557538122 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Part-Time" stroke="none" fill="#87C9EB" tabindex="-1" class="recharts-sector" d="M 56.07419738839819,9.686800755845027
+                        A 68,68,0,
+                        0,1,
+                        72.62683422422995,7.041423762701484
+                    L 73.39462315168497,29.028021957121595
+                                A 46,46,0,
+                                0,0,
+                                62.19725117450466,30.817541687777513 Z" role="img"></path></g></g></g></svg></div></div>
+                                    <div style="position: absolute; inset: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+                                        <span style="font-size: 22px; font-weight: 800; color: rgb(17, 24, 39); line-height: 1;"><t t-esc="state.kpi.headcount"/></span>
+                                        <span style="font-size: 10px; color: rgb(156, 163, 175); margin-top: 2px;">total</span>
+                                    </div>
+                                </div>
+                                <div style="flex: 1 1 0%; min-width: 0px;">
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(74, 144, 226); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Permanent Full-Time</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">178</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">89%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(244, 164, 96); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Contract</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">14</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">7%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(135, 201, 235); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Part-Time</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">8</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">4%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Work Mode -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-sm">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Work Mode Distribution</div>
+                            <div class="sdir-oa-chart-subtitle">Office · Hybrid · Remote split</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <div style="display: flex; gap: 20px; align-items: center; height: 100%;">
+                                <div style="position: relative; width: 150px; height: 150px; flex-shrink: 0;">
+                                    <div class="recharts-responsive-container" style="width: 100%; height: 100%; min-width: 0px;"><div class="recharts-wrapper" style="position: relative; cursor: default; width: 100%; height: 100%; max-height: 150px; max-width: 150px;"><svg cx="50%" cy="50%" class="recharts-surface" width="150" height="150" viewBox="0 0 150 150" style="width: 100%; height: 100%;"><title></title><desc></desc><defs><clipPath id="recharts20-clip"><rect x="5" y="5" height="140" width="140"></rect></clipPath></defs><g class="recharts-layer recharts-pie" tabindex="0"><g class="recharts-layer"><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Hybrid" stroke="none" fill="#B8C4D0" tabindex="-1" class="recharts-sector" d="M 75,7
+                        A 68,68,0,
+                        0,1,
+                        120.44793737140992,125.5814688268777
+                    L 105.74419292771847,109.21687597112316
+                                A 46,46,0,
+                                0,0,
+                                75,29 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Office" stroke="none" fill="#4ECDC4" tabindex="-1" class="recharts-sector" d="M 118.65498391139417,127.13676610316291
+                        A 68,68,0,
+                        0,1,
+                        9.283375893618384,92.4735604860756
+                    L 30.544636633918316,86.82034974058055
+                                A 46,46,0,
+                                0,0,
+                                104.5313126459431,110.26898883449256 Z" role="img"></path></g><g class="recharts-layer recharts-pie-sector" tabindex="-1"><path cx="75" cy="75" name="Remote" stroke="none" fill="#F7D560" tabindex="-1" class="recharts-sector" d="M 8.713590218855487,90.16943895884711
+                        A 68,68,0,
+                        0,1,
+                        72.62683422422995,7.041423762701484
+                    L 73.39462315168497,29.028021957121595
+                                A 46,46,0,
+                                0,0,
+                                30.159193383343414,85.2616792956907 Z" role="img"></path></g></g></g></svg></div></div>
+                                    <div style="position: absolute; inset: 0px; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+                                        <span style="font-size: 22px; font-weight: 800; color: rgb(17, 24, 39); line-height: 1;"><t t-esc="state.kpi.headcount"/></span>
+                                        <span style="font-size: 10px; color: rgb(156, 163, 175); margin-top: 2px;">total</span>
+                                    </div>
+                                </div>
+                                <div style="flex: 1 1 0%; min-width: 0px;">
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(184, 196, 208); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Hybrid</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">78</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">39%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(78, 205, 196); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Office</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">65</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">33%</span></div>
+                                    <div style="display: flex; align-items: center; gap: 7px; margin-bottom: 7px;"><div style="width: 8px; height: 8px; border-radius: 50%; background-color: rgb(247, 213, 96); flex-shrink: 0;"></div><span style="flex: 1 1 0%; font-size: 11px; color: rgb(55, 65, 81); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Remote</span><span style="font-size: 11px; font-weight: 700; color: rgb(17, 24, 39); flex-shrink: 0;">57</span><span style="font-size: 10px; color: rgb(156, 163, 175); width: 36px; text-align: right; flex-shrink: 0;">28%</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Span of Control -->
+                    <div class="sdir-oa-chart-card sdir-oa-chart-card-sm">
+                        <div class="sdir-oa-chart-header">
+                            <div class="sdir-oa-chart-title">Span of Control Distribution</div>
+                            <div class="sdir-oa-chart-subtitle">Number of direct reports per manager</div>
+                        </div>
+                        <div class="sdir-oa-chart-body">
+                            <div class="recharts-responsive-container" style="width: 100%; height: 180px; min-width: 0px;"><div class="recharts-wrapper" style="position: relative; cursor: default; width: 100%; height: 100%; max-height: 180px; max-width: 527px;"><svg class="recharts-surface" width="527" height="180" viewBox="0 0 527 180" style="width: 100%; height: 100%;"><title></title><desc></desc><defs><clipPath id="recharts22-clip"><rect x="44" y="4" height="146" width="475"></rect></clipPath></defs><g class="recharts-layer recharts-cartesian-axis recharts-xAxis xAxis"><g class="recharts-cartesian-axis-ticks"><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="475" height="30" stroke="none" font-size="10" x="91.5" y="158" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="91.5" dy="0.71em">1–5</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="475" height="30" stroke="none" font-size="10" x="186.5" y="158" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="186.5" dy="0.71em">6–10</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="475" height="30" stroke="none" font-size="10" x="281.5" y="158" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="281.5" dy="0.71em">11–15</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="475" height="30" stroke="none" font-size="10" x="376.5" y="158" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="376.5" dy="0.71em">16–20</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="bottom" width="475" height="30" stroke="none" font-size="10" x="471.5" y="158" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="middle" fill="#9CA3AF"><tspan x="471.5" dy="0.71em">20+</tspan></text></g></g></g><g class="recharts-layer recharts-cartesian-axis recharts-yAxis yAxis"><g class="recharts-cartesian-axis-ticks"><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="60" height="146" stroke="none" font-size="10" x="36" y="150" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#9CA3AF"><tspan x="36" dy="0.355em">0</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="60" height="146" stroke="none" font-size="10" x="36" y="113.5" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#9CA3AF"><tspan x="36" dy="0.355em">20</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="60" height="146" stroke="none" font-size="10" x="36" y="77" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#9CA3AF"><tspan x="36" dy="0.355em">40</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="60" height="146" stroke="none" font-size="10" x="36" y="40.5" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#9CA3AF"><tspan x="36" dy="0.355em">60</tspan></text></g><g class="recharts-layer recharts-cartesian-axis-tick"><text orientation="left" width="60" height="146" stroke="none" font-size="10" x="36" y="7.5" class="recharts-text recharts-cartesian-axis-tick-value" text-anchor="end" fill="#9CA3AF"><tspan x="36" dy="0.355em">80</tspan></text></g></g></g><g class="recharts-layer recharts-bar"><g class="recharts-layer recharts-bar-rectangles"><g class="recharts-layer"><g class="recharts-layer recharts-bar-rectangle"><path x="77" y="22.25" width="28" height="127.75" radius="4,4,0,0" name="1–5" fill="#A0AADF" opacity="0.7" class="recharts-rectangle" d="M77,26.25A 4,4,0,0,1,81,22.25L 101,22.25A 4,4,0,0,1,
+                            105,26.25L 105,150L 77,150Z"></path></g><g class="recharts-layer recharts-bar-rectangle"><path x="172" y="140.875" width="28" height="9.125" radius="4,4,0,0" name="6–10" fill="#A0AADF" opacity="0.76" class="recharts-rectangle" d="M172,144.875A 4,4,0,0,1,176,140.875L 196,140.875A 4,4,0,0,1,
+                            200,144.875L 200,150L 172,150Z"></path></g></g></g></g></svg></div></div>
+                            <div style="margin-top: 8px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                                <span style="font-size: 11px; color: rgb(156, 163, 175);"><t t-esc="state.kpi.teams"/> total managers</span>
+                                <span style="font-size: 11px; color: rgb(156, 163, 175);">avg. span: <strong style="color: rgb(55, 65, 81);"><t t-esc="state.kpi.spanOfControl"/></strong></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>
