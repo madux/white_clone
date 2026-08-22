@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState, onMounted, onPatched, useRef } from "@odoo/owl";
+import { Component, useState, onMounted, onPatched, onWillUnmount, useRef } from "@odoo/owl";
 
 export class StaffDirectoryPeopleList extends Component {
     static template = "hr_staff_directory.PeopleList";
@@ -46,8 +46,15 @@ export class StaffDirectoryPeopleList extends Component {
 
     setup() {
         this.jumpInput = useRef("jumpInput");
-        onMounted(() => this._autosizeJumpInput(this.jumpInput.el));
+        this._boundOnWindowClick = this._onWindowClick.bind(this);
+        onMounted(() => {
+            this._autosizeJumpInput(this.jumpInput.el);
+            document.addEventListener("click", this._boundOnWindowClick);
+        });
         onPatched(() => this._autosizeJumpInput(this.jumpInput.el));
+        onWillUnmount(() => {
+            document.removeEventListener("click", this._boundOnWindowClick);
+        });
 
         const initialCols = ['name', 'department', 'role', 'work_email', 'work_phone', 'manager', 'location'];
         
@@ -59,7 +66,10 @@ export class StaffDirectoryPeopleList extends Component {
             pageSize: 12,
             activeColumns: initialCols,
             showColumnsModal: false,
-            showMoreColumns: false
+            showMoreColumns: false,
+            showSavedSegments: false,
+            selectedSegment: 'Engineering Seniors',
+            showNewSegmentModal: false
         });
 
         // Hardcode all available columns for the list view
@@ -171,6 +181,36 @@ export class StaffDirectoryPeopleList extends Component {
 
 
 
+
+    // ─── Saved Segments ──────────────────────────────────────────────────────
+    toggleSavedSegments() {
+        this.state.showSavedSegments = !this.state.showSavedSegments;
+    }
+
+    selectSegment(name) {
+        this.state.selectedSegment = name;
+    }
+
+    toggleNewSegmentModal() {
+        this.state.showNewSegmentModal = !this.state.showNewSegmentModal;
+    }
+
+    _onWindowClick(ev) {
+        if (this.state.showSavedSegments) {
+            const btn = document.getElementById('btnSavedSegmentsGroup');
+            const dropdown = document.querySelector('.sdir-segments-modal');
+            if (btn && btn.contains(ev.target)) return;
+            if (dropdown && dropdown.contains(ev.target)) return;
+            this.state.showSavedSegments = false;
+        }
+        if (this.state.showColumnsModal) {
+            const colsBtn = document.getElementById('btnColumns');
+            const colsModal = document.querySelector('.sdir-cols-modal');
+            if (colsBtn && colsBtn.contains(ev.target)) return;
+            if (colsModal && colsModal.contains(ev.target)) return;
+            this.state.showColumnsModal = false;
+        }
+    }
 
     // ─── Columns ─────────────────────────────────────────────────────────────
     toggleColumnsModal() {
