@@ -102,13 +102,22 @@ export class StaffDirectoryPeopleList extends Component {
 
     get sortedPeople() {
         let people = [...this.props.people];
+        
+        const keyMap = {
+            'role': 'job_title',
+            'manager': 'manager_name',
+            'location': 'work_location',
+            'performance': 'performance_score',
+        };
+
         people.sort((a, b) => {
             if (a.is_pinned !== b.is_pinned) {
                 return a.is_pinned ? -1 : 1;
             }
             if (this.state.sortBy) {
-                let valA = a[this.state.sortBy] || '';
-                let valB = b[this.state.sortBy] || '';
+                const dataKey = keyMap[this.state.sortBy] || this.state.sortBy;
+                let valA = a[dataKey] || '';
+                let valB = b[dataKey] || '';
                 
                 if (typeof valA === 'string') valA = valA.toLowerCase();
                 if (typeof valB === 'string') valB = valB.toLowerCase();

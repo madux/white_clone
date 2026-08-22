@@ -206,7 +206,7 @@ export class StaffDirectoryDashboard extends Component {
                 retention_priority: 0,
                 probation:          0,
             },
-            adminMode: false,
+            adminMode: true,
             showOrgAnalysis: false,
         });
 
