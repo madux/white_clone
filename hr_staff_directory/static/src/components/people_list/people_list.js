@@ -1,12 +1,14 @@
 /** @odoo-module **/
 
 import { Component, useState, onMounted, onPatched, onWillUnmount, useRef } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 
 export class StaffDirectoryPeopleList extends Component {
     static template = "hr_staff_directory.PeopleList";
     static props = {
         people: { type: Array },
         stats: { type: Object },
+        segments: { type: Array, optional: true },
         adminMode: { type: Boolean },
         toggleAdminMode: { type: Function },
         searchQuery: { type: String, optional: true },
@@ -37,6 +39,7 @@ export class StaffDirectoryPeopleList extends Component {
         exportSelected: { type: Function },
         openBulkMessageBox: { type: Function },
         openMessageBox: { type: Function },
+        openSegmentMessageBox: { type: Function },
         deptKey: { type: Function },
         lifecycleLabel: { type: Function },
         getLifecycleDotClass: { type: Function },
@@ -46,6 +49,7 @@ export class StaffDirectoryPeopleList extends Component {
 
     setup() {
         this.jumpInput = useRef("jumpInput");
+        this.rpc = useService("rpc");
         this._boundOnWindowClick = this._onWindowClick.bind(this);
         onMounted(() => {
             this._autosizeJumpInput(this.jumpInput.el);
@@ -69,7 +73,17 @@ export class StaffDirectoryPeopleList extends Component {
             showMoreColumns: false,
             showSavedSegments: false,
             selectedSegment: 'Engineering Seniors',
-            showNewSegmentModal: false
+            showNewSegmentModal: false,
+            segments: [],
+            currentSegmentData: null,
+            segmentForm: {
+                name: '',
+                color: '#F59E0B',
+                icon: 'users',
+                conditions: [{field: '', operator: 'is', value: ''}],
+                audienceSize: 0,
+                loadingPreview: false
+            }
         });
 
         // Hardcode all available columns for the list view
@@ -183,17 +197,133 @@ export class StaffDirectoryPeopleList extends Component {
 
 
     // ─── Saved Segments ──────────────────────────────────────────────────────
-    toggleSavedSegments() {
-        this.state.showSavedSegments = !this.state.showSavedSegments;
+
+    // ─── Saved Segments Dynamic Logic ────────────────────────────────────────
+    
+    get savedSegments() {
+        return this.props.segments || this.state.segments || [];
     }
 
-    selectSegment(name) {
+    async selectSegment(name, id) {
         this.state.selectedSegment = name;
+        this.state.currentSegmentData = null; // show loading if needed
+        try {
+            const data = await this.rpc("/web/dataset/call_kw/hr.employee/get_segment_data", {
+                model: "hr.employee",
+                method: "get_segment_data",
+                args: [id],
+                kwargs: {}
+            });
+            this.state.currentSegmentData = data;
+        } catch (error) {
+            console.error("Error loading segment data", error);
+        }
     }
 
     toggleNewSegmentModal() {
         this.state.showNewSegmentModal = !this.state.showNewSegmentModal;
+        if (this.state.showNewSegmentModal) {
+            this.state.segmentForm = {
+                name: '',
+                color: '#F59E0B',
+                icon: 'users',
+                conditions: [{field: 'dept', operator: 'is', value: ''}],
+                audienceSize: 0,
+                loadingPreview: false
+            };
+            this._previewSegment();
+        }
     }
+
+    addSegmentCondition() {
+        this.state.segmentForm.conditions.push({field: 'dept', operator: 'is', value: ''});
+        this._previewSegment();
+    }
+
+    removeSegmentCondition(index) {
+        this.state.segmentForm.conditions.splice(index, 1);
+        this._previewSegment();
+    }
+
+    updateSegmentCondition(index, key, value) {
+        this.state.segmentForm.conditions[index][key] = value;
+        this._previewSegment();
+    }
+
+    async _previewSegment() {
+        this.state.segmentForm.loadingPreview = true;
+        try {
+            const validConds = this.state.segmentForm.conditions.filter(c => c.field && c.operator && c.value);
+            const data = await this.rpc("/web/dataset/call_kw/hr.employee/preview_segment", {
+                model: "hr.employee",
+                method: "preview_segment",
+                args: [validConds],
+                kwargs: {}
+            });
+            this.state.segmentForm.audienceSize = data.audience_size || 0;
+        } catch (error) {
+            console.error("Error previewing segment", error);
+        } finally {
+            this.state.segmentForm.loadingPreview = false;
+        }
+    }
+
+    async saveSegment() {
+        const validConds = this.state.segmentForm.conditions.filter(c => c.field && c.operator && c.value);
+        if (!this.state.segmentForm.name || validConds.length === 0) return;
+
+        try {
+            const segmentId = await this.rpc("/web/dataset/call_kw/hr.employee/create_segment", {
+                model: "hr.employee",
+                method: "create_segment",
+                args: [
+                    this.state.segmentForm.name,
+                    this.state.segmentForm.color,
+                    this.state.segmentForm.icon,
+                    validConds
+                ],
+                kwargs: {}
+            });
+            // No manual push here: create_segment broadcasts on the bus, the
+            // dashboard reloads and refreshes this.props.segments for every
+            // open tab/device.
+            this.toggleNewSegmentModal();
+            this.selectSegment(this.state.segmentForm.name, segmentId);
+        } catch (error) {
+            console.error("Error saving segment", error);
+        }
+    }
+
+    async deleteSegment(id) {
+        try {
+            await this.rpc("/web/dataset/call_kw/hr.employee/delete_segment", {
+                model: "hr.employee",
+                method: "delete_segment",
+                args: [id],
+                kwargs: {}
+            });
+            // List refresh is server-driven (bus broadcast → dashboard reload);
+            // only clear local view state if the deleted segment was open.
+            if (this.state.currentSegmentData && this.state.currentSegmentData.segment_id === id) {
+                this.state.currentSegmentData = null;
+                this.state.selectedSegment = null;
+            }
+        } catch (error) {
+            console.error("Error deleting segment", error);
+        }
+    }
+
+    openSegmentMessageBox() {
+        const seg = this.state.currentSegmentData;
+        if (!seg || !seg.metrics || !seg.metrics.total) return;
+        this.props.openSegmentMessageBox(seg);
+    }
+
+    toggleSavedSegments() {
+        this.state.showSavedSegments = !this.state.showSavedSegments;
+    }
+
+
 
     _onWindowClick(ev) {
         if (this.state.showSavedSegments) {

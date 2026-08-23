@@ -653,16 +653,220 @@ class HrEmployeeStaffDirectory(models.Model):
                 return {'status': 'pinned', 'employee_id': employee_id}
         return {'status': 'error', 'message': 'Employee not found'}
 
+    @api.model
+    def email_employees(self, employee_ids, subject, body_text):
+        """Email the given employees (People-list selection mode).
+        Recipients come from fresh work_email values — never from client data.
+        """
+        employees = self.browse(employee_ids or []).exists().filtered('active')
+        Segment = self.env['hr.staff.directory.segment']
+        return Segment._send_emails_to_employees(employees, subject, body_text)
+
     # NOTE: Real-time sync (create/write/unlink → bus broadcast) now lives in
     # staff_directory_sync.py so the same notification is emitted for every
     # model the Staff Directory aggregates (hr.employee, hr.contract, hr.leave,
     # hr.department, hr.work.location, hr.employee.skill).
 
+
+    # ─── Segment Engine ──────────────────────────────────────────────────────
+
+    @api.model
+    def _apply_segment_conditions(self, people, conditions):
+        import json
+        if isinstance(conditions, str):
+            try:
+                conditions = json.loads(conditions)
+            except:
+                conditions = []
+        if not conditions:
+            return []
+
+        def match_condition(person, cond):
+            field = cond.get('field')
+            op = cond.get('operator')
+            val = cond.get('value', '')
+            if not field or not op or not val:
+                return False
+            
+            p_val = ''
+            if field == 'dept':
+                p_val = person.get('department', '')
+            elif field == 'role':
+                p_val = person.get('job_title', '')
+            elif field == 'gradeLevel':
+                p_val = person.get('grade', '')
+            elif field == 'location':
+                p_val = person.get('work_location', '')
+            elif field == 'workMode':
+                p_val = person.get('work_mode', '')
+            elif field == 'employmentType':
+                p_val = person.get('employment_type', '')
+            elif field == 'lifecycleState':
+                p_val = person.get('lifecycle_state', '')
+            elif field == 'flightRisk':
+                p_val = person.get('flight_risk', '')
+            elif field == 'retentionPriority':
+                p_val = person.get('retention_priority', '')
+            elif field == 'lineManager':
+                p_val = person.get('reports_to', '')
+            elif field == 'tenureBucket':
+                p_val = person.get('tenure', '')
+                # Extract numbers for comparison if possible, or just exact match
+            elif field == 'gender':
+                p_val = person.get('gender', '')
+            elif field == 'id':
+                p_val = person.get('emp_ref', '')
+            elif field == 'skills':
+                skills = person.get('skills', [])
+                if isinstance(skills, list):
+                    p_val = ','.join(skills)
+                else:
+                    p_val = skills
+            elif field == 'languages':
+                p_val = person.get('languages', '')
+            elif field == 'performanceScore':
+                p_val = person.get('performance_score', '')
+
+            p_val = str(p_val).lower().strip()
+            val = str(val).lower().strip()
+
+            if op == 'is':
+                return p_val == val
+            elif op == 'isNot':
+                return p_val != val
+            elif op == 'contains':
+                return val in p_val
+            elif op == 'notContains':
+                return val not in p_val
+            return False
+
+        filtered = []
+        for person in people:
+            # AND logic: all conditions must match
+            if all(match_condition(person, cond) for cond in conditions):
+                filtered.append(person)
+                
+        return filtered
+
+    @api.model
+    def preview_segment(self, conditions):
+        people = self._sd_people_list()
+        filtered = self._apply_segment_conditions(people, conditions)
+        return {'audience_size': len(filtered)}
+
+    @api.model
+    def create_segment(self, name, color, icon, conditions):
+        import json
+        cond_str = json.dumps(conditions) if not isinstance(conditions, str) else conditions
+        seg = self.env['hr.staff.directory.segment'].create({
+            'name': name,
+            'color': color,
+            'icon': icon,
+            'conditions': cond_str,
+            'user_id': self.env.user.id
+        })
+        return seg.id
+
+    @api.model
+    def delete_segment(self, segment_id):
+        seg = self.env['hr.staff.directory.segment'].search([('id', '=', segment_id), ('user_id', '=', self.env.user.id)])
+        if seg:
+            seg.unlink()
+            return True
+        return False
+
+    @api.model
+    def get_segment_data(self, segment_id):
+        # Ownership guard: the ir.rule also enforces this at DB level, but we
+        # filter explicitly as defense-in-depth.
+        segment = self.env['hr.staff.directory.segment'].search(
+            [('id', '=', segment_id), ('user_id', '=', self.env.user.id)],
+            limit=1,
+        )
+        if not segment:
+            return {}
+
+        people = self._sd_people_list()
+        filtered = self._apply_segment_conditions(people, segment.conditions)
+
+        # Refresh the materialized member cache so downstream consumers
+        # (bulk email now, Cleon AI analytics later) always see fresh IDs.
+        employees = self.browse([p['id'] for p in filtered]).exists()
+        segment._refresh_members(employees)
+        
+        # Calculate metrics
+        office = sum(1 for p in filtered if str(p.get('work_mode')).lower() == 'office')
+        hybrid = sum(1 for p in filtered if str(p.get('work_mode')).lower() == 'hybrid')
+        remote = sum(1 for p in filtered if str(p.get('work_mode')).lower() == 'remote')
+        
+        high_risk = sum(1 for p in filtered if str(p.get('flight_risk')).lower() == 'high')
+        
+        # Tenure
+        def parse_tenure(t):
+            import re
+            m = re.findall(r'\d+', str(t))
+            if m: return float(m[0])
+            return 0.0
+            
+        avg_tenure = 0
+        if filtered:
+            avg_tenure = round(sum(parse_tenure(p.get('tenure')) for p in filtered) / len(filtered), 1)
+            
+        # Grade (just grabbing most common or a simple string for now)
+        avg_grade = "N/A"
+        
+        import json
+        cond_obj = []
+        try:
+            cond_obj = json.loads(segment.conditions)
+        except:
+            pass
+
+        return {
+            'segment_id': segment.id,
+            'name': segment.name,
+            'color': segment.color,
+            'icon': segment.icon,
+            'conditions': cond_obj,
+            'members': filtered,
+            'member_ids': [p['id'] for p in filtered],
+            'members_computed_on': segment.members_computed_on and segment.members_computed_on.strftime('%Y-%m-%d %H:%M:%S') or '',
+            'metrics': {
+                'total': len(filtered),
+                'avg_tenure': f"{avg_tenure}y",
+                'flight_risk': high_risk,
+                'avg_grade': avg_grade,
+            },
+            'work_mode_distribution': {
+                'office': office,
+                'hybrid': hybrid,
+                'remote': remote
+            }
+        }
+
     @api.model
     def get_staff_directory_people_data(self):
+        import json
+        segments_record = self.env['hr.staff.directory.segment'].search([('user_id', '=', self.env.user.id)])
+        segments = []
+        for s in segments_record:
+            cond_obj = []
+            try:
+                cond_obj = json.loads(s.conditions)
+            except:
+                pass
+            segments.append({
+                'id': s.id,
+                'name': s.name,
+                'color': s.color,
+                'icon': s.icon,
+                'conditions': cond_obj,
+            })
+
         return {
             'stats':  self._sd_people_stats(),
             'people': self._sd_people_list(),
+            'segments': segments,
             'departments': [
                 {'id': dept.id, 'name': dept.complete_name}
                 for dept in self.env['hr.department'].search([])

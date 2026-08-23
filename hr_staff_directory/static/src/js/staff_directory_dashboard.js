@@ -185,10 +185,15 @@ export class StaffDirectoryDashboard extends Component {
             messageBox: {
                 isVisible: false,
                 isMinimized: false,
+                // 'people' → send to recipientIds; 'segment' → server recomputes segment members
+                mode: 'people',
+                recipientIds: [],
+                segmentId: null,
                 toName: '',
                 toEmail: '',
                 subject: '',
-                body: ''
+                body: '',
+                sending: false
             },
             toast: {
                 isVisible: false,
@@ -199,6 +204,7 @@ export class StaffDirectoryDashboard extends Component {
             recentlyViewedProfiles: initialRecent,
             people:      [],
             departments: [],
+            segments:    [],
             stats: {
                 total:              0,
                 active:             0,
@@ -303,6 +309,7 @@ export class StaffDirectoryDashboard extends Component {
             if (requestSeq !== this._loadSeq) return;
             this.state.stats  = d.stats  || this.state.stats;
             this.state.departments = d.departments || [];
+            this.state.segments = d.segments || [];
             this._applyPeopleData(d.people || []);
         } catch (e) {
             console.error('[SDIR] people data load failed', e);
@@ -1006,30 +1013,55 @@ export class StaffDirectoryDashboard extends Component {
 
     // ─── Messaging & Toast Logic ─────────────────────────────────────────────
 
-    openMessageBox(recipientName, recipientEmail) {
+    openMessageBox(recipientName, recipientEmail, personId) {
         this.state.messageBox.isVisible = true;
         this.state.messageBox.isMinimized = false;
+        this.state.messageBox.mode = 'people';
+        this.state.messageBox.recipientIds = personId ? [personId] : [];
+        this.state.messageBox.segmentId = null;
         this.state.messageBox.toName = recipientName || '';
         this.state.messageBox.toEmail = recipientEmail || '';
         this.state.messageBox.subject = '';
         this.state.messageBox.body = '';
+        this.state.messageBox.sending = false;
         this.state.hasMessageError = false;
     }
 
     openBulkMessageBox() {
         if (this.state.selectedPeople.length === 0) return;
-        
+
         const selectedPeople = this.state.people.filter(p => this.state.selectedPeople.includes(p.id));
         const emails = selectedPeople
             .map(p => p.work_email || p.email)
             .filter(email => email && email.trim() !== '');
-            
+
         this.state.messageBox.isVisible = true;
         this.state.messageBox.isMinimized = false;
+        this.state.messageBox.mode = 'people';
+        this.state.messageBox.recipientIds = [...this.state.selectedPeople];
+        this.state.messageBox.segmentId = null;
         this.state.messageBox.toName = `Multiple Recipients (${this.state.selectedPeople.length})`;
+        // Display only — the backend resolves fresh work_email values from ids.
         this.state.messageBox.toEmail = emails.join(', ');
         this.state.messageBox.subject = '';
         this.state.messageBox.body = '';
+        this.state.messageBox.sending = false;
+        this.state.hasMessageError = false;
+    }
+
+    openSegmentMessageBox(segmentData) {
+        if (!segmentData || !segmentData.metrics || !segmentData.metrics.total) return;
+
+        this.state.messageBox.isVisible = true;
+        this.state.messageBox.isMinimized = false;
+        this.state.messageBox.mode = 'segment';
+        this.state.messageBox.recipientIds = [];
+        this.state.messageBox.segmentId = segmentData.segment_id;
+        this.state.messageBox.toName = `${segmentData.name} · ${segmentData.metrics.total} member${segmentData.metrics.total === 1 ? '' : 's'}`;
+        this.state.messageBox.toEmail = '';
+        this.state.messageBox.subject = '';
+        this.state.messageBox.body = '';
+        this.state.messageBox.sending = false;
         this.state.hasMessageError = false;
     }
 
@@ -1045,14 +1077,63 @@ export class StaffDirectoryDashboard extends Component {
         this.closeMessageBox();
     }
 
-    sendMessage() {
-        if (!this.state.messageBox.body || this.state.messageBox.body.trim() === '') {
+    async sendMessage() {
+        const mb = this.state.messageBox;
+        if (mb.sending) return;
+        if (!mb.body || mb.body.trim() === '') {
             this.state.hasMessageError = true;
             this.showToast('warning', 'Write something first');
-        } else {
-            this.state.hasMessageError = false;
-            this.showToast('success', `Email sent to ${this.state.messageBox.toName}`);
+            return;
+        }
+
+        const hasTargets = mb.mode === 'segment' ? !!mb.segmentId : mb.recipientIds.length > 0;
+        if (!hasTargets) {
+            this.state.hasMessageError = true;
+            this.showToast('warning', 'No recipients resolved for this message');
+            return;
+        }
+
+        mb.sending = true;
+        try {
+            let res;
+            if (mb.mode === 'segment') {
+                res = await this.rpc("/web/dataset/call_kw/hr.staff.directory.segment/action_email_members", {
+                    model: "hr.staff.directory.segment",
+                    method: "action_email_members",
+                    args: [mb.segmentId, mb.subject.trim(), mb.body],
+                    kwargs: {}
+                });
+            } else {
+                res = await this.rpc("/web/dataset/call_kw/hr.employee/email_employees", {
+                    model: "hr.employee",
+                    method: "email_employees",
+                    args: [mb.recipientIds, mb.subject.trim(), mb.body],
+                    kwargs: {}
+                });
+            }
+            this._reportEmailResult(res);
             this.closeMessageBox();
+        } catch (error) {
+            console.error('Failed to send email:', error);
+            this.showToast('error', 'Failed to send email. Please try again.');
+        } finally {
+            mb.sending = false;
+        }
+    }
+
+    _reportEmailResult(res) {
+        const sent = (res && res.sent) || 0;
+        const skipped = (res && res.skipped_no_email) || 0;
+        const failed = (res && res.failed) || 0;
+        if (sent > 0) {
+            let msg = `Email${sent === 1 ? '' : 's'} sent to ${sent} recipient${sent === 1 ? '' : 's'}`;
+            if (skipped > 0) msg += ` · ${skipped} skipped (no work email)`;
+            if (failed > 0) msg += ` · ${failed} failed`;
+            this.showToast('success', msg);
+        } else if (skipped > 0) {
+            this.showToast('warning', `No emails sent — ${skipped} recipient${skipped === 1 ? '' : 's'} ha${skipped === 1 ? 's' : 've'} no work email`);
+        } else {
+            this.showToast('error', 'No emails could be sent');
         }
     }
 

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Saved Segments are strictly personal: each user may only see and
+         manage their own segments (complements the user_id checks in Python). -->
+    <record id="hr_staff_directory_segment_rule_user" model="ir.rule">
+        <field name="name">Staff Directory Segment: personal only</field>
+        <field name="model_id" ref="model_hr_staff_directory_segment"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+</odoo>

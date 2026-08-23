@@ -34,6 +34,8 @@
         'views/staff_directory_actions.xml',
         'views/menu.xml',
         'data/hr_work_location_cron.xml',
+        'security/ir.model.access.csv',
+        'security/segment_rules.xml',
     ],
     'assets': {
         'web.assets_backend': [

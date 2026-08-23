@@ -63,6 +63,7 @@
             <StaffDirectoryPeopleList 
                 people="this.filteredPeople()" 
                 stats="state.stats" 
+                segments="state.segments"
                 adminMode="state.adminMode" 
                 toggleAdminMode="this.toggleAdminMode.bind(this)" 
                 searchQuery="state.searchQuery" 
@@ -94,6 +95,7 @@
                 exportSelected="this.exportSelected.bind(this)"
                 openBulkMessageBox="this.openBulkMessageBox.bind(this)"
                 openMessageBox="this.openMessageBox.bind(this)"
+                openSegmentMessageBox="this.openSegmentMessageBox.bind(this)"
                 deptKey="this.deptKey.bind(this)"
                 lifecycleLabel="this.lifecycleLabel.bind(this)"
                 getLifecycleDotClass="this.getLifecycleDotClass.bind(this)"
@@ -337,8 +339,10 @@
                 <!-- Body -->
                 <div class="sdir-msg-body" t-if="!state.messageBox.isMinimized">
                     <div class="sdir-msg-row sdir-msg-to-row">
-                        <span class="sdir-msg-label">To:</span> 
-                        <input type="text" class="sdir-msg-to-email-input" t-att-value="state.messageBox.toEmail" t-on-change="(ev) => state.messageBox.toEmail = ev.target.value" placeholder="Enter emails..."/>
+                        <span class="sdir-msg-label">To:</span>
+                        <input type="text" class="sdir-msg-to-email-input" readonly="readonly"
+                            t-att-value="state.messageBox.toEmail || (state.messageBox.mode === 'segment' ? state.messageBox.toName : 'No email on file — resolved server-side')"
+                            placeholder="Recipients are managed by CleonHR"/>
                     </div>
                     <div class="sdir-msg-row">
                         <input type="text" placeholder="Subject" t-model="state.messageBox.subject" class="sdir-msg-input"/>
@@ -349,9 +353,11 @@
                 </div>
                 <!-- Footer -->
                 <div class="sdir-msg-footer" t-if="!state.messageBox.isMinimized">
-                    <button t-att-class="state.hasMessageError ? 'sdir-msg-btn-send sdir-msg-btn-error' : 'sdir-msg-btn-send'" t-on-click="sendMessage">
+                    <button t-att-class="state.hasMessageError ? 'sdir-msg-btn-send sdir-msg-btn-error' : 'sdir-msg-btn-send'"
+                        t-att-disabled="state.messageBox.sending ? 'disabled' : undefined"
+                        t-on-click="sendMessage">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        Send
+                        <t t-esc="state.messageBox.sending ? 'Sending…' : 'Send'"/>
                     </button>
                     <button class="sdir-msg-btn-discard" t-on-click="discardMessage">Discard</button>
                 </div>
