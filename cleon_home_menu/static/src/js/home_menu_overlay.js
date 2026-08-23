@@ -115,7 +115,7 @@
                 url: "/home_menu/get_apps", type: "POST", contentType: "application/json",
                 data: JSON.stringify({
                     jsonrpc: "2.0", method: "call",
-                    params: {employee_mode: localStorage.getItem("cleonhr_interface_mode") === "employee"},
+                    params: {},
                 }),
                 success: function (response) {
                     var result = response && response.result || {};

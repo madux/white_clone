@@ -2,9 +2,6 @@
 import base64
 from odoo import http
 from odoo.http import request
-import logging
-
-_logger = logging.getLogger(__name__)
 
 # Same palette used in landing.py, cycled per category so the overlay
 # and the full landing page render identical colours for the same
@@ -26,21 +23,15 @@ class HomeMenuController(http.Controller):
     @http.route('/home_menu/get_apps', type='json', auth='user')
     def get_apps(self, employee_mode=False):
         """
-        Return menus tagged with a CleonHR category, grouped the same
-        way /maacherp/landing groups them: a list of categories, each
-        with a colour and its app_items (including children/features).
+        Return the current user's visible CleonHR application menus.
+
+        Employee/admin interface mode controls how an application renders;
+        it must never replace the global launcher or grant/revoke menu access.
+        Odoo menu groups remain the single source of truth for visibility.
+
+        ``employee_mode`` is accepted temporarily for compatibility with a
+        browser that still has the previous asset bundle cached, but ignored.
         """
-        access = None
-        if 'cleon.time.policy' in request.env:
-            try:
-                access = request.env['cleon.time.policy'].get_cleon_access()
-            except Exception:
-                _logger.exception("Could not resolve CleonHR employee launcher access")
-
-        use_employee_launcher = bool(employee_mode) or bool(access and not access.get('is_manager'))
-        if use_employee_launcher and access:
-            return self._employee_apps(access)
-
         menu_model = request.env['ir.ui.menu']
         visible_menu_ids = menu_model._visible_menu_ids()
         menus = menu_model.sudo().search([
@@ -105,67 +96,6 @@ class HomeMenuController(http.Controller):
             "categories": apps,
             "total_modules": total_modules,
             "total_features": total_features,
-        }
-
-    def _employee_apps(self, access):
-        """Return the same launcher structure with employee-safe destinations."""
-        env = request.env
-        items = []
-
-        portal_menu = env.ref('white_clone_portal.menu_white_clone_portal_root', raise_if_not_found=False)
-        portal_action = env.ref('white_clone_portal.action_employee_portal_home', raise_if_not_found=False)
-        if access.get('portal_enabled') and portal_menu and portal_action:
-            items.append({
-                "id": portal_menu.id,
-                "name": portal_menu.name,
-                "description": "Employee self-service home",
-                "icon": "/home_menu/get_icon/%s" % portal_menu.id if portal_menu.web_icon_data else False,
-                "icon_class": portal_menu.icon_class or "fa fa-user-circle-o",
-                "icon_color": portal_menu.icon_color or "#EC4899",
-                "url": "/web#action=%s" % portal_action.id,
-                "children": [],
-            })
-
-        portal_modules = access.get('portalModules') or {}
-        if portal_modules.get('leave'):
-            leave_action = env.ref('hr_leave_dashboard.action_hr_leave_employee_dashboard', raise_if_not_found=False)
-            if leave_action:
-                items.append({
-                    "id": "employee-leave",
-                    "name": "Leave Management",
-                    "description": "Leave requests, balances, and calendar",
-                    "icon": False,
-                    "icon_class": "fa fa-calendar",
-                    "icon_color": "#F97316",
-                    "url": "/web#action=%s" % leave_action.id,
-                    "children": [],
-                })
-
-        if portal_modules.get('time'):
-            time_action = env.ref('hr_time_management.action_employee_time_management', raise_if_not_found=False)
-            if time_action:
-                enabled = [name.replace('_app_available', '').replace('_', ' ').title()
-                           for name, enabled in (access.get('featureAccess') or {}).items()
-                           if enabled and name in ('attendance', 'shift', 'tracking', 'overtime')]
-                items.append({
-                    "id": "employee-time",
-                    "name": "Time Management",
-                    "description": ", ".join(enabled) or "Time and attendance",
-                    "icon": False,
-                    "icon_class": "fa fa-clock-o",
-                    "icon_color": "#8B5CF6",
-                    "url": "/web#action=%s" % time_action.id,
-                    "children": [],
-                })
-
-        return {
-            "categories": [{
-                "name": "Employee Apps",
-                "color": ICON_PALETTE[0],
-                "app_items": items,
-            }],
-            "total_modules": len(items),
-            "total_features": len(items),
         }
 
     @http.route('/home_menu/get_icon/<int:menu_id>', type='http', auth='user')
