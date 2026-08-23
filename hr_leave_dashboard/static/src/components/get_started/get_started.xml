@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_leave_dashboard.GetStartedPage" owl="1">
+        <div class="leaveapp">
+
+            <!-- Shared Module Sidebar -->
+            <CalendarSidebar activeMenu="'get_started'"/>
+
+            <!-- Main Page Area -->
+            <div class="o_leave_dashboard o_leave_get_started_page">
+
+                <!-- Header Bar -->
+                <div class="cleon-dash-header">
+                    <div class="cleon-dash-header-left">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openDashboard" title="Go to Dashboard">
+                            <i class="fa fa-columns"/>
+                        </button>
+                        <div>
+                            <h4 class="cleon-dash-title">Get Started</h4>
+                            <span class="cleon-dash-subtitle">Follow these steps to configure and launch Leave Management</span>
+                        </div>
+                    </div>
+                    <div class="cleon-dash-header-right">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Take a Tour">
+                            <i class="fa fa-paper-plane-o"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openWizard" title="Setup Wizard">
+                            <i class="fa fa-magic"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Help / Guide">
+                            <i class="fa fa-question-circle-o"/>
+                        </button>
+
+                        <!-- View Switcher -->
+                        <div class="cleon-view-toggle">
+                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('admin')">
+                                <i class="fa fa-circle-o"/> Admin View
+                            </button>
+                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('employee')">
+                                <i class="fa fa-user-o"/> Employee View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Banner -->
+                <div class="cleon-gs-hero">
+                    <div class="cleon-gs-hero-left">
+                        <div class="cleon-gs-hero-icon">
+                            <i class="fa fa-calendar"/>
+                        </div>
+                        <div class="cleon-gs-hero-text">
+                            <span class="cleon-gs-hero-kicker">LEAVE MANAGEMENT • Setup Guide</span>
+                            <h2 class="cleon-gs-hero-title">Welcome to Leave Management</h2>
+                            <p class="cleon-gs-hero-desc">
+                                Manage employee time off with ease. Set up your leave policies, define leave
+                                types, and configure approval workflows so your team can request and track
+                                leave efficiently.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="cleon-gs-hero-right">
+                        <button class="cleon-gs-hero-btn" t-on-click="openWizard">
+                            <i class="fa fa-magic"/> Get Started
+                        </button>
+                        <span class="cleon-gs-hero-hint">Takes less than 5 minutes</span>
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="cleon-gs-section">
+                    <div class="cleon-gs-section-header">
+                        <div class="cleon-gs-section-title-wrap">
+                            <div class="cleon-gs-section-icon"><i class="fa fa-sliders"/></div>
+                            <div>
+                                <h3 class="cleon-gs-section-title">Get Started with Leave Management</h3>
+                                <span class="cleon-gs-section-sub">
+                                    <t t-esc="state.completedCount"/>/5 steps completed · Follow these steps to get up and running
+                                </span>
+                            </div>
+                        </div>
+                        <div class="cleon-gs-section-progress-wrap">
+                            <div class="cleon-gs-progress-bar-bg">
+                                <div class="cleon-gs-progress-bar-fill" t-att-style="'width:' + (state.completedCount * 20) + '%'"/>
+                            </div>
+                            <span class="cleon-gs-progress-pct"><t t-esc="state.completedCount * 20"/>%</span>
+                            <button type="button" class="cleon-gs-collapse-btn" t-on-click="toggleProgressExpanded" t-att-title="state.progressExpanded ? 'Collapse' : 'Expand'">
+                                <i t-att-class="'fa ' + (state.progressExpanded ? 'fa-chevron-up' : 'fa-chevron-down')"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 5 Step Cards Grid -->
+                    <t t-if="state.progressExpanded">
+                        <div class="cleon-gs-cards-grid">
+
+                            <!-- Step 1: Configure Leave Types -->
+                            <div t-att-class="'cleon-gs-card purple ' + (state.checklist.check_leave_type ? 'is-completed' : '')">
+                                <span class="cleon-gs-card-num">1</span>
+                                <div class="cleon-gs-card-top">
+                                    <div class="cleon-gs-card-icon purple"><i class="fa fa-tags"/></div>
+                                    <div>
+                                        <h4 class="cleon-gs-card-title">Configure Leave Types</h4>
+                                        <p class="cleon-gs-card-desc">Set up Annual, Sick, Maternity and other leave categories with rules.</p>
+                                    </div>
+                                </div>
+                                <div class="cleon-gs-card-actions">
+                                    <button class="cleon-gs-btn purple" t-on-click="openLeaveTypes">Set Up</button>
+                                    <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist.check_leave_type ? 'done' : '')"
+                                            t-on-click="() => this.toggleChecklistItem('check_leave_type')">
+                                        <t t-if="state.checklist.check_leave_type"><i class="fa fa-check"/> Completed</t>
+                                        <t t-else="">Mark done</t>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Set Employee Balances -->
+                            <div t-att-class="'cleon-gs-card green ' + (state.checklist.check_allocate_balance ? 'is-completed' : '')">
+                                <span class="cleon-gs-card-num">2</span>
+                                <div class="cleon-gs-card-top">
+                                    <div class="cleon-gs-card-icon green"><i class="fa fa-globe"/></div>
+                                    <div>
+                                        <h4 class="cleon-gs-card-title">Set Employee Balances</h4>
+                                        <p class="cleon-gs-card-desc">Assign leave day allocations per employee and leave type.</p>
+                                    </div>
+                                </div>
+                                <div class="cleon-gs-card-actions">
+                                    <button class="cleon-gs-btn green" t-on-click="openLeaveBalances">Manage</button>
+                                    <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist.check_allocate_balance ? 'done' : '')"
+                                            t-on-click="() => this.toggleChecklistItem('check_allocate_balance')">
+                                        <t t-if="state.checklist.check_allocate_balance"><i class="fa fa-check"/> Completed</t>
+                                        <t t-else="">Mark done</t>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Define Leave Policies -->
+                            <div t-att-class="'cleon-gs-card amber ' + (state.checklist.check_set_country ? 'is-completed' : '')">
+                                <span class="cleon-gs-card-num">3</span>
+                                <div class="cleon-gs-card-top">
+                                    <div class="cleon-gs-card-icon amber"><i class="fa fa-shield"/></div>
+                                    <div>
+                                        <h4 class="cleon-gs-card-title">Define Leave Policies</h4>
+                                        <p class="cleon-gs-card-desc">Configure carry-forward, approval workflows, and accrual rules.</p>
+                                    </div>
+                                </div>
+                                <div class="cleon-gs-card-actions">
+                                    <button class="cleon-gs-btn amber" t-on-click="openSettings">Configure</button>
+                                    <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist.check_set_country ? 'done' : '')"
+                                            t-on-click="() => this.toggleChecklistItem('check_set_country')">
+                                        <t t-if="state.checklist.check_set_country"><i class="fa fa-check"/> Completed</t>
+                                        <t t-else="">Mark done</t>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Review Leave Requests -->
+                            <div t-att-class="'cleon-gs-card pink ' + (state.checklist.check_review_request ? 'is-completed' : '')">
+                                <span class="cleon-gs-card-num">4</span>
+                                <div class="cleon-gs-card-top">
+                                    <div class="cleon-gs-card-icon pink"><i class="fa fa-file-text-o"/></div>
+                                    <div>
+                                        <h4 class="cleon-gs-card-title">Review Leave Requests</h4>
+                                        <p class="cleon-gs-card-desc">Approve or reject pending employee leave applications.</p>
+                                    </div>
+                                </div>
+                                <div class="cleon-gs-card-actions">
+                                    <button class="cleon-gs-btn pink" t-on-click="openLeaveRequests">Review ...</button>
+                                    <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist.check_review_request ? 'done' : '')"
+                                            t-on-click="() => this.toggleChecklistItem('check_review_request')">
+                                        <t t-if="state.checklist.check_review_request"><i class="fa fa-check"/> Completed</t>
+                                        <t t-else="">Mark done</t>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 5: Explore the Calendar -->
+                            <div t-att-class="'cleon-gs-card blue ' + (state.checklist.check_run_report ? 'is-completed' : '')">
+                                <span class="cleon-gs-card-num">5</span>
+                                <div class="cleon-gs-card-top">
+                                    <div class="cleon-gs-card-icon blue"><i class="fa fa-calendar"/></div>
+                                    <div>
+                                        <h4 class="cleon-gs-card-title">Explore the Calendar</h4>
+                                        <p class="cleon-gs-card-desc">View all leave schedules across the organisation at a glance.</p>
+                                    </div>
+                                </div>
+                                <div class="cleon-gs-card-actions">
+                                    <button class="cleon-gs-btn blue" t-on-click="openLeaveCalendar">Open ...</button>
+                                    <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist.check_run_report ? 'done' : '')"
+                                            t-on-click="() => this.toggleChecklistItem('check_run_report')">
+                                        <t t-if="state.checklist.check_run_report"><i class="fa fa-check"/> Completed</t>
+                                        <t t-else="">Mark done</t>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </t>
+
+                    <!-- Footer Help Bar -->
+                    <div class="cleon-gs-footer-help">
+                        <span><i class="fa fa-exclamation-circle text-pink"/> Need help? Use the <strong>tour guide (?)</strong> in the header</span>
+                        <span><i class="fa fa-magic text-purple"/> Or open the <strong>setup wizard (*)</strong> for step-by-step guidance</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- SETUP WIZARD MODAL -->
+            <t t-if="state.showWizard">
+                <div class="cleon-welcome-backdrop" t-on-click="closeWizard"/>
+                <div class="cleon-wizard-modal" role="dialog" aria-modal="true">
+                    <div class="cleon-wizard-progress">
+                        <t t-foreach="[1,2,3,4,5]" t-as="s" t-key="s">
+                            <div t-att-class="{'cleon-wiz-step': true, 'cleon-wiz-step-active': state.wizardStep === s, 'cleon-wiz-step-done': state.wizardStep > s}">
+                                <div class="cleon-wiz-dot">
+                                    <t t-if="state.wizardStep > s"><i class="fa fa-check"/></t>
+                                    <t t-else=""><t t-esc="s"/></t>
+                                </div>
+                                <t t-if="s_index lt 4"><div class="cleon-wiz-connector"/></t>
+                            </div>
+                        </t>
+                    </div>
+
+                    <t t-if="state.wizardStep === 1">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon"><i class="fa fa-tags"/></div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 1 OF 5</span>
+                                <h2 class="cleon-wizard-title">Configure Leave Types</h2>
+                            </div>
+                        </div>
+                        <p class="cleon-wizard-desc">Define every leave category your organisation offers — Annual Leave, Sick Leave, Maternity/Paternity, Compassionate, and any custom types.</p>
+                        <div class="cleon-key-actions">
+                            <div class="cleon-key-action-item"><i class="fa fa-plus-circle text-pink"/><span>Click <strong>"Add Leave Type"</strong> on the Leave Types page.</span></div>
+                            <div class="cleon-key-action-item"><i class="fa fa-check-circle text-green"/><span>Set entitlements (days per year) and carry-over rules.</span></div>
+                        </div>
+                    </t>
+                    <t t-if="state.wizardStep === 2">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-teal"><i class="fa fa-globe"/></div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 2 OF 5</span>
+                                <h2 class="cleon-wizard-title">Set Employee Balances</h2>
+                            </div>
+                        </div>
+                        <p class="cleon-wizard-desc">Allocate leave balances to employees individually or in bulk. Adjust entitlements mid-cycle and carry forward unused days.</p>
+                        <div class="cleon-key-actions">
+                            <div class="cleon-key-action-item"><i class="fa fa-users text-teal"/><span>Use <strong>"Bulk Allocate"</strong> to set balances for departments.</span></div>
+                        </div>
+                    </t>
+                    <t t-if="state.wizardStep === 3">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-blue"><i class="fa fa-shield"/></div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 3 OF 5</span>
+                                <h2 class="cleon-wizard-title">Define Leave Policies</h2>
+                            </div>
+                        </div>
+                        <p class="cleon-wizard-desc">Configure carry-forward limits, multi-level approval chains, and regional working calendars.</p>
+                    </t>
+                    <t t-if="state.wizardStep === 4">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-pink"><i class="fa fa-file-text-o"/></div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 4 OF 5</span>
+                                <h2 class="cleon-wizard-title">Review Leave Requests</h2>
+                            </div>
+                        </div>
+                        <p class="cleon-wizard-desc">Approve or reject pending leave requests from employees with instant email notifications.</p>
+                    </t>
+                    <t t-if="state.wizardStep === 5">
+                        <div class="cleon-wizard-step-header">
+                            <div class="cleon-wizard-icon cleon-wiz-icon-orange"><i class="fa fa-calendar"/></div>
+                            <div class="cleon-wizard-step-meta">
+                                <span class="cleon-wiz-step-label">STEP 5 OF 5</span>
+                                <h2 class="cleon-wizard-title">Explore the Calendar</h2>
+                            </div>
+                        </div>
+                        <p class="cleon-wizard-desc">View department leave schedules at a glance to manage coverage and avoid understaffing.</p>
+                    </t>
+
+                    <div class="cleon-wizard-footer">
+                        <button class="cleon-wiz-btn-back" t-on-click="prevWizardStep"><i class="fa fa-arrow-left"/> Back</button>
+                        <button class="cleon-wiz-btn-next" t-on-click="nextWizardStep">
+                            <t t-if="state.wizardStep lt 5">Next <i class="fa fa-arrow-right"/></t>
+                            <t t-else=""><i class="fa fa-check"/> Finish Setup</t>
+                        </button>
+                    </div>
+                    <div class="cleon-wiz-skip-row">
+                        <button class="cleon-skip-link" t-on-click="skipWizard">Skip and explore on my own</button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- COMPLETION CONFIRMATION MODAL -->
+            <t t-if="state.showCompletionModal">
+                <div class="cleon-welcome-backdrop" t-on-click="closeCompletionModal"/>
+                <div class="cleon-completion-modal" role="dialog" aria-modal="true">
+                    <button class="cleon-completion-close" t-on-click="closeCompletionModal"><i class="fa fa-times"/></button>
+                    <div class="cleon-completion-header">
+                        <div class="cleon-completion-badge"><i class="fa fa-check"/></div>
+                        <h2 class="cleon-completion-title">You're all set! 🎉</h2>
+                        <p class="cleon-completion-sub">Leave Management is configured and ready for your organization.</p>
+                    </div>
+                    <div class="cleon-completion-footer">
+                        <button class="cleon-btn-done-dash" type="button" t-on-click="openDashboard">
+                            <i class="fa fa-check-circle"/> Go to Dashboard
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+        </div>
+    </t>
+</templates>

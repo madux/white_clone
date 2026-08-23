@@ -1,0 +1,394 @@
+/* ══════════════════════════════════════════════════════════════
+   CLEONHR LEAVE MANAGEMENT — GET STARTED PAGE CSS
+   ══════════════════════════════════════════════════════════════ */
+
+.o_leave_get_started_page {
+    padding: 20px 24px;
+    background: #f5f6fa;
+    margin-left: 220px;
+    flex: 1;
+    min-height: 100vh;
+}
+
+/* ══ HERO BANNER ════════════════════════════════════════════ */
+
+.cleon-gs-hero {
+    background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #4a00e0 100%);
+    border-radius: 16px;
+    padding: 28px 32px;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 28px rgba(236, 72, 153, 0.22);
+    position: relative;
+    overflow: hidden;
+}
+
+.cleon-gs-hero-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.cleon-gs-hero-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    flex-shrink: 0;
+}
+
+.cleon-gs-hero-text {
+    max-width: 620px;
+}
+
+.cleon-gs-hero-kicker {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    display: block;
+    margin-bottom: 6px;
+}
+
+.cleon-gs-hero-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+}
+
+.cleon-gs-hero-desc {
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.92);
+    margin: 0;
+}
+
+.cleon-gs-hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.cleon-gs-hero-btn {
+    background: #ffffff;
+    color: #ec4899;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 24px;
+    border-radius: 24px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cleon-gs-hero-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+    background: #ffffff;
+    color: #d946ef;
+}
+
+.cleon-gs-hero-hint {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+/* ══ PROGRESS SECTION ══════════════════════════════════════ */
+
+.cleon-gs-section {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #eaecf0;
+}
+
+.cleon-gs-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.cleon-gs-section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cleon-gs-section-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #fdf2f8;
+    color: #ec4899;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.cleon-gs-section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.cleon-gs-section-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+    display: block;
+}
+
+.cleon-gs-section-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cleon-gs-progress-bar-bg {
+    width: 140px;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cleon-gs-progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ec4899, #10b981);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.cleon-gs-progress-pct {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    min-width: 32px;
+}
+
+.cleon-gs-collapse-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cleon-gs-collapse-btn:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+
+/* ══ STEP CARDS GRID ═══════════════════════════════════════ */
+
+.cleon-gs-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 20px;
+}
+
+@media (max-width: 1100px) {
+    .cleon-gs-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .cleon-gs-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.cleon-gs-card {
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160px;
+    transition: all 0.2s ease;
+}
+
+.cleon-gs-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.cleon-gs-card.purple {
+    background: #f8f5ff;
+    border: 1px solid #e9e3ff;
+}
+
+.cleon-gs-card.green {
+    background: #f0fdf4;
+    border: 1px solid #dcfce7;
+}
+
+.cleon-gs-card.amber {
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+}
+
+.cleon-gs-card.pink {
+    background: #fdf2f8;
+    border: 1px solid #fce7f3;
+}
+
+.cleon-gs-card.blue {
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+}
+
+.cleon-gs-card.is-completed {
+    opacity: 0.85;
+}
+
+.cleon-gs-card-num {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #94a3b8;
+}
+
+.cleon-gs-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.cleon-gs-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.cleon-gs-card-icon.purple { background: #8b5cf6; }
+.cleon-gs-card-icon.green  { background: #10b981; }
+.cleon-gs-card-icon.amber  { background: #f59e0b; }
+.cleon-gs-card-icon.pink   { background: #ec4899; }
+.cleon-gs-card-icon.blue   { background: #3b82f6; }
+
+.cleon-gs-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 4px 0;
+}
+
+.cleon-gs-card-desc {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #64748b;
+    margin: 0;
+}
+
+.cleon-gs-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.cleon-gs-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-gs-btn.purple { background: #8b5cf6; color: #ffffff; }
+.cleon-gs-btn.green  { background: #10b981; color: #ffffff; }
+.cleon-gs-btn.amber  { background: #f59e0b; color: #ffffff; }
+.cleon-gs-btn.pink   { background: #ec4899; color: #ffffff; }
+.cleon-gs-btn.blue   { background: #3b82f6; color: #ffffff; }
+
+.cleon-gs-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+}
+
+.cleon-gs-mark-btn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cleon-gs-mark-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.cleon-gs-mark-btn.done {
+    background: #ecfdf5;
+    border-color: #10b981;
+    color: #047857;
+}
+
+/* ══ FOOTER HELP ═══════════════════════════════════════════ */
+
+.cleon-gs-footer-help {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.cleon-gs-footer-help span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.text-pink { color: #ec4899; }
+.text-purple { color: #8b5cf6; }

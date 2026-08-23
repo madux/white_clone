@@ -44,9 +44,7 @@ export class CalendarSidebar extends Component {
         if (this.props.onOpenSetup) {
             this.props.onOpenSetup();
         } else {
-            this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard", {
-                additionalContext: { open_setup_wizard: true },
-            });
+            this.action.doAction("hr_leave_dashboard.action_hr_leave_get_started");
         }
     }
 
