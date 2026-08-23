@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 export class LeaveTypeFormModal extends Component {
@@ -30,6 +30,10 @@ export class LeaveTypeFormModal extends Component {
             errors: {},
             saving: false,
             showDiscardPrompt: false,
+            employeeTypePickerOpen: false,
+            employeeTypeSearch: "",
+            locationPickerOpen: false,
+            locationSearch: "",
             expandedSections: {
                 basic: true,
                 settings: true,
@@ -38,6 +42,10 @@ export class LeaveTypeFormModal extends Component {
                 advanced: true,
             },
         });
+
+        this.onDocumentClick = this.onDocumentClick.bind(this);
+        onMounted(() => document.addEventListener("click", this.onDocumentClick));
+        onWillUnmount(() => document.removeEventListener("click", this.onDocumentClick));
 
         this.initialSnapshot = JSON.stringify(this.serializeForm(this.state.form));
     }
@@ -219,6 +227,78 @@ export class LeaveTypeFormModal extends Component {
     onMultiSelectChange(field, ev) {
         const selectedOptions = Array.from(ev.target.selectedOptions).map(o => Number(o.value));
         this.state.form[field] = selectedOptions;
+    }
+
+    getSelectedMultiItems(field, items) {
+        const selected = this.state.form[field] || [];
+        return items.filter(item => selected.includes(Number(item.id)));
+    }
+
+    getAvailableMultiItems(field, items, search = "") {
+        const selected = this.state.form[field] || [];
+        const query = search.trim().toLowerCase();
+        return items.filter(item => (
+            !selected.includes(Number(item.id)) &&
+            (!query || (item.name || "").toLowerCase().includes(query))
+        ));
+    }
+
+    toggleMultiPicker(picker) {
+        const isEmployeeType = picker === "employeeType";
+        const willOpen = isEmployeeType
+            ? !this.state.employeeTypePickerOpen
+            : !this.state.locationPickerOpen;
+        this.state.employeeTypePickerOpen = isEmployeeType
+            ? willOpen
+            : false;
+        this.state.locationPickerOpen = isEmployeeType
+            ? false
+            : willOpen;
+        if (willOpen) {
+            requestAnimationFrame(() => {
+                this.modalBodyRef.el?.querySelector(".leave-m2m-dropdown input")?.focus();
+            });
+        }
+    }
+
+    closeMultiPickers() {
+        this.state.employeeTypePickerOpen = false;
+        this.state.locationPickerOpen = false;
+        this.state.employeeTypeSearch = "";
+        this.state.locationSearch = "";
+    }
+
+    onDocumentClick(ev) {
+        if (!ev.target.closest(".leave-m2m")) {
+            this.closeMultiPickers();
+        }
+    }
+
+    onMultiPickerKeydown(ev) {
+        if (ev.key === "Escape") {
+            this.closeMultiPickers();
+        }
+    }
+
+    addMultiValue(field, value, errorKey = null) {
+        const id = Number(value);
+        const selected = this.state.form[field] || [];
+        if (!selected.includes(id)) {
+            this.state.form[field] = [...selected, id];
+        }
+        if (field === "employeeTypeIds") {
+            this.state.employeeTypeSearch = "";
+        } else if (field === "locationIds") {
+            this.state.locationSearch = "";
+        }
+        if (errorKey) {
+            delete this.state.errors[errorKey];
+        }
+    }
+
+    removeMultiValue(field, value) {
+        const id = Number(value);
+        this.state.form[field] = (this.state.form[field] || []).filter(item => item !== id);
     }
 
     addTenureTier() {

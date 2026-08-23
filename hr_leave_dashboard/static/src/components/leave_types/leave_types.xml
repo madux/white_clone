@@ -942,21 +942,55 @@
                                         <!-- Applicable Employee Types Filter -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Employee Types</label>
-                                            <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('employeeTypeIds', ev)">
-                                                <t t-foreach="props.employmentTypes" t-as="et" t-key="et.id">
-                                                    <option t-att-value="et.id" t-att-selected="state.form.employeeTypeIds.includes(et.id)"><t t-esc="et.name"/></option>
-                                                </t>
-                                            </select>
+                                            <div class="leave-m2m">
+                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.employeeTypePickerOpen" t-on-click="() => this.toggleMultiPicker('employeeType')">
+                                                    <span t-foreach="this.getSelectedMultiItems('employeeTypeIds', props.employmentTypes)" t-as="et" t-key="et.id" class="leave-m2m-tag">
+                                                        <span t-esc="et.name"/>
+                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + et.name" t-on-click.stop="() => this.removeMultiValue('employeeTypeIds', et.id)">×</button>
+                                                    </span>
+                                                    <span t-if="!state.form.employeeTypeIds.length" class="leave-m2m-placeholder">Select employee types...</span>
+                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
+                                                </div>
+                                                <div t-if="state.employeeTypePickerOpen" class="leave-m2m-dropdown">
+                                                    <div class="leave-m2m-search">
+                                                        <i class="fa fa-search" aria-hidden="true"/>
+                                                        <input type="text" t-model="state.employeeTypeSearch" placeholder="Search employee types..." t-on-keydown="onMultiPickerKeydown"/>
+                                                    </div>
+                                                    <div class="leave-m2m-options" role="listbox">
+                                                        <button t-foreach="this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch)" t-as="et" t-key="et.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('employeeTypeIds', et.id)">
+                                                            <span t-esc="et.name"/>
+                                                        </button>
+                                                        <p t-if="!this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch).length" class="leave-m2m-empty">No more matching employee types.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Applicable Locations -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Locations</label>
-                                            <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('locationIds', ev)">
-                                                <t t-foreach="props.locations" t-as="loc" t-key="loc.id">
-                                                    <option t-att-value="loc.id" t-att-selected="state.form.locationIds.includes(loc.id)"><t t-esc="loc.name"/></option>
-                                                </t>
-                                            </select>
+                                            <div class="leave-m2m">
+                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.locationPickerOpen" t-on-click="() => this.toggleMultiPicker('location')">
+                                                    <span t-foreach="this.getSelectedMultiItems('locationIds', props.locations)" t-as="loc" t-key="loc.id" class="leave-m2m-tag">
+                                                        <span t-esc="loc.name"/>
+                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + loc.name" t-on-click.stop="() => this.removeMultiValue('locationIds', loc.id)">×</button>
+                                                    </span>
+                                                    <span t-if="!state.form.locationIds.length" class="leave-m2m-placeholder">Select locations...</span>
+                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
+                                                </div>
+                                                <div t-if="state.locationPickerOpen" class="leave-m2m-dropdown">
+                                                    <div class="leave-m2m-search">
+                                                        <i class="fa fa-search" aria-hidden="true"/>
+                                                        <input type="text" t-model="state.locationSearch" placeholder="Search locations..." t-on-keydown="onMultiPickerKeydown"/>
+                                                    </div>
+                                                    <div class="leave-m2m-options" role="listbox">
+                                                        <button t-foreach="this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch)" t-as="loc" t-key="loc.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('locationIds', loc.id, 'locations')">
+                                                            <span t-esc="loc.name"/>
+                                                        </button>
+                                                        <p t-if="!this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch).length" class="leave-m2m-empty">No more matching locations.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <t t-if="state.errors.locations">
                                                 <span class="text-danger micro-text"><t t-esc="state.errors.locations"/></span>
                                             </t>
