@@ -1,5 +1,12 @@
 from odoo import api, models, fields
 
+class HrEmployee(models.Model):
+    _inherit = 'hr.employee'
+
+    employee_number = fields.Char(
+    string="Staff Number", 
+        )
+
 class IrUiMenu(models.Model):
     _inherit = "ir.ui.menu"
 

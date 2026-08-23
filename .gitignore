@@ -1,3 +1,4 @@
+# Project-specific local files
 resources/ui/AGENTS.md
 .opencode/plans/recruitment-alerts-triggers.md
 .opencode/plans/recruitment-jobs.md
@@ -34,3 +35,8 @@ htmlcov/
 *.swp
 *.swo
 .DS_Store
+
+# Local implementation notes
+hr_expense_management/APP_CONTRACT.md
+hr_expense_management/FINAL_REVIEW.md
+hr_expense_management/PROGRESS.md

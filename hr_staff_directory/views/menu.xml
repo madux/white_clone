@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Override the existing hr_admin_staff_directory menuitem (defined in
+        hr_administration/views/menu.xml, sequence=30) so it now opens the
+        new Staff Directory dashboard instead of the generic employee kanban.
+        We only update the `action` field — name, parent, sequence and
+        icon_class are left unchanged.
+    -->
+    <record id="hr_administration.hr_admin_staff_directory" model="ir.ui.menu">
+        <field name="action" ref="hr_staff_directory.action_staff_directory_dashboard"/>
+    </record>
+
+</odoo>

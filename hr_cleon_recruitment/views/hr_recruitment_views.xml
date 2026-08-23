@@ -39,6 +39,8 @@
         </search>
         </field>
     </record>
+
+    
     <record id="hr_job_recruitment_custom_tree_view" model="ir.ui.view">
         <field name="name">hr.job.candidate.tree</field>
         <field name="model">hr.job</field>
@@ -62,6 +64,11 @@
                 <field name="expected_employees" optional="hide"/>
                 <field name="no_of_hired_employee" optional="hide"/>
                 <field name="company_id" column_invisible="True" on_change="1"/>
+                <button name="%(hr_cleon_recruitment.action_hr_job_recruitment)d"
+                        type="action"
+                        class="btn-sm btn-success"
+                        icon="fa-eye"
+                        string="Dashboard"/>
             </tree>
         </field>
     </record>
@@ -79,7 +86,7 @@
                         <field name="job_id" string="ROLE" class="overwrite-field cn-col-role"/>
                         <field name="department_id" string="DEPARTMENT" class="overwrite-field cn-col-role" optional="hide"/>
                         <!-- <field name="skill_ids" string="EXPERIENCE" class="overwrite-field cn-col-experience" widget="many2many_tags"/> -->
-                        <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
+                        <!-- <field name="rating_ids" string="RARTINGS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/> -->
                         <field name="priority" string="MATCH RATING" class="overwrite-field cn-col-rating" widget="priority"/>
                         <field name="probability" string="PROBABILITY" class="overwrite-field cn-col-rating" optional="hide"/>
                         <field name="application_status" string="STATUS" class="overwrite-field cn-col-status" widget="badge" optional="hide"/>
@@ -148,11 +155,17 @@
             (5, 0, 0),
             (0, 0, {
                 'view_mode': 'tree',
-                'view_id': ref('hr_job_recruitment_custom_tree_view'),
+                'view_id': ref('hr_cleon_recruitment.hr_job_recruitment_custom_tree_view'),
             }),
+            (0, 0, {
+                'view_mode': 'form',
+                'view_id': ref('hr_cleon_recruitment.cleon_job_form_view'),
+            }),
+            
             
         ]"/> 
     </record>
+    
 
     <record id="action_hr_department_recruitment" model="ir.actions.act_window">
         <field name="name">DEPARTMENT:</field>

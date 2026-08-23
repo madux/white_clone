@@ -14,6 +14,7 @@
     </record>
 
 
+
     <menuitem
         id="menu_company_approvals"
         name="Approvals"
@@ -112,7 +113,7 @@
                                                 <p><h6>📅<field name="start" readonly="1" nolabel="1"/></h6><field name="byday" readonly="1" nolabel="1"/></p>
                                                 <div class="cc-action-row">
                                                     <span>
-                                                        <i class="fa fa-user"/> To be approved by: <field name="to_approved_by" readonly="1" nolabel="1"/>
+                                                        <i class="fa fa-user"/> To be approved by: <field name="to_approved_by" options="{'no_create': True}" readonly="1" nolabel="1"/>
                                                     </span>
                                                     <span class="cc-btn-primary m-2">
                                                         <field name="calendar_status" readonly="1" nolabel="1"/>

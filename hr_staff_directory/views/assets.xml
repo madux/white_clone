@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Load DM Sans from Google Fonts via a <link> tag in the backend <head>.
+        This is the correct Odoo pattern for external fonts.
+        Using @import inside a bundled CSS file causes Odoo's asset pipeline
+        to attempt to fetch the URL server-side, which corrupts the entire
+        web.assets_backend bundle and distorts the whole backend UI.
+    -->
+    <template id="assets_backend_dm_sans"
+              inherit_id="web.layout"
+              name="Staff Directory: DM Sans font">
+        <xpath expr="//head" position="inside">
+            <link rel="preconnect" href="https://fonts.googleapis.com"/>
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+            <link rel="stylesheet"
+                  href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;display=swap"/>
+        </xpath>
+    </template>
+
+</odoo>

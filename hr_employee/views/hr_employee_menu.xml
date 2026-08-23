@@ -327,6 +327,8 @@
               action="action_hr_core_salary_mgt"
               groups="base.group_system"/>
 
+              
+
             <menuitem id="menu_hr_core_salary_mgt"
               name="Salary Management"
               parent="menu_hr_core_compensation"

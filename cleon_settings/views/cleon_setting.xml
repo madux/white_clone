@@ -133,6 +133,9 @@
         sequence="10"
         />
         <!-- parent="hr_insurance.menu_hmo_configuration" -->
-
-
+    <record id="cleon_settings.menu_hmo_cleon_setting" model="ir.ui.menu">
+            <field name="icon_class">fa fa-money</field>
+            <field name="category_name">CleonHR-HR Setting</field>
+        </record>
+ 
 </odoo>

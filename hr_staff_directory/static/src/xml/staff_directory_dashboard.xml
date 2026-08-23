@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="hr_staff_directory.StaffDirectoryDashboard">
+        <div class="sdir-app" t-ref="root">
+
+            <!-- ═══ TAB BAR ═════════════════════════════════════════════════ -->
+            <div class="sdir-tab-bar">
+                <button type="button"
+                        t-att-class="state.activeTab === 'people' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabPeople"
+                        t-on-click="() => this.toggleTab('people')">
+                    <!-- People icon -->
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    People
+                </button>
+                <button type="button"
+                        t-att-class="state.activeTab === 'org' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabOrgStructure"
+                        t-on-click="() => this.toggleTab('org')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" 
+                    stroke-linejoin="round" class="lucide lucide-layers">
+                        <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path>
+                        <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path>
+                        <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path>
+                    </svg>
+                    Organizational Structure
+                </button>
+                <button type="button"
+                        t-att-class="state.activeTab === 'workforce' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabWorkforceIntel"
+                        t-on-click="() => this.toggleTab('workforce')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    Workforce Intelligence
+                </button>
+                <button type="button"
+                        t-att-class="state.activeTab === 'network' ? 'sdir-tab sdir-tab-active' : 'sdir-tab'"
+                        id="tabOrgIntel"
+                        t-on-click="() => this.toggleTab('network')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="16" y="16" width="6" height="6" rx="1"></rect>
+                        <rect x="2" y="16" width="6" height="6" rx="1"></rect>
+                        <rect x="9" y="2" width="6" height="6" rx="1"></rect>
+                        <path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path>
+                        <path d="M12 12V8"></path>
+                    </svg>
+                    Organizational Intelligence
+                </button>
+            </div>
+
+            <!-- ═══ MAIN CONTENT (People Tab) ════════════════════════════════ -->
+            <div class="sdir-people-content" t-if="state.activeTab === 'people'">
+
+            <StaffDirectoryPeopleList 
+                people="this.filteredPeople()" 
+                stats="state.stats" 
+                adminMode="state.adminMode" 
+                toggleAdminMode="this.toggleAdminMode.bind(this)" 
+                searchQuery="state.searchQuery" 
+                onSearch="this.onSearch.bind(this)" 
+                showFilterModal="state.showFilterModal" 
+                toggleFilterModal="this.toggleFilterModal.bind(this)"
+                expandedFilters="state.expandedFilters"
+                filterDefinitions="this.filterDefinitions"   
+                openProfile="this.openProfile.bind(this)"
+                togglePin="this.togglePin.bind(this)"
+                activeFilters="state.activeFilters"
+                clearSearch="this.clearSearch.bind(this)"
+                activeFilterCount="this.activeFilterCount"
+                activeFilterChips="this.activeFilterChips"
+                exportAll="this.exportAll.bind(this)"
+                removeFilter="this.removeFilter.bind(this)"
+                clearAllFilters="this.clearAllFilters.bind(this)"
+                toggleFilterAccordion="this.toggleFilterAccordion.bind(this)"
+                setDateFilter="this.setDateFilter.bind(this)"
+                toggleFilterOption="this.toggleFilterOption.bind(this)"
+
+                recentlyViewedProfiles="state.recentlyViewedProfiles"
+                selectedPeople="state.selectedPeople"
+                toggleSelection="this.toggleSelection.bind(this)"
+                toggleAll="this.toggleAll.bind(this)"
+                clearSelection="this.clearSelection.bind(this)"
+                isAllSelected="this.isAllSelected"
+                selectedPeopleCount="this.selectedPeopleCount"
+                exportSelected="this.exportSelected.bind(this)"
+                openBulkMessageBox="this.openBulkMessageBox.bind(this)"
+                openMessageBox="this.openMessageBox.bind(this)"
+                deptKey="this.deptKey.bind(this)"
+                lifecycleLabel="this.lifecycleLabel.bind(this)"
+                getLifecycleDotClass="this.getLifecycleDotClass.bind(this)"
+            />
+            </div><!-- /.sdir-people-content -->
+
+            <!-- ═══ ORG STRUCTURE TAB ════════════════════════════════════════════ -->
+            <div class="sdir-org-content" t-if="state.activeTab === 'org'">
+                
+                <!-- Left Sidebar -->
+                <div t-att-class="'sdir-org-sidebar ' + (state.orgSidebarOpen ? '' : 'sdir-org-sidebar-closed')">
+                    <t t-if="state.orgSidebarOpen">
+                        <div class="sdir-org-sidebar-header">
+                            <div class="sdir-org-sidebar-search">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                <input type="text" placeholder="Search structure..."/>
+                            </div>
+                            <button class="sdir-org-sidebar-toggle" t-on-click="toggleOrgSidebar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                            </button>
+                        </div>
+                        <div class="sdir-org-sidebar-content">
+                            <div class="sdir-org-sidebar-empty">
+                                <p>Search for a category to add it here.</p>
+                                <span>e.g. "Department", "Location"</span>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <button class="sdir-org-sidebar-toggle-closed" t-on-click="toggleOrgSidebar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </t>
+                </div>
+
+                <div class="sdir-org-main">
+                    <!-- Secondary Toolbar -->
+                    <div class="sdir-org-toolbar">
+                        <div class="sdir-org-toolbar-left"></div>
+                        <div class="sdir-org-toolbar-right">
+                            <span class="sdir-org-view-label">View option</span>
+                            <div class="sdir-org-view-select-wrapper">
+                                <div class="sdir-org-view-select" t-on-click="toggleOrgViewDropdown">
+                                    <span t-if="state.activeOrgView === 'org'">Org Chart</span>
+                                    <span t-if="state.activeOrgView === 'heatmap'">Heatmap View</span>
+                                    <span t-if="state.activeOrgView === 'bar'">Bar View</span>
+                                    <span t-if="state.activeOrgView === 'geo'">Geographic Map</span>
+                                    <span t-if="state.activeOrgView === 'graph'">Relationship Graph</span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                </div>
+                                <div t-if="state.showOrgViewDropdown" class="sdir-org-view-dropdown">
+                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'org' ? 'active' : ''" t-on-click="() => this.setOrgView('org')">Org Chart</div>
+                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'heatmap' ? 'active' : ''" t-on-click="() => this.setOrgView('heatmap')">Heatmap View</div>
+                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'bar' ? 'active' : ''" t-on-click="() => this.setOrgView('bar')">Bar View</div>
+                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'geo' ? 'active' : ''" t-on-click="() => this.setOrgView('geo')">Geographic Map</div>
+                                    <div class="sdir-org-view-dropdown-item" t-att-class="state.activeOrgView === 'graph' ? 'active' : ''" t-on-click="() => this.setOrgView('graph')">Relationship Graph</div>
+                                </div>
+                            </div>
+                            <button class="sdir-org-btn-icon" title="Stats">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-8"/><path d="M18 20V10"/><path d="M6 20V4"/></svg>
+                            </button>
+                            <button class="sdir-org-btn-outline">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                                Filters
+                            </button>
+                            <button class="sdir-org-btn-solid">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                Org Chart
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- View Switcher -->
+                    <t t-if="state.activeOrgView === 'org'">
+                        <StaffDirectoryOrgChart people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
+                    </t>
+                    <t t-if="state.activeOrgView === 'heatmap'">
+                        <StaffDirectoryHeatmap people="this.filteredPeople()" openProfile="this.openProfile.bind(this)"/>
+                    </t>
+                    <t t-if="state.activeOrgView === 'bar'">
+                        <StaffDirectoryBarChart people="this.filteredPeople()"/>
+                    </t>
+                    <t t-if="state.activeOrgView === 'geo'">
+                        <StaffDirectoryGeographicMap 
+                            people="this.filteredPeople()" 
+                            openFilterModal="this.toggleFilterModal.bind(this)"
+                            avatarColor="this.avatarColor.bind(this)"
+                            initials="this.initials.bind(this)"
+                            openProfile="this.openProfile.bind(this)"
+                            setOrgView="this.setOrgView.bind(this)"/>
+                    </t>
+                    <t t-if="state.activeOrgView === 'graph'">
+                        <StaffDirectoryRelationshipGraph 
+                            people="this.filteredPeople()" 
+                            openProfile="this.openProfile.bind(this)"
+                            deptKey="this.deptKey.bind(this)"/>
+                    </t>
+                </div> <!-- Close sdir-org-body -->
+            </div> <!-- Close sdir-org-content -->
+            
+            <!-- ═══ WORKFORCE INTELLIGENCE TAB ═══════════════════════════════════ -->
+            <div class="sdir-network-content" t-if="state.activeTab === 'workforce'">
+                <div class="sdir-placeholder-msg">
+                    <h2>Workforce Intelligence</h2>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+
+            <!-- ═══ ORGANIZATIONAL INTELLIGENCE TAB ══════════════════════════════ -->
+            <div class="sdir-network-content" t-if="state.activeTab === 'network'">
+                <div class="sdir-placeholder-msg">
+                    <h2>Organizational Intelligence</h2>
+                    <p>Coming Soon</p>
+                </div>
+            </div>
+
+            <!-- ═══ FLOATING HELP BUTTON ═════════════════════════════════════════ -->
+            <!-- TODO: Implement Help & Support functionality (e.g., trigger tutorial or support modal) -->
+            <!--
+            <button type="button" class="sdir-fab-help" title="Help &amp; Support">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </button>
+            -->
+
+            <!-- ═══ PROFILE FULL-SCREEN MODAL ════════════════════════════════════ -->
+            <t t-if="state.showProfileModal and state.activeProfile">
+                <StaffDirectoryProfilePanel 
+                    activeProfile="state.activeProfile" 
+                    recentlyViewedProfiles="state.recentlyViewedProfiles" 
+                    closeProfile="this.closeProfile.bind(this)" 
+                    openProfile="this.openProfile.bind(this)"
+                    openMessageBox="this.openMessageBox.bind(this)"
+                    getPronouns="this.getPronouns.bind(this)"
+                    deptKey="this.deptKey.bind(this)"
+                    lifecycleLabel="this.lifecycleLabel.bind(this)"
+                    avatarColor="this.avatarColor.bind(this)"
+                    initials="this.initials.bind(this)"
+                    activeProfileManager="this.activeProfileManager"
+                    activeProfileDirectReports="this.activeProfileDirectReports"
+                    activeProfileSimilarColleagues="this.activeProfileSimilarColleagues"
+                />
+            </t>
+
+            <!-- Placeholder for other tabs -->
+            <div class="sdir-tab-placeholder" t-if="state.activeTab !== 'people' and state.activeTab !== 'org' and state.activeTab !== 'network'">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:#9AA0B2;">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                </svg>
+                <div class="sdir-tab-placeholder-title">
+                    <t t-if="state.activeTab === 'org'">Organizational Structure</t>
+                    <t t-if="state.activeTab === 'network'">Relationship Network</t>
+                </div>
+                <div class="sdir-tab-placeholder-sub">This view is coming soon.</div>
+            </div>
+
+            <!-- ═══ FOOTER ═════════════════════════════════════════════════ -->
+
+            <!-- Floating help button (outside footer, fixed bottom-right) -->
+            <!-- TODO: Implement Help functionality (e.g., open documentation link) -->
+            <!--
+            <button type="button" class="sdir-fab" id="sdirFab" title="Help">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+            </button>
+            -->
+
+            <!-- MESSAGE COMPOSE BOX -->
+            <div t-if="state.messageBox.isVisible" t-att-class="'sdir-msg-box ' + (state.messageBox.isMinimized ? 'sdir-msg-minimized' : 'sdir-msg-expanded')">
+                <!-- Header -->
+                <div class="sdir-msg-header">
+                    <span class="sdir-msg-title">New Message<t t-if="!state.messageBox.isMinimized"> — <t t-esc="state.messageBox.toName"/></t></span>
+                    <div class="sdir-msg-controls">
+                        <button t-on-click="minimizeMessageBox" class="sdir-msg-btn-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </button>
+                        <button t-on-click="closeMessageBox" class="sdir-msg-btn-icon">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- Body -->
+                <div class="sdir-msg-body" t-if="!state.messageBox.isMinimized">
+                    <div class="sdir-msg-row sdir-msg-to-row">
+                        <span class="sdir-msg-label">To:</span> 
+                        <input type="text" class="sdir-msg-to-email-input" t-att-value="state.messageBox.toEmail" t-on-change="(ev) => state.messageBox.toEmail = ev.target.value" placeholder="Enter emails..."/>
+                    </div>
+                    <div class="sdir-msg-row">
+                        <input type="text" placeholder="Subject" t-model="state.messageBox.subject" class="sdir-msg-input"/>
+                    </div>
+                    <div class="sdir-msg-row sdir-msg-textarea-row">
+                        <textarea t-attf-placeholder="Write to {{state.messageBox.toName}}..." t-model="state.messageBox.body" class="sdir-msg-textarea"></textarea>
+                    </div>
+                </div>
+                <!-- Footer -->
+                <div class="sdir-msg-footer" t-if="!state.messageBox.isMinimized">
+                    <button t-att-class="state.hasMessageError ? 'sdir-msg-btn-send sdir-msg-btn-error' : 'sdir-msg-btn-send'" t-on-click="sendMessage">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send
+                    </button>
+                    <button class="sdir-msg-btn-discard" t-on-click="discardMessage">Discard</button>
+                </div>
+            </div>
+
+            <!-- TOAST NOTIFICATION -->
+            <div t-if="state.toast.isVisible" t-att-class="'sdir-toast sdir-toast-' + state.toast.type">
+                <div class="sdir-toast-icon">
+                    <svg t-if="state.toast.type === 'warning'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <svg t-if="state.toast.type === 'success'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <span class="sdir-toast-msg" t-esc="state.toast.message"/>
+            </div>
+
+        </div><!-- /.sdir-app -->
+    </t>
+
+
+</templates>

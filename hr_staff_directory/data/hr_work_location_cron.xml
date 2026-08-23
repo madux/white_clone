@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_geocode_work_locations" model="ir.cron">
+        <field name="name">Staff Directory: Geocode Work Locations</field>
+        <field name="model_id" ref="hr.model_hr_work_location"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_geocode_unmapped()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

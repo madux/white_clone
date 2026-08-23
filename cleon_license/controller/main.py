@@ -15,6 +15,7 @@ ICON_PALETTE = [
         "#06B6D4",  # cyan
     ]
 from odoo import http
+from odoo.exceptions import AccessDenied
 from odoo.http import request
 from odoo.modules.registry import Registry
 from odoo import api, SUPERUSER_ID
@@ -123,16 +124,8 @@ class LicensePortal(http.Controller):
         # Local development has no tenant subdomain. Present the databases
         # explicitly so the complete master -> tenant login flow can be tested.
         if db_name in ('localhost', '127'):
-            request.env.cr.execute("""
-                SELECT datname
-                  FROM pg_database
-                 WHERE datname LIKE 'white_clone_%'
-                   AND datallowconn
-                   AND NOT datistemplate
-                 ORDER BY datname
-            """)
-            databases = [row[0] for row in request.env.cr.fetchall()]
-            selected_db = kwargs.get('db') or TARGET_DB
+            databases = http.db_list(force=True)
+            selected_db = kwargs.get('db') or request.session.db or TARGET_DB
             if selected_db not in databases and databases:
                 selected_db = databases[0]
             return request.render('cleon_license.maacherp_login_page', {
@@ -147,50 +140,78 @@ class LicensePortal(http.Controller):
 
         # 🔥 STEP 3: lock DB in session
         request.session.db = db_name
-
-        subscription = _fetch_subscription(db_name)
-
-        if not subscription:
-            return request.redirect('/maacherp/register')
-
-        end_date_raw = subscription.get('subscription_end_date')
-
-        if end_date_raw:
-            end_date = (
-                datetime.strptime(end_date_raw, '%Y-%m-%d').date()
-                if isinstance(end_date_raw, str)
-                else end_date_raw
-            )
-            expired = end_date < date.today()
+        if db_name in [LICENSE_DB]:
+            return request.render('cleon_license.maacherp_login_page', {
+                'db_name': db_name,
+                'company_name': LICENSE_DB, # subscription.get('company_name')
+            })
         else:
-            expired = True
+            subscription = _fetch_subscription(db_name)
+            
+            if not subscription:
+                return request.redirect('/maacherp/register')
 
-        if expired or not subscription.get('active'):
-            return request.redirect('/maacherp/expired')
 
-        # 🔥 if already logged in → go to Odoo web
-        if request.session.uid:
-            return request.redirect(f"/web")
+            end_date_raw = subscription.get('subscription_end_date')
 
-        return request.render('cleon_license.maacherp_login_page', {
-            'db_name': db_name,
-            'company_name': subscription.get('company_name')
-        })
+            if end_date_raw:
+                end_date = (
+                    datetime.strptime(end_date_raw, '%Y-%m-%d').date()
+                    if isinstance(end_date_raw, str)
+                    else end_date_raw
+                )
+                expired = end_date < date.today()
+            else:
+                expired = True
+
+            if expired or not subscription.get('active'):
+                return request.redirect('/maacherp/expired')
+
+            # 🔥 if already logged in → go to Odoo web
+            if request.session.uid:
+                return request.redirect(f"/maacherp/landing")
+
+            return request.render('cleon_license.maacherp_login_page', {
+                'db_name': db_name,
+                'company_name': subscription.get('company_name')
+            })
         
-    @http.route('/maacherp/autologin', type='http', auth='public', csrf=False)
+    @http.route(
+        '/maacherp/autologin',
+        type='http',
+        auth='public',
+        website=True,
+        csrf=False,
+    )
     def autologin(self, **post):
 
-        db = post.get('database_name')
+        db = (post.get('database_name') or '').strip()
         login = post.get('username')
         password = post.get('password')
 
-        uid = request.session.authenticate(db, login, password)
+        databases = http.db_list(force=True)
+        if not db or db not in databases:
+            selected_db = request.session.db if request.session.db in databases else False
+            return request.render('cleon_license.maacherp_login_page', {
+                'errors': {
+                    'database_name': 'The selected database is not available.'
+                },
+                'db_name': selected_db or (databases[0] if databases else ''),
+                'company_name': post.get('company_name'),
+                'databases': databases,
+            })
+
+        try:
+            uid = request.session.authenticate(db, login, password)
+        except AccessDenied:
+            uid = False
 
         if not uid:
             return request.render('cleon_license.maacherp_login_page', {
                 'errors': {'login': 'Invalid credentials'},
                 'db_name': db,
-                'company_name': post.get('company_name')
+                'company_name': post.get('company_name'),
+                'databases': databases,
             })
 
         request.session.db = db
@@ -443,7 +464,7 @@ class LicensePortal(http.Controller):
     
 
     # ── Custom landing page (replaces home) ───────────────────────────────
-    @http.route('/maacherp/landing', type='http', auth='user', website=False)
+    @http.route('/maacherp/landing', type='http', auth='none', website=False)
     def custom_landing_page(self, **kwargs):
         user = request.env.user
  

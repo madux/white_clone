@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_hr_claim_payment_tree" model="ir.ui.view">
+        <field name="name">hr.claim.payment.tree</field><field name="model">hr.claim.payment</field>
+        <field name="arch" type="xml">
+            <tree string="Claim Payments" decoration-success="state == 'completed'" decoration-muted="state == 'cancelled'">
+                <field name="name"/><field name="claim_id"/><field name="employee_id"/><field name="payment_date"/><field name="amount" sum="Total"/><field name="payment_method"/><field name="reference" optional="show"/><field name="processed_by_id" optional="hide"/><field name="state" widget="badge"/><field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_hr_claim_payment_search" model="ir.ui.view">
+        <field name="name">hr.claim.payment.search</field><field name="model">hr.claim.payment</field>
+        <field name="arch" type="xml"><search><field name="name"/><field name="claim_id"/><field name="employee_id"/><field name="reference"/><filter name="completed" string="Completed" domain="[('state', '=', 'completed')]"/><filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/><filter name="group_employee" string="Employee" context="{'group_by': 'employee_id'}"/><filter name="group_month" string="Payment Month" context="{'group_by': 'payment_date:month'}"/></search></field>
+    </record>
+    <record id="view_hr_claim_payment_form" model="ir.ui.view">
+        <field name="name">hr.claim.payment.form</field><field name="model">hr.claim.payment</field>
+        <field name="arch" type="xml"><form string="Claim Payment">
+            <header><button name="action_confirm" string="Confirm Payment" type="object" class="oe_highlight" invisible="state != 'draft'"/><button name="action_cancel" string="Cancel" type="object" invisible="state != 'draft'"/><field name="state" widget="statusbar"/></header>
+            <sheet><field name="company_id" invisible="1"/><div class="oe_title"><label for="name"/><h1><field name="name"/></h1></div><group><group><field name="claim_id" readonly="state != 'draft'"/><field name="employee_id"/><field name="company_id" groups="base.group_multi_company"/></group><group><field name="currency_id" invisible="1"/><field name="amount" readonly="state != 'draft'"/><field name="payment_method" readonly="state != 'draft'"/><field name="payment_date" readonly="state != 'draft'"/><field name="reference" readonly="state != 'draft'"/><field name="processed_by_id"/></group></group><field name="notes" readonly="state != 'draft'"/></sheet>
+            <div class="oe_chatter"><field name="message_follower_ids"/><field name="activity_ids"/><field name="message_ids"/></div>
+        </form></field>
+    </record>
+    <record id="action_hr_claim_payment_history" model="ir.actions.act_window">
+        <field name="name">Payment History</field><field name="res_model">hr.claim.payment</field><field name="view_mode">tree,form</field><field name="search_view_id" ref="view_hr_claim_payment_search"/></record>
+    <record id="action_hr_claim_payment_queue" model="ir.actions.act_window">
+        <field name="name">Payment Queue</field><field name="res_model">hr.claim</field><field name="view_mode">tree,form</field><field name="domain">[('state', '=', 'approved'), ('claim_type_id.reimbursable', '=', True)]</field><field name="context">{'search_default_approved': 1}</field><field name="search_view_id" ref="view_hr_claim_search"/></record>
+</odoo>

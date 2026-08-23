@@ -8,6 +8,8 @@
 (function ($) {
     "use strict";
 
+    var LANDING_CSS_PATH = "/cleon_license/static/src/css/landing.css";
+
     var ICONS = {
         home: "fa-home", employee: "fa-briefcase", workforce: "fa-user-circle-o",
         staff: "fa-users", leave: "fa-calendar", calendar: "fa-calendar-o",
@@ -29,6 +31,23 @@
             .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;");
     }
 
+    function ensureLauncherStyles() {
+        if (document.querySelector('link[href*="' + LANDING_CSS_PATH + '"]')) return;
+        var link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = LANDING_CSS_PATH;
+        document.head.appendChild(link);
+    }
+
+    function colorWithAlpha(color, alpha) {
+        var match = /^#([0-9a-f]{6})$/i.exec(color || "");
+        if (!match) return "rgba(236,72,153," + alpha + ")";
+        var value = match[1];
+        return "rgba(" + parseInt(value.slice(0, 2), 16) + "," +
+            parseInt(value.slice(2, 4), 16) + "," +
+            parseInt(value.slice(4, 6), 16) + "," + alpha + ")";
+    }
+
     function isNavbarAppsButton(target) {
         if (!target || !target.closest) return false;
         return Boolean(
@@ -40,6 +59,9 @@
 
     var Launcher = {
         apps: [],
+        categories: [],
+        totalModules: 0,
+        totalFeatures: 0,
         loading: false,
         visible: false,
 
@@ -53,21 +75,31 @@
                 ].join(""));
             }
             if (!document.getElementById("hmoOverlay")) {
+                ensureLauncherStyles();
                 $("body").append([
                     '<div id="hmoOverlay" class="hmo-overlay" aria-hidden="true">',
                     '  <div class="hmo-backdrop"></div>',
-                    '  <section class="hmo-content" role="dialog" aria-modal="true" aria-labelledby="hmoTitle">',
-                    '    <header class="hmo-header">',
-                    '      <button type="button" class="hmo-back-btn" id="hmoBackBtn"><i class="fa fa-arrow-left"></i> Back</button>',
-                    '      <h2 class="hmo-title" id="hmoTitle">Explore CleonHR Apps</h2>',
-                    '      <label class="hmo-search-wrap" aria-label="Search applications">',
-                    '        <i class="fa fa-search"></i>',
-                    '        <input type="search" class="hmo-search" id="hmoSearch" placeholder="Search applications…" autocomplete="off"/>',
+                    '  <section id="hc-launcher" class="hmo-content" role="dialog" aria-modal="true" aria-labelledby="hmoTitle">',
+                    '    <header class="hc-page-header">',
+                    '      <button type="button" class="hc-back-btn" id="hmoBackBtn"><i class="fa fa-arrow-left"></i> Back</button>',
+                    '      <div class="hc-page-title-row">',
+                    '        <span class="hc-page-icon"><i class="fa fa-magic"></i></span>',
+                    '        <h1 class="hc-page-title" id="hmoTitle">Explore Modules</h1>',
+                    '      </div>',
+                    '      <p class="hc-page-subtitle">Discover the modules available in your CleonHR workspace. Select a module to continue.</p>',
+                    '      <label class="hc-search-wrap" aria-label="Search modules">',
+                    '        <i class="fa fa-search hc-search-icon"></i>',
+                    '        <input type="search" class="hc-search-input" id="hmoSearch" placeholder="Search modules…" autocomplete="off"/>',
                     '      </label>',
                     '    </header>',
-                    '    <div class="hmo-grid-wrap"><div class="hmo-grid" id="hmoGrid">',
+                    '    <section class="hc-stats-row">',
+                    '      <div class="hc-stat-card hc-stat-pink"><span class="hc-stat-number" id="hcStatModules">0</span><span class="hc-stat-label">Total Modules</span></div>',
+                    '      <div class="hc-stat-card hc-stat-purple"><span class="hc-stat-number" id="hcStatFeatures">0</span><span class="hc-stat-label">Features</span></div>',
+                    '      <div class="hc-stat-card hc-stat-blue"><span class="hc-stat-number">All-in-One</span><span class="hc-stat-label">HR Platform</span></div>',
+                    '    </section>',
+                    '    <main id="hmoGrid">',
                     '      <div class="hmo-loading"><div class="hmo-spinner"></div><span>Loading applications…</span></div>',
-                    '    </div></div>',
+                    '    </main>',
                     '  </section>',
                     '</div>'
                 ].join(""));
@@ -86,7 +118,11 @@
                     params: {employee_mode: localStorage.getItem("cleonhr_interface_mode") === "employee"},
                 }),
                 success: function (response) {
-                    var categories = response && response.result && response.result.categories || [];
+                    var result = response && response.result || {};
+                    var categories = result.categories || [];
+                    self.categories = categories;
+                    self.totalModules = result.total_modules || 0;
+                    self.totalFeatures = result.total_features || 0;
                     self.apps = [];
                     categories.forEach(function (category) {
                         (category.app_items || []).forEach(function (app) {
@@ -100,6 +136,7 @@
                 },
                 error: function () {
                     $("#cleonAppRail .cleon-rail-loading").html('<i class="fa fa-exclamation-circle"></i><small>Apps unavailable</small>');
+                    $("#hmoGrid").html('<div class="hc-no-results"><i class="fa fa-exclamation-circle"></i><p>Applications could not be loaded.</p></div>');
                 },
                 complete: function () {
                     self.loading = false;
@@ -125,32 +162,43 @@
 
         renderOverlay: function (query) {
             var normalizedQuery = (query || "").trim().toLowerCase();
-            var apps = this.apps.filter(function (app) {
-                if (!normalizedQuery) return true;
-                return [app.name, app.description, app.category].some(function (value) {
-                    return (value || "").toLowerCase().indexOf(normalizedQuery) !== -1;
+            var moduleCount = 0;
+            var featureCount = 0;
+            var sections = this.categories.map(function (category) {
+                var apps = (category.app_items || []).filter(function (app) {
+                    if (!normalizedQuery) return true;
+                    return [app.name, app.description, category.name].some(function (value) {
+                        return (value || "").toLowerCase().indexOf(normalizedQuery) !== -1;
+                    });
                 });
-            });
-            if (!apps.length) {
+                if (!apps.length) return "";
+                moduleCount += apps.length;
+                var cards = apps.map(function (app) {
+                    var features = app.children && app.children.length ? app.children.length : 1;
+                    featureCount += features;
+                    var configuredIcon = app.icon_class || ("fa " + iconFor(app.name));
+                    var icon = app.icon
+                        ? '<img src="' + escapeAttr(app.icon) + '" alt="" class="hc-app-icon" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"/><span class="hc-app-icon-fallback" style="color:' + escapeAttr(app.icon_color || category.color || "#EC4899") + '"><i class="' + escapeAttr(configuredIcon) + '"></i></span>'
+                        : '<span class="hc-app-icon-fallback" style="display:flex;color:' + escapeAttr(app.icon_color || category.color || "#EC4899") + '"><i class="' + escapeAttr(configuredIcon) + '"></i></span>';
+                    return '<a class="hc-app-card" href="' + escapeAttr(app.url || "#") + '" data-menu-id="' + escapeAttr(app.id) + '">' +
+                        '<span class="hc-app-icon-wrap" style="background-color:' + colorWithAlpha(app.icon_color || category.color, 0.1) + '">' + icon + '</span>' +
+                        '<span class="hc-app-info"><span class="hc-app-name">' + escapeHtml(app.name) + '</span>' +
+                        '<span class="hc-app-desc">' + escapeHtml(app.description || "Open this module") + '</span>' +
+                        '<span class="hc-app-explore">Explore Module <i class="fa fa-arrow-right"></i></span></span></a>';
+                }).join("");
+                return '<section class="hc-category-section"><h2 class="hc-category-title">' + escapeHtml(category.name) + '</h2><div class="hc-app-grid">' + cards + '</div></section>';
+            }).join("");
+            if (!sections) {
                 var message = this.loading ?
                     '<div class="hmo-loading"><div class="hmo-spinner"></div><span>Loading applications…</span></div>' :
-                    '<div class="hmo-empty"><i class="fa fa-search"></i><h3>No applications found</h3><p>Try a different search term.</p></div>';
+                    '<div class="hc-no-results"><i class="fa fa-search-minus"></i><p>No modules found</p></div>';
                 $("#hmoGrid").html(message);
+                $("#hcStatModules,#hcStatFeatures").text("0");
                 return;
             }
-            var html = apps.map(function (app) {
-                var configuredIcon = app.icon_class || ("fa " + iconFor(app.name));
-                var icon = app.icon
-                    ? '<img src="' + escapeAttr(app.icon) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\';"/><i class="' + escapeAttr(configuredIcon) + ' cleon-hmo-fallback"></i>'
-                    : '<i class="' + escapeAttr(configuredIcon) + '"></i>';
-                return '<a class="hmo-card" href="' + escapeAttr(app.url || "#") + '" data-menu-id="' + escapeAttr(app.id) + '">' +
-                    '<span class="hmo-icon" style="background:' + escapeAttr(app.icon_color || app.color || "#64748B") + '">' + icon + '</span>' +
-                    '<span class="hmo-info"><span class="hmo-category">' + escapeHtml(app.category || "CleonHR") + '</span>' +
-                    '<span class="hmo-app-name">' + escapeHtml(app.name) + '</span>' +
-                    '<span class="hmo-app-desc">' + escapeHtml(app.description || "Open this application") + '</span></span>' +
-                    '<i class="fa fa-arrow-right hmo-card-arrow"></i></a>';
-            }).join("");
-            $("#hmoGrid").html(html);
+            $("#hmoGrid").html(sections);
+            $("#hcStatModules").text(moduleCount);
+            $("#hcStatFeatures").text(featureCount);
         },
 
         open: function () {
@@ -178,7 +226,7 @@
                 $(".cleon-rail-app").removeClass("active"); $(this).addClass("active");
             });
 
-            $(document).on("click.cleonLauncher", ".hmo-card", function () {
+            $(document).on("click.cleonLauncher", ".hc-app-card", function () {
                 localStorage.setItem("cleonhr_active_app", String($(this).data("menu-id")));
                 self.close();
             });

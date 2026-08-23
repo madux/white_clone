@@ -14,13 +14,20 @@
     # depend on it, but making setup depend on those same modules creates a
     # cycle (notably cleon_settings <-> hr_warning). The licensing module is
     # also master-database functionality and must not be required by tenants.
-    'depends': ['base', 'hr'],
+    'depends': ['base', 'hr', 'base_addons', 'cleon_license', 'hr_employee'],
     'data': [
         'security/ir.model.access.csv',
         'views/cleon_setting.xml',
+        'views/cleon_login.xml',
+        'views/homepage.xml',
         'views/favicon.xml',
+        'views/cleon_login.xml',
+        'views/homepage.xml',
     ],
     'assets': {
+        'web.assets_frontend': [
+            'cleon_settings/static/src/css/cleon_login.css',
+        ],
         'web.assets_backend': [
             'cleon_settings/static/src/js/override_title.js',
             'cleon_settings/static/src/xml/status_widget.xml',
@@ -35,7 +42,7 @@
         ],
     },
     'installable': True,
-    'auto_install': False,
+    'auto_install': True,
     'application': False,
     'license': 'LGPL-3',
 }

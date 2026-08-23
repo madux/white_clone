@@ -1,0 +1,201 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates xml:space="preserve">
+    <t t-name="hr_expense_management.ExpenseClaimModal" owl="1">
+        <div class="card-body">
+            <div class="o_expense_wizard_steps d-flex align-items-center mb-4">
+                <span t-foreach="[1,2,3]" t-as="step" t-key="step" class="o_expense_wizard_step" t-att-class="state.modal.step &gt;= step ? 'active' : ''">
+                    <b t-esc="step"/>
+                    <small t-esc="step === 1 ? 'Details' : step === 2 ? 'Expenses' : 'Review'"/>
+                </span>
+            </div>
+            <div t-if="state.modal.step === 1" class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Claim type</label>
+                    <select class="form-select" data-field="claim_type_id" t-on-change="updateModalValue">
+                        <option t-foreach="state.pageData.claim_options?.types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Claim title</label>
+                    <input class="form-control" data-field="title" t-on-input="updateModalValue" placeholder="What was this expense for?"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Funding source</label>
+                    <select class="form-select" data-field="money_type" t-on-change="updateModalValue">
+                        <option value="personal">Personal funds</option>
+                        <option value="company">Company funds</option>
+                        <option value="hybrid">Mixed funding</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Expense date</label>
+                    <input type="date" class="form-control" data-field="expense_date" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Purpose</label>
+                    <textarea rows="3" class="form-control" data-field="description" t-on-input="updateModalValue"/>
+                </div>
+            </div>
+            <div t-elif="state.modal.step === 2">
+                <div t-foreach="state.modal.values.lines" t-as="line" t-key="line.id" class="border rounded-4 p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <strong>Expense line <t t-esc="line_index + 1"/>
+                        </strong>
+                        <button t-if="state.modal.values.lines.length &gt; 1" class="btn btn-sm btn-light text-danger" t-on-click="() =&gt; this.removeClaimLine(line.id)">
+                            <i class="fa fa-trash"/>
+                        </button>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" data-field="category" t-att-data-line-id="line.id" t-on-change="updateClaimLine">
+                                <option t-foreach="state.pageData.claim_options?.categories || []" t-as="item" t-key="item.key" t-att-value="item.key" t-att-selected="item.key === line.category" t-esc="item.label"/>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Amount</label>
+                            <input type="number" min="0" class="form-control" data-field="amount" t-att-data-line-id="line.id" t-att-value="line.amount" t-on-input="updateClaimLine"/>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Expense description</label>
+                            <input class="form-control" data-field="description" t-att-data-line-id="line.id" t-att-value="line.description" t-on-input="updateClaimLine"/>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Receipt reference</label>
+                            <input class="form-control" data-field="receipt_reference" t-att-data-line-id="line.id" t-att-value="line.receipt_reference" t-on-input="updateClaimLine"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <button class="btn btn-outline-primary" t-on-click="addClaimLine">
+                        <i class="fa fa-plus me-2"/>Add Expense</button>
+                    <strong>Total: <t t-esc="formatMoney(claimTotal)"/>
+                    </strong>
+                </div>
+                <div class="mt-3">
+                    <label class="form-label">Receipt attachment</label>
+                    <input type="file" class="form-control" accept="image/*,.pdf" t-on-change="updateReceipt"/>
+                    <div t-if="state.modal.values.receipt_name" class="form-text text-success">
+                        <i class="fa fa-check me-1"/>
+                        <t t-esc="state.modal.values.receipt_name"/>
+                    </div>
+                </div>
+            </div>
+            <div t-else="" class="o_expense_review">
+                <div class="border rounded-4 p-3">
+                    <div class="small text-muted">Claim</div>
+                    <h4 class="h5 fw-black" t-esc="state.modal.values.title || 'Untitled claim'"/>
+                    <div class="row g-3 mt-1">
+                        <div class="col-6">
+                            <span class="small text-muted">Total</span>
+                            <div class="fw-bold" t-esc="formatMoney(claimTotal)"/>
+                        </div>
+                        <div class="col-6">
+                            <span class="small text-muted">Expense date</span>
+                            <div class="fw-bold" t-esc="formatDate(state.modal.values.expense_date)"/>
+                        </div>
+                        <div class="col-12">
+                            <span class="small text-muted">Line items</span>
+                            <div class="fw-bold">
+                                <t t-esc="state.modal.values.lines.length"/> expenses</div>
+                        </div>
+                        <div class="col-12">
+                            <span class="small text-muted">Purpose</span>
+                            <div t-esc="state.modal.values.description"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseRequestModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Request type</label>
+                    <select class="form-select" data-field="request_type_id" t-on-change="updateModalValue">
+                        <option t-foreach="state.pageData.request_types || []" t-as="item" t-key="item.id" t-att-value="item.id" t-esc="item.name"/>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Purpose</label>
+                    <input class="form-control" data-field="purpose" t-on-input="updateModalValue" placeholder="What is this expense for?"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Amount</label>
+                    <input type="number" min="0" class="form-control" data-field="amount" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Needed by</label>
+                    <input type="date" class="form-control" data-field="needed_date" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Details</label>
+                    <textarea class="form-control" rows="4" data-field="description" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Supporting document</label>
+                    <input type="file" class="form-control" accept="image/*,.pdf" t-on-change="updateReceipt"/>
+                    <div t-if="state.modal.values.receipt_name" class="form-text text-success" t-esc="state.modal.values.receipt_name"/>
+                </div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseDecisionModal" owl="1">
+        <div class="card-body">
+            <p>Record a decision for <strong t-esc="state.modal.record.reference || state.modal.record.name"/>.</p>
+            <label class="form-label">
+                <t t-esc="state.modal.action === 'approve' ? 'Approval note (optional)' : 'Reason'"/>
+            </label>
+            <textarea class="form-control" rows="4" data-field="comment" t-on-input="updateModalValue"/>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseWriteoffModal" owl="1">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Advance</label>
+                    <select class="form-select" data-field="advance_id" t-on-change="updateModalValue">
+                        <option t-foreach="state.pageData.advance_options || []" t-as="item" t-key="item.id" t-att-value="item.id">
+                            <t t-esc="item.name"/> · <t t-esc="formatMoney(item.outstanding)"/>
+                        </option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Amount</label>
+                    <input type="number" min="0" class="form-control" data-field="amount" t-att-value="state.modal.values.amount" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Reason</label>
+                    <textarea rows="5" class="form-control" data-field="reason" t-on-input="updateModalValue"/>
+                </div>
+                <div class="col-12 alert alert-warning mb-0">Submitting does not write off the balance. An Administrator must independently approve it.</div>
+            </div>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseWriteoffDecisionModal" owl="1">
+        <div class="card-body">
+            <p>
+                <strong t-esc="state.modal.record.name"/> · <t t-esc="formatMoney(state.modal.record.amount)"/>
+            </p>
+            <label class="form-label">
+                <t t-esc="state.modal.decision === 'approve' ? 'Approval note' : 'Rejection reason'"/>
+            </label>
+            <textarea rows="4" class="form-control" data-field="note" t-on-input="updateModalValue"/>
+        </div>
+    </t>
+    <t t-name="hr_expense_management.ExpenseRetirementModal" owl="1">
+        <div class="card-body">
+            <p>Outstanding balance: <strong t-esc="formatMoney(state.modal.record.outstanding)"/>
+            </p>
+            <div class="mb-3">
+                <label class="form-label">Amount retired</label>
+                <input type="number" min="0" class="form-control" data-field="amount" t-att-value="state.modal.values.amount" t-on-input="updateModalValue"/>
+            </div>
+            <div>
+                <label class="form-label">Reference / note</label>
+                <input class="form-control" data-field="reference" t-on-input="updateModalValue"/>
+            </div>
+        </div>
+    </t>
+</templates>

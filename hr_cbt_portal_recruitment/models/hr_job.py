@@ -11,6 +11,7 @@ class HrJob(models.Model):
     request_id = fields.Many2one('hr.job.recruitment.request', string="Recruitment Request", store=True)
     datetime_publish = fields.Date("Date Published")
     close_date = fields.Date("Closing Date")
+    is_published = fields.Boolean("Is Publish")
     
     skills_text = fields.Text(string='Extracted Skills')
     qualifications_text = fields.Text(string='Extracted Qualifications')
@@ -53,7 +54,7 @@ class HrJob(models.Model):
                 }
             
 
-    job_section_descriptions = fields.Many2many('description.sections') # Table objects for storing different sections of descriptions
+    job_section_descriptions = fields.Many2many('description.sections', string="Key responsibilities") # Table objects for storing different sections of descriptions
 
     job_section_proficiency_scale = fields.Many2many('skill.proficiency.scale', string='Proficiency Scale')
 
