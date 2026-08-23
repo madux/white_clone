@@ -26,9 +26,12 @@ class HrLeaveSetupProgress(models.Model):
 
     # FR-050: Checklist completion state fields
     check_leave_type = fields.Boolean(default=False)
+    check_approval_workflow = fields.Boolean(default=False)
     check_allocate_balance = fields.Boolean(default=False)
     check_set_country = fields.Boolean(default=False)
     check_review_request = fields.Boolean(default=False)
+    # Retained for compatibility with setup records created before the
+    # persistent checklist was aligned with the five canonical guide steps.
     check_run_report = fields.Boolean(default=False)
 
     _sql_constraints = [
@@ -54,10 +57,10 @@ class HrLeaveSetupProgress(models.Model):
         dismissed = self.env.user in progress.dismissed_user_ids
         checklist = {
             "check_leave_type": progress.check_leave_type,
+            "check_approval_workflow": progress.check_approval_workflow,
             "check_allocate_balance": progress.check_allocate_balance,
             "check_set_country": progress.check_set_country,
             "check_review_request": progress.check_review_request,
-            "check_run_report": progress.check_run_report,
         }
         completed_count = sum(1 for v in checklist.values() if v)
         return {
@@ -74,10 +77,10 @@ class HrLeaveSetupProgress(models.Model):
         progress = self._company_progress()
         valid_keys = {
             "check_leave_type": "check_leave_type",
+            "check_approval_workflow": "check_approval_workflow",
             "check_allocate_balance": "check_allocate_balance",
             "check_set_country": "check_set_country",
             "check_review_request": "check_review_request",
-            "check_run_report": "check_run_report",
         }
         field_name = valid_keys.get(item_key)
         if not field_name:

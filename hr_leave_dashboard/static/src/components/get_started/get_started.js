@@ -4,10 +4,11 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../calendar_sidebar";
+import { LEAVE_SETUP_STEPS, LeaveSetupCompletion, LeaveSetupWizard } from "../setup_wizard/setup_wizard";
 
 export class GetStartedPage extends Component {
     static template = "hr_leave_dashboard.GetStartedPage";
-    static components = { CalendarSidebar };
+    static components = { CalendarSidebar, LeaveSetupWizard, LeaveSetupCompletion };
 
     setup() {
         this.action = useService("action");
@@ -19,16 +20,17 @@ export class GetStartedPage extends Component {
             loading: true,
             checklist: {
                 check_leave_type: false,
+                check_approval_workflow: false,
                 check_allocate_balance: false,
                 check_set_country: false,
                 check_review_request: false,
-                check_run_report: false,
             },
             completedCount: 0,
             setupState: "not_started",
             currentStep: 0,
             showWizard: false,
             wizardStep: 1,
+            reviewMode: false,
             showCompletionModal: false,
             viewMode: "admin",
             progressExpanded: true,
@@ -81,46 +83,72 @@ export class GetStartedPage extends Component {
         this.state.progressExpanded = !this.state.progressExpanded;
     }
 
+    get setupSteps() {
+        return LEAVE_SETUP_STEPS;
+    }
+
+    openChecklistStep(step) {
+        return this.action.doAction(step.actionId);
+    }
+
     // ── Wizard Methods ─────────────────────────────────────────
 
-    openWizard() {
-        this.state.wizardStep = 1;
-        this.state.showWizard = true;
+    async openWizard() {
+        if (this.state.setupState === "completed") {
+            this.state.wizardStep = 1;
+            this.state.reviewMode = true;
+            this.state.showWizard = true;
+            return;
+        }
+        try {
+            const setup = await this.orm.call("hr.leave.setup.progress", "start_setup", []);
+            this.state.setupState = setup.state;
+            this.state.currentStep = setup.current_step;
+            this.state.wizardStep = setup.current_step || 1;
+            this.state.reviewMode = false;
+            this.state.showWizard = true;
+        } catch (error) {
+            console.error("Failed to start leave setup:", error);
+            this.notification.add("The setup guide could not be opened. Please try again.", { type: "danger" });
+        }
     }
 
     closeWizard() {
         this.state.showWizard = false;
+        this.state.reviewMode = false;
     }
 
-    prevWizardStep() {
-        if (this.state.wizardStep > 1) {
-            this.state.wizardStep -= 1;
-        } else {
-            this.closeWizard();
-        }
+    backFromWizardStart() {
+        this.closeWizard();
     }
 
-    async nextWizardStep() {
-        const nextStep = this.state.wizardStep + 1;
-        if (nextStep > 5) {
-            await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
-            this.state.showWizard = false;
-            this.state.showCompletionModal = true;
-            await this.loadProgress();
-            return;
-        }
-        await this.orm.call("hr.leave.setup.progress", "advance_step", [], { step: nextStep });
-        this.state.wizardStep = nextStep;
+    async wizardCompleted() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+        this.state.showCompletionModal = true;
         await this.loadProgress();
     }
 
-    async skipWizard() {
+    async wizardSkipped() {
         this.state.showWizard = false;
-        await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
+        this.state.reviewMode = false;
+        await this.loadProgress();
     }
 
     closeCompletionModal() {
         this.state.showCompletionModal = false;
+    }
+
+    reviewWizardSteps() {
+        this.state.showCompletionModal = false;
+        this.state.wizardStep = 1;
+        this.state.reviewMode = true;
+        this.state.showWizard = true;
+    }
+
+    doneGoToDashboard() {
+        this.state.showCompletionModal = false;
+        return this.openDashboard();
     }
 
     // ── Navigation Actions ─────────────────────────────────────
@@ -130,30 +158,6 @@ export class GetStartedPage extends Component {
             return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
         }
         this.state.viewMode = mode;
-    }
-
-    openLeaveTypes() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_types_custom");
-    }
-
-    openLeaveBalances() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
-    }
-
-    openSettings() {
-        return this.action.doAction("hr_holidays.action_hr_holidays_configuration");
-    }
-
-    openLeaveRequests() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
-    }
-
-    openLeaveCalendar() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
-    }
-
-    openReports() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
     }
 
     openDashboard() {

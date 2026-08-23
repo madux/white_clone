@@ -5,10 +5,11 @@ import { Component, onWillUnmount, useState, useRef, onWillStart, useEffect } fr
 import { loadBundle } from "@web/core/assets";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../components/calendar_sidebar";
+import { LeaveSetupCompletion, LeaveSetupWizard } from "../components/setup_wizard/setup_wizard";
 
 export class HrLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.Dashboard";
-    static components = { CalendarSidebar };
+    static components = { CalendarSidebar, LeaveSetupWizard, LeaveSetupCompletion };
 
     setup() {
         this.action = useService("action");
@@ -54,23 +55,17 @@ export class HrLeaveDashboard extends Component {
             showCompletionScreen: false,
             checklist: {
                 check_leave_type: false,
+                check_approval_workflow: false,
                 check_allocate_balance: false,
                 check_set_country: false,
                 check_review_request: false,
-                check_run_report: false,
             },
             completedChecklistCount: 0,
         });
 
         this.onKeyDown = (ev) => {
-            if (ev.key === "Escape") {
-                if (this.state.showCompletionScreen) {
-                    this.closeCompletionScreen();
-                } else if (this.state.showWizard) {
-                    this.closeWizard();
-                } else if (this.state.showWelcomeModal) {
-                    this.closeWelcomeModal();
-                }
+            if (ev.key === "Escape" && this.state.showWelcomeModal) {
+                this.closeWelcomeModal();
             }
         };
 
@@ -224,60 +219,29 @@ export class HrLeaveDashboard extends Component {
     //  SETUP WIZARD METHODS
     // ═══════════════════════════════════════════════════════════════
 
-    goBackFromWizard() {
-        if (this.state.wizardStep <= 1) {
-            this.state.showWizard = false;
-            this.state.reviewMode = false;
-            this.state.showCompletionScreen = false;
-            this.state.showWelcomeModal = true;
-        } else {
-            this.state.wizardStep -= 1;
-        }
-    }
-
-    async nextWizardStep() {
-        const nextStep = this.state.wizardStep + 1;
-
-        if (this.state.reviewMode) {
-            if (nextStep > 5) {
-                this.state.showWizard = false;
-                this.state.reviewMode = false;
-                this.state.showCompletionScreen = true;
-            } else {
-                this.state.wizardStep = nextStep;
-            }
-            return;
-        }
-
-        if (nextStep > 5) {
-            const result = await this.orm.call("hr.leave.setup.progress", "complete_setup", []);
-            this.state.setupState = result.state;
-            this.state.showWizard = false;
-            this.state.showCompletionScreen = true;
-            return;
-        }
-        const saved = await this.orm.call(
-            "hr.leave.setup.progress", "advance_step", [], { step: nextStep }
-        );
-        this.state.setupStep = saved.current_step;
-        this.state.wizardStep = nextStep;
-    }
-
-    async skipWizard() {
-        this.state.showWizard = false;
-        if (!this.state.reviewMode) {
-            await this.orm.call("hr.leave.setup.progress", "skip_wizard", []);
-        }
-        this.state.reviewMode = false;
-    }
-
     closeWizard() {
         this.state.showWizard = false;
         this.state.reviewMode = false;
     }
 
-    goToLeaveTypesFromWizard() {
-        return this.openLeaveTypes();
+    backFromWizardStart() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+        this.state.showCompletionScreen = false;
+        this.state.showWelcomeModal = true;
+    }
+
+    wizardCompleted(result) {
+        this.state.setupState = result.state || "completed";
+        this.state.setupStep = 5;
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
+        this.state.showCompletionScreen = true;
+    }
+
+    wizardSkipped() {
+        this.state.showWizard = false;
+        this.state.reviewMode = false;
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -293,13 +257,6 @@ export class HrLeaveDashboard extends Component {
         if (res && res.checklist) {
             this.state.checklist = res.checklist;
             this.state.completedChecklistCount = res.completed_count || 0;
-        }
-    }
-
-    onChecklistKeydown(ev, itemKey) {
-        if (ev.key === "Enter" || ev.key === " ") {
-            ev.preventDefault();
-            this.toggleChecklistItem(itemKey);
         }
     }
 

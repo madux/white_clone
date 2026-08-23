@@ -17,6 +17,8 @@
     ],
     'assets': {
         'web.assets_backend': [
+            'hr_leave_dashboard/static/src/components/setup_wizard/setup_wizard.js',
+            'hr_leave_dashboard/static/src/components/setup_wizard/setup_wizard.xml',
             'hr_leave_dashboard/static/src/js/dashboard.js',
             'hr_leave_dashboard/static/src/components/dashboard_router/dashboard_router.js',
             'hr_leave_dashboard/static/src/components/dashboard_router/dashboard_router.xml',

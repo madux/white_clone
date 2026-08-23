@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_leave_dashboard.LeaveSetupWizard" owl="1">
+        <div class="cleon-welcome-backdrop" t-on-click="props.onClose"/>
+        <div class="cleon-wizard-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-shared-wizard-title">
+            <div class="cleon-wizard-progress" aria-label="Setup progress">
+                <t t-foreach="[1,2,3,4,5]" t-as="stepNumber" t-key="stepNumber">
+                    <div t-att-class="{
+                        'cleon-wiz-step': true,
+                        'cleon-wiz-step-active': state.step === stepNumber,
+                        'cleon-wiz-step-done': state.step > stepNumber
+                    }">
+                        <div class="cleon-wiz-dot">
+                            <i t-if="state.step > stepNumber" class="fa fa-check"/>
+                            <t t-else="" t-esc="stepNumber"/>
+                        </div>
+                        <div t-if="stepNumber_index lt 4" class="cleon-wiz-connector"/>
+                    </div>
+                </t>
+            </div>
+
+            <div class="cleon-wizard-step-header">
+                <div t-att-class="'cleon-wizard-icon ' + stepData.iconClass">
+                    <i t-att-class="'fa ' + stepData.icon"/>
+                </div>
+                <div class="cleon-wizard-step-meta">
+                    <span class="cleon-wiz-step-label">STEP <t t-esc="state.step"/> OF 5</span>
+                    <h2 id="cleon-shared-wizard-title" class="cleon-wizard-title" t-esc="stepData.title"/>
+                </div>
+            </div>
+
+            <p class="cleon-wizard-desc" t-esc="stepData.description"/>
+            <div class="cleon-key-actions">
+                <p class="cleon-key-actions-label">KEY ACTIONS</p>
+                <div t-foreach="stepData.actions" t-as="item" t-key="item_index" class="cleon-key-action-item">
+                    <div class="cleon-ka-icon">
+                        <i class="fa fa-check-circle-o"/>
+                    </div>
+                    <span class="cleon-ka-text"><strong t-esc="item[0]"/> <t t-esc="item[1]"/></span>
+                </div>
+            </div>
+
+            <div class="cleon-wizard-footer">
+                <button type="button" class="cleon-wiz-btn-back" t-on-click="goBack" t-att-disabled="state.busy">
+                    <i class="fa fa-arrow-left"/>
+                    <t t-esc="state.step === 1 ? 'Back' : 'Previous'"/>
+                </button>
+                <button type="button" class="cleon-wiz-btn-shortcut" t-on-click="openStepAction" t-att-disabled="state.busy">
+                    <i class="fa fa-arrow-right"/> <t t-esc="stepData.actionLabel"/>
+                </button>
+                <button type="button" class="cleon-wiz-btn-next" t-on-click="nextStep" t-att-disabled="state.busy">
+                    <t t-if="state.busy"><i class="fa fa-spinner fa-spin"/> Saving...</t>
+                    <t t-elif="state.step lt 5">Next <i class="fa fa-arrow-right"/></t>
+                    <t t-else=""><i class="fa fa-check"/> <t t-esc="props.reviewMode ? 'Finish Review' : 'Finish Setup'"/></t>
+                </button>
+            </div>
+            <div class="cleon-wiz-skip-row">
+                <button type="button" class="cleon-skip-link" t-on-click="skip" t-att-disabled="state.busy">
+                    <t t-esc="props.reviewMode ? 'Close review' : 'Skip and explore on my own'"/>
+                </button>
+            </div>
+        </div>
+    </t>
+
+    <t t-name="hr_leave_dashboard.LeaveSetupCompletion" owl="1">
+        <div class="cleon-welcome-backdrop" t-on-click="props.onClose"/>
+        <div class="cleon-completion-modal" role="dialog" aria-modal="true" aria-labelledby="cleon-shared-completion-title">
+            <button type="button" class="cleon-completion-close" t-on-click="props.onClose" aria-label="Close completion screen">
+                <i class="fa fa-times"/>
+            </button>
+            <div class="cleon-completion-header">
+                <div class="cleon-completion-badge"><i class="fa fa-check"/></div>
+                <h2 id="cleon-shared-completion-title" class="cleon-completion-title">You're all set! 🎉</h2>
+                <p class="cleon-completion-sub">The Leave Management guide is complete. Use this persistent checklist to confirm each configuration area is ready.</p>
+            </div>
+            <div class="cleon-completion-body">
+                <div class="cleon-checklist-header-row">
+                    <span class="cleon-checklist-label-title">QUICK-START CHECKLIST</span>
+                </div>
+                <div class="cleon-checklist-list">
+                    <div t-foreach="setupSteps" t-as="step" t-key="step.number" class="cleon-checklist-item"
+                         role="button" tabindex="0"
+                         t-on-click="() => this.props.onToggle(step.checklistKey)"
+                         t-on-keydown="(ev) => this.onChecklistKeydown(ev, step.checklistKey)">
+                        <div t-att-class="{ 'cleon-checklist-radio': true, 'checked': props.checklist[step.checklistKey] }">
+                            <i t-if="props.checklist[step.checklistKey]" class="fa fa-check"/>
+                        </div>
+                        <span t-att-class="{ 'cleon-checklist-text': true, 'done': props.checklist[step.checklistKey] }" t-esc="step.title"/>
+                        <button type="button" class="cleon-checklist-go-btn" t-on-click.stop="() => this.openStep(step)">
+                            Go <i class="fa fa-arrow-right"/>
+                        </button>
+                    </div>
+                </div>
+                <div class="cleon-checklist-counter-row">
+                    <span class="cleon-checklist-counter"><t t-esc="props.completedCount"/>/5 completed</span>
+                </div>
+            </div>
+            <div class="cleon-completion-footer">
+                <button type="button" class="cleon-btn-review-steps" t-on-click="props.onReview">
+                    <i class="fa fa-arrow-left"/> Review steps
+                </button>
+                <button type="button" class="cleon-btn-done-dash" t-on-click="props.onDone">
+                    <i class="fa fa-check-circle"/> Done — Go to Dashboard
+                </button>
+            </div>
+            <p class="cleon-completion-hint">You can always reopen this guide from Get Started or the Help menu.</p>
+        </div>
+    </t>
+</templates>
