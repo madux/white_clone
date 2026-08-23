@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_hr_leave_settings_custom" model="ir.actions.client">
+        <field name="name">Leave Management Settings</field>
+        <field name="tag">hr_leave_dashboard.LeaveSettingsPage</field>
+    </record>
+</odoo>

@@ -76,6 +76,6 @@ export class CalendarSidebar extends Component {
     }
 
     openSettings() {
-        this.action.doAction("hr_holidays.action_hr_holidays_configuration");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_settings_custom");
     }
 }

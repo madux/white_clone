@@ -327,7 +327,13 @@ class HrLeaveType(models.Model):
             "max_balance_cap": float(vals.get("maxBalanceCap", 0.0)) if vals.get("allowCarryForward") else 0.0,
 
             "approval_workflow": vals.get("approvalWorkflow", "single"),
+            "leave_validation_type": {
+                "none": "no_validation",
+                "single": "hr",
+                "multi": "both",
+            }.get(vals.get("approvalWorkflow", "single"), "hr"),
             "supporting_document_policy": vals.get("supportingDocumentPolicy", "never"),
+            "support_document": vals.get("supportingDocumentPolicy", "never") != "never",
             "minimum_notice_days": int(vals.get("minimumNoticeDays", 0)),
             "allow_half_day": bool(vals.get("allowHalfDay")),
 

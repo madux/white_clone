@@ -849,6 +849,9 @@ class HrLeave(models.Model):
 
             # Immutable Audit Log Entry (FR-111)
             leave._create_audit_record(action_name)
+            leave._post_configured_leave_update(
+                _("Leave request approved by %s.", self.env.user.name)
+            )
             processed += 1
         return {"processed": processed}
 
@@ -866,7 +869,7 @@ class HrLeave(models.Model):
             # Post rejection reason to chatter without destroying original leave.notes.
             body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                      user=self.env.user.name, reason=reason)
-            leave.message_post(body=body)
+            leave._post_configured_leave_update(body)
             leave.action_refuse()
             # Immutable Audit Log Entry (FR-111)
             leave._create_audit_record("reject", note=reason)
@@ -1197,11 +1200,8 @@ class HrLeave(models.Model):
 
         leave._create_audit_record(event)
 
-        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
-        partner_ids = partner.ids if partner else []
-        leave.message_post(
-            body=_("Leave request approved by %s.", self.env.user.name),
-            partner_ids=partner_ids,
+        leave._post_configured_leave_update(
+            _("Leave request approved by %s.", self.env.user.name)
         )
         return self.get_leave_request_detail(leave.id)
 
@@ -1219,9 +1219,7 @@ class HrLeave(models.Model):
 
         body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                  user=self.env.user.name, reason=reason)
-        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
-        partner_ids = partner.ids if partner else []
-        leave.message_post(body=body, partner_ids=partner_ids)
+        leave._post_configured_leave_update(body)
 
         leave.action_refuse()
         leave._create_audit_record("reject", note=reason)
@@ -1252,9 +1250,7 @@ class HrLeave(models.Model):
 
         body = _("Approved leave cancelled by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                  user=self.env.user.name, reason=reason)
-        partner = leave.employee_id.user_id.partner_id if leave.employee_id.user_id else False
-        partner_ids = partner.ids if partner else []
-        leave.message_post(body=body, partner_ids=partner_ids)
+        leave._post_configured_leave_update(body)
         return self.get_leave_request_detail(leave.id)
 
     @api.model
@@ -1410,19 +1406,16 @@ class HrLeave(models.Model):
         leave = LeaveObj.create(vals)
 
         # Notify employee via chatter (FR-110)
-        partner = employee.user_id.partner_id if employee.user_id else False
-        if partner:
-            leave.message_post(
-                body=_(
-                    "%(admin)s created a %(leave_type)s request on your behalf from %(start)s to %(end)s (%(duration)s days).",
-                    admin=self.env.user.name,
-                    leave_type=leave_type.name,
-                    start=leave.request_date_from,
-                    end=leave.request_date_to,
-                    duration=leave.number_of_days,
-                ),
-                partner_ids=partner.ids,
+        leave._post_configured_leave_update(
+            _(
+                "%(admin)s created a %(leave_type)s request on your behalf from %(start)s to %(end)s (%(duration)s days).",
+                admin=self.env.user.name,
+                leave_type=leave_type.name,
+                start=leave.request_date_from,
+                end=leave.request_date_to,
+                duration=leave.number_of_days,
             )
+        )
 
         # Create Immutable Audit Log (FR-111)
         action_type = "override_conflict" if override_conflict else "admin_create"

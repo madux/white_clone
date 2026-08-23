@@ -14,6 +14,7 @@
         'views/leave_balance_views.xml',
         'views/leave_report_views.xml',
         'views/leave_audit_views.xml',
+        'views/leave_settings_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -62,6 +63,9 @@
             'hr_leave_dashboard/static/src/components/get_started/get_started.js',
             'hr_leave_dashboard/static/src/components/get_started/get_started.xml',
             'hr_leave_dashboard/static/src/components/get_started/get_started.css',
+            'hr_leave_dashboard/static/src/components/leave_settings/leave_settings.js',
+            'hr_leave_dashboard/static/src/components/leave_settings/leave_settings.xml',
+            'hr_leave_dashboard/static/src/components/leave_settings/leave_settings.css',
         ],
     },
     'license': 'LGPL-3',

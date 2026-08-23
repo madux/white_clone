@@ -495,7 +495,7 @@ class HrLeaveBalanceTransaction(models.Model):
         """Process carry-forward for all employees with a remaining balance.
 
         For each (employee, leave_type) pair where the leave type allows carry
-        forward (``allow_carryforward`` = True on hr.leave.type) and the
+        forward (``allow_carryover`` = True on hr.leave.type) and the
         remaining balance > 0, create a new validated allocation dated from
         today to end of current year representing the carried-over balance.
         Returns the count of employees processed.
@@ -507,7 +507,7 @@ class HrLeaveBalanceTransaction(models.Model):
         # Leave types that allow carry-forward
         carry_types = self.env["hr.leave.type"].search([
             ("active", "=", True),
-            ("allow_carryforward", "=", True),
+            ("allow_carryover", "=", True),
             ("company_id", "in", self.env.companies.ids),
         ])
         if not carry_types:
@@ -528,11 +528,11 @@ class HrLeaveBalanceTransaction(models.Model):
             for lt in carry_types:
                 key = (emp.id, lt.id)
                 remaining = allocated.get(key, 0.0) - used.get(key, 0.0)
-                cap = getattr(lt, "carryforward_cap", 0.0) or 0.0
+                cap = lt.max_balance_cap or 0.0
                 carry_amount = min(remaining, cap) if cap else remaining
                 if carry_amount <= 0:
                     continue
-                self.env["hr.leave.allocation"].create({
+                allocation = self.env["hr.leave.allocation"].create({
                     "private_name": _("Carry-forward %s") % today.year,
                     "holiday_type": "employee",
                     "employee_id": emp.id,
@@ -542,6 +542,8 @@ class HrLeaveBalanceTransaction(models.Model):
                     "date_to": year_end,
                     "notes": _("Automatic carry-forward processed on %s") % fields.Date.to_string(today),
                 })
+                if allocation.state != "validate":
+                    allocation.action_validate()
                 affected.add(emp.id)
                 self.env["hr.leave.audit.log"].sudo().create({
                     "action": "policy_change",
