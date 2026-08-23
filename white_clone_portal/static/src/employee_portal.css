@@ -1,0 +1,7 @@
+.cep-app{display:flex;height:calc(100vh - 46px);background:#f7f8fb;color:#172033;overflow:hidden}
+.cep-sidebar{flex:0 0 280px;height:100%;padding-top:14px}
+.cep-main{flex:1;min-width:0;height:100%;overflow:auto;padding:28px 32px}
+.cep-heading{margin:0 0 38px}.cep-heading h1{margin:0 0 4px;font-size:32px}.cep-heading p{margin:0;color:#74819a}
+.cep-main>.ctm-app{height:100%;margin:-28px -32px;background:transparent}
+.cep-main>.ctm-app .employee-main{padding:28px 32px}
+@media(max-width:700px){.cep-sidebar{display:none}.cep-main{padding:20px}.cep-main>.ctm-app{margin:-20px}}

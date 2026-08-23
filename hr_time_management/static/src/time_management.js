@@ -3,14 +3,10 @@
 import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { EmployeeLeaveDashboard } from "@hr_leave_dashboard/components/employee_dashboard/employee_dashboard";
-import { MyLeaveRequestsPage } from "@hr_leave_dashboard/components/my_leave_requests/my_leave_requests";
-import { LeaveCalendarPage } from "@hr_leave_dashboard/js/leave_calendar";
 
 export class TimeManagementApp extends Component {
     static template = "hr_time_management.App";
     static props = ["*"];
-    static components = { EmployeeLeaveDashboard, MyLeaveRequestsPage, LeaveCalendarPage };
 
     setup() {
         this.orm = useService("orm");
@@ -23,12 +19,12 @@ export class TimeManagementApp extends Component {
             gateway: true, feature: "attendance", page: "dashboard", loading: false, rows: [], counts: {}, attendanceRate: 0,
             departments: [], shifts: [], status: "all", search: "", departmentId: "",
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
-            isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "clock", busy: false,
-            profileOpen: true, leaveOpen: true, timeOpen: true,
+            isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "dashboard", busy: false,
             regularizations: [], regularization: null, regularizationDetail: null,
             managerDecision: "", regularizationFilter: "all",
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
+            portalModules: {leave: false, time: true}, canSwitchInterface: false,
             moduleDropdown: false,
             settingsTab: "overview",
             attSubTab: "policy",
@@ -51,6 +47,7 @@ export class TimeManagementApp extends Component {
             settingsShifts: [],
             settingsShiftForm: null,
             shiftPage: "dashboard", shiftData: {shifts: [], assignments: [], employees: [], departments: [], kpis: {}},
+            employeeShiftSwaps: [],
             shiftSearch: "", shiftStatus: "all", shiftDetail: null, shiftForm: null,
             assignmentForm: null,
             trackingPage: "dashboard", trackingState: "all", trackingSearch: "",
@@ -64,20 +61,48 @@ export class TimeManagementApp extends Component {
         });
         onWillStart(async () => {
             const access = await this.orm.call("hr.attendance", "get_cleon_access", []);
+            let cleonAccess = null;
             try {
-                const cleonAccess = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
+                cleonAccess = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
                 this.state.capabilities = cleonAccess.capabilities || {};
-            } catch (e) { this.state.capabilities = {}; }
+                this.state.featureAccess = cleonAccess.featureAccess || access.features || this.state.featureAccess;
+            } catch (e) {
+                this.state.capabilities = {};
+                this.state.featureAccess = access.features || this.state.featureAccess;
+            }
             const forceEmployeePortal = Boolean(this.props.action?.params?.force_employee_portal);
-            this.state.isManager = access.is_manager;
-            this.state.featureAccess = access.features || this.state.featureAccess;
+            const forceEmployeeMode = Boolean(this.props.action?.params?.force_employee_mode);
+            this.state.isManager = cleonAccess?.is_manager ?? access.is_manager;
+            this.state.canSwitchInterface = Boolean(cleonAccess?.can_switch_interface);
+            this.state.portalModules = cleonAccess?.portalModules || access.portalModules || this.state.portalModules;
+            if (!this.state.featureAccess[this.state.feature]) {
+                this.state.feature = ["attendance", "shift", "tracking", "overtime"].find(
+                    (feature) => this.state.featureAccess[feature]
+                ) || "attendance";
+            }
             const savedFeature = window.sessionStorage.getItem("cleonhr_time_feature");
             if (savedFeature && this.state.featureAccess[savedFeature]) this.state.feature = savedFeature;
-            this.state.isPortal = forceEmployeePortal || !access.is_manager;
+            // The combined Employee Portal is an explicit host application.
+            // Being an employee only selects the employee Time workspace; it
+            // must not make the portal navigation leak into this module.
+            this.state.isPortal = forceEmployeePortal;
             const savedMode = window.localStorage.getItem("cleonhr_interface_mode");
-            this.state.mode = !forceEmployeePortal && access.is_manager && savedMode !== "employee" ? "admin" : "employee";
-            this.state.gateway = access.is_manager && this.state.mode === "admin";
-            this.state.employeePage = this.state.isPortal ? "dashboard" : "clock";
+            this.state.mode = !forceEmployeePortal && !forceEmployeeMode && this.state.isManager && savedMode !== "employee" ? "admin" : "employee";
+            if (this.state.mode === "employee" && this.state.isManager && !this.state.canSwitchInterface && !forceEmployeePortal && !forceEmployeeMode) {
+                this.state.mode = "admin";
+            }
+            this.state.gateway = this.state.isManager && this.state.mode === "admin";
+            const requestedEmployeePage = this.props.action?.params?.employee_page;
+            const requestedFeature = this.employeeFeatureForPage(requestedEmployeePage);
+            if (requestedFeature && this.state.featureAccess[requestedFeature]) {
+                this.state.feature = requestedFeature;
+            }
+            const allowedEmployeePage = requestedEmployeePage
+                && requestedFeature
+                && this.state.featureAccess[requestedFeature];
+            this.state.employeePage = requestedEmployeePage && allowedEmployeePage
+                ? requestedEmployeePage
+                : this.employeeDefaultPage(this.state.feature);
             if (this.props.action?.params?.show_workflows) {
                 this.state.showWorkflows = true;
                 this.state.workflowTab = "chains";
@@ -85,6 +110,9 @@ export class TimeManagementApp extends Component {
                 this.state.page = "settings";
             }
             await this.load();
+            if (this.state.mode === "employee" && this.state.employeePage === "regularizations") {
+                await this.loadRegularizations(false);
+            }
         });
         this.onInterfaceModeChange = async (event) => {
             await this.setMode(event.detail?.mode || "employee", false);
@@ -117,8 +145,14 @@ export class TimeManagementApp extends Component {
         try {
             if (this.state.mode === "employee") {
                 this.state.employeeData = await this.orm.call("hr.attendance", "get_cleon_employee_data", []);
-                if (this.state.employeePage === "overtime") {
+                if (this.state.feature === "overtime") {
                     this.state.employeeOvertime = await this.orm.call("cleon.overtime.request", "get_my_overtime", []);
+                }
+                if (this.state.feature === "shift") {
+                    this.state.employeeShiftSwaps = await this.orm.call("cleon.shift.swap.request", "get_my_swap_requests", []);
+                }
+                if (this.state.employeePage === "regularizations") {
+                    this.state.regularizations = await this.orm.call("cleon.attendance.regularization", "get_my_requests", []);
                 }
                 return;
             }
@@ -151,18 +185,77 @@ export class TimeManagementApp extends Component {
     }
 
     async setMode(mode, broadcast = true) {
-        if (mode === "admin" && !this.state.isManager) return;
+        if ((mode === "admin" && !this.state.isManager) || (mode === "employee" && this.state.isManager && !this.state.canSwitchInterface)) return;
         this.state.mode = mode; this.state.gateway = false;
         window.localStorage.setItem("cleonhr_interface_mode", mode);
         if (broadcast) {
             window.dispatchEvent(new CustomEvent("cleonhr-interface-mode-change", {detail: {mode}}));
         }
-        this.state.employeePage = "clock"; await this.load();
+        this.state.feature = this.firstEmployeeFeature();
+        this.state.employeePage = this.employeeDefaultPage(this.state.feature);
+        await this.load();
     }
-    async setEmployeePage(page) { this.state.employeePage = page; await this.load(); }
+    async setEmployeePage(page) {
+        const feature = this.employeeFeatureForPage(page);
+        if (feature && !this.state.featureAccess[feature]) {
+            this.notification.add("This application is not included in the current subscription.", {type: "warning"});
+            return;
+        }
+        if (feature) this.state.feature = feature;
+        this.state.employeePage = page; await this.load();
+    }
+    employeeFeatureForPage(page) {
+        if (["dashboard", "attendance_dashboard", "clock", "sheet", "history", "regularizations", "attendance_started"].includes(page)) return "attendance";
+        if (["shift_dashboard", "my_shift", "schedule", "shift_swaps"].includes(page)) return "shift";
+        if (["tracking_dashboard", "my_timesheets"].includes(page)) return "tracking";
+        if (["overtime", "overtime_dashboard", "overtime_requests"].includes(page)) return "overtime";
+        return false;
+    }
+    employeeDefaultPage(feature) {
+        return ({attendance: "attendance_dashboard", shift: "shift_dashboard", tracking: "tracking_dashboard", overtime: "overtime_dashboard"})[feature] || "attendance_dashboard";
+    }
+    firstEmployeeFeature() {
+        return ["attendance", "shift", "tracking", "overtime"].find(feature => this.state.featureAccess[feature]) || "attendance";
+    }
     get calendarBlanks() {
         return Array.from({length: this.state.employeeData?.calendar?.leading_blanks || 0});
     }
+    get employeeWorkingDays() {
+        return (this.state.employeeData?.calendar?.days || []).filter(day => !["weekend", "holiday", "future"].includes(day.status)).length;
+    }
+    get employeeAbsentDays() {
+        return (this.state.employeeData?.calendar?.days || []).filter(day => day.status === "absent").length;
+    }
+    get employeeAttendanceRate() {
+        return this.employeeWorkingDays
+            ? Math.round((this.state.employeeData.summary.days_present / this.employeeWorkingDays) * 100)
+            : 0;
+    }
+    employeePageTitle() {
+        return ({
+            attendance_dashboard: "My Dashboard", attendance_started: "Get Started", clock: "Clock In / Out", sheet: "My Attendance Sheet",
+            history: "My Attendance Record", regularizations: "My Requests",
+            shift_dashboard: "My Shifts", my_shift: "My Shift", schedule: "My Schedule", shift_swaps: "Shift Swap Requests",
+            tracking_dashboard: "My Time Tracking", my_timesheets: "My Timesheets",
+            overtime_dashboard: "My Overtime", overtime_requests: "Overtime Requests",
+        })[this.state.employeePage] || "Time Management";
+    }
+    employeePageSubtitle() {
+        return ({
+            attendance_dashboard: "Track your attendance and manage requests", attendance_started: "Understand your employee attendance workspace", clock: "Record the start and end of your workday",
+            sheet: "Track and manage your daily attendance", history: "Review your monthly attendance record",
+            regularizations: "Track submitted attendance correction requests",
+            shift_dashboard: "View and manage your shift schedule", my_shift: "Review today's assigned shift",
+            schedule: "Plan ahead with your work schedule", shift_swaps: "Track your shift swap requests",
+            tracking_dashboard: "Track your weekly hours and work items", my_timesheets: "View and update your work logs",
+            overtime_dashboard: "Review overtime hours and requests", overtime_requests: "Request and track overtime",
+        })[this.state.employeePage] || "Your employee time workspace";
+    }
+    currentTimeLabel() { return new Date().toLocaleTimeString(undefined, {hour: "2-digit", minute: "2-digit", second: "2-digit"}); }
+    currentDateLabel() { return new Date().toLocaleDateString(undefined, {weekday: "long", month: "long", day: "numeric", year: "numeric"}); }
+    scheduleDay(value) { return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {weekday: "short"}); }
+    scheduleMonth(value) { return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {month: "short"}); }
+    scheduleDate(value) { return new Date(`${value}T00:00:00`).getDate(); }
     formatHour(value) {
         const hours = Math.floor(Number(value || 0));
         const minutes = Math.round((Number(value || 0) - hours) * 60);
@@ -170,18 +263,26 @@ export class TimeManagementApp extends Component {
         const displayHour = hours % 12 || 12;
         return `${displayHour}:${String(minutes).padStart(2, "0")} ${suffix}`;
     }
-    togglePortalSection(section) { this.state[`${section}Open`] = !this.state[`${section}Open`]; }
-    showPortalLeave(page) { this.state.leaveOpen = true; this.state.employeePage = page; }
-    openPortalAction(action) {
-        window.localStorage.setItem("cleonhr_interface_mode", "employee");
-        document.documentElement.classList.add("has-cleon-employee-portal");
-        return this.action.doAction(action, {clearBreadcrumbs: true});
-    }
-    openLeaveDashboard() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_employee_dashboard"); }
-    openLeaveRequests() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
-    openLeaveCalendar() { return this.openPortalAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     openTimesheets() {
         return this.action.doAction("hr_timesheet.act_hr_timesheet_line", {clearBreadcrumbs: true});
+    }
+    async acceptShiftSwap(request) {
+        try {
+            await this.orm.call("cleon.shift.swap.request", "action_peer_accept", [[request.id]]);
+            await this.load();
+            this.notification.add("Shift swap accepted and sent to the line manager.", {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The shift swap could not be accepted.", {type: "danger"});
+        }
+    }
+    async cancelShiftSwap(request) {
+        try {
+            await this.orm.call("cleon.shift.swap.request", "action_cancel", [[request.id]]);
+            await this.load();
+            this.notification.add("Shift swap request cancelled.", {type: "success"});
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The shift swap could not be cancelled.", {type: "danger"});
+        }
     }
 
     deferredFeature(name) {
@@ -288,7 +389,7 @@ export class TimeManagementApp extends Component {
     }
     async openSettings() {
         this.state.page = "settings";
-        this.state.settingsTab = "overview";
+        this.state.settingsTab = this.state.featureAccess[this.state.feature] ? this.state.feature : "overview";
         const [policy, overview, regChain, otChain, access] = await Promise.all([
             this.orm.call("cleon.time.policy", "get_cleon_policy", []),
             this.orm.call("cleon.time.policy", "get_settings_overview", []),
@@ -298,6 +399,13 @@ export class TimeManagementApp extends Component {
         ]);
         this.state.policy = policy;
         this.state.capabilities = access.capabilities || {};
+        this.state.featureAccess = access.featureAccess || this.state.featureAccess;
+        if (
+            this.state.settingsTab !== "overview" &&
+            !this.state.featureAccess[this.state.settingsTab]
+        ) {
+            this.state.settingsTab = "overview";
+        }
         this.state.settingsOverview = overview;
         this.state.regChainSummary = regChain;
         this.state.otChainSummary = otChain;
@@ -315,6 +423,9 @@ export class TimeManagementApp extends Component {
             this.state.policy = await this.orm.call("cleon.time.policy", "save_cleon_policy", [this.state.policy]);
             const access = await this.orm.call("cleon.time.policy", "get_cleon_access", []);
             this.state.capabilities = access.capabilities || {};
+            this.state.canSwitchInterface = Boolean(access.can_switch_interface);
+            this.state.portalModules = access.portalModules || this.state.portalModules;
+            this.state.featureAccess = access.featureAccess || this.state.featureAccess;
             this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
             this.notification.add("Time Management policy saved.", {type:"success"});
         } catch (error) { this.notification.add(error?.data?.message || "Policy could not be saved.", {type:"danger"}); }
@@ -343,6 +454,11 @@ export class TimeManagementApp extends Component {
         }
     }
     async setSettingsTab(tab) {
+        if (tab !== "overview" && !this.state.featureAccess[tab]) {
+            this.state.settingsTab = "overview";
+            this.notification.add("This application is not included in the current subscription.", {type: "warning"});
+            return;
+        }
         this.state.settingsTab = tab;
         if (tab === "overview") {
             this.state.settingsOverview = await this.orm.call("cleon.time.policy", "get_settings_overview", []);
@@ -590,7 +706,7 @@ export class TimeManagementApp extends Component {
     get filteredRows() {
         return this.state.status === "all" ? this.state.rows : this.state.rows.filter(row => row.status === this.state.status);
     }
-    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend Overtime", holiday:"Holiday Overtime", daily:"Daily Overtime", special:"Special Assignment", on_call:"On-call Work", future:"Not yet recorded", auto:"Auto-calculated", submitted:"Pending Approval", approved:"Approved", rejected:"Rejected", correction:"Corrections Requested", withdrawn:"Withdrawn", draft:"Draft"})[status] || status; }
+    label(status) { return ({present:"Present", late:"Late", half_day:"Half-day", absent:"Absent", on_leave:"On Leave", weekend:"Weekend Overtime", holiday:"Holiday Overtime", daily:"Daily Overtime", special:"Special Assignment", on_call:"On-call Work", future:"Not yet recorded", auto:"Auto-calculated", submitted:"Pending Approval", requested:"Pending Peer", peer_accepted:"Pending Manager", approved:"Approved", rejected:"Rejected", correction:"Corrections Requested", withdrawn:"Withdrawn", draft:"Draft"})[status] || status; }
     selectAttendance() { this.selectFeature("attendance"); }
     selectFeature(feature) {
         if (!this.state.featureAccess[feature]) {
@@ -601,10 +717,14 @@ export class TimeManagementApp extends Component {
         window.sessionStorage.setItem("cleonhr_time_feature", feature);
         this.state.gateway = false;
         this.state.gatewayMessage = "";
+        if (this.state.mode === "employee") {
+            this.state.employeePage = this.employeeDefaultPage(feature);
+        }
         this.state.page = "dashboard";
-        this.load();
+        return this.load();
     }
     featureName(feature = this.state.feature) { return ({attendance:"Attendance Management", shift:"Shift Management", tracking:"Time Tracking", overtime:"Overtime Management"})[feature]; }
+    featureShortName(feature) { return ({attendance:"Attendance", shift:"Shift Mgmt", tracking:"Time Tracking", overtime:"Overtime"})[feature]; }
     featureIcon(feature = this.state.feature) {
         return ({
             attendance: "fa-calendar",

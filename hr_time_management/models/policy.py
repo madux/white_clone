@@ -52,7 +52,16 @@ class CleonTimePolicy(models.Model):
     payroll_integration = fields.Boolean()
     performance_integration = fields.Boolean()
     employee_portal = fields.Boolean(default=True)
+    interface_switching_enabled = fields.Boolean(
+        default=True,
+        string="Allow Admin/Employee View Switching",
+        help="Allow eligible managers linked to an employee to switch to the Employee Portal.",
+    )
     leave_integration = fields.Boolean(default=True)
+    attendance_app_available = fields.Boolean(default=True, string="Attendance Application Available")
+    shift_app_available = fields.Boolean(default=True, string="Shift Management Application Available")
+    tracking_app_available = fields.Boolean(default=True, string="Time Tracking Application Available")
+    overtime_app_available = fields.Boolean(default=True, string="Overtime Application Available")
     policy_type = fields.Selection([
 
         ("strict", "Strict Policy"), ("lenient", "Lenient Policy"),
@@ -184,6 +193,19 @@ class CleonTimePolicy(models.Model):
         }
 
     @api.model
+    def _tm_feature_access(self, policy=None):
+        """Return the applications enabled for the current company subscription."""
+        policy = policy or self.sudo().search([("company_id", "=", self.env.company.id)], limit=1)
+        # Existing databases had no subscription switches. Keep all applications
+        # available until an administrator explicitly changes the policy.
+        return {
+            "attendance": not policy or bool(policy.attendance_app_available),
+            "shift": not policy or bool(policy.shift_app_available),
+            "tracking": not policy or bool(policy.tracking_app_available),
+            "overtime": not policy or bool(policy.overtime_app_available),
+        }
+
+    @api.model
     def get_cleon_policy(self):
         """Restricted administrative policy object containing financial billing rates and security configs."""
         if not (self.env.su or self._tm_can_configure()):
@@ -224,7 +246,12 @@ class CleonTimePolicy(models.Model):
             "payroll_integration": policy.payroll_integration if policy else True,
             "performance_integration": policy.performance_integration if policy else True,
             "employee_portal": policy.employee_portal if policy else True,
+            "interface_switching_enabled": policy.interface_switching_enabled if policy else True,
             "leave_integration": policy.leave_integration if policy else True,
+            "attendance_app_available": policy.attendance_app_available if policy else True,
+            "shift_app_available": policy.shift_app_available if policy else True,
+            "tracking_app_available": policy.tracking_app_available if policy else True,
+            "overtime_app_available": policy.overtime_app_available if policy else True,
             "launched": policy.launched if policy else False,
             "go_live_date": fields.Date.to_string(policy.go_live_date) if policy and policy.go_live_date else False,
             "billable_tracking_enabled": policy.billable_tracking_enabled if policy else True,
@@ -428,7 +455,8 @@ class CleonTimePolicy(models.Model):
             "weekend_overtime", "weekend_overtime_rate", "weekend_overtime_approval",
             "holiday_overtime", "holiday_overtime_rate", "holiday_overtime_approval",
             "overtime_request_mode", "synchronization_frequency", "payroll_integration",
-            "performance_integration", "employee_portal", "leave_integration",
+            "performance_integration", "employee_portal", "interface_switching_enabled", "leave_integration",
+            "attendance_app_available", "shift_app_available", "tracking_app_available", "overtime_app_available",
             "billable_tracking_enabled", "default_billing_rate",
             "overtime_auto_approve_max_hours", "regularization_require_approval", "regularization_fallback_approver",
             "overtime_require_approval", "overtime_fallback_approver", "overtime_notify_employee",
@@ -604,19 +632,19 @@ class CleonTimePolicy(models.Model):
 
         has_biometric_connector = False
         if "cleon.biometric.device" in self.env:
-            device_model = self.env["cleon.biometric.device"]
+            device_model = self.env["cleon.biometric.device"].sudo()
             if "company_id" in device_model._fields:
                 has_biometric_connector = bool(device_model.search_count([("company_id", "=", company.id)]))
             else:
                 has_biometric_connector = bool(device_model.search_count([]))
         elif "hr.attendance.device" in self.env:
-            device_model = self.env["hr.attendance.device"]
+            device_model = self.env["hr.attendance.device"].sudo()
             if "company_id" in device_model._fields:
                 has_biometric_connector = bool(device_model.search_count([("company_id", "=", company.id)]))
             else:
                 has_biometric_connector = bool(device_model.search_count([]))
 
-        ready_ot_count = self.env["cleon.overtime.request"].search_count([
+        ready_ot_count = self.env["cleon.overtime.request"].sudo().search_count([
             ("company_id", "=", company.id),
             ("state", "=", "approved"),
             ("payroll_state", "=", "ready"),
@@ -857,16 +885,24 @@ class CleonTimePolicy(models.Model):
         capabilities = self._tm_capabilities()
         can_config = self._tm_can_configure()
         is_manager = role in ("system_admin", "hr_admin", "hr_manager", "line_manager")
+        policy = self.sudo().search([("company_id", "=", self.env.company.id)], limit=1)
+        portal_enabled = not policy or bool(policy.employee_portal)
+        has_employee = bool(self.env.user.employee_id)
+        feature_access = self._tm_feature_access(policy)
         return {
             "role": role,
             "can_configure": can_config,
             "is_manager": is_manager,
-            "capabilities": capabilities,
-            "featureAccess": {
-                "attendance": True,
-                "shift": True,
-                "tracking": True,
-                "overtime": True,
-                "settings": can_config,
+            "has_employee": has_employee,
+            "portal_enabled": portal_enabled,
+            "can_switch_interface": bool(
+                is_manager and has_employee and portal_enabled
+                and (not policy or policy.interface_switching_enabled)
+            ),
+            "portalModules": {
+                "leave": bool(capabilities.get("leave") and (not policy or policy.leave_integration)),
+                "time": any(feature_access.values()),
             },
+            "capabilities": capabilities,
+            "featureAccess": dict(feature_access, settings=can_config),
         }

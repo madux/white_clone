@@ -39,9 +39,6 @@
 
         build: function () {
             if (document.getElementById("cleonAppRail")) return;
-            if (localStorage.getItem("cleonhr_interface_mode") === "employee") {
-                document.documentElement.classList.add("has-cleon-employee-portal");
-            }
             $("body").append([
                 '<aside id="cleonAppRail" class="cleon-app-rail" aria-label="CleonHR applications">',
                 '  <div class="cleon-rail-loading"><i class="fa fa-spinner fa-spin"></i></div>',
@@ -55,7 +52,10 @@
             var self = this;
             $.ajax({
                 url: "/home_menu/get_apps", type: "POST", contentType: "application/json",
-                data: JSON.stringify({ jsonrpc: "2.0", method: "call", params: {} }),
+                data: JSON.stringify({
+                    jsonrpc: "2.0", method: "call",
+                    params: {employee_mode: localStorage.getItem("cleonhr_interface_mode") === "employee"},
+                }),
                 success: function (response) {
                     var categories = response && response.result && response.result.categories || [];
                     self.apps = [];
@@ -100,6 +100,10 @@
             document.addEventListener("click", function (event) {
                 if (!isNavbarAppsButton(event.target)) return;
                 event.preventDefault(); event.stopImmediatePropagation();
+                if (localStorage.getItem("cleonhr_interface_mode") === "employee") {
+                    document.querySelector(".cleon-rail-app")?.focus();
+                    return;
+                }
                 window.location.href = "/maacherp/landing";
             }, true);
 

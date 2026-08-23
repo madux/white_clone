@@ -162,6 +162,36 @@ class TestTimeManagementSecurity(TransactionCase):
         self.assertIn("biometric_terminal_connector", capabilities)
         self.assertFalse(capabilities["biometric_terminal_connector"])
 
+    def test_04_portal_access_uses_role_subscription_and_switch_policy(self):
+        Policy = self.env["cleon.time.policy"]
+        policy = Policy.search([("company_id", "=", self.company.id)], limit=1)
+        if not policy:
+            policy = Policy.create({"company_id": self.company.id})
+        policy.write({
+            "employee_portal": True,
+            "interface_switching_enabled": True,
+            "attendance_app_available": True,
+            "shift_app_available": False,
+            "tracking_app_available": False,
+            "overtime_app_available": False,
+        })
+
+        manager_access = Policy.with_user(self.line_manager_user).get_cleon_access()
+        self.assertTrue(manager_access["is_manager"])
+        self.assertTrue(manager_access["can_switch_interface"])
+        self.assertEqual(
+            {key: manager_access["featureAccess"][key] for key in ("attendance", "shift", "tracking", "overtime")},
+            {"attendance": True, "shift": False, "tracking": False, "overtime": False},
+        )
+
+        employee_access = Policy.with_user(self.employee_user).get_cleon_access()
+        self.assertFalse(employee_access["is_manager"])
+        self.assertFalse(employee_access["can_switch_interface"])
+        self.assertTrue(employee_access["portalModules"]["time"])
+
+        policy.interface_switching_enabled = False
+        self.assertFalse(Policy.with_user(self.line_manager_user).get_cleon_access()["can_switch_interface"])
+
     def test_04_configuration_authorization(self):
         """Test that HR Admin and System Admin can configure, but Line Manager and Employee cannot."""
         Policy = self.env["cleon.time.policy"]
@@ -441,5 +471,3 @@ class TestTimeManagementSecurity(TransactionCase):
         target_row = next(r for r in tracking_data["rows"] if r["id"] == sheet.id)
         self.assertEqual(target_row["total"], 8.0)
         self.assertIn("variance", target_row)
-
-

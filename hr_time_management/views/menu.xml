@@ -14,6 +14,7 @@
     <menuitem id="employee_portal_root"
               name="Employee Portal"
               sequence="45"
+              active="False"
               groups="base.group_no_one"
               web_icon="hr_administration,static/src/img/icon.png"/>
 
@@ -22,6 +23,7 @@
               parent="hr_time_management.employee_portal_root"
               action="hr_time_management.action_employee_portal"
               sequence="1"
+              active="False"
               groups="base.group_no_one"/>
 
     <record id="employee_portal_dashboard" model="ir.ui.menu">

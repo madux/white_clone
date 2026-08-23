@@ -411,6 +411,54 @@ class CleonHrShift(models.Model):
 
         target_date_obj = fields.Date.to_date(target_date)
 
+        # Attendance is sold independently from Shift Management.  In that
+        # configuration there must still be a stable schedule against which
+        # hours and punctuality can be evaluated, but customers must not gain
+        # access to the shift assignment product.  Use the employee calendar
+        # (when configured) and fall back to the protected company policy.
+        Policy = self.env["cleon.time.policy"].sudo()
+        policy = Policy.search([("company_id", "=", emp.company_id.id)], limit=1)
+        if not Policy._tm_feature_access(policy).get("shift"):
+            weekday = target_date_obj.weekday()
+            weekend_days = [
+                int(day.strip())
+                for day in ((policy.weekend_days if policy else "5,6") or "5,6").split(",")
+                if day.strip().isdigit()
+            ]
+            standard_hours = float(policy.standard_hours if policy else 8.0)
+            break_minutes = int(
+                policy.default_break_minutes
+                if policy and policy.enable_break_period
+                else 0
+            )
+            grace_minutes = int(policy.default_grace_minutes if policy else 0)
+            start_hour = 9.0
+            calendar = emp.resource_calendar_id
+            if calendar:
+                calendar_lines = calendar.attendance_ids.filtered(
+                    lambda line: int(line.dayofweek) == weekday
+                )
+                if calendar_lines:
+                    start_hour = min(calendar_lines.mapped("hour_from"))
+            end_hour = (start_hour + standard_hours + (break_minutes / 60.0)) % 24.0
+            is_rest_day = weekday in weekend_days
+            start_dt = datetime.combine(target_date_obj, time()) + timedelta(hours=start_hour)
+            end_dt = start_dt + timedelta(hours=standard_hours, minutes=break_minutes)
+            return {
+                "shift_id": False,
+                "shift_name": _("Standard Attendance Schedule"),
+                "shift_code": "ATTENDANCE-DEFAULT",
+                "expected_hours": 0.0 if is_rest_day else standard_hours,
+                "is_rest_day": is_rest_day,
+                "start_hour": start_hour,
+                "end_hour": end_hour,
+                "start_datetime": start_dt,
+                "end_datetime": end_dt,
+                "break_minutes": break_minutes,
+                "grace_minutes": grace_minutes,
+                "schedule_source": "attendance_policy",
+            }
+
         # 1. Approved shift swap override for target_date
         Swap = self.env["cleon.shift.swap.request"].sudo()
         swap = Swap.search([
@@ -468,7 +516,6 @@ class CleonHrShift(models.Model):
 
         # 3. Explicit policy default shift (No arbitrary limit=1 fallback)
         if not shift:
-            policy = self.env["cleon.time.policy"].sudo().search([("company_id", "=", emp.company_id.id)], limit=1)
             if policy and policy.default_shift_id:
                 shift = policy.default_shift_id
 
@@ -704,6 +751,30 @@ class CleonShiftSwapRequest(models.Model):
     _sql_constraints = [
         ("distinct_employees", "CHECK(requester_id != target_employee_id)", "Requester and target employee cannot be the same person."),
     ]
+
+    @api.model
+    def get_my_swap_requests(self):
+        """Return only swaps involving the employee linked to the current user."""
+        employee = self.env.user.employee_id
+        if not employee:
+            return []
+        requests = self.search([
+            "|", ("requester_id", "=", employee.id), ("target_employee_id", "=", employee.id),
+        ], order="swap_date desc, id desc")
+        return [{
+            "id": request.id,
+            "name": request.name,
+            "date": fields.Date.to_string(request.swap_date),
+            "requester": request.requester_id.sudo().name,
+            "target": request.target_employee_id.sudo().name,
+            "requester_shift": request.requester_shift_id.name or "—",
+            "target_shift": request.target_shift_id.name or "—",
+            "reason": request.reason or "",
+            "state": request.state,
+            "is_requester": request.requester_id == employee,
+            "can_accept": request.target_employee_id == employee and request.state == "requested",
+            "can_cancel": request.requester_id == employee and request.state in ("draft", "requested"),
+        } for request in requests]
 
     @api.constrains("requester_id", "target_employee_id", "requester_shift_id", "target_shift_id")
     def _check_company_integrity(self):

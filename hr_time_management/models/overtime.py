@@ -1,9 +1,13 @@
 from datetime import date, datetime, time, timedelta
+import logging
 
 import pytz
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
+
+
+_logger = logging.getLogger(__name__)
 
 
 class CleonOvertimeRequest(models.Model):
@@ -178,6 +182,8 @@ class CleonOvertimeRequest(models.Model):
         if not self._manager_allowed():
             return
         Policy = self.env["cleon.time.policy"]
+        if not Policy._tm_feature_access().get("overtime"):
+            return
         allowed_emp_ids = Policy._tm_scope_employee_ids()
         cutoff_dt = fields.Datetime.now() - timedelta(days=366)
         cutoff_date = fields.Date.today() - timedelta(days=366)
@@ -227,16 +233,45 @@ class CleonOvertimeRequest(models.Model):
                     existing_auto_daily._sudo_unlink_service()
                 continue
 
-            # Compute gross worked hours & single daily break deduction across multi-punch / split shifts
-            gross_hours = sum((a.check_out - a.check_in).total_seconds() / 3600 for a in att_list)
+            # Merge overlapping punches before calculating hours. Summing raw rows can
+            # exceed 24 hours when a stale/open punch overlaps a corrected record.
+            intervals = []
+            for attendance in att_list:
+                if not attendance.check_in or not attendance.check_out or attendance.check_out <= attendance.check_in:
+                    _logger.warning("Skipping invalid attendance interval %s during overtime sync", attendance.id)
+                    continue
+                duration = (attendance.check_out - attendance.check_in).total_seconds() / 3600.0
+                if duration > 24.0:
+                    _logger.warning("Skipping attendance %s with %.2f-hour interval during overtime sync", attendance.id, duration)
+                    continue
+                intervals.append((attendance.check_in, attendance.check_out, attendance))
+
+            intervals.sort(key=lambda interval: interval[0])
+            merged = []
+            for start, end, attendance in intervals:
+                if merged and start <= merged[-1][1]:
+                    merged[-1] = (merged[-1][0], max(merged[-1][1], end), merged[-1][2])
+                else:
+                    merged.append((start, end, attendance))
+            gross_hours = sum((end - start).total_seconds() / 3600.0 for start, end, _attendance in merged)
+            if not merged or gross_hours <= 0.0 or gross_hours > 24.0:
+                _logger.warning(
+                    "Skipping overtime derivation for employee %s on %s: invalid merged duration %.2f",
+                    employee.id, w_date, gross_hours,
+                )
+                if existing_auto_daily and existing_auto_daily.state == "auto":
+                    existing_auto_daily._sudo_unlink_service()
+                continue
+
             if policy and policy.enable_break_period and gross_hours >= (policy.half_day_hours or 4.0):
                 break_hours = (policy.default_break_minutes or 60) / 60.0
                 total_net_hours = max(0.0, gross_hours - break_hours)
             else:
                 total_net_hours = gross_hours
 
-            earliest_in = min(a.check_in for a in att_list)
-            latest_out = max(a.check_out for a in att_list)
+            earliest_in = merged[0][0]
+            latest_out = merged[-1][1]
+            valid_att_list = [interval[2] for interval in intervals]
 
             # Check calendar & shift boundaries
             calendar = employee.resource_calendar_id
@@ -271,6 +306,9 @@ class CleonOvertimeRequest(models.Model):
                     daily_ot_hours = 0.0
                     regular_hours = total_net_hours
 
+            daily_ot_hours = round(min(24.0, max(0.0, daily_ot_hours)), 4)
+            regular_hours = round(min(24.0, max(0.0, regular_hours)), 4)
+
             if existing_auto_daily:
                 if existing_auto_daily.state == "auto":
                     if daily_ot_hours > 0:
@@ -291,7 +329,7 @@ class CleonOvertimeRequest(models.Model):
                     "start_time": earliest_in, "end_time": latest_out,
                     "regular_hours": regular_hours,
                     "overtime_hours": daily_ot_hours, "category": category,
-                    "source": "attendance", "state": "auto", "attendance_id": att_list[0].id,
+                    "source": "attendance", "state": "auto", "attendance_id": valid_att_list[0].id,
                     "multiplier": multiplier,
                     "justification": _("Automatically calculated from attendance."),
                 }])
@@ -301,7 +339,7 @@ class CleonOvertimeRequest(models.Model):
             # Store for weekly overtime threshold calculation
             iso_year, iso_week, day_idx = w_date.isocalendar()
             emp_weekly_regular_hours.setdefault((employee, (iso_year, iso_week)), []).append(
-                (w_date, regular_hours, total_net_hours, att_list)
+                (w_date, regular_hours, total_net_hours, valid_att_list)
             )
 
         # 3. Weekly Overtime Engine (component-aware, frozen weekly record accounting, no double counting)
@@ -351,7 +389,15 @@ class CleonOvertimeRequest(models.Model):
                     except AccessError:
                         continue
 
-                    ot_to_materialize = min(weekly_ot_needed, reg_h)
+                    # PostgreSQL enforces a strict (0, 24] range.  Keep the
+                    # derived weekly component inside that range as well as
+                    # protecting against floating-point dust around zero.
+                    ot_to_materialize = round(
+                        min(24.0, max(0.0, weekly_ot_needed), max(0.0, reg_h)),
+                        4,
+                    )
+                    if ot_to_materialize <= 0:
+                        continue
                     existing_auto_weekly = existing_weekly_recs.filtered(lambda r: r.date == w_date and r.state == "auto")
 
                     earliest_in = min(a.check_in for a in att_list)

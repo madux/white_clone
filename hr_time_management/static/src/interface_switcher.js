@@ -1,47 +1,42 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { onWillStart } from "@odoo/owl";
 import { registry } from "@web/core/registry";
+import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
+import { UserMenu } from "@web/webclient/user_menu/user_menu";
 
-export class CleonInterfaceSwitcher extends Component {
-    static template = "hr_time_management.InterfaceSwitcher";
+const interfaceAccess = new WeakMap();
 
+patch(UserMenu.prototype, {
     setup() {
-        this.action = useService("action");
-        this.user = useService("user");
-        this.state = useState({allowed: false, isAdmin: false, open: false, mode: "admin"});
+        super.setup(...arguments);
+        const orm = useService("orm");
         onWillStart(async () => {
-            this.state.allowed = await this.user.hasGroup("base.group_user");
-            this.state.isAdmin = await this.user.hasGroup("base.group_system");
-            this.state.mode = window.localStorage.getItem("cleonhr_interface_mode") === "employee" ? "employee" : "admin";
-            if (!this.state.isAdmin) this.state.mode = "employee";
+            try {
+                interfaceAccess.set(this.env, await orm.call("cleon.time.policy", "get_cleon_access", []));
+            } catch {
+                interfaceAccess.set(this.env, {can_switch_interface: false});
+            }
         });
-    }
+    },
+});
 
-    toggle() {
-        if (!this.state.isAdmin) {
-            return this.selectMode("employee");
-        }
-        this.state.open = !this.state.open;
-    }
-
-    async selectMode(mode) {
-        if (!this.state.allowed || (mode === "admin" && !this.state.isAdmin)) {
-            return;
-        }
-        this.state.mode = mode;
-        this.state.open = false;
+registry.category("user_menuitems").add("cleonhr_switch_role", (env) => ({
+    type: "item",
+    id: "cleonhr_switch_role",
+    description: "Switch Role",
+    hide: !interfaceAccess.get(env)?.can_switch_interface,
+    sequence: 55,
+    callback: async () => {
+        const current = window.localStorage.getItem("cleonhr_interface_mode") === "employee" ? "employee" : "admin";
+        const mode = current === "admin" ? "employee" : "admin";
         window.localStorage.setItem("cleonhr_interface_mode", mode);
         document.documentElement.classList.toggle("has-cleon-employee-portal", mode === "employee");
-        window.dispatchEvent(new CustomEvent("cleonhr-interface-mode-change", {detail: {mode}}));
-        const action = mode === "employee"
-            ? "hr_time_management.action_employee_portal"
-            : "hr_time_management.action_time_management";
-        await this.action.doAction(action, {clearBreadcrumbs: true});
-    }
-}
-
-registry.category("systray").add("hr_time_management.InterfaceSwitcher", {
-    Component: CleonInterfaceSwitcher,
-}, {sequence: 25});
+        window.CleonAppLauncher?.load();
+        await env.services.action.doAction(
+            mode === "employee" ? "white_clone_portal.action_employee_portal_home" : "hr_time_management.action_time_management",
+            {clearBreadcrumbs: true}
+        );
+    },
+}));
