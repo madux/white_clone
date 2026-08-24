@@ -1,0 +1,235 @@
+.exm-root {
+  min-height: 100%;
+}
+
+.exm-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: #3d403c;
+  color: #263240;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-svg-library {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.exm-svg-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-svg-fill {
+  fill: currentColor;
+}
+
+.exm-sidebar {
+  position: sticky;
+  top: 0;
+  --exm-pink: #ec4899;
+  --exm-dark: #283341;
+  --exm-accent: #e5e7eb;
+  --exm-line: #dfe1e5;
+  display: flex;
+  width: 80px;
+  min-width: 80px;
+  height: 100vh;
+  min-height: 680px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+.exm-icon-rail {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 80px;
+  flex-direction: column;
+  width: 69px;
+  height: 100vh;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.exm-brand {
+  display: grid;
+  flex: 0 0 80px;
+  place-items: center;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--exm-line);
+}
+.exm-rail-search {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.exm-brand-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #fe327d, #f51f70);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 7px 14px rgba(251, 36, 117, 0.14);
+}
+
+.exm-rail-links {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 0 7px;
+  box-sizing: border-box;
+  overflow-y: scroll;
+  overflow-x: clip;
+  scrollbar-color: #ec489a75 white;
+  scrollbar-width: thin;
+  border-right: 1px solid var(--exm-line);
+}
+
+.exm-rail-button,
+.exm-rail-btn-search {
+  position: relative;
+  display: grid;
+  flex: 0 0 48px;
+  width: 50px;
+  height: 48px;
+  padding: 0;
+  place-items: center;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #344151;
+  font: inherit;
+  cursor: pointer;
+}
+.exm-rail-btn-search {
+  color: #515356;
+}
+
+.exm-rail-button::after,
+.exm-rail-btn-search::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 55px;
+  top: 80%;
+  transform: translateY(-50%) scale(0.8);
+  z-index: 10000;
+  /* Styling the tooltip background */
+  background-color: #333;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+
+  /* Hidden by default */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Hover State: Reveal the pseudo-element tooltip */
+.exm-rail-button:hover::after,
+.exm-rail-btn-search:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+}
+.exm-rail-button-active {
+  color: #ffffff !important;
+  background: linear-gradient(145deg, #fc3d83, #f91d70);
+  box-shadow: 0 8px 15px rgba(251, 36, 117, 0.24);
+}
+
+.exm-rail-icon {
+  width: 25px;
+  height: 25px;
+  overflow: visible;
+}
+
+.exm-notification-holder {
+  isolation: isolate;
+}
+
+.exm-notification {
+  position: absolute;
+  top: -3px;
+  right: -2px;
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #ff343c;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.exm-rail-divider {
+  flex: 0 0 1px;
+  width: 38px;
+  margin-top: 25px;
+}
+.exm-status-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  margin-bottom: 25px;
+  border-radius: 50%;
+}
+.exm-green-rail-divider {
+  background: linear-gradient(90deg, transparent, #42d4b8, transparent);
+}
+.exm-green-status-dot {
+  background: #5bd8bd;
+}
+
+.exm-pink-rail-divider {
+  background: linear-gradient(90deg, transparent, #ec489980, transparent);
+}
+
+.exm-pink-status-dot {
+  background: #fb64b6;
+}
+.exm-blue-rail-divider {
+  background: linear-gradient(90deg, transparent, #51a2ff, transparent);
+}
+
+.exm-blue-status-dot {
+  background: #51a2ff;
+}
+
+.exm-version {
+  display: grid;
+  flex: 0 0 43px;
+  place-items: center;
+  box-sizing: border-box;
+  border-top: 1px solid var(--exm-line);
+  color: #a4abb4;
+  font-size: 10px;
+  font-weight: 700;
+}

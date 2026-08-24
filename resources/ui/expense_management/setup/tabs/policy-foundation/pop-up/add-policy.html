@@ -1,0 +1,135 @@
+<!doctype html>
+<html class="exm-addpol-root" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Policy Rule</title>
+    <link rel="stylesheet" href="add-policy.css" />
+  </head>
+
+  <body class="exm-addpol-page">
+    <!-- Decorative page content makes the modal backdrop visible in this standalone preview. -->
+    <div class="exm-addpol-preview" aria-hidden="true">
+      <header class="exm-addpol-preview-header">
+        <span class="exm-addpol-preview-brand"></span>
+        <span class="exm-addpol-preview-search"></span>
+        <span class="exm-addpol-preview-action"></span>
+      </header>
+      <aside class="exm-addpol-preview-sidebar">
+        <span></span><span></span><span></span><span></span><span></span>
+      </aside>
+      <main class="exm-addpol-preview-content">
+        <div class="exm-addpol-preview-title"></div>
+        <div class="exm-addpol-preview-tabs"><span></span><span></span><span></span></div>
+        <div class="exm-addpol-preview-grid">
+          <article></article><article></article><article></article>
+          <article></article><article></article><article></article>
+        </div>
+      </main>
+    </div>
+
+    <div class="exm-addpol-modal-layer">
+      <section
+        class="exm-addpol-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exm-addpol-title"
+      >
+        <header class="exm-addpol-dialog-header">
+          <h1 class="exm-addpol-title" id="exm-addpol-title">Add Policy Rule</h1>
+        </header>
+
+        <form class="exm-addpol-form" action="#" method="post">
+          <div class="exm-addpol-form-body">
+            <label class="exm-addpol-field">
+              <span class="exm-addpol-label">Policy Name *</span>
+              <input
+                class="exm-addpol-input"
+                type="text"
+                name="policy_name"
+                placeholder="e.g., Hotel Night Cap – Lagos"
+                autocomplete="off"
+                required
+              />
+            </label>
+
+            <label class="exm-addpol-field">
+              <span class="exm-addpol-label">Value / Limit *</span>
+              <input
+                class="exm-addpol-input"
+                type="text"
+                name="policy_limit"
+                placeholder="e.g., ₦35,000 per night"
+                autocomplete="off"
+                required
+              />
+            </label>
+
+            <label class="exm-addpol-field">
+              <span class="exm-addpol-label">Category</span>
+              <span class="exm-addpol-select-wrap">
+                <select class="exm-addpol-select" name="category">
+                  <option value="travel" selected>Travel</option>
+                  <option value="limits">Limits</option>
+                  <option value="compliance">Compliance</option>
+                  <option value="advances">Advances</option>
+                  <option value="other">Other</option>
+                </select>
+                <svg class="exm-addpol-select-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 9.5 5 5 5-5" />
+                </svg>
+              </span>
+            </label>
+
+            <div class="exm-addpol-date-grid">
+              <label class="exm-addpol-field">
+                <span class="exm-addpol-label exm-addpol-date-label">
+                  <svg class="exm-addpol-calendar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M8 3v4M16 3v4M3 10h18" />
+                  </svg>
+                  Effective Date
+                </span>
+                <input
+                  class="exm-addpol-input"
+                  type="text"
+                  name="effective_date"
+                  placeholder="mm/dd/yyyy"
+                  inputmode="numeric"
+                  aria-label="Effective date"
+                />
+              </label>
+
+              <label class="exm-addpol-field">
+                <span class="exm-addpol-label exm-addpol-date-label">
+                  <svg class="exm-addpol-calendar-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M8 3v4M16 3v4M3 10h18" />
+                  </svg>
+                  Expiry Date
+                </span>
+                <input
+                  class="exm-addpol-input"
+                  type="text"
+                  name="expiry_date"
+                  placeholder="mm/dd/yyyy"
+                  inputmode="numeric"
+                  aria-label="Expiry date"
+                />
+              </label>
+            </div>
+          </div>
+
+          <footer class="exm-addpol-actions">
+            <button class="exm-addpol-button exm-addpol-button-cancel" type="button">
+              Cancel
+            </button>
+            <button class="exm-addpol-button exm-addpol-button-submit" type="submit">
+              Add Policy
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  </body>
+</html>

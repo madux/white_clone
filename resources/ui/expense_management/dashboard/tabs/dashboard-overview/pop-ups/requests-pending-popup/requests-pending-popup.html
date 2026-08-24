@@ -1,0 +1,51 @@
+<!-- Requests Pending popup component -->
+<div class="rpp-backdrop" id="requests-pending-popup" aria-hidden="true">
+  <section
+    class="rpp-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="rpp-title"
+  >
+    <header class="rpp-header">
+      <div>
+        <h2 id="rpp-title">Requests Pending</h2>
+        <p>1 — of 2 total</p>
+      </div>
+      <button
+        class="rpp-close"
+        type="button"
+        data-requests-popup-close
+        aria-label="Close requests pending"
+      >
+        <span aria-hidden="true"></span>
+      </button>
+    </header>
+
+    <div class="rpp-list">
+      <a class="rpp-row" href="#">
+        <span class="rpp-main">
+          <span class="rpp-title-line">
+            <strong>REQ-2026-001</strong>
+            <span class="rpp-status">Pending</span>
+          </span>
+          <small>Employee · General</small>
+        </span>
+        <span class="rpp-meta">
+          <strong aria-label="No amount">—</strong>
+          <svg class="rpp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path>
+          </svg>
+        </span>
+      </a>
+    </div>
+
+    <footer class="rpp-footer">
+      <button class="rpp-secondary" type="button" data-requests-popup-close>
+        Close
+      </button>
+      <a class="rpp-primary" href="#"
+        >View All in Requests <span aria-hidden="true">↗</span></a
+      >
+    </footer>
+  </section>
+</div>

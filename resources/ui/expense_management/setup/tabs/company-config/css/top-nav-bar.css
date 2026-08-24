@@ -1,0 +1,408 @@
+.exm-root {
+  min-height: 100%;
+}
+
+/* .exm-topnav-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: #ffffff;
+  color: #202938;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+} */
+
+.exm-svg-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-topnav-shell {
+  --exm-pink: #f72570;
+  --exm-dark: #202938;
+  --exm-muted: #5f6875;
+  --exm-line: #e0e3e7;
+  display: flex;
+  /* width: 1846px; */
+  height: 81px;
+  box-sizing: border-box;
+  margin: 0;
+  background: #ffffff;
+  box-shadow: 0 2px 9px rgba(26, 35, 45, 0.08);
+}
+
+.exm-topnav-cap {
+  display: flex;
+  flex: 0 0 229px;
+  height: 70px;
+}
+
+.exm-topnav-brand-cell {
+  display: grid;
+  flex: 0 0 69px;
+  height: 70px;
+  place-items: center;
+  box-sizing: border-box;
+  border-right: 1px solid var(--exm-line);
+  border-bottom: 1px solid var(--exm-line);
+}
+
+.exm-topnav-brand {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #fe327d, #f51f70);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 7px 14px rgba(251, 36, 117, 0.14);
+}
+
+.exm-topnav-home-cell {
+  display: grid;
+  flex: 0 0 160px;
+  height: 70px;
+  place-items: center;
+  box-sizing: border-box;
+  border-right: 1px solid #d5d8dc;
+  border-bottom: 1px solid var(--exm-line);
+  background: #fafafc;
+  color: #10151b;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.exm-topnav-main {
+  display: flex;
+  /* flex: 0 0 1617px;
+  width: 1617px; */
+  height: 70px;
+  align-items: center;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.exm-topnav-context {
+  display: flex;
+  height: 100%;
+  padding-left: 27px;
+  padding-right: 27px;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.exm-admin-chip {
+  display: flex;
+  /* width: 104px;
+  height: 34px; */
+  padding: 4px 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  border: 1px solid #f1d5e2;
+  border-radius: 7px;
+  background: #fff2f7;
+  color: #c72265;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.exm-admin-avatar {
+  color: #2a3037;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.exm-page-name {
+  margin-right: 4px;
+  color: #1e2633;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.exm-claims-search {
+  display: flex;
+  /* width: 220px;
+  height: 38px; */
+  padding: 6px 12px 6px 12px;
+  align-items: center;
+  gap: 9px;
+  box-sizing: border-box;
+  border: 1px solid #dde1e6;
+  border-radius: 8px;
+  background: #f8f9fb;
+  color: #8a94a2;
+}
+
+.exm-search-icon {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.exm-claims-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #4d5866;
+  font: inherit;
+  font-size: 14px;
+}
+
+.exm-claims-input::placeholder {
+  color: #9ba4b1;
+  opacity: 1;
+}
+
+.exm-company-select {
+  display: flex;
+  /* width: 134px;
+  height: 46px; */
+  margin-left: 2px;
+  padding: 6px 12px 6px 15px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 1px solid #e1e4e8;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #46505e;
+  font: inherit;
+  cursor: default;
+  box-shadow: 0 1px 4px rgba(31, 40, 52, 0.04);
+}
+
+.exm-company-icon-box {
+  display: grid;
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 5px;
+  background: var(--exm-pink);
+  color: #ffffff;
+}
+
+.exm-company-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.exm-company-name {
+  color: #46505e;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.exm-chevron-icon {
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  color: #929aa5;
+}
+
+.exm-utility-bar {
+  display: flex;
+  gap: 2px;
+  /* width: 312px;
+  height: 46px; */
+  padding: 0 14px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-radius: 11px;
+  background: #fafbfc;
+}
+
+.exm-utility-button {
+  position: relative;
+  display: grid;
+  width: 28px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #616b78;
+  cursor: default;
+}
+
+.exm-utility-icon {
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+
+.exm-online-holder {
+  isolation: isolate;
+}
+
+.exm-online-dot {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  background: #20c787;
+}
+
+.exm-alert-holder {
+  isolation: isolate;
+}
+
+.exm-alert-count {
+  position: absolute;
+  top: -7px;
+  right: -4px;
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #ff3044;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.exm-role-switcher {
+  position: relative;
+  display: flex;
+  /* width: 507px;
+  height: 63px; 
+  margin-left: 26px;*/
+  padding: 5px 8px 5px 8px;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  border: 2px solid #d8dce2;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 45, 57, 0.06);
+}
+
+.exm-current-role {
+  /* position: absolute; */
+  /* z-index: 2; */
+  /* top: 20px;
+  left: -64px; */
+  display: grid;
+  /* width: 140px;
+  height: 23px; */
+  padding: 4px 10px;
+  place-items: center;
+  border: 1px solid #f2d5e3;
+  border-radius: 12px;
+  background: #fff0f7;
+  color: #bf1d60;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.7px;
+}
+
+.exm-role-button {
+  display: flex;
+  /* height: 52px; */
+  padding: 12px 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #525d6c;
+  font: inherit;
+  cursor: default;
+}
+
+.exm-role-button-active {
+  background: linear-gradient(110deg, #f72b76, #eb0059);
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(239, 17, 95, 0.18);
+}
+
+.exm-role-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.exm-role-label {
+  font-size: 14px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.exm-role-dot {
+  width: 11px;
+  height: 11px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: #f9679c;
+}
+
+.exm-profile {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 70px;
+  /* margin-left: 14px; */
+  padding-left: 24px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.exm-profile-icon-box {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #fb2d79, #ed075d);
+  color: #ffffff;
+}
+
+.exm-profile-icon {
+  width: 19px;
+  height: 19px;
+}
+
+.exm-profile-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.exm-profile-name {
+  overflow: hidden;
+  color: #202938;
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exm-profile-role {
+  color: #747d89;
+  font-size: 11px;
+}

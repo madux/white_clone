@@ -1,0 +1,636 @@
+.exm-main-content {
+  display: flex;
+}
+
+* {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+.overflow-x-scroll {
+  overflow-x: scroll;
+}
+
+.exm-breadcrumb-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  padding: 0 24px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e9ecf0;
+  background: #fafbfc;
+  color: #97a2b2;
+  font-size: 10px;
+}
+
+.exm-breadcrumb-left,
+.exm-breadcrumb-right,
+.exm-breadcrumb-home,
+.exm-sync-copy,
+.exm-shortcut-copy {
+  display: flex;
+  align-items: center;
+}
+
+.exm-breadcrumb-left {
+  gap: 9px;
+}
+
+.exm-breadcrumb-right {
+  gap: 12px;
+}
+
+.exm-breadcrumb-icon,
+.exm-sync-icon,
+.exm-shortcut-key-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-icon {
+  color: #aab3c0;
+}
+
+.exm-breadcrumb-separator {
+  width: 1px;
+  height: 16px;
+  background: #dfe3e8;
+}
+
+.exm-breadcrumb-home {
+  gap: 3px;
+  color: #8b96a7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.exm-breadcrumb-home-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-chevron {
+  width: 8px;
+  height: 8px;
+}
+
+.exm-breadcrumb-current {
+  color: #101a2b;
+  font-size: 10px;
+}
+
+.exm-sync-copy,
+.exm-shortcut-copy {
+  gap: 4px;
+  font-weight: 650;
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tab {
+  position: relative;
+  display: flex;
+  height: 55px;
+  padding: 0 17px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #465162;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.exm-dashboard-tab-active {
+  min-width: 158px;
+  background: #ffffff;
+  color: #07162b;
+  box-shadow: 0 4px 12px rgba(32, 42, 54, 0.11);
+}
+
+.exm-dashboard-tab-active::after {
+  position: absolute;
+  right: 46px;
+  bottom: 0;
+  left: 54px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--exm-pink);
+  content: "";
+}
+.exm-tab-icon {
+  display: grid;
+  width: 33px;
+  height: 33px;
+  place-items: center;
+  border-radius: 9px;
+  background: #f0f2f5;
+  color: #4e5969;
+}
+
+.exm-tab-icon-active {
+  background: linear-gradient(145deg, #fb2777, #ef0060);
+  color: #ffffff;
+  box-shadow: 0 5px 10px rgba(246, 28, 110, 0.18);
+}
+
+.exm-tab-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exm-tab-label {
+  white-space: nowrap;
+}
+
+/* Floating Action Button */
+
+.exm-company-page .exm-floating-controls {
+  right: 31px;
+  bottom: 28px;
+}
+
+.exm-company-page .exm-scroll-top {
+  width: 40px;
+  height: 40px;
+}
+
+.exm-company-page .exm-floating-home {
+  width: 45px;
+  height: 45px;
+}
+
+.exm-floating-controls {
+  position: fixed;
+  z-index: 30;
+  right: 34px;
+  bottom: 35px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.exm-scroll-top,
+.exm-floating-home {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.exm-scroll-top {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e1e5e9;
+  background: #ffffff;
+  color: #778295;
+  box-shadow: 0 4px 10px rgba(28, 39, 53, 0.08);
+}
+
+.exm-floating-home {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(145deg, #fb1b74, #ed0061);
+  color: #ffffff !important;
+  box-shadow: 0 12px 21px rgba(232, 0, 91, 0.2);
+}
+
+.exm-up-icon,
+.exm-floating-home-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.exm-setup-tab:focus-visible,
+.exm-back-link:focus-visible,
+.exm-home-crumb:focus-visible,
+.exm-setup-crumb:focus-visible,
+.exm-icon-button:focus-visible,
+.exm-tab-collapse:focus-visible,
+.exm-card-action:focus-visible,
+.exm-explore-link:focus-visible,
+.exm-scroll-top:focus-visible,
+.exm-floating-home:focus-visible {
+  outline: 3px solid rgba(247, 34, 115, 0.24);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .exm-company-page .exm-floating-controls {
+    right: 14px;
+    bottom: 16px;
+  }
+}
+
+.exm-reqana-root {
+  min-block-size: 100%;
+}
+
+.exm-reqana-page {
+  font-size: clamp(0.875rem, 0.3vw + 0.8rem, 0.95rem);
+  min-block-size: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background: #ffffff;
+  color: #142238;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-reqana-page,
+.exm-reqana-page * {
+  box-sizing: border-box;
+}
+
+.exm-reqana-svg-library {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+}
+
+.exm-reqana-shell {
+  inline-size: min(100%, 82rem);
+  margin-inline: auto;
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(0.75rem, 2.5vw, 1.25rem)
+    clamp(2.5rem, 6vw, 4rem);
+}
+
+.exm-reqana-header {
+  margin-block-end: clamp(1.1rem, 2.2vw, 1.5rem);
+}
+
+.exm-reqana-title {
+  margin: 0;
+  color: #07152a;
+  font-size: clamp(1.3rem, 2.1vw, 1.6rem);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.exm-reqana-subtitle {
+  margin: 0.3rem 0 0;
+  color: #35445b;
+  font-size: clamp(0.82rem, 1.2vw, 0.95rem);
+  font-weight: 550;
+}
+
+.exm-reqana-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.65rem, 1.2vw, 1rem);
+  margin-block-end: clamp(1rem, 2.2vw, 1.5rem);
+}
+
+.exm-reqana-summary-card {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: clamp(0.55rem, 1vw, 0.75rem);
+  padding: clamp(0.85rem, 1.6vw, 1.2rem);
+  border: 0.125rem solid;
+  border-radius: clamp(0.55rem, 1vw, 0.7rem);
+}
+
+.exm-reqana-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.exm-reqana-summary-top h2 {
+  margin: 0;
+  color: #475469;
+  font-size: clamp(0.72rem, 1vw, 0.85rem);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.exm-reqana-summary-top svg {
+  inline-size: clamp(1rem, 1.8vw, 1.2rem);
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqana-currency-icon {
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.exm-reqana-summary-card > strong {
+  font-size: clamp(1.45rem, 2.5vw, 1.85rem);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.exm-reqana-summary-total {
+  border-color: #badcff;
+  background: #f4f9ff;
+  color: #1c60f0;
+}
+
+.exm-reqana-summary-rate {
+  border-color: #b7edca;
+  background: #f5fff8;
+  color: #00a640;
+}
+
+.exm-reqana-summary-average {
+  border-color: #e2c4f8;
+  background: #fdf9ff;
+  color: #9b19e9;
+}
+
+.exm-reqana-summary-pending {
+  border-color: #f5df78;
+  background: #fffdf4;
+  color: #e17300;
+}
+
+.exm-reqana-insights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.5vw, 1.2rem);
+  margin-block-end: clamp(1rem, 2.2vw, 1.5rem);
+}
+
+.exm-reqana-panel {
+  border: 0.0625rem solid #dfe3e8;
+  border-radius: clamp(0.55rem, 1vw, 0.7rem);
+  background: #ffffff;
+  box-shadow: 0 0.12rem 0.3rem rgba(20, 33, 54, 0.07);
+}
+
+.exm-reqana-panel > h2 {
+  margin: 0;
+  color: #0d1b30;
+  font-size: clamp(0.95rem, 1.4vw, 1.08rem);
+  font-weight: 850;
+}
+
+.exm-reqana-trend-panel,
+.exm-reqana-status-panel {
+  padding: clamp(1rem, 2.2vw, 1.75rem);
+}
+
+.exm-reqana-chart {
+  display: grid;
+  position: relative;
+  min-block-size: clamp(9.5rem, 19vw, 11.5rem);
+  margin-block-start: clamp(0.85rem, 1.5vw, 1.1rem);
+  align-items: end;
+}
+
+.exm-reqana-chart-grid {
+  display: grid;
+  position: absolute;
+  inset: 0 0 clamp(2.4rem, 4vw, 3rem);
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+
+.exm-reqana-chart-grid span {
+  border-block-end: 0.0625rem solid #f0f1f3;
+}
+
+.exm-reqana-months {
+  display: grid;
+  position: relative;
+  z-index: 1;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(0.15rem, 0.5vw, 0.3rem);
+}
+
+.exm-reqana-months div {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: clamp(0.7rem, 1.5vw, 1rem);
+  text-align: center;
+}
+
+.exm-reqana-months strong {
+  color: #17253b;
+  font-size: clamp(0.68rem, 1vw, 0.75rem);
+}
+
+.exm-reqana-months span {
+  color: #56647a;
+  font-size: clamp(0.58rem, 0.9vw, 0.68rem);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.exm-reqana-distribution {
+  display: flex;
+  margin-block-start: clamp(1rem, 1.8vw, 1.3rem);
+  flex-direction: column;
+  gap: clamp(0.8rem, 1.5vw, 1rem);
+}
+
+.exm-reqana-distribution-item {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.35rem, 0.7vw, 0.45rem);
+}
+
+.exm-reqana-distribution-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #1a283e;
+  font-size: clamp(0.78rem, 1.1vw, 0.85rem);
+  font-weight: 750;
+}
+
+.exm-reqana-progress {
+  overflow: hidden;
+  block-size: clamp(0.55rem, 1.2vw, 0.7rem);
+  border-radius: 999px;
+  background: #f0f1f4;
+}
+
+.exm-reqana-progress span {
+  display: block;
+  inline-size: 50%;
+  block-size: 100%;
+  border-radius: inherit;
+}
+
+.exm-reqana-progress-approved {
+  background: #08d47b;
+}
+
+.exm-reqana-progress-pending {
+  background: #ffc107;
+}
+
+.exm-reqana-type-panel {
+  padding: clamp(1rem, 2.2vw, 1.75rem);
+}
+
+.exm-reqana-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.6rem, 1.2vw, 0.85rem);
+  margin-block-start: clamp(0.8rem, 1.5vw, 1.1rem);
+}
+
+.exm-reqana-type-card {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6rem, 1.2vw, 0.8rem);
+  padding: clamp(0.65rem, 1.2vw, 0.85rem);
+  border-radius: clamp(0.6rem, 1.2vw, 0.8rem);
+  background: #f8f9fa;
+}
+
+.exm-reqana-type-icon {
+  display: grid;
+  inline-size: clamp(2.6rem, 4.5vw, 3.15rem);
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: clamp(0.55rem, 1vw, 0.75rem);
+  color: #ffffff;
+}
+
+.exm-reqana-type-icon-travel {
+  background: linear-gradient(145deg, #3285ff, #0757f8);
+}
+
+.exm-reqana-type-icon-advance {
+  background: linear-gradient(145deg, #b141f2, #9e12f2);
+}
+
+.exm-reqana-type-icon svg {
+  inline-size: 47%;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqana-type-card h3 {
+  margin: 0;
+  color: #0f1d32;
+  font-size: clamp(0.86rem, 1.3vw, 1rem);
+  font-weight: 800;
+}
+
+.exm-reqana-type-card p {
+  margin: 0.22rem 0 0;
+  color: #59677d;
+  font-size: clamp(0.72rem, 1vw, 0.82rem);
+  font-weight: 550;
+}
+
+.exm-reqana-home-button {
+  display: grid;
+  position: fixed;
+  z-index: 5;
+  inset-inline-end: clamp(-1rem, -0.8vw, -0.35rem);
+  inset-block-end: clamp(0.75rem, 4vh, 2rem);
+  inline-size: clamp(3rem, 4.5vw, 3.75rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7006d;
+  color: #ffffff;
+  box-shadow: 0 0.45rem 1rem rgba(247, 0, 109, 0.22);
+}
+
+.exm-reqana-home-button svg {
+  inline-size: 42%;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqana-home-button:focus-visible {
+  outline: 0.1875rem solid rgba(18, 99, 255, 0.45);
+  outline-offset: 0.125rem;
+}
+
+@media (max-width: 65rem) {
+  .exm-reqana-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 48rem) {
+  .exm-reqana-insights,
+  .exm-reqana-type-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 34rem) {
+  .exm-reqana-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .exm-reqana-trend-panel,
+  .exm-reqana-status-panel,
+  .exm-reqana-type-panel {
+    padding: clamp(0.8rem, 4vw, 1rem);
+  }
+
+  .exm-reqana-months span {
+    font-size: clamp(0.54rem, 2.2vw, 0.62rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exm-reqana-page * {
+    scroll-behavior: auto !important;
+  }
+}

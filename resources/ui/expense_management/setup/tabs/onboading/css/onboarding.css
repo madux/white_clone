@@ -1,0 +1,1237 @@
+.exm-main-content {
+  display: flex;
+}
+
+.overflow-x-scroll {
+  overflow-x: scroll;
+}
+
+.exm-breadcrumb-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  padding: 0 24px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e9ecf0;
+  background: #fafbfc;
+  color: #97a2b2;
+  font-size: 10px;
+}
+
+.exm-breadcrumb-left,
+.exm-breadcrumb-right,
+.exm-breadcrumb-home,
+.exm-sync-copy,
+.exm-shortcut-copy {
+  display: flex;
+  align-items: center;
+}
+
+.exm-breadcrumb-left {
+  gap: 9px;
+}
+
+.exm-breadcrumb-right {
+  gap: 12px;
+}
+
+.exm-breadcrumb-icon,
+.exm-sync-icon,
+.exm-shortcut-key-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-icon {
+  color: #aab3c0;
+}
+
+.exm-breadcrumb-separator {
+  width: 1px;
+  height: 16px;
+  background: #dfe3e8;
+}
+
+.exm-breadcrumb-home {
+  gap: 3px;
+  color: #8b96a7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.exm-breadcrumb-home-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-chevron {
+  width: 8px;
+  height: 8px;
+}
+
+.exm-breadcrumb-current {
+  color: #101a2b;
+  font-size: 10px;
+}
+
+.exm-sync-copy,
+.exm-shortcut-copy {
+  gap: 4px;
+  font-weight: 650;
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tab {
+  position: relative;
+  display: flex;
+  height: 55px;
+  padding: 0 17px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #465162;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.exm-dashboard-tab-active {
+  min-width: 158px;
+  background: #ffffff;
+  color: #07162b;
+  box-shadow: 0 4px 12px rgba(32, 42, 54, 0.11);
+}
+
+.exm-dashboard-tab-active::after {
+  position: absolute;
+  right: 46px;
+  bottom: 0;
+  left: 54px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--exm-pink);
+  content: "";
+}
+.exm-tab-icon {
+  display: grid;
+  width: 33px;
+  height: 33px;
+  place-items: center;
+  border-radius: 9px;
+  background: #f0f2f5;
+  color: #4e5969;
+}
+
+.exm-tab-icon-active {
+  background: linear-gradient(145deg, #fb2777, #ef0060);
+  color: #ffffff;
+  box-shadow: 0 5px 10px rgba(246, 28, 110, 0.18);
+}
+
+.exm-tab-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exm-tab-label {
+  white-space: nowrap;
+}
+
+/* Floating Action Button */
+
+.exm-company-page .exm-floating-controls {
+  right: 31px;
+  bottom: 28px;
+}
+
+.exm-company-page .exm-scroll-top {
+  width: 40px;
+  height: 40px;
+}
+
+.exm-company-page .exm-floating-home {
+  width: 45px;
+  height: 45px;
+}
+
+.exm-floating-controls {
+  position: fixed;
+  z-index: 30;
+  right: 34px;
+  bottom: 35px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.exm-scroll-top,
+.exm-floating-home {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.exm-scroll-top {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e1e5e9;
+  background: #ffffff;
+  color: #778295;
+  box-shadow: 0 4px 10px rgba(28, 39, 53, 0.08);
+}
+
+.exm-floating-home {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(145deg, #fb1b74, #ed0061);
+  color: #ffffff !important;
+  box-shadow: 0 12px 21px rgba(232, 0, 91, 0.2);
+}
+
+.exm-up-icon,
+.exm-floating-home-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.exm-setup-tab:focus-visible,
+.exm-back-link:focus-visible,
+.exm-home-crumb:focus-visible,
+.exm-setup-crumb:focus-visible,
+.exm-icon-button:focus-visible,
+.exm-tab-collapse:focus-visible,
+.exm-card-action:focus-visible,
+.exm-explore-link:focus-visible,
+.exm-scroll-top:focus-visible,
+.exm-floating-home:focus-visible {
+  outline: 3px solid rgba(247, 34, 115, 0.24);
+  outline-offset: 3px;
+}
+
+.exm-uo-page {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background: #ffffff;
+  color: #071329;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-uo-page *,
+.exm-uo-page *::before,
+.exm-uo-page *::after {
+  box-sizing: border-box;
+}
+
+.exm-uo-page-header {
+  position: relative;
+  z-index: 10;
+  background: #ffffff;
+}
+
+.exm-uo-utility-bar {
+  display: flex;
+  height: 43px;
+  padding: 0 9px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8ebef;
+  background: #fafbfc;
+  color: #929dab;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.exm-uo-utility-left,
+.exm-uo-utility-right,
+.exm-uo-back-link,
+.exm-uo-breadcrumb,
+.exm-uo-home-crumb,
+.exm-uo-sync-status,
+.exm-uo-shortcuts-label {
+  display: flex;
+  align-items: center;
+}
+
+.exm-uo-utility-left {
+  min-width: 0;
+  gap: 12px;
+}
+
+.exm-uo-utility-right {
+  flex: 0 0 auto;
+  gap: 13px;
+}
+
+.exm-uo-back-link {
+  gap: 7px;
+  color: #465267;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exm-uo-utility-icon,
+.exm-uo-clock-icon,
+.exm-uo-sync-icon,
+.exm-uo-refresh-icon,
+.exm-uo-keyboard-icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-clock-icon {
+  margin-left: 19px;
+}
+
+.exm-uo-divider {
+  width: 1px;
+  height: 25px;
+  flex: 0 0 1px;
+  background: #dfe3e7;
+}
+
+.exm-uo-breadcrumb {
+  min-width: 0;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.exm-uo-home-crumb {
+  gap: 4px;
+  color: #9099a8;
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.exm-uo-home-icon {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-crumb-arrow {
+  width: 12px;
+  height: 12px;
+  color: #c7ccd3;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-setup-crumb {
+  color: #687385;
+  font-size: 18px;
+  text-decoration: none;
+}
+
+.exm-uo-current-crumb {
+  color: #101827;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.exm-uo-sync-status,
+.exm-uo-shortcuts-label {
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.exm-uo-icon-button {
+  display: grid;
+  width: 25px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #909aa8;
+  cursor: pointer;
+}
+
+.exm-uo-tabs {
+  position: relative;
+  display: flex;
+  height: 100px;
+  padding: 10px 28px;
+  align-items: center;
+  gap: 19px;
+  border-bottom: 1px solid #e8eaed;
+  background: #ffffff;
+  box-shadow: 0 4px 9px rgba(20, 31, 47, 0.06);
+}
+
+.exm-uo-tab {
+  position: relative;
+  display: flex;
+  height: 74px;
+  padding: 0 10px;
+  align-items: center;
+  gap: 14px;
+  border-radius: 17px;
+  color: #465164;
+  font-size: 20px;
+  font-weight: 850;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exm-uo-tab-active {
+  min-width: 201px;
+  padding: 0 25px;
+  justify-content: center;
+  color: #101827;
+  background: #ffffff;
+  box-shadow: 0 5px 12px rgba(24, 35, 50, 0.12);
+}
+
+.exm-uo-tab-active::after {
+  position: absolute;
+  right: 72px;
+  bottom: 0;
+  left: 72px;
+  height: 4px;
+  border-radius: 8px;
+  background: #f52278;
+  content: "";
+}
+
+.exm-uo-tab-icon {
+  display: grid;
+  width: 45px;
+  height: 45px;
+  flex: 0 0 45px;
+  place-items: center;
+  border-radius: 11px;
+  background: #f1f3f6;
+  color: #4f5b6c;
+}
+
+.exm-uo-tab-icon-active {
+  background: linear-gradient(145deg, #fb2c7e, #ed0062);
+  color: #ffffff;
+  box-shadow: 0 7px 13px rgba(245, 27, 109, 0.22);
+}
+
+.exm-uo-pulse-icon,
+.exm-uo-settings-icon,
+.exm-uo-shield-icon,
+.exm-uo-users-icon {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-tab-collapse {
+  position: absolute;
+  top: 12px;
+  right: 0;
+  display: grid;
+  width: 51px;
+  height: 64px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 23px 0 0 23px;
+  background: linear-gradient(145deg, #fa2a79, #ee0060);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.exm-uo-collapse-icon {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
+}
+
+.exm-uo-main {
+  min-height: calc(100vh - 143px);
+  padding: 70px 16px 68px;
+  background: #ffffff;
+}
+
+.exm-uo-intro {
+  display: flex;
+  min-height: 70px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.exm-uo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.exm-uo-people {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.exm-uo-title {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
+
+.exm-uo-subtitle {
+  margin: 3px 0 0;
+  color: #405068;
+  font-size: 17px;
+}
+
+.exm-uo-invite-button {
+  display: flex;
+  min-width: 201px;
+  height: 45px;
+  padding: 0 19px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 10px;
+  background: #e83f96;
+  color: #ffffff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.exm-uo-invite-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-stats {
+  display: grid;
+  margin-top: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.exm-uo-stat-card {
+  display: flex;
+  min-height: 123px;
+  padding: 30px;
+  flex-direction: column;
+  border: 1px solid;
+  border-radius: 9px;
+  box-shadow: 0 2px 3px rgba(27, 39, 55, 0.04);
+}
+
+.exm-uo-stat-blue {
+  border-color: #bddcff;
+  background: #eff6ff;
+  color: #0844ce;
+}
+
+.exm-uo-stat-green {
+  border-color: #acefca;
+  background: #f0fff6;
+  color: #008b3d;
+}
+
+.exm-uo-stat-yellow {
+  border-color: #f3d976;
+  background: #fffbed;
+  color: #a84a00;
+}
+
+.exm-uo-stat-label {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.exm-uo-stat-value {
+  margin-top: 11px;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.exm-uo-checklist-card,
+.exm-uo-team-card {
+  margin-top: 28px;
+  border: 1px solid #dfe3e8;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 2px 3px rgba(27, 39, 55, 0.04);
+}
+
+.exm-uo-checklist-card {
+  padding: 40px 38px 39px;
+}
+
+.exm-uo-section-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.exm-uo-checklist {
+  display: flex;
+  margin-top: 20px;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.exm-uo-step {
+  display: flex;
+  min-height: 74px;
+  padding: 12px 15px;
+  align-items: center;
+  gap: 19px;
+  border: 1px solid #dfe3e8;
+  border-radius: 15px;
+  background: #f8f9fa;
+}
+
+.exm-uo-step-complete {
+  border-color: #afeccc;
+  background: #effdf5;
+}
+
+.exm-uo-step-pending {
+  border-color: #f4c2dc;
+}
+
+.exm-uo-step-number {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #d4d9e1;
+  color: #405069;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.exm-uo-step-number-complete {
+  background: #00c65a;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.exm-uo-step-copy {
+  min-width: 0;
+}
+
+.exm-uo-step-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.exm-uo-step-complete .exm-uo-step-title {
+  color: #006f32;
+}
+
+.exm-uo-step-description {
+  margin: 4px 0 0;
+  color: #4b5d75;
+  font-size: 14px;
+}
+
+.exm-uo-step-action {
+  display: inline-flex;
+  min-width: 123px;
+  height: 35px;
+  margin-left: auto;
+  padding: 0 13px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exm-uo-step-action-complete {
+  background: #dff9eb;
+  color: #007c38;
+}
+
+.exm-uo-step-action-pending {
+  background: #fff3f8;
+  color: #e10061;
+}
+
+.exm-uo-action-arrow {
+  font-size: 16px;
+}
+
+.exm-uo-team-card {
+  overflow: hidden;
+}
+
+.exm-uo-team-header {
+  display: flex;
+  height: 64px;
+  padding: 0 20px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.exm-uo-team-total {
+  color: #526177;
+  font-size: 13px;
+}
+
+.exm-uo-member-row {
+  display: flex;
+  min-height: 77px;
+  padding: 13px 24px;
+  align-items: center;
+  gap: 19px;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.exm-uo-member-row:last-child {
+  border-bottom: 0;
+}
+
+.exm-uo-avatar {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  flex: 0 0 43px;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #f52b81, #ee0062);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.exm-uo-member-copy {
+  min-width: 0;
+}
+
+.exm-uo-member-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.exm-uo-member-detail {
+  margin: 4px 0 0;
+  color: #435672;
+  font-size: 13px;
+}
+
+.exm-uo-member-badges {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  gap: 20px;
+}
+
+.exm-uo-role,
+.exm-uo-member-status {
+  display: inline-flex;
+  height: 30px;
+  padding: 0 13px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.exm-uo-role {
+  min-width: 85px;
+  border: 1px solid #dfe3e8;
+  background: #f8f9fa;
+  color: #38475e;
+}
+
+.exm-uo-role-admin {
+  border-color: #f5bfdc;
+  background: #fff3f8;
+  color: #d9005c;
+}
+
+.exm-uo-role-manager {
+  border-color: #e2c8ff;
+  background: #faf5ff;
+  color: #8200dc;
+}
+
+.exm-uo-member-status {
+  height: 25px;
+  padding: 0 11px;
+  background: #daf8e5;
+  color: #008a3b;
+}
+
+.exm-uo-training-card {
+  margin-top: 29px;
+  padding: 38px 39px 36px;
+  border: 2px solid #a9c2ff;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #eef3ff 0%, #f7f2ff 100%);
+}
+
+.exm-uo-training-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.exm-uo-training-icon-wrap {
+  display: grid;
+  width: 49px;
+  height: 49px;
+  flex: 0 0 49px;
+  place-items: center;
+  border-radius: 14px;
+  background: #6259ff;
+  color: #ffffff;
+}
+
+.exm-uo-training-icon {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-uo-training-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.exm-uo-training-progress {
+  height: 24px;
+  margin-left: auto;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: #e1e4ff;
+  color: #473bff;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 24px;
+}
+
+.exm-uo-training-track {
+  height: 7px;
+  margin: -15px 0 14px 64px;
+  overflow: hidden;
+  border: 1px solid #9db8ff;
+  border-radius: 5px;
+  background: #ffffff;
+}
+
+.exm-uo-training-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+}
+
+.exm-uo-resource-list {
+  margin-left: 64px;
+}
+
+.exm-uo-resource-row {
+  display: flex;
+  min-height: 37px;
+  align-items: center;
+  gap: 11px;
+  color: #3127f1;
+}
+
+.exm-uo-play-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.exm-uo-resource-name {
+  font-size: 17px;
+}
+
+.exm-uo-start-button {
+  width: 48px;
+  height: 29px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #6157ff;
+  color: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.exm-uo-floating-controls {
+  position: fixed;
+  z-index: 30;
+  right: 12px;
+  bottom: 29px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.exm-uo-scroll-top,
+.exm-uo-floating-home {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  text-decoration: none;
+}
+
+.exm-uo-scroll-top {
+  width: 47px;
+  height: 47px;
+  border: 3px solid #e1e5e9;
+  background: #ffffff;
+  color: #778295;
+  box-shadow: 0 4px 10px rgba(28, 39, 53, 0.08);
+}
+
+.exm-uo-floating-home {
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(145deg, #fb1b74, #ed0061);
+  color: #ffffff;
+  box-shadow: 0 12px 21px rgba(232, 0, 91, 0.2);
+}
+
+.exm-uo-up-icon,
+.exm-uo-floating-home-icon {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.exm-uo-back-link:focus-visible,
+.exm-uo-home-crumb:focus-visible,
+.exm-uo-setup-crumb:focus-visible,
+.exm-uo-icon-button:focus-visible,
+.exm-uo-tab:focus-visible,
+.exm-uo-tab-collapse:focus-visible,
+.exm-uo-invite-button:focus-visible,
+.exm-uo-step-action:focus-visible,
+.exm-uo-start-button:focus-visible,
+.exm-uo-scroll-top:focus-visible,
+.exm-uo-floating-home:focus-visible {
+  outline: 3px solid rgba(247, 34, 115, 0.24);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1100px) {
+  .exm-uo-utility-right {
+    display: none;
+  }
+
+  .exm-uo-tabs {
+    padding-right: 60px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .exm-uo-tab-collapse {
+    position: fixed;
+    top: 55px;
+  }
+}
+
+@media (max-width: 760px) {
+  .exm-uo-utility-bar {
+    height: 54px;
+    padding: 0 14px;
+  }
+
+  .exm-uo-clock-icon,
+  .exm-uo-utility-left > .exm-uo-divider,
+  .exm-uo-home-crumb,
+  .exm-uo-crumb-arrow,
+  .exm-uo-setup-crumb {
+    display: none;
+  }
+
+  .exm-uo-current-crumb {
+    margin-left: 8px;
+  }
+
+  .exm-uo-tabs {
+    height: 82px;
+    padding: 7px 50px 7px 10px;
+    gap: 5px;
+  }
+
+  .exm-uo-tab {
+    height: 66px;
+    padding: 0 11px;
+    gap: 9px;
+    font-size: 16px;
+  }
+
+  .exm-uo-tab-active {
+    min-width: 170px;
+  }
+
+  .exm-uo-tab-icon {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+
+  .exm-uo-tab-collapse {
+    top: 65px;
+    height: 57px;
+  }
+
+  .exm-uo-main {
+    padding: 42px 14px 68px;
+  }
+
+  .exm-uo-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .exm-uo-stat-card {
+    min-height: 91px;
+    padding: 22px;
+  }
+
+  .exm-uo-checklist-card {
+    padding: 28px 20px;
+  }
+
+  .exm-uo-step {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .exm-uo-step-copy {
+    width: calc(100% - 58px);
+  }
+
+  .exm-uo-step-action {
+    margin-left: 57px;
+  }
+
+  .exm-uo-member-row {
+    position: relative;
+    min-height: 98px;
+    padding: 15px 17px;
+    align-items: flex-start;
+  }
+
+  .exm-uo-member-copy {
+    padding-right: 55px;
+  }
+
+  .exm-uo-member-detail {
+    overflow-wrap: anywhere;
+  }
+
+  .exm-uo-member-badges {
+    position: absolute;
+    right: 14px;
+    bottom: 10px;
+    gap: 8px;
+  }
+
+  .exm-uo-training-card {
+    padding: 28px 20px;
+  }
+
+  .exm-uo-training-track,
+  .exm-uo-resource-list {
+    margin-left: 0;
+  }
+
+  .exm-uo-training-track {
+    margin-top: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .exm-uo-back-label {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .exm-uo-current-crumb {
+    display: none;
+  }
+
+  .exm-uo-intro {
+    min-height: 133px;
+    flex-direction: column;
+    gap: 17px;
+  }
+
+  .exm-uo-title {
+    font-size: 22px;
+  }
+
+  .exm-uo-subtitle {
+    font-size: 15px;
+  }
+
+  .exm-uo-invite-button {
+    width: 100%;
+  }
+
+  .exm-uo-step-description {
+    font-size: 13px;
+  }
+
+  .exm-uo-team-header {
+    padding: 0 15px;
+  }
+
+  .exm-uo-member-row {
+    gap: 12px;
+  }
+
+  .exm-uo-member-copy {
+    padding-right: 0;
+  }
+
+  .exm-uo-member-name {
+    font-size: 15px;
+  }
+
+  .exm-uo-member-badges {
+    position: static;
+    margin-left: auto;
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .exm-uo-role {
+    min-width: 72px;
+    height: 27px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .exm-uo-member-status {
+    font-size: 11px;
+  }
+
+  .exm-uo-training-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .exm-uo-training-progress {
+    margin-left: 0;
+  }
+
+  .exm-uo-resource-row {
+    min-height: 48px;
+  }
+
+  .exm-uo-resource-name {
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exm-uo-page *,
+  .exm-uo-page *::before,
+  .exm-uo-page *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .exm-company-page .exm-floating-controls {
+    right: 14px;
+    bottom: 16px;
+  }
+}

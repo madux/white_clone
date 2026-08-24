@@ -1,0 +1,1135 @@
+.exm-main-content {
+  display: flex;
+}
+
+* {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+.overflow-x-scroll {
+  overflow-x: scroll;
+}
+.exm-breadcrumb-bar {
+  display: flex;
+  width: 100%;
+  height: 34px;
+  padding: 0 24px;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e9ecf0;
+  background: #fafbfc;
+  color: #97a2b2;
+  font-size: 10px;
+}
+
+.exm-breadcrumb-left,
+.exm-breadcrumb-right,
+.exm-breadcrumb-home,
+.exm-sync-copy,
+.exm-shortcut-copy {
+  display: flex;
+  align-items: center;
+}
+
+.exm-breadcrumb-left {
+  gap: 9px;
+}
+
+.exm-breadcrumb-right {
+  gap: 12px;
+}
+
+.exm-breadcrumb-icon,
+.exm-sync-icon,
+.exm-shortcut-key-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-icon {
+  color: #aab3c0;
+}
+
+.exm-breadcrumb-separator {
+  width: 1px;
+  height: 16px;
+  background: #dfe3e8;
+}
+
+.exm-breadcrumb-home {
+  gap: 3px;
+  color: #8b96a7;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.exm-breadcrumb-home-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.exm-breadcrumb-chevron {
+  width: 8px;
+  height: 8px;
+}
+
+.exm-breadcrumb-current {
+  color: #101a2b;
+  font-size: 10px;
+}
+
+.exm-sync-copy,
+.exm-shortcut-copy {
+  gap: 4px;
+  font-weight: 650;
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tabs {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 73px;
+  padding: 7px 18px;
+  align-items: center;
+  gap: 13px;
+  box-sizing: border-box;
+  border-bottom: 1px solid #e6e9ed;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(24, 34, 46, 0.05);
+}
+
+.exm-dashboard-tab {
+  position: relative;
+  display: flex;
+  height: 55px;
+  padding: 0 17px;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #465162;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.exm-dashboard-tab-active {
+  min-width: 158px;
+  background: #ffffff;
+  color: #07162b;
+  box-shadow: 0 4px 12px rgba(32, 42, 54, 0.11);
+}
+
+.exm-dashboard-tab-active::after {
+  position: absolute;
+  right: 46px;
+  bottom: 0;
+  left: 54px;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--exm-pink);
+  content: "";
+}
+.exm-tab-icon {
+  display: grid;
+  width: 33px;
+  height: 33px;
+  place-items: center;
+  border-radius: 9px;
+  background: #f0f2f5;
+  color: #4e5969;
+}
+
+.exm-tab-icon-active {
+  background: linear-gradient(145deg, #fb2777, #ef0060);
+  color: #ffffff;
+  box-shadow: 0 5px 10px rgba(246, 28, 110, 0.18);
+}
+
+.exm-tab-svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exm-tab-label {
+  white-space: nowrap;
+}
+
+/* Floating Action Button */
+
+.exm-company-page .exm-floating-controls {
+  right: 31px;
+  bottom: 28px;
+}
+
+.exm-company-page .exm-scroll-top {
+  width: 40px;
+  height: 40px;
+}
+
+.exm-company-page .exm-floating-home {
+  width: 45px;
+  height: 45px;
+}
+
+.exm-floating-controls {
+  position: fixed;
+  z-index: 30;
+  right: 34px;
+  bottom: 35px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.exm-scroll-top,
+.exm-floating-home {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.exm-scroll-top {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e1e5e9;
+  background: #ffffff;
+  color: #778295;
+  box-shadow: 0 4px 10px rgba(28, 39, 53, 0.08);
+}
+
+.exm-floating-home {
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(145deg, #fb1b74, #ed0061);
+  color: #ffffff !important;
+  box-shadow: 0 12px 21px rgba(232, 0, 91, 0.2);
+}
+
+.exm-up-icon,
+.exm-floating-home-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.exm-setup-tab:focus-visible,
+.exm-back-link:focus-visible,
+.exm-home-crumb:focus-visible,
+.exm-setup-crumb:focus-visible,
+.exm-icon-button:focus-visible,
+.exm-tab-collapse:focus-visible,
+.exm-card-action:focus-visible,
+.exm-explore-link:focus-visible,
+.exm-scroll-top:focus-visible,
+.exm-floating-home:focus-visible {
+  outline: 3px solid rgba(247, 34, 115, 0.24);
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .exm-company-page .exm-floating-controls {
+    right: 14px;
+    bottom: 16px;
+  }
+}
+
+.exm-reqmgt-root {
+  min-block-size: 100%;
+}
+
+.exm-reqmgt-page {
+  min-block-size: 100dvh;
+  margin: 0;
+  background: #ffffff;
+  color: #122038;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-reqmgt-page,
+.exm-reqmgt-page * {
+  box-sizing: border-box;
+}
+
+.exm-reqmgt-svg-library {
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
+}
+
+.exm-reqmgt-view-radio {
+  position: fixed;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.exm-reqmgt-shell {
+  inline-size: min(100%, 96rem);
+  margin-inline: auto;
+  padding: clamp(2rem, 5vw, 3.25rem) clamp(0.75rem, 3vw, 1.5rem)
+    clamp(4rem, 8vw, 6rem);
+}
+
+.exm-reqmgt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-block-end: clamp(1.7rem, 3vw, 2rem);
+}
+
+.exm-reqmgt-heading-group {
+  min-inline-size: 0;
+}
+
+.exm-reqmgt-title {
+  margin: 0;
+  color: #07152a;
+  font-size: clamp(1.5rem, 2.6vw, 1.85rem);
+  font-weight: 850;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.exm-reqmgt-subtitle {
+  margin: 0.45rem 0 0;
+  color: #35445b;
+  font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+  font-weight: 550;
+}
+
+.exm-reqmgt-new-button,
+.exm-reqmgt-export-button {
+  display: inline-flex;
+  min-block-size: 3.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding-inline: clamp(1rem, 2.5vw, 1.5rem);
+  border-radius: 0.75rem;
+  font: inherit;
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.exm-reqmgt-new-button {
+  border: 2px solid #e83f91;
+  background: #e83f91;
+  color: #ffffff;
+  box-shadow: 0 0.3rem 0.8rem rgba(222, 45, 133, 0.13);
+}
+
+.exm-reqmgt-new-button svg,
+.exm-reqmgt-export-button svg {
+  inline-size: 1.25rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.75rem, 1.3vw, 1rem);
+  margin-block-end: clamp(1.65rem, 3vw, 2rem);
+}
+
+.exm-reqmgt-summary-card {
+  display: flex;
+  min-block-size: clamp(7.25rem, 13vw, 7.75rem);
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: clamp(1rem, 2vw, 1.3rem);
+  border: 2px solid;
+  border-radius: 0.7rem;
+}
+
+.exm-reqmgt-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.exm-reqmgt-summary-top h2 {
+  margin: 0;
+  color: #36465d;
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.exm-reqmgt-summary-top svg {
+  inline-size: 1.2rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-summary-card strong {
+  font-size: clamp(1.65rem, 3vw, 2rem);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.exm-reqmgt-summary-total {
+  border-color: #b7d8ff;
+  background: #f3f8ff;
+  color: #1765f2;
+}
+
+.exm-reqmgt-summary-pending {
+  border-color: #ffda45;
+  background: #fffdf3;
+  color: #df9600;
+}
+
+.exm-reqmgt-summary-approved {
+  border-color: #a8eec5;
+  background: #f3fff8;
+  color: #00ad49;
+}
+
+.exm-reqmgt-summary-rejected {
+  border-color: #ffc0c0;
+  background: #fff6f6;
+  color: #ec0000;
+}
+
+.exm-reqmgt-controls {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.65rem, 1.2vw, 1rem);
+  margin-block-end: clamp(1.6rem, 3vw, 1.8rem);
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid #dde1e6;
+  border-radius: 0.7rem;
+  background: #ffffff;
+  box-shadow: 0 0.12rem 0.3rem rgba(20, 33, 54, 0.08);
+}
+
+.exm-reqmgt-view-switch {
+  display: flex;
+  flex: 0 0 auto;
+  padding: 0.25rem;
+  border-radius: 0.7rem;
+  background: #f1f1f3;
+}
+
+.exm-reqmgt-view-label {
+  display: inline-flex;
+  min-block-size: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-inline: 0.75rem;
+  border-radius: 0.55rem;
+  color: #626e82;
+  font-size: clamp(0.82rem, 1.3vw, 0.95rem);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.exm-reqmgt-view-label svg {
+  inline-size: 1.1rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+#exm-reqmgt-view-default:checked
+  ~ .exm-reqmgt-shell
+  .exm-reqmgt-view-label-default,
+#exm-reqmgt-view-table:checked ~ .exm-reqmgt-shell .exm-reqmgt-view-label-table,
+#exm-reqmgt-view-card:checked ~ .exm-reqmgt-shell .exm-reqmgt-view-label-card {
+  background: #ffffff;
+  color: #ec0072;
+  box-shadow: 0 0.12rem 0.3rem rgba(20, 33, 54, 0.1);
+}
+
+#exm-reqmgt-view-default:focus-visible
+  ~ .exm-reqmgt-shell
+  .exm-reqmgt-view-label-default,
+#exm-reqmgt-view-table:focus-visible
+  ~ .exm-reqmgt-shell
+  .exm-reqmgt-view-label-table,
+#exm-reqmgt-view-card:focus-visible
+  ~ .exm-reqmgt-shell
+  .exm-reqmgt-view-label-card {
+  outline: 3px solid rgba(18, 99, 255, 0.42);
+  outline-offset: 2px;
+}
+
+.exm-reqmgt-search {
+  display: flex;
+  min-inline-size: min(100%, 13rem);
+  min-block-size: 3.3rem;
+  flex: 1 1 25rem;
+  align-items: center;
+  gap: 0.8rem;
+  padding-inline: 1rem;
+  border: 2px solid #d1d6de;
+  border-radius: 0.65rem;
+  color: #95a0b1;
+}
+
+.exm-reqmgt-search:focus-within {
+  border-color: #ec3e91;
+  box-shadow: 0 0 0 0.18rem rgba(236, 62, 145, 0.12);
+}
+
+.exm-reqmgt-search svg {
+  inline-size: 1.25rem;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-search input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #122038;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.exm-reqmgt-search input::placeholder {
+  color: #929baa;
+  opacity: 1;
+}
+
+.exm-reqmgt-status-filter {
+  display: grid;
+  position: relative;
+  min-inline-size: 9.5rem;
+  min-block-size: 3.3rem;
+  align-items: center;
+  border: 2px solid #d1d6de;
+  border-radius: 0.65rem;
+  background: #ffffff;
+}
+
+.exm-reqmgt-status-filter select {
+  inline-size: 100%;
+  min-block-size: 3rem;
+  padding-inline: 1.25rem 2.7rem;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: #122038;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.exm-reqmgt-status-filter > svg {
+  position: absolute;
+  inset-inline-end: 0.8rem;
+  inline-size: 1.1rem;
+  aspect-ratio: 1;
+  pointer-events: none;
+  fill: none;
+  stroke: #26334a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-status-filter:focus-within {
+  border-color: #ec3e91;
+}
+
+.exm-reqmgt-export-button {
+  min-block-size: 3.3rem;
+  border: 2px solid #ec3e91;
+  background: #ffffff;
+  color: #e63d8e;
+}
+
+.exm-reqmgt-view-panel {
+  display: none;
+  overflow: hidden;
+  border: 1px solid #dfe3e8;
+  border-radius: 0.7rem;
+  background: #ffffff;
+  box-shadow: 0 0.12rem 0.32rem rgba(20, 33, 54, 0.08);
+}
+
+#exm-reqmgt-view-default:checked ~ .exm-reqmgt-shell .exm-reqmgt-default-panel,
+#exm-reqmgt-view-table:checked ~ .exm-reqmgt-shell .exm-reqmgt-table-panel,
+#exm-reqmgt-view-card:checked ~ .exm-reqmgt-shell .exm-reqmgt-card-panel {
+  display: block;
+}
+
+.exm-reqmgt-table-scroll {
+  overflow-x: auto;
+}
+
+.exm-reqmgt-default-table,
+.exm-reqmgt-compact-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  color: #0d1b30;
+}
+
+.exm-reqmgt-default-table {
+  min-inline-size: 75rem;
+}
+
+.exm-reqmgt-compact-table {
+  min-inline-size: 68rem;
+}
+
+.exm-reqmgt-default-table th,
+.exm-reqmgt-default-table td,
+.exm-reqmgt-compact-table th,
+.exm-reqmgt-compact-table td {
+  padding: 1rem clamp(0.65rem, 1.2vw, 1.15rem);
+  border-block-end: 1px solid #dfe3e8;
+  text-align: start;
+  vertical-align: middle;
+}
+
+.exm-reqmgt-default-table th,
+.exm-reqmgt-compact-table th {
+  background: #fbfbfc;
+  color: #29374c;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-default-table td {
+  font-size: clamp(0.9rem, 1.3vw, 1rem);
+}
+
+.exm-reqmgt-compact-table th,
+.exm-reqmgt-compact-table td {
+  padding-block: 0.7rem;
+}
+
+.exm-reqmgt-compact-table td {
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+
+.exm-reqmgt-default-table tbody tr:hover,
+.exm-reqmgt-compact-table tbody tr:hover {
+  background: #fffafd;
+}
+
+.exm-reqmgt-request-link {
+  color: #eb0073;
+  font-weight: 800;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-employee {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 550;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-avatar {
+  display: grid;
+  inline-size: 2.7rem;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0e3e8;
+  color: #596579;
+}
+
+.exm-reqmgt-avatar svg {
+  inline-size: 1.2rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #d4adff;
+  border-radius: 999px;
+  background: #f7eaff;
+  color: #8600e8;
+  font-size: 0.85rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.exm-reqmgt-amount {
+  font-weight: 800 !important;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-purpose {
+  display: inline-block;
+  max-inline-size: 21rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-status {
+  display: inline-flex;
+  min-block-size: 2rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-status-pending {
+  border-color: #ffca00;
+  background: #fff6cc;
+  color: #a36500;
+}
+
+.exm-reqmgt-status-approved {
+  border-color: #6ce697;
+  background: #dcffea;
+  color: #008c34;
+}
+
+.exm-reqmgt-date {
+  color: #29394f;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.exm-reqmgt-icon-button {
+  display: grid;
+  inline-size: 2.55rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid;
+  border-radius: 0.65rem;
+  cursor: pointer;
+}
+
+.exm-reqmgt-compact-table .exm-reqmgt-icon-button {
+  inline-size: 1.8rem;
+  border-radius: 0.4rem;
+}
+
+.exm-reqmgt-icon-button svg {
+  inline-size: 1.25rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-compact-table .exm-reqmgt-icon-button svg {
+  inline-size: 1rem;
+}
+
+.exm-reqmgt-approve {
+  border-color: #afeeca;
+  background: #effff5;
+  color: #00a94a;
+}
+
+.exm-reqmgt-reject {
+  border-color: #ffc3c3;
+  background: #fff3f3;
+  color: #f00014;
+}
+
+.exm-reqmgt-view {
+  border-color: #b9d8ff;
+  background: #eff6ff;
+  color: #0962ff;
+}
+
+.exm-reqmgt-pagination {
+  display: flex;
+  min-block-size: 4.5rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.exm-reqmgt-pagination p {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-pagination label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #8b94a7;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.exm-reqmgt-pagination select {
+  min-block-size: 2.7rem;
+  padding-inline: 1rem 2rem;
+  border: 2px solid #e0e4e9;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  color: #26344a;
+  font: inherit;
+  font-weight: 750;
+}
+
+.exm-reqmgt-pagination nav {
+  display: flex;
+  margin-inline-start: auto;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.exm-reqmgt-pagination nav button {
+  display: grid;
+  min-inline-size: 2.4rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: #49576b;
+  font: inherit;
+  font-weight: 750;
+}
+
+.exm-reqmgt-pagination nav button:disabled {
+  color: #d9dde4;
+}
+
+.exm-reqmgt-pagination nav .exm-reqmgt-current-page {
+  background: #fa2d89;
+  color: #ffffff;
+}
+
+.exm-reqmgt-card-panel {
+  border-inline: 0;
+  border-block-end: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.exm-reqmgt-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+  gap: 1.25rem;
+  padding: 0.3rem 0.2rem 1.7rem;
+  border-block-end: 1px solid #e0e3e8;
+}
+
+.exm-reqmgt-request-card {
+  display: flex;
+  min-block-size: 18rem;
+  flex-direction: column;
+  padding: clamp(1.25rem, 3vw, 1.7rem);
+  border: 2px solid #dfe3e8;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.exm-reqmgt-card-top,
+.exm-reqmgt-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.exm-reqmgt-request-card h2 {
+  margin: 1.25rem 0 0.45rem;
+  color: #1b2940;
+  font-size: 0.95rem;
+}
+
+.exm-reqmgt-request-card > p {
+  margin: 0;
+  color: #536177;
+  font-size: 0.9rem;
+}
+
+.exm-reqmgt-card-meta {
+  margin-block-start: 1.25rem;
+}
+
+.exm-reqmgt-card-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #435269;
+  font-size: 0.9rem;
+}
+
+.exm-reqmgt-card-meta svg {
+  inline-size: 1rem;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: #94a0b2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-card-meta strong {
+  font-size: 1.1rem;
+}
+
+.exm-reqmgt-request-card time {
+  margin-block: 1rem;
+  color: #909bad;
+  font-size: 0.85rem;
+}
+
+.exm-reqmgt-card-actions {
+  display: flex;
+  margin-block-start: auto;
+  gap: 0.65rem;
+}
+
+.exm-reqmgt-card-actions button {
+  min-block-size: 2.55rem;
+  flex: 1;
+  padding-inline: 0.7rem;
+  border: 1px solid;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.exm-reqmgt-card-approve {
+  border-color: #acebc7 !important;
+  background: #f0fff6 !important;
+  color: #009b3c;
+}
+
+.exm-reqmgt-card-reject {
+  border-color: #ffc0c0 !important;
+  background: #fff3f3 !important;
+  color: #e60012;
+}
+
+.exm-reqmgt-card-view {
+  border-color: #b7d5ff !important;
+  background: #eff6ff !important;
+  color: #075dff;
+}
+
+.exm-reqmgt-home-button {
+  display: grid;
+  position: fixed;
+  z-index: 5;
+  inset-inline-end: clamp(-1.4rem, -1vw, -0.5rem);
+  inset-block-end: clamp(1rem, 5vh, 3rem);
+  inline-size: clamp(3.8rem, 5vw, 4.5rem);
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: #f7006d;
+  color: #ffffff;
+  box-shadow: 0 0.45rem 1rem rgba(247, 0, 109, 0.22);
+}
+
+.exm-reqmgt-home-button svg {
+  inline-size: 42%;
+  aspect-ratio: 1;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-reqmgt-visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.exm-reqmgt-new-button:hover,
+.exm-reqmgt-export-button:hover,
+.exm-reqmgt-icon-button:hover,
+.exm-reqmgt-card-actions button:hover {
+  filter: brightness(0.97);
+}
+
+.exm-reqmgt-new-button:focus-visible,
+.exm-reqmgt-export-button:focus-visible,
+.exm-reqmgt-icon-button:focus-visible,
+.exm-reqmgt-card-actions button:focus-visible,
+.exm-reqmgt-home-button:focus-visible,
+.exm-reqmgt-pagination button:focus-visible,
+.exm-reqmgt-pagination select:focus-visible {
+  outline: 3px solid rgba(18, 99, 255, 0.42);
+  outline-offset: 2px;
+}
+
+@media (max-width: 67rem) {
+  .exm-reqmgt-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .exm-reqmgt-controls {
+    flex-wrap: wrap;
+  }
+
+  .exm-reqmgt-search {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 43rem) {
+  .exm-reqmgt-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .exm-reqmgt-new-button {
+    align-self: flex-start;
+  }
+
+  .exm-reqmgt-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .exm-reqmgt-summary-card {
+    min-block-size: 6.5rem;
+  }
+
+  .exm-reqmgt-view-switch {
+    inline-size: 100%;
+  }
+
+  .exm-reqmgt-view-label {
+    flex: 1;
+    padding-inline: 0.35rem;
+  }
+
+  .exm-reqmgt-status-filter,
+  .exm-reqmgt-export-button {
+    flex: 1 1 45%;
+  }
+
+  .exm-reqmgt-pagination {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .exm-reqmgt-pagination nav {
+    inline-size: 100%;
+    margin-inline-start: 0;
+    justify-content: center;
+  }
+
+  .exm-reqmgt-card-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 25rem) {
+  .exm-reqmgt-view-label {
+    gap: 0.3rem;
+    font-size: 0.75rem;
+  }
+
+  .exm-reqmgt-status-filter,
+  .exm-reqmgt-export-button {
+    flex-basis: 100%;
+  }
+
+  .exm-reqmgt-pagination label {
+    inline-size: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exm-reqmgt-page * {
+    scroll-behavior: auto !important;
+  }
+}

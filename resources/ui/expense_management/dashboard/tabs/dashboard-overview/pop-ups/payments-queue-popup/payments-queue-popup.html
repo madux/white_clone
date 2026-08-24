@@ -1,0 +1,88 @@
+<!-- Payments Queue popup component -->
+<div class="pqp-backdrop" id="payments-queue-popup" aria-hidden="true">
+  <section
+    class="pqp-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pqp-title"
+  >
+    <header class="pqp-header">
+      <div>
+        <h2 id="pqp-title">Payments Queue</h2>
+        <p>₦366K — 4 claims</p>
+      </div>
+      <button
+        class="pqp-close"
+        type="button"
+        data-payments-popup-close
+        aria-label="Close payments queue"
+      >
+        <span aria-hidden="true"></span>
+      </button>
+    </header>
+
+    <div class="pqp-list">
+      <a class="pqp-row" href="#">
+        <span class="pqp-main"
+          ><span class="pqp-title-line"
+            ><strong>CLM-2026-002</strong
+            ><span class="pqp-status">Ready to Pay</span></span
+          ><small>Employee</small></span
+        >
+        <span class="pqp-meta"
+          ><strong>₦75K</strong
+          ><svg class="pqp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path></svg
+        ></span>
+      </a>
+      <a class="pqp-row pqp-row-active" href="#">
+        <span class="pqp-main"
+          ><span class="pqp-title-line"
+            ><strong>CLM-2026-006</strong
+            ><span class="pqp-status">Ready to Pay</span></span
+          ><small>Employee</small></span
+        >
+        <span class="pqp-meta"
+          ><strong>₦28K</strong
+          ><svg class="pqp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path></svg
+        ></span>
+      </a>
+      <a class="pqp-row" href="#">
+        <span class="pqp-main"
+          ><span class="pqp-title-line"
+            ><strong>CLM-2026-009</strong
+            ><span class="pqp-status">Ready to Pay</span></span
+          ><small>Employee</small></span
+        >
+        <span class="pqp-meta"
+          ><strong>₦185K</strong
+          ><svg class="pqp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path></svg
+        ></span>
+      </a>
+      <a class="pqp-row" href="#">
+        <span class="pqp-main"
+          ><span class="pqp-title-line"
+            ><strong>CLM-2026-012</strong
+            ><span class="pqp-status">Ready to Pay</span></span
+          ><small>Employee</small></span
+        >
+        <span class="pqp-meta"
+          ><strong>₦78K</strong
+          ><svg class="pqp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path></svg
+        ></span>
+      </a>
+    </div>
+
+    <footer class="pqp-footer">
+      <button class="pqp-secondary" type="button" data-payments-popup-close>
+        Close
+      </button>
+      <a class="pqp-primary" href="#"
+        >View All in Payments <span aria-hidden="true">↗</span></a
+      >
+    </footer>
+  </section>
+</div>

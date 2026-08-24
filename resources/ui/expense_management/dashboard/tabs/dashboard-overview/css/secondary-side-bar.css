@@ -1,0 +1,237 @@
+.exm-root {
+  min-height: 100%;
+}
+
+.exm-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  background: #3d403c;
+  color: #263240;
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.exm-svg-library {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.exm-svg-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.exm-svg-fill {
+  fill: currentColor;
+}
+
+.exm-secondary-sidebar {
+  position: sticky;
+  top: 0;
+  --exm-dark: #283341;
+  --exm-line: #dfe1e5;
+  display: flex;
+  min-width: 159px;
+  width: 159px;
+  height: 100vh;
+  min-height: 680px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.08);
+}
+
+.exm-detail-panel {
+  position: relative;
+  display: flex;
+  flex: 0 0 159px;
+  flex-direction: column;
+  width: 159px;
+  min-width: 0;
+  height: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.exm-panel-header {
+  display: grid;
+  flex: 0 0 69px;
+  justify-content: center;
+  align-items: center;
+  place-items: center;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--exm-line);
+  background: #f6f3f4;
+}
+
+.exm-panel-heading {
+  margin: 0;
+  color: #10151b;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+.exm-toolbar {
+  display: grid;
+  flex: 0 0 71px;
+  grid-template-columns: repeat(3, 1fr);
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--exm-line);
+}
+
+.exm-tool-button {
+  display: flex;
+  min-width: 0;
+  padding: 6px 1px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  border: 0;
+  background: #ffffff;
+  color: var(--exm-dark);
+  font: inherit;
+  cursor: default;
+}
+
+.exm-tool-icon {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.exm-tool-label {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.exm-panel-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  /* overflow: scroll; */
+}
+
+.exm-panel-content {
+  height: 100%;
+  padding: 10px 8px 18px;
+  box-sizing: border-box;
+  overflow: clip;
+}
+
+.exm-search-box {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid #d4d7dc;
+  border-radius: 8px;
+  background: #fafbfc;
+  color: #536071;
+}
+
+.exm-search-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.exm-search-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--exm-dark);
+  font: inherit;
+  font-size: 14px;
+}
+
+.exm-search-input::placeholder {
+  color: #7f858e;
+  opacity: 1;
+}
+
+.exm-shortcut-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  padding-top: 20px;
+  overflow-y: scroll;
+  height: 90%;
+  scrollbar-width: none;
+}
+
+.exm-shortcut {
+  display: flex;
+  flex: 0 0 109px;
+  width: 100%;
+  padding: 3px 0px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--exm-dark);
+  font: inherit;
+  font-weight: 700;
+  cursor: default;
+}
+
+.exm-shortcut-active {
+  flex-basis: 120px;
+  background: linear-gradient(145deg, #fc2e7b, #fb1f6c);
+  color: #ffffff;
+  box-shadow: 0 9px 19px rgba(251, 36, 117, 0.18);
+}
+
+.exm-shortcut-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #e9eaee;
+}
+
+.exm-shortcut-icon-active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.exm-shortcut-svg {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+}
+
+.exm-shortcut-label {
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.exm-panel-footer {
+  display: grid;
+  flex: 0 0 35px;
+  place-items: center;
+  box-sizing: border-box;
+  border-top: 1px solid var(--exm-line);
+  background: #fafbfc;
+  color: var(--exm-dark);
+  font-size: 11px;
+  font-weight: 700;
+}

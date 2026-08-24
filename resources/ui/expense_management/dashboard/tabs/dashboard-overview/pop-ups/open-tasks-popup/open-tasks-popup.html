@@ -1,0 +1,56 @@
+<!-- Open Tasks popup component -->
+<div class="otp-backdrop" id="open-tasks-popup" aria-hidden="true">
+  <section
+    class="otp-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="otp-title"
+  >
+    <header class="otp-header">
+      <div>
+        <h2 id="otp-title">Open Tasks</h2>
+        <p>1 — Awaiting action</p>
+      </div>
+      <button
+        class="otp-close"
+        type="button"
+        data-open-tasks-popup-close
+        aria-label="Close open tasks"
+      >
+        <span aria-hidden="true"></span>
+      </button>
+    </header>
+
+    <div class="otp-list">
+      <a class="otp-row" href="#">
+        <span class="otp-main">
+          <span class="otp-title-line">
+            <strong>Review Mileage Claim</strong>
+            <span class="otp-status">Open</span>
+          </span>
+          <small>General · Medium priority</small>
+        </span>
+        <span class="otp-meta">
+          <small
+            ><svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8"></circle>
+              <path d="M12 7v5l3 2"></path></svg
+            >15 Feb</small
+          >
+          <svg class="otp-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m9 7 5 5-5 5"></path>
+          </svg>
+        </span>
+      </a>
+    </div>
+
+    <footer class="otp-footer">
+      <button class="otp-secondary" type="button" data-open-tasks-popup-close>
+        Close
+      </button>
+      <a class="otp-primary" href="#"
+        >View All in Workflow <span aria-hidden="true">↗</span></a
+      >
+    </footer>
+  </section>
+</div>

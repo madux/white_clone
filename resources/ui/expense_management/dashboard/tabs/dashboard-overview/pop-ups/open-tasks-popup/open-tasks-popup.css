@@ -1,0 +1,244 @@
+  .otp-backdrop {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    padding: 11px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    background: rgba(14, 19, 26, 0.48);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    backdrop-filter: blur(2px);
+    display: flex;
+  }
+
+  .otp-modal {
+    width: min(640px, 100%);
+    overflow: hidden;
+    border-radius: 20px;
+    background: #fff;
+    color: #111b2c;
+    box-shadow: 0 24px 60px rgba(3, 15, 33, 0.25);
+  }
+
+  .otp-header {
+    display: flex;
+    height: 102px;
+    padding: 0 25px;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    border-bottom: 1px solid #dde1e7;
+  }
+
+  .otp-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 850;
+    letter-spacing: -0.2px;
+  }
+
+  .otp-header p {
+    margin: 6px 0 0;
+    color: #6f7b8e;
+    font-size: 14px;
+    font-weight: 650;
+  }
+
+  .otp-close {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #354155;
+    cursor: pointer;
+  }
+
+  .otp-close:hover {
+    background: #f3f5f7;
+  }
+
+  .otp-close span::before,
+  .otp-close span::after {
+    position: absolute;
+    top: 17px;
+    left: 10px;
+    width: 16px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    content: "";
+  }
+
+  .otp-close span::before {
+    transform: rotate(45deg);
+  }
+  .otp-close span::after {
+    transform: rotate(-45deg);
+  }
+
+  .otp-row {
+    display: flex;
+    height: 75px;
+    padding: 0 25px;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    border-bottom: 1px solid #edf0f3;
+    color: #152034;
+    text-decoration: none;
+    transition: background-color 150ms ease;
+  }
+
+  .otp-row:hover {
+    background: #fafbfc;
+  }
+  .otp-row:hover .otp-title-line strong,
+  .otp-row:hover .otp-arrow {
+    color: #eb0067;
+  }
+
+  .otp-main,
+  .otp-title-line,
+  .otp-meta,
+  .otp-meta small {
+    display: flex;
+    align-items: center;
+  }
+
+  .otp-main {
+    min-width: 0;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .otp-title-line {
+    gap: 9px;
+  }
+
+  .otp-title-line strong {
+    font-size: 15px;
+    font-weight: 850;
+  }
+
+  .otp-main > small {
+    margin-top: 6px;
+    color: #687589;
+    font-size: 13px;
+  }
+
+  .otp-status {
+    display: inline-flex;
+    height: 22px;
+    padding: 0 9px;
+    align-items: center;
+    border-radius: 12px;
+    background: #fff0cd;
+    color: #cb6500;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .otp-meta {
+    flex: 0 0 auto;
+    gap: 17px;
+  }
+
+  .otp-meta small {
+    gap: 3px;
+    color: #8e99aa;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .otp-meta small svg,
+  .otp-arrow {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  .otp-arrow {
+    color: #c8ced7;
+  }
+
+  .otp-footer {
+    display: grid;
+    height: 82px;
+    padding: 20px 20px 19px;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    box-sizing: border-box;
+    background: #fbfcfd;
+  }
+
+  .otp-secondary,
+  .otp-primary {
+    display: flex;
+    height: 43px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border-radius: 14px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .otp-secondary {
+    border: 1px solid #dde2e8;
+    background: #fff;
+    color: #4d596c;
+    cursor: pointer;
+  }
+
+  .otp-primary {
+    gap: 8px;
+    background: linear-gradient(105deg, #f52b85, #f0005f);
+    color: #fff;
+    box-shadow: 0 5px 10px rgba(239, 0, 95, 0.22);
+  }
+
+  .otp-primary span {
+    font-size: 17px;
+  }
+
+  @media (max-width: 480px) {
+    .otp-backdrop {
+      padding: 12px;
+    }
+    .otp-header {
+      height: 92px;
+      padding: 0 16px;
+    }
+
+    .otp-row {
+      height: auto;
+      min-height: 82px;
+      padding: 13px 16px;
+      align-items: flex-start;
+      gap: 8px;
+      flex-direction: column;
+    }
+
+    .otp-meta {
+      width: 100%;
+    }
+    .otp-meta small {
+      margin-left: auto;
+    }
+    .otp-footer {
+      height: auto;
+      padding: 16px;
+      grid-template-columns: 1fr;
+    }
+  }
