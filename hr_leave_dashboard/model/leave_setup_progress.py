@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import AccessError
 
 class HrLeaveSetupProgress(models.Model):
     _name = "hr.leave.setup.progress"
@@ -30,9 +30,6 @@ class HrLeaveSetupProgress(models.Model):
     check_allocate_balance = fields.Boolean(default=False)
     check_set_country = fields.Boolean(default=False)
     check_review_request = fields.Boolean(default=False)
-    # Retained for compatibility with setup records created before the
-    # persistent checklist was aligned with the five canonical guide steps.
-    check_run_report = fields.Boolean(default=False)
 
     _sql_constraints = [
         ("company_unique", "unique(company_id)",
@@ -85,23 +82,6 @@ class HrLeaveSetupProgress(models.Model):
             "checklist": checklist,
             "completed_count": completed_count,
         }
-
-    @api.model
-    def set_checklist_item(self, item_key, completed):
-        """Compatibility endpoint; checklist state is derived from real configuration."""
-        progress = self._company_progress()
-        valid_keys = {
-            "check_leave_type": "check_leave_type",
-            "check_approval_workflow": "check_approval_workflow",
-            "check_allocate_balance": "check_allocate_balance",
-            "check_set_country": "check_set_country",
-            "check_review_request": "check_review_request",
-        }
-        field_name = valid_keys.get(item_key)
-        if not field_name:
-            raise ValidationError(_("Invalid leave setup checklist item."))
-
-        return self.get_welcome_state()
 
     @api.model
     def dismiss_welcome(self):

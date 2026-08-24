@@ -76,43 +76,6 @@ class HrLeaveAuditLog(models.Model):
     session_ref = fields.Char(string="Session Reference", readonly=True)
     department_id = fields.Many2one(related="employee_id.department_id", store=True, readonly=True, index=True)
 
-    # def init(self):
-    #     """Classify records created before the semantic audit fields existed."""
-    #     self.env.cr.execute("""
-    #         UPDATE hr_leave_audit_log log
-    #            SET module_area = CASE
-    #                    WHEN action = 'policy_change' THEN 'policies'
-    #                    WHEN action IN ('balance_adjustment', 'balance_allocation') THEN 'balance'
-    #                    WHEN action = 'accrual_processed' THEN 'accrual'
-    #                    WHEN action = 'calendar_change' THEN 'calendar'
-    #                    WHEN action = 'settings_change' THEN 'settings'
-    #                    ELSE module_area
-    #                END,
-    #                entity_type = CASE
-    #                    WHEN action = 'policy_change' THEN 'policy'
-    #                    WHEN action IN ('balance_adjustment', 'balance_allocation') THEN 'balance'
-    #                    WHEN action = 'accrual_processed' THEN 'accrual_plan'
-    #                    WHEN action IN ('calendar_change', 'settings_change') THEN 'system'
-    #                    ELSE entity_type
-    #                END,
-    #                entity_name = COALESCE(
-    #                    NULLIF(log.entity_name, ''),
-    #                    (SELECT COALESCE(leave_type.name->>'en_US', leave_type.name->>'en_GB') FROM hr_leave_type leave_type WHERE leave_type.id = log.leave_type_id),
-    #                    (SELECT leave_record.request_ref FROM hr_leave leave_record WHERE leave_record.id = log.leave_id)
-    #                ),
-    #                entity_reference = COALESCE(
-    #                    NULLIF(log.entity_reference, ''),
-    #                    (SELECT leave_type.leave_code FROM hr_leave_type leave_type WHERE leave_type.id = log.leave_type_id),
-    #                    (SELECT leave_record.request_ref FROM hr_leave leave_record WHERE leave_record.id = log.leave_id)
-    #                ),
-    #                company_id = COALESCE(
-    #                    log.company_id,
-    #                    (SELECT employee.company_id FROM hr_employee employee WHERE employee.id = log.employee_id),
-    #                    (SELECT employee.company_id FROM hr_leave leave_record JOIN hr_employee employee ON employee.id = leave_record.employee_id WHERE leave_record.id = log.leave_id),
-    #                    (SELECT leave_type.company_id FROM hr_leave_type leave_type WHERE leave_type.id = log.leave_type_id)
-    #                )
-    #     """)
-
     @api.model_create_multi
     def create(self, vals_list):
         action_labels = dict(self._fields["action"].selection)
