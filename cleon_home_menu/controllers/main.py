@@ -21,7 +21,7 @@ ICON_PALETTE = [
 class HomeMenuController(http.Controller):
 
     @http.route('/home_menu/get_apps', type='json', auth='user')
-    def get_apps(self, employee_mode=False):
+    def get_apps(self, employee_mode=False, debug_mode=False):
         """
         Return the current user's visible CleonHR application menus.
 
@@ -33,12 +33,25 @@ class HomeMenuController(http.Controller):
         browser that still has the previous asset bundle cached, but ignored.
         """
         menu_model = request.env['ir.ui.menu']
-        visible_menu_ids = menu_model._visible_menu_ids()
-        menus = menu_model.sudo().search([
+        settings_menu = request.env.ref(
+            'base.menu_administration', raise_if_not_found=False
+        )
+        # Odoo stores debug in the HTTP session, but its module loader clears
+        # ``odoo.debug`` when debug is not explicit in the current page URL.
+        # Requiring the client flag as well keeps this launcher aligned with
+        # the debug state of the currently rendered web client.
+        debug = request.session.debug if debug_mode else False
+        visible_menu_ids = menu_model._visible_menu_ids(debug)
+        menu_domain = [
             ('id', 'in', list(visible_menu_ids)),
             ('action', '!=', False),
             ('category_name', 'ilike', 'CleonHR'),
-        ], order='sequence, id')
+        ]
+        if settings_menu:
+            # Settings is injected below only for authorized developer-mode
+            # sessions; never let its category metadata bypass that policy.
+            menu_domain.append(('id', '!=', settings_menu.id))
+        menus = menu_model.sudo().search(menu_domain, order='sequence, id')
 
         categories = {}
         order = []
@@ -92,10 +105,53 @@ class HomeMenuController(http.Controller):
                 "app_items": categories[name],
             })
 
+        # Settings is intentionally not a normal CleonHR business module. Make
+        # it available as a developer tool only when Odoo developer mode is
+        # active and the user is a system administrator. The checks stay on the
+        # server so changing browser state cannot expose the entry.
+        show_developer_settings = bool(debug) and request.env.user.has_group(
+            'base.group_system'
+        )
+        if show_developer_settings:
+            general_settings_menu = request.env.ref(
+                'base_setup.menu_config', raise_if_not_found=False
+            )
+            if settings_menu and settings_menu.id in visible_menu_ids:
+                settings_url = "/web#menu_id=%s" % settings_menu.id
+                if (
+                    general_settings_menu
+                    and general_settings_menu.id in visible_menu_ids
+                    and general_settings_menu.action
+                ):
+                    settings_url = "/web#action=%s&menu_id=%s" % (
+                        general_settings_menu.action.id,
+                        general_settings_menu.id,
+                    )
+                apps.append({
+                    "name": "Developer Tools",
+                    "color": "#64748B",
+                    "app_items": [{
+                        "id": settings_menu.id,
+                        "name": "Settings",
+                        "description": "System configuration and technical tools",
+                        "icon": (
+                            "/home_menu/get_icon/%s" % settings_menu.id
+                            if settings_menu.web_icon_data else False
+                        ),
+                        "icon_class": "fa fa-cog",
+                        "icon_color": "#64748B",
+                        "url": settings_url,
+                        "children": [],
+                    }],
+                })
+                total_modules += 1
+                total_features += 1
+
         return {
             "categories": apps,
             "total_modules": total_modules,
             "total_features": total_features,
+            "show_developer_settings": show_developer_settings,
         }
 
     @http.route('/home_menu/get_icon/<int:menu_id>', type='http', auth='user')

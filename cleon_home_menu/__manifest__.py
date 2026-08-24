@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'CleonHR Home Menu',
-    'version': '17.0.5.0',
+    'version': '17.0.5.3',
     'summary': 'Persistent CleonHR application launcher sidebar',
     'description': """
 CleonHR Application Rail

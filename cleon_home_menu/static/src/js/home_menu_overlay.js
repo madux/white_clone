@@ -31,6 +31,20 @@
             .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/'/g, "&#39;");
     }
 
+    function preserveDebugMode(url) {
+        if (!url || !window.odoo || !window.odoo.debug) return url;
+        try {
+            var parsed = new URL(url, window.location.origin);
+            if (parsed.origin !== window.location.origin || parsed.pathname !== "/web") {
+                return url;
+            }
+            parsed.searchParams.set("debug", window.odoo.debug);
+            return parsed.pathname + parsed.search + parsed.hash;
+        } catch (_error) {
+            return url;
+        }
+    }
+
     function ensureLauncherStyles() {
         if (document.querySelector('link[href*="' + LANDING_CSS_PATH + '"]')) return;
         var link = document.createElement("link");
@@ -62,6 +76,7 @@
         categories: [],
         totalModules: 0,
         totalFeatures: 0,
+        developerSettingsEnabled: false,
         loading: false,
         visible: false,
 
@@ -115,7 +130,9 @@
                 url: "/home_menu/get_apps", type: "POST", contentType: "application/json",
                 data: JSON.stringify({
                     jsonrpc: "2.0", method: "call",
-                    params: {},
+                    params: {
+                        debug_mode: Boolean(window.odoo && window.odoo.debug),
+                    },
                 }),
                 success: function (response) {
                     var result = response && response.result || {};
@@ -123,6 +140,11 @@
                     self.categories = categories;
                     self.totalModules = result.total_modules || 0;
                     self.totalFeatures = result.total_features || 0;
+                    self.developerSettingsEnabled = Boolean(result.show_developer_settings);
+                    document.documentElement.classList.toggle(
+                        "cleon-developer-tools-enabled",
+                        self.developerSettingsEnabled
+                    );
                     self.apps = [];
                     categories.forEach(function (category) {
                         (category.app_items || []).forEach(function (app) {
@@ -149,10 +171,11 @@
             var activeId = localStorage.getItem("cleonhr_active_app") || "";
             var html = this.apps.map(function (app) {
                 var configuredIcon = app.icon_class || ("fa " + iconFor(app.name));
+                var appUrl = preserveDebugMode(app.url || "#");
                 var icon = app.icon
                     ? '<img src="' + escapeAttr(app.icon) + '" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\';"/><i class="' + escapeAttr(configuredIcon) + ' cleon-rail-fallback"></i>'
                     : '<i class="' + escapeAttr(configuredIcon) + '"></i>';
-                return '<a class="cleon-rail-app ' + (String(app.id) === activeId ? "active" : "") + '" href="' + escapeAttr(app.url || "#") + '" data-menu-id="' + escapeAttr(app.id) + '" title="' + escapeAttr(app.name) + '">' +
+                return '<a class="cleon-rail-app ' + (String(app.id) === activeId ? "active" : "") + '" href="' + escapeAttr(appUrl) + '" data-menu-id="' + escapeAttr(app.id) + '" title="' + escapeAttr(app.name) + '">' +
                     '<span class="cleon-rail-icon" style="--app-color:' + escapeAttr(app.icon_color || "#64748B") + '">' + icon + '</span>' +
                     '<span class="cleon-rail-label">' + escapeHtml(app.name) + '</span></a>';
             }).join("");
@@ -177,10 +200,11 @@
                     var features = app.children && app.children.length ? app.children.length : 1;
                     featureCount += features;
                     var configuredIcon = app.icon_class || ("fa " + iconFor(app.name));
+                    var appUrl = preserveDebugMode(app.url || "#");
                     var icon = app.icon
                         ? '<img src="' + escapeAttr(app.icon) + '" alt="" class="hc-app-icon" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';"/><span class="hc-app-icon-fallback" style="color:' + escapeAttr(app.icon_color || category.color || "#EC4899") + '"><i class="' + escapeAttr(configuredIcon) + '"></i></span>'
                         : '<span class="hc-app-icon-fallback" style="display:flex;color:' + escapeAttr(app.icon_color || category.color || "#EC4899") + '"><i class="' + escapeAttr(configuredIcon) + '"></i></span>';
-                    return '<a class="hc-app-card" href="' + escapeAttr(app.url || "#") + '" data-menu-id="' + escapeAttr(app.id) + '">' +
+                    return '<a class="hc-app-card" href="' + escapeAttr(appUrl) + '" data-menu-id="' + escapeAttr(app.id) + '">' +
                         '<span class="hc-app-icon-wrap" style="background-color:' + colorWithAlpha(app.icon_color || category.color, 0.1) + '">' + icon + '</span>' +
                         '<span class="hc-app-info"><span class="hc-app-name">' + escapeHtml(app.name) + '</span>' +
                         '<span class="hc-app-desc">' + escapeHtml(app.description || "Open this module") + '</span>' +
