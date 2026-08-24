@@ -23,6 +23,7 @@ export class LeaveBalancesPage extends Component {
             "doYearEndReset", "doCarryForward", "importBalances",
             "toggleLtFilter", "setLtFilter", "clearLtFilter",
             "decrementAdjustment", "incrementAdjustment",
+            "setGroupBy", "toggleGroupByDropdown", "toggleGroup", "toggleGroupSelected", "toggleExpandAll",
         ]) {
             this[methodName] = this[methodName].bind(this);
         }
@@ -39,9 +40,10 @@ export class LeaveBalancesPage extends Component {
             historyOpen: false, history: null, historySearch: "", historyStatus: "all",
             requestDetailId: null,
             ltFilterOpen: false,   // Leave Type column quick-filter dropdown open
-
             ltQuickFilter: null,   // leave_type_id of the active quick-filter (null = all)
-
+            groupBy: "employee",   // "employee" (default), "leave_type", or "none"
+            groupByOpen: false,
+            expandedGroupKeys: [], // collapsed by default
         });
         onWillStart(() => this.refreshPage());
     }
@@ -285,6 +287,7 @@ export class LeaveBalancesPage extends Component {
     closeMoreOptions() {
         this.state.moreOptionsOpen = false;
         this.state.ltFilterOpen = false;   // also close LT quick-filter
+        this.state.groupByOpen = false;    // also close group-by menu
     }
     async doYearEndReset() {
         this.state.moreOptionsOpen = false;
@@ -305,6 +308,126 @@ export class LeaveBalancesPage extends Component {
     importBalances() {
         this.state.moreOptionsOpen = false;
         this.state.importOpen = true;
+    }
+
+    // ── Grouping Methods ──────────────────────────────────────────
+
+    setGroupBy(mode) {
+        this.state.groupBy = mode;
+        this.state.groupByOpen = false;
+        this.state.expandedGroupKeys = [];
+    }
+
+    toggleGroupByDropdown(ev) {
+        if (ev) ev.stopPropagation();
+        this.state.groupByOpen = !this.state.groupByOpen;
+        this.state.moreOptionsOpen = false;
+        this.state.ltFilterOpen = false;
+    }
+
+    toggleGroup(groupKey) {
+        const index = this.state.expandedGroupKeys.indexOf(groupKey);
+        if (index === -1) {
+            this.state.expandedGroupKeys.push(groupKey);
+        } else {
+            this.state.expandedGroupKeys.splice(index, 1);
+        }
+    }
+
+    isGroupExpanded(groupKey) {
+        return this.state.expandedGroupKeys.includes(groupKey);
+    }
+
+    isGroupAllSelected(group) {
+        return group.rows.length > 0 && group.rows.every(r => this.state.selectedKeys.includes(r.key));
+    }
+
+    toggleGroupSelected(group) {
+        const allSelected = this.isGroupAllSelected(group);
+        const groupRowKeys = group.rows.map(r => r.key);
+        if (allSelected) {
+            this.state.selectedKeys = this.state.selectedKeys.filter(k => !groupRowKeys.includes(k));
+        } else {
+            const toAdd = groupRowKeys.filter(k => !this.state.selectedKeys.includes(k));
+            this.state.selectedKeys.push(...toAdd);
+        }
+    }
+
+    get allExpanded() {
+        return Boolean(this.groupedRows && this.groupedRows.length > 0 && this.groupedRows.every(g => this.state.expandedGroupKeys.includes(g.key)));
+    }
+
+    toggleExpandAll() {
+        if (this.allExpanded) {
+            this.state.expandedGroupKeys = [];
+        } else if (this.groupedRows) {
+            this.state.expandedGroupKeys = this.groupedRows.map(g => g.key);
+        }
+    }
+
+    get groupedRows() {
+        if (this.state.groupBy === "none") {
+            return null;
+        }
+
+        const rows = this.visibleRows;
+        const groups = [];
+        const groupMap = new Map();
+
+        for (const row of rows) {
+            let groupKey, groupName, groupMeta;
+            if (this.state.groupBy === "employee") {
+                groupKey = `emp_${row.employee_id}`;
+                groupName = row.employee_name;
+                groupMeta = {
+                    type: "employee",
+                    id: row.employee_id,
+                    name: row.employee_name,
+                    code: row.employee_code,
+                    avatar_url: row.avatar_url,
+                    department: row.department,
+                };
+            } else if (this.state.groupBy === "leave_type") {
+                groupKey = `lt_${row.leave_type_id}`;
+                groupName = row.leave_type;
+                groupMeta = {
+                    type: "leave_type",
+                    id: row.leave_type_id,
+                    name: row.leave_type,
+                    color_hex: row.color_hex,
+                };
+            }
+
+            if (!groupMap.has(groupKey)) {
+                const groupObj = {
+                    key: groupKey,
+                    name: groupName,
+                    meta: groupMeta,
+                    rows: [],
+                    totals: {
+                        allocated: 0,
+                        used: 0,
+                        pending: 0,
+                        remaining: 0,
+                        carried_forward: 0,
+                        expiring_days: 0,
+                    },
+                };
+                groupMap.set(groupKey, groupObj);
+                groups.push(groupObj);
+            }
+
+            const g = groupMap.get(groupKey);
+            g.rows.push(row);
+            g.totals.allocated = Math.round((g.totals.allocated + Number(row.allocated || 0)) * 100) / 100;
+            g.totals.used = Math.round((g.totals.used + Number(row.used || 0)) * 100) / 100;
+            g.totals.pending = Math.round((g.totals.pending + Number(row.pending || 0)) * 100) / 100;
+            g.totals.remaining = Math.round((g.totals.remaining + Number(row.remaining || 0)) * 100) / 100;
+            g.totals.carried_forward = Math.round((g.totals.carried_forward + Number(row.carried_forward || 0)) * 100) / 100;
+            g.totals.expiring_days = Math.round((g.totals.expiring_days + Number(row.expiring_days || 0)) * 100) / 100;
+        }
+
+        return groups;
     }
 }
 

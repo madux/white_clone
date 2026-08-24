@@ -21,6 +21,35 @@
           </div>
           <div class="o_lb_tools">
             <input t-model="state.search" placeholder="Search by name or ID..."/>
+            <!-- Group By dropdown -->
+            <div class="o_lb_group_wrap" t-on-click.stop="">
+              <button class="o_lb_btn_group" t-att-class="state.groupBy !== 'none' ? 'active' : ''" t-on-click="toggleGroupByDropdown" title="Group leave balance records">
+                <i class="fa fa-bars"/> Group By:
+                <b>
+                  <t t-if="state.groupBy === 'employee'">Employee</t>
+                  <t t-elif="state.groupBy === 'leave_type'">Leave Type</t>
+                  <t t-else="">None</t>
+                </b>
+                <i class="fa fa-caret-down ms-1"/>
+              </button>
+              <div t-if="state.groupByOpen" class="o_lb_group_menu">
+                <button t-att-class="state.groupBy === 'employee' ? 'selected' : ''" t-on-click="() => this.setGroupBy('employee')">
+                  <i class="fa fa-user"/> Employee <i t-if="state.groupBy === 'employee'" class="fa fa-check o_lb_group_check"/>
+                </button>
+                <button t-att-class="state.groupBy === 'leave_type' ? 'selected' : ''" t-on-click="() => this.setGroupBy('leave_type')">
+                  <i class="fa fa-tags"/> Leave Type <i t-if="state.groupBy === 'leave_type'" class="fa fa-check o_lb_group_check"/>
+                </button>
+                <div class="dropdown-divider"/>
+                <button t-att-class="state.groupBy === 'none' ? 'selected' : ''" t-on-click="() => this.setGroupBy('none')">
+                  <i class="fa fa-list"/> None <i t-if="state.groupBy === 'none'" class="fa fa-check o_lb_group_check"/>
+                </button>
+              </div>
+            </div>
+            <!-- Expand / Collapse all button -->
+            <button t-if="state.groupBy !== 'none'" class="o_lb_btn_expand" t-on-click="toggleExpandAll" t-att-title="allExpanded ? 'Collapse all groups' : 'Expand all groups'">
+              <i t-att-class="'fa ' + (allExpanded ? 'fa-compress' : 'fa-expand')"/>
+              <span><t t-esc="allExpanded ? 'Collapse All' : 'Expand All'"/></span>
+            </button>
             <!-- Filters button with active badge -->
             <button t-on-click="openFilters" class="o_lb_btn_filters">
               <i class="fa fa-sliders"/> Filters
@@ -113,42 +142,144 @@
               </tr>
             </thead>
             <tbody>
-              <tr t-foreach="visibleRows" t-as="row" t-key="row.key">
-                <td><input type="checkbox" t-att-checked="state.selectedKeys.includes(row.key)" t-on-change="() => toggleSelected(row.key)"/></td>
-                <td>
-                  <div class="o_lb_employee">
-                    <img t-att-src="row.avatar_url"/>
-                    <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
-                  </div>
-                </td>
-                <td t-esc="row.department"/>
-                <td>
-                  <span class="o_lb_dot" t-att-style="'background:'+row.color_hex"/>
-                  <t t-esc="row.leave_type"/>
-                </td>
-                <td t-esc="row.allocated"/>
-                <td t-esc="row.used"/>
-                <td t-esc="row.pending"/>
-                <td><b t-att-class="'o_lb_balance '+row.health" t-esc="row.remaining"/></td>
-                <td t-esc="row.carried_forward"/>
-                <td>
-                  <span t-if="row.expiry_countdown !== false" class="o_lb_expiry"><t t-esc="row.expiry_countdown"/>d</span>
-                  <span t-else="">—</span>
-                </td>
-                <td t-esc="row.last_updated || '—'"/>
-                <td class="o_lb_actions">
-                  <button t-on-click="() => state.actionKey = state.actionKey === row.key ? null : row.key">&#8942;</button>
-                  <div t-if="state.actionKey === row.key" class="o_lb_menu">
-                    <button t-on-click="() => openDetails(row)">View Details</button>
-                    <button t-on-click="() => openAdjust(row)">Adjust Balance</button>
-                    <button t-on-click="() => openDetails(row, true)">View Transactions</button>
-                    <button t-on-click="() => openHistory(row)">View Leave History</button>
-                  </div>
-                </td>
-              </tr>
-              <tr t-if="!visibleRows.length">
-                <td colspan="12" class="o_lb_empty">No leave balances match these filters.</td>
-              </tr>
+              <!-- GROUPED VIEW -->
+              <t t-if="groupedRows">
+                <t t-foreach="groupedRows" t-as="group" t-key="group.key">
+                  <!-- Group Header Row -->
+                  <tr class="o_lb_group_row" t-on-click="() => this.toggleGroup(group.key)">
+                    <td t-on-click.stop="">
+                      <input type="checkbox" t-att-checked="isGroupAllSelected(group)" t-on-change="() => this.toggleGroupSelected(group)"/>
+                    </td>
+                    <td colspan="3">
+                      <div class="o_lb_group_header_cell">
+                        <i t-att-class="'fa o_lb_chevron ' + (isGroupExpanded(group.key) ? 'fa-chevron-down' : 'fa-chevron-right')"/>
+                        <t t-if="group.meta.type === 'employee'">
+                          <img t-att-src="group.meta.avatar_url" class="o_lb_group_avatar"/>
+                          <span class="o_lb_group_title">
+                            <b t-esc="group.meta.name"/>
+                            <small class="text-muted ms-1" t-esc="group.meta.code"/>
+                          </span>
+                          <span class="o_lb_group_dept ms-2" t-esc="group.meta.department"/>
+                          <span class="o_lb_group_count ms-2"><t t-esc="group.rows.length"/> leave type<t t-if="group.rows.length != 1">s</t></span>
+                        </t>
+                        <t t-elif="group.meta.type === 'leave_type'">
+                          <span class="o_lb_dot" t-att-style="'background:' + group.meta.color_hex"/>
+                          <span class="o_lb_group_title">
+                            <b t-esc="group.meta.name"/>
+                          </span>
+                          <span class="o_lb_group_count ms-2"><t t-esc="group.rows.length"/> employee<t t-if="group.rows.length != 1">s</t></span>
+                        </t>
+                      </div>
+                    </td>
+                    <td><b t-esc="group.totals.allocated"/></td>
+                    <td><b t-esc="group.totals.used"/></td>
+                    <td><b t-esc="group.totals.pending"/></td>
+                    <td><b class="o_lb_balance green" t-esc="group.totals.remaining"/></td>
+                    <td><t t-esc="group.totals.carried_forward"/></td>
+                    <td>
+                      <span t-if="group.totals.expiring_days" class="o_lb_expiry"><t t-esc="group.totals.expiring_days"/>d</span>
+                      <span t-else="">—</span>
+                    </td>
+                    <td>—</td>
+                    <td class="o_lb_actions" t-on-click.stop="">
+                    </td>
+                  </tr>
+
+                  <!-- Child Rows when expanded -->
+                  <t t-if="isGroupExpanded(group.key)">
+                    <tr t-foreach="group.rows" t-as="row" t-key="row.key" class="o_lb_child_row">
+                      <td t-on-click.stop=""><input type="checkbox" t-att-checked="state.selectedKeys.includes(row.key)" t-on-change="() => toggleSelected(row.key)"/></td>
+                      <td class="ps-4">
+                        <t t-if="group.meta.type === 'employee'">
+                          <div class="o_lb_nested_leave_type">
+                            <span class="o_lb_tree_line"/>
+                            <span class="o_lb_dot" t-att-style="'background:'+row.color_hex"/>
+                            <b t-esc="row.leave_type"/>
+                          </div>
+                        </t>
+                        <t t-else="">
+                          <div class="o_lb_employee ps-2">
+                            <img t-att-src="row.avatar_url"/>
+                            <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
+                          </div>
+                        </t>
+                      </td>
+                      <td t-esc="row.department"/>
+                      <td>
+                        <t t-if="group.meta.type === 'employee'">
+                          <span class="text-muted small">Individual balance</span>
+                        </t>
+                        <t t-else="">
+                          <span class="o_lb_dot" t-att-style="'background:'+row.color_hex"/>
+                          <t t-esc="row.leave_type"/>
+                        </t>
+                      </td>
+                      <td t-esc="row.allocated"/>
+                      <td t-esc="row.used"/>
+                      <td t-esc="row.pending"/>
+                      <td><b t-att-class="'o_lb_balance '+row.health" t-esc="row.remaining"/></td>
+                      <td t-esc="row.carried_forward"/>
+                      <td>
+                        <span t-if="row.expiry_countdown !== false" class="o_lb_expiry"><t t-esc="row.expiry_countdown"/>d</span>
+                        <span t-else="">—</span>
+                      </td>
+                      <td t-esc="row.last_updated || '—'"/>
+                      <td class="o_lb_actions" t-on-click.stop="">
+                        <button t-on-click="() => state.actionKey = state.actionKey === row.key ? null : row.key">&#8942;</button>
+                        <div t-if="state.actionKey === row.key" class="o_lb_menu">
+                          <button t-on-click="() => openDetails(row)">View Details</button>
+                          <button t-on-click="() => openAdjust(row)">Adjust Balance</button>
+                          <button t-on-click="() => openDetails(row, true)">View Transactions</button>
+                          <button t-on-click="() => openHistory(row)">View Leave History</button>
+                        </div>
+                      </td>
+                    </tr>
+                  </t>
+                </t>
+                <tr t-if="!groupedRows.length">
+                  <td colspan="12" class="o_lb_empty">No leave balances match these filters.</td>
+                </tr>
+              </t>
+
+              <!-- FLAT VIEW (when groupBy === 'none') -->
+              <t t-else="">
+                <tr t-foreach="visibleRows" t-as="row" t-key="row.key">
+                  <td><input type="checkbox" t-att-checked="state.selectedKeys.includes(row.key)" t-on-change="() => toggleSelected(row.key)"/></td>
+                  <td>
+                    <div class="o_lb_employee">
+                      <img t-att-src="row.avatar_url"/>
+                      <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
+                    </div>
+                  </td>
+                  <td t-esc="row.department"/>
+                  <td>
+                    <span class="o_lb_dot" t-att-style="'background:'+row.color_hex"/>
+                    <t t-esc="row.leave_type"/>
+                  </td>
+                  <td t-esc="row.allocated"/>
+                  <td t-esc="row.used"/>
+                  <td t-esc="row.pending"/>
+                  <td><b t-att-class="'o_lb_balance '+row.health" t-esc="row.remaining"/></td>
+                  <td t-esc="row.carried_forward"/>
+                  <td>
+                    <span t-if="row.expiry_countdown !== false" class="o_lb_expiry"><t t-esc="row.expiry_countdown"/>d</span>
+                    <span t-else="">—</span>
+                  </td>
+                  <td t-esc="row.last_updated || '—'"/>
+                  <td class="o_lb_actions" t-on-click.stop="">
+                    <button t-on-click="() => state.actionKey = state.actionKey === row.key ? null : row.key">&#8942;</button>
+                    <div t-if="state.actionKey === row.key" class="o_lb_menu">
+                      <button t-on-click="() => openDetails(row)">View Details</button>
+                      <button t-on-click="() => openAdjust(row)">Adjust Balance</button>
+                      <button t-on-click="() => openDetails(row, true)">View Transactions</button>
+                      <button t-on-click="() => openHistory(row)">View Leave History</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr t-if="!visibleRows.length">
+                  <td colspan="12" class="o_lb_empty">No leave balances match these filters.</td>
+                </tr>
+              </t>
             </tbody>
           </table>
         </section>

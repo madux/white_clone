@@ -30,6 +30,18 @@
 .o_lb_btn_filters{position:relative}
 .o_lb_filter_badge{background:#ed1970;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px;font-weight:700}
 
+/* Group By control */
+.o_lb_group_wrap{position:relative}
+.o_lb_btn_group{position:relative;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.o_lb_btn_group.active{border-color:#ed1970;color:#ed1970;background:#fff0f6}
+.o_lb_btn_group b{font-weight:700}
+.o_lb_group_menu{position:absolute;left:0;top:calc(100% + 4px);z-index:200;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:190px;padding:6px;white-space:nowrap}
+.o_lb_group_menu button{border:0;display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 12px;border-radius:7px;font-size:13px;background:transparent;cursor:pointer;color:#172033}
+.o_lb_group_menu button:hover{background:#f8fafc}
+.o_lb_group_menu button.selected{background:#fff0f6;color:#ed1970;font-weight:600}
+.o_lb_group_check{color:#ed1970;font-size:11px}
+.o_lb_btn_expand{color:#475569;font-size:12px;padding:7px 10px}
+
 /* More Options ⋮ button + dropdown */
 .o_lb_more_wrap{position:relative}
 .o_lb_more_btn{border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;cursor:pointer;font-size:18px;line-height:1;font-weight:700;color:#555}
@@ -69,6 +81,21 @@
 .o_lb_page th,.o_lb_page td{padding:10px 9px;border-bottom:1px solid #edf0f5;white-space:nowrap}
 .o_lb_page tbody tr:last-child td{border-bottom:0}
 .o_lb_page tbody tr:hover{background:#fafbfd}
+
+/* Group Row & Hierarchy */
+.o_lb_group_row{background:#f8fafc!important;font-weight:600;cursor:pointer;user-select:none;transition:background .15s}
+.o_lb_group_row:hover{background:#edf2f7!important}
+.o_lb_group_row td{padding:10px 9px;border-bottom:1px solid #e2e8f0}
+.o_lb_group_header_cell{display:flex;align-items:center;gap:8px}
+.o_lb_chevron{color:#64748b;width:14px;text-align:center;font-size:11px;transition:transform .15s}
+.o_lb_group_avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.o_lb_group_title b{font-size:13px;color:#172033}
+.o_lb_group_dept{font-size:11px;font-weight:600;color:#475569;background:#e2e8f0;padding:2px 7px;border-radius:6px}
+.o_lb_group_count{font-size:11px;font-weight:600;color:#0284c7;background:#e0f2fe;padding:2px 8px;border-radius:10px}
+.o_lb_child_row{background:#ffffff}
+.o_lb_child_row:hover{background:#f8fafc!important}
+.o_lb_nested_leave_type{display:flex;align-items:center;gap:6px;padding-left:14px;position:relative}
+.o_lb_nested_leave_type .o_lb_tree_line{display:inline-block;width:8px;height:8px;border-left:2px solid #cbd5e1;border-bottom:2px solid #cbd5e1;margin-right:4px;transform:translateY(-3px)}
 
 /* Leave Type column quick-filter */
 .o_lb_th_filter{overflow:visible!important;position:relative}
