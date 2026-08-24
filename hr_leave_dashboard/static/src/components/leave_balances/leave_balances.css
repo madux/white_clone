@@ -12,12 +12,12 @@
 .o_lb_alert button:hover{text-decoration:underline}
 
 /* Header / toolbar */
-.o_lb_header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.o_lb_header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:4px}
 .o_lb_header h2{margin:0;font-size:20px;font-weight:700}
 .o_lb_header p{display:block;color:#8490a5;margin:3px 0;font-size:12px}
 .o_lb_info_icon{font-size:13px;color:#b0bac9;margin-left:5px;cursor:help}
-.o_lb_tools{display:flex;align-items:center;gap:8px}
-.o_lb_tools input{width:200px;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px}
+.o_lb_tools{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.o_lb_tools input{width:200px;min-width:150px;height:38px;border:1px solid #dce2ec;border-radius:7px;padding:7px 10px;background:white;font-size:13px}
 
 /* Shared button base */
 .o_lb_page button{border:1px solid #dce2ec;border-radius:7px;padding:7px 12px;background:white;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px}
@@ -31,8 +31,9 @@
 .o_lb_filter_badge{background:#ed1970;color:white;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:4px;font-weight:700}
 
 /* Group By control */
-.o_lb_group_wrap{position:relative}
-.o_lb_btn_group{position:relative;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.o_lb_group_wrap{position:relative;flex:0 0 196px;width:196px}
+.o_lb_btn_group{position:relative;font-weight:500;display:inline-flex;align-items:center;gap:5px;width:196px;height:38px;white-space:nowrap;font-size:12px!important}
+.o_lb_btn_group .fa-caret-down{margin-left:auto!important}
 .o_lb_btn_group.active{border-color:#ed1970;color:#ed1970;background:#fff0f6}
 .o_lb_btn_group b{font-weight:700}
 .o_lb_group_menu{position:absolute;left:0;top:calc(100% + 4px);z-index:200;background:white;border:1px solid #dfe4ec;border-radius:10px;box-shadow:0 8px 28px #18203428;min-width:190px;padding:6px;white-space:nowrap}
@@ -40,7 +41,9 @@
 .o_lb_group_menu button:hover{background:#f8fafc}
 .o_lb_group_menu button.selected{background:#fff0f6;color:#ed1970;font-weight:600}
 .o_lb_group_check{color:#ed1970;font-size:11px}
-.o_lb_btn_expand{color:#475569;font-size:12px;padding:7px 10px}
+.o_lb_expand_slot{display:inline-flex;flex:0 0 106px;width:106px;height:38px}
+.o_lb_expand_slot.is-empty{visibility:hidden;pointer-events:none}
+.o_lb_btn_expand{width:100%;height:38px;color:#475569;font-size:12px;padding:7px 10px;white-space:nowrap}
 
 /* More Options ⋮ button + dropdown */
 .o_lb_more_wrap{position:relative}
@@ -81,6 +84,11 @@
 .o_lb_page th,.o_lb_page td{padding:10px 9px;border-bottom:1px solid #edf0f5;white-space:nowrap}
 .o_lb_page tbody tr:last-child td{border-bottom:0}
 .o_lb_page tbody tr:hover{background:#fafbfd}
+.o_lb_pager{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-top:1px solid #e5e9f0;background:#fff;color:#6e7d92;font-size:12px}
+.o_lb_pager_controls{display:flex;align-items:center;gap:9px}
+.o_lb_pager_controls label{display:flex;align-items:center;gap:7px}
+.o_lb_pager_controls select{height:32px;border:1px solid #dce2ec;border-radius:7px;background:white;padding:0 24px 0 8px;color:#172033}
+.o_lb_pager button{width:32px;height:32px;padding:0;justify-content:center}
 
 /* Group Row & Hierarchy */
 .o_lb_group_row{background:#f8fafc!important;font-weight:600;cursor:pointer;user-select:none;transition:background .15s}
@@ -95,7 +103,6 @@
 .o_lb_child_row{background:#ffffff}
 .o_lb_child_row:hover{background:#f8fafc!important}
 .o_lb_nested_leave_type{display:flex;align-items:center;gap:6px;padding-left:14px;position:relative}
-.o_lb_nested_leave_type .o_lb_tree_line{display:inline-block;width:8px;height:8px;border-left:2px solid #cbd5e1;border-bottom:2px solid #cbd5e1;margin-right:4px;transform:translateY(-3px)}
 
 /* Leave Type column quick-filter */
 .o_lb_th_filter{overflow:visible!important;position:relative}

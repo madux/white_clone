@@ -33,7 +33,6 @@ class HrWarningCaseType(models.Model):
             ('financial', 'Financial'),
         ],
         string='Category',
-        tracking=True,
         default="conduct"
     )
     code = fields.Char(
@@ -44,7 +43,6 @@ class HrWarningCaseType(models.Model):
     
     description = fields.Text(
         string='Description',
-        size=20,
         help='Describe when this case type should be used.',
     )
     color = fields.Integer(
