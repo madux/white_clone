@@ -143,16 +143,16 @@
 
                 <!-- KPI ROW (FR-055 to FR-060) -->
                 <div class="kpi-row">
-                    <div class="kpi-card">
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openStaffContext" title="View employee balances and staff directory">
                         <div class="kpi-top">
                             <span class="kpi-label">TOTAL EMPLOYEES</span>
                             <span class="kpi-icon blue"><i class="fa fa-users"/></span>
                         </div>
                         <div class="kpi-value"><t t-esc="state.kpis.total_employees"/></div>
                         <div class="kpi-sub"><t t-esc="state.kpis.on_leave_today"/> on leave today</div>
-                    </div>
+                    </button>
 
-                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveRequests">
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveRequests" title="View pending leave requests">
                         <t t-if="state.kpis.pending_approvals gt 0">
                             <span class="kpi-new-badge"><t t-esc="state.kpis.pending_approvals"/> new</span>
                         </t>
@@ -161,10 +161,13 @@
                             <span class="kpi-icon orange"><i class="fa fa-clock-o"/></span>
                         </div>
                         <div class="kpi-value"><t t-esc="state.kpis.pending_approvals"/></div>
-                        <div class="kpi-sub">Awaiting review</div>
+                        <div class="kpi-sub">
+                            <t t-if="state.kpis.pending_approvals gt 0">Awaiting review</t>
+                            <t t-else="">All clear</t>
+                        </div>
                     </button>
 
-                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveCalendar">
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveCalendar" title="View who is on leave today">
                         <div class="kpi-top">
                             <span class="kpi-label">ON LEAVE TODAY</span>
                             <span class="kpi-icon purple"><i class="fa fa-calendar"/></span>
@@ -173,25 +176,25 @@
                         <div class="kpi-sub"><t t-esc="state.kpis.on_leave_pct"/>% of workforce</div>
                     </button>
 
-                    <div class="kpi-card">
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openLeaveCalendar" title="View approved upcoming leave in calendar">
                         <div class="kpi-top">
                             <span class="kpi-label">UPCOMING (7 DAYS)</span>
                             <span class="kpi-icon teal"><i class="fa fa-line-chart"/></span>
                         </div>
                         <div class="kpi-value"><t t-esc="state.kpis.upcoming_7_days"/></div>
                         <div class="kpi-sub">Approved upcoming leave</div>
-                    </div>
+                    </button>
 
-                    <div class="kpi-card">
+                    <button type="button" class="kpi-card kpi-card-button" t-on-click="openReports" title="View leave utilisation reports">
                         <div class="kpi-top">
                             <span class="kpi-label">UTILISATION RATE</span>
                             <span class="kpi-icon pink"><i class="fa fa-heartbeat"/></span>
                         </div>
                         <div class="kpi-value"><t t-esc="state.kpis.utilisation_rate"/>%</div>
                         <div class="kpi-sub">Leave days consumed</div>
-                    </div>
+                    </button>
 
-                    <div t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-card coverage-alert-active' : 'kpi-card'">
+                    <button type="button" t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-card kpi-card-button coverage-alert-active' : 'kpi-card kpi-card-button'" t-on-click="openCoverageContext" title="View department coverage breakdown">
                         <div class="kpi-top">
                             <span class="kpi-label">COVERAGE ALERTS</span>
                             <span t-att-class="state.kpis.coverage_alerts gt 0 ? 'kpi-icon red' : 'kpi-icon green'">
@@ -203,7 +206,7 @@
                             <t t-if="state.kpis.coverage_alerts gt 0">Coverage needs attention</t>
                             <t t-else="">Coverage healthy</t>
                         </div>
-                    </div>
+                    </button>
                 </div>
 
                 <!-- TRENDS (FR-061 to FR-063) + BY TYPE (FR-064) -->

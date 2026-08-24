@@ -299,6 +299,19 @@ export class HrLeaveDashboard extends Component {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
     }
 
+    openStaffContext() {
+        return this.openLeaveBalances();
+    }
+
+    openCoverageContext() {
+        const el = this.el?.querySelector(".coverage-table-wrap, .panel:has(.coverage-table)");
+        if (el) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+            this.openLeaveCalendar();
+        }
+    }
+
     openReports() {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
     }
