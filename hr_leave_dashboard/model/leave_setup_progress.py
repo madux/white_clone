@@ -55,13 +55,28 @@ class HrLeaveSetupProgress(models.Model):
     def get_welcome_state(self, force=False):
         progress = self._company_progress()
         dismissed = self.env.user in progress.dismissed_user_ids
+        leave_types = self.env["hr.leave.type"].with_context(active_test=False).search([
+            ("company_id", "in", [False, self.env.company.id]), ("active", "=", True),
+        ])
+        has_workflow = any(
+            leave_type.approval_workflow in ("none", "single")
+            or (leave_type.approval_workflow == "multi" and leave_type.approval_stage_ids)
+            for leave_type in leave_types
+        )
         checklist = {
-            "check_leave_type": progress.check_leave_type,
-            "check_approval_workflow": progress.check_approval_workflow,
-            "check_allocate_balance": progress.check_allocate_balance,
-            "check_set_country": progress.check_set_country,
-            "check_review_request": progress.check_review_request,
+            "check_leave_type": bool(leave_types),
+            "check_approval_workflow": bool(has_workflow),
+            "check_allocate_balance": bool(self.env["hr.leave.allocation"].sudo().search_count([
+                ("employee_id.company_id", "=", self.env.company.id), ("state", "=", "validate"),
+            ])),
+            "check_set_country": bool(self.env.company.country_id and self.env.company.resource_calendar_id),
+            "check_review_request": bool(self.env["hr.leave"].sudo().search_count([
+                ("employee_id.company_id", "=", self.env.company.id), ("state", "!=", "draft"),
+            ])),
         }
+        persisted = {key: value for key, value in checklist.items() if getattr(progress, key) != value}
+        if persisted:
+            progress.write(persisted)
         completed_count = sum(1 for v in checklist.values() if v)
         return {
             "show_welcome": bool(force) or (progress.state != "completed" and not dismissed),
@@ -73,7 +88,7 @@ class HrLeaveSetupProgress(models.Model):
 
     @api.model
     def set_checklist_item(self, item_key, completed):
-        """FR-050: Explicitly set checklist item completion state and persist."""
+        """Compatibility endpoint; checklist state is derived from real configuration."""
         progress = self._company_progress()
         valid_keys = {
             "check_leave_type": "check_leave_type",
@@ -86,7 +101,6 @@ class HrLeaveSetupProgress(models.Model):
         if not field_name:
             raise ValidationError(_("Invalid leave setup checklist item."))
 
-        progress.write({field_name: bool(completed)})
         return self.get_welcome_state()
 
     @api.model

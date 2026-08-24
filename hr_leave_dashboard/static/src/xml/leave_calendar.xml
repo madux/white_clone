@@ -68,7 +68,7 @@
                             </div>
 
                             <!-- Coverage Analysis Toggle Button -->
-                            <button type="button"
+                            <button t-if="!state.employeeView" type="button"
                                     t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
                                     t-on-click="toggleCoverageMode">
                                 <i class="fa fa-line-chart me-1"/> Coverage Analysis
@@ -144,7 +144,12 @@
                     </div>
                 </t>
 
-                <t t-else="">
+                <div t-if="state.loadError and !state.loading" class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+                    <span><i class="fa fa-exclamation-triangle me-2"/><t t-esc="state.loadError"/></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" t-on-click="loadCalendarData">Retry</button>
+                </div>
+
+                <t t-if="!state.loading and !state.loadError">
 
                     <!-- ════════════════════════════════════════════════════
                          MONTH VIEW (Fig 11.1, Fig 11.2, FR-146 to FR-157)
@@ -166,7 +171,9 @@
                             <t t-foreach="this.monthGridWeeks" t-as="week" t-key="week_index">
                                 <div class="calendar-week-row">
                                     <t t-foreach="week" t-as="day" t-key="day.ymd">
-                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '')">
+                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '')"
+                                             t-on-click="() => this.openDateRequest(day.ymd)"
+                                             t-att-title="state.employeeView and this.getDayLeaves(day.ymd).length === 0 and this.getDayHolidays(day.ymd).length === 0 ? 'Request leave for this date' : ''">
 
                                             <!-- Day Number in Top Left -->
                                             <span class="day-number-label"><t t-esc="day.dayNumber"/></span>
@@ -183,12 +190,17 @@
                                             <!-- STANDARD LEAVE BLOCKS MODE (Fig 11.1) -->
                                             <t t-else="">
                                                 <div class="day-cell-leave-stack">
+                                                    <t t-foreach="this.getDayHolidays(day.ymd)" t-as="holiday" t-key="'holiday-' + holiday.id">
+                                                        <div class="calendar-leave-block bg-light text-dark border" t-att-title="holiday.name">
+                                                            <i class="fa fa-star me-1 text-warning"/><span class="leave-block-name"><t t-esc="holiday.name"/></span>
+                                                        </div>
+                                                    </t>
                                                     <t t-set="dayLeaves" t-value="this.getDayLeaves(day.ymd)"/>
                                                     <!-- Render up to 3 visible leave blocks -->
                                                     <t t-foreach="dayLeaves.slice(0, 3)" t-as="leave" t-key="leave.id">
                                                         <div t-att-class="'calendar-leave-block ' + (leave.status === 'pending' ? 'pending ' : '')"
                                                              t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
-                                                             t-on-click="() => this.openLeaveDetail(leave.id)"
+                                                             t-on-click.stop="() => this.openLeaveDetail(leave.id)"
                                                              t-att-title="leave.employee_name + ' (' + leave.leave_type_name + ')'">
                                                             <span class="leave-block-name"><t t-esc="leave.employee_name"/></span>
                                                         </div>
@@ -196,7 +208,7 @@
 
                                                     <!-- Stack Overflow Indicator "+N more" -->
                                                     <t t-if="dayLeaves.length > 3">
-                                                        <div class="leave-overflow-badge" t-on-click="() => this.openLeaveDetail(dayLeaves[3].id)">
+                                                        <div class="leave-overflow-badge" t-on-click.stop="() => this.openLeaveDetail(dayLeaves[3].id)">
                                                             +<t t-esc="dayLeaves.length - 3"/> more
                                                         </div>
                                                     </t>
@@ -226,7 +238,13 @@
                             <div class="calendar-week-body-row">
                                 <t t-foreach="this.weekViewDays" t-as="day" t-key="day.ymd">
                                     <div class="week-day-column">
-                                        <t t-if="day.leaves.length === 0">
+                                        <t t-foreach="day.holidays" t-as="holiday" t-key="'week-holiday-' + holiday.id">
+                                            <div class="week-expanded-card bg-light border">
+                                                <strong class="card-emp-name"><i class="fa fa-star text-warning me-1"/><t t-esc="holiday.name"/></strong>
+                                                <span class="card-leave-type">Public holiday</span>
+                                            </div>
+                                        </t>
+                                        <t t-if="day.leaves.length === 0 and day.holidays.length === 0">
                                             <div class="no-leaves-placeholder">No leaves</div>
                                         </t>
                                         <t t-else="">
@@ -252,7 +270,10 @@
                     <t t-if="state.viewMode === 'day'">
                         <div class="calendar-day-view-box border rounded p-4 bg-white shadow-sm">
                             <h4 class="h5 font-weight-bold mb-3">Schedules for <t t-esc="this.periodLabel"/></h4>
-                            <t t-if="this.dayViewLeaves.length === 0">
+                            <t t-foreach="this.dayViewHolidays" t-as="holiday" t-key="'day-holiday-' + holiday.id">
+                                <div class="alert alert-light border"><i class="fa fa-star text-warning me-2"/><strong><t t-esc="holiday.name"/></strong> · Public holiday</div>
+                            </t>
+                            <t t-if="this.dayViewLeaves.length === 0 and this.dayViewHolidays.length === 0">
                                 <div class="text-center py-5 text-muted">
                                     <i class="fa fa-smile-o fa-2x mb-2 text-success"/>
                                     <p class="mb-0">No employees are on leave on this day.</p>
@@ -402,6 +423,18 @@
                     </div>
                     <div class="filter-panel-body p-3 overflow-y-auto">
 
+                        <div t-if="state.employeeView" class="filter-section mb-4">
+                            <label class="form-label font-weight-bold small text-uppercase text-muted">Show Events</label>
+                            <div class="filter-checkbox-list">
+                                <label class="form-check small mb-2"><input class="form-check-input" type="checkbox" t-att-checked="state.employeeEventFilters.includes('all')" t-on-change="() => this.toggleEmployeeEventFilter('all')"/> All Events</label>
+                                <label class="form-check small mb-2"><input class="form-check-input" type="checkbox" t-att-checked="state.employeeEventFilters.includes('mine')" t-on-change="() => this.toggleEmployeeEventFilter('mine')"/> My Leave</label>
+                                <label class="form-check small mb-2"><input class="form-check-input" type="checkbox" t-att-checked="state.employeeEventFilters.includes('team')" t-on-change="() => this.toggleEmployeeEventFilter('team')"/> Team Leave</label>
+                                <label class="form-check small mb-2"><input class="form-check-input" type="checkbox" t-att-checked="state.employeeEventFilters.includes('holidays')" t-on-change="() => this.toggleEmployeeEventFilter('holidays')"/> Public Holidays</label>
+                            </div>
+                        </div>
+
+                        <t t-if="!state.employeeView">
+
                         <!-- Date Range -->
                         <div class="filter-section mb-4">
                             <label class="form-label font-weight-bold small text-uppercase text-muted">Date Range</label>
@@ -497,6 +530,8 @@
                             </div>
                         </div>
 
+                        </t>
+
                     </div>
                     <div class="filter-panel-footer border-top p-3 d-flex justify-content-between align-items-center">
                         <button type="button" class="btn btn-sm btn-link text-muted p-0" t-on-click="clearAllFilters">Clear All</button>
@@ -512,7 +547,7 @@
                     close.bind="closeDetailModal"
                     onChanged.bind="loadCalendarData"/>
             </t>
-            <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData"/>
+            <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData" initial="state.employeeRequestInitial"/>
 
         </div>
     </t>

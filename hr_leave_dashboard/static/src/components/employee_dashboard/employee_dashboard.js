@@ -27,7 +27,7 @@ export class EmployeeLeaveDashboard extends Component {
     openAdmin() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard"); }
     toggleSidebar() { window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar")); }
     openTour() { this.notification.add("Use the balance cards and quick actions to manage your personal leave.", { title: "Employee Dashboard Tour", type: "info" }); }
-    openHelp() { this.notification.add("Available balance is approved allocation less approved leave; pending days are shown separately.", { title: "Leave Dashboard Guide", type: "info" }); }
+    openHelp() { this.notification.add("Available balance is allocation less approved and pending leave. Carry-forward is shown separately when applicable.", { title: "Leave Dashboard Guide", type: "info" }); }
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
     requestLeave() { this.state.requestOpen = true; }
     closeRequest() { this.state.requestOpen = false; }

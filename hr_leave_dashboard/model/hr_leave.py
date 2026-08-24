@@ -71,6 +71,14 @@ class HrLeave(models.Model):
         readonly=True,
         copy=False,
     )
+    approval_line_ids = fields.One2many(
+        "hr.leave.approval.line", "leave_id", string="Approval Timeline", copy=False,
+    )
+    escalated = fields.Boolean(readonly=True, copy=False, index=True)
+    escalation_note = fields.Text(readonly=True, copy=False)
+    escalated_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    escalated_at = fields.Datetime(readonly=True, copy=False)
+    rejection_reason = fields.Text(readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -83,7 +91,130 @@ class HrLeave(models.Model):
         for leave in leaves:
             if not leave.admin_created:
                 leave._create_audit_record("submitted", note=leave.notes or "")
+            # Odoo may create an HR-approved leave type directly in the
+            # "To Approve" state, without calling action_confirm().
+            if leave.state in ("confirm", "validate1"):
+                leave._initialize_configured_approval_lines()
         return leaves
+
+    def action_confirm(self):
+        result = super().action_confirm()
+        self._initialize_configured_approval_lines()
+        return result
+
+    def _resolve_stage_approver(self, stage):
+        self.ensure_one()
+        employee = self.employee_id
+        if stage.approver_type == "direct_manager":
+            return employee.leave_manager_id or employee.parent_id.user_id
+        if stage.approver_type == "department_head":
+            return employee.department_id.manager_id.user_id if employee.department_id.manager_id else False
+        group_xmlid = {
+            "hr_manager": "hr_holidays.group_hr_holidays_manager",
+            "hr_director": "hr_holidays.group_hr_holidays_manager",
+            "finance_director": "account.group_account_manager",
+            "ceo": "base.group_system",
+        }.get(stage.approver_type)
+        group = self.env.ref(group_xmlid, raise_if_not_found=False) if group_xmlid else False
+        users = group.users.filtered(lambda user: self.employee_id.company_id in user.company_ids) if group else self.env["res.users"]
+        return users[:1]
+
+    def _initialize_configured_approval_lines(self):
+        Line = self.env["hr.leave.approval.line"].sudo()
+        now = fields.Datetime.now()
+        for leave in self:
+            stages = leave.holiday_status_id.approval_stage_ids.sorted(lambda stage: (stage.sequence, stage.id))
+            if leave.holiday_status_id.approval_workflow != "multi" or not stages or leave.approval_line_ids:
+                continue
+            for index, stage in enumerate(stages):
+                line = Line.create({
+                    "leave_id": leave.id,
+                    "stage_id": stage.id,
+                    "sequence": stage.sequence,
+                    "level": index + 1,
+                    "approver_id": leave._resolve_stage_approver(stage).id,
+                    "status": "pending" if index == 0 else "waiting",
+                })
+                if index == 0:
+                    line.write({"deadline": line._deadline_from_stage(now)})
+
+    def _approve_configured_stage(self, comment=""):
+        self.ensure_one()
+        pending = self.approval_line_ids.filtered(lambda line: line.status == "pending")[:1]
+        if not pending:
+            return False
+        now = fields.Datetime.now()
+        pending.sudo().write({
+            "status": "approved", "actioned_at": now,
+            "actioned_by_id": self.env.user.id, "comments": comment or False,
+        })
+        waiting = self.approval_line_ids.filtered(lambda line: line.status == "waiting").sorted(
+            lambda line: (line.sequence, line.id)
+        )[:1]
+        if waiting:
+            waiting.sudo().write({"status": "pending", "deadline": waiting._deadline_from_stage(now)})
+            return "stage"
+        super(HrLeave, self.with_context(cleon_final_approval=True)).action_approve()
+        return "final"
+
+    def action_approve(self, check_state=True):
+        """Prevent native approval entry points from skipping custom stages."""
+        if self.env.context.get("cleon_final_approval"):
+            return super().action_approve(check_state=check_state)
+        configured = self.filtered(
+            lambda leave: leave.holiday_status_id.approval_workflow == "multi"
+            and leave.approval_line_ids
+        )
+        regular = self - configured
+        result = super(HrLeave, regular).action_approve(check_state=check_state) if regular else True
+        for leave in configured:
+            leave._approve_configured_stage()
+        return result
+
+    def _reject_configured_stages(self, reason):
+        for leave in self:
+            leave.approval_line_ids.filtered(lambda line: line.status == "pending").sudo().write({
+                "status": "rejected", "actioned_at": fields.Datetime.now(),
+                "actioned_by_id": self.env.user.id, "comments": reason,
+            })
+            leave.approval_line_ids.filtered(lambda line: line.status == "waiting").sudo().write({
+                "status": "skipped",
+            })
+
+    def _has_active_disciplinary_suspension(self):
+        self.ensure_one()
+        if "hr.warning.interim_measure" not in self.env:
+            return False
+        now = fields.Datetime.now()
+        domain = [
+            ("employee_id", "=", self.employee_id.id),
+            ("measure_type_suspension_pending", "=", True),
+            "|", ("start_date", "=", False), ("start_date", "<=", now),
+            "|", ("expected_end_date", "=", False), ("expected_end_date", ">=", now),
+        ]
+        return bool(self.env["hr.warning.interim_measure"].sudo().search_count(domain))
+
+    @api.model
+    def _employee_has_active_disciplinary_suspension(self, employee):
+        pseudo_leave = self.new({"employee_id": employee.id})
+        return pseudo_leave._has_active_disciplinary_suspension()
+
+    @api.model
+    def _cron_escalate_overdue_approval_stages(self):
+        lines = self.env["hr.leave.approval.line"].sudo().search([
+            ("status", "=", "pending"), ("deadline", "!=", False),
+            ("deadline", "<", fields.Datetime.now()), ("escalated", "=", False),
+        ])
+        for line in lines:
+            line.write({"escalated": True, "escalated_at": fields.Datetime.now()})
+            leave = line.leave_id
+            leave.sudo().write({
+                "escalated": True,
+                "escalation_note": _("Approval stage %d exceeded its configured response time.") % line.level,
+                "escalated_at": fields.Datetime.now(),
+            })
+            leave._create_audit_record("escalated", note=leave.escalation_note, is_system=True)
+        return len(lines)
 
     @api.constrains("holiday_status_id", "employee_id", "request_date_from", "request_date_to", "number_of_days", "state")
     def _check_leave_type_policy_enforcement(self):
@@ -165,12 +296,22 @@ class HrLeave(models.Model):
             allocated_days = sum(allocations.filtered(lambda a: a.holiday_status_id == leave_type).mapped("number_of_days"))
             used_days = sum(approved.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
             pending_days = sum(pending.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
-            remaining = allocated_days - used_days
+            # Pending requests reserve entitlement and must reduce the amount
+            # that the employee can request again.
+            remaining = allocated_days - used_days - pending_days
+            carried_days = sum(self.env["hr.leave.balance.transaction"].sudo().search([
+                ("employee_id", "=", employee.id),
+                ("leave_type_id", "=", leave_type.id),
+                ("transaction_type", "=", "carry_forward"),
+                ("effective_date", ">=", year_start),
+                ("effective_date", "<=", year_end),
+            ]).mapped("delta"))
             balances.append({
                 "id": leave_type.id, "name": leave_type.name,
                 "color": leave_type.cleon_color_hex or "#3B82F6",
                 "allocated": round(allocated_days, 1), "used": round(used_days, 1),
                 "pending": round(pending_days, 1), "remaining": round(remaining, 1),
+                "carried_forward": round(carried_days, 1),
                 "percent": round(min(100, max(0, remaining * 100 / allocated_days)), 1) if allocated_days else 0,
             })
 
@@ -221,10 +362,12 @@ class HrLeave(models.Model):
         ]).filtered(lambda leave_type: employee in leave_type._get_eligible_employees())
         allocations = self.env["hr.leave.allocation"].sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("holiday_status_id", "in", types.ids)])
         approved = self.sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
+        pending = self.sudo().search([("employee_id", "=", employee.id), ("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
         return {"employee": {"id": employee.id, "name": employee.name}, "leave_types": [{
             "id": leave_type.id, "name": leave_type.name, "color": leave_type.cleon_color_hex or "#3B82F6",
             "allocated": round(sum(allocations.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
             "used": round(sum(approved.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
+            "pending": round(sum(pending.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
             "unlimited": bool(leave_type.unlimited_entitlement), "allow_half_day": bool(leave_type.allow_half_day),
         } for leave_type in types]}
 
@@ -242,7 +385,7 @@ class HrLeave(models.Model):
         duration = 0.5 if half_day else round(preview.number_of_days or 0.0, 1)
         policy = self.env["hr.leave.type"].sudo().evaluate_leave_request_policy(employee.id, leave_type.id, date_from, date_to, duration, half_day)
         row = next(item for item in options["leave_types"] if item["id"] == leave_type.id)
-        remaining = row["allocated"] - row["used"]
+        remaining = row["allocated"] - row["used"] - row["pending"]
         holidays = self.env["resource.calendar.leaves"].sudo().search_count([
             ("date_from", "<=", date_to + " 23:59:59"), ("date_to", ">=", date_from + " 00:00:00"),
             ("calendar_id", "=", employee.resource_calendar_id.id),
@@ -251,6 +394,15 @@ class HrLeave(models.Model):
 
     @api.model
     def submit_employee_leave_request(self, values):
+        employee = self._employee_for_current_user()
+        if self._employee_has_active_disciplinary_suspension(employee):
+            self.env["hr.leave.audit.log"].sudo().create({
+                "action": "failed", "event_status": "failed",
+                "employee_id": employee.id, "actor_id": self.env.user.id,
+                "actor_label": self.env.user.name,
+                "note": _("Submission blocked: employee is under an active disciplinary suspension."),
+            })
+            return {"ok": False, "message": _("You cannot submit leave while an active disciplinary suspension applies.")}
         try:
             with self.env.cr.savepoint():
                 result = self._submit_employee_leave_request(values)
@@ -269,10 +421,12 @@ class HrLeave(models.Model):
         if not preview.get("eligible") or preview.get("errors"):
             raise ValidationError("\n".join(preview.get("errors") or [_('This request does not comply with the leave policy.')]))
         attachment = values.get("attachment") or {}
-        if preview.get("document_required") and not attachment.get("data"):
-            raise ValidationError(_("A supporting document is required for this request."))
-        if attachment.get("data") and attachment.get("mimetype") not in ("application/pdf", "image/jpeg", "image/png"):
-            raise ValidationError(_("Only PDF, JPG, and PNG attachments are supported."))
+        if attachment.get("data") and attachment.get("mimetype") not in (
+            "application/pdf", "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/jpeg", "image/png",
+        ):
+            raise ValidationError(_("Only PDF, DOC, DOCX, JPG, and PNG attachments are supported."))
         if attachment.get("data"):
             try:
                 if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:
@@ -311,7 +465,7 @@ class HrLeave(models.Model):
         for record in records:
             approver = record.second_approver_id or record.first_approver_id
             if not approver and employee.parent_id: approver = employee.parent_id.user_id
-            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) == "pending", "can_resubmit": request_status(record) == "rejected"})
+            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) in ("pending", "approved"), "can_escalate": request_status(record) == "pending" and not record.escalated, "escalated": bool(record.escalated), "can_resubmit": request_status(record) == "rejected"})
         types = self.env["hr.leave.type"].sudo().browse(all_records.mapped("holiday_status_id").ids).sorted("name")
         return {"rows": rows, "counts": counts, "leave_types": [{"id": item.id, "name": item.name} for item in types]}
 
@@ -321,15 +475,40 @@ class HrLeave(models.Model):
         if len(reason) < 3: return {"ok": False, "message": _("Please provide a cancellation reason of at least 3 characters.")}
         leave = self.search([("id", "=", int(leave_id)), ("employee_id", "=", employee.id)], limit=1)
         if not leave: return {"ok": False, "message": _("This leave request could not be found.")}
-        if leave.state not in ("confirm", "validate1") or leave.is_cancelled: return {"ok": False, "message": _("Only a pending leave request can be cancelled.")}
+        if leave.state not in ("confirm", "validate1", "validate") or leave.is_cancelled: return {"ok": False, "message": _("Only a pending or approved leave request can be cancelled.")}
         try:
             with self.env.cr.savepoint():
-                leave.action_refuse()
-                leave.write({"is_cancelled": True, "cancelled_by_id": self.env.user.id, "cancelled_at": fields.Datetime.now(), "cancellation_reason": reason})
-                leave._create_audit_record("cancelled", note=reason)
-            return {"ok": True, "message": _("Your pending leave request has been cancelled.")}
+                leave.sudo().action_refuse()
+                leave.sudo().write({"is_cancelled": True, "cancelled_by_id": self.env.user.id, "cancelled_at": fields.Datetime.now(), "cancellation_reason": reason})
+                leave.sudo()._create_audit_record("cancelled", note=reason)
+            return {"ok": True, "message": _("Your leave request has been cancelled and its balance restored.")}
         except (ValidationError, UserError, AccessError) as error:
             return {"ok": False, "message": str(error.args[0] if error.args else _("The request could not be cancelled."))}
+
+    @api.model
+    def escalate_my_leave_request(self, leave_id, note):
+        employee = self._employee_for_current_user()
+        note = (note or "").strip()
+        if not note or len(note) > 300:
+            return {"ok": False, "message": _("Provide an escalation note of no more than 300 characters.")}
+        leave = self.sudo().search([
+            ("id", "=", int(leave_id)), ("employee_id", "=", employee.id),
+            ("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False),
+        ], limit=1)
+        if not leave:
+            return {"ok": False, "message": _("Only your own pending request can be escalated.")}
+        if leave.escalated:
+            return {"ok": False, "message": _("This request has already been escalated.")}
+        leave.write({
+            "escalated": True, "escalation_note": note,
+            "escalated_by_id": self.env.user.id, "escalated_at": fields.Datetime.now(),
+        })
+        leave.approval_line_ids.filtered(lambda line: line.status == "pending").write({
+            "escalated": True, "escalated_at": fields.Datetime.now(),
+        })
+        leave._create_audit_record("escalated", note=note)
+        leave._post_configured_leave_update(_("Leave request escalated by %(employee)s: %(note)s", employee=employee.name, note=note))
+        return {"ok": True, "message": _("Your request has been escalated for review.")}
 
     # ---------------------------------------------------------
     # KPI CARDS (FR-055 to FR-060)
@@ -723,6 +902,9 @@ class HrLeave(models.Model):
             "admin_created_by": rec.admin_created_by_id.name if rec.admin_created else "",
             "admin_created_at": fields.Date.to_string(rec.admin_created_at.date()) if rec.admin_created_at else "",
             "can_review": status == "pending" and not rec.is_cancelled,
+            "escalated": bool(rec.escalated),
+            "escalation_note": rec.escalation_note or "",
+            "rejection_reason": rec.rejection_reason or "",
             "notes": rec.notes or rec.admin_creation_note or "",
         }
 
@@ -748,7 +930,7 @@ class HrLeave(models.Model):
             }
 
         page = max(int(page or 1), 1)
-        allowed_sizes = (10, 25, 50, 100)
+        allowed_sizes = (5, 10, 25, 50, 100)
         page_size = int(page_size or 10)
         if page_size not in allowed_sizes:
             page_size = 10
@@ -762,6 +944,8 @@ class HrLeave(models.Model):
                     [("employee_id.name", "ilike", st)],
                     [("holiday_status_id.name", "ilike", st)],
                     [("name", "ilike", st)],
+                    [("notes", "ilike", st)],
+                    [("request_ref", "ilike", st)],
                 ])
             ])
 
@@ -838,7 +1022,16 @@ class HrLeave(models.Model):
         )
         processed = 0
         for leave in leaves:
-            if leave.state == "confirm":
+            if leave._has_active_disciplinary_suspension():
+                leave._create_audit_record(
+                    "failed",
+                    note=_("Bulk approval blocked: employee is under an active disciplinary suspension."),
+                )
+                continue
+            if leave.holiday_status_id.approval_workflow == "multi" and leave.approval_line_ids:
+                stage_result = leave._approve_configured_stage()
+                action_name = "final_approval" if stage_result == "final" else "first_approval"
+            elif leave.state == "confirm":
                 leave.action_approve()
                 action_name = "first_approval" if leave.state == "validate1" else "final_approval"
             elif leave.state == "validate1":
@@ -870,6 +1063,8 @@ class HrLeave(models.Model):
             body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                      user=self.env.user.name, reason=reason)
             leave._post_configured_leave_update(body)
+            leave._reject_configured_stages(reason)
+            leave.sudo().write({"rejection_reason": reason})
             leave.action_refuse()
             # Immutable Audit Log Entry (FR-111)
             leave._create_audit_record("reject", note=reason)
@@ -1056,6 +1251,18 @@ class HrLeave(models.Model):
         )
 
         workflow = []
+        if leave.approval_line_ids:
+            workflow = [{
+                "key": "approval_stage_%d" % line.id,
+                "label": "%s · Level %d" % (line.stage_id.approver_type.replace("_", " ").title(), line.level),
+                "actor": line.approver_id.name or _("Unassigned"),
+                "role": dict(line._fields["status"].selection).get(line.status, line.status),
+                "timestamp": fields.Datetime.to_string(line.actioned_at) if line.actioned_at else False,
+                "state": line.status,
+                "system": False,
+                "comments": line.comments or "",
+                "escalated": bool(line.escalated),
+            } for line in leave.approval_line_ids.sorted(lambda item: (item.sequence, item.id))]
         for log in audit_logs:
             if log.action in ("submitted", "admin_create"):
                 workflow.append({
@@ -1107,6 +1314,17 @@ class HrLeave(models.Model):
                     "state": "cancelled",
                     "system": False,
                 })
+            elif log.action == "escalated":
+                workflow.append({
+                    "key": "escalated",
+                    "label": "Request Escalated",
+                    "actor": log.actor_label or (log.actor_id.name if log.actor_id else "System"),
+                    "role": log.actor_role or "Employee",
+                    "timestamp": fields.Datetime.to_string(log.occurred_at),
+                    "state": "escalated",
+                    "system": log.is_system,
+                    "comments": log.note or "",
+                })
 
         if not workflow:
             submitted_by = leave.admin_created_by_id.name if leave.admin_created else leave.employee_id.name
@@ -1150,6 +1368,7 @@ class HrLeave(models.Model):
                     "approve": "Approved",
                     "reject": "Rejected",
                     "cancelled": "Cancelled",
+                    "escalated": "Escalated",
                     "override_conflict": "Conflict Overridden",
                 }.get(log.action, log.action)
                 title = f"{action_label} by {actor}{role}"
@@ -1175,6 +1394,9 @@ class HrLeave(models.Model):
             "history": history,
             "actions": actions,
             "cancellation_reason": leave.cancellation_reason or "",
+            "escalated": bool(leave.escalated),
+            "escalation_note": leave.escalation_note or "",
+            "rejection_reason": leave.rejection_reason or "",
             "cancelled_by": leave.cancelled_by_id.name if leave.cancelled_by_id else "",
             "cancelled_at": fields.Datetime.to_string(leave.cancelled_at) if leave.cancelled_at else "",
         })
@@ -1189,7 +1411,18 @@ class HrLeave(models.Model):
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
             raise ValidationError(_("This leave request is not awaiting approval."))
 
-        if leave.state == "confirm":
+        if leave._has_active_disciplinary_suspension():
+            self.env["hr.leave.audit.log"].sudo().create({
+                "leave_id": leave.id, "action": "failed", "event_status": "failed",
+                "employee_id": leave.employee_id.id, "leave_type_id": leave.holiday_status_id.id,
+                "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+                "note": _("Approval blocked: employee is under an active disciplinary suspension."),
+            })
+            return {"ok": False, "message": _("This request cannot be approved while the employee is under an active disciplinary suspension.")}
+        if leave.holiday_status_id.approval_workflow == "multi" and leave.approval_line_ids:
+            stage_result = leave._approve_configured_stage()
+            event = "final_approval" if stage_result == "final" else "first_approval"
+        elif leave.state == "confirm":
             leave.action_approve()
             event = "first_approval" if leave.state == "validate1" else "final_approval"
         elif leave.state == "validate1":
@@ -1220,7 +1453,8 @@ class HrLeave(models.Model):
         body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                  user=self.env.user.name, reason=reason)
         leave._post_configured_leave_update(body)
-
+        leave._reject_configured_stages(reason)
+        leave.sudo().write({"rejection_reason": reason})
         leave.action_refuse()
         leave._create_audit_record("reject", note=reason)
         return self.get_leave_request_detail(leave.id)
@@ -1372,6 +1606,17 @@ class HrLeave(models.Model):
         leave_type = self.env["hr.leave.type"].browse(int(leave_type_id)).exists()
         if not employee or employee.company_id != self.env.company or not leave_type:
             raise ValidationError(_("Invalid request data."))
+        if self._employee_has_active_disciplinary_suspension(employee):
+            self.env["hr.leave.audit.log"].sudo().create({
+                "action": "failed", "event_status": "failed",
+                "employee_id": employee.id, "leave_type_id": leave_type.id,
+                "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+                "note": _("Admin submission blocked: employee is under an active disciplinary suspension."),
+            })
+            return {
+                "created": False,
+                "message": _("A leave request cannot be created while this employee is under an active disciplinary suspension."),
+            }
 
         preview = self.preview_admin_leave_request(
             employee.id, leave_type.id, date_from, date_to, half_day, period
@@ -1404,6 +1649,8 @@ class HrLeave(models.Model):
             LeaveObj = LeaveObj.with_context(leave_skip_date_check=True)
 
         leave = LeaveObj.create(vals)
+        if leave.state == "draft":
+            leave.action_confirm()
 
         # Notify employee via chatter (FR-110)
         leave._post_configured_leave_update(
@@ -1419,13 +1666,33 @@ class HrLeave(models.Model):
 
         # Create Immutable Audit Log (FR-111)
         action_type = "override_conflict" if override_conflict else "admin_create"
-        self._create_audit_record(action_type, note=admin_note)
+        leave._create_audit_record(action_type, note=admin_note)
 
         return {"created": True, "id": leave.id}
 
     # ---------------------------------------------------------
     # SCREEN 11: LEAVE CALENDAR BACKEND API (FR-138 to FR-177)
     # ---------------------------------------------------------
+
+    @api.model
+    def _employee_calendar_visibility_domain(self, employee_view):
+        """Employee calendar = own requests plus approved absences in their team.
+
+        Pending, rejected, cancelled and explanatory notes belonging to colleagues
+        are deliberately not exposed.
+        """
+        if not employee_view:
+            return [], False
+        employee = self._employee_for_current_user()
+        own = [("employee_id", "=", employee.id)]
+        if not employee.department_id:
+            return own, employee
+        team_approved = [
+            ("employee_id.department_id", "=", employee.department_id.id),
+            ("state", "=", "validate"),
+            ("is_cancelled", "=", False),
+        ]
+        return expression.OR([own, team_approved]), employee
 
     @api.model
     def get_leave_calendar_data(
@@ -1451,12 +1718,9 @@ class HrLeave(models.Model):
             ("request_date_to", ">=", date_from),
         ]
 
-        if employee_view:
-            curr_emp = self.env.user.employee_id
-            if not curr_emp:
-                domain.append(("id", "=", False))
-            else:
-                domain.append(("employee_id", "=", curr_emp.id))
+        visibility_domain, curr_emp = self._employee_calendar_visibility_domain(employee_view)
+        if visibility_domain:
+            domain = expression.AND([domain, visibility_domain])
         elif employee_ids:
             domain.append(("employee_id", "in", employee_ids))
 
@@ -1488,11 +1752,16 @@ class HrLeave(models.Model):
                 ("is_cancelled", "=", False),
             ])
 
-        leaves = self.search(domain, order="request_date_from asc")
+        # Employee record rules normally hide colleagues' leave.  The sudo is
+        # safe here because the server-built visibility domain above permits
+        # only the employee's own records and approved records in their team.
+        CalendarLeave = self.sudo() if employee_view else self
+        leaves = CalendarLeave.search(domain, order="request_date_from asc")
 
         leave_list = []
         for l in leaves:
             status = l._get_cleon_leave_status()
+            is_own = bool(curr_emp and l.employee_id == curr_emp)
             leave_list.append({
                 "id": l.id,
                 "request_ref": l.request_ref or f"LR-{l.id:06d}",
@@ -1510,19 +1779,37 @@ class HrLeave(models.Model):
                 "status": status,
                 "half_day": bool(l.request_unit_half),
                 "half_day_period": l.request_date_from_period if l.request_unit_half else False,
-                "notes": l.notes or l.admin_creation_note or "",
+                "notes": (l.notes or l.admin_creation_note or "") if (not employee_view or is_own) else "",
+                "is_own": is_own,
+                "can_open_detail": not employee_view or is_own,
             })
 
-        leave_types = self.env["hr.leave.type"].search([
+        leave_types = self.env["hr.leave.type"].sudo().search([
+            ("active", "=", True),
             ("company_id", "in", [False, self.env.company.id]),
         ])
-        departments = self.env["hr.department"].search([
-            ("company_id", "=", self.env.company.id),
-        ])
-        company_employees = self.env["hr.employee"].search([
-            ("company_id", "=", self.env.company.id),
-            ("active", "=", True),
-        ])
+        if employee_view:
+            departments = curr_emp.department_id
+            company_employees = self.env["hr.employee"].sudo().search([
+                ("company_id", "=", self.env.company.id),
+                ("department_id", "=", curr_emp.department_id.id),
+                ("active", "=", True),
+            ]) if curr_emp.department_id else curr_emp
+        else:
+            departments = self.env["hr.department"].search([
+                ("company_id", "=", self.env.company.id),
+            ])
+            company_employees = self.env["hr.employee"].search([
+                ("company_id", "=", self.env.company.id),
+                ("active", "=", True),
+            ])
+
+        public_holidays = self.env["resource.calendar.leaves"].sudo().search([
+            ("company_id", "in", [False, self.env.company.id]),
+            ("resource_id", "=", False),
+            ("date_from", "<=", date_to + " 23:59:59"),
+            ("date_to", ">=", date_from + " 00:00:00"),
+        ], order="date_from asc")
 
         return {
             "leaves": leave_list,
@@ -1542,6 +1829,12 @@ class HrLeave(models.Model):
                 "department": emp.department_id.name or "No Department",
             } for emp in company_employees],
             "total_active_employees": len(company_employees) or 1,
+            "holidays": [{
+                "id": holiday.id,
+                "name": holiday.name or _("Public Holiday"),
+                "date_from": fields.Date.to_string(holiday.date_from.date()),
+                "date_to": fields.Date.to_string(holiday.date_to.date()),
+            } for holiday in public_holidays],
         }
 
     @api.model
@@ -1571,12 +1864,9 @@ class HrLeave(models.Model):
             ("request_date_to", ">=", date_from),
         ]
 
-        if employee_view:
-            curr_emp = self.env.user.employee_id
-            if not curr_emp:
-                domain.append(("id", "=", False))
-            else:
-                domain.append(("employee_id", "=", curr_emp.id))
+        visibility_domain, _curr_emp = self._employee_calendar_visibility_domain(employee_view)
+        if visibility_domain:
+            domain = expression.AND([domain, visibility_domain])
         elif employee_ids:
             domain.append(("employee_id", "in", employee_ids))
 
@@ -1608,7 +1898,8 @@ class HrLeave(models.Model):
                 ("is_cancelled", "=", False),
             ])
 
-        leaves = self.search(domain)
+        CalendarLeave = self.sudo() if employee_view else self
+        leaves = CalendarLeave.search(domain)
 
         month_summary = {m: {"approved": 0, "pending": 0, "holidays": 0} for m in range(1, 13)}
         day_occupancy = {}

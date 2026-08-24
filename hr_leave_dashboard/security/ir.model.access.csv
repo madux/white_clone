@@ -8,3 +8,11 @@ access_hr_leave_type_tenure_tier_officer,hr.leave.type.tenure.tier officer,model
 access_hr_leave_type_tenure_tier_manager,hr.leave.type.tenure.tier manager,model_hr_leave_type_tenure_tier,hr_holidays.group_hr_holidays_manager,1,1,1,1
 access_hr_leave_balance_transaction_manager,hr.leave.balance.transaction manager,model_hr_leave_balance_transaction,hr_holidays.group_hr_holidays_manager,1,0,0,0
 access_hr_leave_balance_transaction_system,hr.leave.balance.transaction system,model_hr_leave_balance_transaction,base.group_system,1,0,0,0
+access_hr_leave_type_approval_stage_user,hr.leave.type.approval.stage user,model_hr_leave_type_approval_stage,base.group_user,1,0,0,0
+access_hr_leave_type_approval_stage_manager,hr.leave.type.approval.stage manager,model_hr_leave_type_approval_stage,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_approval_line_user,hr.leave.approval.line user,model_hr_leave_approval_line,base.group_user,1,0,0,0
+access_hr_leave_approval_line_manager,hr.leave.approval.line manager,model_hr_leave_approval_line,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_blackout_period_manager,hr.leave.blackout.period manager,model_hr_leave_blackout_period,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_blackout_period_system,hr.leave.blackout.period system,model_hr_leave_blackout_period,base.group_system,1,1,1,1
+access_hr_leave_accrual_run_manager,hr.leave.accrual.run manager,model_hr_leave_accrual_run,hr_holidays.group_hr_holidays_manager,1,0,0,0
+access_hr_leave_accrual_run_system,hr.leave.accrual.run system,model_hr_leave_accrual_run,base.group_system,1,1,1,1

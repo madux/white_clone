@@ -38,7 +38,7 @@ export const LEAVE_SETUP_STEPS = [
             ["Review escalation rules", "so requests do not remain unattended."],
         ],
         actionLabel: "Go to Settings",
-        actionId: "hr_holidays.action_hr_holidays_configuration",
+        actionId: "hr_leave_dashboard.action_hr_leave_settings_custom",
     },
     {
         number: 3,
@@ -74,7 +74,7 @@ export const LEAVE_SETUP_STEPS = [
             ["Check team coverage", "in the leave calendar before opening requests to employees."],
         ],
         actionLabel: "Go to Settings",
-        actionId: "hr_holidays.action_hr_holidays_configuration",
+        actionId: "hr_leave_dashboard.action_hr_leave_settings_custom",
     },
     {
         number: 5,

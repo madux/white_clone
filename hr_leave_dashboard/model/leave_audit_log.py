@@ -23,6 +23,7 @@ class HrLeaveAuditLog(models.Model):
         ("final_approval", "Final Approval"),
         ("reject", "Rejected"),
         ("cancelled", "Cancelled"),
+        ("escalated", "Escalated"),
         ("override_conflict", "Conflict Override"),
         ("edit", "Request Edited"),
         ("comment", "Comment Added"),

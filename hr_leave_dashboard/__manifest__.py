@@ -7,6 +7,7 @@
         'security/security.xml',
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
+        'data/leave_cron_data.xml',
         'views/dashboard_action.xml',
         'views/leave_base.xml',
         'views/menu.xml',

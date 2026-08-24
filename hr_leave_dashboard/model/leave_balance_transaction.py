@@ -528,7 +528,7 @@ class HrLeaveBalanceTransaction(models.Model):
             for lt in carry_types:
                 key = (emp.id, lt.id)
                 remaining = allocated.get(key, 0.0) - used.get(key, 0.0)
-                cap = lt.max_balance_cap or 0.0
+                cap = lt.max_carryover_days or 0.0
                 carry_amount = min(remaining, cap) if cap else remaining
                 if carry_amount <= 0:
                     continue
@@ -539,7 +539,15 @@ class HrLeaveBalanceTransaction(models.Model):
                     "holiday_status_id": lt.id,
                     "number_of_days": round(carry_amount, 2),
                     "date_from": today,
-                    "date_to": year_end,
+                    "date_to": (
+                        today + timedelta(days=90)
+                        if lt.carryover_expiry_rule == "three_months"
+                        else today + timedelta(days=180)
+                        if lt.carryover_expiry_rule == "six_months"
+                        else fields.Date.end_of(today + timedelta(days=366), "year")
+                        if lt.carryover_expiry_rule == "end_next_year"
+                        else False
+                    ),
                     "notes": _("Automatic carry-forward processed on %s") % fields.Date.to_string(today),
                 })
                 if allocation.state != "validate":

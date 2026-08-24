@@ -245,6 +245,7 @@
                         <div class="page-size-control">
                             Show
                             <select t-on-change="changePageSize">
+                                <option value="5" t-att-selected="state.pageSize === 5">5</option>
                                 <option value="10" t-att-selected="state.pageSize === 10">10</option>
                                 <option value="25" t-att-selected="state.pageSize === 25">25</option>
                                 <option value="50" t-att-selected="state.pageSize === 50">50</option>
