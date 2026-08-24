@@ -36,10 +36,7 @@ class HomeMenuController(http.Controller):
         settings_menu = request.env.ref(
             'base.menu_administration', raise_if_not_found=False
         )
-        # Odoo stores debug in the HTTP session, but its module loader clears
-        # ``odoo.debug`` when debug is not explicit in the current page URL.
-        # Requiring the client flag as well keeps this launcher aligned with
-        # the debug state of the currently rendered web client.
+       
         debug = request.session.debug if debug_mode else False
         visible_menu_ids = menu_model._visible_menu_ids(debug)
         menu_domain = [
