@@ -43,7 +43,6 @@ export class StaffDirectoryPeopleList extends Component {
         deptKey: { type: Function },
         lifecycleLabel: { type: Function },
         getLifecycleDotClass: { type: Function },
-        showToast: { type: Function },
 
     };
 
@@ -51,6 +50,7 @@ export class StaffDirectoryPeopleList extends Component {
     setup() {
         this.jumpInput = useRef("jumpInput");
         this.rpc = useService("rpc");
+        this.toast = useService("hr_staff_directory.toast");
         this._boundOnWindowClick = this._onWindowClick.bind(this);
         onMounted(() => {
             this._autosizeJumpInput(this.jumpInput.el);
@@ -338,7 +338,7 @@ export class StaffDirectoryPeopleList extends Component {
     compareSegments() {
         if (this.activeCompareSel.length < 2) return;
         // Placeholder: real comparison view lands in a follow-up task
-        this.props.showToast('success', `Comparing ${this.activeCompareSel.length} segments — comparison view coming soon`);
+        this.toast.show('success', `Comparing ${this.activeCompareSel.length} segments — comparison view coming soon`);
     }
 
     async selectSegment(name, id) {
@@ -484,13 +484,13 @@ export class StaffDirectoryPeopleList extends Component {
     async saveSegment() {
         const segName = this.state.segmentForm.name;
         if (!segName) {
-            this.props.showToast('warning', 'Give the segment a name');
+            this.toast.show('warning', 'Give the segment a name');
             return;
         }
         const conditions = this.state.segmentForm.conditions;
         const validConds = conditions.filter(c => c.field && c.operator && c.value);
         if (validConds.length === 0 || validConds.length !== conditions.length) {
-            this.props.showToast('warning', 'Fill in all condition values');
+            this.toast.show('warning', 'Fill in all condition values');
             return;
         }
 

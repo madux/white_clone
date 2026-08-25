@@ -44,6 +44,10 @@
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
 
+            'hr_staff_directory/static/src/components/toast/toast.css',
+            'hr_staff_directory/static/src/components/toast/toast.js',
+            'hr_staff_directory/static/src/components/toast/toast.xml',
+
             'hr_staff_directory/static/src/components/people_list/people_list.css',
 
             'hr_staff_directory/static/src/components/bar_chart/bar_chart.js',

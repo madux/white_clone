@@ -34,10 +34,12 @@ let activeSdirHandler = null;
  */
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
+    static props = ["*"];
     static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis };
 
     setup() {
         this.rpc = useService("rpc");
+        this.toast = useService("hr_staff_directory.toast");
         this.busService = this.env.services.bus_service;
         this.rootRef = useRef("root");
         this.jumpInput = useRef("jumpInput");
@@ -194,11 +196,6 @@ export class StaffDirectoryDashboard extends Component {
                 subject: '',
                 body: '',
                 sending: false
-            },
-            toast: {
-                isVisible: false,
-                type: '',
-                message: ''
             },
             hasMessageError: false,
             recentlyViewedProfiles: initialRecent,
@@ -736,13 +733,13 @@ export class StaffDirectoryDashboard extends Component {
                 employee_id: person.id
             });
             const action = person.is_pinned ? 'pinned' : 'unpinned';
-            this.showToast('success', `${person.name} has been successfully ${action}!`);
+            this.toast.show('success', `${person.name} has been successfully ${action}!`);
         } catch (error) {
             // Revert on error
             person.is_pinned = !person.is_pinned;
             this.state.people = [...this.state.people];
             console.error('Failed to toggle pin:', error);
-            this.showToast('error', 'Failed to update pin status.');
+            this.toast.show('error', 'Failed to update pin status.');
         }
     }
 
@@ -757,7 +754,7 @@ export class StaffDirectoryDashboard extends Component {
 
     exportToCSV(data, filename) {
         if (!data || data.length === 0) {
-            this.showToast('warning', 'No data to export.');
+            this.toast.show('warning', 'No data to export.');
             return;
         }
 
@@ -791,7 +788,7 @@ export class StaffDirectoryDashboard extends Component {
         link.click();
         document.body.removeChild(link);
         
-        this.showToast('success', `Successfully exported ${data.length} records!`);
+        this.toast.show('success', `Successfully exported ${data.length} records!`);
     }
 
     
@@ -1082,14 +1079,14 @@ export class StaffDirectoryDashboard extends Component {
         if (mb.sending) return;
         if (!mb.body || mb.body.trim() === '') {
             this.state.hasMessageError = true;
-            this.showToast('warning', 'Write something first');
+            this.toast.show('warning', 'Write something first');
             return;
         }
 
         const hasTargets = mb.mode === 'segment' ? !!mb.segmentId : mb.recipientIds.length > 0;
         if (!hasTargets) {
             this.state.hasMessageError = true;
-            this.showToast('warning', 'No recipients resolved for this message');
+            this.toast.show('warning', 'No recipients resolved for this message');
             return;
         }
 
@@ -1115,7 +1112,7 @@ export class StaffDirectoryDashboard extends Component {
             this.closeMessageBox();
         } catch (error) {
             console.error('Failed to send email:', error);
-            this.showToast('error', 'Failed to send email. Please try again.');
+            this.toast.show('error', 'Failed to send email. Please try again.');
         } finally {
             mb.sending = false;
         }
@@ -1129,25 +1126,12 @@ export class StaffDirectoryDashboard extends Component {
             let msg = `Email${sent === 1 ? '' : 's'} sent to ${sent} recipient${sent === 1 ? '' : 's'}`;
             if (skipped > 0) msg += ` · ${skipped} skipped (no work email)`;
             if (failed > 0) msg += ` · ${failed} failed`;
-            this.showToast('success', msg);
+            this.toast.show('success', msg);
         } else if (skipped > 0) {
-            this.showToast('warning', `No emails sent — ${skipped} recipient${skipped === 1 ? '' : 's'} ha${skipped === 1 ? 's' : 've'} no work email`);
+            this.toast.show('warning', `No emails sent — ${skipped} recipient${skipped === 1 ? '' : 's'} ha${skipped === 1 ? 's' : 've'} no work email`);
         } else {
-            this.showToast('error', 'No emails could be sent');
+            this.toast.show('error', 'No emails could be sent');
         }
-    }
-
-    showToast(type, message) {
-        this.state.toast.isVisible = true;
-        this.state.toast.type = type;
-        this.state.toast.message = message;
-        
-        if (this.toastTimeout) {
-            clearTimeout(this.toastTimeout);
-        }
-        this.toastTimeout = setTimeout(() => {
-            this.state.toast.isVisible = false;
-        }, 3000);
     }
 
     onKeyDown(ev) {

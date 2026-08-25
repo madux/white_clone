@@ -11,6 +11,7 @@ This module relies heavily on Odoo's web framework (OWL) to render a modern dash
 *   **heatmap**: Used for cross-sectional data visualization (e.g., skills distribution).
 *   **bar_chart**: Displays headcount trends and department distribution.
 *   **people_list & profile_panel**: Handles the individual employee cards and detailed views.
+*   **toast**: Service-driven reusable toast container, mounted globally (see §7).
 *   **staff_directory_dashboard.js**: The main orchestrator that fetches data and mounts these sub-components.
 
 ## 3. Backend Architecture (Python Models)
@@ -51,3 +52,52 @@ If your organization has a different specific definition for what constitutes a 
 3. Employment Type Mix (Backend Note)
 Currently, the backend Python model simply passes the raw `employee_type` field directly to the frontend. If `employee_type` is empty or lacks robust contract/employment status checking, the frontend is forced to guess using fallback logic (e.g., checking if `contract_id` exists). 
 **Note for Backend Developer:** Please ensure that any business logic for calculating the exact "Employment Type" (Permanent, Contract, Intern, etc.) is implemented in the `models/hr_employee.py` backend model. The `hr_staff_directory` module strictly relies on the **Single Source of Truth** approach—the frontend should only be responsible for rendering the data, not deducing it.
+
+## 7. Reusable Toast Mechanism (Service-Driven)
+The module ships a shared, animated toast notification system that **any component can raise from anywhere** — no prop-drilling, no local state, no per-template wiring. It is modeled directly on Odoo core's `notification_service` pattern (reactive state inside a service + a container registered in the `main_components` registry).
+
+### Files
+| File | Owns |
+|---|---|
+| `static/src/components/toast/toast.js` | `hr_staff_directory.toast` **service** (reactive state + `show()` API + container registration) and the `StaffDirectoryToast` OWL component |
+| `static/src/components/toast/toast.xml` | Template `hr_staff_directory.Toast` (icon + message markup) |
+| `static/src/components/toast/toast.css` | All `.sdir-toast*` rules + the `slideUpToast` keyframes (moved out of staff_directory.css) |
+
+### How It Works
+1. The service's `start()` creates a module-wide **reactive singleton**: `reactive({ isVisible, type, message })`.
+2. The same `start()` registers the container once in the **`main_components` registry** (`SDIRToastContainer`, sequence 100). The webclient mounts main components at its **root**, so exactly one toast container exists for the whole session — independent of which client action is open. This is also why the toast reliably renders *above* in-page modals: it is `position: fixed; z-index: 10001` at the webclient root, while e.g. the New Segment modal overlay sits at `z-index: 9999`.
+3. The reactive state object is passed to the container **as a prop** (the core-proven reactivity path — same as `props: { notifications }` in core's notification service). Mutating it re-renders the container.
+4. Calling `show()` mutates the state (`isVisible = true`, type, message) and (re)starts the auto-hide timer.
+
+### Usage (copy-paste for developers)
+```js
+import { useService } from "@web/core/utils/hooks";
+
+// in setup():
+this.toast = useService("hr_staff_directory.toast");
+
+// anywhere:
+this.toast.show("success", "Segment saved!");
+this.toast.show("warning", "Give the segment a name");
+this.toast.show("error",   "Failed to send email. Please try again.");
+this.toast.show("warning", "Slow operation finished", 5000);  // optional duration, default 3000ms
+```
+
+### Toast Types
+| Type | Look | Icon |
+|---|---|---|
+| `success` | Green (`#EAFBF1` / `#10b981`) | check |
+| `warning` | Red (`#FDECEC` / `#E53E3E`) | exclamation |
+| `error`   | Strong red (`#FEF2F2` / `#DC2626`) | circle-x |
+
+Behavior: fixed bottom-right, 360px, slides up (`slideUpToast`), auto-dismisses after 3s; a rapid second call replaces the message and restarts the timer.
+
+### Current Consumers
+*   **staff_directory_dashboard.js** — pin/unpin results, CSV export, email send results (`_reportEmailResult`).
+*   **people_list.js** — Compare-Segments placeholder toast and the two save-segment validation guards ("Give the segment a name" / "Fill in all condition values").
+
+### Extending
+Adding a new toast type requires **no JS changes**: add `.sdir-toast-{type}` color rules in `toast.css` and one icon branch (`<svg t-if="state.type === '...'" .../>`) in `toast.xml`.
+
+### Design Note — why `main_components`?
+An earlier revision mounted the container inside the dashboard's template. That couples the toast to a single client action (it disappears when the action unmounts) and relies on a child component subscribing to service state through a getter. Registering in `main_components` — exactly what core's `notification_service` does — guarantees one always-mounted container at the webclient root, making `show()` truly global and the reactivity path identical to core.
