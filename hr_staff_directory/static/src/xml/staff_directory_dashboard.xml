@@ -99,6 +99,7 @@
                 deptKey="this.deptKey.bind(this)"
                 lifecycleLabel="this.lifecycleLabel.bind(this)"
                 getLifecycleDotClass="this.getLifecycleDotClass.bind(this)"
+                showToast="this.showToast.bind(this)"
             />
             </div><!-- /.sdir-people-content -->
 

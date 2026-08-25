@@ -1,12 +1,54 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_staff_directory.PeopleList">
+        <!-- Icon sprite: single source for every segment icon in this
+             component (picker grid, modal header, sidebar, detail card,
+             metrics, spinner). Symbols draw with stroke="currentColor", so
+             colour follows the CSS `color` of the <use>-ing <svg>.
+             Referenced statically via href="#sdir-pl-ic-{id}" or dynamically
+             via t-att-href (e.g. '#sdir-pl-ic-' + segmentForm.icon). -->
+        <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+            <defs>
+                <symbol id="sdir-pl-ic-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></g></symbol>
+                <symbol id="sdir-pl-ic-user" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></g></symbol>
+                <symbol id="sdir-pl-ic-user-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></g></symbol>
+                <symbol id="sdir-pl-ic-briefcase" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></g></symbol>
+                <symbol id="sdir-pl-ic-building-2" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></g></symbol>
+                <symbol id="sdir-pl-ic-map-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></g></symbol>
+                <symbol id="sdir-pl-ic-tag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></g></symbol>
+                <symbol id="sdir-pl-ic-award" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></g></symbol>
+                <symbol id="sdir-pl-ic-trending-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></g></symbol>
+                <symbol id="sdir-pl-ic-trending-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></g></symbol>
+                <symbol id="sdir-pl-ic-triangle-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></g></symbol>
+                <symbol id="sdir-pl-ic-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></g></symbol>
+                <symbol id="sdir-pl-ic-star" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></g></symbol>
+                <symbol id="sdir-pl-ic-flame" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></g></symbol>
+                <symbol id="sdir-pl-ic-zap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></g></symbol>
+                <symbol id="sdir-pl-ic-target" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></g></symbol>
+                <symbol id="sdir-pl-ic-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></g></symbol>
+                <symbol id="sdir-pl-ic-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></g></symbol>
+                <symbol id="sdir-pl-ic-chart-no-axes-column" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></g></symbol>
+                <symbol id="sdir-pl-ic-git-branch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></g></symbol>
+                <symbol id="sdir-pl-ic-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></g></symbol>
+                <symbol id="sdir-pl-ic-book-open" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></g></symbol>
+                <symbol id="sdir-pl-ic-house" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></g></symbol>
+                <symbol id="sdir-pl-ic-laptop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></g></symbol>
+                <symbol id="sdir-pl-ic-graduation-cap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></g></symbol>
+                <symbol id="sdir-pl-ic-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></g></symbol>
+                <symbol id="sdir-pl-ic-trophy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></g></symbol>
+                <symbol id="sdir-pl-ic-heart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></g></symbol>
+                <symbol id="sdir-pl-ic-coffee" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v2"/><path d="M14 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/><path d="M6 2v2"/></g></symbol>
+                <symbol id="sdir-pl-ic-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></g></symbol>
+                <symbol id="sdir-pl-ic-loader-circle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></g></symbol>
+            </defs>
+        </svg>
+
         <t t-if="state.activeView !== 'segments'">
                 <!-- ── STAT CARDS ROW ──────────────────────────────────────── -->
                 <div class="sdir-stat-row">
 
                     <!-- Total People -->
-                    <div class="sdir-stat-card sdir-stat-purple" id="statTotal">
+                    <div class="sdir-stat-card sdir-stat-purple" id="sdirPlStatTotal">
                         <div class="sdir-stat-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" 
                             stroke-linejoin="round" class="lucide lucide-users">
@@ -23,7 +65,7 @@
                     </div>
 
                     <!-- Active -->
-                    <div class="sdir-stat-card sdir-stat-green" id="statActive">
+                    <div class="sdir-stat-card sdir-stat-green" id="sdirPlStatActive">
                         <div class="sdir-stat-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-check"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><polyline points="16 11 18 13 22 9"></polyline></svg>
                         </div>
@@ -34,7 +76,7 @@
                     </div>
 
                     <!-- On Leave -->
-                    <div class="sdir-stat-card sdir-stat-blue" id="statOnLeave">
+                    <div class="sdir-stat-card sdir-stat-blue" id="sdirPlStatOnLeave">
                         <div class="sdir-stat-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plane"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>
                         </div>
@@ -45,7 +87,7 @@
                     </div>
 
                     <!-- Retention Priority -->
-                    <div class="sdir-stat-card sdir-stat-red" id="statRetention">
+                    <div class="sdir-stat-card sdir-stat-red" id="sdirPlStatRetention">
                         <div class="sdir-stat-icon">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
@@ -60,7 +102,7 @@
                     </div>
 
                     <!-- Probation -->
-                    <div class="sdir-stat-card sdir-stat-amber" id="statProbation">
+                    <div class="sdir-stat-card sdir-stat-amber" id="sdirPlStatProbation">
                         <div class="sdir-stat-icon">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -110,7 +152,7 @@
                         <div t-att-class="props.adminMode ? 'sdir-toggle-pill' : 'sdir-toggle-pill sdir-toggle-pill--ess'" id="sdirAdminEssToggle">
                             <button type="button"
                                     t-att-class="props.adminMode ? 'sdir-toggle-opt sdir-toggle-active' : 'sdir-toggle-opt'"
-                                    id="toggleAdmin"
+                                    id="sdirPlToggleAdmin"
                                     t-on-click="() => props.toggleAdminMode(true)">
                                 <!-- <span class="sdir-toggle-dot"/> -->
                                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
@@ -121,7 +163,7 @@
                             </button>
                             <button type="button"
                                     t-att-class="props.adminMode ? 'sdir-toggle-opt' : 'sdir-toggle-opt sdir-toggle-active'"
-                                    id="toggleEss"
+                                    id="sdirPlToggleEss"
                                     t-on-click="() => props.toggleAdminMode(false)">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
                                 stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-off">
@@ -137,7 +179,7 @@
                         <div class="sdir-view-btns" id="sdirViewToggle">
                             <button type="button"
                                     t-att-class="state.activeView === 'list' ? 'sdir-view-btn sdir-view-active' : 'sdir-view-btn'"
-                                    id="viewList"
+                                    id="sdirPlViewList"
                                     t-on-click="() => this.toggleView('list')"
                                     title="List view">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -151,7 +193,7 @@
                             </button>
                             <button type="button"
                                     t-att-class="state.activeView === 'grid' ? 'sdir-view-btn sdir-view-active' : 'sdir-view-btn'"
-                                    id="viewGrid"
+                                    id="sdirPlViewGrid"
                                     t-on-click="() => this.toggleView('grid')"
                                     title="Grid view">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
@@ -167,7 +209,7 @@
                         <div class="sdir-cols-wrap" t-if="props.adminMode">
                             <button type="button" 
                                     t-att-class="state.showColumnsModal ? 'sdir-btn sdir-btn-active sdir-btn-columns' : 'sdir-btn sdir-btn-ghost sdir-btn-columns'" 
-                                    id="btnColumns"
+                                    id="sdirPlBtnColumns"
                                     t-on-click="() => this.toggleColumnsModal()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings">
@@ -238,46 +280,38 @@
                         </div>
 
                         <!-- Saved Segments group -->
-                        <div style="display: flex; border-radius: 9px; border: 1.5px solid rgb(232, 232, 238); overflow: visible; flex-shrink: 0; position: relative;" id="btnSavedSegmentsGroup">
-                            <button style="height: 32px; padding: 0px 10px 0px 12px; border-width: medium 1px medium medium; border-style: none solid none none; border-color: currentcolor rgb(232, 232, 238) currentcolor currentcolor; border-image: none; background-color: rgb(255, 255, 255); font-size: 12px; color: rgb(55, 65, 81); cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 600; border-radius: 7px 0px 0px 7px;" t-on-click="() => this.toggleView('segments')">
+                        <div class="sdir-pl-seg-group" id="sdirPlBtnSavedSegmentsGroup">
+                            <button t-att-class="'sdir-pl-seg-dd-btn' + (savedSegments.length === 0 ? ' sdir-pl-seg-dd-btn-solo' : '')" t-on-click="() => this.onSavedSegmentsBtnClick()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg> 
                                 Saved Segments
                             </button>
-                            <button t-att-style="state.showSavedSegments ? 'height: 32px; width: 28px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background-color: rgb(255, 240, 247); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0px 7px 7px 0px;' : 'height: 32px; width: 28px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background-color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0px 7px 7px 0px;'" t-on-click.stop="() => this.toggleSavedSegments()">
+                            <button t-if="savedSegments.length > 0" class="sdir-pl-seg-dd-chev" t-att-class="state.showSavedSegments ? 'sdir-pl-seg-dd-chev-on' : ''" t-on-click.stop="() => this.toggleSavedSegments()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" t-att-stroke="state.showSavedSegments ? '#E91E8C' : '#9CA3AF'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg>
                             </button>
                             
                             <!-- Dropdown Modal -->
-                            <div t-if="state.showSavedSegments" style="position: absolute; top: 100%; right: 0; margin-top: 8px; background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); box-shadow: rgba(0, 0, 0, 0.13) 0px 12px 36px; z-index: 9060; min-width: 220px; overflow: hidden;" class="sdir-segments-modal">
-                                <div style="padding: 10px 14px 6px; border-bottom: 1px solid rgb(240, 240, 245);">
-                                    <span style="font-size: 10px; font-weight: 700; color: rgb(156, 163, 175); text-transform: uppercase; letter-spacing: 0.06em;">Apply Saved Segment</span>
+                            <div t-if="state.showSavedSegments" class="sdir-segments-modal">
+                                <div class="sdir-pl-dd-head">
+                                    <span class="sdir-pl-dd-label">Apply Saved Segment</span>
                                 </div>
-                                <div style="max-height: 280px; overflow-y: auto;">
-                                    <button style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-width: medium medium 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(249, 249, 252); border-image: none; background-color: rgb(255, 255, 255); cursor: pointer; text-align: left; font-size: 13px; color: rgb(17, 24, 39); font-weight: 600;">
-                                        <div style="width: 9px; height: 9px; border-radius: 50%; background-color: rgb(59, 130, 246); flex-shrink: 0;"></div>
-                                        <span style="flex: 1 1 0%;">Engineering Seniors</span>
-                                        <span style="font-size: 10px; color: rgb(156, 163, 175); font-weight: 500;">2 cond.</span>
-                                    </button>
-                                    <button style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-width: medium medium 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(249, 249, 252); border-image: none; background-color: rgb(255, 255, 255); cursor: pointer; text-align: left; font-size: 13px; color: rgb(17, 24, 39); font-weight: 600;">
-                                        <div style="width: 9px; height: 9px; border-radius: 50%; background-color: rgb(239, 68, 68); flex-shrink: 0;"></div>
-                                        <span style="flex: 1 1 0%;">High Flight Risk</span>
-                                        <span style="font-size: 10px; color: rgb(156, 163, 175); font-weight: 500;">1 cond.</span>
-                                    </button>
-                                    <button style="display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-width: medium medium 1px; border-style: none none solid; border-color: currentcolor currentcolor rgb(249, 249, 252); border-image: none; background-color: rgb(255, 255, 255); cursor: pointer; text-align: left; font-size: 13px; color: rgb(17, 24, 39); font-weight: 600;">
-                                        <div style="width: 9px; height: 9px; border-radius: 50%; background-color: rgb(16, 185, 129); flex-shrink: 0;"></div>
-                                        <span style="flex: 1 1 0%;">Remote Workers</span>
-                                        <span style="font-size: 10px; color: rgb(156, 163, 175); font-weight: 500;">1 cond.</span>
-                                    </button>
+                                <div class="sdir-pl-dd-scroll">
+                                    <t t-foreach="savedSegments" t-as="seg" t-key="seg.id">
+                                        <button class="sdir-pl-seg-dd-item" t-on-click="() => this.openSegmentFromDropdown(seg)">
+                                            <div class="sdir-pl-dot" t-att-style="'background-color: ' + (seg.color || '#F59E0B') + ';'"></div>
+                                            <span class="sdir-pl-flex1"><t t-esc="seg.name"/></span>
+                                            <span class="sdir-pl-cap"><t t-esc="seg.conditions.length"/> cond.</span>
+                                        </button>
+                                    </t>
                                 </div>
-                                <div style="padding: 8px 14px; border-top: 1px solid rgb(240, 240, 245);">
-                                    <button style="width: 100%; height: 28px; border: 1px solid rgb(232, 232, 238); border-radius: 7px; background: rgb(249, 250, 251); font-size: 11px; color: rgb(107, 114, 128); cursor: pointer; font-weight: 600;" t-on-click="() => props.clearAllFilters()">Clear All Filters</button>
+                                <div class="sdir-pl-dd-foot">
+                                    <button class="sdir-pl-clearall-btn" t-on-click="() => props.clearAllFilters()">Clear All Filters</button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Filter icon-only button -->
                         <div class="sdir-filter-wrapper">
-                            <button type="button" t-attf-class="sdir-btn sdir-btn-icon #{props.activeFilterCount > 0 ? 'sdir-btn-filter-active' : ''}" id="btnFilter" t-on-click="() => props.toggleFilterModal()">
+                            <button type="button" t-attf-class="sdir-btn sdir-btn-icon #{props.activeFilterCount > 0 ? 'sdir-btn-filter-active' : ''}" id="sdirPlBtnFilter" t-on-click="() => props.toggleFilterModal()">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-funnel"><path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z"></path></svg>
                                 <span class="sdir-filter-badge" t-if="props.activeFilterCount > 0"><t t-esc="props.activeFilterCount"/></span>
                             </button>
@@ -360,7 +394,7 @@
                         </div>
 
                         <!-- Export button -->
-                        <button type="button" class="sdir-btn sdir-btn-ghost" id="btnExport" t-on-click="() => props.exportAll()">
+                        <button type="button" class="sdir-btn sdir-btn-ghost" id="sdirPlBtnExport" t-on-click="() => props.exportAll()">
                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
                             Export
                         </button>
@@ -438,7 +472,7 @@
                             <thead class="sdir-thead">
                                 <tr>
                                     <th class="sdir-th sdir-th-check">
-                                        <input type="checkbox" class="sdir-checkbox" id="checkAll"
+                                        <input type="checkbox" class="sdir-checkbox" id="sdirPlCheckAll"
                                                t-att-checked="props.isAllSelected"
                                                t-on-change="(ev) => props.toggleAll(ev)"/>
                                     </th>
@@ -447,7 +481,7 @@
                                         <th t-att-class="'sdir-th' + (col.id === 'name' ? ' sdir-th-name' : '')" 
                                             t-if="col.id !== 'manager' or props.adminMode"
                                             t-on-click="() => this.toggleSort(col.id)"
-                                            style="cursor: pointer;">
+                                            class="sdir-pl-clickable">
                                             <t t-esc="col.label.toUpperCase()"/>
                                             <t t-if="state.sortBy === col.id">
                                                 <svg t-if="!state.sortDesc" class="sdir-sort-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -475,7 +509,7 @@
 
                                         <!-- Checkbox -->
                                         <td class="sdir-td sdir-td-check" t-on-click.stop="">
-                                            <input type="checkbox" class="sdir-checkbox" t-att-id="'row-chk-' + person.id"
+                                            <input type="checkbox" class="sdir-checkbox" t-att-id="'sdirPlRowChk-' + person.id"
                                                    t-att-checked="props.selectedPeople.includes(person.id)"
                                                    t-on-change="() => props.toggleSelection(person.id)"/>
                                         </td>
@@ -559,7 +593,7 @@
                                                 <td class="sdir-td">
                                                     <span t-att-class="'sd-workmode-pill sd-wm-' + (person.work_mode or 'hybrid').toLowerCase()"
                                                           t-esc="person.work_mode or '—'"
-                                                          style="display: inline-flex;"/>
+                                                          class="sdir-pl-inline-flex"/>
                                                 </td>
                                             </t>
                                             
@@ -660,7 +694,7 @@
 
                 <!-- ── DATA GRID ───────────────────────────────────────────── -->
                 <t t-if="state.activeView === 'grid'">
-                    <div id="sd-grid-view" class="sd-grid-container">
+                    <div id="sdirPlGridView" class="sd-grid-container">
                         <t t-foreach="this.paginatedPeople()" t-as="person" t-key="person.id">
                             <div t-att-class="'sd-card sdir-clickable' + (person.is_pinned ? ' sdir-card-pinned' : '')"
                                  t-on-click="() => props.openProfile(person.id)">
@@ -834,179 +868,179 @@
         </t>
 
         <t t-if="state.activeView === 'segments'">
-<div style="flex: 1 1 0%; display: flex; flex-direction: column; overflow: hidden; min-width: 0px;"><style>
-        .wsv-header-stats { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
-        .wsv-stat-tile { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 8px; background: #F9FAFB; border: 1px solid #F0F0F5; white-space: nowrap; }
-        .wsv-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
-        .wsv-sidebar { width: 240px; flex-shrink: 0; border-right: 1px solid #E8E8EE; background: #fff; display: flex; flex-direction: column; overflow: hidden; }
-        .wsv-main { flex: 1; overflow-y: auto; background: #F5F5F8; padding: 16px; min-width: 0; }
-        .wsv-main-ai { flex: 1; overflow: hidden; min-width: 0; display: flex; flex-direction: column; }
-        .wsv-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
-        @media (max-width: 700px) {
-          .wsv-sidebar { width: 180px; }
-          .wsv-stat-tile span.wsv-stat-label { display: none; }
-        }
-        @media (max-width: 520px) {
-          .wsv-body { flex-direction: column; }
-          .wsv-sidebar { width: 100%; height: 180px; border-right: none; border-bottom: 1px solid #E8E8EE; flex-shrink: 0; }
-          .wsv-main, .wsv-main-ai { overflow-y: auto; }
-        }
-      </style><div style="background-color: rgb(255, 255, 255); border-bottom: 1px solid rgb(232, 232, 238); padding: 0px 14px; min-height: 48px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;"><button style="width: 30px; height: 30px; border-radius: 7px; border: 1.5px solid rgb(232, 232, 238); background-color: rgb(255, 255, 255); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;" t-on-click="() => this.toggleView('list')"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></button><div class="wsv-header-stats"><div class="wsv-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg><span style="font-size: 13px; font-weight: 700; color: rgb(55, 65, 81);">3</span><span class="wsv-stat-label" style="font-size: 11px; color: rgb(156, 163, 175); font-weight: 500;">Segments</span></div><div class="wsv-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span style="font-size: 13px; font-weight: 700; color: rgb(16, 185, 129);">200</span><span class="wsv-stat-label" style="font-size: 11px; color: rgb(156, 163, 175); font-weight: 500;">Workforce</span></div><div class="wsv-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg><span style="font-size: 13px; font-weight: 700; color: rgb(239, 68, 68);">14</span><span class="wsv-stat-label" style="font-size: 11px; color: rgb(156, 163, 175); font-weight: 500;">High Risk</span></div><div class="wsv-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg><span style="font-size: 13px; font-weight: 700; color: rgb(59, 130, 246);">57</span><span class="wsv-stat-label" style="font-size: 11px; color: rgb(156, 163, 175); font-weight: 500;">Remote</span></div></div></div><div class="wsv-body"><div class="wsv-sidebar"><div style="padding: 14px 16px; border-bottom: 1px solid rgb(243, 244, 246); display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 12px; font-weight: 700; color: rgb(17, 24, 39);">Saved Segments</span><button t-on-click="() => this.toggleNewSegmentModal()" style="height: 30px; padding: 0px 12px; background: linear-gradient(135deg, rgb(233, 30, 140) 0%, rgb(194, 24, 91) 100%); border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 8px; color: rgb(255, 255, 255); font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: rgba(26, 26, 46, 0.3) 0px 2px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg> New</button></div><div style="flex: 1 1 0%; overflow-y: auto;">
+<div class="sdir-pl-view-root"><div class="sdir-pl-topbar"><button class="sdir-pl-back-btn" t-on-click="() => this.toggleView('list')"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></button><div class="sdir-pl-header-stats"><div class="sdir-pl-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-layers"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg><span class="sdir-pl-statnum" t-esc="segCount"/><span class="sdir-pl-stat-tile-label sdir-pl-mini-label">Segments</span></div><div class="sdir-pl-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span class="sdir-pl-statnum-green" t-esc="workforceCount"/><span class="sdir-pl-stat-tile-label sdir-pl-mini-label">Workforce</span></div><div class="sdir-pl-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg><span class="sdir-pl-statnum-red" t-esc="highRiskCount"/><span class="sdir-pl-stat-tile-label sdir-pl-mini-label">High Risk</span></div><div class="sdir-pl-stat-tile"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg><span class="sdir-pl-statnum-blue" t-esc="remoteCount"/><span class="sdir-pl-stat-tile-label sdir-pl-mini-label">Remote</span></div></div></div><div class="sdir-pl-body"><div class="sdir-pl-sidebar"><div class="sdir-pl-side-head"><span class="sdir-pl-side-title">Saved Segments</span><button t-on-click="() => this.toggleNewSegmentModal()" class="sdir-pl-newseg-btn"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg> New</button></div><div class="sdir-pl-scroll1">
     <t t-foreach="savedSegments" t-as="seg" t-key="seg.id">
-        <div t-on-click="() => this.selectSegment(seg.name, seg.id)" t-att-style="state.selectedSegment === seg.name ? 'padding: 13px 16px; border-bottom: 1px solid rgb(243, 244, 246); cursor: pointer; background-color: rgb(255, 248, 252); border-left: 3px solid rgb(233, 30, 140); transition: 0.12s;' : 'padding: 13px 16px; border-bottom: 1px solid rgb(243, 244, 246); cursor: pointer; background-color: rgb(255, 255, 255); border-left: 3px solid transparent; transition: 0.12s;'">
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-                <div t-att-style="'width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background-color: ' + (seg.color || '#F59E0B') + ';'">
-                    <i t-attf-class="lucide lucide-{{seg.icon || 'users'}}" style="color: white; font-size: 14px;"></i>
+        <div t-on-click="() => this.selectSegment(seg.name, seg.id)" t-att-class="'sdir-pl-seg-item' + (state.selectedSegment === seg.name ? ' sdir-pl-seg-item-active' : '')">
+            <div class="sdir-pl-seg-row">
+                <div class="sdir-pl-seg-icon" t-att-style="'background-color: ' + (seg.color || '#F59E0B') + ';'">
+                    <svg width="14" height="14" class="sdir-pl-ic-white14"><use t-att-href="'#sdir-pl-ic-' + (seg.icon || 'users')"/></svg>
                 </div>
-                <div style="flex: 1 1 0%; min-width: 0px;">
-                    <div style="font-size: 12px; font-weight: 700; color: rgb(17, 24, 39); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><t t-esc="seg.name"/></div>
-                    <div style="font-size: 10px; color: rgb(156, 163, 175); margin-top: 2px;"><t t-esc="seg.conditions.length"/> condition<t t-if="seg.conditions.length !== 1">s</t></div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px;">
+                <div class="sdir-pl-col-min0">
+                    <div class="sdir-pl-seg-name"><t t-esc="seg.name"/></div>
+                    <div class="sdir-pl-cap-mt2"><t t-esc="seg.conditions.length"/> condition<t t-if="seg.conditions.length !== 1">s</t></div>
+                    <div class="sdir-pl-chips-sm">
                         <t t-foreach="seg.conditions" t-as="cond" t-key="cond.field">
-                            <span t-att-style="'font-size: 9px; padding: 2px 6px; border-radius: 5px; font-weight: 700; background-color: ' + (seg.color || '#F59E0B') + '14; color: ' + (seg.color || '#F59E0B') + ';'">
+                            <span class="sdir-pl-condchip" t-att-style="'background-color: ' + (seg.color || '#F59E0B') + '14; color: ' + (seg.color || '#F59E0B') + ';'">
                                 <t t-esc="cond.field"/> <t t-esc="cond.operator"/> <t t-esc="cond.value"/>
                             </span>
                         </t>
                     </div>
                 </div>
-                <button t-on-click.stop="() => this.deleteSegment(seg.id)" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background: none; cursor: pointer; padding: 2px; color: rgb(209, 213, 219); flex-shrink: 0;">
+                <button t-on-click.stop="() => this.deleteSegment(seg.id)" class="sdir-pl-seg-del">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2 lucide-trash-2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
                 </button>
             </div>
         </div>
     </t>
-<div style="padding: 14px 16px; border-top: 1px solid rgb(243, 244, 246); background-color: rgb(250, 250, 250);"><div style="font-size: 10px; font-weight: 700; color: rgb(156, 163, 175); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Compare Segments</div><div style="display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;"><button style="font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); color: rgb(107, 114, 128); cursor: pointer; font-weight: 700; transition: 0.12s;">Engineering Seniors</button><button style="font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); color: rgb(107, 114, 128); cursor: pointer; font-weight: 700; transition: 0.12s;">High Flight Risk</button><button style="font-size: 10px; padding: 3px 8px; border-radius: 6px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); color: rgb(107, 114, 128); cursor: pointer; font-weight: 700; transition: 0.12s;">Remote Workers</button></div><button disabled="" style="width: 100%; height: 34px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 9px; background: rgb(229, 231, 235); color: rgb(156, 163, 175); font-size: 12px; font-weight: 700; cursor: default; transition: 0.2s;">Compare (0)</button></div></div>
+</div><!-- /.sdir-pl-scroll1 -->
+<div class="sdir-pl-compare-foot">
+        <button class="sdir-pl-compare-head" t-on-click="() => this.toggleCompareAccordion()">
+            <span class="sdir-pl-compare-head-label">Compare Segments</span>
+            <svg t-att-class="'sdir-pl-compare-chev' + (state.compareOpen ? ' sdir-pl-compare-chev-on' : '')" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </button>
+        <div class="sdir-pl-compare-chips" t-if="state.compareOpen">
+            <t t-foreach="savedSegments" t-as="seg" t-key="seg.id">
+                <button t-att-class="'sdir-pl-compare-chip' + (isChipSelected(seg.id) ? ' sdir-pl-compare-chip-on' : '')" t-on-click="() => this.toggleCompareChip(seg.id)">
+                    <t t-esc="seg.name"/>
+                </button>
+            </t>
+        </div>
+        <button t-if="state.compareOpen" t-att-class="'sdir-pl-compare-btn' + (compareCount >= 2 ? ' sdir-pl-compare-btn-on' : '')" t-att-disabled="compareCount >= 2 ? undefined : 'disabled'" t-on-click="() => this.compareSegments()">
+            Compare (<t t-esc="compareCount"/>)
+        </button>
+    </div><!-- /.sdir-pl-compare-foot -->
+    </div><!-- /.sdir-pl-sidebar -->
     <t t-if="state.currentSegmentData">
-        <div class="wsv-main">
-            <div style="background-color: rgb(255, 255, 255); border-radius: 14px; border: 1px solid rgb(232, 232, 238); padding: 18px 22px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; box-shadow: rgba(0, 0, 0, 0.05) 0px 2px 8px;">
-                <div t-att-style="'width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, ' + (state.currentSegmentData.color || '#F59E0B') + '25 0%, ' + (state.currentSegmentData.color || '#F59E0B') + '10 100%); border: 1.5px solid ' + (state.currentSegmentData.color || '#F59E0B') + '30;'">
-                    <i t-attf-class="lucide lucide-{{state.currentSegmentData.icon || 'users'}}" t-att-style="'color: ' + (state.currentSegmentData.color || '#F59E0B') + '; font-size: 22px;'"></i>
+        <div class="sdir-pl-main">
+            <div class="sdir-pl-detail-card">
+                <div class="sdir-pl-detail-icon" t-att-style="'background: linear-gradient(135deg, ' + (state.currentSegmentData.color || '#F59E0B') + '25 0%, ' + (state.currentSegmentData.color || '#F59E0B') + '10 100%); border: 1.5px solid ' + (state.currentSegmentData.color || '#F59E0B') + '30;'">
+                    <svg width="22" height="22" class="sdir-pl-ic22" t-att-style="'color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'"><use t-att-href="'#sdir-pl-ic-' + (state.currentSegmentData.icon || 'users')"/></svg>
                 </div>
-                <div style="flex: 1 1 0%;">
-                    <div style="font-size: 17px; font-weight: 800; color: rgb(17, 24, 39); margin-bottom: 6px;"><t t-esc="state.currentSegmentData.name"/></div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                <div class="sdir-pl-flex1">
+                    <div class="sdir-pl-detail-title"><t t-esc="state.currentSegmentData.name"/></div>
+                    <div class="sdir-pl-conds-wrap">
                         <t t-foreach="state.currentSegmentData.conditions" t-as="cond" t-key="cond.field">
-                            <span t-att-style="'font-size: 10px; padding: 3px 8px; border-radius: 6px; font-weight: 700; background-color: ' + (state.currentSegmentData.color || '#F59E0B') + '12; color: ' + (state.currentSegmentData.color || '#F59E0B') + '; border: 1px solid ' + (state.currentSegmentData.color || '#F59E0B') + '25;'">
+                            <span class="sdir-pl-condchip-lg" t-att-style="'background-color: ' + (state.currentSegmentData.color || '#F59E0B') + '12; color: ' + (state.currentSegmentData.color || '#F59E0B') + '; border: 1px solid ' + (state.currentSegmentData.color || '#F59E0B') + '25;'">
                                 <t t-esc="cond.field"/> <t t-esc="cond.operator"/> <t t-esc="cond.value"/>
                             </span>
                         </t>
                     </div>
                 </div>
-                <button t-on-click="() => this.openSegmentMessageBox()" t-att-disabled="!state.currentSegmentData.metrics.total" style="height: 38px; padding: 0px 18px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 10px; background: rgb(233, 30, 140); color: rgb(255, 255, 255); font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: rgba(233, 30, 140, 0.25) 0px 3px 12px; white-space: nowrap;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail" style="vertical-align: -2px; margin-right: 6px;"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>Email All
+                <button t-on-click="() => this.openSegmentMessageBox()" t-att-disabled="!state.currentSegmentData.metrics.total" class="sdir-pl-emailall-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail sdir-pl-ic-mail"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>Email All
                 </button>
             </div>
             
-            <div class="wsv-metrics">
-                <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); padding: 16px 18px; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div t-att-style="'width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background-color: ' + (state.currentSegmentData.color || '#F59E0B') + '14;'">
-                            <i t-attf-class="lucide lucide-{{state.currentSegmentData.icon || 'users'}}" t-att-style="'color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'"></i>
+            <div class="sdir-pl-metrics">
+                <div class="sdir-pl-card">
+                    <div class="sdir-pl-row-between8">
+                        <div class="sdir-pl-micon-base" t-att-style="'background-color: ' + (state.currentSegmentData.color || '#F59E0B') + '14;'">
+                            <svg width="16" height="16" t-att-style="'color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'"><use t-att-href="'#sdir-pl-ic-' + (state.currentSegmentData.icon || 'users')"/></svg>
                         </div>
                     </div>
-                    <div t-att-style="'font-size: 26px; font-weight: 800; line-height: 1; color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'">
+                    <div class="sdir-pl-mval-base" t-att-style="'color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'">
                         <t t-esc="state.currentSegmentData.metrics.total"/>
                     </div>
-                    <div style="font-size: 11px; color: rgb(156, 163, 175); margin-top: 4px; font-weight: 600;">Members</div>
-                    <div style="font-size: 10px; color: rgb(196, 196, 196); margin-top: 1px;">in cohort</div>
+                    <div class="sdir-pl-mlabel">Members</div>
+                    <div class="sdir-pl-msub">in cohort</div>
                 </div>
-                <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); padding: 16px 18px; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="width: 34px; height: 34px; border-radius: 9px; background-color: rgba(107, 114, 128, 0.08); display: flex; align-items: center; justify-content: center;">
+                <div class="sdir-pl-card">
+                    <div class="sdir-pl-row-between8">
+                        <div class="sdir-pl-micon-gray">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trending-up"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
                         </div>
                     </div>
-                    <div style="font-size: 26px; font-weight: 800; color: rgb(107, 114, 128); line-height: 1;">
+                    <div class="sdir-pl-mval-gray">
                         <t t-esc="state.currentSegmentData.metrics.avg_tenure"/>
                     </div>
-                    <div style="font-size: 11px; color: rgb(156, 163, 175); margin-top: 4px; font-weight: 600;">Avg Tenure</div>
-                    <div style="font-size: 10px; color: rgb(196, 196, 196); margin-top: 1px;">average</div>
+                    <div class="sdir-pl-mlabel">Avg Tenure</div>
+                    <div class="sdir-pl-msub">average</div>
                 </div>
-                <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); padding: 16px 18px; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="width: 34px; height: 34px; border-radius: 9px; background-color: rgba(239, 68, 68, 0.08); display: flex; align-items: center; justify-content: center;">
+                <div class="sdir-pl-card">
+                    <div class="sdir-pl-row-between8">
+                        <div class="sdir-pl-micon-red">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
                         </div>
                     </div>
-                    <div style="font-size: 26px; font-weight: 800; color: rgb(239, 68, 68); line-height: 1;">
+                    <div class="sdir-pl-mval-red">
                         <t t-esc="state.currentSegmentData.metrics.flight_risk"/>
                     </div>
-                    <div style="font-size: 11px; color: rgb(156, 163, 175); margin-top: 4px; font-weight: 600;">Flight Risk</div>
-                    <div style="font-size: 10px; color: rgb(196, 196, 196); margin-top: 1px;">high risk</div>
+                    <div class="sdir-pl-mlabel">Flight Risk</div>
+                    <div class="sdir-pl-msub">high risk</div>
                 </div>
-                <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); padding: 16px 18px; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <div style="width: 34px; height: 34px; border-radius: 9px; background-color: rgba(139, 92, 246, 0.08); display: flex; align-items: center; justify-content: center;">
+                <div class="sdir-pl-card">
+                    <div class="sdir-pl-row-between8">
+                        <div class="sdir-pl-micon-violet">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
                         </div>
                     </div>
-                    <div style="font-size: 26px; font-weight: 800; color: rgb(139, 92, 246); line-height: 1;">
+                    <div class="sdir-pl-mval-violet">
                         <t t-esc="state.currentSegmentData.metrics.avg_grade"/>
                     </div>
-                    <div style="font-size: 11px; color: rgb(156, 163, 175); margin-top: 4px; font-weight: 600;">Avg Grade</div>
-                    <div style="font-size: 10px; color: rgb(196, 196, 196); margin-top: 1px;">grade band</div>
+                    <div class="sdir-pl-mlabel">Avg Grade</div>
+                    <div class="sdir-pl-msub">grade band</div>
                 </div>
             </div>
 
-            <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); padding: 16px 18px; margin-bottom: 16px; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                <div style="font-size: 11px; font-weight: 700; color: rgb(156, 163, 175); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Work Mode Distribution</div>
-                <div style="display: flex; height: 10px; border-radius: 99px; overflow: hidden; gap: 2px; margin-bottom: 12px;">
+            <div class="sdir-pl-card sdir-pl-card-mb16">
+                <div class="sdir-pl-cap-upper-mb12">Work Mode Distribution</div>
+                <div class="sdir-pl-dist-track">
                     <t t-set="total_dist" t-value="state.currentSegmentData.work_mode_distribution.office + state.currentSegmentData.work_mode_distribution.hybrid + state.currentSegmentData.work_mode_distribution.remote || 1"/>
-                    <div t-att-title="'Office: ' + state.currentSegmentData.work_mode_distribution.office" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.office / total_dist) + ' 1 0%; background-color: rgb(59, 130, 246); position: relative; border-radius: 2px;'"></div>
-                    <div t-att-title="'Hybrid: ' + state.currentSegmentData.work_mode_distribution.hybrid" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.hybrid / total_dist) + ' 1 0%; background-color: rgb(124, 58, 237); position: relative; border-radius: 2px;'"></div>
-                    <div t-att-title="'Remote: ' + state.currentSegmentData.work_mode_distribution.remote" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.remote / total_dist) + ' 1 0%; background-color: rgb(16, 185, 129); position: relative; border-radius: 2px;'"></div>
+                    <div t-att-title="'Office: ' + state.currentSegmentData.work_mode_distribution.office" class="sdir-pl-dist-office" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.office / total_dist) + ' 1 0%;'"></div>
+                    <div t-att-title="'Hybrid: ' + state.currentSegmentData.work_mode_distribution.hybrid" class="sdir-pl-dist-hybrid" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.hybrid / total_dist) + ' 1 0%;'"></div>
+                    <div t-att-title="'Remote: ' + state.currentSegmentData.work_mode_distribution.remote" class="sdir-pl-dist-remote" t-att-style="'flex: ' + (state.currentSegmentData.work_mode_distribution.remote / total_dist) + ' 1 0%;'"></div>
                 </div>
-                <div style="display: flex; gap: 20px;">
-                    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(107, 114, 128);">
-                        <span style="width: 9px; height: 9px; border-radius: 3px; background-color: rgb(59, 130, 246); display: inline-block;"></span>Office <strong style="color: rgb(17, 24, 39); font-weight: 800;"><t t-esc="state.currentSegmentData.work_mode_distribution.office"/></strong>
+                <div class="sdir-pl-dist-legend">
+                    <span class="sdir-pl-legend-item">
+                        <span class="sdir-pl-sw-office"></span>Office <strong class="sdir-pl-strong"><t t-esc="state.currentSegmentData.work_mode_distribution.office"/></strong>
                     </span>
-                    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(107, 114, 128);">
-                        <span style="width: 9px; height: 9px; border-radius: 3px; background-color: rgb(124, 58, 237); display: inline-block;"></span>Hybrid <strong style="color: rgb(17, 24, 39); font-weight: 800;"><t t-esc="state.currentSegmentData.work_mode_distribution.hybrid"/></strong>
+                    <span class="sdir-pl-legend-item">
+                        <span class="sdir-pl-sw-hybrid"></span>Hybrid <strong class="sdir-pl-strong"><t t-esc="state.currentSegmentData.work_mode_distribution.hybrid"/></strong>
                     </span>
-                    <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgb(107, 114, 128);">
-                        <span style="width: 9px; height: 9px; border-radius: 3px; background-color: rgb(16, 185, 129); display: inline-block;"></span>Remote <strong style="color: rgb(17, 24, 39); font-weight: 800;"><t t-esc="state.currentSegmentData.work_mode_distribution.remote"/></strong>
+                    <span class="sdir-pl-legend-item">
+                        <span class="sdir-pl-sw-remote"></span>Remote <strong class="sdir-pl-strong"><t t-esc="state.currentSegmentData.work_mode_distribution.remote"/></strong>
                     </span>
                 </div>
             </div>
 
-            <div style="background-color: rgb(255, 255, 255); border-radius: 12px; border: 1px solid rgb(232, 232, 238); overflow: hidden; box-shadow: rgba(0, 0, 0, 0.04) 0px 1px 4px;">
-                <div style="padding: 13px 18px; border-bottom: 1px solid rgb(243, 244, 246); display: flex; align-items: center; justify-content: space-between;">
-                    <span style="font-size: 11px; font-weight: 700; color: rgb(156, 163, 175); text-transform: uppercase; letter-spacing: 0.05em;">Segment Members (<t t-esc="state.currentSegmentData.members.length"/>)</span>
+            <div class="sdir-pl-members-card">
+                <div class="sdir-pl-members-head">
+                    <span class="sdir-pl-cap-upper">Segment Members (<t t-esc="state.currentSegmentData.members.length"/>)</span>
                 </div>
                 
                 <t t-if="state.currentSegmentData.members.length === 0">
-                    <div style="padding: 48px 20px; text-align: center;">
-                        <div style="width: 64px; height: 64px; border-radius: 18px; background-color: rgb(255, 240, 247); display: flex; align-items: center; justify-content: center; margin: 0px auto 16px;">
-                            <span style="font-size: 28px;">🔍</span>
+                    <div class="sdir-pl-empty">
+                        <div class="sdir-pl-empty-icon">
+                            <span class="sdir-pl-empty-emoji">🔍</span>
                         </div>
-                        <div style="font-size: 14px; font-weight: 700; color: rgb(55, 65, 81); margin-bottom: 8px;">No employees match these conditions</div>
-                        <button style="height: 34px; padding: 0px 18px; border: 1.5px solid rgb(233, 30, 140); border-radius: 8px; background: rgb(255, 240, 247); color: rgb(233, 30, 140); font-size: 12px; font-weight: 700; cursor: pointer;">Edit Conditions →</button>
+                        <div class="sdir-pl-empty-title">No employees match these conditions</div>
+                        <button class="sdir-pl-editbtn">Edit Conditions →</button>
                     </div>
                 </t>
                 <t t-else="">
                     <t t-foreach="state.currentSegmentData.members" t-as="member" t-key="member.id">
-                        <div t-att-style="'padding: 11px 18px; border-top: 1px solid rgb(243, 244, 246); display: flex; align-items: center; gap: 12px; background-color: ' + (member_index % 2 === 0 ? 'rgb(255, 255, 255)' : 'rgb(250, 250, 250)') + '; transition: background-color 0.1s;'">
-                            <div t-att-style="'width: 3px; height: 30px; border-radius: 99px; flex-shrink: 0; background-color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'"></div>
+                        <div class="sdir-pl-member-row">
+                            <div class="sdir-pl-stripe" t-att-style="'background-color: ' + (state.currentSegmentData.color || '#F59E0B') + ';'"></div>
                             
                             <t t-if="member.has_image">
-                                <img t-attf-src="/web/image/hr.employee/{{member.id}}/avatar_128" t-att-alt="member.name" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid rgb(255, 255, 255); box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 4px;"/>
+                                <img t-attf-src="/web/image/hr.employee/{{member.id}}/avatar_128" t-att-alt="member.name" class="sdir-pl-member-avatar"/>
                             </t>
                             <t t-else="">
-                                <div style="width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: white; font-weight: 700; font-size: 12px;" t-att-style="'background-color: ' + avatarColor(member.name)"><t t-esc="initials(member.name)"/></div>
+                                <div class="sdir-pl-initials34" t-att-style="'background-color: ' + avatarColor(member.name)"><t t-esc="initials(member.name)"/></div>
                             </t>
 
-                            <div style="flex: 1 1 0%;">
-                                <div style="font-size: 13px; font-weight: 700; color: rgb(17, 24, 39);"><t t-esc="member.name"/></div>
-                                <div style="font-size: 10px; color: rgb(156, 163, 175); margin-top: 1px;"><t t-esc="member.job_title"/> · <t t-esc="member.department"/></div>
+                            <div class="sdir-pl-flex1">
+                                <div class="sdir-pl-member-name"><t t-esc="member.name"/></div>
+                                <div class="sdir-pl-member-sub"><t t-esc="member.job_title"/> · <t t-esc="member.department"/></div>
                             </div>
                             
-                            <span t-if="member.work_mode" t-att-style="'font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 700; ' + (member.work_mode === 'Remote' ? 'background-color: rgb(245, 243, 255); color: rgb(139, 92, 246);' : member.work_mode === 'Hybrid' ? 'background-color: rgb(245, 243, 255); color: rgb(139, 92, 246);' : 'background-color: rgb(255, 240, 247); color: rgb(214, 0, 110);')">
+                            <span t-if="member.work_mode" t-att-class="'sdir-pl-wm-pill ' + ((member.work_mode === 'Remote' || member.work_mode === 'Hybrid') ? 'sdir-pl-wm-violet' : 'sdir-pl-wm-pink')">
                                 <t t-esc="member.work_mode"/>
                             </span>
                             
-                            <span style="font-size: 10px; color: rgb(156, 163, 175); min-width: 32px; text-align: right;"><t t-esc="member.tenure"/></span>
+                            <span class="sdir-pl-tenure"><t t-esc="member.tenure"/></span>
                             
-                            <span t-if="member.flight_risk === 'High'" style="font-size: 9px; padding: 2px 7px; border-radius: 10px; background-color: rgb(254, 226, 226); color: rgb(239, 68, 68); font-weight: 700; border: 1px solid rgb(254, 202, 202);">Risk</span>
+                            <span t-if="member.flight_risk === 'High'" class="sdir-pl-riskbadge">Risk</span>
                         </div>
                     </t>
                 </t>
@@ -1014,118 +1048,154 @@
         </div>
     </t>
     <t t-else="">
-        <div class="wsv-main" style="display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 40px; color: #9CA3AF;">
-            <i class="lucide lucide-loader" style="font-size: 32px; margin-bottom: 16px; animation: spin 2s linear infinite;"></i>
+        <div class="sdir-pl-main sdir-pl-loading">
+            <svg width="32" height="32" class="sdir-pl-spinner" style="color: #9CA3AF;"><use href="#sdir-pl-ic-loader-circle"/></svg>
             <p>Loading Segment Data...</p>
         </div>
     </t>
-<t t-if="state.showNewSegmentModal">
-<div style="position: fixed; inset: 0px; background: rgba(17, 24, 39, 0.4); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;">
-    <div style="width: 780px; max-width: 96vw; background-color: rgb(255, 255, 255); border-radius: 18px; overflow: visible; box-shadow: rgba(0, 0, 0, 0.22) 0px 24px 64px; max-height: 90vh; display: flex; flex-direction: column;">
-        <div style="background: linear-gradient(135deg, rgb(233, 30, 140) 0%, rgb(194, 24, 91) 100%); padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-radius: 18px 18px 0px 0px;">
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div t-att-style="'width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: rgba(245, 158, 11, 0.376) 0px 4px 16px; flex-shrink: 0; transition: background-color 0.15s; background-color: ' + state.segmentForm.color + ';'">
-                    <i t-attf-class="lucide lucide-{{state.segmentForm.icon}}" style="color: white; font-size: 20px;"></i>
+
+ </div><!-- /.sdir-pl-body --></div><!-- /.sdir-pl-view-root -->
+        </t>
+
+    <!-- New Segment modal — template ROOT level so it renders from any view
+         (the empty-state "Saved Segments" button opens it while the list view
+         is active; a view-scoped branch would never display it). -->
+    <t t-if="state.showNewSegmentModal">
+<div class="sdir-pl-overlay">
+    <div class="sdir-pl-dialog"
+     t-att-style="'--sdir-pl-c: ' + (state.segmentForm.color || '#3B82F6') + '; --sdir-pl-c-soft: ' + (state.segmentForm.color || '#3B82F6') + '0d; --sdir-pl-c-tint: ' + (state.segmentForm.color || '#3B82F6') + '10; --sdir-pl-c-50: ' + (state.segmentForm.color || '#3B82F6') + '50;'">
+        <div class="sdir-pl-modal-head">
+            <div class="sdir-pl-headrow">
+                <div class="sdir-pl-formicon44" t-att-style="'background-color: ' + state.segmentForm.color + '; box-shadow: ' + state.segmentForm.color + '60 0px 4px 16px;'">
+                    <svg width="20" height="20" class="sdir-pl-ic-white20"><use t-att-href="'#sdir-pl-ic-' + (state.segmentForm.icon || 'users')"/></svg>
                 </div>
                 <div>
-                    <h3 style="margin: 0px; font-size: 15px; font-weight: 700; color: rgb(255, 255, 255);">Build a Cohort Segment</h3>
-                    <p style="margin: 2px 0px 0px; font-size: 11px; color: rgba(255, 255, 255, 0.5);">Define conditions to create a dynamic workforce cohort</p>
+                    <h3 class="sdir-pl-modal-h3">Build a Cohort Segment</h3>
+                    <p class="sdir-pl-modal-p">Define conditions to create a dynamic workforce cohort</p>
                 </div>
             </div>
-            <button t-on-click="() => this.toggleNewSegmentModal()" style="border-width: medium; border-style: none; border-color: currentcolor; border-image: none; background: rgba(255, 255, 255, 0.1); border-radius: 8px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <button t-on-click="() => this.toggleNewSegmentModal()" class="sdir-pl-modal-close">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
         </div>
-        <div style="overflow-y: auto; flex: 1 1 0%;">
-            <div style="padding: 20px 24px 0px;">
-                <div style="margin-bottom: 18px;">
-                    <label style="font-size: 11px; font-weight: 700; color: rgb(107, 114, 128); text-transform: uppercase; display: block; margin-bottom: 6px; letter-spacing: 0.05em;">Segment Name</label>
-                    <input placeholder="e.g. Engineering Tenure 3y+" t-model="state.segmentForm.name" style="width: 100%; height: 38px; padding: 0px 12px; border-radius: 9px; border: 1.5px solid rgb(229, 231, 235); font-size: 13px; outline: none; box-sizing: border-box; font-family: Inter, sans-serif;"/>
+        <div class="sdir-pl-modal-body">
+            <div class="sdir-pl-modal-pad">
+                <div class="sdir-pl-mb18">
+                    <label class="sdir-pl-label6">Segment Name</label>
+                    <input placeholder="e.g. Engineering Tenure 3y+" t-model="state.segmentForm.name" class="sdir-pl-input38"/>
                 </div>
-                <div style="margin-bottom: 18px; display: flex; gap: 10px; align-items: center;">
-                    <span style="font-size: 11px; font-weight: 700; color: rgb(107, 114, 128); text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;">Appearance</span>
-                    <div style="position: relative;">
-                        <!-- Color picker mock for now, just static button that sets color for demo or leave as is -->
-                        <button style="height: 36px; padding: 0px 10px; border-radius: 9px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: rgb(55, 65, 81); transition: border-color 0.12s, background-color 0.12s;">
-                            <div t-att-style="'width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0; background-color: ' + state.segmentForm.color + ';'"></div>Color
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg>
+                <div class="sdir-pl-appearance-row">
+                    <span class="sdir-pl-appearance-label">Appearance</span>
+                    <div class="sdir-pl-relative sdir-pl-picker-wrap">
+                        <button class="sdir-pl-picker-btn" t-on-click="() => this.toggleColorPicker()"
+                                t-att-style="state.showColorPicker ? ('border-color: ' + state.segmentForm.color + '; background: ' + state.segmentForm.color + '0d;') : ''">
+                            <div class="sdir-pl-swatch16" t-att-style="'background-color: ' + state.segmentForm.color + ';'"></div>Color
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                         </button>
+                        <div t-if="state.showColorPicker" class="sdir-pl-colorpop">
+                            <div class="sdir-pl-colorpop-grid">
+                                <t t-foreach="segColors" t-as="c" t-key="c">
+                                    <button t-att-title="c"
+                                            t-att-class="'sdir-pl-swatch' + (state.segmentForm.color === c ? ' sdir-pl-swatch-on' : '')"
+                                            t-att-style="'background-color: ' + c + ';' + (state.segmentForm.color === c ? ' outline: 2px solid ' + c + '; outline-offset: 2px;' : '')"
+                                            t-on-click="() => this.selectSegmentColor(c)">
+                                        <svg t-if="state.segmentForm.color === c" xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                                    </button>
+                                </t>
+                            </div>
+                        </div>
                     </div>
-                    <div style="position: relative;">
-                        <!-- Icon picker mock -->
-                        <button style="height: 36px; padding: 0px 10px; border-radius: 9px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); cursor: pointer; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: rgb(55, 65, 81); transition: border-color 0.12s, background-color 0.12s;">
-                            <div t-att-style="'width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background-color: ' + state.segmentForm.color + ';'">
-                                <i t-attf-class="lucide lucide-{{state.segmentForm.icon}}" style="color: white; font-size: 13px;"></i>
+                    <div class="sdir-pl-relative sdir-pl-picker-wrap">
+                        <button class="sdir-pl-picker-btn" t-on-click="() => this.toggleIconPicker()"
+                                t-att-style="state.showIconPicker ? ('border-color: ' + state.segmentForm.color + '; background: ' + state.segmentForm.color + '0d;') : ''">
+                            <div class="sdir-pl-swatch22box" t-att-style="'background-color: ' + state.segmentForm.color + ';'">
+                                <svg width="13" height="13" class="sdir-pl-ic-white13"><use t-att-href="'#sdir-pl-ic-' + (state.segmentForm.icon || 'users')"/></svg>
                             </div>Icon
-                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"></path></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                         </button>
+                        <div t-if="state.showIconPicker" class="sdir-pl-iconpop">
+                            <div class="sdir-pl-iconpop-grid">
+                                <t t-foreach="segIcons" t-as="ic" t-key="ic.id">
+                                    <button t-att-title="ic.title"
+                                            class="sdir-pl-iconopt"
+                                            t-att-style="state.segmentForm.icon === ic.id ? ('background-color: ' + state.segmentForm.color + '; border-color: ' + state.segmentForm.color + '; color: #fff; box-shadow: ' + state.segmentForm.color + '40 0px 2px 6px;') : ''"
+                                            t-on-click="() => this.selectSegmentIcon(ic.id)">
+                                        <svg width="14" height="14"><use t-att-href="'#sdir-pl-ic-' + ic.id"/></svg>
+                                    </button>
+                                </t>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div style="margin-bottom: 4px;">
-                    <label style="font-size: 11px; font-weight: 700; color: rgb(107, 114, 128); text-transform: uppercase; display: block; margin-bottom: 8px; letter-spacing: 0.05em;">Filter Conditions</label>
-                    <div style="font-size: 10px; color: rgb(156, 163, 175); margin-bottom: 10px; padding: 6px 10px; background-color: rgb(249, 250, 251); border-radius: 6px; border: 1px solid rgb(243, 244, 246);">
+                <div class="sdir-pl-mb4">
+                    <label class="sdir-pl-label8">Filter Conditions</label>
+                    <div class="sdir-pl-preview-note">
                         <t t-if="state.segmentForm.loadingPreview">
                             Calculating audience...
                         </t>
                         <t t-else="">
-                            Audience Size: <strong style="color: rgb(17, 24, 39);"><t t-esc="state.segmentForm.audienceSize"/> members</strong> match all conditions.
+                            Audience Size: <strong class="sdir-pl-text-dark"><t t-esc="state.segmentForm.audienceSize"/> members</strong> match all conditions.
                         </t>
                     </div>
-                    
+
                     <t t-foreach="state.segmentForm.conditions" t-as="cond" t-key="cond_index">
-                        <div style="display: flex; gap: 7px; margin-bottom: 8px; align-items: flex-start; flex-wrap: wrap;">
-                            <select t-att-value="cond.field" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'field', ev.target.value)" style="height: 36px; padding: 0px 8px; border-radius: 8px; border: 1.5px solid rgb(229, 231, 235); font-size: 12px; outline: none; font-family: Inter, sans-serif; box-sizing: border-box; flex: 2 1 130px;">
-                                <option value="dept">Department</option>
-                                <option value="role">Role</option>
-                                <option value="gradeLevel">Grade</option>
-                                <option value="location">Location</option>
-                                <option value="workMode">Work Mode</option>
-                                <option value="employmentType">Employment Type</option>
-                                <option value="lifecycleState">Lifecycle State</option>
-                                <option value="flightRisk">Flight Risk</option>
-                                <option value="retentionPriority">Retention Priority</option>
-                                <option value="lineManager">Reports To</option>
-                                <option value="tenureBucket">Tenure</option>
-                                <option value="gender">Gender</option>
-                                <option value="id">Employee ID</option>
-                                <option value="skills">Skills</option>
-                                <option value="languages">Languages</option>
-                                <option value="performanceScore">Performance Score</option>
-                            </select>
-                            <select t-att-value="cond.operator" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'operator', ev.target.value)" style="height: 36px; padding: 0px 8px; border-radius: 8px; border: 1.5px solid rgb(229, 231, 235); font-size: 12px; outline: none; font-family: Inter, sans-serif; box-sizing: border-box; flex: 1.5 1 110px;">
+                        <div class="sdir-pl-condrow">
+                            <div class="sdir-pl-relative sdir-pl-picker-wrap sdir-pl-fieldcell">
+                                <button type="button"
+                                        t-att-class="'sdir-pl-fieldselect-btn' + (state.openFieldSelect === cond_index ? ' sdir-pl-fieldselect-btn-on' : '')"
+                                        t-on-click="() => this.toggleFieldSelect(cond_index)">
+                                    <span t-esc="fieldLabel(cond.field)"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                                </button>
+                                <div t-if="state.openFieldSelect === cond_index" class="sdir-pl-fieldpop">
+                                    <div class="sdir-pl-fieldpop-search">
+                                        <input type="text" placeholder="Search…" autofocus="autofocus"
+                                               t-att-value="state.fieldSearch"
+                                               t-on-input="(ev) => this.state.fieldSearch = ev.target.value"/>
+                                    </div>
+                                    <div class="sdir-pl-fieldpop-list">
+                                        <t t-foreach="filteredFieldOptions" t-as="opt" t-key="opt.id">
+                                            <button type="button"
+                                                    t-att-class="'sdir-pl-fieldopt' + (cond.field === opt.id ? ' sdir-pl-fieldopt-on' : '')"
+                                                    t-on-click="() => this.selectField(cond_index, opt.id)">
+                                                <t t-esc="opt.label"/>
+                                            </button>
+                                        </t>
+                                        <div t-if="filteredFieldOptions.length === 0" class="sdir-pl-fieldpop-empty">No matches</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <select t-att-value="cond.operator" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'operator', ev.target.value)" class="sdir-pl-select-op">
                                 <option value="is">is</option>
                                 <option value="isNot">is not</option>
                                 <option value="contains">contains</option>
                                 <option value="notContains">does not contain</option>
                             </select>
-                            <div style="flex: 2 1 130px; display: flex; gap: 4px;">
-                                <input type="text" t-att-value="cond.value" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'value', ev.target.value)" placeholder="Value..." style="width: 100%; height: 36px; padding: 0px 10px; border-radius: 8px; border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); font-size: 12px; outline: none; font-family: Inter, sans-serif; box-sizing: border-box; color: rgb(17, 24, 39);"/>
-                                <button t-if="state.segmentForm.conditions.length > 1" t-on-click="() => this.removeSegmentCondition(cond_index)" style="height: 36px; padding: 0px 10px; border: 1.5px solid rgb(229, 231, 235); border-radius: 8px; background: white; cursor: pointer; color: rgb(239, 68, 68);">
+                            <div class="sdir-pl-valuewrap">
+                                <input type="text" t-att-value="cond.value" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'value', ev.target.value)" placeholder="Value..." class="sdir-pl-value-input"/>
+                                <button t-if="state.segmentForm.conditions.length > 1" t-on-click="() => this.removeSegmentCondition(cond_index)" class="sdir-pl-remove-btn">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
                                 </button>
                             </div>
                         </div>
                     </t>
-                    
-                    <button t-on-click="() => this.addSegmentCondition()" style="display: flex; align-items: center; gap: 5px; border: 1.5px dashed rgba(245, 158, 11, 0.376); background: rgba(245, 158, 11, 0.03); cursor: pointer; color: rgb(245, 158, 11); font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 9px; margin-top: 6px;">
+
+                    <button t-on-click="() => this.addSegmentCondition()" class="sdir-pl-addcond-btn" t-att-style="addCondStyle">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg> Add condition
                     </button>
                 </div>
             </div>
-            <div style="height: 20px;"></div>
+            <div class="sdir-pl-spacer20"></div>
         </div>
-        <div style="padding: 14px 24px; border-top: 1px solid rgb(229, 231, 235); display: flex; justify-content: flex-end; gap: 8px; background-color: rgb(250, 250, 250); flex-shrink: 0; border-radius: 0px 0px 18px 18px;">
-            <button t-on-click="() => this.toggleNewSegmentModal()" style="height: 36px; padding: 0px 18px; border: 1.5px solid rgb(229, 231, 235); border-radius: 9px; background: rgb(255, 255, 255); font-size: 12px; font-weight: 600; color: rgb(55, 65, 81); cursor: pointer;">Cancel</button>
-            <button t-on-click="() => this.saveSegment()" style="height: 36px; padding: 0px 18px; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; border-radius: 9px; background: rgb(245, 158, 11); color: rgb(255, 255, 255); font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: rgba(245, 158, 11, 0.314) 0px 2px 8px; display: flex; align-items: center; gap: 6px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>Save Segment
+        <div class="sdir-pl-modal-foot">
+            <button t-on-click="() => this.toggleNewSegmentModal()" class="sdir-pl-cancel-btn">Cancel</button>
+            <button t-on-click="() => this.saveSegment()" class="sdir-pl-save-btn" t-att-style="saveBtnStyle">
+                <svg width="13" height="13" class="sdir-pl-ic-white13"><use t-att-href="'#sdir-pl-ic-' + (state.segmentForm.icon || 'users')"/></svg>Save Segment
             </button>
         </div>
     </div>
 </div>
 </t>
-
- </div></div></div>
-        </t>
     </t>
 </templates>
 

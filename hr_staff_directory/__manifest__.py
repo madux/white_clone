@@ -43,7 +43,9 @@
             'hr_staff_directory/static/src/js/staff_directory_dashboard.js',
             'hr_staff_directory/static/src/css/staff_directory.css',
             'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
-            
+
+            'hr_staff_directory/static/src/components/people_list/people_list.css',
+
             'hr_staff_directory/static/src/components/bar_chart/bar_chart.js',
             'hr_staff_directory/static/src/components/bar_chart/bar_chart.css',
             'hr_staff_directory/static/src/components/bar_chart/bar_chart.xml',

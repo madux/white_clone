@@ -43,6 +43,7 @@ export class StaffDirectoryPeopleList extends Component {
         deptKey: { type: Function },
         lifecycleLabel: { type: Function },
         getLifecycleDotClass: { type: Function },
+        showToast: { type: Function },
 
     };
 
@@ -72,13 +73,19 @@ export class StaffDirectoryPeopleList extends Component {
             showColumnsModal: false,
             showMoreColumns: false,
             showSavedSegments: false,
-            selectedSegment: 'Engineering Seniors',
+            selectedSegment: null,
             showNewSegmentModal: false,
+            showColorPicker: false,
+            showIconPicker: false,
+            openFieldSelect: null,
+            fieldSearch: '',
+            compareOpen: true,
+            compareSel: [],
             segments: [],
             currentSegmentData: null,
             segmentForm: {
                 name: '',
-                color: '#F59E0B',
+                color: '#3B82F6',
                 icon: 'users',
                 conditions: [{field: '', operator: 'is', value: ''}],
                 audienceSize: 0,
@@ -100,6 +107,67 @@ export class StaffDirectoryPeopleList extends Component {
             { id: 'flight_risk', label: 'Flight Risk' },
             { id: 'employment_type', label: 'Employment' },
             { id: 'lifecycle_state', label: 'Lifecycle' }
+        ];
+
+        // Segment appearance palettes — rendered through the SVG symbol
+        // sprite defined at the top of people_list.xml (<use href="#sdir-pl-ic-{id}"/>).
+        this.segColors = [
+            '#3B82F6', '#0EA5E9', '#1D4ED8', '#6366F1', '#10B981', '#14B8A6',
+            '#059669', '#84CC16', '#8B5CF6', '#7C3AED', '#EC4899', '#E91E8C',
+            '#F59E0B', '#F97316', '#EF4444', '#DC2626', '#6B7280', '#111827',
+        ];
+        this.segIcons = [
+            { id: 'users', title: 'Users' },
+            { id: 'user', title: 'User' },
+            { id: 'user-check', title: 'UserCheck' },
+            { id: 'briefcase', title: 'Briefcase' },
+            { id: 'building-2', title: 'Building2' },
+            { id: 'map-pin', title: 'MapPin' },
+            { id: 'tag', title: 'Tag' },
+            { id: 'award', title: 'Award' },
+            { id: 'trending-up', title: 'TrendingUp' },
+            { id: 'trending-down', title: 'TrendingDown' },
+            { id: 'triangle-alert', title: 'AlertTriangle' },
+            { id: 'shield', title: 'Shield' },
+            { id: 'star', title: 'Star' },
+            { id: 'flame', title: 'Flame' },
+            { id: 'zap', title: 'Zap' },
+            { id: 'target', title: 'Target' },
+            { id: 'globe', title: 'Globe' },
+            { id: 'clock', title: 'Clock' },
+            { id: 'chart-no-axes-column', title: 'BarChart2' },
+            { id: 'git-branch', title: 'GitBranch' },
+            { id: 'layers', title: 'Layers' },
+            { id: 'book-open', title: 'BookOpen' },
+            { id: 'house', title: 'Home' },
+            { id: 'laptop', title: 'Laptop' },
+            { id: 'graduation-cap', title: 'GraduationCap' },
+            { id: 'flag', title: 'Flag' },
+            { id: 'trophy', title: 'Trophy' },
+            { id: 'heart', title: 'Heart' },
+            { id: 'coffee', title: 'Coffee' },
+            { id: 'eye', title: 'Eye' },
+        ];
+
+        // Condition "Field" options for the searchable dropdown (ids must
+        // match the backend segment engine's condition field keys).
+        this.fieldOptions = [
+            { id: 'dept', label: 'Department' },
+            { id: 'role', label: 'Role' },
+            { id: 'gradeLevel', label: 'Grade' },
+            { id: 'location', label: 'Location' },
+            { id: 'workMode', label: 'Work Mode' },
+            { id: 'employmentType', label: 'Employment Type' },
+            { id: 'lifecycleState', label: 'Lifecycle State' },
+            { id: 'flightRisk', label: 'Flight Risk' },
+            { id: 'retentionPriority', label: 'Retention Priority' },
+            { id: 'lineManager', label: 'Reports To' },
+            { id: 'tenureBucket', label: 'Tenure' },
+            { id: 'gender', label: 'Gender' },
+            { id: 'id', label: 'Employee ID' },
+            { id: 'skills', label: 'Skills' },
+            { id: 'languages', label: 'Languages' },
+            { id: 'performanceScore', label: 'Performance Score' },
         ];
     }
 
@@ -204,6 +272,75 @@ export class StaffDirectoryPeopleList extends Component {
         return this.props.segments || this.state.segments || [];
     }
 
+    // ─── Header stat counts (segments view topbar) ───────────────────────────
+    get segCount() {
+        return this.savedSegments.length;
+    }
+    get workforceCount() {
+        return (this.props.people || []).length;
+    }
+    get highRiskCount() {
+        // flight_risk is not populated on the backend yet — reads 0 until then
+        return (this.props.people || []).filter(
+            p => String(p.flight_risk || '').toLowerCase() === 'high'
+        ).length;
+    }
+    get remoteCount() {
+        return (this.props.people || []).filter(
+            p => String(p.work_mode || '').toLowerCase() === 'remote'
+        ).length;
+    }
+
+    // ─── Entry point & dropdown ──────────────────────────────────────────────
+    onSavedSegmentsBtnClick() {
+        if (this.savedSegments.length === 0) {
+            // First-run UX: guide the user straight into creating a segment
+            this.toggleNewSegmentModal();
+            return;
+        }
+        this.toggleView('segments');
+    }
+
+    async openSegmentFromDropdown(seg) {
+        this.state.showSavedSegments = false;
+        this.state.activeView = 'segments';
+        await this.selectSegment(seg.name, seg.id);
+    }
+
+    // ─── Compare accordion ───────────────────────────────────────────────────
+    toggleCompareAccordion() {
+        this.state.compareOpen = !this.state.compareOpen;
+    }
+
+    toggleCompareChip(segId) {
+        const idx = this.state.compareSel.indexOf(segId);
+        if (idx === -1) {
+            this.state.compareSel.push(segId);
+        } else {
+            this.state.compareSel.splice(idx, 1);
+        }
+    }
+
+    /** Selection minus segments that no longer exist (deleted elsewhere). */
+    get activeCompareSel() {
+        const live = new Set(this.savedSegments.map(sg => sg.id));
+        return this.state.compareSel.filter(id => live.has(id));
+    }
+
+    isChipSelected(segId) {
+        return this.activeCompareSel.includes(segId);
+    }
+
+    get compareCount() {
+        return this.activeCompareSel.length;
+    }
+
+    compareSegments() {
+        if (this.activeCompareSel.length < 2) return;
+        // Placeholder: real comparison view lands in a follow-up task
+        this.props.showToast('success', `Comparing ${this.activeCompareSel.length} segments — comparison view coming soon`);
+    }
+
     async selectSegment(name, id) {
         this.state.selectedSegment = name;
         this.state.currentSegmentData = null; // show loading if needed
@@ -222,10 +359,14 @@ export class StaffDirectoryPeopleList extends Component {
 
     toggleNewSegmentModal() {
         this.state.showNewSegmentModal = !this.state.showNewSegmentModal;
+        this.state.showColorPicker = false;
+        this.state.showIconPicker = false;
+        this.state.openFieldSelect = null;
+        this.state.fieldSearch = '';
         if (this.state.showNewSegmentModal) {
             this.state.segmentForm = {
                 name: '',
-                color: '#F59E0B',
+                color: '#3B82F6',
                 icon: 'users',
                 conditions: [{field: 'dept', operator: 'is', value: ''}],
                 audienceSize: 0,
@@ -235,13 +376,85 @@ export class StaffDirectoryPeopleList extends Component {
         }
     }
 
+    // ─── Appearance pickers (color / icon) ───────────────────────────────────
+
+    toggleColorPicker() {
+        this.state.showColorPicker = !this.state.showColorPicker;
+        this.state.showIconPicker = false;
+    }
+
+    toggleIconPicker() {
+        this.state.showIconPicker = !this.state.showIconPicker;
+        this.state.showColorPicker = false;
+    }
+
+    selectSegmentColor(color) {
+        this.state.segmentForm.color = color;
+        this.state.showColorPicker = false;
+    }
+
+    selectSegmentIcon(icon) {
+        this.state.segmentForm.icon = icon;
+        this.state.showIconPicker = false;
+    }
+
+    // ─── Condition field dropdown (searchable) ───────────────────────────────
+
+    toggleFieldSelect(index) {
+        this.state.showColorPicker = false;
+        this.state.showIconPicker = false;
+        if (this.state.openFieldSelect === index) {
+            this.state.openFieldSelect = null;
+        } else {
+            this.state.openFieldSelect = index;
+            this.state.fieldSearch = '';
+        }
+    }
+
+    selectField(index, fieldId) {
+        this.updateSegmentCondition(index, 'field', fieldId);
+        this.state.openFieldSelect = null;
+    }
+
+    fieldLabel(fieldId) {
+        const opt = this.fieldOptions.find(o => o.id === fieldId);
+        return opt ? opt.label : '— select —';
+    }
+
+    get filteredFieldOptions() {
+        const q = (this.state.fieldSearch || '').toLowerCase().trim();
+        if (!q) return this.fieldOptions;
+        return this.fieldOptions.filter(o => o.label.toLowerCase().includes(q));
+    }
+
+    _shade(hex, pct) {
+        const n = parseInt((hex || '#000000').slice(1), 16);
+        const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+        const r = clamp(((n >> 16) & 255) * (1 + pct / 100));
+        const g = clamp(((n >> 8) & 255) * (1 + pct / 100));
+        const b = clamp((n & 255) * (1 + pct / 100));
+        return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    get addCondStyle() {
+        const c = this.state.segmentForm.color;
+        return `border-color: ${c}60; background: ${c}08; color: ${c};`;
+    }
+
+    get saveBtnStyle() {
+        const c = this.state.segmentForm.color;
+        return `background: linear-gradient(135deg, ${c} 0%, ${this._shade(c, -18)} 100%); box-shadow: ${c}50 0px 2px 8px;`;
+    }
+
     addSegmentCondition() {
         this.state.segmentForm.conditions.push({field: 'dept', operator: 'is', value: ''});
+        this.state.openFieldSelect = null;
         this._previewSegment();
     }
 
     removeSegmentCondition(index) {
         this.state.segmentForm.conditions.splice(index, 1);
+        this.state.openFieldSelect = null;
         this._previewSegment();
     }
 
@@ -269,15 +482,24 @@ export class StaffDirectoryPeopleList extends Component {
     }
 
     async saveSegment() {
-        const validConds = this.state.segmentForm.conditions.filter(c => c.field && c.operator && c.value);
-        if (!this.state.segmentForm.name || validConds.length === 0) return;
+        const segName = this.state.segmentForm.name;
+        if (!segName) {
+            this.props.showToast('warning', 'Give the segment a name');
+            return;
+        }
+        const conditions = this.state.segmentForm.conditions;
+        const validConds = conditions.filter(c => c.field && c.operator && c.value);
+        if (validConds.length === 0 || validConds.length !== conditions.length) {
+            this.props.showToast('warning', 'Fill in all condition values');
+            return;
+        }
 
         try {
             const segmentId = await this.rpc("/web/dataset/call_kw/hr.employee/create_segment", {
                 model: "hr.employee",
                 method: "create_segment",
                 args: [
-                    this.state.segmentForm.name,
+                    segName,
                     this.state.segmentForm.color,
                     this.state.segmentForm.icon,
                     validConds
@@ -288,7 +510,11 @@ export class StaffDirectoryPeopleList extends Component {
             // dashboard reloads and refreshes this.props.segments for every
             // open tab/device.
             this.toggleNewSegmentModal();
-            this.selectSegment(this.state.segmentForm.name, segmentId);
+            // Land in the segments view so a segment created from the list
+            // view's empty-state entry point is immediately visible, and use
+            // the captured name (segmentForm was just reset) for highlight.
+            this.state.activeView = 'segments';
+            this.selectSegment(segName, segmentId);
         } catch (error) {
             console.error("Error saving segment", error);
         }
@@ -327,18 +553,24 @@ export class StaffDirectoryPeopleList extends Component {
 
     _onWindowClick(ev) {
         if (this.state.showSavedSegments) {
-            const btn = document.getElementById('btnSavedSegmentsGroup');
+            const btn = document.getElementById('sdirPlBtnSavedSegmentsGroup');
             const dropdown = document.querySelector('.sdir-segments-modal');
             if (btn && btn.contains(ev.target)) return;
             if (dropdown && dropdown.contains(ev.target)) return;
             this.state.showSavedSegments = false;
         }
         if (this.state.showColumnsModal) {
-            const colsBtn = document.getElementById('btnColumns');
+            const colsBtn = document.getElementById('sdirPlBtnColumns');
             const colsModal = document.querySelector('.sdir-cols-modal');
             if (colsBtn && colsBtn.contains(ev.target)) return;
             if (colsModal && colsModal.contains(ev.target)) return;
             this.state.showColumnsModal = false;
+        }
+        if ((this.state.showColorPicker || this.state.showIconPicker || this.state.openFieldSelect !== null)
+            && !ev.target.closest('.sdir-pl-picker-wrap')) {
+            this.state.showColorPicker = false;
+            this.state.showIconPicker = false;
+            this.state.openFieldSelect = null;
         }
     }
 

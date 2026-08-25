@@ -923,7 +923,7 @@ export class StaffDirectoryDashboard extends Component {
 
     onWindowClick(ev) {
         if (this.state.showColumnsModal) {
-            const colsBtn = document.getElementById('btnColumns');
+            const colsBtn = document.getElementById('sdirPlBtnColumns');
             const colsModal = document.querySelector('.sdir-cols-modal');
             if (colsBtn && colsBtn.contains(ev.target)) return;
             if (colsModal && colsModal.contains(ev.target)) return;
