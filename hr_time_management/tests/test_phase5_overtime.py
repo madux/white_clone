@@ -141,9 +141,15 @@ class TestPhase5Overtime(TransactionCase):
             "holiday_overtime_rate": 2.25,
         })
         today = fields.Date.today()
-        holiday_date = today - timedelta(days=3)
-        daily_date = today - timedelta(days=2)
-        weekend_date = today - timedelta(days=1)
+        d_offset = 1
+        while (today - timedelta(days=d_offset)).weekday() >= 5:
+            d_offset += 1
+        daily_date = today - timedelta(days=d_offset)
+
+        h_offset = d_offset + 1
+        while (today - timedelta(days=h_offset)).weekday() >= 5 or (today - timedelta(days=h_offset)) == daily_date:
+            h_offset += 1
+        holiday_date = today - timedelta(days=h_offset)
 
         # Add public holiday
         self.env["resource.calendar.leaves"].create({
@@ -178,11 +184,13 @@ class TestPhase5Overtime(TransactionCase):
         self.assertEqual(rec_daily.category, "daily")
         self.assertEqual(rec_daily.multiplier, 1.4)
 
-        # 3. Weekend day (Aug 9, 2026 is Sunday) -> Server derives 'weekend' and 1.75x multiplier
+        # 3. Weekend day (nearest past Sunday) -> Server derives 'weekend' and 1.75x multiplier
+        days_since_sunday = (today.weekday() + 1) % 7 or 7
+        weekend_date = today - timedelta(days=days_since_sunday)
         ot_weekend = Overtime.with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-09",
-            "start_time": "2026-08-09 09:00:00",
-            "end_time": "2026-08-09 13:00:00",
+            "date": fields.Date.to_string(weekend_date),
+            "start_time": "%s 09:00:00" % weekend_date,
+            "end_time": "%s 13:00:00" % weekend_date,
             "justification": "Emergency server maintenance on Sunday morning",
         })
         rec_weekend = Overtime.sudo().browse(ot_weekend["id"])

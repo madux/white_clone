@@ -202,6 +202,10 @@ class CleonAttendanceRegularization(models.Model):
                 if required:
                     raise ValidationError(_("Requested clock-in time is required."))
                 return False
+            if isinstance(value, str):
+                value = value.replace("T", " ").strip()
+                if len(value) == 16:
+                    value += ":00"
             parsed = fields.Datetime.to_datetime(value)
             localized = timezone.localize(parsed).astimezone(pytz.UTC).replace(tzinfo=None)
             return localized

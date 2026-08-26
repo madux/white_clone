@@ -187,11 +187,15 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
             ],
         })
 
+        today = fields.Date.today()
+        d_small = today - timedelta(days=3)
+        d_large = today - timedelta(days=2)
+
         # 1. OT Request <= 2h (1.5h) -> Business rule auto-approve
         res_small = self.env["cleon.overtime.request"].with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-10",
-            "start_time": "2026-08-10 17:00:00",
-            "end_time": "2026-08-10 18:30:00",
+            "date": fields.Date.to_string(d_small),
+            "start_time": "%s 17:00:00" % d_small,
+            "end_time": "%s 18:30:00" % d_small,
             "justification": "Short overtime work for server upgrade deployment",
         })
         ot_small = self.env["cleon.overtime.request"].browse(res_small["id"])
@@ -199,9 +203,9 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
 
         # 2. OT Request > 2h (4h) -> Starts approval chain
         res_large = self.env["cleon.overtime.request"].with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-11",
-            "start_time": "2026-08-11 17:00:00",
-            "end_time": "2026-08-11 21:00:00",
+            "date": fields.Date.to_string(d_large),
+            "start_time": "%s 17:00:00" % d_large,
+            "end_time": "%s 21:00:00" % d_large,
             "justification": "Extended emergency bugfix deployment for client release",
         })
         ot_large = self.env["cleon.overtime.request"].browse(res_large["id"])
@@ -334,10 +338,12 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
             ],
         })
 
+        today = fields.Date.today()
+        d_ot = today - timedelta(days=2)
         res = self.env["cleon.overtime.request"].with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-11",
-            "start_time": "2026-08-11 17:00:00",
-            "end_time": "2026-08-11 21:00:00",
+            "date": fields.Date.to_string(d_ot),
+            "start_time": "%s 17:00:00" % d_ot,
+            "end_time": "%s 21:00:00" % d_ot,
             "justification": "Extended emergency bugfix deployment for client release",
         })
         ot = self.env["cleon.overtime.request"].browse(res["id"])

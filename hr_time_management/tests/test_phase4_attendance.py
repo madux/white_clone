@@ -361,6 +361,7 @@ class TestPhase4Attendance(TransactionCase):
         leave_type = self.env["hr.leave.type"].create({
             "name": "Paid Annual Leave",
             "requires_allocation": "no",
+            "retroactive_request_days": 365,
         })
         leave = self.env["hr.leave"].sudo().create({
             "name": "Mid-week Doctor Appointment",

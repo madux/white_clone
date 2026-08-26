@@ -748,10 +748,10 @@
                                                     </div>
                                                 </div>
                                                 <label class="ctm-field-title" style="margin-top:20px">Select Shift Template</label>
-                                                <select class="ctm-select-full" t-model="state.policy.selected_shift_id">
+                                                <select class="ctm-select-full" t-att-value="state.policy.selected_shift_id or ''" t-on-change="onShiftTemplateChange">
                                                     <option value="">-- Select Shift --</option>
                                                     <t t-foreach="state.settingsShifts" t-as="shift" t-key="shift.id">
-                                                        <option t-att-value="shift.id" t-esc="shift.name + ' (' + shift.start + ' - ' + shift.end + ')'"/>
+                                                        <option t-att-value="shift.id" t-att-selected="(state.policy.selected_shift_id == shift.id) ? 'selected' : undefined" t-esc="shift.name + ' (' + shift.start + ' - ' + shift.end + ')'"/>
                                                     </t>
                                                 </select>
                                                 <div class="ctm-three-grid" style="margin-top:20px">

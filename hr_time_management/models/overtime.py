@@ -521,8 +521,19 @@ class CleonOvertimeRequest(models.Model):
         justification = (values.get("justification") or "").strip()
         if len(justification) < 30 or len(justification) > 500:
             raise ValidationError(_("Justification must contain between 30 and 500 characters."))
-        start = fields.Datetime.to_datetime(values.get("start_time"))
-        end = fields.Datetime.to_datetime(values.get("end_time"))
+        start_val = values.get("start_time")
+        if isinstance(start_val, str):
+            start_val = start_val.replace("T", " ").strip()
+            if len(start_val) == 16:
+                start_val += ":00"
+        start = fields.Datetime.to_datetime(start_val)
+
+        end_val = values.get("end_time")
+        if isinstance(end_val, str):
+            end_val = end_val.replace("T", " ").strip()
+            if len(end_val) == 16:
+                end_val += ":00"
+        end = fields.Datetime.to_datetime(end_val)
         if not start or not end or end <= start:
             raise ValidationError(_("End time must be after start time."))
         hours = (end - start).total_seconds() / 3600

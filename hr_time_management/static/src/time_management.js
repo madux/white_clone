@@ -13,6 +13,8 @@ export class TimeManagementApp extends Component {
         this.action = useService("action");
         this.notification = useService("notification");
         this.user = useService("user");
+        this.Math = Math;
+        this.String = String;
         const now = new Date();
         const iso = now.toISOString().slice(0, 10);
         this.state = useState({
@@ -390,13 +392,15 @@ export class TimeManagementApp extends Component {
     async openSettings() {
         this.state.page = "settings";
         this.state.settingsTab = this.state.featureAccess[this.state.feature] ? this.state.feature : "overview";
-        const [policy, overview, regChain, otChain, access] = await Promise.all([
+        const [policy, overview, regChain, otChain, access, shiftData] = await Promise.all([
             this.orm.call("cleon.time.policy", "get_cleon_policy", []),
             this.orm.call("cleon.time.policy", "get_settings_overview", []),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_regularization"]),
             this.orm.call("cleon.time.policy", "get_approval_chain_summary", ["time_overtime"]),
             this.orm.call("cleon.time.policy", "get_cleon_access", []),
+            this.orm.call("cleon.hr.shift", "get_shift_management_data", []),
         ]);
+        this.state.settingsShifts = shiftData?.shifts || [];
         this.state.policy = policy;
         this.state.capabilities = access.capabilities || {};
         this.state.featureAccess = access.featureAccess || this.state.featureAccess;
@@ -409,7 +413,25 @@ export class TimeManagementApp extends Component {
         this.state.settingsOverview = overview;
         this.state.regChainSummary = regChain;
         this.state.otChainSummary = otChain;
-        await this.loadSettingsShifts();
+    }
+    onShiftTemplateChange(ev) {
+        const val = ev.target.value;
+        const shiftId = val ? Number(val) : false;
+        this.state.policy.selected_shift_id = shiftId;
+        if (shiftId && this.state.settingsShifts) {
+            const shift = this.state.settingsShifts.find(s => s.id === shiftId);
+            if (shift) {
+                const duration = Math.max(0, (shift.end_hour || 17) - (shift.start_hour || 9));
+                this.state.policy.standard_hours = duration || 8.0;
+                this.state.policy.half_day_hours = Math.round((duration / 2.0) * 10) / 10 || 4.0;
+                if (shift.grace_minutes !== undefined) {
+                    this.state.policy.default_grace_minutes = shift.grace_minutes;
+                }
+                if (shift.break_minutes !== undefined) {
+                    this.state.policy.default_break_minutes = shift.break_minutes;
+                }
+            }
+        }
     }
     async openApprovalChain(workflowCode) {
         return this.action.doAction({

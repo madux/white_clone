@@ -463,6 +463,8 @@ class CleonTimePolicy(models.Model):
             "office_latitude", "office_longitude", "gps_radius_meters", "ip_whitelist",
         }
         clean = {key: value for key, value in values.items() if key in allowed}
+        if "selected_shift_id" in clean:
+            clean["selected_shift_id"] = int(clean["selected_shift_id"]) if clean["selected_shift_id"] else False
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
         if not policy:
             policy = self.create({"company_id": self.env.company.id})
