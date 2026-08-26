@@ -316,8 +316,249 @@
                                 
                             </t>
                             
+                            <!-- ADMIN TAB -->
+                            <t t-if="state.profileActiveTab === 'admin'">
+                                <div class="sdir-admin-container">
+                                    <div class="sdir-admin-stats">
+                                        <div class="sdir-admin-stat-item">
+                                            <p class="sdir-admin-stat-label">Status</p>
+                                            <div class="sdir-admin-stat-val-container">
+                                                <span class="sdir-admin-stat-dot-active"></span>
+                                                <p class="sdir-admin-stat-val">Active</p>
+                                            </div>
+                                        </div>
+                                        <div class="sdir-admin-stat-item">
+                                            <p class="sdir-admin-stat-label">Department</p>
+                                            <div class="sdir-admin-stat-val-container">
+                                                <p class="sdir-admin-stat-val" t-esc="props.activeProfile.department or 'Sales &amp; Business Development'"/>
+                                            </div>
+                                        </div>
+                                        <div class="sdir-admin-stat-item">
+                                            <p class="sdir-admin-stat-label">Access Level</p>
+                                            <div class="sdir-admin-stat-val-container">
+                                                <p class="sdir-admin-stat-val">Standard</p>
+                                            </div>
+                                        </div>
+                                        <div class="sdir-admin-stat-item">
+                                            <p class="sdir-admin-stat-label">Tenure</p>
+                                            <div class="sdir-admin-stat-val-container">
+                                                <p class="sdir-admin-stat-val" t-esc="props.activeProfile.tenure or '1y 11m'"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sdir-admin-section">
+                                        <div class="sdir-admin-section-header sdir-admin-header-indigo">
+                                            <div class="sdir-admin-section-icon sdir-admin-icon-indigo">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-cog"><circle cx="18" cy="15" r="3"></circle><circle cx="9" cy="7" r="4"></circle><path d="M10 15H6a4 4 0 0 0-4 4v2"></path><path d="m21.7 16.4-.9-.3"></path><path d="m15.2 13.9-.9-.3"></path><path d="m16.6 18.7.3-.9"></path><path d="m19.1 12.2.3-.9"></path><path d="m19.6 18.7-.4-1"></path><path d="m16.8 12.3-.4-1"></path><path d="m14.3 16.6 1-.4"></path><path d="m20.7 13.8 1-.4"></path></svg>
+                                            </div>
+                                            <p class="sdir-admin-section-title">Profile Management</p>
+                                            <span class="sdir-admin-section-count">4 actions</span>
+                                        </div>
+                                        <div class="sdir-admin-actions-grid">
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-indigo-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen-line"><path d="M12 20h9"></path><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Edit Profile</p>
+                                                    <p class="sdir-admin-btn-desc">Update name, role &amp; work details</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-indigo-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Change Status</p>
+                                                    <p class="sdir-admin-btn-desc">Lifecycle state change</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-indigo-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Update Photo</p>
+                                                    <p class="sdir-admin-btn-desc">Upload a new profile picture</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-indigo-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Edit Contact Info</p>
+                                                    <p class="sdir-admin-btn-desc">Phone, email &amp; address</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sdir-admin-section">
+                                        <div class="sdir-admin-section-header sdir-admin-header-pink">
+                                            <div class="sdir-admin-section-icon sdir-admin-icon-pink">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-right"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg>
+                                            </div>
+                                            <p class="sdir-admin-section-title">Workforce Operations</p>
+                                            <span class="sdir-admin-section-count">4 actions</span>
+                                        </div>
+                                        <div class="sdir-admin-actions-grid">
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-pink-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-right"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Transfer Employee</p>
+                                                    <p class="sdir-admin-btn-desc">Move to another department</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-pink-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Promote Employee</p>
+                                                    <p class="sdir-admin-btn-desc">Promotion with salary adjustment</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-pink-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building2 lucide-building-2"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Change Department</p>
+                                                    <p class="sdir-admin-btn-desc">Update departmental assignment</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-pink-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Reassign Manager</p>
+                                                    <p class="sdir-admin-btn-desc">Update reporting line</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sdir-admin-section">
+                                        <div class="sdir-admin-section-header sdir-admin-header-amber">
+                                            <div class="sdir-admin-section-icon sdir-admin-icon-amber">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+                                            </div>
+                                            <p class="sdir-admin-section-title">Access &amp; Security</p>
+                                            <span class="sdir-admin-section-count">4 actions</span>
+                                        </div>
+                                        <div class="sdir-admin-actions-grid">
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-amber-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Grant Permissions</p>
+                                                    <p class="sdir-admin-btn-desc">Add roles &amp; access rights</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-x"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="17" x2="22" y1="8" y2="13"></line><line x1="22" x2="17" y1="8" y2="13"></line></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title sdir-admin-btn-title-danger">Revoke Access</p>
+                                                    <p class="sdir-admin-btn-desc">Remove system access</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-amber-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"></path><path d="m21 2-9.6 9.6"></path><circle cx="7.5" cy="15.5" r="5.5"></circle></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Reset Password</p>
+                                                    <p class="sdir-admin-btn-desc">Send reset link or temp password</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title sdir-admin-btn-title-danger">Suspend Account</p>
+                                                    <p class="sdir-admin-btn-desc">Temporarily disable access</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="sdir-admin-section">
+                                        <div class="sdir-admin-section-header sdir-admin-header-red">
+                                            <div class="sdir-admin-section-icon sdir-admin-icon-red">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-git-branch"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                                            </div>
+                                            <p class="sdir-admin-section-title">Lifecycle Management</p>
+                                            <span class="sdir-admin-section-count">4 actions</span>
+                                        </div>
+                                        <div class="sdir-admin-actions-grid">
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Trigger Onboarding</p>
+                                                    <p class="sdir-admin-btn-desc">Start onboarding workflow</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-log-out"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" x2="9" y1="12" y2="12"></line></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title sdir-admin-btn-title-danger">Trigger Offboarding</p>
+                                                    <p class="sdir-admin-btn-desc">Initiate exit process</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Confirm Probation</p>
+                                                    <p class="sdir-admin-btn-desc">Pass or fail probation review</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                            <button type="button" class="sdir-admin-action-btn">
+                                                <div class="sdir-admin-btn-icon-wrapper sdir-admin-icon-red-light">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-plus"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" x2="19" y1="8" y2="14"></line><line x1="22" x2="16" y1="11" y2="11"></line></svg>
+                                                </div>
+                                                <div class="sdir-admin-btn-text-wrapper">
+                                                    <p class="sdir-admin-btn-title">Rehire Employee</p>
+                                                    <p class="sdir-admin-btn-desc">Restart employment</p>
+                                                </div>
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-admin-btn-chevron lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
                             <!-- OTHER TABS PLACEHOLDERS -->
-                            <t t-if="state.profileActiveTab !== 'overview'">
+                            <t t-if="!['overview', 'admin'].includes(state.profileActiveTab)">
                                 <div class="sdir-prof-placeholder">
                                     <p>Content for <t t-esc="state.profileActiveTab"/> coming soon.</p>
                                 </div>

@@ -2186,3 +2186,217 @@
     font-weight: 600;
     border: 1px solid;
 }
+
+
+/* ADMIN TAB STYLES */
+.sdir-admin-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.sdir-admin-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 14px 16px;
+    background-color: #F9FAFB;
+    border-radius: 12px;
+    border: 1px solid #F3F4F6;
+    margin-bottom: 4px;
+}
+
+.sdir-admin-stat-item {
+    text-align: center;
+}
+
+.sdir-admin-stat-label {
+    margin: 0 0 3px 0;
+    font-size: 10px;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sdir-admin-stat-val-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.sdir-admin-stat-dot-active {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #10B981;
+}
+
+.sdir-admin-stat-val {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.sdir-admin-section {
+    background-color: #FFFFFF;
+    border-radius: 14px;
+    border: 1.5px solid #F3F4F6;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.sdir-admin-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+}
+
+.sdir-admin-header-indigo {
+    background-color: rgba(99, 102, 241, 0.03);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.125);
+}
+.sdir-admin-icon-indigo {
+    background-color: rgba(99, 102, 241, 0.094);
+    color: #6366F1;
+}
+.sdir-admin-icon-indigo-light {
+    background-color: rgba(99, 102, 241, 0.08);
+}
+
+.sdir-admin-header-pink {
+    background-color: rgba(233, 30, 99, 0.03);
+    border-bottom: 1px solid rgba(233, 30, 99, 0.125);
+}
+.sdir-admin-icon-pink {
+    background-color: rgba(233, 30, 99, 0.094);
+    color: #E91E63;
+}
+.sdir-admin-icon-pink-light {
+    background-color: rgba(233, 30, 99, 0.08);
+}
+
+.sdir-admin-header-amber {
+    background-color: rgba(245, 158, 11, 0.03);
+    border-bottom: 1px solid rgba(245, 158, 11, 0.125);
+}
+.sdir-admin-icon-amber {
+    background-color: rgba(245, 158, 11, 0.094);
+    color: #F59E0B;
+}
+.sdir-admin-icon-amber-light {
+    background-color: rgba(245, 158, 11, 0.08);
+}
+
+.sdir-admin-header-red {
+    background-color: rgba(239, 68, 68, 0.03);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.125);
+}
+.sdir-admin-icon-red {
+    background-color: rgba(239, 68, 68, 0.094);
+    color: #EF4444;
+}
+.sdir-admin-icon-red-light {
+    background-color: rgba(239, 68, 68, 0.08);
+}
+.sdir-admin-icon-red-light-alt {
+    background-color: #FEE2E2;
+}
+
+.sdir-admin-section-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sdir-admin-section-title {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 800;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sdir-admin-section-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: #9CA3AF;
+}
+
+.sdir-admin-actions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+}
+
+.sdir-admin-action-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background-color: #FFFFFF;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.12s;
+    border: none;
+    border-bottom: 1px solid #F3F4F6;
+    border-right: 1px solid #F3F4F6;
+}
+.sdir-admin-action-btn:nth-child(even) {
+    border-right: none;
+}
+.sdir-admin-action-btn:nth-last-child(1),
+.sdir-admin-action-btn:nth-last-child(2) {
+    border-bottom: none;
+}
+.sdir-admin-action-btn:hover {
+    background-color: #F9FAFB;
+}
+
+.sdir-admin-btn-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.sdir-admin-btn-text-wrapper {
+    min-width: 0;
+}
+
+.sdir-admin-btn-title {
+    margin: 0 0 2px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sdir-admin-btn-title-danger {
+    color: #EF4444;
+}
+
+.sdir-admin-btn-desc {
+    margin: 0;
+    font-size: 11px;
+    color: #9CA3AF;
+    line-height: 1.4;
+}
+
+.sdir-admin-btn-chevron {
+    flex-shrink: 0;
+    margin-top: 6px;
+    margin-left: auto;
+}
