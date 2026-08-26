@@ -687,7 +687,23 @@ class HrEmployeeStaffDirectory(models.Model):
             val = cond.get('value', '')
             if not field or not op or not val:
                 return False
-            
+
+            # Numeric operators (Performance Score) — evaluated before the
+            # generic string matching below. "between" takes "min-max".
+            if field == 'performanceScore' and op in ('eq', 'gte', 'lte', 'between'):
+                try:
+                    score = float(str(person.get('performance_score', '')).replace('%', '').strip())
+                    if op == 'eq':
+                        return score == float(val)
+                    if op == 'gte':
+                        return score >= float(val)
+                    if op == 'lte':
+                        return score <= float(val)
+                    lo, _, hi = str(val).partition('-')
+                    return score >= float(lo) and score <= float(hi or lo)
+                except (TypeError, ValueError):
+                    return False
+
             p_val = ''
             if field == 'dept':
                 p_val = person.get('department', '')

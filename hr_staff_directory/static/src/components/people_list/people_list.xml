@@ -900,7 +900,9 @@
         </button>
         <div class="sdir-pl-compare-chips" t-if="state.compareOpen">
             <t t-foreach="savedSegments" t-as="seg" t-key="seg.id">
-                <button t-att-class="'sdir-pl-compare-chip' + (isChipSelected(seg.id) ? ' sdir-pl-compare-chip-on' : '')" t-on-click="() => this.toggleCompareChip(seg.id)">
+                <button t-att-class="'sdir-pl-compare-chip' + (isChipSelected(seg.id) ? ' sdir-pl-compare-chip-on' : '')"
+                        t-att-style="isChipSelected(seg.id) ? ('border-color: ' + (seg.color || '#F59E0B') + '; background: ' + (seg.color || '#F59E0B') + '0d; color: ' + (seg.color || '#F59E0B') + ';') : ''"
+                        t-on-click="() => this.toggleCompareChip(seg.id)">
                     <t t-esc="seg.name"/>
                 </button>
             </t>
@@ -926,8 +928,8 @@
                         </t>
                     </div>
                 </div>
-                <button t-on-click="() => this.openSegmentMessageBox()" t-att-disabled="!state.currentSegmentData.metrics.total" class="sdir-pl-emailall-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail sdir-pl-ic-mail"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>Email All
+                <button t-on-click="() => this.openActOnSegmentModal()" t-att-disabled="!state.currentSegmentData.metrics.total" class="sdir-pl-emailall-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14H4z"></path></svg>Take Action
                 </button>
             </div>
             
@@ -1078,7 +1080,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
             </button>
         </div>
-        <div class="sdir-pl-modal-body">
+        <div class="sdir-pl-modal-body" t-ref="modalBody">
             <div class="sdir-pl-modal-pad">
                 <div class="sdir-pl-mb18">
                     <label class="sdir-pl-label6">Segment Name</label>
@@ -1140,20 +1142,22 @@
 
                     <t t-foreach="state.segmentForm.conditions" t-as="cond" t-key="cond_index">
                         <div class="sdir-pl-condrow">
+                            <!-- Field -->
                             <div class="sdir-pl-relative sdir-pl-picker-wrap sdir-pl-fieldcell">
                                 <button type="button"
-                                        t-att-class="'sdir-pl-fieldselect-btn' + (state.openFieldSelect === cond_index ? ' sdir-pl-fieldselect-btn-on' : '')"
-                                        t-on-click="() => this.toggleFieldSelect(cond_index)">
+                                        t-att-class="'sdir-pl-fieldselect-btn' + (isOpenPop('field', cond_index) ? ' sdir-pl-fieldselect-btn-on' : '')"
+                                        t-att-data-sdir-poptrigger="'field-' + cond_index"
+                                        t-on-click="(ev) => this.toggleSelectPop('field', cond_index, ev)">
                                     <span t-esc="fieldLabel(cond.field)"/>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
                                 </button>
-                                <div t-if="state.openFieldSelect === cond_index" class="sdir-pl-fieldpop">
-                                    <div class="sdir-pl-fieldpop-search">
+                                <div t-if="isOpenPop('field', cond_index)" class="sdir-pl-pop" t-att-style="popStyle">
+                                    <div class="sdir-pl-pop-search">
                                         <input type="text" placeholder="Search…" autofocus="autofocus"
-                                               t-att-value="state.fieldSearch"
-                                               t-on-input="(ev) => this.state.fieldSearch = ev.target.value"/>
+                                               t-att-value="state.popSearch"
+                                               t-on-input="(ev) => this.state.popSearch = ev.target.value"/>
                                     </div>
-                                    <div class="sdir-pl-fieldpop-list">
+                                    <div class="sdir-pl-pop-list">
                                         <t t-foreach="filteredFieldOptions" t-as="opt" t-key="opt.id">
                                             <button type="button"
                                                     t-att-class="'sdir-pl-fieldopt' + (cond.field === opt.id ? ' sdir-pl-fieldopt-on' : '')"
@@ -1161,18 +1165,68 @@
                                                 <t t-esc="opt.label"/>
                                             </button>
                                         </t>
-                                        <div t-if="filteredFieldOptions.length === 0" class="sdir-pl-fieldpop-empty">No matches</div>
+                                        <div t-if="filteredFieldOptions.length === 0" class="sdir-pl-pop-empty">No matches</div>
                                     </div>
                                 </div>
                             </div>
-                            <select t-att-value="cond.operator" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'operator', ev.target.value)" class="sdir-pl-select-op">
-                                <option value="is">is</option>
-                                <option value="isNot">is not</option>
-                                <option value="contains">contains</option>
-                                <option value="notContains">does not contain</option>
-                            </select>
+                            <!-- Operator (contextual per field) -->
+                            <div class="sdir-pl-relative sdir-pl-picker-wrap sdir-pl-opcell">
+                                <button type="button"
+                                        t-att-class="'sdir-pl-fieldselect-btn' + (isOpenPop('op', cond_index) ? ' sdir-pl-fieldselect-btn-on' : '')"
+                                        t-att-data-sdir-poptrigger="'op-' + cond_index"
+                                        t-on-click="(ev) => this.toggleSelectPop('op', cond_index, ev)">
+                                    <span t-esc="opLabel(cond.field, cond.operator)"/>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                                </button>
+                                <div t-if="isOpenPop('op', cond_index)" class="sdir-pl-pop" t-att-style="popStyle">
+                                    <div class="sdir-pl-pop-list">
+                                        <t t-foreach="operatorsFor(cond.field)" t-as="op" t-key="op.id">
+                                            <button type="button"
+                                                    t-att-class="'sdir-pl-fieldopt' + (cond.operator === op.id ? ' sdir-pl-fieldopt-on' : '')"
+                                                    t-on-click="() => this.selectOp(cond_index, op.id)">
+                                                <t t-esc="op.label"/>
+                                            </button>
+                                        </t>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Value (searchable options, or digits-only for Performance Score) -->
                             <div class="sdir-pl-valuewrap">
-                                <input type="text" t-att-value="cond.value" t-on-change="(ev) => this.updateSegmentCondition(cond_index, 'value', ev.target.value)" placeholder="Value..." class="sdir-pl-value-input"/>
+                                <t t-if="cond.field === 'performanceScore'">
+                                    <input type="text" inputmode="numeric"
+                                           t-att-value="cond.value"
+                                           t-on-input="(ev) => this.onPerfScoreInput(cond_index, ev)"
+                                           t-att-placeholder="cond.operator === 'between' ? 'e.g. 60-80' : 'e.g. 75'"
+                                           class="sdir-pl-value-input sdir-pl-numinput"/>
+                                </t>
+                                <t t-else="">
+                                    <div class="sdir-pl-relative sdir-pl-picker-wrap sdir-pl-valuecell">
+                                        <button type="button"
+                                                t-att-class="'sdir-pl-fieldselect-btn' + (isOpenPop('value', cond_index) ? ' sdir-pl-fieldselect-btn-on' : '')"
+                                                t-att-data-sdir-poptrigger="'value-' + cond_index"
+                                                t-on-click="(ev) => this.toggleSelectPop('value', cond_index, ev)">
+                                            <span t-esc="cond.value || '— select —'"/>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                                        </button>
+                                        <div t-if="isOpenPop('value', cond_index)" class="sdir-pl-pop" t-att-style="popStyle">
+                                            <div class="sdir-pl-pop-search">
+                                                <input type="text" placeholder="Search…" autofocus="autofocus"
+                                                       t-att-value="state.popSearch"
+                                                       t-on-input="(ev) => this.state.popSearch = ev.target.value"/>
+                                            </div>
+                                            <div class="sdir-pl-pop-list">
+                                                <t t-foreach="filteredValueOptions" t-as="val" t-key="val">
+                                                    <button type="button"
+                                                            t-att-class="'sdir-pl-fieldopt' + (cond.value === val ? ' sdir-pl-fieldopt-on' : '')"
+                                                            t-on-click="() => this.selectValue(cond_index, val)">
+                                                        <t t-esc="val"/>
+                                                    </button>
+                                                </t>
+                                                <div t-if="filteredValueOptions.length === 0" class="sdir-pl-pop-empty">No matches</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
                                 <button t-if="state.segmentForm.conditions.length > 1" t-on-click="() => this.removeSegmentCondition(cond_index)" class="sdir-pl-remove-btn">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line></svg>
                                 </button>
@@ -1196,6 +1250,131 @@
     </div>
 </div>
 </t>
+
+    <!-- Segment Comparison modal (opened from the sidebar Compare footer) -->
+    <t t-if="state.showCompareModal">
+<div class="sdir-pl-overlay">
+    <div class="sdir-pl-cmp-dialog">
+        <div class="sdir-pl-modal-head">
+            <div>
+                <h3 class="sdir-pl-modal-h3">Segment Comparison</h3>
+                <p class="sdir-pl-modal-p">
+                    <t t-if="state.compareLoading">Loading…</t>
+                    <t t-else=""><t t-esc="state.compareData.length"/> segments selected</t>
+                </p>
+            </div>
+            <button t-on-click="() => this.closeCompareModal()" class="sdir-pl-modal-close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+            </button>
+        </div>
+        <div class="sdir-pl-cmp-body">
+            <t t-if="state.compareLoading">
+                <div class="sdir-pl-loading">
+                    <svg width="32" height="32" class="sdir-pl-spinner" style="color: #9CA3AF;"><use href="#sdir-pl-ic-loader-circle"/></svg>
+                    <p>Comparing segments...</p>
+                </div>
+            </t>
+            <t t-else="">
+                <table class="sdir-pl-cmp-table">
+                    <thead>
+                        <tr class="sdir-pl-cmp-thead-tr">
+                            <th class="sdir-pl-cmp-th sdir-pl-cmp-th-metric">Metric</th>
+                            <t t-foreach="state.compareData" t-as="d" t-key="d.segment_id">
+                                <th class="sdir-pl-cmp-th">
+                                    <div class="sdir-pl-cmp-colhead">
+                                        <span class="sdir-pl-cmp-dot" t-att-style="'background-color: ' + (d.color || '#F59E0B') + '; box-shadow: ' + (d.color || '#F59E0B') + '30 0px 0px 0px 3px;'"></span>
+                                        <span class="sdir-pl-cmp-name" t-esc="d.name"/>
+                                        <span class="sdir-pl-cmp-members"><t t-esc="d.metrics.total"/> members</span>
+                                    </div>
+                                </th>
+                            </t>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="state.compareTable" t-as="row" t-key="row.label">
+                            <tr class="sdir-pl-cmp-row">
+                                <td class="sdir-pl-cmp-td sdir-pl-cmp-td-metric" t-esc="row.label"/>
+                                <t t-foreach="state.compareData" t-as="d" t-key="d_index">
+                                    <td class="sdir-pl-cmp-td sdir-pl-cmp-td-val"
+                                        t-att-style="'color: ' + (d.color || '#F59E0B') + ';'"
+                                        t-esc="row.values[d_index]"/>
+                                </t>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </t>
+        </div>
+    </div>
+</div>
+</t>
+
+    <!-- Act on Segment Modal -->
+    <t t-if="state.showActOnSegmentModal">
+        <div class="sdir-pl-overlay">
+            <div class="sdir-pl-act-dialog">
+                <div class="sdir-pl-act-header">
+                    <div>
+                        <h3 class="sdir-pl-act-title">Act on Segment</h3>
+                        <div class="sdir-pl-act-subtitle">
+                            <t t-esc="state.currentSegmentData.name"/> · <t t-esc="state.currentSegmentData.metrics.total"/> current members
+                        </div>
+                    </div>
+                    <button class="sdir-pl-act-close" t-on-click="() => this.closeActOnSegmentModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="sdir-pl-act-body">
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.closeActOnSegmentModal(); this.openSegmentMessageBox(); }">
+                        <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-blue">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <div>
+                            <div class="sdir-pl-act-btn-title" style="color: rgb(17, 24, 39);">Message All</div>
+                            <div class="sdir-pl-act-btn-desc">Send a message to all <t t-esc="state.currentSegmentData.metrics.total"/> members</div>
+                        </div>
+                    </button>
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-highlight" t-on-click="() => { this.toast.show('warning', 'AI features are coming soon'); }">
+                        <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-pink">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path><path d="M20 3v4"></path><path d="M22 5h-4"></path><path d="M4 17v2"></path><path d="M5 18H3"></path></svg>
+                        </div>
+                        <div>
+                            <div class="sdir-pl-act-btn-title" style="color: rgb(233, 30, 140);">Ask Cleon AI</div>
+                            <div class="sdir-pl-act-btn-desc">Ask anything about people in your organisation</div>
+                        </div>
+                    </button>
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.toast.show('warning', 'Exporting segments is coming soon!'); }">
+                        <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-green">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" x2="12" y1="15" y2="3"></line></svg>
+                        </div>
+                        <div>
+                            <div class="sdir-pl-act-btn-title" style="color: rgb(17, 24, 39);">Export to CSV</div>
+                            <div class="sdir-pl-act-btn-desc">Download a CSV roster of this segment</div>
+                        </div>
+                    </button>
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.toast.show('warning', 'Workflows not implemented yet'); }">
+                        <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-purple">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-workflow"><rect width="8" height="8" x="3" y="3" rx="2"></rect><path d="M7 11v4a2 2 0 0 0 2 2h4"></path><rect width="8" height="8" x="13" y="13" rx="2"></rect></svg>
+                        </div>
+                        <div>
+                            <div class="sdir-pl-act-btn-title" style="color: rgb(17, 24, 39);">Enrol in Workflow</div>
+                            <div class="sdir-pl-act-btn-desc">Assign all members to an HR workflow</div>
+                        </div>
+                    </button>
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.toast.show('warning', 'Reports not implemented yet'); }">
+                        <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-orange">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-no-axes-column"><line x1="18" x2="18" y1="20" y2="10"></line><line x1="12" x2="12" y1="20" y2="4"></line><line x1="6" x2="6" y1="20" y2="14"></line></svg>
+                        </div>
+                        <div>
+                            <div class="sdir-pl-act-btn-title" style="color: rgb(17, 24, 39);">Add to Report</div>
+                            <div class="sdir-pl-act-btn-desc">Include this cohort in a scheduled report</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
     </t>
 </templates>
 

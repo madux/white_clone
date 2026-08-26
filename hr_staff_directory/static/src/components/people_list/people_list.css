@@ -190,9 +190,7 @@
     border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255);
     color: rgb(107, 114, 128); cursor: pointer; font-weight: 700; transition: 0.12s;
 }
-.sdir-pl-compare-chip-on {
-    border-color: rgb(233, 30, 140); background-color: rgb(255, 240, 247); color: rgb(214, 0, 110);
-}
+.sdir-pl-compare-chip-on { /* selected colours are set inline from seg.color */ }
 .sdir-pl-compare-btn     {
     width: 100%; height: 34px; border-width: medium; border-style: none; border-color: currentcolor;
     border-image: none; border-radius: 9px; background: rgb(229, 231, 235); color: rgb(156, 163, 175);
@@ -382,12 +380,8 @@
     background-color: rgb(249, 250, 251); border-radius: 6px; border: 1px solid rgb(243, 244, 246);
 }
 .sdir-pl-condrow       { display: flex; gap: 7px; margin-bottom: 8px; align-items: flex-start; flex-wrap: wrap; }
-.sdir-pl-select-op     {
-    height: 36px; padding: 0px 8px; border-radius: 8px;
-    border: 1.5px solid rgb(229, 231, 235); font-size: 12px; outline: none;
-    font-family: Inter, sans-serif; box-sizing: border-box; flex: 1.5 1 110px;
-}
-.sdir-pl-fieldcell      { position: relative; flex: 2 1 130px; min-width: 0; }
+.sdir-pl-opcell         { position: relative; flex: 1.5 1 110px; min-width: 0; }
+.sdir-pl-valuecell      { position: relative; flex: 1 1 auto; min-width: 0; }
 .sdir-pl-fieldselect-btn {
     width: 100%; height: 36px; padding: 0px 8px; border-radius: 8px;
     border: 1.5px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255);
@@ -398,20 +392,23 @@
 .sdir-pl-fieldselect-btn-on {
     border-color: var(--sdir-pl-c); background-color: var(--sdir-pl-c-soft);
 }
-.sdir-pl-fieldpop {
-    position: absolute; top: calc(100% + 5px); left: 0px; z-index: 101;
-    width: 100%; min-width: 200px; background: rgb(255, 255, 255);
+.sdir-pl-pop {
+    /* Portal-style: fixed + JS-computed coordinates (inline t-att-style) so
+       the panel escapes the modal body's overflow-y clipping. z-index sits
+       above the 9999 modal overlay. Shared by field/operator/value panels. */
+    position: fixed; z-index: 10050;
+    background: rgb(255, 255, 255);
     border-radius: 10px; border: 1.5px solid var(--sdir-pl-c-50);
     box-shadow: rgba(0, 0, 0, 0.18) 0px 8px 32px; overflow: hidden;
 }
-.sdir-pl-fieldpop-search { padding: 8px 8px 4px; border-bottom: 1px solid rgb(243, 244, 246); }
-.sdir-pl-fieldpop-search input {
+.sdir-pl-pop-search { padding: 8px 8px 4px; border-bottom: 1px solid rgb(243, 244, 246); }
+.sdir-pl-pop-search input {
     width: 100%; height: 28px; padding: 0px 8px; border-radius: 6px;
     border: 1.5px solid rgb(229, 231, 235); font-size: 11px; outline: none;
     font-family: inherit; box-sizing: border-box;
 }
-.sdir-pl-fieldpop-search input:focus { border-color: var(--sdir-pl-c); }
-.sdir-pl-fieldpop-list   { max-height: 240px; overflow-y: auto; }
+.sdir-pl-pop-search input:focus { border-color: var(--sdir-pl-c); }
+.sdir-pl-pop-list   { max-height: 240px; overflow-y: auto; }
 .sdir-pl-fieldopt        {
     display: block; width: 100%; padding: 7px 12px;
     border-width: medium; border-style: none; border-color: currentcolor; border-image: none;
@@ -420,7 +417,7 @@
 }
 .sdir-pl-fieldopt:hover  { background: var(--sdir-pl-c-soft); }
 .sdir-pl-fieldopt-on     { background: var(--sdir-pl-c-tint); color: rgb(156, 163, 175); }
-.sdir-pl-fieldpop-empty  { padding: 10px 12px; font-size: 11px; color: rgb(156, 163, 175); text-align: center; }
+.sdir-pl-pop-empty  { padding: 10px 12px; font-size: 11px; color: rgb(156, 163, 175); text-align: center; }
 .sdir-pl-valuewrap     { flex: 2 1 130px; display: flex; gap: 4px; }
 .sdir-pl-value-input   {
     width: 100%; height: 36px; padding: 0px 10px; border-radius: 8px;
@@ -428,6 +425,7 @@
     font-size: 12px; outline: none; font-family: Inter, sans-serif; box-sizing: border-box;
     color: rgb(17, 24, 39);
 }
+.sdir-pl-numinput:focus { border-color: var(--sdir-pl-c); }
 .sdir-pl-remove-btn    {
     height: 36px; padding: 0px 10px; border: 1.5px solid rgb(229, 231, 235); border-radius: 8px;
     background: white; cursor: pointer; color: rgb(239, 68, 68);
@@ -475,7 +473,7 @@
     background-color: rgb(255, 255, 255); border-radius: 12px;
     border: 1px solid rgb(229, 231, 235);
     box-shadow: rgba(0, 0, 0, 0.13) 0px 8px 28px;
-    padding: 12px; width: 234px;
+    padding: 12px; width: max-content;
 }
 .sdir-pl-iconpop-grid  { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
 .sdir-pl-iconopt       {
@@ -499,3 +497,199 @@
 .sdir-filter-chip-label { font-size: 11px; color: rgb(55, 65, 81); font-weight: 600; }
 .sdir-recent-icon       { color: rgb(156, 163, 175); flex-shrink: 0; }
 .sdir-recent-label      { font-size: 11px; color: rgb(107, 114, 128); font-weight: 600; }
+
+
+/* Segment Comparison Modal */
+.sdir-pl-cmp-dialog {
+    width: 700px;
+    max-height: 80vh;
+    background: #fff;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+.sdir-pl-cmp-body {
+    padding: 24px;
+    overflow-y: auto;
+}
+.sdir-pl-cmp-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+.sdir-pl-cmp-thead-tr {
+    background-color: #F9FAFB;
+}
+.sdir-pl-cmp-th {
+    padding: 12px 16px;
+    border-bottom: 1px solid #E5E7EB;
+}
+.sdir-pl-cmp-th-metric {
+    width: 120px;
+    color: #6B7280;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+.sdir-pl-cmp-colhead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.sdir-pl-cmp-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+}
+.sdir-pl-cmp-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #111827;
+}
+.sdir-pl-cmp-members {
+    font-size: 11px;
+    color: #6B7280;
+    font-weight: 400;
+}
+.sdir-pl-cmp-row {
+    border-bottom: 1px solid #F3F4F6;
+}
+.sdir-pl-cmp-row:nth-child(even) {
+    background-color: #FAFAFA;
+}
+.sdir-pl-cmp-td {
+    padding: 16px;
+}
+.sdir-pl-cmp-td-metric {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+}
+.sdir-pl-cmp-td-val {
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+}
+
+
+
+/* Act on Segment Modal */
+.sdir-pl-act-dialog {
+    width: 100%;
+    max-width: 480px;
+    background-color: rgb(255, 255, 255);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: rgba(0, 0, 0, 0.22) 0px 24px 64px;
+}
+.sdir-pl-act-header {
+    background: linear-gradient(135deg, rgb(233, 30, 140) 0%, rgb(194, 24, 91) 100%);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.sdir-pl-act-title {
+    margin: 0px;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgb(255, 255, 255);
+}
+.sdir-pl-act-subtitle {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+}
+.sdir-pl-act-close {
+    border-width: medium;
+    border-style: none;
+    border-color: currentcolor;
+    border-image: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.12s;
+}
+.sdir-pl-act-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+.sdir-pl-act-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sdir-pl-act-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.12s;
+}
+.sdir-pl-act-btn-default {
+    border: 1.5px solid rgb(232, 232, 238);
+    background: rgb(255, 255, 255);
+}
+.sdir-pl-act-btn-default:hover {
+    border-color: rgb(209, 213, 219);
+    background: rgb(249, 250, 251);
+}
+.sdir-pl-act-btn-highlight {
+    border: 1.5px solid rgba(233, 30, 140, 0.19);
+    background: rgba(233, 30, 140, 0.024);
+}
+.sdir-pl-act-btn-highlight:hover {
+    background: rgba(233, 30, 140, 0.05);
+}
+.sdir-pl-act-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sdir-pl-act-icon-blue {
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.145);
+}
+.sdir-pl-act-icon-pink {
+    background: linear-gradient(135deg, rgba(233, 30, 140, 0.145), rgba(156, 39, 176, 0.145));
+    border: 1px solid rgba(233, 30, 140, 0.145);
+}
+.sdir-pl-act-icon-green {
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.145);
+}
+.sdir-pl-act-icon-purple {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid rgba(139, 92, 246, 0.145);
+}
+.sdir-pl-act-icon-orange {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.145);
+}
+.sdir-pl-act-btn-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+.sdir-pl-act-btn-desc {
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    margin-top: 1px;
+}
+

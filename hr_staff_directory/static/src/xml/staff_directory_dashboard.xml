@@ -81,6 +81,7 @@
                 exportAll="this.exportAll.bind(this)"
                 removeFilter="this.removeFilter.bind(this)"
                 clearAllFilters="this.clearAllFilters.bind(this)"
+                applySegmentConditions="this.applySegmentConditions.bind(this)"
                 toggleFilterAccordion="this.toggleFilterAccordion.bind(this)"
                 setDateFilter="this.setDateFilter.bind(this)"
                 toggleFilterOption="this.toggleFilterOption.bind(this)"

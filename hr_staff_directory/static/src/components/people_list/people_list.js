@@ -26,6 +26,7 @@ export class StaffDirectoryPeopleList extends Component {
         exportAll: { type: Function },
         removeFilter: { type: Function },
         clearAllFilters: { type: Function },
+        applySegmentConditions: { type: Function, optional: true },
         toggleFilterAccordion: { type: Function },
         setDateFilter: { type: Function },
         toggleFilterOption: { type: Function },
@@ -49,16 +50,23 @@ export class StaffDirectoryPeopleList extends Component {
 
     setup() {
         this.jumpInput = useRef("jumpInput");
+        this.modalBodyRef = useRef("modalBody");
         this.rpc = useService("rpc");
         this.toast = useService("hr_staff_directory.toast");
         this._boundOnWindowClick = this._onWindowClick.bind(this);
+        this._boundOnKeyDown = this._onDialogKeyDown.bind(this);
+        this._boundOnResize = this._onWindowResize.bind(this);
+        this._boundOnBodyScroll = this._onModalBodyScroll.bind(this);
         onMounted(() => {
             this._autosizeJumpInput(this.jumpInput.el);
             document.addEventListener("click", this._boundOnWindowClick);
+            document.addEventListener("keydown", this._boundOnKeyDown);
         });
         onPatched(() => this._autosizeJumpInput(this.jumpInput.el));
         onWillUnmount(() => {
             document.removeEventListener("click", this._boundOnWindowClick);
+            document.removeEventListener("keydown", this._boundOnKeyDown);
+            this._closeDialogPopups();
         });
 
         const initialCols = ['name', 'department', 'role', 'work_email', 'work_phone', 'manager', 'location'];
@@ -77,10 +85,16 @@ export class StaffDirectoryPeopleList extends Component {
             showNewSegmentModal: false,
             showColorPicker: false,
             showIconPicker: false,
-            openFieldSelect: null,
-            fieldSearch: '',
+            openPop: null,      // {kind: 'field'|'op'|'value', index} | null
+            popSearch: '',
+            popPos: null,
             compareOpen: true,
             compareSel: [],
+            showCompareModal: false,
+            showActOnSegmentModal: false,
+            compareLoading: false,
+            compareData: [],
+            compareTable: [],
             segments: [],
             currentSegmentData: null,
             segmentForm: {
@@ -169,6 +183,46 @@ export class StaffDirectoryPeopleList extends Component {
             { id: 'languages', label: 'Languages' },
             { id: 'performanceScore', label: 'Performance Score' },
         ];
+
+        // Operator sets per field kind. "includes"/"does not include" are
+        // display labels — the stored ids (contains/notContains) are the ones
+        // the backend segment engine implements.
+        this.operatorSets = {
+            setOps: [
+                { id: 'contains', label: 'includes' },
+                { id: 'notContains', label: 'does not include' },
+            ],
+            numeric: [
+                { id: 'eq', label: '= equals' },
+                { id: 'gte', label: '≥ at least' },
+                { id: 'lte', label: '≤ at most' },
+                { id: 'between', label: 'between' },
+            ],
+            text: [
+                { id: 'is', label: 'is' },
+                { id: 'isNot', label: 'is not' },
+            ],
+        };
+
+        // Value-option sources: payload key (from _sd_people_list) per
+        // condition field. skills/languages are comma-joined → split later.
+        this.fieldValueSource = {
+            dept: p => p.department,
+            role: p => p.job_title,
+            gradeLevel: p => p.grade,
+            location: p => p.work_location,
+            workMode: p => p.work_mode,
+            employmentType: p => p.employment_type,
+            lifecycleState: p => p.lifecycle_state,
+            flightRisk: p => p.flight_risk,
+            retentionPriority: p => p.retention_priority,
+            lineManager: p => p.manager_name,
+            tenureBucket: p => p.tenure,
+            gender: p => p.gender,
+            id: p => p.emp_ref,
+            skills: p => p.skills,
+            languages: p => p.languages,
+        };
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
@@ -298,13 +352,19 @@ export class StaffDirectoryPeopleList extends Component {
             this.toggleNewSegmentModal();
             return;
         }
+        // Open the segments management view and select the first segment
         this.toggleView('segments');
+        if (this.savedSegments.length > 0) {
+            this.selectSegment(this.savedSegments[0].name, this.savedSegments[0].id);
+        }
     }
 
     async openSegmentFromDropdown(seg) {
         this.state.showSavedSegments = false;
-        this.state.activeView = 'segments';
-        await this.selectSegment(seg.name, seg.id);
+        if (this.props.applySegmentConditions && seg.conditions) {
+            let conditions = typeof seg.conditions === 'string' ? JSON.parse(seg.conditions) : seg.conditions;
+            this.props.applySegmentConditions(conditions);
+        }
     }
 
     // ─── Compare accordion ───────────────────────────────────────────────────
@@ -335,10 +395,58 @@ export class StaffDirectoryPeopleList extends Component {
         return this.activeCompareSel.length;
     }
 
-    compareSegments() {
-        if (this.activeCompareSel.length < 2) return;
-        // Placeholder: real comparison view lands in a follow-up task
-        this.toast.show('success', `Comparing ${this.activeCompareSel.length} segments — comparison view coming soon`);
+    async compareSegments() {
+        const ids = this.activeCompareSel;
+        if (ids.length < 2) return;
+        this.state.showCompareModal = true;
+        this.state.compareLoading = true;
+        this.state.compareData = [];
+        this.state.compareTable = [];
+        try {
+            const results = await Promise.all(ids.map(id =>
+                this.rpc("/web/dataset/call_kw/hr.employee/get_segment_data", {
+                    model: "hr.employee",
+                    method: "get_segment_data",
+                    args: [id],
+                    kwargs: {}
+                })
+            ));
+            const data = results.filter(d => d && d.metrics);
+            if (data.length < 2) {
+                this.state.showCompareModal = false;
+                this.toast.show('warning', 'Selected segments are no longer available');
+                return;
+            }
+            this.state.compareData = data;
+            this.state.compareTable = [
+                { label: 'Headcount',   values: data.map(d => d.metrics.total) },
+                { label: 'Avg Grade',   values: data.map(d => d.metrics.avg_grade) },
+                { label: 'Avg Tenure',  values: data.map(d => d.metrics.avg_tenure) },
+                { label: 'Flight Risk', values: data.map(d => d.metrics.flight_risk) },
+                { label: 'Office',      values: data.map(d => (d.work_mode_distribution || {}).office ?? 0) },
+                { label: 'Hybrid',      values: data.map(d => (d.work_mode_distribution || {}).hybrid ?? 0) },
+                { label: 'Remote',      values: data.map(d => (d.work_mode_distribution || {}).remote ?? 0) },
+            ];
+        } catch (error) {
+            console.error('Error comparing segments', error);
+            this.state.showCompareModal = false;
+            this.toast.show('error', 'Failed to load segment comparison');
+        } finally {
+            this.state.compareLoading = false;
+        }
+    }
+
+
+    openActOnSegmentModal() {
+        this.state.showActOnSegmentModal = true;
+    }
+
+    closeActOnSegmentModal() {
+        this.state.showActOnSegmentModal = false;
+    }
+
+    closeCompareModal() {
+        this.state.showCompareModal = false;
     }
 
     async selectSegment(name, id) {
@@ -359,10 +467,8 @@ export class StaffDirectoryPeopleList extends Component {
 
     toggleNewSegmentModal() {
         this.state.showNewSegmentModal = !this.state.showNewSegmentModal;
-        this.state.showColorPicker = false;
-        this.state.showIconPicker = false;
-        this.state.openFieldSelect = null;
-        this.state.fieldSearch = '';
+        this._closeDialogPopups();
+        this.state.popSearch = '';
         if (this.state.showNewSegmentModal) {
             this.state.segmentForm = {
                 name: '',
@@ -379,13 +485,15 @@ export class StaffDirectoryPeopleList extends Component {
     // ─── Appearance pickers (color / icon) ───────────────────────────────────
 
     toggleColorPicker() {
-        this.state.showColorPicker = !this.state.showColorPicker;
+        this._closeSelectPop();
         this.state.showIconPicker = false;
+        this.state.showColorPicker = !this.state.showColorPicker;
     }
 
     toggleIconPicker() {
-        this.state.showIconPicker = !this.state.showIconPicker;
+        this._closeSelectPop();
         this.state.showColorPicker = false;
+        this.state.showIconPicker = !this.state.showIconPicker;
     }
 
     selectSegmentColor(color) {
@@ -398,33 +506,203 @@ export class StaffDirectoryPeopleList extends Component {
         this.state.showIconPicker = false;
     }
 
-    // ─── Condition field dropdown (searchable) ───────────────────────────────
+    // ─── Condition dropdowns (field / operator / value) ──────────────────────
+    // All three panels are position:fixed with JS-computed coordinates so
+    // they escape the modal body's overflow clipping (same approach as the
+    // design prototype's "svs-portal" markup). Exactly one panel is open at
+    // a time: state.openPop = {kind: 'field'|'op'|'value', index} | null.
 
-    toggleFieldSelect(index) {
-        this.state.showColorPicker = false;
-        this.state.showIconPicker = false;
-        if (this.state.openFieldSelect === index) {
-            this.state.openFieldSelect = null;
-        } else {
-            this.state.openFieldSelect = index;
-            this.state.fieldSearch = '';
+    _computePopPos(trigger) {
+        const rect = trigger.getBoundingClientRect();
+        const POP_EST = 300;  // search header + list max-height + borders
+        const margin = 8;
+        let top = rect.bottom + 5;
+        if (top + POP_EST > window.innerHeight - margin) {
+            // Not enough room below the trigger — flip upward.
+            top = Math.max(margin, rect.top - 5 - POP_EST);
+        }
+        const width = Math.max(rect.width, 200);
+        let left = rect.left;
+        if (left + width > window.innerWidth - margin) {
+            left = window.innerWidth - margin - width;
+        }
+        return { top: Math.round(top), left: Math.round(Math.max(margin, left)), width: Math.round(width) };
+    }
+
+    _attachPopListeners() {
+        const body = this.modalBodyRef.el;
+        if (body) {
+            body.addEventListener("scroll", this._boundOnBodyScroll);
+        }
+        window.addEventListener("resize", this._boundOnResize);
+    }
+
+    _detachPopListeners() {
+        const body = this.modalBodyRef.el;
+        if (body) {
+            body.removeEventListener("scroll", this._boundOnBodyScroll);
+        }
+        window.removeEventListener("resize", this._boundOnResize);
+    }
+
+    _onModalBodyScroll() {
+        this._repositionPop();
+    }
+
+    _onWindowResize() {
+        this._repositionPop();
+    }
+
+    _repositionPop() {
+        const pop = this.state.openPop;
+        if (!pop || !this.modalBodyRef.el) return;
+        const trigger = this.modalBodyRef.el.querySelector(`[data-sdir-poptrigger="${pop.kind}-${pop.index}"]`);
+        if (trigger) {
+            this.state.popPos = this._computePopPos(trigger);
         }
     }
 
-    selectField(index, fieldId) {
-        this.updateSegmentCondition(index, 'field', fieldId);
-        this.state.openFieldSelect = null;
+    isOpenPop(kind, index) {
+        const pop = this.state.openPop;
+        return !!pop && pop.kind === kind && pop.index === index;
     }
+
+    get popStyle() {
+        const p = this.state.popPos;
+        if (!p) return '';
+        return `position: fixed; top: ${p.top}px; left: ${p.left}px; width: ${p.width}px;`;
+    }
+
+    _closeSelectPop() {
+        this.state.openPop = null;
+        this.state.popPos = null;
+        this._detachPopListeners();
+    }
+
+    _closeDialogPopups() {
+        this.state.showColorPicker = false;
+        this.state.showIconPicker = false;
+        this._closeSelectPop();
+    }
+
+    _onDialogKeyDown(ev) {
+        if (ev.key === 'Escape'
+            && (this.state.showColorPicker || this.state.showIconPicker || this.state.openPop)) {
+            this._closeDialogPopups();
+        }
+    }
+
+    toggleSelectPop(kind, index, ev) {
+        if (this.isOpenPop(kind, index)) {
+            this._closeDialogPopups();
+            return;
+        }
+        this.state.showColorPicker = false;
+        this.state.showIconPicker = false;
+        this.state.openPop = { kind, index };
+        this.state.popSearch = '';
+        this.state.popPos = ev && ev.currentTarget
+            ? this._computePopPos(ev.currentTarget)
+            : null;
+        this._attachPopListeners();
+    }
+
+    // ─── Field / operator / value selection ──────────────────────────────────
 
     fieldLabel(fieldId) {
         const opt = this.fieldOptions.find(o => o.id === fieldId);
         return opt ? opt.label : '— select —';
     }
 
+    operatorsFor(fieldId) {
+        if (fieldId === 'skills' || fieldId === 'languages') return this.operatorSets.setOps;
+        if (fieldId === 'performanceScore') return this.operatorSets.numeric;
+        return this.operatorSets.text;
+    }
+
+    opLabel(fieldId, opId) {
+        const set = this.operatorsFor(fieldId).find(o => o.id === opId)
+            || Object.values(this.operatorSets).flat().find(o => o.id === opId);
+        return set ? set.label : '— select —';
+    }
+
+    selectField(index, fieldId) {
+        const cond = this.state.segmentForm.conditions[index];
+        this._closeSelectPop();
+        if (!cond || cond.field === fieldId) return;
+        cond.field = fieldId;
+        const ops = this.operatorsFor(fieldId);
+        cond.operator = ops.length ? ops[0].id : 'is';
+        cond.value = '';
+        this._previewSegment();
+    }
+
+    selectOp(index, opId) {
+        const cond = this.state.segmentForm.conditions[index];
+        this._closeSelectPop();
+        if (!cond || cond.operator === opId) return;
+        if ((cond.operator === 'between') !== (opId === 'between')) {
+            cond.value = '';
+        }
+        cond.operator = opId;
+        this._previewSegment();
+    }
+
+    selectValue(index, val) {
+        const cond = this.state.segmentForm.conditions[index];
+        this._closeSelectPop();
+        if (!cond) return;
+        cond.value = val;
+        this._previewSegment();
+    }
+
+    onPerfScoreInput(index, ev) {
+        const cond = this.state.segmentForm.conditions[index];
+        if (!cond) return;
+        const cleaned = cond.operator === 'between'
+            ? ev.target.value.replace(/[^\d-]/g, '').replace(/-+/g, '-')
+            : ev.target.value.replace(/[^\d]/g, '');
+        ev.target.value = cleaned;
+        cond.value = cleaned;
+    }
+
     get filteredFieldOptions() {
-        const q = (this.state.fieldSearch || '').toLowerCase().trim();
+        const pop = this.state.openPop;
+        if (!pop || pop.kind !== 'field') return this.fieldOptions;
+        const q = (this.state.popSearch || '').toLowerCase().trim();
         if (!q) return this.fieldOptions;
         return this.fieldOptions.filter(o => o.label.toLowerCase().includes(q));
+    }
+
+    get valueOptions() {
+        const pop = this.state.openPop;
+        if (!pop || pop.kind !== 'value' || !this.props.people) return [];
+        const cond = this.state.segmentForm.conditions[pop.index];
+        const source = cond && this.fieldValueSource[cond.field];
+        if (!source) return [];
+        const isList = cond.field === 'skills' || cond.field === 'languages';
+        const values = new Set();
+        this.props.people.forEach(p => {
+            const raw = source(p);
+            if (!raw) return;
+            if (isList) {
+                String(raw).split(',').forEach(v => {
+                    const t = v.trim();
+                    if (t) values.add(t);
+                });
+            } else {
+                const t = String(raw).trim();
+                if (t) values.add(t);
+            }
+        });
+        return Array.from(values).sort((a, b) => a.localeCompare(b));
+    }
+
+    get filteredValueOptions() {
+        const q = (this.state.popSearch || '').toLowerCase().trim();
+        const opts = this.valueOptions;
+        if (!q) return opts;
+        return opts.filter(v => v.toLowerCase().includes(q));
     }
 
     _shade(hex, pct) {
@@ -448,18 +726,13 @@ export class StaffDirectoryPeopleList extends Component {
 
     addSegmentCondition() {
         this.state.segmentForm.conditions.push({field: 'dept', operator: 'is', value: ''});
-        this.state.openFieldSelect = null;
+        this._closeSelectPop();
         this._previewSegment();
     }
 
     removeSegmentCondition(index) {
         this.state.segmentForm.conditions.splice(index, 1);
-        this.state.openFieldSelect = null;
-        this._previewSegment();
-    }
-
-    updateSegmentCondition(index, key, value) {
-        this.state.segmentForm.conditions[index][key] = value;
+        this._closeSelectPop();
         this._previewSegment();
     }
 
@@ -566,11 +839,13 @@ export class StaffDirectoryPeopleList extends Component {
             if (colsModal && colsModal.contains(ev.target)) return;
             this.state.showColumnsModal = false;
         }
-        if ((this.state.showColorPicker || this.state.showIconPicker || this.state.openFieldSelect !== null)
-            && !ev.target.closest('.sdir-pl-picker-wrap')) {
-            this.state.showColorPicker = false;
-            this.state.showIconPicker = false;
-            this.state.openFieldSelect = null;
+        // Unified click-away for the New Segment dialog popups (color / icon /
+        // field dropdown): any click that is not inside the popup's own
+        // wrapper (trigger + panel) closes all of them.
+        const insidePicker = ev.target.closest('.sdir-pl-picker-wrap');
+        if (!insidePicker
+            && (this.state.showColorPicker || this.state.showIconPicker || this.state.openPop)) {
+            this._closeDialogPopups();
         }
     }
 

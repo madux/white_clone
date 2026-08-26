@@ -693,6 +693,48 @@ export class StaffDirectoryDashboard extends Component {
         this.state.activeFilters = { ...this.state.activeFilters, [categoryId]: newArr };
             }
 
+    
+    applySegmentConditions(conditions) {
+        this.clearAllFilters();
+        
+        const fieldMap = {
+            'dept': 'department',
+            'gradeLevel': 'grade',
+            'location': 'location',
+            'workMode': 'work_mode',
+            'employmentType': 'employment_type',
+            'lifecycleState': 'lifecycle',
+            'flightRisk': 'flight_risk',
+            'lineManager': 'manager',
+            'tenureBucket': 'tenure',
+            'gender': 'gender',
+            'skills': 'skills',
+            'languages': 'languages',
+            'performanceScore': 'performance'
+        };
+
+        // For now, treat all conditions as standard inclusion filters
+        conditions.forEach(cond => {
+            if (!cond.field || !cond.value) return;
+            
+            const filterKey = fieldMap[cond.field];
+            if (filterKey && this.state.activeFilters[filterKey] !== undefined) {
+                // If it's a comma-separated list of values (e.g., from an IN operator or tags), handle appropriately
+                let values = Array.isArray(cond.value) ? cond.value : [cond.value];
+                
+                // Add unique values
+                values.forEach(val => {
+                    if (!this.state.activeFilters[filterKey].includes(val)) {
+                        this.state.activeFilters[filterKey].push(val);
+                    }
+                });
+            }
+        });
+        
+        // Trigger reactivity
+        this.state.activeFilters = { ...this.state.activeFilters };
+    }
+
     clearAllFilters() {
         const reset = {
             start_date_from: '',
