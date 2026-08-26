@@ -672,25 +672,12 @@
     color: #16a34a;
 }
 
-/* AI textarea badge */
-.textarea-ai-container {
-    position: relative;
-}
-.ai-helper-badge {
-    position: absolute;
-    bottom: 8px;
-    left: 10px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: #059669;
-    font-weight: 600;
-    background: #ecfdf5;
-    padding: 2px 8px;
-    border-radius: 6px;
-    border: 1px solid #a7f3d0;
-    pointer-events: none;
+.ctm-reg-empty-state {
+    padding: 12px 14px;
+    color: #718096;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
 }
 
 /* Common Reasons Chips */

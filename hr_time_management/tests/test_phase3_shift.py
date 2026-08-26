@@ -309,3 +309,32 @@ class TestPhase3Shift(TransactionCase):
         data = self.env["cleon.hr.shift"].with_user(self.manager_user).get_shift_management_data()
         shift_ids = [s["id"] for s in data["shifts"]]
         self.assertIn(inactive_shift.id, shift_ids)
+
+    def test_09_shift_management_exposes_authoritative_scheduled_hours(self):
+        """Night and split templates expose backend-calculated net duration to settings."""
+        night = self.env["cleon.hr.shift"].with_user(self.hr_manager_user).create({
+            "name": "P3 Duration Night Shift",
+            "code": "P3-DUR-NIGHT",
+            "shift_type": "night",
+            "start_hour": 20.0,
+            "end_hour": 6.0,
+            "break_minutes": 60,
+            "company_id": self.company.id,
+        })
+        split = self.env["cleon.hr.shift"].with_user(self.hr_manager_user).create({
+            "name": "P3 Duration Split Shift",
+            "code": "P3-DUR-SPLIT",
+            "shift_type": "split",
+            "break_minutes": 30,
+            "company_id": self.company.id,
+            "segment_ids": [
+                (0, 0, {"name": "Morning", "sequence": 1, "start_hour": 8.0, "end_hour": 12.0}),
+                (0, 0, {"name": "Evening", "sequence": 2, "start_hour": 16.0, "end_hour": 20.0}),
+            ],
+        })
+
+        data = self.env["cleon.hr.shift"].with_user(self.hr_manager_user).get_shift_management_data()
+        rows = {row["id"]: row for row in data["shifts"]}
+
+        self.assertEqual(rows[night.id]["scheduled_hours"], 9.0)
+        self.assertEqual(rows[split.id]["scheduled_hours"], 7.5)

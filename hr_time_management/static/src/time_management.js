@@ -295,17 +295,36 @@ export class TimeManagementApp extends Component {
     }
     newRegularization() {
         const today = new Date().toISOString().slice(0, 10);
+        const unresolved = this.state.employeeData?.unresolved_attendance;
         this.state.regularization = {
-            attendance_date: today, issue_type: "forgot_in",
-            requested_check_in: `${today}T09:00`, requested_check_out: `${today}T17:00`, reason: "",
+            attendance_date: unresolved?.attendance_date || today,
+            issue_type: unresolved ? "forgot_out" : "forgot_in",
+            requested_check_in: unresolved?.check_in || "",
+            requested_check_out: "",
+            reason: "",
+        };
+        this.state.error = "";
+    }
+    editRejectedRegularization(request) {
+        if (!request || request.state !== "rejected") return;
+        this.state.regularizationDetail = null;
+        this.state.regularization = {
+            id: request.id,
+            attendance_date: request.attendance_date,
+            issue_type: request.issue_type === "system_error" ? "system_glitch" : request.issue_type,
+            requested_check_in: request.requested_check_in_input || "",
+            requested_check_out: request.requested_check_out_input || "",
+            reason: request.reason || "",
         };
         this.state.error = "";
     }
     closeRegularization() { this.state.regularization = null; this.state.error = ""; }
     syncRegularizationDate() {
         const date = this.state.regularization.attendance_date;
-        this.state.regularization.requested_check_in = `${date}T09:00`;
-        this.state.regularization.requested_check_out = `${date}T17:00`;
+        for (const field of ["requested_check_in", "requested_check_out"]) {
+            const time = (this.state.regularization[field] || "").split("T")[1];
+            this.state.regularization[field] = date && time ? `${date}T${time}` : "";
+        }
     }
     async loadRegularizations(manager = false) {
         this.state.regularizations = await this.orm.call(
@@ -482,7 +501,7 @@ export class TimeManagementApp extends Component {
         if (shiftId && this.state.settingsShifts) {
             const shift = this.state.settingsShifts.find(s => s.id === shiftId);
             if (shift) {
-                const duration = Math.max(0, (shift.end_hour || 17) - (shift.start_hour || 9));
+                const duration = Number(shift.scheduled_hours) || 0;
                 this.state.policy.standard_hours = duration || 8.0;
                 this.state.policy.half_day_hours = Math.round((duration / 2.0) * 10) / 10 || 4.0;
                 if (shift.grace_minutes !== undefined) {

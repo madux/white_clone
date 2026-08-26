@@ -71,6 +71,21 @@ class HrAttendance(models.Model):
         # correction workflow; presenting it as today's session would make the
         # Clock Out button close the wrong workday.
         open_attendance = today_attendance.filtered(lambda record: not record.check_out)
+        unresolved_attendance = self.search([
+            ("employee_id", "=", employee.id),
+            ("check_out", "=", False),
+        ], order="check_in asc", limit=1)
+        unresolved_data = False
+        if unresolved_attendance:
+            unresolved_local = pytz.UTC.localize(unresolved_attendance.check_in).astimezone(
+                self._tz_for_employee(employee, unresolved_attendance.check_in)
+            )
+            if unresolved_local.date() < today:
+                unresolved_data = {
+                    "id": unresolved_attendance.id,
+                    "attendance_date": fields.Date.to_string(unresolved_local.date()),
+                    "check_in": unresolved_local.strftime("%Y-%m-%dT%H:%M"),
+                }
         expected, _grace, shift = self._expected_start(employee, today)
         policy = self.env["cleon.time.policy"].search([("company_id", "=", employee.company_id.id)], limit=1)
         week_start = today - timedelta(days=today.weekday())
@@ -186,6 +201,7 @@ class HrAttendance(models.Model):
             "employee": employee.name,
             "employee_id": employee.id,
             "attendance_state": "checked_in" if open_attendance else "checked_out",
+            "unresolved_attendance": unresolved_data,
             "today": self._row(employee, today_attendance, today) if today_attendance else False,
             "rows": rows,
             "summary": {
@@ -746,7 +762,7 @@ class HrAttendance(models.Model):
             "id": attendance.id if attendance else 0,
             "employee_id": employee.id,
             "employee": employee.name,
-            "employee_code": employee.sudo().barcode or "EMP-%03d" % employee.id,
+            "employee_code": employee.sudo().identification_id or employee.sudo().barcode or False,
             "department": employee.department_id.name or "—",
             "date": fields.Date.to_string(target_date),
             "check_in": self._display_time(attendance.check_in) if attendance else "",

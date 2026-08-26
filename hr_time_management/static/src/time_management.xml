@@ -2209,7 +2209,7 @@
         <t t-if="state.gateway"><div class="ctm-overlay"><section class="ctm-gateway"><button class="ctm-close" t-on-click="() => this.selectFeature(state.feature)" aria-label="Close">×</button><h2><i class="fa fa-clock-o"/> Time Management</h2><p>Select a module to manage your workforce time and attendance</p><p class="ctm-gateway-message" t-if="state.gatewayMessage" t-esc="state.gatewayMessage"/><div class="ctm-module-grid"><button t-att-class="!state.featureAccess.attendance ? 'ctm-feature-unavailable' : ''" t-att-disabled="!state.featureAccess.attendance" t-att-title="!state.featureAccess.attendance ? 'Contact your administrator for access.' : 'Open Attendance Management'" t-on-click="() => this.selectFeature('attendance')"><i class="fa fa-calendar pink"/><span><strong>Attendance Management</strong><small>Track and manage employee attendance, clock-ins, and absences</small><em t-if="!state.featureAccess.attendance">Not included in your subscription</em></span></button><button t-att-class="!state.featureAccess.shift ? 'ctm-feature-unavailable' : ''" t-att-disabled="!state.featureAccess.shift" t-att-title="!state.featureAccess.shift ? 'Contact your administrator for access.' : 'Open Shift Management'" t-on-click="() => this.selectFeature('shift')"><i class="fa fa-clock-o blue"/><span><strong>Shift Management</strong><small>Schedule and assign shifts across your organization</small><em t-if="!state.featureAccess.shift">Not included in your subscription</em></span></button><button t-att-class="!state.featureAccess.tracking ? 'ctm-feature-unavailable' : ''" t-att-disabled="!state.featureAccess.tracking" t-att-title="!state.featureAccess.tracking ? 'Contact your administrator for access.' : 'Open Time Tracking'" t-on-click="() => this.selectFeature('tracking')"><i class="fa fa-list-alt green"/><span><strong>Time Tracking</strong><small>Track task hours and manage timesheets</small><em t-if="!state.featureAccess.tracking">Not included in your subscription</em></span></button><button t-att-class="!state.featureAccess.overtime ? 'ctm-feature-unavailable' : ''" t-att-disabled="!state.featureAccess.overtime" t-att-title="!state.featureAccess.overtime ? 'Contact your administrator for access.' : 'Open Overtime Management'" t-on-click="() => this.selectFeature('overtime')"><i class="fa fa-hourglass-half orange"/><span><strong>Overtime Management</strong><small>Monitor and approve overtime requests and costs</small><em t-if="!state.featureAccess.overtime">Not included in your subscription</em></span></button></div><footer>Need help choosing? <b>View the guide</b> · Press <kbd>Alt</kbd> + <kbd>T</kbd> to return here</footer></section></div></t>
         <t t-if="state.detail"><div class="ctm-overlay"><section class="ctm-modal detail"><button class="ctm-close" t-on-click="closeDetail">×</button><h2>Employee Attendance Details</h2><div class="ctm-person"><div class="avatar" t-esc="state.detail.employee[0]"/><div><strong t-esc="state.detail.employee"/><small><t t-esc="state.detail.employee_code"/> • <t t-esc="state.detail.department"/></small></div></div><div class="ctm-detail-grid"><div><span>Clock In</span><strong t-esc="state.detail.check_in || 'Missing'"/></div><div><span>Clock Out</span><strong t-esc="state.detail.check_out || 'Missing'"/></div><div><span>Shift</span><strong t-esc="state.detail.shift"/></div><div><span>Status</span><b t-att-class="'status '+state.detail.status" t-esc="label(state.detail.status)"/></div></div></section></div></t>
         <t t-if="state.edit"><div class="ctm-overlay"><section class="ctm-modal edit"><button class="ctm-close" t-on-click="closeEdit">×</button><h2>Edit Attendance Record</h2><div class="ctm-warning">⚠ <strong>You are about to modify an attendance record</strong><br/>Please provide a reason for this change. The update will be audited.</div><div class="ctm-person"><div><span>Employee Name</span><strong t-esc="state.edit.employee"/></div><div><span>Employee ID</span><strong t-esc="state.edit.employee_code"/></div><div><span>Date</span><strong t-esc="state.edit.date"/></div><div><span>Current Status</span><b t-att-class="'status '+state.edit.status" t-esc="label(state.edit.status)"/></div></div><label>Clock-in Time<input type="datetime-local" t-model="state.edit.check_in_input"/></label><label>Clock-out Time<input type="datetime-local" t-model="state.edit.check_out_input"/></label><label>Attendance Status *<select t-model="state.edit.status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option><option value="on_leave">On Leave</option></select></label><label>Break Duration (minutes)<input type="number" min="0" t-model="state.edit.break_minutes"/></label><label>Reason for change *<textarea t-model="state.editReason"/></label><p class="ctm-error" t-if="state.error" t-esc="state.error"/><footer><button class="ctm-btn" t-on-click="closeEdit">Cancel</button><button class="ctm-btn pink" t-on-click="saveEdit">Save Changes</button></footer></section></div></t>
-        <t t-if="state.regularization"><div class="ctm-overlay"><section class="ctm-modal ctm-regularization-modal"><button class="ctm-close" t-on-click="closeRegularization">×</button><h2>Request Attendance Correction</h2><p>Submit an attendance issue for manager approval.</p><label>Attendance Date *<input type="date" t-model="state.regularization.attendance_date" t-on-change="syncRegularizationDate"/></label><label>Issue Type *<select t-model="state.regularization.issue_type"><option value="forgot_in">Forgot to Clock In</option><option value="forgot_out">Forgot to Clock Out</option><option value="incorrect_status">Incorrect Attendance Status</option><option value="system_error">System Error</option><option value="other">Other</option></select></label><div class="ctm-form-grid"><label>Requested Clock-in *<input type="datetime-local" step="900" t-model="state.regularization.requested_check_in"/></label><label>Requested Clock-out<input type="datetime-local" step="900" t-model="state.regularization.requested_check_out"/></label></div><label>Reason *<textarea maxlength="500" t-model="state.regularization.reason" placeholder="Explain what happened (20–500 characters)"/><small><t t-esc="state.regularization.reason.length"/> / 500 characters</small></label><div class="ctm-info">Supporting documents are stored by the workflow model; the upload control will be enabled with the approved attachment design.</div><p class="ctm-error" t-if="state.error" t-esc="state.error"/><footer><button class="ctm-btn" t-on-click="closeRegularization">Cancel</button><button class="ctm-btn pink" t-on-click="submitRegularization">Submit Request</button></footer></section></div></t>
+        <t t-if="state.regularization"><div class="ctm-overlay"><section class="ctm-modal ctm-regularization-modal"><button class="ctm-close" t-on-click="closeRegularization">×</button><h2 t-esc="state.regularization.id ? 'Edit Attendance Correction' : 'Request Attendance Correction'"/><p>Submit an attendance issue for manager approval.</p><label>Attendance Date *<input type="date" t-model="state.regularization.attendance_date" t-on-change="syncRegularizationDate"/></label><label>Issue Type *<select t-model="state.regularization.issue_type"><option value="forgot_in">Forgot to Clock In</option><option value="forgot_out">Forgot to Clock Out</option><option value="incorrect_status">Incorrect Attendance Status</option><option value="system_glitch">System Error</option><option value="other">Other</option></select></label><div class="ctm-form-grid"><label>Requested Clock-in *<input type="datetime-local" step="900" t-model="state.regularization.requested_check_in"/></label><label>Requested Clock-out<input type="datetime-local" step="900" t-model="state.regularization.requested_check_out"/></label></div><label>Reason *<textarea maxlength="500" t-model="state.regularization.reason" placeholder="Explain what happened (20–500 characters)"/><small><t t-esc="state.regularization.reason.length"/> / 500 characters</small></label><div class="ctm-info">Supporting document upload is not available from this screen yet.</div><p class="ctm-error" t-if="state.error" t-esc="state.error"/><footer><button class="ctm-btn" t-on-click="closeRegularization">Cancel</button><button class="ctm-btn pink" t-on-click="submitRegularization" t-esc="state.regularization.id ? 'Resubmit Request' : 'Submit Request'"/></footer></section></div></t>
         <!-- Regularization Request Details Modal (Figma Screen 1) -->
         <t t-if="state.regularizationDetail and !state.regularizationApproveModal and !state.regularizationRejectModal">
             <div class="ctm-overlay">
@@ -2224,7 +2224,7 @@
 
                     <div class="ctm-reg-emp-card">
                         <div class="emp-name" t-esc="state.regularizationDetail.employee"/>
-                        <div class="emp-meta" t-esc="state.regularizationDetail.employee_code || ('EMP-' + state.regularizationDetail.employee_id)"/>
+                        <div class="emp-meta" t-esc="state.regularizationDetail.employee_code || 'Employee number not assigned'"/>
                         <div class="emp-meta">Submitted: <t t-esc="state.regularizationDetail.submitted_on_formatted || state.regularizationDetail.submitted_on"/></div>
                     </div>
 
@@ -2238,7 +2238,7 @@
                             </div>
                             <div class="reg-box-row">
                                 <span>Clock-in:</span>
-                                <strong t-esc="state.regularizationDetail.current_check_in_time or '09:05 AM'"/>
+                                <strong t-esc="state.regularizationDetail.current_check_in_time or 'Not recorded'"/>
                             </div>
                             <div class="reg-box-row">
                                 <span>Clock-out:</span>
@@ -2253,15 +2253,15 @@
                             <h4>Requested Changes</h4>
                             <div class="reg-box-row">
                                 <span class="blue-lbl">Clock-in:</span>
-                                <strong class="val-green" t-esc="state.regularizationDetail.requested_check_in_time or '09:00 AM'"/>
+                                <strong class="val-green" t-esc="state.regularizationDetail.requested_check_in_time or 'Not provided'"/>
                             </div>
                             <div class="reg-box-row">
                                 <span class="blue-lbl">Clock-out:</span>
-                                <strong class="val-green" t-esc="state.regularizationDetail.requested_check_out_time or '05:30 PM'"/>
+                                <strong class="val-green" t-esc="state.regularizationDetail.requested_check_out_time or 'Not provided'"/>
                             </div>
                             <div class="reg-box-row">
                                 <span class="blue-lbl">Issue Type:</span>
-                                <strong class="text-danger" t-esc="state.regularizationDetail.issue_label or 'Forgot to Clock Out'"/>
+                                <strong class="text-danger" t-esc="state.regularizationDetail.issue_label or 'Not specified'"/>
                             </div>
                         </div>
                     </div>
@@ -2285,13 +2285,7 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <div class="ctm-reg-doc-pill">
-                                <i class="fa fa-file-pdf-o doc-icon"/>
-                                <span class="doc-title">medical_certificate.pdf</span>
-                                <a href="javascript:void(0)" class="doc-dl" title="Download Document">
-                                    <i class="fa fa-download"/>
-                                </a>
-                            </div>
+                            <div class="ctm-reg-empty-state">No supporting documents were attached.</div>
                         </t>
                     </div>
 
@@ -2299,11 +2293,14 @@
                         <h4>Location Details</h4>
                         <div class="ctm-reg-loc-row">
                             <i class="fa fa-map-marker"/>
-                            <span t-esc="state.regularizationDetail.location or 'Head Office, Lagos'"/>
+                            <span t-esc="state.regularizationDetail.location or 'Not specified'"/>
                         </div>
                     </div>
 
                     <footer class="ctm-reg-modal-actions">
+                        <button t-if="state.mode === 'employee' and state.regularizationDetail.state === 'rejected'" class="ctm-reg-btn approve" t-on-click="() => this.editRejectedRegularization(state.regularizationDetail)">
+                            <i class="fa fa-pencil"/> Edit &amp; Resubmit
+                        </button>
                         <t t-if="state.mode === 'admin' and state.regularizationDetail.state === 'submitted'">
                             <button class="ctm-reg-btn approve" t-on-click="() => this.openRegularizationApproveModal(state.regularizationDetail)">
                                 <i class="fa fa-check-circle"/> Approve Request
@@ -2340,13 +2337,13 @@
                         <div class="summary-item">
                             <span>Clock-in:</span>
                             <strong class="green-change">
-                                <t t-esc="state.regularizationApproveModal.request.current_check_in_time or '09:05 AM'"/> → <t t-esc="state.regularizationApproveModal.request.requested_check_in_time or state.regularizationApproveModal.request.requested_check_in"/>
+                                <t t-esc="state.regularizationApproveModal.request.current_check_in_time or 'Not recorded'"/> → <t t-esc="state.regularizationApproveModal.request.requested_check_in_time or state.regularizationApproveModal.request.requested_check_in or 'Not provided'"/>
                             </strong>
                         </div>
                         <div class="summary-item">
                             <span>Clock-out:</span>
                             <strong class="green-change">
-                                <t t-esc="state.regularizationApproveModal.request.current_check_out_time or 'Not clocked out'"/> → <t t-esc="state.regularizationApproveModal.request.requested_check_out_time or state.regularizationApproveModal.request.requested_check_out or '05:30 PM'"/>
+                                <t t-esc="state.regularizationApproveModal.request.current_check_out_time or 'Not recorded'"/> → <t t-esc="state.regularizationApproveModal.request.requested_check_out_time or state.regularizationApproveModal.request.requested_check_out or 'Not provided'"/>
                             </strong>
                         </div>
                     </div>
@@ -2397,12 +2394,7 @@
 
                     <div class="ctm-reg-field-wrap">
                         <label>Reason for Rejection <span class="required-star">*</span></label>
-                        <div class="textarea-ai-container">
-                            <textarea t-model="state.regularizationRejectModal.comment" placeholder="Explain why this request is being rejected (minimum 20 characters)"/>
-                            <div class="ai-helper-badge">
-                                <span><i class="fa fa-magic"/> Write with AI</span>
-                            </div>
-                        </div>
+                        <textarea t-model="state.regularizationRejectModal.comment" placeholder="Explain why this request is being rejected (minimum 20 characters)"/>
                         <small t-if="(state.regularizationRejectModal.comment || '').trim().length &lt; 20" class="counter-text text-danger">
                             <t t-esc="20 - (state.regularizationRejectModal.comment || '').trim().length"/> more characters required
                         </small>
@@ -2451,7 +2443,7 @@
 </t>
 
 <t t-name="hr_time_management.RegularizationTable">
-    <div class="ctm-table-wrap"><table><thead><tr><th t-if="state.mode === 'admin'">EMPLOYEE</th><th>ATTENDANCE DATE</th><th>ISSUE TYPE</th><th>STATUS</th><th>SUBMITTED ON</th><th>APPROVER</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="filteredRegularizations" t-as="request" t-key="request.id"><td t-if="state.mode === 'admin'" t-esc="request.employee"/><td t-esc="request.attendance_date"/><td t-esc="request.issue_label"/><td><span t-att-class="'status '+request.state" t-esc="label(request.state)"/></td><td t-esc="request.submitted_on_formatted or request.submitted_on"/><td t-esc="request.approver || (request.state === 'submitted' ? 'Awaiting manager approval' : '—')"/><td><button class="link" t-on-click="() => this.viewRegularization(request)">View</button><t t-if="state.mode === 'admin' and request.state === 'submitted'"><button class="link approve" t-on-click="() => this.decideRegularization(request, 'approve')">Approve</button><button class="link reject" t-on-click="() => this.decideRegularization(request, 'reject')">Reject</button></t><button t-if="state.mode === 'employee' and request.state === 'submitted'" class="link reject" t-on-click="() => this.withdrawRegularization(request)">Withdraw</button></td></tr><tr t-if="!filteredRegularizations.length"><td colspan="8" class="empty">No regularization requests match this filter.</td></tr></tbody></table></div>
+    <div class="ctm-table-wrap"><table><thead><tr><th t-if="state.mode === 'admin'">EMPLOYEE</th><th>ATTENDANCE DATE</th><th>ISSUE TYPE</th><th>STATUS</th><th>SUBMITTED ON</th><th>APPROVER</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="filteredRegularizations" t-as="request" t-key="request.id"><td t-if="state.mode === 'admin'" t-esc="request.employee"/><td t-esc="request.attendance_date"/><td t-esc="request.issue_label"/><td><span t-att-class="'status '+request.state" t-esc="label(request.state)"/></td><td t-esc="request.submitted_on_formatted or request.submitted_on"/><td t-esc="request.approver || (request.state === 'submitted' ? 'Awaiting manager approval' : '—')"/><td><button class="link" t-on-click="() => this.viewRegularization(request)">View</button><t t-if="state.mode === 'admin' and request.state === 'submitted'"><button class="link approve" t-on-click="() => this.decideRegularization(request, 'approve')">Approve</button><button class="link reject" t-on-click="() => this.decideRegularization(request, 'reject')">Reject</button></t><button t-if="state.mode === 'employee' and request.state === 'submitted'" class="link reject" t-on-click="() => this.withdrawRegularization(request)">Withdraw</button><button t-if="state.mode === 'employee' and request.state === 'rejected'" class="link approve" t-on-click="() => this.editRejectedRegularization(request)">Edit &amp; Resubmit</button></td></tr><tr t-if="!filteredRegularizations.length"><td colspan="8" class="empty">No regularization requests match this filter.</td></tr></tbody></table></div>
 </t>
 <t t-name="hr_time_management.AttendanceTable">
     <div class="ctm-table-wrap"><table><thead><tr><th>EMPLOYEE</th><th>DEPARTMENT</th><th t-if="state.page === 'sheet'">DATE</th><th>CLOCK IN</th><th>CLOCK OUT</th><th>SHIFT</th><th t-if="state.page === 'sheet'">HOURS</th><th>STATUS</th><th t-if="state.page === 'dashboard'">SOURCE</th><th>LATE BY</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="filteredRows" t-as="row" t-key="row.employee_id + '-' + row.id"><td><div class="ctm-employee"><span class="avatar" t-esc="row.employee[0]"/><div><strong t-esc="row.employee"/><small t-esc="row.employee_code"/></div></div></td><td t-esc="row.department"/><td t-if="state.page === 'sheet'" t-esc="row.date"/><td t-esc="row.check_in || '—'"/><td t-esc="row.check_out || 'Missing'"/><td t-esc="row.shift"/><td t-if="state.page === 'sheet'"><t t-esc="row.hours"/> hrs</td><td><span t-att-class="'status '+row.status" t-esc="label(row.status)"/></td><td t-if="state.page === 'dashboard'" t-esc="row.source"/><td><span t-if="row.late_by" class="late"><t t-esc="row.late_by"/> min late</span><span t-else="" class="ontime">On time</span></td><td><button class="link" t-on-click="() => this.openDetail(row)">View</button><button t-if="state.page === 'sheet' and row.id" class="icon-btn" title="Edit" t-on-click="() => this.beginEdit(row)">✎</button></td></tr><tr t-if="!filteredRows.length"><td colspan="11" class="empty">No attendance records match these filters.</td></tr></tbody></table></div>

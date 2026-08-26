@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, timedelta, time
 import pytz
 
 from odoo import fields
@@ -457,3 +457,103 @@ class TestPhase4Attendance(TransactionCase):
             self.env["hr.attendance"]._verify_clock_policy(
                 self.policy, punch_type="biometric", client_ip=None, device=device
             )
+
+    def test_22_employee_data_exposes_stale_open_attendance_for_correction(self):
+        """The employee correction form can target an unresolved prior workday."""
+        check_in = fields.Datetime.now() - timedelta(days=2)
+        attendance = self.env["hr.attendance"].sudo().create({
+            "employee_id": self.sub_emp.id,
+            "check_in": check_in,
+        })
+
+        data = self.env["hr.attendance"].with_user(self.emp_user).get_cleon_employee_data()
+
+        self.assertEqual(data["unresolved_attendance"]["id"], attendance.id)
+        self.assertIn("T", data["unresolved_attendance"]["check_in"])
+
+    def test_23_rejected_regularization_resubmits_datetime_local_values(self):
+        """Rejected requests are reused and browser datetime-local values are accepted."""
+        Regularization = self.env["cleon.attendance.regularization"]
+        today = fields.Date.today()
+        date_value = fields.Date.to_string(today)
+        rejected = Regularization.sudo().create({
+            "employee_id": self.sub_emp.id,
+            "attendance_date": today,
+            "issue_type": "other",
+            "requested_check_in": "%s 08:00:00" % date_value,
+            "requested_check_out": "%s 16:00:00" % date_value,
+            "reason": "The original correction details were not accurate.",
+            "state": "rejected",
+        })
+        self.env["cleon.approval.chain"].sudo().search([
+            ("company_id", "=", self.company.id),
+            ("workflow_type_id.code", "=", "time_regularization"),
+            ("is_default", "=", True),
+        ]).write({"is_default": False})
+        self.policy.write({
+            "regularization_require_approval": False,
+            "regularization_window_days": 7,
+        })
+
+        result = Regularization.with_user(self.emp_user).submit_request({
+            "attendance_date": date_value,
+            "issue_type": "system_error",  # compatibility input from the brief-lived client value
+            "requested_check_in": "%sT09:00" % date_value,
+            "requested_check_out": "%sT17:00" % date_value,
+            "reason": "The attendance terminal failed during the workday.",
+        })
+
+        self.assertEqual(result["id"], rejected.id)
+        self.assertEqual(result["issue_type"], "system_glitch")
+        self.assertEqual(rejected.state, "approved")
+
+    def test_24_regularization_uses_employee_work_timezone_and_honest_code(self):
+        """A reviewer timezone must not change the employee workday or displayed correction times."""
+        calendar = self.env["resource.calendar"].create({
+            "name": "P4 Lagos Calendar",
+            "tz": "Africa/Lagos",
+            "company_id": self.company.id,
+        })
+        self.sub_emp.write({
+            "resource_calendar_id": calendar.id,
+            "identification_id": False,
+            "barcode": False,
+        })
+        self.manager_user.tz = "America/New_York"
+        target_date = fields.Date.today()
+        utc_check_in = datetime.combine(target_date, time(hour=8))
+        attendance = self.env["hr.attendance"].sudo().create({
+            "employee_id": self.sub_emp.id,
+            "check_in": utc_check_in,
+        })
+        request = self.env["cleon.attendance.regularization"].sudo().create({
+            "employee_id": self.sub_emp.id,
+            "attendance_date": target_date,
+            "issue_type": "forgot_out",
+            "requested_check_in": utc_check_in,
+            "reason": "The employee forgot to clock out after completing work.",
+        })
+
+        result = request.with_user(self.manager_user)._serialize()
+
+        self.assertEqual(result["current_check_in_time"], "09:00 AM")
+        self.assertEqual(result["requested_check_in_input"], "%sT09:00" % target_date)
+        self.assertEqual(result["employee_code"], False)
+        self.assertEqual(request.attendance_id, self.env["hr.attendance"])
+        self.assertTrue(attendance.exists())
+
+    def test_25_cross_company_default_shift_is_rejected(self):
+        """Settings cannot persist another company's shift as the active default."""
+        company_b = self.env["res.company"].create({"name": "P4 Other Company"})
+        foreign_shift = self.env["cleon.hr.shift"].sudo().create({
+            "name": "P4 Foreign Shift",
+            "code": "P4-FOREIGN",
+            "company_id": company_b.id,
+            "start_hour": 8.0,
+            "end_hour": 16.0,
+        })
+
+        with self.assertRaises(ValidationError):
+            self.env["cleon.time.policy"].save_cleon_policy({
+                "selected_shift_id": foreign_shift.id,
+            })

@@ -231,6 +231,14 @@ class CleonHrShift(models.Model):
             days_label = ", ".join([days_map.get(d, "") for d in days_list])
             start_lbl = self._hour_label(s.start_hour)
             end_lbl = self._hour_label(s.end_hour)
+            if s.shift_type == "split" and s.segment_ids:
+                gross_hours = sum(
+                    (segment.end_hour - segment.start_hour) % 24
+                    for segment in s.segment_ids
+                )
+            else:
+                gross_hours = (s.end_hour - s.start_hour) % 24
+            scheduled_hours = max(0.0, gross_hours - (s.break_minutes / 60.0))
             shift_rows.append({
                 "id": s.id,
                 "name": s.name,
@@ -243,6 +251,7 @@ class CleonHrShift(models.Model):
                 "start": start_lbl,
                 "end": end_lbl,
                 "break_minutes": s.break_minutes,
+                "scheduled_hours": round(scheduled_hours, 2),
                 "grace_minutes": s.grace_minutes,
                 "shift_type": s.shift_type,
                 "recurrence": s.recurrence,

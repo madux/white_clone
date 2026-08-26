@@ -137,10 +137,11 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
         self.assertEqual(instance.state, "pending")
 
         # Step 2: HR Manager approves -> Finalizes regularization
-        reg.with_user(self.hr_user).action_approve()
+        reg.with_user(self.hr_user).action_approve(comment="Verified against the employee's work schedule.")
         self.assertEqual(reg.state, "approved")
         self.assertEqual(instance.state, "approved")
         self.assertTrue(reg.attendance_id)
+        self.assertEqual(reg.manager_comment, "Verified against the employee's work schedule.")
 
     def test_03_timesheet_rejection_preserves_analytic_lines(self):
         """Test rejecting a weekly timesheet envelope detaches analytic lines without unlinking them."""
@@ -574,3 +575,59 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
         self.assertNotIn("default_billing_rate", runtime_data)
         self.assertNotIn("ip_whitelist", runtime_data)
 
+    def test_18_rejected_regularization_resubmission_starts_new_approval_history(self):
+        """Resubmission preserves the rejected instance and creates a new pending instance."""
+        self.env["cleon.approval.chain"].create({
+            "name": "P7 Resubmission Chain",
+            "company_id": self.company.id,
+            "workflow_type_id": self.wft_reg.id,
+            "active": True,
+            "is_default": True,
+            "step_ids": [
+                (0, 0, {
+                    "sequence": 10,
+                    "name": "Direct Manager Step",
+                    "approver_type": "line_manager",
+                }),
+            ],
+        })
+        target_date = fields.Date.today() - timedelta(days=1)
+        date_value = fields.Date.to_string(target_date)
+        Regularization = self.env["cleon.attendance.regularization"]
+        request = Regularization.with_user(self.emp_user).create({
+            "employee_id": self.sub_emp.id,
+            "attendance_date": target_date,
+            "issue_type": "forgot_out",
+            "requested_check_in": "%s 09:00:00" % date_value,
+            "reason": "The initial request needs manager review and correction.",
+        })
+        request.action_submit()
+        first_submitted_at = request.submitted_at
+        first_instance = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", request._name),
+            ("res_id", "=", request.id),
+        ], limit=1)
+        request.with_user(self.manager_user).action_reject(
+            comment="The requested clock details do not match the work schedule."
+        )
+        self.assertEqual(first_instance.state, "rejected")
+        request.sudo().write({"submitted_at": first_submitted_at - timedelta(hours=1)})
+
+        result = Regularization.with_user(self.emp_user).submit_request({
+            "attendance_date": date_value,
+            "issue_type": "system_glitch",
+            "requested_check_in": "%sT09:15" % date_value,
+            "requested_check_out": "%sT17:15" % date_value,
+            "reason": "The corrected terminal times now match the employee schedule.",
+        })
+        instances = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", request._name),
+            ("res_id", "=", request.id),
+        ], order="id")
+
+        self.assertEqual(result["id"], request.id)
+        self.assertEqual(len(instances), 2)
+        self.assertEqual(instances[0].state, "rejected")
+        self.assertEqual(instances[1].state, "pending")
+        self.assertEqual(request.state, "submitted")
+        self.assertGreater(request.submitted_at, first_submitted_at - timedelta(hours=1))

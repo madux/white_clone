@@ -20,6 +20,7 @@ class CleonAttendanceRegularization(models.Model):
         ("forgot_check_in", "Forgot Check-In"),
         ("forgot_check_out", "Forgot Check-Out"),
         ("system_glitch", "System Glitch"),
+        ("incorrect_status", "Incorrect Attendance Status"),
         ("other", "Other"),
     ], default="other", required=True)
     requested_check_in = fields.Datetime(required=True)
@@ -34,6 +35,7 @@ class CleonAttendanceRegularization(models.Model):
     approver_id = fields.Many2one("res.users", readonly=True)
     decision_date = fields.Datetime(readonly=True)
     manager_comment = fields.Text(readonly=True)
+    submitted_at = fields.Datetime(readonly=True, index=True)
     attendance_id = fields.Many2one("hr.attendance", readonly=True, ondelete="set null")
     attachment_ids = fields.Many2many("ir.attachment", string="Supporting Documents")
 
@@ -84,6 +86,21 @@ class CleonAttendanceRegularization(models.Model):
         self.ensure_one()
         return self.attendance_date, self.attendance_date
 
+    def _attendance_timezone(self):
+        """Return the schedule-aware timezone that owns this employee's workday."""
+        self.ensure_one()
+        return self.env["hr.attendance"]._tz_for_employee(
+            self.employee_id.sudo(), self.attendance_date
+        )
+
+    def _attendance_day_bounds(self):
+        self.ensure_one()
+        timezone = self._attendance_timezone()
+        day_start = timezone.localize(
+            datetime.combine(self.attendance_date, time.min)
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+        return timezone, day_start, day_start + timedelta(days=1)
+
     def _approval_validate_decision(self, decision, automated=False, comment=False):
         self.ensure_one()
         c_id = self._approval_company()
@@ -97,10 +114,11 @@ class CleonAttendanceRegularization(models.Model):
             user = self.env.user
             attendance = request.attendance_id
             if not attendance:
+                _timezone, day_start, day_end = request._attendance_day_bounds()
                 attendance = self.env["hr.attendance"].sudo().search([
                     ("employee_id", "=", request.employee_id.id),
-                    ("check_in", ">=", datetime.combine(request.attendance_date, time.min)),
-                    ("check_in", "<=", datetime.combine(request.attendance_date, time.max)),
+                    ("check_in", ">=", day_start),
+                    ("check_in", "<", day_end),
                 ], limit=1)
             before = {}
             if attendance:
@@ -155,11 +173,8 @@ class CleonAttendanceRegularization(models.Model):
 
     def _serialize(self):
         self.ensure_one()
-        tz_name = self.env.user.tz or self.employee_id.tz or "UTC"
-        try:
-            tz = pytz.timezone(tz_name)
-        except Exception:
-            tz = pytz.UTC
+        employee = self.employee_id.sudo()
+        tz = self._attendance_timezone()
 
         def fmt_time(dt_val):
             if not dt_val:
@@ -185,14 +200,24 @@ class CleonAttendanceRegularization(models.Model):
             local_dt = dt_utc.astimezone(tz)
             return local_dt.strftime("%Y-%m-%d %I:%M %p")
 
+        def fmt_input(dt_val):
+            if not dt_val:
+                return False
+            dt_val = fields.Datetime.to_datetime(dt_val)
+            dt_utc = pytz.utc.localize(dt_val) if not dt_val.tzinfo else dt_val.astimezone(pytz.utc)
+            return dt_utc.astimezone(tz).strftime("%Y-%m-%dT%H:%M")
+
         att = self.attendance_id
         if not att and self.attendance_date and self.employee_id:
-            day_start = tz.localize(datetime.combine(self.attendance_date, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
-            day_end = tz.localize(datetime.combine(self.attendance_date, time.max)).astimezone(pytz.UTC).replace(tzinfo=None)
-            att = self.env["hr.attendance"].search([
+            _timezone, day_start, day_end = self._attendance_day_bounds()
+            # The regularization record rules already determine whether the
+            # viewer may inspect this employee's request. Do not let separate
+            # attendance rules turn the linked current record into a false
+            # "not clocked in" display for an authorized reviewer.
+            att = self.env["hr.attendance"].sudo().search([
                 ("employee_id", "=", self.employee_id.id),
                 ("check_in", ">=", day_start),
-                ("check_in", "<=", day_end)
+                ("check_in", "<", day_end)
             ], limit=1, order="check_in asc")
 
         cur_in = fmt_time(att.check_in) if (att and att.check_in) else "Not clocked in"
@@ -201,7 +226,7 @@ class CleonAttendanceRegularization(models.Model):
         if att and hasattr(att, "status") and att.status:
             cur_status = dict(att._fields["status"].selection).get(att.status, cur_status)
 
-        loc = self.employee_id.work_location_id.name or self.employee_id.company_id.name or "Head Office, Lagos"
+        loc = employee.work_location_id.name or employee.company_id.name or False
 
         issue_labels = {
             "forgot_in": "Forgot to Clock In",
@@ -209,7 +234,6 @@ class CleonAttendanceRegularization(models.Model):
             "forgot_out": "Forgot to Clock Out",
             "forgot_check_out": "Forgot to Clock Out",
             "system_glitch": "System Error",
-            "system_error": "System Error",
             "incorrect_status": "Incorrect Attendance Status",
             "other": "Other",
         }
@@ -225,24 +249,26 @@ class CleonAttendanceRegularization(models.Model):
         return {
             "id": self.id,
             "code": f"#REG-{self.id:04d}",
-            "employee": self.employee_id.sudo().name,
-            "employee_id": self.employee_id.id,
-            "employee_code": self.employee_id.identification_id or self.employee_id.barcode or f"EMP-{self.employee_id.id:03d}",
+            "employee": employee.name,
+            "employee_id": employee.id,
+            "employee_code": employee.identification_id or employee.barcode or False,
             "location": loc,
             "attendance_date": fields.Date.to_string(self.attendance_date),
             "issue_type": self.issue_type,
             "issue_label": issue_label,
             "requested_check_in": fields.Datetime.to_string(self.requested_check_in),
             "requested_check_out": fields.Datetime.to_string(self.requested_check_out) if self.requested_check_out else False,
-            "requested_check_in_time": fmt_time(self.requested_check_in) or "—",
-            "requested_check_out_time": fmt_time(self.requested_check_out) or "—",
+            "requested_check_in_input": fmt_input(self.requested_check_in),
+            "requested_check_out_input": fmt_input(self.requested_check_out),
+            "requested_check_in_time": fmt_time(self.requested_check_in),
+            "requested_check_out_time": fmt_time(self.requested_check_out),
             "current_check_in_time": cur_in,
             "current_check_out_time": cur_out,
             "current_status": cur_status,
             "reason": self.reason,
             "state": self.state,
-            "submitted_on": fields.Datetime.to_string(self.create_date),
-            "submitted_on_formatted": fmt_datetime(self.create_date),
+            "submitted_on": fields.Datetime.to_string(self.submitted_at or self.create_date),
+            "submitted_on_formatted": fmt_datetime(self.submitted_at or self.create_date),
             "approver": self.approver_id.name or False,
             "decision_date": fields.Datetime.to_string(self.decision_date) if self.decision_date else False,
             "manager_comment": self.manager_comment or "",
@@ -273,7 +299,7 @@ class CleonAttendanceRegularization(models.Model):
         attendance_date = fields.Date.to_date(values.get("attendance_date"))
         if not attendance_date:
             raise ValidationError(_("Attendance date is required."))
-        timezone = pytz.timezone(self.env.user.tz or "UTC")
+        timezone = self.env["hr.attendance"]._tz_for_employee(employee.sudo(), attendance_date)
 
         def to_utc(value, required=False):
             if not value:
@@ -303,15 +329,36 @@ class CleonAttendanceRegularization(models.Model):
             ("check_in", "<", day_end),
         ], limit=1)
 
-        request = self.create({
+        request_values = {
             "employee_id": employee.id,
             "attendance_date": attendance_date,
-            "issue_type": values.get("issue_type") or "other",
+            # system_error was briefly emitted by the OWL client. Keep accepting
+            # it at the RPC boundary while storing the canonical legacy value.
+            "issue_type": "system_glitch" if values.get("issue_type") == "system_error" else (values.get("issue_type") or "other"),
             "requested_check_in": requested_in,
             "requested_check_out": requested_out,
             "reason": (values.get("reason") or "").strip(),
             "attendance_id": att.id if att else False,
-        })
+        }
+        request = self.search([
+            ("employee_id", "=", employee.id),
+            ("attendance_date", "=", attendance_date),
+        ], limit=1)
+        if request:
+            if request.state not in ("draft", "rejected"):
+                raise ValidationError(_(
+                    "An attendance correction for this date is already %s."
+                ) % dict(request._fields["state"].selection).get(request.state, request.state))
+            request.sudo().write({
+                **request_values,
+                "state": "draft",
+                "approver_id": False,
+                "decision_date": False,
+                "manager_comment": False,
+            })
+            request._audit("modified", "Attendance regularization corrected and resubmitted.")
+        else:
+            request = self.create(request_values)
         request.action_submit()
         return request._serialize()
 
@@ -323,7 +370,7 @@ class CleonAttendanceRegularization(models.Model):
         if not self._is_manager():
             raise AccessError(_("Only Time Management managers can review attendance corrections."))
         if decision == "approve":
-            request.action_approve()
+            request.action_approve(comment=comment)
         elif decision == "reject":
             request.action_reject(comment=comment)
         else:
@@ -377,7 +424,11 @@ class CleonAttendanceRegularization(models.Model):
             cutoff_date = fields.Date.context_today(self) - timedelta(days=cutoff_days)
             if record.attendance_date < cutoff_date:
                 raise ValidationError(_("Submission blocked: Attendance date %s exceeds the cutoff window of %s days.") % (record.attendance_date, cutoff_days))
-            record.sudo().write({"state": "submitted"})
+            record.sudo().write({
+                "state": "submitted",
+                "submitted_at": fields.Datetime.now(),
+            })
+            record._audit("submitted", "Attendance regularization submitted for approval.")
             instance = self.env["cleon.approval.instance"].action_start(record)
 
     def action_withdraw(self):
@@ -396,7 +447,7 @@ class CleonAttendanceRegularization(models.Model):
             self.env["cleon.approval.instance"].action_cancel_for_target(record, reason=_("Withdrawn by employee."))
             record.sudo().write({"state": "draft"})
 
-    def action_approve(self):
+    def action_approve(self, comment=False):
         for request in self:
             instance = self.env["cleon.approval.instance"].sudo().search([
                 ("res_model", "=", request._name),
@@ -404,14 +455,16 @@ class CleonAttendanceRegularization(models.Model):
                 ("state", "=", "pending"),
             ], limit=1)
             if instance:
-                instance.with_user(self.env.user).action_decide("approve")
+                instance.with_user(self.env.user).action_decide("approve", comment=comment)
             else:
                 if request.state != "submitted":
                     raise UserError(_("Only submitted regularization requests can be approved."))
                 if not self.env["cleon.time.policy"]._tm_can_approve(request, self.env.user):
                     raise AccessError(_("You are not authorized to approve this attendance regularization request."))
-                request._approval_validate_decision("approve")
+                request._approval_validate_decision("approve", comment=comment)
                 request._approval_finalize_approve()
+            if request.state == "approved" and comment:
+                request.sudo().write({"manager_comment": comment})
 
     def action_reject(self, comment=False):
         for request in self:

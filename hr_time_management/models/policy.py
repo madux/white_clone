@@ -66,7 +66,9 @@ class CleonTimePolicy(models.Model):
 
         ("strict", "Strict Policy"), ("lenient", "Lenient Policy"),
     ], default="strict", required=True)
-    selected_shift_id = fields.Many2one("cleon.hr.shift", string="Default Shift Template")
+    selected_shift_id = fields.Many2one(
+        "cleon.hr.shift", string="Default Shift Template", check_company=True
+    )
     half_day_hours = fields.Float(default=4.0)
     enable_time_round_off = fields.Boolean(default=True)
     round_off_interval = fields.Integer(default=15)
@@ -464,7 +466,12 @@ class CleonTimePolicy(models.Model):
         }
         clean = {key: value for key, value in values.items() if key in allowed}
         if "selected_shift_id" in clean:
-            clean["selected_shift_id"] = int(clean["selected_shift_id"]) if clean["selected_shift_id"] else False
+            shift_id = int(clean["selected_shift_id"]) if clean["selected_shift_id"] else False
+            if shift_id:
+                shift = self.env["cleon.hr.shift"].browse(shift_id).exists()
+                if not shift or shift.company_id != self.env.company:
+                    raise ValidationError(_("Select a shift template belonging to the active company."))
+            clean["selected_shift_id"] = shift_id
         policy = self.search([("company_id", "=", self.env.company.id)], limit=1)
         if not policy:
             policy = self.create({"company_id": self.env.company.id})
