@@ -23,6 +23,7 @@ export class TimeManagementApp extends Component {
             dateFrom: iso, dateTo: iso, detail: null, edit: null, editReason: "", error: "", gatewayMessage: "",
             isManager: false, mode: "admin", isPortal: false, employeeData: null, employeePage: "dashboard", busy: false,
             regularizations: [], regularization: null, regularizationDetail: null,
+            regularizationApproveModal: null, regularizationRejectModal: null,
             managerDecision: "", regularizationFilter: "all",
             policy: {},
             featureAccess: {attendance: true, shift: true, tracking: true, overtime: true},
@@ -337,17 +338,77 @@ export class TimeManagementApp extends Component {
             this.notification.add("Regularization request withdrawn.", {type:"success"});
         } catch (error) { this.notification.add(error?.data?.message || "Request could not be withdrawn.", {type:"danger"}); }
     }
-    async decideRegularization(request, decision) {
-        const comment = window.prompt(decision === "approve" ? "Approval comment (optional)" : "Rejection reason", "");
-        if (comment === null) return;
-        if (decision === "reject" && !comment.trim()) {
-            this.notification.add("A rejection reason is required.", {type:"warning"}); return;
-        }
+    openRegularizationApproveModal(request) {
+        this.state.regularizationApproveModal = {
+            request: request || this.state.regularizationDetail,
+            comment: "",
+        };
+    }
+    closeRegularizationApproveModal() {
+        this.state.regularizationApproveModal = null;
+    }
+    async confirmRegularizationApprove() {
+        if (!this.state.regularizationApproveModal || this.state.busy) return;
+        const request = this.state.regularizationApproveModal.request;
+        const comment = (this.state.regularizationApproveModal.comment || "").trim();
+        this.state.busy = true;
         try {
-            await this.orm.call("cleon.attendance.regularization", "manager_decide", [request.id, decision, comment]);
+            await this.orm.call("cleon.attendance.regularization", "manager_decide", [request.id, "approve", comment || false]);
             await this.loadRegularizations(true);
-            this.notification.add(`Regularization request ${decision === "approve" ? "approved and attendance updated" : "rejected"}.`, {type:"success"});
-        } catch (error) { this.notification.add(error?.data?.message || "The decision could not be saved.", {type:"danger"}); }
+            this.closeRegularizationApproveModal();
+            this.closeRegularizationDetail();
+            this.notification.add("Regularization request approved and attendance updated.", { type: "success" });
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The decision could not be saved.", { type: "danger" });
+        } finally {
+            this.state.busy = false;
+        }
+    }
+    openRegularizationRejectModal(request) {
+        this.state.regularizationRejectModal = {
+            request: request || this.state.regularizationDetail,
+            comment: "",
+        };
+    }
+    closeRegularizationRejectModal() {
+        this.state.regularizationRejectModal = null;
+    }
+    selectCommonRejectReason(reasonText) {
+        if (!this.state.regularizationRejectModal) return;
+        const current = (this.state.regularizationRejectModal.comment || "").trim();
+        if (!current) {
+            this.state.regularizationRejectModal.comment = reasonText;
+        } else if (!current.includes(reasonText)) {
+            this.state.regularizationRejectModal.comment = current + ". " + reasonText;
+        }
+    }
+    async confirmRegularizationReject() {
+        if (!this.state.regularizationRejectModal || this.state.busy) return;
+        const request = this.state.regularizationRejectModal.request;
+        const comment = (this.state.regularizationRejectModal.comment || "").trim();
+        if (comment.length < 20) {
+            this.notification.add("Rejection reason must be at least 20 characters.", { type: "warning" });
+            return;
+        }
+        this.state.busy = true;
+        try {
+            await this.orm.call("cleon.attendance.regularization", "manager_decide", [request.id, "reject", comment]);
+            await this.loadRegularizations(true);
+            this.closeRegularizationRejectModal();
+            this.closeRegularizationDetail();
+            this.notification.add("Regularization request rejected.", { type: "success" });
+        } catch (error) {
+            this.notification.add(error?.data?.message || "The decision could not be saved.", { type: "danger" });
+        } finally {
+            this.state.busy = false;
+        }
+    }
+    decideRegularization(request, decision) {
+        if (decision === "approve") {
+            this.openRegularizationApproveModal(request);
+        } else if (decision === "reject") {
+            this.openRegularizationRejectModal(request);
+        }
     }
     viewRegularization(request) { this.state.regularizationDetail = request; }
     closeRegularizationDetail() { this.state.regularizationDetail = null; }

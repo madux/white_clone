@@ -155,21 +155,99 @@ class CleonAttendanceRegularization(models.Model):
 
     def _serialize(self):
         self.ensure_one()
+        tz_name = self.env.user.tz or self.employee_id.tz or "UTC"
+        try:
+            tz = pytz.timezone(tz_name)
+        except Exception:
+            tz = pytz.UTC
+
+        def fmt_time(dt_val):
+            if not dt_val:
+                return False
+            if isinstance(dt_val, str):
+                dt_val = fields.Datetime.to_datetime(dt_val)
+            if not dt_val.tzinfo:
+                dt_utc = pytz.utc.localize(dt_val)
+            else:
+                dt_utc = dt_val.astimezone(pytz.utc)
+            local_dt = dt_utc.astimezone(tz)
+            return local_dt.strftime("%I:%M %p")
+
+        def fmt_datetime(dt_val):
+            if not dt_val:
+                return False
+            if isinstance(dt_val, str):
+                dt_val = fields.Datetime.to_datetime(dt_val)
+            if not dt_val.tzinfo:
+                dt_utc = pytz.utc.localize(dt_val)
+            else:
+                dt_utc = dt_val.astimezone(pytz.utc)
+            local_dt = dt_utc.astimezone(tz)
+            return local_dt.strftime("%Y-%m-%d %I:%M %p")
+
+        att = self.attendance_id
+        if not att and self.attendance_date and self.employee_id:
+            day_start = tz.localize(datetime.combine(self.attendance_date, time.min)).astimezone(pytz.UTC).replace(tzinfo=None)
+            day_end = tz.localize(datetime.combine(self.attendance_date, time.max)).astimezone(pytz.UTC).replace(tzinfo=None)
+            att = self.env["hr.attendance"].search([
+                ("employee_id", "=", self.employee_id.id),
+                ("check_in", ">=", day_start),
+                ("check_in", "<=", day_end)
+            ], limit=1, order="check_in asc")
+
+        cur_in = fmt_time(att.check_in) if (att and att.check_in) else "Not clocked in"
+        cur_out = fmt_time(att.check_out) if (att and att.check_out) else "Not clocked out"
+        cur_status = "Incomplete" if (not att or not att.check_in or not att.check_out) else "Present"
+        if att and hasattr(att, "status") and att.status:
+            cur_status = dict(att._fields["status"].selection).get(att.status, cur_status)
+
+        loc = self.employee_id.work_location_id.name or self.employee_id.company_id.name or "Head Office, Lagos"
+
+        issue_labels = {
+            "forgot_in": "Forgot to Clock In",
+            "forgot_check_in": "Forgot to Clock In",
+            "forgot_out": "Forgot to Clock Out",
+            "forgot_check_out": "Forgot to Clock Out",
+            "system_glitch": "System Error",
+            "system_error": "System Error",
+            "incorrect_status": "Incorrect Attendance Status",
+            "other": "Other",
+        }
+        issue_label = issue_labels.get(self.issue_type) or (dict(self._fields["issue_type"].selection).get(self.issue_type) if "issue_type" in self._fields else "Other")
+
+        attachments = [{
+            "id": a.id,
+            "name": a.name,
+            "mimetype": a.mimetype,
+            "url": f"/web/content/{a.id}?download=true"
+        } for a in self.attachment_ids]
+
         return {
             "id": self.id,
+            "code": f"#REG-{self.id:04d}",
             "employee": self.employee_id.sudo().name,
+            "employee_id": self.employee_id.id,
+            "employee_code": self.employee_id.identification_id or self.employee_id.barcode or f"EMP-{self.employee_id.id:03d}",
+            "location": loc,
             "attendance_date": fields.Date.to_string(self.attendance_date),
             "issue_type": self.issue_type,
-            "issue_label": dict(self._fields["issue_type"].selection).get(self.issue_type),
+            "issue_label": issue_label,
             "requested_check_in": fields.Datetime.to_string(self.requested_check_in),
-            "requested_check_out": fields.Datetime.to_string(self.requested_check_out),
+            "requested_check_out": fields.Datetime.to_string(self.requested_check_out) if self.requested_check_out else False,
+            "requested_check_in_time": fmt_time(self.requested_check_in) or "—",
+            "requested_check_out_time": fmt_time(self.requested_check_out) or "—",
+            "current_check_in_time": cur_in,
+            "current_check_out_time": cur_out,
+            "current_status": cur_status,
             "reason": self.reason,
             "state": self.state,
             "submitted_on": fields.Datetime.to_string(self.create_date),
+            "submitted_on_formatted": fmt_datetime(self.create_date),
             "approver": self.approver_id.name or False,
             "decision_date": fields.Datetime.to_string(self.decision_date) if self.decision_date else False,
             "manager_comment": self.manager_comment or "",
             "attachment_count": len(self.attachment_ids),
+            "attachments": attachments,
         }
 
     @api.model

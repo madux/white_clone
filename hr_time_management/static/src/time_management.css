@@ -318,3 +318,459 @@
 .ctm-employee-shift-hero{padding:26px;border-radius:14px;background:linear-gradient(120deg,#ef3b98,#d01f68);color:#fff;display:flex;flex-direction:column;gap:8px;margin-bottom:18px}.ctm-employee-shift-hero span{font-weight:700}.ctm-employee-shift-hero strong{font-size:28px}.ctm-employee-shift-hero.detailed{min-height:160px;justify-content:center}.ctm-employee-shift-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}.ctm-employee-shift-actions button{display:grid;grid-template-columns:38px 1fr;gap:3px 10px;text-align:left;padding:15px;border:1px solid #dfe4eb;border-radius:11px;background:#fff}.ctm-employee-shift-actions i{grid-row:1/3;width:34px;height:34px;display:grid;place-items:center;border-radius:9px;background:#fdeaf4;color:var(--pink)}.ctm-employee-shift-actions small{color:#7a879d}.ctm-upcoming-shifts,.ctm-employee-schedule{padding:18px}.ctm-upcoming-shifts article,.ctm-employee-schedule article{display:flex;align-items:center;gap:14px;padding:12px;border-top:1px solid #edf0f4}.ctm-upcoming-shifts time,.ctm-employee-schedule time{width:48px;text-align:center}.ctm-upcoming-shifts time b,.ctm-upcoming-shifts time small,.ctm-employee-schedule time b,.ctm-employee-schedule time strong{display:block}.ctm-upcoming-shifts article>div,.ctm-employee-schedule article>div{flex:1}.ctm-upcoming-shifts article>div strong,.ctm-upcoming-shifts article>div small,.ctm-employee-schedule article>div b,.ctm-employee-schedule article>div span{display:block}.ctm-upcoming-shifts article>span{border-radius:14px;background:#f2f3f6;padding:4px 10px;font-size:11px}.ctm-timesheet-projects article{display:flex;align-items:center;gap:12px;padding:14px;border-top:1px solid #edf0f4}.ctm-timesheet-projects article i{color:var(--pink)}.ctm-timesheet-projects article b{flex:1}.ctm-employee-swaps{padding:18px}.ctm-employee-swaps>article{padding:16px;border-top:1px solid #edf0f4}.ctm-employee-swaps>article>div{display:flex;align-items:center;justify-content:space-between}.ctm-employee-swaps>article p{margin:8px 0;color:#536078}.ctm-employee-swaps>article small{color:#7a879d}.ctm-employee-swaps>article footer{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 @media(max-width:1100px){.ctm-employee-dashboard-kpis,.ctm-employee-record-kpis{grid-template-columns:1fr 1fr}.ctm-employee-dashboard-panels,.ctm-attendance-sheet-layout{grid-template-columns:1fr}.ctm-week-schedule>div{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:700px){.ctm-employee-dashboard-kpis,.ctm-employee-record-kpis,.ctm-employee-dashboard-panels,.ctm-employee-shift-actions{grid-template-columns:1fr}.ctm-week-schedule>div{grid-template-columns:repeat(2,1fr)}}
+
+/* Regularization Detail & Decision Modals - Figma Design System */
+.ctm-reg-detail-modal {
+    width: min(720px, 94vw) !important;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+.ctm-reg-dialog-modal {
+    width: min(540px, 94vw) !important;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px !important;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+.ctm-reg-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+.ctm-reg-modal-head h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+}
+.ctm-reg-modal-sub {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Employee Banner */
+.ctm-reg-emp-card {
+    background: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+}
+.ctm-reg-emp-card .emp-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+.ctm-reg-emp-card .emp-meta {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+}
+
+.ctm-reg-block-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 14px;
+}
+
+/* Comparison Side-by-Side */
+.ctm-reg-compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+.ctm-reg-box {
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ctm-reg-box.current {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+.ctm-reg-box.requested {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+}
+.ctm-reg-box h4 {
+    margin: 0 0 4px;
+    font-size: 13.5px;
+    font-weight: 700;
+}
+.ctm-reg-box.current h4 {
+    color: #334155;
+}
+.ctm-reg-box.requested h4 {
+    color: #0369a1;
+}
+.reg-box-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+.reg-box-row span {
+    color: #64748b;
+}
+.reg-box-row .blue-lbl {
+    color: #0284c7;
+    font-weight: 500;
+}
+.reg-box-row strong {
+    font-weight: 700;
+    color: #0f172a;
+}
+.reg-box-row .val-green {
+    color: #059669;
+    font-weight: 700;
+}
+.reg-box-row .text-danger {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+/* Sections */
+.ctm-reg-section {
+    margin-bottom: 20px;
+}
+.ctm-reg-section h4 {
+    margin: 0 0 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #334155;
+}
+.ctm-reg-quote-box {
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    border-radius: 10px;
+    padding: 14px 18px;
+}
+.ctm-reg-quote-box p {
+    margin: 0;
+    font-style: italic;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #451a03;
+}
+
+/* Supporting doc */
+.ctm-reg-doc-pill {
+    background: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ctm-reg-doc-pill .doc-icon {
+    font-size: 18px;
+    color: #0284c7;
+}
+.ctm-reg-doc-pill .doc-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0284c7;
+    flex: 1;
+}
+.ctm-reg-doc-pill .doc-dl {
+    color: #0284c7;
+    font-size: 14px;
+    padding: 4px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.ctm-reg-doc-pill .doc-dl:hover {
+    background: #e0f2fe;
+}
+
+/* Location row */
+.ctm-reg-loc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #475569;
+}
+.ctm-reg-loc-row i {
+    color: #64748b;
+    font-size: 15px;
+}
+
+/* Action Footers */
+.ctm-reg-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+.ctm-reg-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s ease-in-out;
+}
+.ctm-reg-btn.approve {
+    background: #00a65a;
+    color: #ffffff;
+    flex: 1;
+}
+.ctm-reg-btn.approve:hover {
+    background: #008d4c;
+}
+.ctm-reg-btn.reject {
+    background: #dc2626;
+    color: #ffffff;
+    flex: 1;
+}
+.ctm-reg-btn.reject:hover {
+    background: #b91c1c;
+}
+.ctm-reg-btn.close, .ctm-reg-btn.cancel {
+    background: #f1f5f9;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+}
+.ctm-reg-btn.close:hover, .ctm-reg-btn.cancel:hover {
+    background: #e2e8f0;
+}
+
+/* Approve Summary Card */
+.ctm-approve-summary-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+.ctm-approve-summary-card .summary-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #166534;
+    margin-bottom: 12px;
+}
+.ctm-approve-summary-card .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.ctm-approve-summary-card .summary-item:last-child {
+    margin-bottom: 0;
+}
+.ctm-approve-summary-card .summary-item span {
+    color: #166534;
+    font-weight: 500;
+}
+.ctm-approve-summary-card .summary-item strong {
+    font-weight: 700;
+    color: #0f172a;
+}
+.ctm-approve-summary-card .green-change {
+    color: #16a34a !important;
+}
+
+/* Reject Summary Card */
+.ctm-reject-summary-card {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+.ctm-reject-summary-card .summary-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #991b1b;
+    margin-bottom: 12px;
+}
+.ctm-reject-summary-card .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.ctm-reject-summary-card .summary-item:last-child {
+    margin-bottom: 0;
+}
+.ctm-reject-summary-card .summary-item span {
+    color: #991b1b;
+    font-weight: 500;
+}
+.ctm-reject-summary-card .summary-item strong {
+    font-weight: 700;
+    color: #0f172a;
+}
+
+/* Form fields & validation */
+.ctm-reg-field-wrap {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ctm-reg-field-wrap label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #334155;
+}
+.ctm-reg-field-wrap .required-star {
+    color: #dc2626;
+}
+.ctm-reg-field-wrap textarea {
+    width: 100%;
+    min-height: 85px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.ctm-reg-field-wrap textarea:focus {
+    border-color: #0284c7;
+}
+.ctm-reg-field-wrap textarea.invalid {
+    border-color: #ef4444;
+}
+.ctm-reg-field-wrap .counter-text {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+.ctm-reg-field-wrap .counter-text.text-danger {
+    color: #dc2626;
+}
+.ctm-reg-field-wrap .counter-text.text-success {
+    color: #16a34a;
+}
+
+/* AI textarea badge */
+.textarea-ai-container {
+    position: relative;
+}
+.ai-helper-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #059669;
+    font-weight: 600;
+    background: #ecfdf5;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid #a7f3d0;
+    pointer-events: none;
+}
+
+/* Common Reasons Chips */
+.ctm-common-reasons-block {
+    margin-bottom: 20px;
+}
+.ctm-common-reasons-block label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    display: block;
+    margin-bottom: 8px;
+}
+.chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.reason-chip {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.reason-chip:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+/* Alert warning */
+.ctm-reg-alert-warning {
+    background: #fefce8;
+    border: 1px solid #fef08a;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12.5px;
+    color: #854d0e;
+    font-weight: 500;
+}
+.ctm-reg-alert-warning i {
+    font-size: 15px;
+    color: #ca8a04;
+    flex-shrink: 0;
+}
+
+/* Dialog actions */
+.ctm-reg-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-start;
+}
+.ctm-reg-btn.approve-confirm {
+    background: #00a65a;
+    color: #ffffff;
+    flex: 1;
+}
+.ctm-reg-btn.approve-confirm:hover {
+    background: #008d4c;
+}
+.ctm-reg-btn.reject-confirm.disabled {
+    background: #cbd5e1;
+    color: #94a3b8;
+    cursor: not-allowed;
+    flex: 1;
+}
+.ctm-reg-btn.reject-confirm.ready {
+    background: #dc2626;
+    color: #ffffff;
+    cursor: pointer;
+    flex: 1;
+}
+.ctm-reg-btn.reject-confirm.ready:hover {
+    background: #b91c1c;
+}
