@@ -39,7 +39,9 @@ export class EmployeePortalApp extends Component {
             if (!this.isPageAllowed(this.state.page)) {
                 this.state.page = "dashboard";
             }
-            window.localStorage.setItem("cleonhr_interface_mode", "employee");
+            // Opening Employee Portal must not change the user's selected
+            // interface role. The portal is an application, not a role switch,
+            // and may contain administrator-only actions when in Admin View.
             document.documentElement.classList.add("has-cleon-employee-portal");
             window.CleonAppLauncher?.load();
         });

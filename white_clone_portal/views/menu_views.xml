@@ -37,7 +37,7 @@
         <menuitem
             id="menu_white_clone_portal_root"
             name="Employee Portal"
-            sequence="5"
+            sequence="1"
             groups="base.group_user"
             action="white_clone_portal.action_employee_portal_home"/>
 
