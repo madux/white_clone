@@ -27,17 +27,6 @@ class HrLeave(models.Model):
         copy=False,
         index=True,
     )
-    admin_created_by_id = fields.Many2one(
-        "res.users",
-        string="Created By Administrator",
-        readonly=True,
-        copy=False,
-    )
-    admin_created_at = fields.Datetime(
-        string="Created At",
-        readonly=True,
-        copy=False,
-    )
     admin_creation_note = fields.Text(
         string="Admin Note / Reason",
         readonly=True,
@@ -959,8 +948,8 @@ class HrLeave(models.Model):
             "submitted": fields.Date.to_string(rec.create_date.date()) if rec.create_date else "",
             "submitted_at": fields.Datetime.to_string(rec.create_date) if rec.create_date else "",
             "admin_created": rec.admin_created,
-            "admin_created_by": rec.admin_created_by_id.name if rec.admin_created else "",
-            "admin_created_at": fields.Date.to_string(rec.admin_created_at.date()) if rec.admin_created_at else "",
+            "admin_created_by": rec.create_uid.name if rec.admin_created else "",
+            "admin_created_at": fields.Date.to_string(rec.create_date.date()) if rec.admin_created and rec.create_date else "",
             "can_review": status == "pending" and not rec.is_cancelled,
             "escalated": bool(rec.escalated),
             "escalation_note": rec.escalation_note or "",
@@ -1389,14 +1378,14 @@ class HrLeave(models.Model):
                 })
 
         if not workflow:
-            submitted_by = leave.admin_created_by_id.name if leave.admin_created else leave.employee_id.name
+            submitted_by = leave.create_uid.name if leave.admin_created else leave.employee_id.name
             submitted_role = "Administrator" if leave.admin_created else "Employee"
             workflow.append({
                 "key": "submitted",
                 "label": "Request Submitted" if not leave.admin_created else "Admin Created Request",
                 "actor": submitted_by,
                 "role": submitted_role,
-                "timestamp": fields.Datetime.to_string(leave.admin_created_at or leave.create_date),
+                "timestamp": fields.Datetime.to_string(leave.create_date),
                 "state": "done",
                 "system": False,
             })
@@ -1702,8 +1691,6 @@ class HrLeave(models.Model):
             "request_unit_half": bool(half_day),
             "request_date_from_period": period,
             "admin_created": True,
-            "admin_created_by_id": self.env.user.id,
-            "admin_created_at": fields.Datetime.now(),
             "admin_creation_note": admin_note,
             "admin_overlap_override": bool(override_conflict),
         }
