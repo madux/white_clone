@@ -735,7 +735,17 @@ class HrLeaveType(models.Model):
         return True
 
     @api.model
-    def evaluate_leave_request_policy(self, employee_id, leave_type_id, date_from, date_to, requested_days=1.0, half_day=False):
+    def evaluate_leave_request_policy(
+        self,
+        employee_id,
+        leave_type_id,
+        date_from,
+        date_to,
+        requested_days=1.0,
+        half_day=False,
+        enforce_submission_timing=True,
+        exclude_leave_id=False,
+    ):
         lt = self.browse(int(leave_type_id))
         emp = self.env["hr.employee"].browse(int(employee_id))
         res = {
@@ -770,7 +780,7 @@ class HrLeaveType(models.Model):
                 res["errors"].append(_("Minimum service period of %d months required. (Current service: %d days).") % (lt.minimum_service_months, service_days))
 
         # 3. Minimum Notice Period Check
-        if lt.minimum_notice_days > 0 and date_from:
+        if enforce_submission_timing and lt.minimum_notice_days > 0 and date_from:
             try:
                 start_dt = fields.Date.from_string(date_from)
                 notice_given = (start_dt - fields.Date.today()).days
@@ -783,7 +793,7 @@ class HrLeaveType(models.Model):
         start_dt = fields.Date.from_string(date_from) if date_from else False
         end_dt = fields.Date.from_string(date_to) if date_to else False
         today = fields.Date.context_today(self)
-        if start_dt:
+        if enforce_submission_timing and start_dt:
             days_before_today = (today - start_dt).days
             if days_before_today > lt.retroactive_request_days:
                 res["errors"].append(
@@ -842,19 +852,24 @@ class HrLeaveType(models.Model):
             ])
             total_alloc = sum(allocs.mapped("number_of_days")) or (lt.max_entitlement if lt.max_entitlement is not None else 20.0)
 
-            used_leaves = self.env["hr.leave"].search([
+            used_domain = [
                 ("holiday_status_id", "=", lt.id),
                 ("employee_id", "=", emp.id),
                 ("state", "=", "validate"),
                 ("is_cancelled", "=", False),
-            ])
-            total_used = sum(used_leaves.mapped("number_of_days"))
-            pending_leaves = self.env["hr.leave"].search([
+            ]
+            pending_domain = [
                 ("holiday_status_id", "=", lt.id),
                 ("employee_id", "=", emp.id),
                 ("state", "in", ("confirm", "validate1")),
                 ("is_cancelled", "=", False),
-            ])
+            ]
+            if exclude_leave_id:
+                used_domain.append(("id", "!=", int(exclude_leave_id)))
+                pending_domain.append(("id", "!=", int(exclude_leave_id)))
+            used_leaves = self.env["hr.leave"].search(used_domain)
+            total_used = sum(used_leaves.mapped("number_of_days"))
+            pending_leaves = self.env["hr.leave"].search(pending_domain)
             total_pending = sum(pending_leaves.mapped("number_of_days"))
             remaining_balance = total_alloc - total_used - total_pending
 
@@ -880,13 +895,16 @@ class HrLeaveType(models.Model):
             ])
             dept_count = max(1, len(dept_emps))
 
-            overlapping_leaves = self.env["hr.leave"].search([
+            overlap_domain = [
                 ("department_id", "=", emp.department_id.id),
                 ("state", "in", ("confirm", "validate1", "validate")),
                 ("is_cancelled", "=", False),
                 ("date_from", "<=", date_to),
                 ("date_to", ">=", date_from),
-            ])
+            ]
+            if exclude_leave_id:
+                overlap_domain.append(("id", "!=", int(exclude_leave_id)))
+            overlapping_leaves = self.env["hr.leave"].search(overlap_domain)
             on_leave_emp_ids = set(overlapping_leaves.mapped("employee_id.id"))
             on_leave_emp_ids.add(emp.id)
 

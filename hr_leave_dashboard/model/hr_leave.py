@@ -95,6 +95,7 @@ class HrLeave(models.Model):
                     self.env["ir.sequence"].next_by_code("hr.leave.request.ref") or _("New")
                 )
         leaves = super().create(vals_list)
+        leaves._validate_leave_policy(enforce_submission_timing=True)
         for leave in leaves:
             if not leave.admin_created:
                 leave._create_audit_record("submitted", note=leave.notes or "")
@@ -103,6 +104,43 @@ class HrLeave(models.Model):
             if leave.state in ("confirm", "validate1"):
                 leave._initialize_configured_approval_lines()
         return leaves
+
+    def write(self, values):
+        """Validate policy only for genuine request lifecycle changes.
+
+        Odoo also writes operational fields such as ``manager_id``,
+        ``department_id`` and ``resource_calendar_id`` to leave records while
+        synchronising employee data.  Those maintenance writes must not turn
+        historical submission windows into database invariants.
+        """
+        policy_input_fields = {
+            "holiday_status_id",
+            "employee_id",
+            "request_date_from",
+            "request_date_to",
+            "date_from",
+            "date_to",
+            "number_of_days",
+            "request_unit_half",
+        }
+        previous_states = {leave.id: leave.state for leave in self}
+        result = super().write(values)
+
+        inputs_changed = bool(policy_input_fields.intersection(values))
+        state_changed = "state" in values
+        if inputs_changed or state_changed:
+            for leave in self:
+                if leave.state not in ("confirm", "validate1", "validate"):
+                    continue
+                old_state = previous_states.get(leave.id)
+                entering_submission = leave.state == "confirm" and old_state != "confirm"
+                editing_pending = inputs_changed and leave.state in ("confirm", "validate1")
+                approving = state_changed and leave.state in ("validate1", "validate")
+                if entering_submission or editing_pending or approving:
+                    leave._validate_leave_policy(
+                        enforce_submission_timing=entering_submission or editing_pending,
+                    )
+        return result
 
     def action_confirm(self):
         result = super().action_confirm()
@@ -223,8 +261,8 @@ class HrLeave(models.Model):
             leave._create_audit_record("escalated", note=leave.escalation_note, is_system=True)
         return len(lines)
 
-    @api.constrains("holiday_status_id", "employee_id", "request_date_from", "request_date_to", "number_of_days", "state")
-    def _check_leave_type_policy_enforcement(self):
+    def _validate_leave_policy(self, enforce_submission_timing=True):
+        """Enforce request policy at submission/edit/approval boundaries."""
         for leave in self:
             if leave.state in ("confirm", "validate1", "validate") and leave.holiday_status_id and leave.employee_id:
                 res = self.env["hr.leave.type"].evaluate_leave_request_policy(
@@ -234,6 +272,8 @@ class HrLeave(models.Model):
                     date_to=leave.request_date_to or leave.date_to,
                     requested_days=leave.number_of_days or 1.0,
                     half_day=bool(getattr(leave, "request_unit_half", False)),
+                    enforce_submission_timing=enforce_submission_timing,
+                    exclude_leave_id=leave.id,
                 )
                 if not res.get("eligible") or res.get("errors"):
                     raise ValidationError(_("Policy validation error for '%s':\n%s") % (leave.holiday_status_id.name, "\n".join("• " + e for e in res["errors"])))
