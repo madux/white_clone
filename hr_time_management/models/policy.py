@@ -657,7 +657,7 @@ class CleonTimePolicy(models.Model):
             ("company_id", "=", company.id),
             ("state", "=", "approved"),
             ("payroll_state", "=", "ready"),
-            ("employee_id.identification_id", "!=", False),
+            ("employee_id.employee_number", "!=", False),
         ]) if "cleon.overtime.request" in self.env else 0
 
         target_engine = "hr_payroll" if has_hr_payroll else ("cleon_payroll" if has_cleon_payroll else "csv_contract")
@@ -791,11 +791,7 @@ class CleonTimePolicy(models.Model):
 
         for ot in ot_records:
             emp = ot.employee_id.sudo()
-            # Odoo's employee payroll/reference code is Identification No.
-            # (`identification_id`).  There is no `employee_code` field on the
-            # standard hr.employee model; `employee_code` is only the stable
-            # key exposed by this handoff payload.
-            code = emp.identification_id or False
+            code = emp.employee_number or False
             has_missing_code = not bool(code)
             if has_missing_code:
                 unresolved_codes_count += 1

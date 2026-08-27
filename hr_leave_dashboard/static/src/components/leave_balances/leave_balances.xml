@@ -159,7 +159,10 @@
                           <img t-att-src="group.meta.avatar_url" class="o_lb_group_avatar"/>
                           <span class="o_lb_group_title">
                             <b t-esc="group.meta.name"/>
-                            <small class="text-muted ms-1" t-esc="group.meta.code"/>
+                            <small class="text-muted ms-1">
+                                <t t-if="group.meta.employee_number">Staff No: <t t-esc="group.meta.employee_number"/></t>
+                                <t t-if="group.meta.identification_id"> · ID: <t t-esc="group.meta.identification_id"/></t>
+                            </small>
                           </span>
                           <span class="o_lb_group_dept ms-2" t-esc="group.meta.department"/>
                           <span class="o_lb_group_count ms-2"><t t-esc="group.rows.length"/> leave type<t t-if="group.rows.length != 1">s</t></span>
@@ -201,7 +204,13 @@
                         <t t-else="">
                           <div class="o_lb_employee ps-2">
                             <img t-att-src="row.avatar_url"/>
-                            <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
+                            <span>
+                              <b t-esc="row.employee_name"/>
+                              <small>
+                                <t t-if="row.employee_number">Staff No: <t t-esc="row.employee_number"/></t>
+                                <t t-if="row.identification_id"> · ID: <t t-esc="row.identification_id"/></t>
+                              </small>
+                            </span>
                           </div>
                         </t>
                       </td>
@@ -249,7 +258,13 @@
                   <td>
                     <div class="o_lb_employee">
                       <img t-att-src="row.avatar_url"/>
-                      <span><b t-esc="row.employee_name"/><small t-esc="row.employee_code"/></span>
+                      <span>
+                        <b t-esc="row.employee_name"/>
+                        <small>
+                          <t t-if="row.employee_number">Staff No: <t t-esc="row.employee_number"/></t>
+                          <t t-if="row.identification_id"> · ID: <t t-esc="row.identification_id"/></t>
+                        </small>
+                      </span>
                     </div>
                   </td>
                   <td t-esc="row.department"/>
@@ -430,7 +445,11 @@
                   <img t-att-src="e.avatar_url"/>
                   <span>
                     <b t-esc="e.employee_name"/>
-                    <small><t t-esc="e.department"/> · <t t-esc="e.employee_code"/></small>
+                    <small>
+                      <t t-esc="e.department"/> · 
+                      <t t-if="e.employee_number">Staff No: <t t-esc="e.employee_number"/></t>
+                      <t t-if="e.identification_id"> · ID: <t t-esc="e.identification_id"/></t>
+                    </small>
                   </span>
                 </label>
               </div>
@@ -658,7 +677,12 @@
               <img t-att-src="state.adjustmentEmployee.avatar_url" class="o_lb_emp_avatar"/>
               <div>
                 <b class="o_lb_emp_name" t-esc="state.adjustmentEmployee.employee_name"/>
-                <small class="o_lb_emp_sub"><t t-esc="state.adjustmentEmployee.employee_code"/> • <t t-esc="state.adjustmentEmployee.department"/></small>
+                <small class="o_lb_emp_sub">
+                  <t t-if="state.adjustmentEmployee.employee_number">Staff No: <t t-esc="state.adjustmentEmployee.employee_number"/> • </t>
+                  <t t-if="state.adjustmentEmployee.identification_id">ID: <t t-esc="state.adjustmentEmployee.identification_id"/> • </t>
+                  <t t-if="!state.adjustmentEmployee.employee_number and !state.adjustmentEmployee.identification_id">Identifiers not assigned • </t>
+                  <t t-esc="state.adjustmentEmployee.department"/>
+                </small>
               </div>
             </div>
 
@@ -738,7 +762,12 @@
               <img t-att-src="state.history.employee.avatar_url" class="o_lb_hist_avatar"/>
               <div>
                 <h3 class="o_lb_hist_emp_name" t-esc="state.history.employee.name"/>
-                <small class="o_lb_hist_emp_sub"><t t-esc="state.history.employee.code"/> • <t t-esc="state.history.employee.department"/></small>
+                <small class="o_lb_hist_emp_sub">
+                  <t t-if="state.history.employee.employee_number">Staff No: <t t-esc="state.history.employee.employee_number"/> • </t>
+                  <t t-if="state.history.employee.identification_id">ID: <t t-esc="state.history.employee.identification_id"/> • </t>
+                  <t t-if="!state.history.employee.employee_number and !state.history.employee.identification_id">Identifiers not assigned • </t>
+                  <t t-esc="state.history.employee.department"/>
+                </small>
                 <div class="o_lb_hist_title_badge"><i class="fa fa-calendar"/> Complete Leave History</div>
               </div>
             </div>

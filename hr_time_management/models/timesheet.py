@@ -523,7 +523,7 @@ class CleonTimeSheet(models.Model):
             expected_h = Shift._get_expected_hours_for_period(sheet.employee_id.id, sheet.week_start, sheet.week_end)
             row_data = {
                 "id": sheet.id, "employee": sheet.employee_id.sudo().name,
-                "employee_code": sheet.employee_id.sudo().identification_id or "",
+                "employee_code": sheet.employee_id.sudo().employee_number or "",
                 "department": sheet.employee_id.sudo().department_id.name or "—",
                 "week_start": fields.Date.to_string(sheet.week_start),
                 "week_end": fields.Date.to_string(sheet.week_end),

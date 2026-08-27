@@ -13,6 +13,13 @@ _logger = logging.getLogger(__name__)
 class HrLeave(models.Model):
     _inherit = "hr.leave"
 
+    @api.model
+    def _employee_identification(self, employee):
+        """Expose the private identifier only to users allowed to read it."""
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
+
     # Admin Creation & Attribution Fields (FR-108 to FR-109)
     admin_created = fields.Boolean(
         string="Created by Administrator",
@@ -330,7 +337,14 @@ class HrLeave(models.Model):
         ], order="date_from asc", limit=5)
         status_labels = {"draft": _("Draft"), "confirm": _("Pending"), "validate1": _("Pending"), "validate": _("Approved"), "refuse": _("Rejected"), "cancel": _("Cancelled")}
         return {
-            "employee": {"id": employee.id, "name": employee.name},
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
+                "department": employee.department_id.name or "No Department",
+                "job_title": employee.job_title or (employee.job_id.name if hasattr(employee, "job_id") and employee.job_id else "") or "Employee",
+            },
             "can_admin": self.env.user.has_group("hr_holidays.group_hr_holidays_manager") or self.env.user.has_group("base.group_system"),
             "kpis": {
                 "total_balance": round(sum(item["remaining"] for item in balances), 1),
@@ -363,7 +377,12 @@ class HrLeave(models.Model):
         allocations = self.env["hr.leave.allocation"].sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("holiday_status_id", "in", types.ids)])
         approved = self.sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
         pending = self.sudo().search([("employee_id", "=", employee.id), ("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
-        return {"employee": {"id": employee.id, "name": employee.name}, "leave_types": [{
+        return {"employee": {
+            "id": employee.id,
+            "name": employee.name,
+            "employee_number": employee.employee_number or "",
+            "identification_id": self._employee_identification(employee),
+        }, "leave_types": [{
             "id": leave_type.id, "name": leave_type.name, "color": leave_type.cleon_color_hex or "#3B82F6",
             "allocated": round(sum(allocations.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
             "used": round(sum(approved.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
@@ -878,7 +897,8 @@ class HrLeave(models.Model):
             "employee": {
                 "id": rec.employee_id.id,
                 "name": rec.employee_id.name or "",
-                "employee_number": getattr(rec.employee_id, "employee_number", False) or f"EMP-{rec.employee_id.id:03d}",
+                "employee_number": rec.employee_id.employee_number or "",
+                "identification_id": self._employee_identification(rec.employee_id),
                 "department": rec.department_id.name or "No Department",
                 "job_title": rec.employee_id.job_title or (rec.employee_id.job_id.name if hasattr(rec.employee_id, "job_id") and rec.employee_id.job_id else "") or "Employee",
                 "email": rec.employee_id.work_email or f"{rec.employee_id.name.lower().replace(' ', '.')}@cleonhr.com",
@@ -942,6 +962,8 @@ class HrLeave(models.Model):
                 base_domain,
                 expression.OR([
                     [("employee_id.name", "ilike", st)],
+                    [("employee_id.employee_number", "ilike", st)],
+                    [("employee_id.identification_id", "ilike", st)],
                     [("holiday_status_id.name", "ilike", st)],
                     [("name", "ilike", st)],
                     [("notes", "ilike", st)],
@@ -1508,9 +1530,11 @@ class HrLeave(models.Model):
             "employees": [{
                 "id": emp.id,
                 "name": emp.name,
+                "employee_number": emp.employee_number or "",
+                "identification_id": self._employee_identification(emp),
                 "department": emp.department_id.name or "No Department",
                 "job_title": emp.job_title or (emp.job_id.name if hasattr(emp, "job_id") and emp.job_id else "") or "Employee",
-                "label": f"{emp.name} ({emp.department_id.name or 'No Department'} - {emp.job_title or (emp.job_id.name if hasattr(emp, 'job_id') and emp.job_id else '') or 'Employee'})",
+                "label": f"{emp.name} ({emp.employee_number or _('Staff number not assigned')} - {emp.department_id.name or _('No Department')})",
             } for emp in employees],
         }
 

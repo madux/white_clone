@@ -251,7 +251,7 @@ class CleonAttendanceRegularization(models.Model):
             "code": f"#REG-{self.id:04d}",
             "employee": employee.name,
             "employee_id": employee.id,
-            "employee_code": employee.identification_id or employee.barcode or False,
+            "employee_code": employee.employee_number or False,
             "location": loc,
             "attendance_date": fields.Date.to_string(self.attendance_date),
             "issue_type": self.issue_type,

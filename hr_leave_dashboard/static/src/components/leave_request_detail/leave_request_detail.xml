@@ -68,7 +68,10 @@
                             <div class="employee-banner-info">
                                 <h4 class="employee-banner-name"><t t-esc="state.detail.employee.name"/></h4>
                                 <span class="employee-banner-meta">
-                                    <t t-esc="state.detail.employee.employee_number || '—'"/> · <t t-esc="state.detail.employee.department"/>
+                                    <t t-if="state.detail.employee.employee_number">Staff No: <t t-esc="state.detail.employee.employee_number"/> · </t>
+                                    <t t-if="state.detail.employee.identification_id">ID No: <t t-esc="state.detail.employee.identification_id"/> · </t>
+                                    <t t-if="!state.detail.employee.employee_number and !state.detail.employee.identification_id">Identifiers not assigned · </t>
+                                    <t t-esc="state.detail.employee.department"/>
                                 </span>
                             </div>
                         </div>
@@ -78,6 +81,14 @@
                             <div class="info-cell">
                                 <label>Name</label>
                                 <strong><t t-esc="state.detail.employee.name"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Staff Number</label>
+                                <strong><t t-esc="state.detail.employee.employee_number || '—'"/></strong>
+                            </div>
+                            <div class="info-cell">
+                                <label>Identification Number</label>
+                                <strong><t t-esc="state.detail.employee.identification_id || '—'"/></strong>
                             </div>
                             <div class="info-cell">
                                 <label>Department</label>

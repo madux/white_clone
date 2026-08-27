@@ -744,7 +744,7 @@ class CleonOvertimeRequest(models.Model):
         employees = month.mapped("employee_id")
         rows = [{
             "id": row.id, "name": row.name, "employee": row.employee_id.sudo().name,
-            "employee_code": row.employee_id.sudo().identification_id or "",
+            "employee_code": row.employee_id.sudo().employee_number or "",
             "department": row.employee_id.sudo().department_id.name or _("Unassigned"),
             "date": fields.Date.to_string(row.date), "regular_hours": round(row.regular_hours, 2),
             "hours": round(row.overtime_hours, 2), "category": row.category,

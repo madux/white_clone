@@ -7,6 +7,12 @@ class HrLeaveAuditLog(models.Model):
     _description = "Leave Audit Log"
     _order = "occurred_at desc, id desc"
 
+    @api.model
+    def _employee_identification(self, employee):
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
+
     leave_id = fields.Many2one(
         "hr.leave",
         string="Leave Request",
@@ -163,7 +169,10 @@ class HrLeaveAuditLog(models.Model):
             "entity_type": record.entity_type, "entity_type_label": entity_labels.get(record.entity_type),
             "entity_name": record.entity_name or "", "entity_reference": record.entity_reference or "",
             "actor": record.actor_label or record.actor_id.name or _("System"), "actor_role": record.actor_role or _("System"),
-            "employee": record.employee_id.name or "", "employee_code": record.employee_id.employee_number or "",
+            "employee": record.employee_id.name or "",
+            "employee_code": record.employee_id.employee_number or "",
+            "employee_number": record.employee_id.employee_number or "",
+            "identification_id": self._employee_identification(record.employee_id),
             "department": record.department_id.name or "", "before": record.before_values or {}, "after": record.after_values or {},
             "description": record.description or record.note or "", "ip_address": record.ip_address or "",
             "device_browser": record.device_browser or "", "source": record.source, "status": record.event_status,

@@ -53,7 +53,13 @@ class HrLeaveBalanceTransaction(models.Model):
 
     @api.model
     def _employee_code(self, employee):
-        return employee.employee_number or "EMP-%03d" % employee.id
+        return employee.employee_number or ""
+
+    @api.model
+    def _employee_identification(self, employee):
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
 
     @api.model
     def _balance_maps(self, employee_ids=None, leave_type_ids=None):
@@ -218,6 +224,8 @@ class HrLeaveBalanceTransaction(models.Model):
                 "key": "%s-%s" % (employee_id, type_id),
                 "employee_id": employee_id, "employee_name": employee.name,
                 "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
                 "avatar_url": "/web/image/hr.employee/%s/image_128" % employee_id,
                 "department_id": employee.department_id.id or False,
                 "department": employee.department_id.name or _("No Department"),
@@ -244,9 +252,9 @@ class HrLeaveBalanceTransaction(models.Model):
         type_ids = {int(x) for x in filters.get("leave_type_ids", [])}
         policy_ids = {int(x) for x in filters.get("policy_ids", [])}
         if search:
-            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower()]
+            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower() or search in (r.get("identification_id") or "").lower()]
         if employee_search:
-            rows = [r for r in rows if employee_search in r["employee_name"].lower() or employee_search in r["employee_code"].lower()]
+            rows = [r for r in rows if employee_search in r["employee_name"].lower() or employee_search in r["employee_code"].lower() or employee_search in (r.get("identification_id") or "").lower()]
         if department_ids:
             rows = [r for r in rows if r["department_id"] in department_ids]
         if location_ids:
@@ -329,6 +337,8 @@ class HrLeaveBalanceTransaction(models.Model):
                 meta = {
                     "type": "employee", "id": row["employee_id"],
                     "name": row["employee_name"], "code": row["employee_code"],
+                    "employee_number": row.get("employee_number") or "",
+                    "identification_id": row.get("identification_id") or "",
                     "avatar_url": row["avatar_url"], "department": row["department"],
                 }
             else:
@@ -393,6 +403,8 @@ class HrLeaveBalanceTransaction(models.Model):
             "employee_id": employee.id,
             "employee_name": employee.name,
             "employee_code": self._employee_code(employee),
+            "employee_number": employee.employee_number or "",
+            "identification_id": self._employee_identification(employee),
             "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
             "department_id": employee.department_id.id or False,
             "department": employee.department_id.name or _("No Department"),
@@ -576,9 +588,16 @@ class HrLeaveBalanceTransaction(models.Model):
                 "approved_on": fields.Date.to_string(leave.write_date.date()) if status == "approved" and leave.write_date else "",
             })
         return {
-            "employee": {"id": employee.id, "name": employee.name, "code": self._employee_code(employee),
-                         "department": employee.department_id.name or _("No Department"),
-                         "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id},
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "code": self._employee_code(employee),
+                "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
+                "department": employee.department_id.name or _("No Department"),
+                "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+            },
             "requests": requests,
             "summary": {
                 "approved": len([r for r in requests if r["status"] == "approved"]),

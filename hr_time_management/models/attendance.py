@@ -762,7 +762,7 @@ class HrAttendance(models.Model):
             "id": attendance.id if attendance else 0,
             "employee_id": employee.id,
             "employee": employee.name,
-            "employee_code": employee.sudo().identification_id or employee.sudo().barcode or False,
+            "employee_code": employee.sudo().employee_number or False,
             "department": employee.department_id.name or "—",
             "date": fields.Date.to_string(target_date),
             "check_in": self._display_time(attendance.check_in) if attendance else "",

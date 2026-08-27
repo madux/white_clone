@@ -269,7 +269,7 @@ class CleonHrShift(models.Model):
             "time": "%s – %s" % (self._hour_label(a.shift_id.start_hour), self._hour_label(a.shift_id.end_hour)),
             "target_name": a.employee_id.sudo().name if a.employee_id else (a.department_id.sudo().name if a.department_id else "—"),
             "employee": a.employee_id.sudo().name if a.employee_id else (a.department_id.sudo().name if a.department_id else "—"),
-            "employee_code": a.employee_id.sudo().identification_id or "",
+            "employee_code": a.employee_id.sudo().employee_number or "",
             "department": a.department_id.sudo().name if a.department_id else "—",
             "employee_id": a.employee_id.id if a.employee_id else False,
             "department_id": a.department_id.id if a.department_id else False,
@@ -280,7 +280,7 @@ class CleonHrShift(models.Model):
         } for a in assignments]
 
         employees = self.env["hr.employee"].search([("id", "in", allowed_emp_ids)])
-        employee_rows = [{"id": e.id, "name": e.sudo().name, "identification_id": e.sudo().identification_id or ""} for e in employees]
+        employee_rows = [{"id": e.id, "name": e.sudo().name, "employee_number": e.sudo().employee_number or ""} for e in employees]
 
         departments = self.env["hr.department"].search([("company_id", "=", company.id)])
         department_rows = [{"id": d.id, "name": d.sudo().name} for d in departments]

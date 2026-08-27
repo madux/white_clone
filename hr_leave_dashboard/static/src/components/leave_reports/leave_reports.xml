@@ -352,7 +352,13 @@
                     <td>
                       <div class="o_lr_employee_cell">
                         <img t-att-src="row.avatar_url"/>
-                        <span><b t-esc="row.name"/><small t-esc="row.code"/></span>
+                        <span>
+                          <b t-esc="row.name"/>
+                          <small>
+                            <t t-if="row.employee_number">Staff No: <t t-esc="row.employee_number"/></t>
+                            <t t-if="row.identification_id"> · ID: <t t-esc="row.identification_id"/></t>
+                          </small>
+                        </span>
                       </div>
                     </td>
                     <td t-esc="row.department"/>

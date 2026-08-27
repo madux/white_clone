@@ -227,6 +227,11 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
 
     def test_05_period_lock_enforcement_during_approval(self):
         """Test period lock blocks decision if date period is locked."""
+        target_date = fields.Date.context_today(
+            self.env["cleon.overtime.request"]
+        ) - timedelta(days=1)
+        next_month = (target_date.replace(day=28) + timedelta(days=4)).replace(day=1)
+        month_end = next_month - timedelta(days=1)
         chain = self.env["cleon.approval.chain"].create({
             "name": "P7 Lock Chain",
             "company_id": self.company.id,
@@ -238,18 +243,18 @@ class TestPhase7ApprovalWorkflow(TransactionCase):
         })
 
         res = self.env["cleon.overtime.request"].with_user(self.emp_user).submit_manual_request({
-            "date": "2026-08-12",
-            "start_time": "2026-08-12 17:00:00",
-            "end_time": "2026-08-12 21:00:00",
+            "date": fields.Date.to_string(target_date),
+            "start_time": "%s 17:00:00" % fields.Date.to_string(target_date),
+            "end_time": "%s 21:00:00" % fields.Date.to_string(target_date),
             "justification": "Extended emergency bugfix deployment for client release",
         })
         ot = self.env["cleon.overtime.request"].browse(res["id"])
 
-        # Lock August 2026 period
+        # Lock the target date's period.
         self.env["cleon.time.period.lock"].sudo().create({
             "company_id": self.company.id,
-            "date_from": "2026-08-01",
-            "date_to": "2026-08-31",
+            "date_from": fields.Date.to_string(target_date.replace(day=1)),
+            "date_to": fields.Date.to_string(month_end),
             "state": "locked",
             "reason": "Period Lock",
         })
