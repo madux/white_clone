@@ -153,7 +153,8 @@
         <field name="arch" type="xml">
             <tree string="Employee" js_class="organisation_list">
                 <field name="name" string="Name"/>
-                <field name="employee_number" string="Number"/>
+                <field name="employee_number" string="Staff Number"/>
+                <field name="identification_id" string="Identification No" optional="show" groups="hr.group_hr_user"/>
                 <field name="work_email" string="Email"/>
                 <field name="work_phone" string="Phone"/>
                 <field name="department_id" string="Department"/>
@@ -161,6 +162,30 @@
                 <field name="job_id" string="Role"/>
                 <field name="branch_id" string="Branch"/>
             </tree>
+        </field>
+    </record>
+
+    <record id="view_employee_form_inherit_staff_numbers" model="ir.ui.view">
+        <field name="name">hr.employee.form.inherit.staff.numbers</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='work_email']" position="after">
+                <field name="employee_number" string="Staff Number" placeholder="e.g. EMP-001"/>
+                <field name="identification_id" string="Identification Number" placeholder="e.g. ID-12345" groups="hr.group_hr_user"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_employee_tree_inherit_staff_numbers" model="ir.ui.view">
+        <field name="name">hr.employee.tree.inherit.staff.numbers</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="employee_number" string="Staff Number" optional="show"/>
+                <field name="identification_id" string="Identification No" optional="show" groups="hr.group_hr_user"/>
+            </xpath>
         </field>
     </record>
     

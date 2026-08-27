@@ -12,13 +12,18 @@ export class EmployeeRequestModal extends Component {
         onWillStart(async () => { const data = await this.orm.call("hr.leave", "get_employee_request_options", []); this.state.types = data.leave_types || []; this.state.balances = data.leave_types || []; if (this.props.initial) Object.assign(this.state.form, this.props.initial); this.state.loading = false; if (this.props.initial) await this.preview(); });
     }
     get selectedType() { return this.state.types.find(item => item.id === Number(this.state.form.leave_type_id)); }
-    get canSubmit() { const p = this.state.preview; return !this.state.submitting && p && p.eligible && !(p.errors || []).length && this.state.form.reason.trim().length >= 5 && (!p.document_required || this.state.form.attachment); }
+    get canSubmit() { const p = this.state.preview; return !this.state.submitting && p && p.eligible && !(p.errors || []).length && this.state.form.reason.trim().length >= 5; }
+    get today() {
+        const date = new Date();
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
     friendlyError(error, fallback) {
         const message = error?.data?.message || error?.cause?.data?.message || error?.cause?.message;
         if (message && !/odoo server error/i.test(message)) return message;
         return fallback;
     }
     onStartChange() { if (!this.state.form.date_to || this.state.form.date_to < this.state.form.date_from) this.state.form.date_to = this.state.form.date_from; return this.preview(); }
+    onTypeChange() { if (this.selectedType && !this.selectedType.allow_half_day) this.state.form.half_day = false; return this.preview(); }
     async preview() {
         const f = this.state.form; this.state.error = "";
         if (!f.leave_type_id || !f.date_from || !f.date_to) { this.state.preview = null; return; }
@@ -27,7 +32,7 @@ export class EmployeeRequestModal extends Component {
     }
     async onFileChange(event) {
         const file = event.target.files?.[0]; if (!file) { this.state.form.attachment = null; return; }
-        if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) { this.state.error = "Only PDF, JPG and PNG files are supported."; event.target.value = ""; return; }
+        if (!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png"].includes(file.type)) { this.state.error = "Only PDF, DOC, DOCX, JPG and PNG files are supported."; event.target.value = ""; return; }
         if (file.size > 10 * 1024 * 1024) { this.state.error = "The attachment must not exceed 10 MB."; event.target.value = ""; return; }
         const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1]); reader.onerror = reject; reader.readAsDataURL(file); });
         this.state.form.attachment = { name: file.name, mimetype: file.type, data }; this.state.error = "";

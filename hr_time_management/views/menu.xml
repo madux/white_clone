@@ -1,0 +1,35 @@
+<odoo>
+    <record id="hr_administration.hr_admin_time_mgt" model="ir.ui.menu">
+        <field name="name">Time Management</field>
+        <field name="action" ref="hr_time_management.action_time_management"/>
+        <field name="icon_class">fa fa-clock-o</field>
+        <field name="icon_color">#8B5CF6</field>
+        <field name="category_name">CleonHR-HR Admin</field>
+        <!-- Keep the existing audiences and explicitly include internal users and
+             Settings administrators. The application itself selects the safe
+             employee/admin interface after opening. -->
+        <field name="groups_id" eval="[(4, ref('base.group_user')), (4, ref('base.group_system'))]"/>
+    </record>
+
+    <menuitem id="employee_portal_root"
+              name="Employee Portal"
+              sequence="45"
+              active="False"
+              groups="base.group_no_one"
+              web_icon="hr_administration,static/src/img/icon.png"/>
+
+    <menuitem id="employee_portal_dashboard"
+              name="Employee Portal"
+              parent="hr_time_management.employee_portal_root"
+              action="hr_time_management.action_employee_portal"
+              sequence="1"
+              active="False"
+              groups="base.group_no_one"/>
+
+    <record id="employee_portal_dashboard" model="ir.ui.menu">
+        <field name="icon_class">fa fa-user-circle-o</field>
+        <field name="icon_color">#EC4899</field>
+        <field name="category_name">CleonHR-Employee Portal</field>
+        <field name="groups_id" eval="[(6, 0, [ref('base.group_no_one')])]"/>
+    </record>
+</odoo>

@@ -8,13 +8,46 @@
             <field name="url">/landing</field>
             <field name="target">self</field>
         </record>
-        <!-- CloneHR Top Menu -->
+
+        <record id="action_employee_portal_home" model="ir.actions.client">
+            <field name="name">Employee Portal</field>
+            <field name="tag">white_clone_portal.EmployeePortal</field>
+            <field name="params">{'initial_page': 'dashboard'}</field>
+        </record>
+
+        <!-- Compatibility aliases for links created before the applications
+             were separated. They now open the native module workspaces. -->
+        <record id="action_employee_portal_leave" model="ir.actions.client">
+            <field name="name">Leave Management</field>
+            <field name="tag">hr_leave_dashboard.EmployeeDashboard</field>
+            <field name="params">{}</field>
+        </record>
+
+        <record id="action_employee_portal_time" model="ir.actions.client">
+            <field name="name">Time Management</field>
+            <field name="tag">hr_time_management.App</field>
+            <field name="params">{'force_employee_mode': True, 'employee_page': 'attendance_dashboard'}</field>
+        </record>
+
+        <!--
+            Employee Portal is a first-class application.  Leave Management
+            and Time Management deliberately have their own application
+            actions; only this root action owns the combined employee shell.
+        -->
         <menuitem
             id="menu_white_clone_portal_root"
-            name="CleonHR"
-            sequence="50"
-            web_icon="white_clone_portal,static/description/icon.png"
-            action="white_clone_portal.action_white_clone_portal_dashboard"/>
+            name="Employee Portal"
+            sequence="1"
+            groups="base.group_user"
+            action="white_clone_portal.action_employee_portal_home"/>
+
+        <record id="menu_white_clone_portal_root" model="ir.ui.menu">
+            <field name="category_name">CleonHR-Employee Portal</field>
+            <field name="icon_class">fa fa-user-circle-o</field>
+            <field name="icon_color">#EC4899</field>
+            <field name="web_icon" eval="False"/>
+            <field name="web_icon_data" eval="False"/>
+        </record>
 
         
 

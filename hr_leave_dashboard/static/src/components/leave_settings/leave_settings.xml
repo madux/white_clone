@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeaveSettingsPage" owl="1">
+    <div class="leaveapp o_ls_page">
+      <CalendarSidebar activeMenu="'settings'" mode="'admin'"/>
+      <main class="o_ls_main">
+        <header class="o_ls_header">
+          <div>
+            <h1>Settings</h1>
+            <p>Configure company-wide Leave Management preferences</p>
+          </div>
+          <button class="o_ls_icon_button" title="Settings guide" t-on-click="openTour"><i class="fa fa-question-circle-o"/></button>
+        </header>
+
+        <div t-if="state.loading" class="o_ls_loading"><i class="fa fa-spinner fa-spin"/><span>Loading settings…</span></div>
+        <t t-elif="state.data">
+          <section class="o_ls_intro">
+            <span><i class="fa fa-cog"/></span>
+            <div><h2>Leave Management Settings</h2><p>These preferences apply to <strong t-esc="state.data.company.name"/>. Leave-category rules remain attached to each Leave Type.</p></div>
+          </section>
+
+          <section class="o_ls_card">
+            <header><i class="fa fa-calendar-o"/><div><h2>Company Calendar &amp; Working Days</h2><p>The calendars Odoo uses when calculating leave duration and public holidays.</p></div></header>
+            <div class="o_ls_card_body">
+              <div class="o_ls_grid two">
+                <label class="o_ls_field"><span>Company Country / Region</span><select t-model="state.form.country_id"><option value="">Select country</option><option t-foreach="state.data.countries" t-as="country" t-key="country.id" t-att-value="country.id" t-esc="country.name"/></select><small>Used as the regional context on leave calendars; it does not create holidays automatically.</small></label>
+                <label class="o_ls_field"><span>Default Working Schedule</span><select t-model="state.form.resource_calendar_id"><option t-foreach="state.data.calendars" t-as="calendar" t-key="calendar.id" t-att-value="calendar.id"><t t-esc="calendar.name"/> · <t t-esc="calendar.hours_per_week"/> hrs/week</option></select><small>Leave days are calculated from this company schedule unless an employee has a specific schedule.</small></label>
+              </div>
+              <div class="o_ls_schedule" t-if="selectedCalendar">
+                <div><span class="o_ls_country_code" t-esc="selectedCountry?.code || '—'"/><div><strong t-esc="selectedCalendar.name"/><small><t t-esc="selectedCalendar.hours_per_week"/> scheduled hours per week</small></div></div>
+                <div class="o_ls_day_list"><span t-foreach="selectedCalendar.working_days" t-as="day" t-key="day" t-esc="day"/><em t-if="!selectedCalendar.working_days.length">No working days configured</em></div>
+              </div>
+              <div class="o_ls_holiday_head"><div><strong>Upcoming public holidays</strong><small>Global or schedule-specific closures already configured in Odoo</small></div><button t-on-click="openPublicHolidays"><i class="fa fa-calendar-plus-o"/> Manage Holidays</button></div>
+              <div class="o_ls_holidays" t-if="state.data.holidays.length"><span t-foreach="state.data.holidays" t-as="holiday" t-key="holiday.id"><b t-esc="holiday.date"/><t t-esc="holiday.name"/></span></div>
+              <div class="o_ls_empty_inline" t-else=""><i class="fa fa-info-circle"/> No upcoming public holidays are configured for this schedule.</div>
+            </div>
+          </section>
+
+          <section class="o_ls_card">
+            <header><i class="fa fa-sliders"/><div><h2>Defaults for New Leave Types</h2><p>Starting values for leave types created after these settings are saved.</p></div><button class="o_ls_link_button" t-on-click="openLeaveTypes">Manage existing Leave Types <i class="fa fa-arrow-right"/></button></header>
+            <div class="o_ls_notice"><i class="fa fa-info-circle"/><span>Changing these defaults does not rewrite existing policies. Edit an existing policy from Leave Types when its rules need to change.</span></div>
+            <div class="o_ls_card_body o_ls_grid three">
+              <label class="o_ls_field"><span>Approval Workflow</span><select t-model="state.form.default_approval_workflow"><option value="none">No Approval Required</option><option value="single">Single Approver</option><option value="multi">Multi-level Approval</option></select></label>
+              <label class="o_ls_field"><span>Supporting Documents</span><select t-model="state.form.default_supporting_document_policy"><option value="never">Never Required</option><option value="conditional">Conditional (&gt;3 days)</option><option value="always">Always Required</option></select></label>
+              <label class="o_ls_field"><span>Minimum Notice (days)</span><input type="number" min="0" t-model.number="state.form.default_minimum_notice_days"/></label>
+              <label class="o_ls_field"><span>Maximum Balance Cap</span><input type="number" min="0" step="0.5" t-model.number="state.form.default_max_balance_cap"/><small>0 means there is no maximum cap.</small></label>
+              <label class="o_ls_field"><span>Team Overlap Limit (%)</span><input type="number" min="0" max="100" step="1" t-model.number="state.form.default_team_overlap_percent"/><small>0 means overlap checking is disabled.</small></label>
+              <div class="o_ls_checks">
+                <label><input type="checkbox" t-model="state.form.default_allow_half_day"/><span>Allow half-day requests</span></label>
+                <label><input type="checkbox" t-model="state.form.default_allow_carryover"/><span>Allow balance carry-over</span></label>
+                <label><input type="checkbox" t-model="state.form.default_allow_negative_balance"/><span>Allow negative balances</span></label>
+                <label><input type="checkbox" t-model="state.form.default_block_overlap_threshold"/><span>Block above overlap limit</span></label>
+              </div>
+            </div>
+          </section>
+
+          <section class="o_ls_card">
+            <header><i class="fa fa-bell-o"/><div><h2>Request Update Notifications</h2><p>Choose how this module records and addresses approval, rejection and cancellation updates.</p></div></header>
+            <div class="o_ls_toggle_rows">
+              <button t-att-class="'o_ls_toggle_row ' + (state.form.notify_in_app ? 'on' : '')" t-on-click="() => toggle('notify_in_app')"><div><strong>Post updates in Odoo</strong><small>Keep a message on the leave request for traceability and in-app activity.</small></div><span class="o_ls_switch"><i/></span></button>
+              <button t-att-class="'o_ls_toggle_row ' + (state.form.notify_email ? 'on' : '')" t-on-click="() => toggle('notify_email')"><div><strong>Address updates to the employee</strong><small>Add the employee as a recipient of approval, rejection and cancellation messages.</small></div><span class="o_ls_switch"><i/></span></button>
+            </div>
+          </section>
+
+          <section class="o_ls_card">
+            <header><i class="fa fa-file-text-o"/><div><h2>Existing Policy Coverage</h2><p>A live summary of the rules configured on active Leave Types.</p></div><button class="o_ls_link_button" t-on-click="openLeaveTypes">Review policies <i class="fa fa-arrow-right"/></button></header>
+            <div class="o_ls_metrics">
+              <div><b t-esc="state.data.policy_summary.leave_type_count"/><span>Active Leave Types</span></div>
+              <div><b t-esc="state.data.policy_summary.carryover_count"/><span>Allow Carry-over</span></div>
+              <div><b t-esc="state.data.policy_summary.document_count"/><span>Require Documents</span></div>
+              <div><b t-esc="state.data.policy_summary.workflow_counts.multi"/><span>Multi-level Approval</span></div>
+            </div>
+          </section>
+
+          <section class="o_ls_card">
+            <header><i class="fa fa-shield"/><div><h2>Access &amp; Responsibilities</h2><p>Real Odoo security groups currently governing Leave Management.</p></div><button class="o_ls_link_button" t-on-click="openAccessRights">Manage users <i class="fa fa-external-link"/></button></header>
+            <div class="o_ls_roles"><div t-foreach="state.data.roles" t-as="role" t-key="role.xmlid"><span class="o_ls_role_dot"/><div><strong t-esc="role.name"/><small t-esc="role.description"/></div><b><t t-esc="role.users"/> users</b></div></div>
+          </section>
+
+          <footer class="o_ls_footer">
+            <button class="o_ls_reset" t-on-click="resetDefaults" t-att-disabled="state.saving"><i class="fa fa-undo"/> Reset policy defaults</button>
+            <div><button t-if="dirty" class="o_ls_discard" t-on-click="discard" t-att-disabled="state.saving">Discard</button><button class="o_ls_save" t-on-click="save" t-att-disabled="!dirty || state.saving"><i t-att-class="state.saving ? 'fa fa-spinner fa-spin' : 'fa fa-save'"/> Save Changes</button></div>
+          </footer>
+        </t>
+      </main>
+    </div>
+  </t>
+</templates>

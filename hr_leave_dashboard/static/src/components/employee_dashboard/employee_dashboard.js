@@ -9,13 +9,14 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class EmployeeLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.EmployeeDashboard";
     static components = { EmployeeRequestModal, CalendarSidebar };
+    static props = { embedded: {type: Boolean, optional: true}, startRequest: {type: Boolean, optional: true} };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
         this.state = useState({ loading: true, requestOpen: false, data: { employee: {}, kpis: {}, balances: [], upcoming_leave: [], holidays: [], recent: [] } });
-        onWillStart(() => this.load());
+        onWillStart(async () => { await this.load(); if (this.props.startRequest) this.state.requestOpen = true; });
     }
     async load() {
         this.state.loading = true;
@@ -26,7 +27,7 @@ export class EmployeeLeaveDashboard extends Component {
     openAdmin() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard"); }
     toggleSidebar() { window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar")); }
     openTour() { this.notification.add("Use the balance cards and quick actions to manage your personal leave.", { title: "Employee Dashboard Tour", type: "info" }); }
-    openHelp() { this.notification.add("Available balance is approved allocation less approved leave; pending days are shown separately.", { title: "Leave Dashboard Guide", type: "info" }); }
+    openHelp() { this.notification.add("Available balance is allocation less approved and pending leave. Carry-forward is shown separately when applicable.", { title: "Leave Dashboard Guide", type: "info" }); }
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
     requestLeave() { this.state.requestOpen = true; }
     closeRequest() { this.state.requestOpen = false; }

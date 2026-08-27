@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../calendar_sidebar";
@@ -23,11 +23,13 @@ export class LeaveBalancesPage extends Component {
             "doYearEndReset", "doCarryForward", "importBalances",
             "toggleLtFilter", "setLtFilter", "clearLtFilter",
             "decrementAdjustment", "incrementAdjustment",
+            "setGroupBy", "toggleGroupByDropdown", "toggleGroup", "toggleGroupSelected", "toggleExpandAll",
+            "onSearchInput", "previousPage", "nextPage", "setPageSize",
         ]) {
             this[methodName] = this[methodName].bind(this);
         }
         this.state = useState({
-            loading: true, rows: [], kpis: {}, departments: [], locations: [], grades: [], leaveTypes: [],
+            loading: true, rows: [], groups: [], employeeOptions: [], kpis: {}, departments: [], locations: [], grades: [], leaveTypes: [],
             search: "", sort: { field: "employee_name", direction: "asc" },
             filters: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "", expiring_only: false },
             filterDraft: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "" },
@@ -39,48 +41,65 @@ export class LeaveBalancesPage extends Component {
             historyOpen: false, history: null, historySearch: "", historyStatus: "all",
             requestDetailId: null,
             ltFilterOpen: false,   // Leave Type column quick-filter dropdown open
-
             ltQuickFilter: null,   // leave_type_id of the active quick-filter (null = all)
-
+            groupBy: "employee",   // "employee" (default), "leave_type", or "none"
+            groupByOpen: false,
+            expandedGroupKeys: [], // collapsed by default
+            pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 1, itemLabel: "groups" },
         });
+        this.searchTimer = null;
+        this.loadSequence = 0;
         onWillStart(() => this.refreshPage());
+        onWillUnmount(() => clearTimeout(this.searchTimer));
     }
 
     today() { return new Date().toISOString().slice(0, 10); }
 
     async refreshPage() {
+        const loadSequence = ++this.loadSequence;
         this.state.loading = true;
         try {
             const data = await this.orm.call("hr.leave.balance.transaction", "get_balance_page_data", [], {
-                filters: { ...this.state.filters, search: this.state.filters.employee_search }, sort: this.state.sort,
+                filters: {
+                    ...this.state.filters,
+                    search: this.state.search.trim(),
+                    quick_leave_type_id: this.state.ltQuickFilter,
+                },
+                sort: this.state.sort,
+                group_by: this.state.groupBy,
+                pagination: {
+                    page: this.state.pagination.page,
+                    page_size: this.state.pagination.pageSize,
+                },
             });
-            this.state.rows = data.rows || [];
+            if (loadSequence !== this.loadSequence) return;
+            this.state.groups = data.groups || [];
+            this.state.rows = this.state.groupBy === "none"
+                ? (data.rows || [])
+                : this.state.groups.flatMap((group) => group.rows);
             this.state.kpis = data.kpis || {};
             this.state.departments = data.departments || [];
             this.state.locations = data.locations || [];
             this.state.grades = data.grades || [];
             this.state.leaveTypes = data.leave_types || [];
+            const pager = data.pagination || {};
+            this.state.pagination.page = pager.page || 1;
+            this.state.pagination.pageSize = pager.page_size || this.state.pagination.pageSize;
+            this.state.pagination.totalItems = pager.total_items || 0;
+            this.state.pagination.totalPages = pager.total_pages || 1;
+            this.state.pagination.itemLabel = pager.item_label || (this.state.groupBy === "none" ? "records" : "groups");
         } catch (error) {
             this.notification.add(error.message || "Unable to load leave balances.", { type: "danger" });
-        } finally { this.state.loading = false; }
+        } finally {
+            if (loadSequence === this.loadSequence) this.state.loading = false;
+        }
     }
 
     get visibleRows() {
-        const term = this.state.search.trim().toLowerCase();
-        let rows = term
-            ? this.state.rows.filter(r => r.employee_name.toLowerCase().includes(term) || r.employee_code.toLowerCase().includes(term))
-            : this.state.rows;
-        // apply Leave Type column quick-filter if active
-
-        if (this.state.ltQuickFilter !== null) {
-            rows = rows.filter(r => r.leave_type_id === this.state.ltQuickFilter);
-        }
-        return rows;
+        return this.state.rows;
     }
     get employees() {
-        const seen = new Map();
-        for (const row of this.state.rows) if (!seen.has(row.employee_id)) seen.set(row.employee_id, row);
-        return [...seen.values()];
+        return this.state.employeeOptions;
     }
     get filteredEmployees() {
         const term = this.state.employeeSearch.trim().toLowerCase();
@@ -150,17 +169,21 @@ export class LeaveBalancesPage extends Component {
         this.state.filters.policy_ids = [...this.state.filterDraft.policy_ids];
         this.state.filters.employee_search = this.state.filterDraft.employee_search;
         this.state.filtersOpen = false;
+        this.resetResultState();
         await this.refreshPage();
     }
     async clearFilters() {
         this.state.filterDraft = { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "" };
         this.state.filters = { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "", expiring_only: false };
+        this.resetResultState();
         await this.refreshPage();
     }
-    async showExpiring() { this.state.filters.expiring_only = true; await this.refreshPage(); }
+    async showExpiring() { this.state.filters.expiring_only = true; this.resetResultState(); await this.refreshPage(); }
     async sortBy(field) {
         this.state.sort.direction = this.state.sort.field === field && this.state.sort.direction === "asc" ? "desc" : "asc";
-        this.state.sort.field = field; await this.refreshPage();
+        this.state.sort.field = field;
+        this.state.pagination.page = 1;
+        await this.refreshPage();
     }
     sortIcon(field) { return this.state.sort.field === field ? (this.state.sort.direction === "asc" ? "fa-sort-up" : "fa-sort-down") : "fa-sort"; }
 
@@ -172,34 +195,54 @@ export class LeaveBalancesPage extends Component {
         this.state.moreOptionsOpen = false;
         this.state.actionKey = null;
     }
-    setLtFilter(id) {
+    async setLtFilter(id) {
         this.state.ltQuickFilter = (this.state.ltQuickFilter === id) ? null : id;
         this.state.ltFilterOpen = false;
+        this.resetResultState();
+        await this.refreshPage();
     }
-    clearLtFilter() { this.state.ltQuickFilter = null; this.state.ltFilterOpen = false; }
+    async clearLtFilter() {
+        this.state.ltQuickFilter = null;
+        this.state.ltFilterOpen = false;
+        this.resetResultState();
+        await this.refreshPage();
+    }
 
     // Unique leave types visible in the current row set (used to build dropdown)
     get ltFilterOptions() {
-        const seen = new Map();
-        for (const row of this.state.rows) {
-            if (!seen.has(row.leave_type_id)) {
-                seen.set(row.leave_type_id, { id: row.leave_type_id, name: row.leave_type, color_hex: row.color_hex });
-            }
-        }
-        return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+        return [...this.state.leaveTypes].sort((a, b) => a.name.localeCompare(b.name));
     }
 
+    get allVisibleSelected() {
+        return this.visibleRows.length > 0 && this.visibleRows.every((row) => this.state.selectedKeys.includes(row.key));
+    }
     toggleSelected(key) { const i = this.state.selectedKeys.indexOf(key); i === -1 ? this.state.selectedKeys.push(key) : this.state.selectedKeys.splice(i, 1); }
-    toggleAll() { this.state.selectedKeys = this.state.selectedKeys.length === this.visibleRows.length ? [] : this.visibleRows.map(r => r.key); }
+    toggleAll() {
+        const visibleKeys = new Set(this.visibleRows.map((row) => row.key));
+        if (this.allVisibleSelected) {
+            this.state.selectedKeys = this.state.selectedKeys.filter((key) => !visibleKeys.has(key));
+        } else {
+            this.state.selectedKeys = [...new Set([...this.state.selectedKeys, ...visibleKeys])];
+        }
+    }
 
-    openAllocation() {
+    async openAllocation() {
+        if (!this.state.employeeOptions.length) {
+            try {
+                this.state.employeeOptions = await this.orm.call(
+                    "hr.leave.balance.transaction", "get_balance_employee_options", [],
+                );
+            } catch (error) {
+                this.notification.add(error.message || "Unable to load employees.", { type: "danger" });
+                return;
+            }
+        }
         this.state.allocationOpen = true; this.state.allocationStep = 1; this.state.selectedEmployeeIds = []; this.state.allocationGroupIds = []; this.state.selectionMode = "individual";
         this.state.allocation = { leave_type_id: "", amount: 0, reason: "", effective_date: this.today(), notes: "" };
     }
     toggleEmployee(id) { const a = this.state.selectedEmployeeIds; const i = a.indexOf(id); i === -1 ? a.push(id) : a.splice(i, 1); }
     setSelectionMode(mode) { this.state.selectionMode = mode; this.state.allocationGroupIds = []; this.state.selectedEmployeeIds = []; }
     toggleAllocationGroup(id) { const a = this.state.allocationGroupIds; const i = a.indexOf(id); i === -1 ? a.push(id) : a.splice(i, 1); }
-    adjustedBalance(item) { return Number(item.remaining || 0) + Number(item.adjustment || 0); }
     selectAllEmployees() {
         const allIds = this.filteredEmployees.map(e => e.employee_id);
         const allSelected = allIds.length > 0 && allIds.every(id => this.state.selectedEmployeeIds.includes(id));
@@ -266,9 +309,19 @@ export class LeaveBalancesPage extends Component {
             domain: [["employee_id", "=", this.state.details.employee_id], ["leave_type_id", "=", this.state.details.leave_type_id]],
         });
     }
-    exportRows() {
+    async exportRows() {
+        const data = await this.orm.call("hr.leave.balance.transaction", "get_balance_page_data", [], {
+            filters: {
+                ...this.state.filters,
+                search: this.state.search.trim(),
+                quick_leave_type_id: this.state.ltQuickFilter,
+            },
+            sort: this.state.sort,
+            group_by: "none",
+            pagination: { page: 1, page_size: 0 },
+        });
         const header = ["Employee ID","Employee","Department","Location","Leave Type","Allocated","Used","Pending","Remaining","Carried Forward","Expiring Days","Expiry Date","Last Updated"];
-        const lines = this.visibleRows.map(r => [r.employee_code,r.employee_name,r.department,r.location,r.leave_type,r.allocated,r.used,r.pending,r.remaining,r.carried_forward,r.expiring_days,r.expiry_date,r.last_updated].map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(","));
+        const lines = (data.rows || []).map(r => [r.employee_code,r.employee_name,r.department,r.location,r.leave_type,r.allocated,r.used,r.pending,r.remaining,r.carried_forward,r.expiring_days,r.expiry_date,r.last_updated].map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(","));
         const url = URL.createObjectURL(new Blob(["\uFEFF" + [header.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" }));
         const a = document.createElement("a"); a.href = url; a.download = "leave_balances.csv"; a.click(); URL.revokeObjectURL(url);
     }
@@ -285,6 +338,7 @@ export class LeaveBalancesPage extends Component {
     closeMoreOptions() {
         this.state.moreOptionsOpen = false;
         this.state.ltFilterOpen = false;   // also close LT quick-filter
+        this.state.groupByOpen = false;    // also close group-by menu
     }
     async doYearEndReset() {
         this.state.moreOptionsOpen = false;
@@ -305,6 +359,114 @@ export class LeaveBalancesPage extends Component {
     importBalances() {
         this.state.moreOptionsOpen = false;
         this.state.importOpen = true;
+    }
+
+    // ── Grouping Methods ──────────────────────────────────────────
+
+    async setGroupBy(mode) {
+        this.state.groupBy = mode;
+        this.state.groupByOpen = false;
+        this.resetResultState();
+        await this.refreshPage();
+    }
+
+    toggleGroupByDropdown(ev) {
+        if (ev) ev.stopPropagation();
+        this.state.groupByOpen = !this.state.groupByOpen;
+        this.state.moreOptionsOpen = false;
+        this.state.ltFilterOpen = false;
+    }
+
+    toggleGroup(groupKey) {
+        const index = this.state.expandedGroupKeys.indexOf(groupKey);
+        if (index === -1) {
+            this.state.expandedGroupKeys.push(groupKey);
+        } else {
+            this.state.expandedGroupKeys.splice(index, 1);
+        }
+    }
+
+    isGroupExpanded(groupKey) {
+        return this.state.expandedGroupKeys.includes(groupKey);
+    }
+
+    isGroupAllSelected(group) {
+        return group.rows.length > 0 && group.rows.every(r => this.state.selectedKeys.includes(r.key));
+    }
+
+    toggleGroupSelected(group) {
+        const allSelected = this.isGroupAllSelected(group);
+        const groupRowKeys = group.rows.map(r => r.key);
+        if (allSelected) {
+            this.state.selectedKeys = this.state.selectedKeys.filter(k => !groupRowKeys.includes(k));
+        } else {
+            const toAdd = groupRowKeys.filter(k => !this.state.selectedKeys.includes(k));
+            this.state.selectedKeys.push(...toAdd);
+        }
+    }
+
+    get allExpanded() {
+        return Boolean(this.groupedRows && this.groupedRows.length > 0 && this.groupedRows.every(g => this.state.expandedGroupKeys.includes(g.key)));
+    }
+
+    toggleExpandAll() {
+        if (this.allExpanded) {
+            this.state.expandedGroupKeys = [];
+        } else if (this.groupedRows) {
+            this.state.expandedGroupKeys = this.groupedRows.map(g => g.key);
+        }
+    }
+
+    get groupedRows() {
+        return this.state.groupBy === "none" ? null : this.state.groups;
+    }
+
+    resetResultState() {
+        this.state.pagination.page = 1;
+        this.state.expandedGroupKeys = [];
+        this.state.selectedKeys = [];
+    }
+
+    onSearchInput(ev) {
+        this.state.search = ev.target.value;
+        clearTimeout(this.searchTimer);
+        this.searchTimer = setTimeout(async () => {
+            this.resetResultState();
+            await this.refreshPage();
+        }, 300);
+    }
+
+    async previousPage() {
+        if (this.state.pagination.page <= 1) return;
+        this.state.pagination.page -= 1;
+        this.state.expandedGroupKeys = [];
+        await this.refreshPage();
+    }
+
+    async nextPage() {
+        if (this.state.pagination.page >= this.state.pagination.totalPages) return;
+        this.state.pagination.page += 1;
+        this.state.expandedGroupKeys = [];
+        await this.refreshPage();
+    }
+
+    async setPageSize(ev) {
+        this.state.pagination.pageSize = Number(ev.target.value);
+        this.resetResultState();
+        await this.refreshPage();
+    }
+
+    get pageStart() {
+        return this.state.pagination.totalItems
+            ? (this.state.pagination.page - 1) * this.state.pagination.pageSize + 1
+            : 0;
+    }
+
+    get pageEnd() {
+        return Math.min(
+            this.state.pagination.page * this.state.pagination.pageSize,
+            this.state.pagination.totalItems,
+        );
     }
 }
 

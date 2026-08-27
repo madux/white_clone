@@ -184,7 +184,11 @@
                                             <div class="employee-cell">
                                                 <div>
                                                     <strong class="employee-name"><t t-esc="req.employee.name"/></strong>
-                                                    <small class="employee-dept"><t t-esc="req.employee.department"/></small>
+                                                    <small class="employee-dept">
+                                                        <t t-if="req.employee.employee_number">Staff No: <t t-esc="req.employee.employee_number"/></t>
+                                                        <t t-if="req.employee.identification_id"> · ID: <t t-esc="req.employee.identification_id"/></t>
+                                                        · <t t-esc="req.employee.department"/>
+                                                    </small>
                                                 </div>
                                                 <t t-if="req.admin_created">
                                                     <span class="admin-created-badge" title="Created by administrator">Admin</span>
@@ -245,6 +249,7 @@
                         <div class="page-size-control">
                             Show
                             <select t-on-change="changePageSize">
+                                <option value="5" t-att-selected="state.pageSize === 5">5</option>
                                 <option value="10" t-att-selected="state.pageSize === 10">10</option>
                                 <option value="25" t-att-selected="state.pageSize === 25">25</option>
                                 <option value="50" t-att-selected="state.pageSize === 50">50</option>

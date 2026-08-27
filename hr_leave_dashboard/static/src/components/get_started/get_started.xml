@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_leave_dashboard.GetStartedPage" owl="1">
+        <div class="leaveapp">
+
+            <!-- Shared Module Sidebar -->
+            <CalendarSidebar activeMenu="'get_started'"/>
+
+            <!-- Main Page Area -->
+            <div class="o_leave_dashboard o_leave_get_started_page">
+
+                <!-- Header Bar -->
+                <div class="cleon-dash-header">
+                    <div class="cleon-dash-header-left">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openDashboard" title="Go to Dashboard">
+                            <i class="fa fa-columns"/>
+                        </button>
+                        <div>
+                            <h4 class="cleon-dash-title">Get Started</h4>
+                            <span class="cleon-dash-subtitle">Follow these steps to configure and launch Leave Management</span>
+                        </div>
+                    </div>
+                    <div class="cleon-dash-header-right">
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Take a Tour">
+                            <i class="fa fa-paper-plane-o"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openWizard" title="Setup Wizard">
+                            <i class="fa fa-magic"/>
+                        </button>
+                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Help / Guide">
+                            <i class="fa fa-question-circle-o"/>
+                        </button>
+
+                        <!-- View Switcher -->
+                        <div class="cleon-view-toggle">
+                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('admin')">
+                                <i class="fa fa-circle-o"/> Admin View
+                            </button>
+                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
+                                    t-on-click="() => this.setViewMode('employee')">
+                                <i class="fa fa-user-o"/> Employee View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hero Banner -->
+                <div class="cleon-gs-hero">
+                    <div class="cleon-gs-hero-left">
+                        <div class="cleon-gs-hero-icon">
+                            <i class="fa fa-calendar"/>
+                        </div>
+                        <div class="cleon-gs-hero-text">
+                            <span class="cleon-gs-hero-kicker">LEAVE MANAGEMENT • Setup Guide</span>
+                            <h2 class="cleon-gs-hero-title">Welcome to Leave Management</h2>
+                            <p class="cleon-gs-hero-desc">
+                                Manage employee time off with ease. Set up your leave policies, define leave
+                                types, and configure approval workflows so your team can request and track
+                                leave efficiently.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="cleon-gs-hero-right">
+                        <button class="cleon-gs-hero-btn" t-on-click="openWizard">
+                            <i class="fa fa-magic"/> Get Started
+                        </button>
+                        <span class="cleon-gs-hero-hint">Takes less than 5 minutes</span>
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="cleon-gs-section">
+                    <div class="cleon-gs-section-header">
+                        <div class="cleon-gs-section-title-wrap">
+                            <div class="cleon-gs-section-icon"><i class="fa fa-sliders"/></div>
+                            <div>
+                                <h3 class="cleon-gs-section-title">Get Started with Leave Management</h3>
+                                <span class="cleon-gs-section-sub">
+                                    <t t-esc="state.completedCount"/>/5 steps completed · Follow these steps to get up and running
+                                </span>
+                            </div>
+                        </div>
+                        <div class="cleon-gs-section-progress-wrap">
+                            <div class="cleon-gs-progress-bar-bg">
+                                <div class="cleon-gs-progress-bar-fill" t-att-style="'width:' + (state.completedCount * 20) + '%'"/>
+                            </div>
+                            <span class="cleon-gs-progress-pct"><t t-esc="state.completedCount * 20"/>%</span>
+                            <button type="button" class="cleon-gs-collapse-btn" t-on-click="toggleProgressExpanded" t-att-title="state.progressExpanded ? 'Collapse' : 'Expand'">
+                                <i t-att-class="'fa ' + (state.progressExpanded ? 'fa-chevron-up' : 'fa-chevron-down')"/>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- The persistent checklist uses the same canonical step data as the wizard. -->
+                    <div t-if="state.progressExpanded" class="cleon-gs-cards-grid">
+                        <div t-foreach="setupSteps" t-as="step" t-key="step.number"
+                             t-att-class="'cleon-gs-card ' + step.cardClass + (state.checklist[step.checklistKey] ? ' is-completed' : '')">
+                            <span class="cleon-gs-card-num" t-esc="step.number"/>
+                            <div class="cleon-gs-card-top">
+                                <div t-att-class="'cleon-gs-card-icon ' + step.cardClass">
+                                    <i t-att-class="'fa ' + step.icon"/>
+                                </div>
+                                <div>
+                                    <h4 class="cleon-gs-card-title" t-esc="step.title"/>
+                                    <p class="cleon-gs-card-desc" t-esc="step.cardDescription"/>
+                                </div>
+                            </div>
+                            <div class="cleon-gs-card-actions">
+                                <button t-att-class="'cleon-gs-btn ' + step.cardClass" t-on-click="() => this.openChecklistStep(step)" t-esc="step.cardActionLabel"/>
+                                <button t-att-class="'cleon-gs-mark-btn ' + (state.checklist[step.checklistKey] ? 'done' : '')"
+                                        t-on-click="() => this.toggleChecklistItem(step.checklistKey)">
+                                    <t t-if="state.checklist[step.checklistKey]"><i class="fa fa-check"/> Completed</t>
+                                    <t t-else="">Mark done</t>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Help Bar -->
+                    <div class="cleon-gs-footer-help">
+                        <span><i class="fa fa-exclamation-circle text-pink"/> Need help? Use the <strong>tour guide (?)</strong> in the header</span>
+                        <span><i class="fa fa-magic text-purple"/> Or open the <strong>setup wizard (*)</strong> for step-by-step guidance</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <LeaveSetupWizard t-if="state.showWizard"
+                initialStep="state.wizardStep"
+                reviewMode="state.reviewMode"
+                onClose.bind="closeWizard"
+                onBackAtFirst.bind="backFromWizardStart"
+                onCompleted.bind="wizardCompleted"
+                onSkipped.bind="wizardSkipped"/>
+
+            <LeaveSetupCompletion t-if="state.showCompletionModal"
+                checklist="state.checklist"
+                completedCount="state.completedCount"
+                onToggle.bind="toggleChecklistItem"
+                onReview.bind="reviewWizardSteps"
+                onDone.bind="doneGoToDashboard"
+                onClose.bind="closeCompletionModal"/>
+
+        </div>
+    </t>
+</templates>

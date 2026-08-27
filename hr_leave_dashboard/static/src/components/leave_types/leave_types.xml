@@ -52,6 +52,16 @@
                             </button>
 
                             <!-- Export Dropdown -->
+                            <div t-if="state.viewMode === 'admin'" class="dropdown d-inline-block">
+                                <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleImportDropdown">
+                                    <i class="fa fa-upload me-1"/> Import Template
+                                </button>
+                                <ul t-att-class="'dropdown-menu dropdown-menu-end ' + (state.importDropdownOpen ? 'show' : '')">
+                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.importStarterPack('standard')">Standard Leave Pack</a></li>
+                                    <li><a class="dropdown-item small" href="#" t-on-click="() => this.importStarterPack('nigeria')">Nigeria Leave Pack</a></li>
+                                </ul>
+                            </div>
+
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleExportDropdown">
                                     <i class="fa fa-download me-1"/> Export
@@ -152,6 +162,10 @@
                 </t>
 
                 <!-- Loading Spinner -->
+                <div t-if="state.loadError" class="alert alert-danger d-flex justify-content-between align-items-center">
+                    <span><i class="fa fa-exclamation-triangle me-2"/><t t-esc="state.loadError"/></span>
+                    <button type="button" class="btn btn-sm btn-outline-danger" t-on-click="loadData">Retry</button>
+                </div>
                 <t t-if="state.loading">
                     <div class="text-center py-5 text-muted">
                         <i class="fa fa-circle-o-notch fa-spin fa-2x mb-2"/>
@@ -188,7 +202,12 @@
                                     <tr>
                                         <td t-att-colspan="state.viewMode === 'admin' ? 11 : 8" class="text-center py-5 text-muted">
                                             <i class="fa fa-info-circle fa-2x mb-2 text-primary"/>
-                                            <p class="mb-0 font-weight-bold">No leave types found matching criteria.</p>
+                                            <p class="mb-2 font-weight-bold"><t t-esc="this.hasActiveFilters ? 'No results match your filters.' : 'No leave types have been configured yet.'"/></p>
+                                            <button t-if="this.hasActiveFilters" type="button" class="btn btn-sm btn-outline-primary" t-on-click="clearFilters">Clear filters</button>
+                                            <div t-else="" class="d-flex justify-content-center gap-2">
+                                                <button type="button" class="btn btn-sm btn-primary" t-on-click="openAddModal">Add Leave Type</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" t-on-click="toggleImportDropdown">Import Template</button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </t>
@@ -266,8 +285,8 @@
 
                                             <!-- Total Days Used Column -->
                                             <td class="small font-weight-bold">
-                                                <t t-if="leaveTypeItem.total_days_used &gt; 0">
-                                                    <t t-esc="leaveTypeItem.total_days_used"/> days
+                                                <t t-if="leaveTypeItem.total_days_allocated &gt; 0">
+                                                    <t t-esc="leaveTypeItem.total_days_allocated"/> days
                                                 </t>
                                                 <t t-else="">
                                                     <span class="text-muted">—</span>
@@ -306,7 +325,7 @@
                                                                 <i class="fa fa-ellipsis-v text-muted"/>
                                                             </button>
                                                             <ul class="dropdown-menu dropdown-menu-end small shadow">
-                                                                <li>
+                                                                <li t-if="!leaveTypeItem.is_system &amp;&amp; leaveTypeItem.assigned_count === 0">
                                                                     <a class="dropdown-item" href="#" t-on-click="() => this.assignToEmployees(leaveTypeItem)">
                                                                         <i class="fa fa-users me-2 text-primary"/> Allocate to Employees
                                                                     </a>
@@ -825,6 +844,7 @@
                                                 <input class="form-check-input" type="checkbox" id="unlimited_chk" t-model="state.form.unlimitedEntitlement"/>
                                                 <label class="form-check-label small text-muted" for="unlimited_chk">Unlimited Entitlement</label>
                                             </div>
+                                            <span t-if="state.errors.entitlement" class="text-danger micro-text"><t t-esc="state.errors.entitlement"/></span>
                                         </div>
 
                                         <!-- Applicable Gender -->
@@ -942,21 +962,56 @@
                                         <!-- Applicable Employee Types Filter -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Employee Types</label>
-                                            <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('employeeTypeIds', ev)">
-                                                <t t-foreach="props.employmentTypes" t-as="et" t-key="et.id">
-                                                    <option t-att-value="et.id" t-att-selected="state.form.employeeTypeIds.includes(et.id)"><t t-esc="et.name"/></option>
-                                                </t>
-                                            </select>
+                                            <div class="leave-m2m">
+                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.employeeTypePickerOpen" t-on-click="() => this.toggleMultiPicker('employeeType')">
+                                                    <span t-foreach="this.getSelectedMultiItems('employeeTypeIds', props.employmentTypes)" t-as="et" t-key="et.id" class="leave-m2m-tag">
+                                                        <span t-esc="et.name"/>
+                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + et.name" t-on-click.stop="() => this.removeMultiValue('employeeTypeIds', et.id)">×</button>
+                                                    </span>
+                                                    <span t-if="!state.form.employeeTypeIds.length" class="leave-m2m-placeholder">Select employee types...</span>
+                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
+                                                </div>
+                                                <div t-if="state.employeeTypePickerOpen" class="leave-m2m-dropdown">
+                                                    <div class="leave-m2m-search">
+                                                        <i class="fa fa-search" aria-hidden="true"/>
+                                                        <input type="text" t-model="state.employeeTypeSearch" placeholder="Search employee types..." t-on-keydown="onMultiPickerKeydown"/>
+                                                    </div>
+                                                    <div class="leave-m2m-options" role="listbox">
+                                                        <button t-foreach="this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch)" t-as="et" t-key="et.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('employeeTypeIds', et.id)">
+                                                            <span t-esc="et.name"/>
+                                                        </button>
+                                                        <p t-if="!this.getAvailableMultiItems('employeeTypeIds', props.employmentTypes, state.employeeTypeSearch).length" class="leave-m2m-empty">No more matching employee types.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span t-if="state.errors.employmentTypes" class="text-danger micro-text"><t t-esc="state.errors.employmentTypes"/></span>
                                         </div>
 
                                         <!-- Applicable Locations -->
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Applicable Locations</label>
-                                            <select class="form-select form-select-sm" multiple="1" style="height: 80px;" t-on-change="(ev) => this.onMultiSelectChange('locationIds', ev)">
-                                                <t t-foreach="props.locations" t-as="loc" t-key="loc.id">
-                                                    <option t-att-value="loc.id" t-att-selected="state.form.locationIds.includes(loc.id)"><t t-esc="loc.name"/></option>
-                                                </t>
-                                            </select>
+                                            <div class="leave-m2m">
+                                                <div class="leave-m2m-control" role="combobox" aria-haspopup="listbox" t-att-aria-expanded="state.locationPickerOpen" t-on-click="() => this.toggleMultiPicker('location')">
+                                                    <span t-foreach="this.getSelectedMultiItems('locationIds', props.locations)" t-as="loc" t-key="loc.id" class="leave-m2m-tag">
+                                                        <span t-esc="loc.name"/>
+                                                        <button type="button" class="leave-m2m-tag-remove" t-att-aria-label="'Remove ' + loc.name" t-on-click.stop="() => this.removeMultiValue('locationIds', loc.id)">×</button>
+                                                    </span>
+                                                    <span t-if="!state.form.locationIds.length" class="leave-m2m-placeholder">Select locations...</span>
+                                                    <i class="fa fa-chevron-down leave-m2m-chevron" aria-hidden="true"/>
+                                                </div>
+                                                <div t-if="state.locationPickerOpen" class="leave-m2m-dropdown">
+                                                    <div class="leave-m2m-search">
+                                                        <i class="fa fa-search" aria-hidden="true"/>
+                                                        <input type="text" t-model="state.locationSearch" placeholder="Search locations..." t-on-keydown="onMultiPickerKeydown"/>
+                                                    </div>
+                                                    <div class="leave-m2m-options" role="listbox">
+                                                        <button t-foreach="this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch)" t-as="loc" t-key="loc.id" type="button" role="option" class="leave-m2m-option" t-on-click="() => this.addMultiValue('locationIds', loc.id, 'locations')">
+                                                            <span t-esc="loc.name"/>
+                                                        </button>
+                                                        <p t-if="!this.getAvailableMultiItems('locationIds', props.locations, state.locationSearch).length" class="leave-m2m-empty">No more matching locations.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <t t-if="state.errors.locations">
                                                 <span class="text-danger micro-text"><t t-esc="state.errors.locations"/></span>
                                             </t>
@@ -966,6 +1021,7 @@
                                         <div class="col-md-6">
                                             <label class="form-label font-weight-bold small">Minimum Service Period (months)</label>
                                             <input type="number" class="form-control form-control-sm" t-model="state.form.minimumServiceMonths"/>
+                                            <span t-if="this.hasMinimumServicePeriod" class="text-success micro-text">Requires <t t-esc="state.form.minimumServiceMonths"/> months of employment.</span>
                                         </div>
                                     </div>
                                 </t>
@@ -1034,6 +1090,19 @@
                                             </div>
                                         </div>
 
+                                        <div t-if="state.form.accrualMethod === 'monthly'" class="row g-2 mb-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label micro-label font-weight-bold">Days earned per month</label>
+                                                <input type="number" min="0" step="0.01" t-att-class="'form-control form-control-sm ' + (state.errors.monthlyAccrualRate ? 'is-invalid' : '')" t-model="state.form.monthlyAccrualRate"/>
+                                                <div t-if="state.errors.monthlyAccrualRate" class="invalid-feedback" t-esc="state.errors.monthlyAccrualRate"/>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <div class="alert alert-light border w-100 py-2 mb-0 small">
+                                                    Annual equivalent: <strong><t t-esc="this.monthlyAnnualEquivalent"/> days</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <!-- Accrual Summary Preview Banner -->
                                         <div class="alert alert-info border-info mb-0 py-2 px-3 small d-flex align-items-center gap-2">
                                             <i class="fa fa-info-circle"/>
@@ -1080,6 +1149,22 @@
                                                 <div class="col-md-4">
                                                     <label class="form-label micro-label">Max Balance Cap (days)</label>
                                                     <input type="number" class="form-control form-control-sm" t-att-disabled="!state.form.allowCarryForward" t-model="state.form.maxBalanceCap"/>
+                                                </div>
+                                            </div>
+                                            <div t-if="state.form.allowCarryForward" class="row g-2 mt-2">
+                                                <div class="col-md-6">
+                                                    <label class="form-label micro-label">Max Carry-Forward Days</label>
+                                                    <input type="number" min="0" step="0.5" t-att-class="'form-control form-control-sm ' + (state.errors.maxCarryoverDays ? 'is-invalid' : '')" t-model="state.form.maxCarryoverDays"/>
+                                                    <div t-if="state.errors.maxCarryoverDays" class="invalid-feedback" t-esc="state.errors.maxCarryoverDays"/>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label micro-label">Expiry Rule</label>
+                                                    <select class="form-select form-select-sm" t-model="state.form.carryoverExpiryRule">
+                                                        <option value="never">Never</option>
+                                                        <option value="three_months">3 Months</option>
+                                                        <option value="six_months">6 Months</option>
+                                                        <option value="end_next_year">End of Next Year</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -1188,6 +1273,34 @@
                                                 </div>
                                             </div>
 
+                                            <div t-if="state.form.approvalWorkflow === 'multi'" class="border rounded bg-light p-2 mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <strong class="small">Ordered Approval Stages</strong>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" t-on-click="addApprovalStage">+ Add Stage</button>
+                                                </div>
+                                                <div t-foreach="state.form.approvalStages" t-as="stage" t-key="stage.id || stage_index" class="row g-2 align-items-end border-top py-2">
+                                                    <div class="col-md-4">
+                                                        <label class="micro-label">Stage <t t-esc="stage_index + 1"/> Approver</label>
+                                                        <select class="form-select form-select-sm" t-model="stage.approver_type">
+                                                            <option value="direct_manager">Direct Manager</option>
+                                                            <option value="department_head">Department Head</option>
+                                                            <option value="hr_manager">HR Manager</option>
+                                                            <option value="hr_director">HR Director</option>
+                                                            <option value="finance_director">Finance Director</option>
+                                                            <option value="ceo">CEO / MD</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-2"><label class="micro-label">Escalate after</label><input type="number" min="0" class="form-control form-control-sm" t-model="stage.escalation_value"/></div>
+                                                    <div class="col-md-2"><label class="micro-label">Unit</label><select class="form-select form-select-sm" t-model="stage.escalation_unit"><option value="hours">Hours</option><option value="days">Days</option></select></div>
+                                                    <div class="col-md-4 d-flex gap-1">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" t-att-disabled="stage_index === 0" t-on-click="() => this.moveApprovalStage(stage_index, -1)"><i class="fa fa-arrow-up"/></button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" t-att-disabled="stage_index === state.form.approvalStages.length - 1" t-on-click="() => this.moveApprovalStage(stage_index, 1)"><i class="fa fa-arrow-down"/></button>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" t-att-disabled="state.form.approvalStages.length === 1" t-on-click="() => this.removeApprovalStage(stage_index)"><i class="fa fa-trash"/></button>
+                                                    </div>
+                                                </div>
+                                                <div class="small text-muted mt-2">Request <t t-foreach="state.form.approvalStages" t-as="stage" t-key="'chain_' + (stage.id || stage_index)"> → <strong><t t-esc="stage.approver_type.replaceAll('_', ' ')"/></strong></t> → Approved</div>
+                                            </div>
+
                                             <!-- Require Supporting Document 3-Way Pill Button Group -->
                                             <label class="form-label micro-label font-weight-bold mb-2">Require Supporting Document</label>
                                             <div class="btn-group btn-group-sm w-100 mb-3">
@@ -1219,10 +1332,24 @@
                                         <div class="col-12 border-bottom pb-3">
                                             <h5 class="h6 font-weight-bold text-dark mb-2">Restrictions &amp; Overlap Safeguards</h5>
                                             <div class="row g-3 mb-2">
+                                                <div class="col-md-4">
+                                                    <label class="form-label micro-label font-weight-bold">Minimum Request Days</label>
+                                                    <input type="number" min="0" step="0.5" class="form-control form-control-sm" t-model="state.form.minimumRequestDays"/>
+                                                </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label micro-label font-weight-bold">Max Consecutive Days</label>
                                                     <input type="number" class="form-control form-control-sm" t-model="state.form.maxConsecutiveDays"/>
                                                     <span class="micro-text text-muted">Set to 0 for no limit</span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label micro-label font-weight-bold">Advance Booking Window (days)</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" t-model="state.form.advanceBookingDays"/>
+                                                    <span class="micro-text text-muted">0 means no future limit</span>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label class="form-label micro-label font-weight-bold">Retroactive Window (days)</label>
+                                                    <input type="number" min="0" class="form-control form-control-sm" t-model="state.form.retroactiveRequestDays"/>
+                                                    <span class="micro-text text-muted">0 blocks past dates</span>
                                                 </div>
                                                 <div class="col-md-6">
                                                     <label class="form-label micro-label font-weight-bold">Max % of Team on Leave Simultaneously</label>

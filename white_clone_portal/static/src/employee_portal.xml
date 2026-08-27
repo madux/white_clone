@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="white_clone_portal.EmployeePortal">
+        <div class="cep-app">
+            <aside class="ctm-sidebar employee portal-sidebar cep-sidebar">
+                <div class="ctm-employee-brand"><i class="fa fa-user-circle"/><strong>EMPLOYEE PORTAL</strong><small t-esc="state.employeeData?.employee || 'Employee'"/></div>
+                <button t-att-class="'ctm-nav ' + (state.page === 'dashboard' ? 'active' : '')" t-on-click="() => this.setPage('dashboard')"><i class="fa fa-home"/>Dashboard</button>
+                <button class="ctm-nav"><i class="fa fa-tasks"/>My Tasks</button>
+                <button class="ctm-nav ctm-section-toggle" t-on-click="() => this.toggleSection('profile')"><i class="fa fa-user-o"/><strong>My Profile</strong><i t-att-class="'fa ctm-chevron ' + (state.profileOpen ? 'fa-chevron-up' : 'fa-chevron-down')"/></button>
+                <div t-if="state.profileOpen" class="ctm-nav-children"><button class="ctm-nav"><i class="fa fa-id-card-o"/>Personal Information</button><button class="ctm-nav"><i class="fa fa-briefcase"/>Work History</button></div>
+
+                <t t-if="portalModules.leave">
+                    <button class="ctm-nav ctm-section-toggle" t-on-click="() => this.toggleSection('leave')"><i class="fa fa-calendar-o"/><strong>Leave Management</strong><i t-att-class="'fa ctm-chevron ' + (state.leaveOpen ? 'fa-chevron-up' : 'fa-chevron-down')"/></button>
+                    <div t-if="state.leaveOpen" class="ctm-nav-children">
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leave' ? 'active' : '')" t-on-click="() => this.setPage('leave')"><i class="fa fa-calendar-plus-o"/>Apply for Leave</button>
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leaveRequests' ? 'active' : '')" t-on-click="() => this.setPage('leaveRequests')"><i class="fa fa-file-text-o"/>My Leave Requests</button>
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leave' ? 'active' : '')" t-on-click="() => this.setPage('leave')"><i class="fa fa-pie-chart"/>Leave Balance</button>
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leaveCalendar' ? 'active' : '')" t-on-click="() => this.setPage('leaveCalendar')"><i class="fa fa-calendar"/>Leave Calendar</button>
+                    </div>
+                </t>
+
+                <t t-if="portalModules.time">
+                    <button class="ctm-nav ctm-section-toggle" t-on-click="() => this.toggleSection('time')"><i class="fa fa-clock-o"/><strong>Time &amp; Attendance</strong><i t-att-class="'fa ctm-chevron ' + (state.timeOpen ? 'fa-chevron-up' : 'fa-chevron-down')"/></button>
+                    <div t-if="state.timeOpen" class="ctm-nav-children">
+                        <t t-if="featureAccess.attendance"><button t-att-class="'ctm-nav ' + (state.page === 'clock' ? 'active' : '')" t-on-click="() => this.setPage('clock')"><i class="fa fa-clock-o"/>Clock In/Out</button><button t-att-class="'ctm-nav ' + (state.page === 'history' ? 'active' : '')" t-on-click="() => this.setPage('history')"><i class="fa fa-calendar-check-o"/>My Attendance</button><button t-att-class="'ctm-nav ' + (state.page === 'regularizations' ? 'active' : '')" t-on-click="() => this.setPage('regularizations')"><i class="fa fa-pencil-square-o"/>My Correction Requests</button></t>
+                        <button t-if="featureAccess.overtime" t-att-class="'ctm-nav ' + (state.page === 'overtime' ? 'active' : '')" t-on-click="() => this.setPage('overtime')"><i class="fa fa-hourglass-half"/>Overtime Requests</button>
+                    </div>
+                </t>
+            </aside>
+
+            <main class="cep-main">
+                <t t-if="state.page === 'dashboard' and state.employeeData">
+                    <header class="cep-heading"><h1>Employee Portal</h1><p>Your personal HR workspace</p></header>
+                    <section class="ctm-portal-welcome"><div><h2>Welcome back, <t t-esc="state.employeeData.employee"/>!</h2><p>Access the employee services included in your company subscription.</p></div><button t-if="featureAccess.attendance" t-on-click="() => this.setPage('clock')"><i class="fa fa-clock-o"/> Clock In / Out</button></section>
+                    <div class="ctm-time-dashboard-grid">
+                        <article t-if="featureAccess.attendance" class="today"><div class="ctm-widget-title"><i class="fa fa-clock-o"/><span>Today's Status</span></div><strong t-esc="state.employeeData.attendance_state === 'checked_in' ? 'Clocked In' : 'Not yet clocked in'"/><small>Hours today: <t t-esc="state.employeeData.today?.hours || 0"/>h</small><div class="ctm-widget-actions"><button t-on-click="() => this.setPage('clock')">Open Attendance</button></div></article>
+                        <article t-if="featureAccess.shift" class="shift"><div class="ctm-widget-title"><i class="fa fa-calendar"/><span>My Shift</span></div><strong t-esc="state.employeeData.shift.name"/><small><t t-esc="state.employeeData.shift.break_minutes"/> minute break</small><div class="ctm-widget-actions"><button t-on-click="() => this.setPage('clock')">View Time Workspace</button></div></article>
+                        <article t-if="featureAccess.tracking" class="timesheet"><div class="ctm-widget-title"><i class="fa fa-list-alt"/><span>This Week Timesheet</span></div><strong><t t-esc="state.employeeData.summary.weekly_timesheet_hours"/> / <t t-esc="state.employeeData.summary.weekly_expected_hours"/> hrs</strong><div class="ctm-progress"><span t-att-style="'width:' + state.employeeData.summary.weekly_timesheet_percent + '%'"/></div><small><t t-esc="state.employeeData.summary.weekly_timesheet_percent"/>% complete</small></article>
+                        <article t-if="featureAccess.overtime" class="overtime"><div class="ctm-widget-title"><i class="fa fa-hourglass-half"/><span>Overtime</span></div><strong><t t-esc="state.employeeData.summary.monthly_overtime_hours"/> hrs</strong><small>This month</small><div class="ctm-widget-actions"><button t-on-click="() => this.setPage('overtime')">Request OT</button></div></article>
+                    </div>
+                </t>
+                <t t-elif="state.page === 'leave'"><EmployeeLeaveDashboard embedded="true"/></t>
+                <t t-elif="state.page === 'leaveRequests'"><MyLeaveRequestsPage embedded="true"/></t>
+                <t t-elif="state.page === 'leaveCalendar'"><LeaveCalendarPage embedded="true" forceEmployee="true"/></t>
+                <t t-else=""><TimeManagementApp t-key="state.page" action="timeAction" portalEmbedded="true"/></t>
+            </main>
+        </div>
+    </t>
+</templates>

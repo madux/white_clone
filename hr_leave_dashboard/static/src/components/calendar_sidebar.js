@@ -19,7 +19,8 @@ export class CalendarSidebar extends Component {
         this.state = useState({ collapsed: localStorage.getItem("cleonhr_leave_sidebar_collapsed") === "1", isAdmin: false, employeeMode: this.props.mode === "employee", pending: 0, configOpen: true });
         onWillStart(async () => {
             this.state.isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
-            this.state.employeeMode = this.props.mode === "employee" || (!this.state.isAdmin && this.props.mode !== "admin");
+            const isEmployeeMode = window.localStorage.getItem("cleonhr_interface_mode") === "employee";
+            this.state.employeeMode = this.props.mode === "employee" || (!this.state.isAdmin && this.props.mode !== "admin") || (isEmployeeMode && this.props.mode !== "admin");
             try {
                 const data = this.state.employeeMode
                     ? await this.orm.call("hr.leave", "get_my_leave_requests", ["all", "", false])
@@ -44,9 +45,7 @@ export class CalendarSidebar extends Component {
         if (this.props.onOpenSetup) {
             this.props.onOpenSetup();
         } else {
-            this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard", {
-                additionalContext: { open_setup_wizard: true },
-            });
+            this.action.doAction("hr_leave_dashboard.action_hr_leave_get_started");
         }
     }
 
@@ -78,6 +77,6 @@ export class CalendarSidebar extends Component {
     }
 
     openSettings() {
-        this.action.doAction("hr_holidays.action_hr_holidays_configuration");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_settings_custom");
     }
 }

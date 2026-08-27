@@ -1,0 +1,11 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_cleon_approval_workflow_type_user,cleon.approval.workflow.type.user,model_cleon_approval_workflow_type,base.group_user,1,0,0,0
+access_cleon_approval_workflow_type_admin,cleon.approval.workflow.type.admin,model_cleon_approval_workflow_type,cleon_approval.group_cleon_approval_manager,1,1,1,1
+access_cleon_approval_chain_user,cleon.approval.chain.user,model_cleon_approval_chain,base.group_user,1,0,0,0
+access_cleon_approval_chain_admin,cleon.approval.chain.admin,model_cleon_approval_chain,cleon_approval.group_cleon_approval_manager,1,1,1,1
+access_cleon_approval_step_user,cleon.approval.step.user,model_cleon_approval_step,base.group_user,1,0,0,0
+access_cleon_approval_step_admin,cleon.approval.step.admin,model_cleon_approval_step,cleon_approval.group_cleon_approval_manager,1,1,1,1
+access_cleon_approval_instance_user,cleon.approval.instance.user,model_cleon_approval_instance,base.group_user,1,0,0,0
+access_cleon_approval_instance_admin,cleon.approval.instance.admin,model_cleon_approval_instance,cleon_approval.group_cleon_approval_manager,1,1,1,1
+access_cleon_approval_instance_step_user,cleon.approval.instance.step.user,model_cleon_approval_instance_step,base.group_user,1,0,0,0
+access_cleon_approval_instance_step_admin,cleon.approval.instance.step.admin,model_cleon_approval_instance_step,cleon_approval.group_cleon_approval_manager,1,1,1,1

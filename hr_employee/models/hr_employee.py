@@ -16,15 +16,22 @@ class HrEmployee(models.Model):
 
     @api.constrains('employee_number')
     def _check_duplicate_employee_number(self):
-        employee = self.env['hr.employee'].sudo()
-        if self.employee_number not in ["", False]:
-            duplicate_employee = employee.search([('employee_number', '=', self.employee_number)], limit=2)
-            if len([r for r in duplicate_employee]) > 1:
-                raise ValidationError("Employee with same staff ID already existing")
+        for record in self.filtered('employee_number'):
+            duplicate_count = self.sudo().search_count([
+                ('id', '!=', record.id),
+                ('employee_number', '=', record.employee_number),
+            ], limit=1)
+            if duplicate_count:
+                raise ValidationError(_(
+                    "Staff Number %(number)s is already assigned to another employee.",
+                    number=record.employee_number,
+                ))
 
     employee_number = fields.Char(
-        string="Staff Number", 
-        )
+        string="Staff Number",
+        copy=False,
+        index=True,
+    )
 
     @api.model
     def get_employee_profile_dashboard(self):
@@ -145,7 +152,6 @@ class HrEmployee(models.Model):
     mother_phone = fields.Char(string="Mother's Phone")
     manager = fields.Boolean(string="Is a Manager")
 
-    employee_number = fields.Char(string="Staff Number")
     awardee_id = fields.Many2one('hr.employee', string="Awardee")
     awardee_job_id = fields.Char(related="awardee_id.job_id.name")
 

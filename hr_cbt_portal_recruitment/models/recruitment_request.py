@@ -14,19 +14,9 @@ class HRJobRecruitmentRequest(models.Model):
 		return self.env.user.employee_id.department_id
 	
 	name = fields.Char(string='Subject', size=512, required=False,
-			   help='The subject of the recruitment request. E.g. Two new salesmen are requested for a new sales strategy',
-			   states={'confirmed': [('readonly', True)],
-				   'accepted':[('readonly', True)],
-				   'recruiting':[('readonly', True)],
-				   'done':[('readonly', True)]
-				   },)
+			   help='The subject of the recruitment request. E.g. Two new salesmen are requested for a new sales strategy')
 	
 	job_id = fields.Many2one('hr.job', string='Requested Position',
-				 states={'confirmed': [('readonly', True)],
-					 'accepted':[('readonly', True)],
-					 'recruiting':[('readonly', True)],
-					 'done':[('readonly', True)]
-					 },
 				 help='The Job Position you expected to get more hired.',
 				 )
 	memo_id = fields.Integer(string="Request ID")
@@ -36,21 +26,13 @@ class HRJobRecruitmentRequest(models.Model):
 				  ], string='Recruitment Mode', index=True,
 				 copy=False,
 				 readonly=True,
-				 store=True,
-				 states={'draft': [('required', True)],
-					 'draft':[('readonly', False)],
-					 })
+				 store=True)
 	
 	job_tmp = fields.Char(string="Job Title",
 			  size=256,
 			  help='If you don\'t select the requested position in the field above, you must specify a Job Title here. Upon this request is approved, the system can automatically create a new Job position and attach it to this request.')
 	department_id = fields.Many2one('hr.department',
 					string='Department',
-					states={'confirmed': [('readonly', True)],
-						'accepted':[('readonly', True)],
-						'recruiting':[('readonly', True)],
-						'done':[('readonly', True)]
-						},
 					default=_get_default_dept,
 					required=False,
 					index=True
@@ -62,11 +44,6 @@ class HRJobRecruitmentRequest(models.Model):
 					#   compute='_count_dept_employees', required=False)
 	expected_employees = fields.Integer('Expected Employees', default=1,
 					help='Number of extra new employees to be expected via the recruitment request.',
-					states={'confirmed': [('readonly', True)],
-						'accepted':[('readonly', True)],
-						'recruiting':[('readonly', True)],
-						'done':[('readonly', True)]
-						},
 					required=False,
 					index=True
 					)
@@ -75,23 +52,16 @@ class HRJobRecruitmentRequest(models.Model):
 	description = fields.Text('Job Description',
 				  help='Please describe the job',
 				  readonly=False,
-				  states={'done':[('readonly', True)]},
 				  required=False
 				  )
 	requirements = fields.Text('Job Requirements',
 				   help='Please specify your requirements on new employees',
 				   readonly=False,
-				   states={'done':[('readonly', True)]},
 				   required=False
 				   )
 	years_of_experience = fields.Char('Years of Experience')
 	reason = fields.Text('Reason',
 			 help='Please explain why you request to recruit more employee(s) for your department',
-			 states={'confirmed': [('readonly', True)],
-				 'accepted':[('readonly', True)],
-				 'recruiting':[('readonly', True)],
-				 'done':[('readonly', True)]
-				 },
 			 required=False
 			 )
 	state = fields.Selection([
@@ -266,6 +236,6 @@ class HRJobRecruitmentRequest(models.Model):
 	def action_export_score_sheet(self):
 		"""Used to export the panelist score sheet"""
 		# TODO: to be done by paul
-		pass 
-		
+		pass
+
 		

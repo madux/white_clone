@@ -53,7 +53,13 @@ class HrLeaveBalanceTransaction(models.Model):
 
     @api.model
     def _employee_code(self, employee):
-        return employee.employee_number or "EMP-%03d" % employee.id
+        return employee.employee_number or ""
+
+    @api.model
+    def _employee_identification(self, employee):
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
 
     @api.model
     def _balance_maps(self, employee_ids=None, leave_type_ids=None):
@@ -76,25 +82,49 @@ class HrLeaveBalanceTransaction(models.Model):
         today = fields.Date.context_today(self)
         deadline = today + timedelta(days=30)
 
-        allocations = self.env["hr.leave.allocation"].search(alloc_domain)
-        for allocation in allocations:
-            key = (allocation.employee_id.id, allocation.holiday_status_id.id)
-            allocated[key] += allocation.number_of_days
-            changed = allocation.write_date or allocation.create_date
+        allocation_rows = self.env["hr.leave.allocation"].read_group(
+            alloc_domain,
+            ["number_of_days:sum", "write_date:max"],
+            ["employee_id", "holiday_status_id"],
+            lazy=False,
+        )
+        for row in allocation_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            allocated[key] = row.get("number_of_days", 0.0)
+            changed = fields.Datetime.to_datetime(row.get("write_date"))
             if changed and (not last_updated.get(key) or changed > last_updated[key]):
                 last_updated[key] = changed
-            if allocation.date_to and today <= allocation.date_to <= deadline:
-                expiring[key] += allocation.number_of_days
-                expiry_date[key] = min(expiry_date.get(key, allocation.date_to), allocation.date_to)
 
-        leaves = self.env["hr.leave"].search(leave_domain + [("state", "in", ("confirm", "validate1", "validate"))])
-        for leave in leaves:
-            key = (leave.employee_id.id, leave.holiday_status_id.id)
-            if leave.state == "validate":
-                used[key] += leave.number_of_days
+        expiring_rows = self.env["hr.leave.allocation"].read_group(
+            alloc_domain + [("date_to", ">=", today), ("date_to", "<=", deadline)],
+            ["number_of_days:sum", "date_to:min"],
+            ["employee_id", "holiday_status_id"],
+            lazy=False,
+        )
+        for row in expiring_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            expiring[key] = row.get("number_of_days", 0.0)
+            expiry_date[key] = fields.Date.to_date(row.get("date_to"))
+
+        leave_rows = self.env["hr.leave"].read_group(
+            leave_domain + [("state", "in", ("confirm", "validate1", "validate"))],
+            ["number_of_days:sum", "write_date:max"],
+            ["employee_id", "holiday_status_id", "state"],
+            lazy=False,
+        )
+        for row in leave_rows:
+            if not row.get("employee_id") or not row.get("holiday_status_id"):
+                continue
+            key = (row["employee_id"][0], row["holiday_status_id"][0])
+            if row.get("state") == "validate":
+                used[key] += row.get("number_of_days", 0.0)
             else:
-                pending[key] += leave.number_of_days
-            changed = leave.write_date or leave.create_date
+                pending[key] += row.get("number_of_days", 0.0)
+            changed = fields.Datetime.to_datetime(row.get("write_date"))
             if changed and (not last_updated.get(key) or changed > last_updated[key]):
                 last_updated[key] = changed
 
@@ -104,8 +134,13 @@ class HrLeaveBalanceTransaction(models.Model):
             expiring[key] = min(expiring[key], max(allocated[key] - used[key], 0.0))
 
         carried = defaultdict(float)
+        carry_domain = [("company_id", "in", company_ids), ("transaction_type", "=", "carry_forward")]
+        if employee_ids:
+            carry_domain.append(("employee_id", "in", employee_ids))
+        if leave_type_ids:
+            carry_domain.append(("leave_type_id", "in", leave_type_ids))
         carry_rows = self.read_group(
-            [("company_id", "in", company_ids), ("transaction_type", "=", "carry_forward")],
+            carry_domain,
             ["delta:sum"], ["employee_id", "leave_type_id"], lazy=False,
         )
         for row in carry_rows:
@@ -118,21 +153,23 @@ class HrLeaveBalanceTransaction(models.Model):
         """Reconstruct the measurable KPI values at the end of a prior month."""
         cutoff = fields.Datetime.to_string(datetime.combine(as_of_date, time.max))
         company_ids = self.env.companies.ids
-        allocations = self.env["hr.leave.allocation"].search([
+        allocation_rows = self.env["hr.leave.allocation"].read_group([
             ("state", "=", "validate"), ("employee_id.company_id", "in", company_ids),
             ("employee_id", "in", employee_ids), ("holiday_status_id", "in", leave_type_ids),
             ("create_date", "<=", cutoff),
-        ])
-        leaves = self.env["hr.leave"].search([
+        ], ["number_of_days:sum"], ["employee_id"], lazy=False)
+        leave_rows = self.env["hr.leave"].read_group([
             ("employee_id.company_id", "in", company_ids), ("is_cancelled", "=", False),
             ("employee_id", "in", employee_ids), ("holiday_status_id", "in", leave_type_ids),
             ("state", "=", "validate"), ("create_date", "<=", cutoff),
-        ])
+        ], ["number_of_days:sum"], ["employee_id"], lazy=False)
         per_employee = defaultdict(lambda: [0.0, 0.0])
-        for allocation in allocations:
-            per_employee[allocation.employee_id.id][0] += allocation.number_of_days
-        for leave in leaves:
-            per_employee[leave.employee_id.id][1] += leave.number_of_days
+        for row in allocation_rows:
+            if row.get("employee_id"):
+                per_employee[row["employee_id"][0]][0] = row.get("number_of_days", 0.0)
+        for row in leave_rows:
+            if row.get("employee_id"):
+                per_employee[row["employee_id"][0]][1] = row.get("number_of_days", 0.0)
         allocated = sum(value[0] for value in per_employee.values())
         used = sum(value[1] for value in per_employee.values())
         return {
@@ -158,7 +195,7 @@ class HrLeaveBalanceTransaction(models.Model):
         return round(((current - previous) / previous) * 100, 1)
 
     @api.model
-    def get_balance_page_data(self, filters=None, sort=None):
+    def get_balance_page_data(self, filters=None, sort=None, pagination=None, group_by="employee"):
         self._check_balance_admin()
         filters = filters or {}
         employees = self.env["hr.employee"].search([
@@ -187,6 +224,8 @@ class HrLeaveBalanceTransaction(models.Model):
                 "key": "%s-%s" % (employee_id, type_id),
                 "employee_id": employee_id, "employee_name": employee.name,
                 "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
                 "avatar_url": "/web/image/hr.employee/%s/image_128" % employee_id,
                 "department_id": employee.department_id.id or False,
                 "department": employee.department_id.name or _("No Department"),
@@ -207,12 +246,15 @@ class HrLeaveBalanceTransaction(models.Model):
             })
 
         search = (filters.get("search") or "").strip().lower()
+        employee_search = (filters.get("employee_search") or "").strip().lower()
         department_ids = {int(x) for x in filters.get("department_ids", [])}
         location_ids = {int(x) for x in filters.get("location_ids", [])}
         type_ids = {int(x) for x in filters.get("leave_type_ids", [])}
         policy_ids = {int(x) for x in filters.get("policy_ids", [])}
         if search:
-            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower()]
+            rows = [r for r in rows if search in r["employee_name"].lower() or search in r["employee_code"].lower() or search in (r.get("identification_id") or "").lower()]
+        if employee_search:
+            rows = [r for r in rows if employee_search in r["employee_name"].lower() or employee_search in r["employee_code"].lower() or employee_search in (r.get("identification_id") or "").lower()]
         if department_ids:
             rows = [r for r in rows if r["department_id"] in department_ids]
         if location_ids:
@@ -221,13 +263,20 @@ class HrLeaveBalanceTransaction(models.Model):
             rows = [r for r in rows if r["leave_type_id"] in type_ids]
         if policy_ids:
             rows = [r for r in rows if r["leave_type_id"] in policy_ids]
+        quick_type_id = filters.get("quick_leave_type_id")
+        if quick_type_id:
+            rows = [r for r in rows if r["leave_type_id"] == int(quick_type_id)]
         if filters.get("expiring_only"):
             rows = [r for r in rows if r["expiring_days"] > 0]
 
         sort = sort or {"field": "employee_name", "direction": "asc"}
         allowed_sort = {"employee_name", "department", "used", "remaining", "last_updated"}
         sort_field = sort.get("field") if sort.get("field") in allowed_sort else "employee_name"
-        rows.sort(key=lambda r: (r.get(sort_field) is None, r.get(sort_field) or ""), reverse=sort.get("direction") == "desc")
+        if sort_field in ("used", "remaining"):
+            sort_key = lambda row: float(row.get(sort_field) or 0.0)
+        else:
+            sort_key = lambda row: (row.get(sort_field) or "").lower()
+        rows.sort(key=sort_key, reverse=sort.get("direction") == "desc")
         unique_employees = {r["employee_id"] for r in rows}
         kpis = {
             "total_employees": len(unique_employees),
@@ -247,13 +296,121 @@ class HrLeaveBalanceTransaction(models.Model):
             "remaining_trend_pct": self._pct_change(kpis["remaining"], previous["remaining"]),
             "negative_employees_trend": kpis["negative_employees"] - previous["negative_employees"],
         })
+        group_by = group_by if group_by in ("employee", "leave_type", "none") else "employee"
+        groups = self._group_balance_rows(rows, group_by, sort) if group_by != "none" else []
+        pagination = pagination or {}
+        page_size = int(pagination.get("page_size", 10) or 0)
+        page_size = 0 if page_size == 0 else min(max(page_size, 10), 100)
+        page = max(int(pagination.get("page", 1) or 1), 1)
+        source = groups if group_by != "none" else rows
+        total_items = len(source)
+        total_pages = max((total_items + page_size - 1) // page_size, 1) if page_size else 1
+        page = min(page, total_pages)
+        if page_size:
+            page_source = source[(page - 1) * page_size:page * page_size]
+        else:
+            page_source = source
+        page_groups = page_source if group_by != "none" else []
         return {
-            "rows": rows, "kpis": kpis,
+            # Group children already live inside ``groups``; avoid serialising
+            # the same rows twice in grouped mode.
+            "rows": page_source if group_by == "none" else [],
+            "groups": page_groups, "kpis": kpis,
+            "pagination": {
+                "page": page, "page_size": page_size or total_items or 10,
+                "total_items": total_items, "total_pages": total_pages,
+                "item_label": _("groups") if group_by != "none" else _("records"),
+            },
             "departments": [{"id": d.id, "name": d.name} for d in employees.mapped("department_id").sorted("name")],
             "locations": [{"id": l.id, "name": l.name} for l in employees.mapped("work_location_id").sorted("name")],
             "grades": [{"id": g.id, "name": g.name} for g in employees.mapped("grade_id").sorted("name")],
             "leave_types": [{"id": t.id, "name": t.name, "color_hex": t.cleon_color_hex or "#64748B"} for t in leave_types],
         }
+
+    @api.model
+    def _group_balance_rows(self, rows, group_by, sort):
+        groups = []
+        group_map = {}
+        for row in rows:
+            if group_by == "employee":
+                key = "emp_%s" % row["employee_id"]
+                meta = {
+                    "type": "employee", "id": row["employee_id"],
+                    "name": row["employee_name"], "code": row["employee_code"],
+                    "employee_number": row.get("employee_number") or "",
+                    "identification_id": row.get("identification_id") or "",
+                    "avatar_url": row["avatar_url"], "department": row["department"],
+                }
+            else:
+                key = "lt_%s" % row["leave_type_id"]
+                meta = {
+                    "type": "leave_type", "id": row["leave_type_id"],
+                    "name": row["leave_type"], "color_hex": row["color_hex"],
+                }
+            if key not in group_map:
+                group = {
+                    "key": key, "meta": meta, "rows": [],
+                    "totals": {
+                        "allocated": 0.0, "used": 0.0, "pending": 0.0,
+                        "remaining": 0.0, "carried_forward": 0.0,
+                        "expiry_countdown": False, "last_updated": "",
+                    },
+                }
+                group_map[key] = group
+                groups.append(group)
+            group = group_map[key]
+            group["rows"].append(row)
+            for field_name in ("allocated", "used", "pending", "remaining", "carried_forward"):
+                group["totals"][field_name] = round(
+                    group["totals"][field_name] + float(row.get(field_name) or 0.0), 2,
+                )
+            countdown = row.get("expiry_countdown")
+            current = group["totals"]["expiry_countdown"]
+            if countdown is not False and (current is False or countdown < current):
+                group["totals"]["expiry_countdown"] = countdown
+            if row.get("last_updated", "") > group["totals"]["last_updated"]:
+                group["totals"]["last_updated"] = row["last_updated"]
+        for group in groups:
+            allocated_days = group["totals"]["allocated"]
+            ratio = group["totals"]["remaining"] / allocated_days if allocated_days else 0
+            group["health"] = "green" if ratio >= .5 else ("amber" if ratio >= .25 else "red")
+        sort_field = (sort or {}).get("field", "employee_name")
+        reverse = (sort or {}).get("direction") == "desc"
+        if sort_field in ("used", "remaining"):
+            groups.sort(
+                key=lambda group: group["totals"].get(sort_field) or 0,
+                reverse=reverse,
+            )
+        elif sort_field == "last_updated":
+            groups.sort(
+                key=lambda group: group["totals"].get("last_updated") or "",
+                reverse=reverse,
+            )
+        elif group_by == "employee" and sort_field == "department":
+            groups.sort(key=lambda group: group["meta"]["department"].lower(), reverse=reverse)
+        else:
+            groups.sort(key=lambda group: group["meta"]["name"].lower(), reverse=reverse)
+        return groups
+
+    @api.model
+    def get_balance_employee_options(self):
+        """Load allocation candidates on demand instead of with every balance page."""
+        self._check_balance_admin()
+        employees = self.env["hr.employee"].search([
+            ("company_id", "in", self.env.companies.ids), ("active", "=", True),
+        ], order="name, id")
+        return [{
+            "employee_id": employee.id,
+            "employee_name": employee.name,
+            "employee_code": self._employee_code(employee),
+            "employee_number": employee.employee_number or "",
+            "identification_id": self._employee_identification(employee),
+            "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+            "department_id": employee.department_id.id or False,
+            "department": employee.department_id.name or _("No Department"),
+            "grade_id": employee.grade_id.id if employee.grade_id else False,
+            "grade": employee.grade_id.name if employee.grade_id else "",
+        } for employee in employees]
 
     @api.model
     def _current_balance(self, employee_id, leave_type_id):
@@ -431,9 +588,16 @@ class HrLeaveBalanceTransaction(models.Model):
                 "approved_on": fields.Date.to_string(leave.write_date.date()) if status == "approved" and leave.write_date else "",
             })
         return {
-            "employee": {"id": employee.id, "name": employee.name, "code": self._employee_code(employee),
-                         "department": employee.department_id.name or _("No Department"),
-                         "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id},
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "code": self._employee_code(employee),
+                "employee_code": self._employee_code(employee),
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
+                "department": employee.department_id.name or _("No Department"),
+                "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
+            },
             "requests": requests,
             "summary": {
                 "approved": len([r for r in requests if r["status"] == "approved"]),
@@ -495,7 +659,7 @@ class HrLeaveBalanceTransaction(models.Model):
         """Process carry-forward for all employees with a remaining balance.
 
         For each (employee, leave_type) pair where the leave type allows carry
-        forward (``allow_carryforward`` = True on hr.leave.type) and the
+        forward (``allow_carryover`` = True on hr.leave.type) and the
         remaining balance > 0, create a new validated allocation dated from
         today to end of current year representing the carried-over balance.
         Returns the count of employees processed.
@@ -507,7 +671,7 @@ class HrLeaveBalanceTransaction(models.Model):
         # Leave types that allow carry-forward
         carry_types = self.env["hr.leave.type"].search([
             ("active", "=", True),
-            ("allow_carryforward", "=", True),
+            ("allow_carryover", "=", True),
             ("company_id", "in", self.env.companies.ids),
         ])
         if not carry_types:
@@ -528,20 +692,30 @@ class HrLeaveBalanceTransaction(models.Model):
             for lt in carry_types:
                 key = (emp.id, lt.id)
                 remaining = allocated.get(key, 0.0) - used.get(key, 0.0)
-                cap = getattr(lt, "carryforward_cap", 0.0) or 0.0
+                cap = lt.max_carryover_days or 0.0
                 carry_amount = min(remaining, cap) if cap else remaining
                 if carry_amount <= 0:
                     continue
-                self.env["hr.leave.allocation"].create({
+                allocation = self.env["hr.leave.allocation"].create({
                     "private_name": _("Carry-forward %s") % today.year,
                     "holiday_type": "employee",
                     "employee_id": emp.id,
                     "holiday_status_id": lt.id,
                     "number_of_days": round(carry_amount, 2),
                     "date_from": today,
-                    "date_to": year_end,
+                    "date_to": (
+                        today + timedelta(days=90)
+                        if lt.carryover_expiry_rule == "three_months"
+                        else today + timedelta(days=180)
+                        if lt.carryover_expiry_rule == "six_months"
+                        else fields.Date.end_of(today + timedelta(days=366), "year")
+                        if lt.carryover_expiry_rule == "end_next_year"
+                        else False
+                    ),
                     "notes": _("Automatic carry-forward processed on %s") % fields.Date.to_string(today),
                 })
+                if allocation.state != "validate":
+                    allocation.action_validate()
                 affected.add(emp.id)
                 self.env["hr.leave.audit.log"].sudo().create({
                     "action": "policy_change",

@@ -9,7 +9,9 @@
         sequence="10" />
         <record id="hr_administration.hr_admin_exployee_experience" model="ir.ui.menu">
             <field name="icon_class">fa fa-building</field>
+            <field name="icon_color">#8B5CF6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">10</field>
         </record>
 
 
@@ -22,7 +24,9 @@
     />
     <record id="hr_administration.hr_admin_workforce_lifecycle" model="ir.ui.menu">
             <field name="icon_class">fa fa-users</field>
+            <field name="icon_color">#06B6D4</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">20</field>
         </record>
 
 
@@ -34,8 +38,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_staff_directory" model="ir.ui.menu">
-            <field name="icon_class">fa fa-users</field>
+            <field name="icon_class">fa fa-id-badge</field>
+            <field name="icon_color">#22C55E</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">30</field>
         </record>
 
     <menuitem
@@ -46,8 +52,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_time_mgt" model="ir.ui.menu">
-            <field name="icon_class">fa fa-users</field>
+            <field name="icon_class">fa fa-clock-o</field>
+            <field name="icon_color">#14B8A6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">40</field>
         </record>
 
 
@@ -59,8 +67,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_document_management" model="ir.ui.menu">
-            <field name="icon_class">fa fa-users</field>
+            <field name="icon_class">fa fa-file-text-o</field>
+            <field name="icon_color">#3B82F6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">80</field>
         </record>
 
 
@@ -72,8 +82,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_company_documentary" model="ir.ui.menu">
-            <field name="icon_class">fa fa-users</field>
+            <field name="icon_class">fa fa-file-text</field>
+            <field name="icon_color">#22C55E</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">90</field>
         </record>
     <menuitem
         id="hr_admin_asset_management"
@@ -83,8 +95,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_asset_management" model="ir.ui.menu">
-            <field name="icon_class">fa fa-money</field>
+            <field name="icon_class">fa fa-cubes</field>
+            <field name="icon_color">#F97316</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">100</field>
         </record>
 
     <menuitem
@@ -95,8 +109,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_compensation" model="ir.ui.menu">
-            <field name="icon_class">fa fa-card</field>
+            <field name="icon_class">fa fa-money</field>
+            <field name="icon_color">#14B8A6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">110</field>
         </record>
 
     <menuitem
@@ -107,8 +123,10 @@
         parent="hr_administration.hr_administration_dashboard"
     />
     <record id="hr_administration.hr_admin_social_gallery" model="ir.ui.menu">
-            <field name="icon_class">fa fa-card</field>
+            <field name="icon_class">fa fa-picture-o</field>
+            <field name="icon_color">#8B5CF6</field>
             <field name="category_name">CleonHR-HR Admin</field>
+            <field name="sequence">120</field>
         </record>
     
 </odoo>

@@ -44,6 +44,8 @@ export class LeaveTypesPage extends Component {
             editingLeaveType: null,
 
             exportDropdownOpen: false,
+            importDropdownOpen: false,
+            loadError: "",
             draggedLeaveTypeId: null,
 
             helpModalOpen: false,
@@ -66,6 +68,7 @@ export class LeaveTypesPage extends Component {
 
     async loadData() {
         this.state.loading = true;
+        this.state.loadError = "";
         try {
             const typesData = await this.orm.call("hr.leave.type", "get_leave_types_list_data", []);
             this.state.leaveTypes = typesData || [];
@@ -78,6 +81,7 @@ export class LeaveTypesPage extends Component {
             this.state.locations = await this.safeSearchRead("hr.work.location");
         } catch (err) {
             console.error("Failed to load leave types data", err);
+            this.state.loadError = err.message || "Leave types could not be loaded.";
             this.notification.add("Failed to load leave types configuration.", { type: "danger" });
         } finally {
             this.state.loading = false;
@@ -360,6 +364,21 @@ export class LeaveTypesPage extends Component {
 
     toggleExportDropdown() {
         this.state.exportDropdownOpen = !this.state.exportDropdownOpen;
+    }
+
+    toggleImportDropdown() {
+        this.state.importDropdownOpen = !this.state.importDropdownOpen;
+    }
+
+    async importStarterPack(pack) {
+        this.state.importDropdownOpen = false;
+        try {
+            const result = await this.orm.call("hr.leave.type", "import_leave_type_pack", [pack]);
+            this.notification.add(result.message, { type: "success" });
+            await this.loadData();
+        } catch (error) {
+            this.notification.add(error.message || "The starter pack could not be imported.", { type: "danger" });
+        }
     }
 
     exportLeaveTypes(format) {

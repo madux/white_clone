@@ -19,6 +19,7 @@
     'website': '',
     'depends': [
         'base',
+        'base_addons',
         'hr',
         'cleon_settings',
         # 'hr_contract',

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useRef, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useRef, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 export class LeaveTypeFormModal extends Component {
@@ -30,6 +30,10 @@ export class LeaveTypeFormModal extends Component {
             errors: {},
             saving: false,
             showDiscardPrompt: false,
+            employeeTypePickerOpen: false,
+            employeeTypeSearch: "",
+            locationPickerOpen: false,
+            locationSearch: "",
             expandedSections: {
                 basic: true,
                 settings: true,
@@ -38,6 +42,10 @@ export class LeaveTypeFormModal extends Component {
                 advanced: true,
             },
         });
+
+        this.onDocumentClick = this.onDocumentClick.bind(this);
+        onMounted(() => document.addEventListener("click", this.onDocumentClick));
+        onWillUnmount(() => document.removeEventListener("click", this.onDocumentClick));
 
         this.initialSnapshot = JSON.stringify(this.serializeForm(this.state.form));
     }
@@ -65,6 +73,7 @@ export class LeaveTypeFormModal extends Component {
                 minimumServiceMonths: 0,
 
                 accrualMethod: "year_start",
+                monthlyAccrualRate: 0,
                 tenureBasedAccrual: false,
                 tenureTiers: [{ id: "temp_1", year_from: 1, year_to: 5, days_per_year: 20 }],
 
@@ -75,12 +84,21 @@ export class LeaveTypeFormModal extends Component {
                 suspensionUnauthorizedAbsence: false,
 
                 allowCarryForward: true,
+                maxCarryoverDays: 5,
+                carryoverExpiryRule: "never",
                 allowEncashment: false,
                 maxBalanceCap: 0,
 
                 approvalWorkflow: "single",
+                approvalStages: [
+                    { id: `stage_${Date.now()}_1`, approver_type: "direct_manager", escalation_value: 2, escalation_unit: "days" },
+                    { id: `stage_${Date.now()}_2`, approver_type: "hr_manager", escalation_value: 2, escalation_unit: "days" },
+                ],
                 supportingDocumentPolicy: "never",
                 minimumNoticeDays: 0,
+                minimumRequestDays: 0,
+                advanceBookingDays: 0,
+                retroactiveRequestDays: 0,
                 allowHalfDay: true,
 
                 maxConsecutiveDays: 0,
@@ -122,6 +140,7 @@ export class LeaveTypeFormModal extends Component {
             minimumServiceMonths: data.minimum_service_months || 0,
 
             accrualMethod: data.accrual_method || "year_start",
+            monthlyAccrualRate: data.monthly_accrual_rate || 0,
             tenureBasedAccrual: Boolean(data.tenure_based_accrual),
             tenureTiers: data.tenure_tiers && data.tenure_tiers.length
                 ? [...data.tenure_tiers]
@@ -134,12 +153,20 @@ export class LeaveTypeFormModal extends Component {
             suspensionUnauthorizedAbsence: Boolean(data.suspension_unauthorized_absence),
 
             allowCarryForward: data.allow_carry_forward !== undefined ? Boolean(data.allow_carry_forward) : true,
+            maxCarryoverDays: data.max_carryover_days || 0,
+            carryoverExpiryRule: data.carryover_expiry_rule || "never",
             allowEncashment: Boolean(data.allow_encashment),
             maxBalanceCap: data.max_balance_cap || 0,
 
             approvalWorkflow: data.approval_workflow || "single",
+            approvalStages: data.approval_stages && data.approval_stages.length
+                ? data.approval_stages.map(stage => ({ ...stage }))
+                : [{ id: `stage_${Date.now()}`, approver_type: "direct_manager", escalation_value: 2, escalation_unit: "days" }],
             supportingDocumentPolicy: data.supporting_document_policy || "never",
             minimumNoticeDays: data.minimum_notice_days || 0,
+            minimumRequestDays: data.minimum_request_days || 0,
+            advanceBookingDays: data.advance_booking_days || 0,
+            retroactiveRequestDays: data.retroactive_request_days || 0,
             allowHalfDay: data.allow_half_day !== undefined ? Boolean(data.allow_half_day) : true,
 
             maxConsecutiveDays: data.max_consecutive_days || 0,
@@ -174,6 +201,7 @@ export class LeaveTypeFormModal extends Component {
             locationIds: f.locationIds,
             minimumServiceMonths: f.minimumServiceMonths,
             accrualMethod: f.accrualMethod,
+            monthlyAccrualRate: f.monthlyAccrualRate,
             tenureBasedAccrual: f.tenureBasedAccrual,
             tenureTiers: f.tenureTiers,
             suspensionUnpaidLeave: f.suspensionUnpaidLeave,
@@ -182,11 +210,17 @@ export class LeaveTypeFormModal extends Component {
             suspensionProbation: f.suspensionProbation,
             suspensionUnauthorizedAbsence: f.suspensionUnauthorizedAbsence,
             allowCarryForward: f.allowCarryForward,
+            maxCarryoverDays: f.maxCarryoverDays,
+            carryoverExpiryRule: f.carryoverExpiryRule,
             allowEncashment: f.allowEncashment,
             maxBalanceCap: f.maxBalanceCap,
             approvalWorkflow: f.approvalWorkflow,
+            approvalStages: f.approvalStages,
             supportingDocumentPolicy: f.supportingDocumentPolicy,
             minimumNoticeDays: f.minimumNoticeDays,
+            minimumRequestDays: f.minimumRequestDays,
+            advanceBookingDays: f.advanceBookingDays,
+            retroactiveRequestDays: f.retroactiveRequestDays,
             allowHalfDay: f.allowHalfDay,
             maxConsecutiveDays: f.maxConsecutiveDays,
             allowNegativeBalance: f.allowNegativeBalance,
@@ -208,6 +242,14 @@ export class LeaveTypeFormModal extends Component {
         ];
     }
 
+    get hasMinimumServicePeriod() {
+        return Number(this.state.form.minimumServiceMonths || 0) > 0;
+    }
+
+    get monthlyAnnualEquivalent() {
+        return (Number(this.state.form.monthlyAccrualRate || 0) * 12).toFixed(1);
+    }
+
     selectPresetColor(hex) {
         this.state.form.colorHex = hex;
     }
@@ -219,6 +261,78 @@ export class LeaveTypeFormModal extends Component {
     onMultiSelectChange(field, ev) {
         const selectedOptions = Array.from(ev.target.selectedOptions).map(o => Number(o.value));
         this.state.form[field] = selectedOptions;
+    }
+
+    getSelectedMultiItems(field, items) {
+        const selected = this.state.form[field] || [];
+        return items.filter(item => selected.includes(Number(item.id)));
+    }
+
+    getAvailableMultiItems(field, items, search = "") {
+        const selected = this.state.form[field] || [];
+        const query = search.trim().toLowerCase();
+        return items.filter(item => (
+            !selected.includes(Number(item.id)) &&
+            (!query || (item.name || "").toLowerCase().includes(query))
+        ));
+    }
+
+    toggleMultiPicker(picker) {
+        const isEmployeeType = picker === "employeeType";
+        const willOpen = isEmployeeType
+            ? !this.state.employeeTypePickerOpen
+            : !this.state.locationPickerOpen;
+        this.state.employeeTypePickerOpen = isEmployeeType
+            ? willOpen
+            : false;
+        this.state.locationPickerOpen = isEmployeeType
+            ? false
+            : willOpen;
+        if (willOpen) {
+            requestAnimationFrame(() => {
+                this.modalBodyRef.el?.querySelector(".leave-m2m-dropdown input")?.focus();
+            });
+        }
+    }
+
+    closeMultiPickers() {
+        this.state.employeeTypePickerOpen = false;
+        this.state.locationPickerOpen = false;
+        this.state.employeeTypeSearch = "";
+        this.state.locationSearch = "";
+    }
+
+    onDocumentClick(ev) {
+        if (!ev.target.closest(".leave-m2m")) {
+            this.closeMultiPickers();
+        }
+    }
+
+    onMultiPickerKeydown(ev) {
+        if (ev.key === "Escape") {
+            this.closeMultiPickers();
+        }
+    }
+
+    addMultiValue(field, value, errorKey = null) {
+        const id = Number(value);
+        const selected = this.state.form[field] || [];
+        if (!selected.includes(id)) {
+            this.state.form[field] = [...selected, id];
+        }
+        if (field === "employeeTypeIds") {
+            this.state.employeeTypeSearch = "";
+        } else if (field === "locationIds") {
+            this.state.locationSearch = "";
+        }
+        if (errorKey) {
+            delete this.state.errors[errorKey];
+        }
+    }
+
+    removeMultiValue(field, value) {
+        const id = Number(value);
+        this.state.form[field] = (this.state.form[field] || []).filter(item => item !== id);
     }
 
     addTenureTier() {
@@ -239,13 +353,36 @@ export class LeaveTypeFormModal extends Component {
         }
     }
 
+    addApprovalStage() {
+        this.state.form.approvalStages.push({
+            id: `stage_${Date.now()}`,
+            approver_type: "direct_manager",
+            escalation_value: 2,
+            escalation_unit: "days",
+        });
+    }
+
+    removeApprovalStage(index) {
+        if (this.state.form.approvalStages.length > 1) {
+            this.state.form.approvalStages.splice(index, 1);
+        }
+    }
+
+    moveApprovalStage(index, direction) {
+        const target = index + direction;
+        const stages = this.state.form.approvalStages;
+        if (target < 0 || target >= stages.length) return;
+        [stages[index], stages[target]] = [stages[target], stages[index]];
+    }
+
     get accrualSummaryPreviewText() {
         const f = this.state.form;
         const daysText = f.unlimitedEntitlement ? "Unlimited leave" : `${f.maxEntitlement} days`;
         if (f.accrualMethod === "year_start") {
             return `All ${daysText} are credited upfront at the start of each calendar year on January 1st.`;
         } else if (f.accrualMethod === "monthly") {
-            return `${daysText} accrue gradually on a monthly prorated basis throughout the year.`;
+            const annual = (Number(f.monthlyAccrualRate || 0) * 12).toFixed(1);
+            return `${f.monthlyAccrualRate || 0} days accrue monthly (${annual} days per year).`;
         } else if (f.accrualMethod === "hire_anniversary") {
             return `Leave entitlement renews on each employee's hire date anniversary.`;
         } else if (f.accrualMethod === "first_year_prorated") {
@@ -285,11 +422,29 @@ export class LeaveTypeFormModal extends Component {
         if (!f.code || !f.code.trim()) {
             f.code = (f.name || "LT").trim().substring(0, 3).toUpperCase();
         }
+        if (f.code.trim().length > 4) {
+            errors.code = "Code must contain no more than 4 characters.";
+        }
+        if (!f.unlimitedEntitlement && Number(f.maxEntitlement) <= 0) {
+            errors.entitlement = "Entitlement must be greater than zero, or mark the type as Unlimited.";
+        }
+        if (this.props.employmentTypes.length && !f.employeeTypeIds.length) {
+            errors.employmentTypes = "At least one applicable employment type is required.";
+        }
         if (!/^#[0-9A-F]{6}$/i.test((f.colorHex || "").trim())) {
             errors.colorHex = "Enter a valid six-digit hex colour, for example #3B82F6.";
         }
         if (this.props.locations && this.props.locations.length > 0 && (!f.locationIds || f.locationIds.length === 0)) {
             errors.locations = "At least one applicable location is required.";
+        }
+        if (f.accrualMethod === "monthly" && Number(f.monthlyAccrualRate) <= 0) {
+            errors.monthlyAccrualRate = "Enter a monthly accrual rate greater than zero.";
+        }
+        if (f.allowCarryForward && Number(f.maxCarryoverDays) <= 0) {
+            errors.maxCarryoverDays = "Set the maximum number of days that may be carried forward.";
+        }
+        if (f.approvalWorkflow === "multi" && !f.approvalStages.length) {
+            errors.approvalStages = "Add at least one approval stage.";
         }
 
         if (f.eligibilityScope === "departments" && f.departmentIds.length === 0) {

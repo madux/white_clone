@@ -1,0 +1,59 @@
+.ctm-overtime-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:18px 0; }
+.ctm-overtime-kpis article { position:relative; min-height:125px; padding:18px; border:1px solid #e0e5ed; border-radius:14px; background:#fff; }
+.ctm-overtime-kpis article > i { position:absolute; right:17px; top:17px; width:38px; height:38px; border-radius:12px; display:grid; place-items:center; }
+.ctm-overtime-kpis span, .ctm-overtime-kpis small { display:block; color:#748098; }
+.ctm-overtime-kpis strong { display:block; font-size:27px; margin:12px 0 4px; }
+.ctm-overtime-kpis .pink { border-left:3px solid #ec258a; }
+.ctm-overtime-kpis .pink > i { background:#fde5f1; color:#ec258a; }
+.ctm-overtime-kpis .orange { border-left:3px solid #f49318; }
+.ctm-overtime-kpis .orange > i { background:#fff0d5; color:#d97900; }
+.ctm-overtime-kpis .blue { border-left:3px solid #347df4; }
+.ctm-overtime-kpis .blue > i { background:#e6efff; color:#286fe0; }
+.ctm-overtime-kpis .green { border-left:3px solid #08af50; }
+.ctm-overtime-kpis .green > i { background:#dff8e9; color:#07933f; }
+.ctm-overtime-kpis .purple { border-left:3px solid #9343ef; }
+.ctm-overtime-table { width:100%; border-collapse:collapse; }
+.ctm-overtime-table th, .ctm-overtime-table td { padding:13px 12px; border-bottom:1px solid #e5e8ee; text-align:left; vertical-align:middle; }
+.ctm-overtime-table td > small { display:block; color:#8993a6; margin-top:4px; }
+.ctm-overtime-table .actions { white-space:nowrap; }
+.ctm-overtime-table .actions button { border:0; background:#f4f6f9; border-radius:7px; margin-right:4px; padding:7px 9px; color:#496078; }
+.ctm-overtime-table .actions .ok { color:#08a74e; }
+.ctm-overtime-table .actions .danger { color:#e52d3a; }
+.ctm-category { display:inline-block; padding:4px 9px; border-radius:12px; background:#fff0d7; color:#b46800; }
+.ctm-category.weekend { background:#e5efff; color:#2864d5; }
+.ctm-category.holiday { background:#e1f8e9; color:#087e3b; }
+.ctm-category.special, .ctm-category.on_call { background:#f0e5ff; color:#7431b8; }
+.ctm-overtime-breakdown > div { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.ctm-overtime-breakdown span { padding:18px; border-radius:10px; background:#f6f8fb; color:#748098; }
+.ctm-overtime-breakdown strong, .ctm-overtime-breakdown small { display:block; }
+.ctm-overtime-breakdown strong { font-size:24px; color:#172033; margin-top:8px; }
+.ctm-overtime-detail .ctm-info { margin-top:16px; }
+.ctm-btn.danger { border-color:#ef4b55; color:#d62d38; }
+.ctm-overtime-kpis.employee { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.ctm-my-overtime { padding:0; overflow:hidden; }
+.ctm-my-overtime > article { padding:18px 20px; border-bottom:1px solid #e5e8ee; }
+.ctm-my-overtime > article:last-child { border-bottom:0; }
+.ctm-my-overtime article > div { display:flex; align-items:center; gap:12px; }
+.ctm-my-overtime article p { margin:9px 0; color:#526078; }
+.ctm-my-overtime article small { display:block; color:#8792a7; margin-bottom:10px; }
+.ctm-overtime-form { width:min(650px,calc(100vw - 30px)); }
+.ctm-overtime-form .ctm-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:20px; }
+.ctm-overtime-form label { display:flex; flex-direction:column; gap:7px; font-weight:600; }
+.ctm-overtime-form label.full { grid-column:1/-1; }
+.ctm-overtime-form input, .ctm-overtime-form select, .ctm-overtime-form textarea { border:1px solid #d7dde7; border-radius:8px; padding:10px 12px; background:#fff; }
+.ctm-overtime-form textarea { min-height:105px; resize:vertical; }
+.ctm-overtime-form label small { color:#7d879a; font-weight:400; text-align:right; }
+.ctm-overtime-form footer { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.ctm-overtime-decision { width:min(490px,calc(100vw - 30px)); }
+.ctm-overtime-decision > p { color:#68758c; line-height:1.5; }
+.ctm-decision-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; padding:12px; margin:16px 0; border-radius:10px; background:#f6f8fb; }
+.ctm-decision-summary span, .ctm-decision-summary small, .ctm-decision-summary b { display:block; }
+.ctm-decision-summary small { color:#8490a4; margin-bottom:4px; }
+.ctm-overtime-decision > label { display:flex; flex-direction:column; gap:7px; font-weight:600; }
+.ctm-overtime-decision textarea { min-height:84px; padding:10px 12px; border:1px solid #d7dde7; border-radius:8px; resize:vertical; }
+.ctm-overtime-decision footer { display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+.ctm-btn.danger.filled { background:#e63847; border-color:#e63847; color:#fff; }
+.ctm-btn.warning.filled { background:#efa31a; border-color:#efa31a; color:#fff; }
+.icon-btn.warning { color:#d88700; }
+@media (max-width:1100px) { .ctm-overtime-kpis { grid-template-columns:1fr 1fr; } }
+@media (max-width:700px) { .ctm-overtime-kpis, .ctm-overtime-kpis.employee, .ctm-overtime-breakdown > div, .ctm-overtime-form .ctm-form-grid { grid-template-columns:1fr; } .ctm-overtime-form label.full { grid-column:auto; } .ctm-overtime-table { min-width:900px; } }

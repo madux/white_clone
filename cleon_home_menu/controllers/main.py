@@ -2,9 +2,6 @@
 import base64
 from odoo import http
 from odoo.http import request
-import logging
-
-_logger = logging.getLogger(__name__)
 
 # Same palette used in landing.py, cycled per category so the overlay
 # and the full landing page render identical colours for the same
@@ -24,16 +21,34 @@ ICON_PALETTE = [
 class HomeMenuController(http.Controller):
 
     @http.route('/home_menu/get_apps', type='json', auth='user')
-    def get_apps(self):
+    def get_apps(self, employee_mode=False, debug_mode=False):
         """
-        Return menus tagged with a CleonHR category, grouped the same
-        way /maacherp/landing groups them: a list of categories, each
-        with a colour and its app_items (including children/features).
+        Return the current user's visible CleonHR application menus.
+
+        Employee/admin interface mode controls how an application renders;
+        it must never replace the global launcher or grant/revoke menu access.
+        Odoo menu groups remain the single source of truth for visibility.
+
+        ``employee_mode`` is accepted temporarily for compatibility with a
+        browser that still has the previous asset bundle cached, but ignored.
         """
-        menus = request.env['ir.ui.menu'].sudo().search([
-            ('parent_id', '!=', False),
+        menu_model = request.env['ir.ui.menu']
+        settings_menu = request.env.ref(
+            'base.menu_administration', raise_if_not_found=False
+        )
+       
+        debug = request.session.debug if debug_mode else False
+        visible_menu_ids = menu_model._visible_menu_ids(debug)
+        menu_domain = [
+            ('id', 'in', list(visible_menu_ids)),
+            ('action', '!=', False),
             ('category_name', 'ilike', 'CleonHR'),
-        ])
+        ]
+        if settings_menu:
+            # Settings is injected below only for authorized developer-mode
+            # sessions; never let its category metadata bypass that policy.
+            menu_domain.append(('id', '!=', settings_menu.id))
+        menus = menu_model.sudo().search(menu_domain, order='sequence, id')
 
         categories = {}
         order = []
@@ -60,7 +75,7 @@ class HomeMenuController(http.Controller):
                     "url": "/web#menu_id=%s" % child.id,
                 }
                 for child in menu.child_id
-                if child.action
+                if child.action and child.id in visible_menu_ids
             ]
 
             total_modules += 1
@@ -72,7 +87,9 @@ class HomeMenuController(http.Controller):
                 "description": getattr(menu, 'description', False) or (
                     "%s tools and workflows" % menu.name
                 ),
-                "icon": menu.web_icon or False,
+                "icon": "/home_menu/get_icon/%s" % menu.id if menu.web_icon_data else False,
+                "icon_class": getattr(menu, 'icon_class', False) or "fa fa-th-large",
+                "icon_color": getattr(menu, 'icon_color', False) or "#64748B",
                 "url": "/web#menu_id=%s" % menu.id,
                 "children": children,
             })
@@ -85,10 +102,53 @@ class HomeMenuController(http.Controller):
                 "app_items": categories[name],
             })
 
+        # Settings is intentionally not a normal CleonHR business module. Make
+        # it available as a developer tool only when Odoo developer mode is
+        # active and the user is a system administrator. The checks stay on the
+        # server so changing browser state cannot expose the entry.
+        show_developer_settings = bool(debug) and request.env.user.has_group(
+            'base.group_system'
+        )
+        if show_developer_settings:
+            general_settings_menu = request.env.ref(
+                'base_setup.menu_config', raise_if_not_found=False
+            )
+            if settings_menu and settings_menu.id in visible_menu_ids:
+                settings_url = "/web#menu_id=%s" % settings_menu.id
+                if (
+                    general_settings_menu
+                    and general_settings_menu.id in visible_menu_ids
+                    and general_settings_menu.action
+                ):
+                    settings_url = "/web#action=%s&menu_id=%s" % (
+                        general_settings_menu.action.id,
+                        general_settings_menu.id,
+                    )
+                apps.append({
+                    "name": "Developer Tools",
+                    "color": "#64748B",
+                    "app_items": [{
+                        "id": settings_menu.id,
+                        "name": "Settings",
+                        "description": "System configuration and technical tools",
+                        "icon": (
+                            "/home_menu/get_icon/%s" % settings_menu.id
+                            if settings_menu.web_icon_data else False
+                        ),
+                        "icon_class": "fa fa-cog",
+                        "icon_color": "#64748B",
+                        "url": settings_url,
+                        "children": [],
+                    }],
+                })
+                total_modules += 1
+                total_features += 1
+
         return {
             "categories": apps,
             "total_modules": total_modules,
             "total_features": total_features,
+            "show_developer_settings": show_developer_settings,
         }
 
     @http.route('/home_menu/get_icon/<int:menu_id>', type='http', auth='user')

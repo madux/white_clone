@@ -17,6 +17,12 @@ class HrLeaveReportService(models.AbstractModel):
             raise AccessError(_("Only a Time Off Administrator can access leave reports."))
 
     @api.model
+    def _employee_identification(self, employee):
+        if not self.env.user.has_group("hr.group_hr_user"):
+            return ""
+        return employee.sudo().identification_id or ""
+
+    @api.model
     def _date_range(self, preset, start_date=None, end_date=None):
         today = fields.Date.context_today(self)
         if preset == "today":
@@ -150,7 +156,9 @@ class HrLeaveReportService(models.AbstractModel):
                 continue
             rows.append({
                 "id": employee.id, "name": employee.name,
-                "code": employee.employee_number or "EMP-%03d" % employee.id,
+                "code": employee.employee_number or "",
+                "employee_number": employee.employee_number or "",
+                "identification_id": self._employee_identification(employee),
                 "department": employee.department_id.name or _("No Department"),
                 "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
                 "total_days": approved_days, "requests": approved_requests,

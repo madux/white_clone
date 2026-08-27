@@ -10,11 +10,17 @@ import { EmployeeRequestModal } from "../components/employee_request_modal/emplo
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
     static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal };
+    static props = {
+        embedded: { type: Boolean, optional: true },
+        forceEmployee: { type: Boolean, optional: true },
+        "*": true,
+    };
 
     setup() {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
+        this.user = useService("user");
 
         const today = new Date();
 
@@ -25,8 +31,10 @@ export class LeaveCalendarPage extends Component {
             currentDate: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
             coverageMode: false,
             employeeView: false,
+            isAdmin: false,
 
             leaves: [],
+            holidays: [],
             leaveTypes: [],
             departments: [],
             employees: [],
@@ -60,9 +68,17 @@ export class LeaveCalendarPage extends Component {
 
             detailRequestId: null,
             employeeRequestOpen: false,
+            employeeRequestInitial: {},
+            loadError: "",
+            employeeEventFilters: ["all"],
         });
 
-        onWillStart(() => this.loadCalendarData());
+        onWillStart(async () => {
+            this.state.isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
+            const requestedEmployee = this.props.forceEmployee || this.props.action?.params?.force_employee_view || window.localStorage.getItem("cleonhr_interface_mode") === "employee";
+            this.state.employeeView = Boolean(requestedEmployee || !this.state.isAdmin);
+            await this.loadCalendarData();
+        });
     }
 
     // ---------------------------------------------------------
@@ -71,6 +87,7 @@ export class LeaveCalendarPage extends Component {
 
     async loadCalendarData() {
         this.state.loading = true;
+        this.state.loadError = "";
         try {
             if (this.state.viewMode === "year") {
                 const year = this.state.currentDate.getFullYear();
@@ -113,6 +130,7 @@ export class LeaveCalendarPage extends Component {
                 );
 
                 this.state.leaves = res.leaves || [];
+                this.state.holidays = res.holidays || [];
                 this.state.leaveTypes = res.leave_types || [];
                 this.state.departments = res.departments || [];
                 this.state.employees = res.employees || [];
@@ -120,6 +138,7 @@ export class LeaveCalendarPage extends Component {
             }
         } catch (err) {
             console.error("Failed to load leave calendar data", err);
+            this.state.loadError = "Calendar data could not be loaded. Check your connection and try again.";
             this.notification.add("Failed to load calendar data.", { type: "danger" });
         } finally {
             this.state.loading = false;
@@ -177,12 +196,24 @@ export class LeaveCalendarPage extends Component {
     }
 
     toggleAdminEmployeeView(employeeViewVal) {
+        if (!this.state.isAdmin && !employeeViewVal) return;
         this.state.employeeView = employeeViewVal;
         this.loadCalendarData();
     }
 
-    openEmployeeRequest() { this.state.employeeRequestOpen = true; }
-    closeEmployeeRequest() { this.state.employeeRequestOpen = false; }
+    openEmployeeRequest() {
+        this.state.employeeRequestInitial = {};
+        this.state.employeeRequestOpen = true;
+    }
+    openDateRequest(ymd) {
+        if (!this.state.employeeView || this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length) return;
+        this.state.employeeRequestInitial = { date_from: ymd, date_to: ymd };
+        this.state.employeeRequestOpen = true;
+    }
+    closeEmployeeRequest() {
+        this.state.employeeRequestOpen = false;
+        this.state.employeeRequestInitial = {};
+    }
 
     navigate(direction) {
         const d = new Date(this.state.currentDate);
@@ -286,7 +317,7 @@ export class LeaveCalendarPage extends Component {
         const weekStartStr = weekDays[0].ymd;
         const weekEndStr = weekDays[6].ymd;
 
-        const matchingLeaves = this.state.leaves.filter(l => l.date_from <= weekEndStr && l.date_to >= weekStartStr);
+        const matchingLeaves = this.visibleLeaves.filter(l => l.date_from <= weekEndStr && l.date_to >= weekStartStr);
 
         const segments = [];
         for (const leave of matchingLeaves) {
@@ -311,7 +342,28 @@ export class LeaveCalendarPage extends Component {
 
     // Get leaves specifically for a day cell
     getDayLeaves(ymdStr) {
-        return this.state.leaves.filter(l => l.date_from <= ymdStr && l.date_to >= ymdStr);
+        return this.visibleLeaves.filter(l => l.date_from <= ymdStr && l.date_to >= ymdStr);
+    }
+
+    getDayHolidays(ymdStr) {
+        return this.visibleHolidays.filter(h => h.date_from <= ymdStr && h.date_to >= ymdStr);
+    }
+
+    get visibleLeaves() {
+        const selected = this.state.employeeEventFilters;
+        if (!this.state.employeeView || selected.includes("all")) return this.state.leaves;
+        return this.state.leaves.filter(leave =>
+            (selected.includes("mine") && leave.is_own) ||
+            (selected.includes("team") && !leave.is_own)
+        );
+    }
+
+    get visibleHolidays() {
+        const selected = this.state.employeeEventFilters;
+        if (!this.state.employeeView || selected.includes("all") || selected.includes("holidays")) {
+            return this.state.holidays;
+        }
+        return [];
     }
 
     // Coverage tile calculations with unique absent employee count (Feedback Item 10)
@@ -361,6 +413,7 @@ export class LeaveCalendarPage extends Component {
                 dayNumber: d.getDate(),
                 isToday: dayYMD === todayStr,
                 leaves: this.getDayLeaves(dayYMD),
+                holidays: this.getDayHolidays(dayYMD),
             });
             d.setDate(d.getDate() + 1);
         }
@@ -370,6 +423,10 @@ export class LeaveCalendarPage extends Component {
     get dayViewLeaves() {
         const todayYMD = this.formatYMD(this.state.currentDate);
         return this.getDayLeaves(todayYMD);
+    }
+
+    get dayViewHolidays() {
+        return this.getDayHolidays(this.formatYMD(this.state.currentDate));
     }
 
     // ---------------------------------------------------------
@@ -489,6 +546,18 @@ export class LeaveCalendarPage extends Component {
         else list.splice(idx, 1);
     }
 
+    toggleEmployeeEventFilter(filterKey) {
+        if (filterKey === "all") {
+            this.state.employeeEventFilters = ["all"];
+            return;
+        }
+        const selected = this.state.employeeEventFilters.filter(key => key !== "all");
+        const index = selected.indexOf(filterKey);
+        if (index === -1) selected.push(filterKey);
+        else selected.splice(index, 1);
+        this.state.employeeEventFilters = selected.length ? selected : ["all"];
+    }
+
     get visibleFilterEmployees() {
         const term = (this.state.filterDraft.employeeSearch || "").trim().toLowerCase();
         if (!term) return this.state.employees;
@@ -498,6 +567,7 @@ export class LeaveCalendarPage extends Component {
     }
 
     clearAllFilters() {
+        this.state.employeeEventFilters = ["all"];
         this.state.filterDraft = {
             dateFrom: "",
             dateTo: "",
@@ -523,6 +593,9 @@ export class LeaveCalendarPage extends Component {
         count += f.leaveTypeIds.length;
         count += f.statuses.length;
         count += f.employeeIds.length;
+        if (this.state.employeeView && !this.state.employeeEventFilters.includes("all")) {
+            count += this.state.employeeEventFilters.length;
+        }
         return count;
     }
 
@@ -538,14 +611,14 @@ export class LeaveCalendarPage extends Component {
     exportCalendar(format) {
         this.state.downloadDropdownOpen = false;
 
-        if (!this.state.leaves || this.state.leaves.length === 0) {
+        if (!this.visibleLeaves || this.visibleLeaves.length === 0) {
             this.notification.add("No leave records available in current view to export.", { type: "warning" });
             return;
         }
 
         if (format === "csv" || format === "excel") {
             let csvContent = "Employee,Department,Leave Type,Start Date,End Date,Days,Status\n";
-            for (const l of this.state.leaves) {
+            for (const l of this.visibleLeaves) {
                 csvContent += `"${l.employee_name}","${l.department_name}","${l.leave_type_name}","${l.date_from}","${l.date_to}",${l.number_of_days},"${l.status}"\n`;
             }
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -559,7 +632,7 @@ export class LeaveCalendarPage extends Component {
             this.notification.add("Calendar exported as CSV successfully.", { type: "success" });
         } else if (format === "ical" || format === "ics") {
             let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CleonHR//Leave Calendar//EN\n";
-            for (const l of this.state.leaves) {
+            for (const l of this.visibleLeaves) {
                 const sDate = l.date_from.replace(/-/g, "");
                 const eDate = l.date_to.replace(/-/g, "");
                 icsContent += "BEGIN:VEVENT\n";
@@ -591,6 +664,11 @@ export class LeaveCalendarPage extends Component {
     // ---------------------------------------------------------
 
     openLeaveDetail(id) {
+        const leave = this.state.leaves.find(item => item.id === id);
+        if (this.state.employeeView && leave && !leave.can_open_detail) {
+            this.notification.add("A colleague is away on this date. Request details remain private.", { type: "info" });
+            return;
+        }
         this.state.detailRequestId = id;
     }
 

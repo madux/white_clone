@@ -28,7 +28,7 @@
 						<div class="oe_title">
 							<label for="name" class="oe_edit_only" />
 							<h1>
-								<field name="name" readonly = "state in ['recruiting', 'done']"/>
+								<field name="name" readonly="state in ['confirmed', 'accepted', 'recruiting', 'done']"/>
 							</h1>
 						</div>
 						<field name="company_id" groups="base.group_multi_company"
@@ -36,9 +36,9 @@
 						<group>
 							<group>
 								<field name="department_id" options="{'no_create': True, 'no_open': True}" 
-								readonly = "state in ['recruiting', 'done']"/>
+								readonly="state in ['confirmed', 'accepted', 'recruiting', 'done']"/>
 								<field name="job_id" options="{'no_create': True, 'no_open': True}"
-								readonly = "state in ['recruiting', 'done']"/>
+								readonly="state in ['confirmed', 'accepted', 'recruiting', 'done']"/>
 								<field name="job_tmp" invisible = "job_id != False" required="job_id == False"/>
 							</group>
 							<group> 
@@ -48,7 +48,7 @@
 						</group>
 						<div>
 							<label for="reason" />
-							<field name="reason" readonly = "state in ['recruiting', 'done']"/>
+							<field name="reason" readonly="state in ['confirmed', 'accepted', 'recruiting', 'done']"/>
 						</div>
 						<notebook>
 							<page string="Information">
@@ -56,7 +56,7 @@
 									<group>
 										<field name="description" readonly = "state in ['recruiting', 'done']"/>
 										<field name="requirements" readonly = "state in ['recruiting', 'done']"/> 
-										<field name="expected_employees" readonly = "state in ['recruiting', 'done']"/>
+										<field name="expected_employees" readonly="state in ['confirmed', 'accepted', 'recruiting', 'done']"/>
 										
 									</group>
 									<group>
