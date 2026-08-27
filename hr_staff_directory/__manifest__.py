@@ -65,6 +65,7 @@
             'hr_staff_directory/static/src/components/people_list/people_list.js',
             'hr_staff_directory/static/src/components/people_list/people_list.xml',
             
+            'hr_staff_directory/static/src/components/profile_panel/profile_panel.css',
             'hr_staff_directory/static/src/components/profile_panel/profile_panel.js',
             'hr_staff_directory/static/src/components/profile_panel/profile_panel.xml',
             
