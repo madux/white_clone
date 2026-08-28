@@ -1472,3 +1472,200 @@
     font-weight: 700;
     color: #111827;
 }
+
+/* TIME OFF TAB */
+.sdir-prof-timeoff-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    /* padding: 28px 32px; */
+}
+.sdir-prof-timeoff-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sdir-prof-timeoff-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
+}
+.sdir-prof-timeoff-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+.sdir-prof-timeoff-mb {
+    margin-bottom: 10px;
+}
+.sdir-prof-timeoff-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: #92400E;
+    background: #FEF3C7;
+    border: 1px solid #FDE68A;
+    border-radius: 20px;
+    padding: 2px 8px;
+}
+.sdir-prof-timeoff-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sdir-prof-timeoff-card {
+    background: #FAFAFA;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #F0F0F0;
+}
+.sdir-prof-timeoff-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.sdir-prof-timeoff-card-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+.sdir-prof-timeoff-card-subtitle {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin: 1px 0 0 0;
+}
+.sdir-prof-timeoff-card-val {
+    font-size: 16px;
+    font-weight: 800;
+}
+.sdir-prof-timeoff-card-total {
+    font-size: 10px;
+    font-weight: 500;
+    color: #9CA3AF;
+}
+.sdir-prof-timeoff-progress-bg {
+    height: 5px;
+    background: #E5E7EB;
+    border-radius: 99px;
+    overflow: hidden;
+}
+.sdir-prof-timeoff-progress-bar {
+    height: 100%;
+    border-radius: 99px;
+}
+
+/* Colors */
+.sdir-color-pink { color: #E91E63; }
+.sdir-bg-pink { background-color: #E91E63; }
+.sdir-bg-pink-light { background: #FFF0F6; }
+
+.sdir-color-orange { color: #F97316; }
+.sdir-bg-orange { background-color: #F97316; }
+
+.sdir-color-green { color: #059669; }
+.sdir-bg-green { background-color: #059669; }
+.sdir-bg-green-light { background: #D1FAE5; color: #065F46; }
+
+.sdir-bg-yellow-light { background: #FEF3C7; }
+
+.sdir-bg-gray { background-color: #D1D5DB; }
+
+.sdir-prof-timeoff-events {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sdir-prof-timeoff-event-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #FAFAFA;
+    border: 1px solid #F0F0F0;
+}
+.sdir-prof-timeoff-event-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.sdir-prof-timeoff-event-info {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+.sdir-prof-timeoff-event-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+.sdir-prof-timeoff-event-desc {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin: 1px 0 0 0;
+}
+.sdir-prof-timeoff-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+}
+.sdir-prof-timeoff-status-sm {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 99px;
+    white-space: nowrap;
+}
+.sdir-status-approved {
+    background: #D1FAE5;
+    color: #065F46;
+}
+.sdir-status-public {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+.sdir-prof-timeoff-history {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.sdir-prof-timeoff-history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid #F9FAFB;
+}
+.sdir-prof-timeoff-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.sdir-prof-timeoff-history-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+.sdir-prof-timeoff-history-desc {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin: 1px 0 0 0;
+}

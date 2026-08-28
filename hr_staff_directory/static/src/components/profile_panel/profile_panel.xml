@@ -103,6 +103,7 @@
                         <div class="sdir-prof-tabs">
                             <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'overview' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('overview')">Overview</button>
                             <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'activity' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('activity')">Activity</button>
+                            <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'timeoff' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('timeoff')">Time Off</button>
                             <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'modules' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('modules')">All Modules</button>
                             <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'org' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('org')">Org &amp; Team</button>
                             <button type="button" t-att-class="'sdir-prof-tab' + (state.profileActiveTab === 'admin' ? ' sdir-prof-tab-active' : '')" t-on-click="() => this.setProfileTab('admin')">
@@ -557,8 +558,140 @@
                                 </div>
                             </t>
 
+                            <!-- TIMEOFF TAB -->
+                            <t t-if="state.profileActiveTab === 'timeoff'">
+                                <div class="sdir-prof-timeoff-wrapper">
+                                    <div class="sdir-prof-timeoff-col">
+                                        <!-- LEAVE BALANCE -->
+                                        <div class="sdir-prof-timeoff-header">
+                                            <p class="sdir-prof-timeoff-section-title">Leave Balance</p>
+                                            <span class="sdir-prof-timeoff-badge">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> EMS-managed
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="sdir-prof-timeoff-list">
+                                            <!-- Annual Leave -->
+                                            <div class="sdir-prof-timeoff-card">
+                                                <div class="sdir-prof-timeoff-card-header">
+                                                    <div>
+                                                        <p class="sdir-prof-timeoff-card-title">Annual Leave</p>
+                                                        <p class="sdir-prof-timeoff-card-subtitle">14 days remaining</p>
+                                                    </div>
+                                                    <span class="sdir-prof-timeoff-card-val sdir-color-pink">7<span class="sdir-prof-timeoff-card-total">/21</span></span>
+                                                </div>
+                                                <div class="sdir-prof-timeoff-progress-bg">
+                                                    <div class="sdir-prof-timeoff-progress-bar sdir-bg-pink" style="width: 33.3333%;"></div>
+                                                </div>
+                                            </div>
+                                            <!-- Sick Leave -->
+                                            <div class="sdir-prof-timeoff-card">
+                                                <div class="sdir-prof-timeoff-card-header">
+                                                    <div>
+                                                        <p class="sdir-prof-timeoff-card-title">Sick Leave</p>
+                                                        <p class="sdir-prof-timeoff-card-subtitle">3 days remaining</p>
+                                                    </div>
+                                                    <span class="sdir-prof-timeoff-card-val sdir-color-orange">7<span class="sdir-prof-timeoff-card-total">/10</span></span>
+                                                </div>
+                                                <div class="sdir-prof-timeoff-progress-bg">
+                                                    <div class="sdir-prof-timeoff-progress-bar sdir-bg-orange" style="width: 70%;"></div>
+                                                </div>
+                                            </div>
+                                            <!-- Compassionate Leave -->
+                                            <div class="sdir-prof-timeoff-card">
+                                                <div class="sdir-prof-timeoff-card-header">
+                                                    <div>
+                                                        <p class="sdir-prof-timeoff-card-title">Compassionate Leave</p>
+                                                        <p class="sdir-prof-timeoff-card-subtitle">No days left</p>
+                                                    </div>
+                                                    <span class="sdir-prof-timeoff-card-val sdir-color-green">5<span class="sdir-prof-timeoff-card-total">/5</span></span>
+                                                </div>
+                                                <div class="sdir-prof-timeoff-progress-bg">
+                                                    <div class="sdir-prof-timeoff-progress-bar sdir-bg-green" style="width: 100%;"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            
+                                    <div>
+                                        <p class="sdir-prof-timeoff-section-title sdir-prof-timeoff-mb">Upcoming</p>
+                                        <div class="sdir-prof-timeoff-events">
+                                            <!-- Upcoming 1 -->
+                                            <div class="sdir-prof-timeoff-event-card">
+                                                <div class="sdir-prof-timeoff-event-icon sdir-bg-pink-light">🌴</div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-event-title">Annual Leave</p>
+                                                    <p class="sdir-prof-timeoff-event-desc">Aug 14 – Aug 18 · 5 days</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status sdir-status-approved">Approved</span>
+                                            </div>
+                                            <!-- Upcoming 2 -->
+                                            <div class="sdir-prof-timeoff-event-card">
+                                                <div class="sdir-prof-timeoff-event-icon sdir-bg-yellow-light">🏛️</div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-event-title">Public Holiday</p>
+                                                    <p class="sdir-prof-timeoff-event-desc">Oct 1 – Oct 1 · 1 day</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status sdir-status-public">Public Holiday</span>
+                                            </div>
+                                            <!-- Upcoming 3 -->
+                                            <div class="sdir-prof-timeoff-event-card">
+                                                <div class="sdir-prof-timeoff-event-icon sdir-bg-yellow-light">🏛️</div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-event-title">Public Holiday</p>
+                                                    <p class="sdir-prof-timeoff-event-desc">Dec 25 – Dec 26 · 2 days</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status sdir-status-public">Public Holiday</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                            
+                                    <div>
+                                        <p class="sdir-prof-timeoff-section-title sdir-prof-timeoff-mb">Leave History</p>
+                                        <div class="sdir-prof-timeoff-history">
+                                            <!-- History 1 -->
+                                            <div class="sdir-prof-timeoff-history-item">
+                                                <div class="sdir-prof-timeoff-dot sdir-bg-green"></div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-history-title">Annual Leave</p>
+                                                    <p class="sdir-prof-timeoff-history-desc">Jun 10 – Jun 14 · 5 days</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status-sm sdir-status-approved">Approved</span>
+                                            </div>
+                                            <!-- History 2 -->
+                                            <div class="sdir-prof-timeoff-history-item">
+                                                <div class="sdir-prof-timeoff-dot sdir-bg-green"></div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-history-title">Sick Leave</p>
+                                                    <p class="sdir-prof-timeoff-history-desc">Apr 3 – Apr 5 · 3 days</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status-sm sdir-status-approved">Approved</span>
+                                            </div>
+                                            <!-- History 3 -->
+                                            <div class="sdir-prof-timeoff-history-item">
+                                                <div class="sdir-prof-timeoff-dot sdir-bg-gray"></div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-history-title">Public Holiday</p>
+                                                    <p class="sdir-prof-timeoff-history-desc">May 1 – May 1 · 1 day</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status-sm sdir-status-public">Public Holiday</span>
+                                            </div>
+                                            <!-- History 4 -->
+                                            <div class="sdir-prof-timeoff-history-item" style="border-bottom: none;">
+                                                <div class="sdir-prof-timeoff-dot sdir-bg-green"></div>
+                                                <div class="sdir-prof-timeoff-event-info">
+                                                    <p class="sdir-prof-timeoff-history-title">Annual Leave</p>
+                                                    <p class="sdir-prof-timeoff-history-desc">Mar 17 – Mar 21 · 5 days</p>
+                                                </div>
+                                                <span class="sdir-prof-timeoff-status-sm sdir-status-approved">Approved</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
                             <!-- OTHER TABS PLACEHOLDERS -->
-                            <t t-if="!['overview', 'admin'].includes(state.profileActiveTab)">
+                            <t t-if="!['overview', 'admin', 'timeoff'].includes(state.profileActiveTab)">
                                 <div class="sdir-prof-placeholder">
                                     <p>Content for <t t-esc="state.profileActiveTab"/> coming soon.</p>
                                 </div>
