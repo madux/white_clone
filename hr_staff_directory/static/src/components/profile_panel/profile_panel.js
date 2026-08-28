@@ -46,6 +46,15 @@ export class StaffDirectoryProfilePanel extends Component {
             showProbationModal: false,
             probationOutcome: null,
             showRehireModal: false,
+            activityExpandedYears: {
+                "2026": true,
+                "2025": false,
+                "2024": false,
+                "2023": false,
+                "2022": false,
+                "2021": false,
+                "2020": false,
+            },
             offboardingTasks: {
                 interview: true,
                 knowledge: true,
@@ -307,5 +316,9 @@ export class StaffDirectoryProfilePanel extends Component {
 
     closeRehireModal() {
         this.state.showRehireModal = false;
+    }
+
+    toggleActivityYear(year) {
+        this.state.activityExpandedYears[year] = !this.state.activityExpandedYears[year];
     }
 }

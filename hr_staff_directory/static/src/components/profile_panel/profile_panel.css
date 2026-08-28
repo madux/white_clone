@@ -1669,3 +1669,275 @@
     color: #9CA3AF;
     margin: 1px 0 0 0;
 }
+
+/* ACTIVITY TAB */
+.sdir-prof-activity-wrapper {
+    /* padding: 28px 32px; */
+}
+.sdir-prof-activity-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 14px;
+    background: #FFF5F8;
+    border-radius: 12px;
+    border: 1px solid rgba(233, 30, 99, 0.145);
+    margin-bottom: 18px;
+}
+.sdir-prof-activity-stat-box {
+    text-align: center;
+}
+.sdir-prof-activity-stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 4px 0;
+}
+.sdir-prof-activity-stat-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: #E91E63;
+    margin: 0;
+    line-height: 1.3;
+}
+.sdir-prof-activity-timeline-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.sdir-prof-activity-year-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 9px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: #F9FAFB;
+}
+.sdir-prof-activity-year-btn-active {
+    border: 1px solid rgba(233, 30, 99, 0.19);
+    background: rgba(233, 30, 99, 0.03);
+    margin-bottom: 10px;
+}
+.sdir-prof-activity-year-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #374151;
+}
+.sdir-prof-activity-year-label-active {
+    color: #E91E63;
+}
+.sdir-prof-activity-year-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sdir-prof-activity-year-count {
+    font-size: 11px;
+    color: #9CA3AF;
+}
+.sdir-prof-activity-chevron {
+    transform: none;
+    transition: transform 0.2s;
+}
+.sdir-prof-activity-chevron-active {
+    transform: rotate(180deg);
+}
+.sdir-prof-activity-event-row {
+    display: flex;
+    gap: 10px;
+}
+.sdir-prof-activity-event-icon-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 28px;
+}
+.sdir-prof-activity-event-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sdir-prof-activity-event-icon-star { background: #FEF3C7; }
+.sdir-prof-activity-event-icon-promo { background: #FCE7F3; }
+.sdir-prof-activity-event-icon-join { background: #D1FAE5; }
+
+.sdir-prof-activity-event-line {
+    width: 2px;
+    flex: 1 1 0%;
+    min-height: 12px;
+    background: #F0F0F5;
+    margin: 3px 0;
+}
+.sdir-prof-activity-event-content {
+    flex: 1 1 0%;
+    padding-bottom: 14px;
+    padding-top: 2px;
+}
+.sdir-prof-activity-event-content-last {
+    padding-bottom: 4px;
+}
+.sdir-prof-activity-event-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 2px;
+}
+.sdir-prof-activity-event-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.35;
+}
+.sdir-prof-activity-event-date {
+    font-size: 10px;
+    color: #9CA3AF;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.sdir-prof-activity-event-desc {
+    font-size: 11.5px;
+    color: #6B7280;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ORG & TEAM TAB */
+.sdir-prof-org-wrapper {
+    /* padding: 28px 32px; */
+}
+.sdir-prof-org-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 14px;
+}
+.sdir-prof-org-chart-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+}
+.sdir-prof-org-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 10px 10px;
+    border-radius: 12px;
+    border: 1.5px solid #E5E7EB;
+    background: #FAFAFA;
+    cursor: pointer;
+    width: 100px;
+    flex-shrink: 0;
+    text-align: center;
+    box-shadow: none;
+    transition: border-color 0.15s;
+    position: relative;
+}
+.sdir-prof-org-card-active {
+    border: 2px solid #E91E63;
+    background: #FFF5F8;
+    cursor: default;
+    box-shadow: rgba(233, 30, 99, 0.082) 0px 0px 0px 3px;
+}
+.sdir-prof-org-mgr-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 8px;
+    font-weight: 700;
+    background: #FDF0FA;
+    color: #E91E63;
+    border-radius: 4px;
+    padding: 1px 4px;
+}
+.sdir-prof-org-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #E5E7EB;
+    flex-shrink: 0;
+}
+.sdir-prof-org-avatar-active {
+    border: 2px solid #E91E63;
+}
+.sdir-prof-org-avatar-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #FFFFFF;
+    user-select: none;
+}
+.sdir-bg-teal { background-color: #0D9488; }
+.sdir-bg-blue { background-color: #2563EB; }
+.sdir-bg-red { background-color: #DC2626; }
+
+.sdir-prof-org-card-info {
+    min-width: 0;
+    width: 100%;
+}
+.sdir-prof-org-card-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sdir-prof-org-card-role {
+    font-size: 10px;
+    color: #9CA3AF;
+    margin: 2px 0 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.3;
+}
+.sdir-prof-org-card-you {
+    font-size: 9px;
+    font-weight: 700;
+    color: #E91E63;
+    margin: 2px 0 0 0;
+    letter-spacing: 0.04em;
+}
+.sdir-prof-org-line {
+    width: 2px;
+    height: 20px;
+    background: #E5E7EB;
+    margin: 0 auto;
+}
+.sdir-prof-org-reports-wrap {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.sdir-prof-org-report-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.sdir-prof-org-teams-empty {
+    font-size: 13px;
+    color: #9CA3AF;
+}
