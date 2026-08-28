@@ -48,6 +48,10 @@
             'hr_staff_directory/static/src/components/toast/toast.js',
             'hr_staff_directory/static/src/components/toast/toast.xml',
 
+            'hr_staff_directory/static/src/components/message/message.css',
+            'hr_staff_directory/static/src/components/message/message.js',
+            'hr_staff_directory/static/src/components/message/message.xml',
+
             'hr_staff_directory/static/src/components/people_list/people_list.css',
 
             'hr_staff_directory/static/src/components/bar_chart/bar_chart.js',

@@ -1,0 +1,252 @@
+/* MESSAGE COMPONENT */
+.sdir-msg-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10005;
+    background-color: #F0F2F5 !important;
+    display: flex;
+    flex-direction: column;
+    font-family: Inter, sans-serif !important;
+}
+.sdir-msg-overlay .sdir-msg-header {
+    height: 60px;
+    background-color: #FFFFFF !important;
+    border-bottom: 1px solid #E8E8EE !important;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 4px !important;
+}
+.sdir-msg-overlay .sdir-msg-btn-back {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid #E8E8EE !important;
+    background-color: #F9FAFB !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+.sdir-msg-overlay .sdir-msg-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #8B5CF6 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: #FFFFFF !important;
+}
+.sdir-msg-overlay .sdir-msg-status-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #10B981 !important;
+    border: 2px solid #FFFFFF !important;
+}
+.sdir-msg-overlay .sdir-msg-info {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+.sdir-msg-overlay .sdir-msg-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sdir-msg-overlay .sdir-msg-role {
+    font-size: 11px;
+    color: #9CA3AF !important;
+    margin-top: 1px;
+}
+.sdir-msg-overlay .sdir-msg-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.sdir-msg-overlay .sdir-msg-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    border: 1px solid #E8E8EE !important;
+    background-color: #F9FAFB !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-body-wrap {
+    flex: 1 1 0%;
+    display: flex;
+    overflow: hidden;
+}
+.sdir-msg-overlay .sdir-msg-body {
+    flex: 1 1 0%;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.sdir-msg-overlay .sdir-msg-row-left {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    align-items: flex-end;
+}
+.sdir-msg-overlay .sdir-msg-row-right {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    align-items: flex-end;
+}
+.sdir-msg-overlay .sdir-msg-avatar-sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #8B5CF6 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: #FFFFFF !important;
+    flex-shrink: 0;
+}
+.sdir-msg-overlay .sdir-msg-bubble-wrap-left {
+    max-width: 68%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+.sdir-msg-overlay .sdir-msg-bubble-wrap-right {
+    max-width: 68%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+}
+.sdir-msg-overlay .sdir-msg-bubble-left {
+    padding: 10px 14px;
+    border-radius: 16px 16px 16px 4px !important;
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
+    font-size: 13px;
+    line-height: 1.55;
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 4px !important;
+    border: 1px solid #E8E8EE !important;
+}
+.sdir-msg-overlay .sdir-msg-bubble-right {
+    padding: 10px 14px;
+    border-radius: 16px 16px 4px 16px !important;
+    background-color: #E91E8C !important;
+    color: #FFFFFF !important;
+    font-size: 13px;
+    line-height: 1.55;
+    box-shadow: rgba(233, 30, 140, 0.19) 0px 2px 8px !important;
+    border: none !important;
+}
+.sdir-msg-overlay .sdir-msg-time {
+    font-size: 10px;
+    color: #9CA3AF !important;
+    margin-left: 2px;
+}
+.sdir-msg-overlay .sdir-msg-footer {
+    background-color: #FFFFFF !important;
+    border-top: 1px solid #E8E8EE !important;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+.sdir-msg-overlay .sdir-msg-attach-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #E8E8EE !important;
+    background-color: #F9FAFB !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-input-wrap {
+    flex: 1 1 0%;
+    position: relative;
+}
+.sdir-msg-overlay .sdir-msg-input {
+    width: 100% !important;
+    height: 42px !important;
+    padding: 0 44px 0 16px !important;
+    border: 1.5px solid #E8E8EE !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    outline: none !important;
+    font-family: inherit;
+    color: #111827 !important;
+    background-color: #F9FAFB !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.15s;
+    margin: 0 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-input:focus {
+    border-color: #8B5CF6 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-emoji-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: none !important;
+    background: none !important;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+.sdir-msg-overlay .sdir-msg-send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: none !important;
+    background-color: #E5E7EB !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: not-allowed;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    padding: 0 !important;
+    box-shadow: none !important;
+}

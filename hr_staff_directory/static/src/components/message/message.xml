@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_staff_directory.Message">
+        <div t-if="state.isVisible" class="sdir-msg-overlay">
+            
+            <div class="sdir-msg-header">
+                <button class="sdir-msg-btn-back" t-on-click="() => this.close()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>
+                </button>
+                <div class="sdir-msg-avatar-wrap">
+                    <div class="sdir-msg-avatar">
+                        <t t-if="state.profile and state.profile.name">
+                            <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                        </t>
+                        <t t-else="">AP</t>
+                    </div>
+                    <div class="sdir-msg-status-dot"></div>
+                </div>
+                <div class="sdir-msg-info">
+                    <div class="sdir-msg-name">
+                        <t t-esc="state.profile ? state.profile.name : 'Aaron Park'"/>
+                    </div>
+                    <div class="sdir-msg-role">
+                        <t t-esc="state.profile ? state.profile.job_title : 'Relationship Manager'"/>
+                    </div>
+                </div>
+                <div class="sdir-msg-actions">
+                    <button title="Call" class="sdir-msg-action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    </button>
+                    <button title="Video" class="sdir-msg-action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-video"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path><rect x="2" y="6" width="14" height="12" rx="2"></rect></svg>
+                    </button>
+                    <button title="Search" class="sdir-msg-action-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sdir-msg-body-wrap">
+                <div class="sdir-msg-body">
+                    <!-- Message 1 -->
+                    <div class="sdir-msg-row-left">
+                        <div class="sdir-msg-avatar-sm">
+                            <t t-if="state.profile and state.profile.name">
+                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                            </t>
+                            <t t-else="">AP</t>
+                        </div>
+                        <div class="sdir-msg-bubble-wrap-left">
+                            <div class="sdir-msg-bubble-left">Hi there! Thanks for reaching out.</div>
+                            <span class="sdir-msg-time">01:33 PM</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message 2 -->
+                    <div class="sdir-msg-row-right">
+                        <div class="sdir-msg-bubble-wrap-right">
+                            <div class="sdir-msg-bubble-right">
+                                <t t-if="state.profile and state.profile.name">
+                                    Hey <t t-esc="state.profile.name.split(' ')[0]"/>, I wanted to check in about the upcoming project timeline.
+                                </t>
+                                <t t-else="">
+                                    Hey Aaron, I wanted to check in about the upcoming project timeline.
+                                </t>
+                            </div>
+                            <span class="sdir-msg-time">01:35 PM</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message 3 -->
+                    <div class="sdir-msg-row-left">
+                        <div class="sdir-msg-avatar-sm">
+                            <t t-if="state.profile and state.profile.name">
+                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                            </t>
+                            <t t-else="">AP</t>
+                        </div>
+                        <div class="sdir-msg-bubble-wrap-left">
+                            <div class="sdir-msg-bubble-left">Sure! I was actually going to bring that up. I think we need to revisit the deadlines for Q3.</div>
+                            <span class="sdir-msg-time">01:37 PM</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message 4 -->
+                    <div class="sdir-msg-row-right">
+                        <div class="sdir-msg-bubble-wrap-right">
+                            <div class="sdir-msg-bubble-right">Agreed. Let's set up a quick call this week to align on priorities.</div>
+                            <span class="sdir-msg-time">01:40 PM</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Message 5 -->
+                    <div class="sdir-msg-row-left">
+                        <div class="sdir-msg-avatar-sm">
+                            <t t-if="state.profile and state.profile.name">
+                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                            </t>
+                            <t t-else="">AP</t>
+                        </div>
+                        <div class="sdir-msg-bubble-wrap-left">
+                            <div class="sdir-msg-bubble-left">Sounds good! I'm free Thursday afternoon after 2pm.</div>
+                            <span class="sdir-msg-time">01:45 PM</span>
+                        </div>
+                    </div>
+                    <div style="height: 10px;"></div>
+                </div>
+            </div>
+            
+            <div class="sdir-msg-footer">
+                <button class="sdir-msg-attach-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paperclip"><path d="M13.234 20.252 21 12.3"></path><path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486"></path></svg>
+                </button>
+                <div class="sdir-msg-input-wrap">
+                    <input class="sdir-msg-input" t-att-placeholder="state.profile ? 'Message ' + state.profile.name.split(' ')[0] + '…' : 'Message Aaron…'"/>
+                    <button class="sdir-msg-emoji-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smile"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
+                    </button>
+                </div>
+                <button class="sdir-msg-send-btn" disabled="disabled">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg>
+                </button>
+            </div>
+            
+        </div>
+    </t>
+</templates>

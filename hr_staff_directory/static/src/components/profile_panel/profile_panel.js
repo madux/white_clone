@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Component, useState } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 
 export class StaffDirectoryProfilePanel extends Component {
     static template = "hr_staff_directory.ProfilePanel";
@@ -21,6 +22,7 @@ export class StaffDirectoryProfilePanel extends Component {
     };
 
     setup() {
+        this.messageService = useService("hr_staff_directory.message");
         this.state = useState({
             profileActiveTab: 'overview',
             showEditModal: false,
