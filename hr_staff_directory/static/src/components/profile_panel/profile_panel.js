@@ -48,15 +48,7 @@ export class StaffDirectoryProfilePanel extends Component {
             showProbationModal: false,
             probationOutcome: null,
             showRehireModal: false,
-            activityExpandedYears: {
-                "2026": true,
-                "2025": false,
-                "2024": false,
-                "2023": false,
-                "2022": false,
-                "2021": false,
-                "2020": false,
-            },
+            activityExpandedYears: {},
             offboardingTasks: {
                 interview: true,
                 knowledge: true,
@@ -320,7 +312,20 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showRehireModal = false;
     }
 
+    get activityYears() {
+        if (!this.props.activeProfile || !this.props.activeProfile.activity_timeline) return [];
+        return Object.keys(this.props.activeProfile.activity_timeline).sort((a, b) => b - a);
+    }
+
+    isActivityYearExpanded(year) {
+        if (year in this.state.activityExpandedYears) {
+            return this.state.activityExpandedYears[year];
+        }
+        const years = this.activityYears;
+        return years.length > 0 && years[0] === year;
+    }
+
     toggleActivityYear(year) {
-        this.state.activityExpandedYears[year] = !this.state.activityExpandedYears[year];
+        this.state.activityExpandedYears[year] = !this.isActivityYearExpanded(year);
     }
 }

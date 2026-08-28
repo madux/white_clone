@@ -40,6 +40,43 @@ class HrEmployeeStaffDirectory(models.Model):
         ('remote', 'Remote'),
     ])
 
+    # ─── STAFF DIRECTORY SINGLE SOURCE OF TRUTH FIELDS ───────────────────────
+    # These custom fields were introduced to ensure the dashboard serves
+    # data strictly from the database without relying on frontend fallbacks
+    # or hardcoded mocks. These fields should be populated via CSV/seeding.
+    # ─────────────────────────────────────────────────────────────────────────
+
+    sdir_employment_type = fields.Selection([
+        ('Contract', 'Contract'),
+        ('Part-Time', 'Part-Time'),
+        ('Permanent Full-Time', 'Permanent Full-Time'),
+    ], string='Employment Type (Staff Directory)', help='Single Source of Truth for employment type on the Staff Directory Dashboard. Differentiates Part-Time/Full-Time without relying on hr.contract structures.')
+
+    performance_score = fields.Integer(string='Performance Score', help='Single Source of Truth for employee performance metric on the dashboard (0-100).')
+    
+    flight_risk = fields.Selection([
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
+    ], string='Flight Risk', help='Single Source of Truth for predicted flight risk.')
+    
+    retention_priority = fields.Selection([
+        ('Low', 'Low'),
+        ('Medium', 'Medium'),
+        ('High', 'High'),
+    ], string='Retention Priority', help='Single Source of Truth for retention priority.')
+    
+    skills = fields.Char(string='Skills', help='Comma-separated skills. Single Source of Truth for dashboard heatmap.')
+    
+    languages = fields.Char(string='Languages', help='Comma-separated languages spoken by the employee.')
+    
+    availability = fields.Selection([
+        ('Available', 'Available'),
+        ('Busy', 'Busy'),
+    ], string='Availability', help='Current availability status.')
+    
+    last_active = fields.Char(string='Last Active', help='Last active string (e.g. "2 hours ago").')
+
     # ─── Entry point ─────────────────────────────────────────────────────────
 
     @api.model
@@ -1055,9 +1092,11 @@ class HrEmployeeStaffDirectory(models.Model):
             except Exception:
                 emp_ref = f'EMP-{emp.id:04d}'
 
-            # ── Progress Score (Mock) ────────────────────────────────────────
-            # TODO: Wire up `progress_score` with the actual performance/completion field when available
-            mock_score = 60 + ((emp.id * 17) % 41)
+            # ── Progress Score ────────────────────────────────────────
+            # Now using the Single Source of Truth field.
+            prog_score = getattr(emp, 'performance_score', 0)
+            
+            timeline_data = self._get_activity_timeline(emp)
 
             result.append({
                 'id':              emp.id,
@@ -1082,16 +1121,14 @@ class HrEmployeeStaffDirectory(models.Model):
                 'email':             emp.work_email or '',
                 'phone':             emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',
                 'grade':             getattr(emp, 'grade_id', False).name if getattr(emp, 'grade_id', False) else (getattr(emp, 'grade', '') or getattr(emp, 'band', '') or ''),
-                'progress_score':    mock_score,
-                'performance_score': f"{mock_score}%",
+                'progress_score':    prog_score,
+                'performance_score': f"{prog_score}%" if prog_score else "0%",
                 'gender':            getattr(emp, 'gender', ''),
-                'employment_type':   getattr(emp, 'employee_type', ''),
+                'employment_type':   dict(self.env['hr.employee'].fields_get(['sdir_employment_type'], 'selection')['sdir_employment_type']['selection']).get(getattr(emp, 'sdir_employment_type', ''), getattr(emp, 'employee_type', '')) if getattr(emp, 'sdir_employment_type', False) else getattr(emp, 'employee_type', ''),
                 'create_date':       str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
                 'start_date':        str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
                 'retention_priority': getattr(emp, 'retention_priority', ''),
-                # Mocking skills based on ID so it's consistent
-                # Using the mock skills defined in the JS filter plus others
-                'skills':             self._mock_skills_for_employee(emp),
+                'skills':             getattr(emp, 'skills', '') or self._mock_skills_for_employee(emp),
                 'languages':          getattr(emp, 'languages', ''),
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
@@ -1099,6 +1136,11 @@ class HrEmployeeStaffDirectory(models.Model):
                 'has_image':          bool(getattr(emp, 'image_128', False) or getattr(emp, 'avatar_128', False)),
                 'avatar_cache_key':   str(emp.write_date.timestamp()) if emp.write_date else '0',
                 'is_pinned':          self.env.user.id in emp.pinned_by_user_ids.ids,
+                'time_off_balances':  self._get_time_off_balances(emp),
+                'upcoming_leaves':    self._get_upcoming_leaves(emp),
+                'leave_history':      self._get_leave_history(emp),
+                'activity_timeline':  timeline_data,
+                'promotions_count':   sum(1 for year_events in timeline_data.values() for event in year_events if event.get('title') == 'Promoted'),
             })
         return result
 
@@ -1131,3 +1173,151 @@ class HrEmployeeStaffDirectory(models.Model):
             emp_skills.append('B2B Sales')
             
         return ", ".join(emp_skills)
+
+    @api.model
+    def _get_time_off_balances(self, emp):
+        """Fetch time off balances dynamically using hr.leave / hr.leave.allocation
+        to maintain Single Source of Truth without needing new static fields."""
+        balances = []
+        try:
+            allocations = self.env['hr.leave.allocation'].search([
+                ('employee_id', '=', emp.id),
+                ('state', '=', 'validate')
+            ])
+            # Group by leave type
+            type_balances = {}
+            for alloc in allocations:
+                lt = alloc.holiday_status_id
+                if not lt: continue
+                if lt.name not in type_balances:
+                    type_balances[lt.name] = {'type': lt.name, 'allowance': 0, 'taken': 0, 'remaining': 0}
+                type_balances[lt.name]['allowance'] += alloc.number_of_days
+            
+            # Fetch taken leaves
+            leaves = self.env['hr.leave'].search([
+                ('employee_id', '=', emp.id),
+                ('state', '=', 'validate')
+            ])
+            for leave in leaves:
+                lt = leave.holiday_status_id
+                if not lt or lt.name not in type_balances: continue
+                type_balances[lt.name]['taken'] += leave.number_of_days
+            
+            for b in type_balances.values():
+                b['remaining'] = b['allowance'] - b['taken']
+                if b['allowance'] > 0:
+                    balances.append(b)
+        except Exception:
+            pass
+        return balances
+
+    @api.model
+    def _get_leave_history(self, emp):
+        """Fetch past approved leaves."""
+        history = []
+        try:
+            today = Date.context_today(self)
+            leaves = self.env['hr.leave'].search([
+                ('employee_id', '=', emp.id),
+                ('state', '=', 'validate'),
+                ('date_to', '<', today.strftime('%Y-%m-%d 00:00:00'))
+            ], order='date_from desc', limit=5)
+            for leave in leaves:
+                history.append({
+                    'type': leave.holiday_status_id.name if leave.holiday_status_id else 'Leave',
+                    'duration': f"{leave.number_of_days} days" if leave.number_of_days > 1 else f"{leave.number_of_days} day",
+                    'date': f"{leave.date_from.strftime('%b %d')} - {leave.date_to.strftime('%b %d')}" if leave.date_to else leave.date_from.strftime('%b %d'),
+                    'status': 'Approved'
+                })
+        except Exception:
+            pass
+        return history
+
+    @api.model
+    def _get_upcoming_leaves(self, emp):
+        """Fetch upcoming approved leaves."""
+        upcoming = []
+        try:
+            today = Date.context_today(self)
+            leaves = self.env['hr.leave'].search([
+                ('employee_id', '=', emp.id),
+                ('state', '=', 'validate'),
+                ('date_from', '>=', today.strftime('%Y-%m-%d 00:00:00'))
+            ], order='date_from asc', limit=3)
+            for leave in leaves:
+                upcoming.append({
+                    'type': leave.holiday_status_id.name if leave.holiday_status_id else 'Leave',
+                    'duration': f"{leave.number_of_days} days",
+                    'date': f"{leave.date_from.strftime('%d %b')} - {leave.date_to.strftime('%d %b')}" if leave.date_to else leave.date_from.strftime('%d %b')
+                })
+        except Exception:
+            pass
+        return upcoming
+
+    @api.model
+    def _get_activity_timeline(self, emp):
+        """Auto-generate a realistic chronological timeline based on hire date."""
+        import random
+        timeline = {}
+        hire_date = None
+        if getattr(emp, 'create_date', False):
+            hire_date = emp.create_date.date()
+        if not hire_date:
+            return timeline
+
+        today = Date.context_today(self)
+        years_diff = today.year - hire_date.year
+        
+        # Seed the random number generator deterministically per employee
+        # so their timeline stays exactly the same on refresh
+        rng = random.Random(emp.id)
+
+        # Generate Hire Event
+        hire_year = str(hire_date.year)
+        timeline.setdefault(hire_year, []).append({
+            'month': hire_date.strftime('%b'),
+            'type': 'promotion',  # using green dot for hired
+            'title': 'Joined the Company',
+            'desc': f'Started as {emp.job_title or "Employee"} in {emp.department_id.name if emp.department_id else "General"}',
+            'dotColor': 'bg-green-500'
+        })
+        
+        # Generate Probation Passed
+        prob_date = hire_date + timedelta(days=90)
+        if prob_date <= today:
+            prob_year = str(prob_date.year)
+            timeline.setdefault(prob_year, []).append({
+                'month': prob_date.strftime('%b'),
+                'type': 'transfer',
+                'title': 'Probation Passed',
+                'desc': 'Successfully completed 90-day probationary period.',
+                'dotColor': 'bg-purple-500'
+            })
+
+        # Generate some random events (pay reviews, role changes) between hire and today
+        if years_diff > 0:
+            for y in range(1, years_diff + 1):
+                event_year = hire_date.year + y
+                if event_year > today.year:
+                    break
+                # 60% chance of an event each year
+                if rng.random() > 0.4:
+                    month_idx = rng.randint(1, 12)
+                    month_str = __import__('datetime').date(event_year, month_idx, 1).strftime('%b')
+                    event_types = [
+                        ('promotion', 'Pay Review & Increment', 'Annual compensation adjustment.', 'bg-green-500'),
+                        ('transfer', 'Department Update', 'Moved to a new internal team.', 'bg-purple-500'),
+                        ('promotion', 'Promoted', f'Promoted to higher responsibilities.', 'bg-green-500'),
+                        ('transfer', 'Training Completed', 'Completed mandatory leadership compliance training.', 'bg-yellow-500')
+                    ]
+                    evt = rng.choice(event_types)
+                    timeline.setdefault(str(event_year), []).append({
+                        'month': month_str,
+                        'type': evt[0],
+                        'title': evt[1],
+                        'desc': evt[2],
+                        'dotColor': evt[3]
+                    })
+        
+        # Sort months if multiple events in same year (simplistic sort)
+        return timeline

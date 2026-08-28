@@ -127,8 +127,9 @@ def main():
         trial = ("'%s'" % TRIAL_DATE_END) if r['Status'] == 'Probation' else 'NULL'
         gender = GENDER_MAP[r['Gender']]
         gender_lit = 'NULL' if gender is None else q(gender)
+        perf = r.get('performance_score', '0')
         rows_txt.append(
-            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
+            "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
                 q(r['ID']),
                 q(r['ID']),
                 q(r['Name']),
@@ -144,6 +145,14 @@ def main():
                 active,
                 trial,
                 gender_lit,
+                q(r.get('sdir_employment_type', 'Permanent Full-Time')),
+                perf if perf.isdigit() else '0',
+                q(r.get('flight_risk', 'Low')),
+                q(r.get('retention_priority', 'Low')),
+                q(r.get('skills', '')),
+                q(r.get('languages', 'English')),
+                q(r.get('availability', 'Available')),
+                q(r.get('last_active', '2026-08-28 10:00:00')),
             )
         )
 
@@ -175,11 +184,21 @@ CREATE TEMP TABLE _seed_emp (
     phone       text,
     is_active   boolean,
     trial_end   date,
-    gender      text
+    gender      text,
+    sdir_employment_type text,
+    performance_score int,
+    flight_risk text,
+    retention_priority text,
+    skills      text,
+    languages   text,
+    availability text,
+    last_active timestamp
 ) ON COMMIT DROP;
 
 INSERT INTO _seed_emp (barcode, emp_no, name, job_title, dept, grade, work_mode,
-                       loc, manager, start_date, email, phone, is_active, trial_end, gender)
+                       loc, manager, start_date, email, phone, is_active, trial_end, gender,
+                       sdir_employment_type, performance_score, flight_risk, retention_priority,
+                       skills, languages, availability, last_active)
 VALUES
 %s;
 
@@ -244,12 +263,16 @@ INSERT INTO hr_employee(name, resource_id, company_id, active,
                         job_title, department_id, work_location_id,
                         barcode, employee_number, employee_type, work_email,
                         mobile_phone, grade_id, work_mode, gender,
+                        sdir_employment_type, performance_score, flight_risk,
+                        retention_priority, skills, languages, availability, last_active,
                         create_uid, write_uid, create_date, write_date)
 SELECT s.name, r.id, :company_id, s.is_active,
        s.job_title, d.id, l.id,
        s.barcode, s.emp_no, 'employee', s.email, s.phone,
        g.id, s.work_mode, s.gender,
-       :admin_uid, :admin_uid, NOW(), NOW()
+       s.sdir_employment_type, s.performance_score, s.flight_risk,
+       s.retention_priority, s.skills, s.languages, s.availability, s.last_active,
+       :admin_uid, :admin_uid, CAST(s.start_date AS timestamp), NOW()
 FROM _seed_emp s
 JOIN LATERAL (
     SELECT rr.id FROM resource_resource rr
