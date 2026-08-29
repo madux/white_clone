@@ -38,72 +38,39 @@
             </div>
             
             <div class="sdir-msg-body-wrap">
-                <div class="sdir-msg-body">
-                    <!-- Message 1 -->
-                    <div class="sdir-msg-row-left">
-                        <div class="sdir-msg-avatar-sm">
-                            <t t-if="state.profile and state.profile.name">
-                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                <div class="sdir-msg-body" t-ref="msgBody">
+                    <t t-if="!state.messages || state.messages.length === 0">
+                        <div style="height: 100%; display: flex; align-items: center; justify-content: center; color: #9CA3AF; font-size: 13px;">
+                            Start a conversation...
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <t t-foreach="state.messages" t-as="msg" t-key="msg.id">
+                            <t t-if="msg.isMine">
+                                <div class="sdir-msg-row-right">
+                                    <div class="sdir-msg-bubble-wrap-right">
+                                        <div class="sdir-msg-bubble-right">
+                                            <t t-out="msg.body"/>
+                                        </div>
+                                        <span class="sdir-msg-time"><t t-esc="msg.time"/></span>
+                                    </div>
+                                </div>
                             </t>
-                            <t t-else="">AP</t>
-                        </div>
-                        <div class="sdir-msg-bubble-wrap-left">
-                            <div class="sdir-msg-bubble-left">Hi there! Thanks for reaching out.</div>
-                            <span class="sdir-msg-time">01:33 PM</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Message 2 -->
-                    <div class="sdir-msg-row-right">
-                        <div class="sdir-msg-bubble-wrap-right">
-                            <div class="sdir-msg-bubble-right">
-                                <t t-if="state.profile and state.profile.name">
-                                    Hey <t t-esc="state.profile.name.split(' ')[0]"/>, I wanted to check in about the upcoming project timeline.
-                                </t>
-                                <t t-else="">
-                                    Hey Aaron, I wanted to check in about the upcoming project timeline.
-                                </t>
-                            </div>
-                            <span class="sdir-msg-time">01:35 PM</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Message 3 -->
-                    <div class="sdir-msg-row-left">
-                        <div class="sdir-msg-avatar-sm">
-                            <t t-if="state.profile and state.profile.name">
-                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
+                            <t t-else="">
+                                <div class="sdir-msg-row-left">
+                                    <div class="sdir-msg-avatar-sm">
+                                        <t t-esc="msg.authorInitials"/>
+                                    </div>
+                                    <div class="sdir-msg-bubble-wrap-left">
+                                        <div class="sdir-msg-bubble-left">
+                                            <t t-out="msg.body"/>
+                                        </div>
+                                        <span class="sdir-msg-time"><t t-esc="msg.time"/></span>
+                                    </div>
+                                </div>
                             </t>
-                            <t t-else="">AP</t>
-                        </div>
-                        <div class="sdir-msg-bubble-wrap-left">
-                            <div class="sdir-msg-bubble-left">Sure! I was actually going to bring that up. I think we need to revisit the deadlines for Q3.</div>
-                            <span class="sdir-msg-time">01:37 PM</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Message 4 -->
-                    <div class="sdir-msg-row-right">
-                        <div class="sdir-msg-bubble-wrap-right">
-                            <div class="sdir-msg-bubble-right">Agreed. Let's set up a quick call this week to align on priorities.</div>
-                            <span class="sdir-msg-time">01:40 PM</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Message 5 -->
-                    <div class="sdir-msg-row-left">
-                        <div class="sdir-msg-avatar-sm">
-                            <t t-if="state.profile and state.profile.name">
-                                <t t-esc="state.profile.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()"/>
-                            </t>
-                            <t t-else="">AP</t>
-                        </div>
-                        <div class="sdir-msg-bubble-wrap-left">
-                            <div class="sdir-msg-bubble-left">Sounds good! I'm free Thursday afternoon after 2pm.</div>
-                            <span class="sdir-msg-time">01:45 PM</span>
-                        </div>
-                    </div>
-                    <div style="height: 10px;"></div>
+                        </t>
+                    </t>
                 </div>
             </div>
             
@@ -111,13 +78,13 @@
                 <button class="sdir-msg-attach-btn">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paperclip"><path d="M13.234 20.252 21 12.3"></path><path d="m16 6-8.414 8.586a2 2 0 0 0 0 2.828 2 2 0 0 0 2.828 0l8.414-8.586a4 4 0 0 0 0-5.656 4 4 0 0 0-5.656 0l-8.415 8.585a6 6 0 1 0 8.486 8.486"></path></svg>
                 </button>
-                <div class="sdir-msg-input-wrap">
-                    <input class="sdir-msg-input" t-att-placeholder="state.profile ? 'Message ' + state.profile.name.split(' ')[0] + '…' : 'Message Aaron…'"/>
-                    <button class="sdir-msg-emoji-btn">
+                <div class="sdir-msg-input-wrap" style="align-items: center;">
+                    <textarea t-ref="msgInput" class="sdir-msg-input" style="resize: none; font-family: inherit; font-size: inherit; border: none; outline: none; width: 100%; box-sizing: border-box; background: transparent; padding-top: 8px; line-height: 1.2;" rows="1" t-att-placeholder="state.profile ? 'Message ' + state.profile.name.split(' ')[0] + '…' : 'Message Aaron…'" t-model="state.messageBody" t-on-keydown="onKeydown"></textarea>
+                    <button class="sdir-msg-emoji-btn" style="margin-top: 4px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-smile"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" x2="9.01" y1="9" y2="9"></line><line x1="15" x2="15.01" y1="9" y2="9"></line></svg>
                     </button>
                 </div>
-                <button class="sdir-msg-send-btn" disabled="disabled">
+                <button class="sdir-msg-send-btn" t-att-style="!state.messageBody ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;'" t-att-disabled="!state.messageBody ? 'disabled' : undefined" t-on-click="() => this.sendMessage()">
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"></path><path d="m21.854 2.147-10.94 10.939"></path></svg>
                 </button>
             </div>

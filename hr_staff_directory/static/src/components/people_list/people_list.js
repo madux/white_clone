@@ -54,6 +54,7 @@ export class StaffDirectoryPeopleList extends Component {
         this.rpc = useService("rpc");
         this.toast = useService("hr_staff_directory.toast");
         this.messageService = useService("hr_staff_directory.message");
+        this.mailModalService = useService("hr_staff_directory.mail_modal");
         this._boundOnWindowClick = this._onWindowClick.bind(this);
         this._boundOnKeyDown = this._onDialogKeyDown.bind(this);
         this._boundOnResize = this._onWindowResize.bind(this);

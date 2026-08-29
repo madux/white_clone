@@ -23,6 +23,7 @@ export class StaffDirectoryProfilePanel extends Component {
 
     setup() {
         this.messageService = useService("hr_staff_directory.message");
+        this.mailModalService = useService("hr_staff_directory.mail_modal");
         this.state = useState({
             profileActiveTab: 'overview',
             showEditModal: false,

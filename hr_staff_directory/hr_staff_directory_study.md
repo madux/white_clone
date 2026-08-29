@@ -101,3 +101,68 @@ Adding a new toast type requires **no JS changes**: add `.sdir-toast-{type}` col
 
 ### Design Note — why `main_components`?
 An earlier revision mounted the container inside the dashboard's template. That couples the toast to a single client action (it disappears when the action unmounts) and relies on a child component subscribing to service state through a getter. Registering in `main_components` — exactly what core's `notification_service` does — guarantees one always-mounted container at the webclient root, making `show()` truly global and the reactivity path identical to core.
+
+
+## 8. Reusable Message and Mail Modals (Service-Driven)
+The module provides reusable UI components for sending Direct Messages and Emails. Just like the Toast component, these are mounted as global services in the `main_components` registry. Any component can trigger them without prop-drilling or template wiring.
+
+### The Message Component (`hr_staff_directory.message`)
+This provides a custom, pixel-perfect floating message box (similar to standard Odoo Discuss UI but customized for this module).
+*   **Usage**:
+    ```js
+    import { useService } from "@web/core/utils/hooks";
+    
+    // in setup():
+    this.messageModal = useService("hr_staff_directory.message");
+    
+    // anywhere (pass the employee's profile object):
+    this.messageModal.show(activeProfile);
+    ```
+
+### The Mail Modal Component (`hr_staff_directory.mail_modal`)
+This provides a sleek, slide-up-from-bottom email composer modal.
+*   **Usage**:
+    ```js
+    import { useService } from "@web/core/utils/hooks";
+    
+    // in setup():
+    this.mailModal = useService("hr_staff_directory.mail_modal");
+    
+    // anywhere (pass the employee's profile object):
+    this.mailModal.show(activeProfile);
+    ```
+
+### How They Work
+1. The services `start()` create reactive singletons and register containers (`SDIRMessageContainer` and `SDIRMailModalContainer`) in the `main_components` registry.
+2. The UI logic handles toggling `isVisible` and pre-filling the target recipient's details based on the `profile` object passed to `.show(profile)`.
+3. (Planned) The actual sending of the message/email will execute headless RPC calls to Odoo's `discuss.channel` backend.
+
+
+## 9. Local Development: Testing Outgoing Emails
+
+When developing modules that send real emails in Odoo, it is critical to use a mock SMTP server to prevent accidentally emailing real users or crashing the email queue with "Connection Refused" exceptions.
+
+**Mailpit** is the recommended tool. It runs a local SMTP server and provides a web interface to inspect all sent emails.
+
+### Setting up Mailpit in WSL/Linux:
+
+1. **Install Mailpit:**
+   ```bash
+   sudo bash -c "$(curl -sL https://raw.githubusercontent.com/axllent/mailpit/refs/heads/master/install.sh)"
+   ```
+
+2. **Run Mailpit:**
+   Start the server by running `mailpit` in your terminal. It will occupy port `1025` for SMTP and `8025` for the web UI.
+
+3. **Configure Odoo:**
+   - Enable **Developer Mode**.
+   - Navigate to **Settings -> Technical -> Outgoing Mail Servers**.
+   - Create a new record:
+     - **Description:** Local Mailpit
+     - **SMTP Server:** `localhost`
+     - **SMTP Port:** `1025`
+     - **Connection Security:** None
+   - Leave the username and password blank.
+   - Click **Test Connection** to verify.
+
+Once configured, all emails routed via `mail.mail` or `message_post` will be delivered to Mailpit. You can view the full HTML emails at `http://localhost:8025`.

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_staff_directory.MailModal" owl="1">
+        <div t-if="state.isVisible" t-att-class="'sdir-msg-box ' + (state.isMinimized ? 'sdir-msg-minimized' : 'sdir-msg-expanded')">
+            <!-- Header -->
+            <div class="sdir-msg-header">
+                <span class="sdir-msg-title">New Email<t t-if="!state.isMinimized and state.profile"> — <t t-esc="state.profile.name"/></t></span>
+                <div class="sdir-msg-controls">
+                    <button t-on-click="toggleMinimize" class="sdir-msg-btn-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                    <button t-on-click="close" class="sdir-msg-btn-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Body -->
+            <div class="sdir-msg-body" t-if="!state.isMinimized">
+                <div class="sdir-msg-row sdir-msg-to-row">
+                    <span class="sdir-msg-label">To:</span>
+                    <input type="text" class="sdir-msg-to-email-input" readonly="readonly"
+                        t-att-value="state.profile ? (state.profile.work_email || state.profile.name) : ''"/>
+                </div>
+                <div class="sdir-msg-row">
+                    <input type="text" placeholder="Subject" t-model="state.subject" class="sdir-msg-input"/>
+                </div>
+                <div class="sdir-msg-row sdir-msg-textarea-row">
+                    <textarea t-attf-placeholder="Write to {{state.profile ? state.profile.name : '...'}}" t-model="state.body" class="sdir-msg-textarea"></textarea>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="sdir-msg-footer" t-if="!state.isMinimized">
+                <button class="sdir-msg-btn-send" t-on-click="() => this.sendMessage()" t-att-disabled="(!state.subject || !state.body) ? 'disabled' : undefined" t-att-style="(!state.subject || !state.body) ? 'opacity: 0.5; cursor: not-allowed;' : 'cursor: pointer;'">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    Send
+                </button>
+                <button class="sdir-msg-btn-discard" t-on-click="close">Discard</button>
+            </div>
+        </div>
+    </t>
+</templates>

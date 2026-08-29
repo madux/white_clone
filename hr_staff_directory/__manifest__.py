@@ -32,6 +32,7 @@
     'data': [
         'views/assets.xml',
         'views/staff_directory_actions.xml',
+        'views/mail_templates.xml',
         'views/menu.xml',
         'data/hr_work_location_cron.xml',
         'security/ir.model.access.csv',
@@ -51,6 +52,10 @@
             'hr_staff_directory/static/src/components/message/message.css',
             'hr_staff_directory/static/src/components/message/message.js',
             'hr_staff_directory/static/src/components/message/message.xml',
+
+            'hr_staff_directory/static/src/components/mail_modal/mail_modal.css',
+            'hr_staff_directory/static/src/components/mail_modal/mail_modal.js',
+            'hr_staff_directory/static/src/components/mail_modal/mail_modal.xml',
 
             'hr_staff_directory/static/src/components/people_list/people_list.css',
 

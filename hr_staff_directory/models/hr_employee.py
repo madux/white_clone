@@ -693,11 +693,31 @@ class HrEmployeeStaffDirectory(models.Model):
     @api.model
     def email_employees(self, employee_ids, subject, body_text):
         """Email the given employees (People-list selection mode).
-        Recipients come from fresh work_email values — never from client data.
+        Posts a message to the employee's chatter which handles the actual email dispatch.
         """
         employees = self.browse(employee_ids or []).exists().filtered('active')
-        Segment = self.env['hr.staff.directory.segment']
-        return Segment._send_emails_to_employees(employees, subject, body_text)
+        sent = 0
+        skipped = 0
+        for emp in employees:
+            if not emp.work_contact_id:
+                skipped += 1
+                continue
+                
+            emp.message_post(
+                body=body_text,
+                subject=subject or 'No Subject',
+                message_type='email',
+                subtype_xmlid='mail.mt_comment',
+                partner_ids=[emp.work_contact_id.id]
+            )
+            sent += 1
+            
+        return {
+            'sent': sent,
+            'failed': 0,
+            'skipped_no_email': skipped,
+            'total': len(employees)
+        }
 
     # NOTE: Real-time sync (create/write/unlink → bus broadcast) now lives in
     # staff_directory_sync.py so the same notification is emitted for every
@@ -1116,6 +1136,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'direct_report_ids': emp.child_ids.ids if emp.child_ids else [],
                 'direct_reports':    len(emp.child_ids.ids) if emp.child_ids else 0,
                 'tenure':            tenure_label,
+                'partner_id':        emp.user_id.partner_id.id if emp.user_id else (emp.work_contact_id.id if emp.work_contact_id else False),
                 'work_email':        emp.work_email or '',
                 'work_phone':        emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',
                 'email':             emp.work_email or '',
