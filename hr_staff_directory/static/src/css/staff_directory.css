@@ -1934,3 +1934,8 @@
 }
 
 
+
+/* Hide native Odoo chat windows while in the Staff Directory */
+.o_hr_staff_directory_dashboard .o-mail-ChatWindow {
+    display: none !important;
+}
