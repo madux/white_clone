@@ -27,7 +27,7 @@ export class StaffDirectoryMailModal extends Component {
     }
 
     async sendMessage() {
-        if (!this.state.profile) return;
+        if (!this.state.profiles || this.state.profiles.length === 0) return;
         
         if (!this.state.subject || !this.state.body) {
             if (this.env.services["hr_staff_directory.toast"]) {
@@ -36,32 +36,44 @@ export class StaffDirectoryMailModal extends Component {
             return;
         }
 
-        if (!this.state.profile.partner_id) {
-            if (this.env.services["hr_staff_directory.toast"]) {
-                this.env.services["hr_staff_directory.toast"].show("error", "Employee has no contact record attached.");
-            }
-            return;
-        }
-
         try {
-            // Post an email message directly to the hr.employee chatter
-            // Passing partner_ids forces Odoo to actually dispatch the email to them
-            await this.orm.call("hr.employee", "message_post", [this.state.profile.id], {
-                subject: this.state.subject,
-                body: this.state.body,
-                message_type: 'email',
-                subtype_xmlid: 'mail.mt_comment',
-                partner_ids: [this.state.profile.partner_id]
-            });
+            let sentCount = 0;
+            let errorCount = 0;
+            
+            for (const profile of this.state.profiles) {
+                if (!profile.partner_id) {
+                    errorCount++;
+                    continue;
+                }
+                try {
+                    await this.orm.call("hr.employee", "message_post", [profile.id], {
+                        subject: this.state.subject,
+                        body: this.state.body,
+                        message_type: 'email',
+                        subtype_xmlid: 'mail.mt_comment',
+                        partner_ids: [profile.partner_id]
+                    });
+                    sentCount++;
+                } catch (e) {
+                    console.error("Failed to send email to", profile.name, e);
+                    errorCount++;
+                }
+            }
 
             if (this.env.services["hr_staff_directory.toast"]) {
-                this.env.services["hr_staff_directory.toast"].show("success", "Email queued for delivery!");
+                if (sentCount > 0 && errorCount === 0) {
+                    this.env.services["hr_staff_directory.toast"].show("success", sentCount === 1 ? "Email queued for delivery!" : `Queued ${sentCount} emails for delivery!`);
+                } else if (sentCount > 0 && errorCount > 0) {
+                    this.env.services["hr_staff_directory.toast"].show("warning", `Sent ${sentCount} emails, but ${errorCount} failed.`);
+                } else {
+                    this.env.services["hr_staff_directory.toast"].show("error", "Failed to send emails.");
+                }
             }
             this.close();
         } catch (error) {
-            console.error("Failed to send email:", error);
+            console.error("Failed to process bulk email:", error);
             if (this.env.services["hr_staff_directory.toast"]) {
-                this.env.services["hr_staff_directory.toast"].show("error", "Failed to send email.");
+                this.env.services["hr_staff_directory.toast"].show("error", "An unexpected error occurred.");
             }
         }
     }
@@ -73,7 +85,7 @@ export const sdirMailModalService = {
         const state = reactive({ 
             isVisible: false,
             isMinimized: false,
-            profile: null,
+            profiles: [],
             subject: "",
             body: ""
         });
@@ -86,13 +98,16 @@ export const sdirMailModalService = {
         
         return {
             state,
-            async show(profile) {
+            async showBulk(profiles) {
                 const visibleWindows = [...chatWindowService.visible];
                 for (const cw of visibleWindows) {
                     await chatWindowService.close(cw);
                 }
-                state.profile = profile;
+                state.profiles = profiles;
                 state.isVisible = true;
+            },
+            async show(profile) {
+                this.showBulk([profile]);
             },
             hide() {
                 state.isVisible = false;

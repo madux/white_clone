@@ -218,3 +218,51 @@ const selectedUsers = [
 ];
 this.messageService.showBulk(selectedUsers);
 ```
+
+## 11. Global Toast Override (Notification Service Patch)
+
+To ensure visual consistency across the entire dashboard and module, we surgically overridden Odoo's native `notification_service`. This guarantees that if any underlying Odoo core components (like the ORM or Discuss module) throw a standard toast notification, they are instantly hijacked and rendered using our custom, premium `.sdir-toast` component instead.
+
+### 11.1 How It Works
+We leverage Odoo's native `@web/core/utils/patch` utility in a dedicated file `static/src/components/toast/notification_patch.js`.
+
+1. **Monkey Patching**: We hook into `notificationService.start()` and intercept its `add()` method.
+2. **Type Mapping**: Odoo's native `type` attributes (`success`, `warning`, `danger`, `info`) are dynamically mapped to our custom toast styles (`success`, `warning`, `error`, `info`).
+3. **Smart Fallback**: The native Odoo notification system supports interactive toasts (with buttons) or "sticky" toasts that require explicit dismissal. Because our custom toast is designed for simple, auto-dismissing visual alerts, the patch intelligently inspects the incoming arguments. If a toast requires buttons or is sticky, the patch seamlessly falls back to the native Odoo notification component, ensuring that critical functionality never breaks.
+
+### 11.2 The Implementation
+```javascript
+import { patch } from "@web/core/utils/patch";
+import { notificationService } from "@web/core/notifications/notification_service";
+
+patch(notificationService, {
+    start(env) {
+        const result = super.start(env);
+        const originalAdd = result.add;
+        
+        result.add = (message, options = {}) => {
+            // Fallback for sticky or actionable toasts since our custom toast is simple auto-closing
+            if (options.buttons || options.sticky) {
+                return originalAdd(message, options);
+            }
+            
+            // Map Odoo's native types to our custom toast
+            let type = "info";
+            if (options.type === "danger") type = "error";
+            else if (options.type === "warning") type = "warning";
+            else if (options.type === "success") type = "success";
+            
+            const customToast = env.services["hr_staff_directory.toast"];
+            if (customToast) {
+                customToast.show(type, message);
+                return () => {}; // return dummy close function
+            }
+            
+            return originalAdd(message, options);
+        };
+        
+        return result;
+    }
+});
+```
+This patch script is then registered directly into the `__manifest__.py` under the `web.assets_backend` bundle so it loads seamlessly with the Odoo webclient.

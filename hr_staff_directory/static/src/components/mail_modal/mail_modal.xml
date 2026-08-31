@@ -4,7 +4,7 @@
         <div t-if="state.isVisible" t-att-class="'sdir-msg-box ' + (state.isMinimized ? 'sdir-msg-minimized' : 'sdir-msg-expanded')">
             <!-- Header -->
             <div class="sdir-msg-header">
-                <span class="sdir-msg-title">New Email<t t-if="!state.isMinimized and state.profile"> — <t t-esc="state.profile.name"/></t></span>
+                <span class="sdir-msg-title">New Email<t t-if="!state.isMinimized and state.profiles.length > 0"> — <t t-esc="state.profiles.length === 1 ? state.profiles[0].name : state.profiles.length + ' Recipients'"/></t></span>
                 <div class="sdir-msg-controls">
                     <button t-on-click="toggleMinimize" class="sdir-msg-btn-icon">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -19,13 +19,13 @@
                 <div class="sdir-msg-row sdir-msg-to-row">
                     <span class="sdir-msg-label">To:</span>
                     <input type="text" class="sdir-msg-to-email-input" readonly="readonly"
-                        t-att-value="state.profile ? (state.profile.work_email || state.profile.name) : ''"/>
+                        t-att-value="state.profiles.length === 1 ? (state.profiles[0].work_email || state.profiles[0].name) : state.profiles.length + ' Recipients'"/>
                 </div>
                 <div class="sdir-msg-row">
                     <input type="text" placeholder="Subject" t-model="state.subject" class="sdir-msg-input"/>
                 </div>
                 <div class="sdir-msg-row sdir-msg-textarea-row">
-                    <textarea t-attf-placeholder="Write to {{state.profile ? state.profile.name : '...'}}" t-model="state.body" class="sdir-msg-textarea"></textarea>
+                    <textarea t-attf-placeholder="Write to {{state.profiles.length === 1 ? state.profiles[0].name : 'your team'}}..." t-model="state.body" class="sdir-msg-textarea"></textarea>
                 </div>
             </div>
             <!-- Footer -->

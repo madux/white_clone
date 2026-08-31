@@ -1053,17 +1053,11 @@ export class StaffDirectoryDashboard extends Component {
     // ─── Messaging & Toast Logic ─────────────────────────────────────────────
 
     openMessageBox(recipientName, recipientEmail, personId) {
-        this.state.messageBox.isVisible = true;
-        this.state.messageBox.isMinimized = false;
-        this.state.messageBox.mode = 'people';
-        this.state.messageBox.recipientIds = personId ? [personId] : [];
-        this.state.messageBox.segmentId = null;
-        this.state.messageBox.toName = recipientName || '';
-        this.state.messageBox.toEmail = recipientEmail || '';
-        this.state.messageBox.subject = '';
-        this.state.messageBox.body = '';
-        this.state.messageBox.sending = false;
-        this.state.hasMessageError = false;
+        if (!personId) return;
+        const profile = this.state.people.find(p => p.id === personId);
+        if (profile && this.env.services["hr_staff_directory.mail_modal"]) {
+            this.env.services["hr_staff_directory.mail_modal"].show(profile);
+        }
     }
 
     openBulkChatBox() {
@@ -1076,24 +1070,10 @@ export class StaffDirectoryDashboard extends Component {
 
     openBulkMessageBox() {
         if (this.state.selectedPeople.length === 0) return;
-
         const selectedPeople = this.state.people.filter(p => this.state.selectedPeople.includes(p.id));
-        const emails = selectedPeople
-            .map(p => p.work_email || p.email)
-            .filter(email => email && email.trim() !== '');
-
-        this.state.messageBox.isVisible = true;
-        this.state.messageBox.isMinimized = false;
-        this.state.messageBox.mode = 'people';
-        this.state.messageBox.recipientIds = [...this.state.selectedPeople];
-        this.state.messageBox.segmentId = null;
-        this.state.messageBox.toName = `Multiple Recipients (${this.state.selectedPeople.length})`;
-        // Display only — the backend resolves fresh work_email values from ids.
-        this.state.messageBox.toEmail = emails.join(', ');
-        this.state.messageBox.subject = '';
-        this.state.messageBox.body = '';
-        this.state.messageBox.sending = false;
-        this.state.hasMessageError = false;
+        if (this.env.services["hr_staff_directory.mail_modal"]) {
+            this.env.services["hr_staff_directory.mail_modal"].showBulk(selectedPeople);
+        }
     }
 
     openSegmentChatBox(segmentData) {
@@ -1104,19 +1084,10 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     openSegmentMessageBox(segmentData) {
-        if (!segmentData || !segmentData.metrics || !segmentData.metrics.total) return;
-
-        this.state.messageBox.isVisible = true;
-        this.state.messageBox.isMinimized = false;
-        this.state.messageBox.mode = 'segment';
-        this.state.messageBox.recipientIds = [];
-        this.state.messageBox.segmentId = segmentData.segment_id;
-        this.state.messageBox.toName = `${segmentData.name} · ${segmentData.metrics.total} member${segmentData.metrics.total === 1 ? '' : 's'}`;
-        this.state.messageBox.toEmail = '';
-        this.state.messageBox.subject = '';
-        this.state.messageBox.body = '';
-        this.state.messageBox.sending = false;
-        this.state.hasMessageError = false;
+        if (!segmentData || !segmentData.members) return;
+        if (this.env.services["hr_staff_directory.mail_modal"]) {
+            this.env.services["hr_staff_directory.mail_modal"].showBulk(segmentData.members);
+        }
     }
 
     minimizeMessageBox() {

@@ -33,7 +33,7 @@ export const sdirToastService = {
         );
         return {
             state,
-            show(type, message, duration = 3000) {
+            show(type, message, duration = 5000) {
                 state.type = type;
                 state.message = message;
                 state.isVisible = true;

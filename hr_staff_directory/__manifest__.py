@@ -33,6 +33,7 @@
     'hr_staff_directory/static/src/xml/staff_directory_dashboard.xml',
     'hr_staff_directory/static/src/components/toast/toast.css',
     'hr_staff_directory/static/src/components/toast/toast.js',
+    'hr_staff_directory/static/src/components/toast/notification_patch.js',
     'hr_staff_directory/static/src/components/toast/toast.xml',
     'hr_staff_directory/static/src/components/message/message.css',
     'hr_staff_directory/static/src/components/message/message.js',
