@@ -166,3 +166,55 @@ When developing modules that send real emails in Odoo, it is critical to use a m
    - Click **Test Connection** to verify.
 
 Once configured, all emails routed via `mail.mail` or `message_post` will be delivered to Mailpit. You can view the full HTML emails at `http://localhost:8025`.
+
+
+## 10. Chat Window UI Redesign & Service Proxy
+
+The module deeply redesigns the native Odoo `mail.ChatWindow` component to look incredibly modern and premium, while carefully preserving all underlying WebRTC, Discuss, and Thread logic.
+
+### 10.1 UI Customization via XPath and CSS
+Instead of reinventing the complex Odoo messaging and WebRTC wheel, we extended the native `mail.ChatWindow` using `xpath` (in `chat_window_patch.xml`) and injected a highly specific CSS layer (`chat_window_redesign.css`).
+*   **The Overrides**: We aggressively override the native layout, stripping out Odoo's default borders and box-shadows. We force the chat window to be 450px wide, floating, with 12px border radii and a clean `rgb(240, 242, 245)` background.
+*   **Action Buttons**: The native Odoo action icons (Call, Settings) were missing or misplaced. We patched the XML `t-if` condition to correctly map the `"call"`, `"settings"`, and `"search"` native Odoo action IDs so they seamlessly render in our custom header. Crucially, we bind these clicks to `action.onSelect()` rather than `action.action()`, ensuring Odoo's internal JS continues to route WebRTC requests properly.
+*   **Composer Gaps**: We targeted deep internal DOM elements (`.o-mail-Composer-actions .d-flex.flex-grow-1.align-items-center`) to inject `gap: 8px !important;` alongside forced flexbox layouts, making the emoji, attachment, and voice recorder buttons perfectly spaced.
+
+### 10.2 The Proxy Service (`hr_staff_directory.message`)
+To control the lifecycle of this redesigned chat window and prevent UI overlapping, we built a proxy service: `hr_staff_directory.message`.
+
+When a user clicks "Message", "Call", or "Video Call", they do not trigger Odoo directly. Instead, they call our service, which safely orchestrates the launch:
+1.  **Mutual Exclusivity**: It aggressively sweeps `chatWindowService.visible` and closes any currently open chat boxes, ensuring only one chat is open at a time. It also forces the `mailModalService` (Email Box) to hide.
+2.  **1-on-1 Chats**: For a single target, it invokes the native `mailThread.openChat({ partnerId: ID })`.
+3.  **Group/Bulk Chats**: When triggered from the "Message All" button on the table or inside a Segment, the service's `showBulk(profiles)` method intercepts. If multiple users are passed, it seamlessly proxies the array of `partner_id`s to Odoo's native `discuss.core.common.createGroupChat({ partners_to: partnerIds })`. This spins up a native group chat without any backend RPC boilerplate on our end.
+4.  **Auto-Video Call Integration**: If triggered with the `{ startVideoCall: true }` option (e.g., from the Video Call button), the service awaits the chat window, resolves the `thread`, and automatically triggers `rtc.toggleCall(thread, { video: true })` via `discuss.rtc`, dropping the user directly into a live camera feed.
+
+### 10.3 How Other Devs Can Trigger It
+Other modules or custom components in Odoo 17 can easily leverage this proxy to trigger our redesigned chat window or initiate a native WebRTC video call.
+
+**Triggering a 1-on-1 Chat / Video Call:**
+```javascript
+import { useService } from "@web/core/utils/hooks";
+
+// In your setup():
+this.messageService = useService("hr_staff_directory.message");
+
+// Trigger a normal chat:
+this.messageService.show({ partner_id: 123 });
+
+// Trigger an instant WebRTC Video Call:
+this.messageService.show({ partner_id: 123 }, { startVideoCall: true });
+```
+
+**Triggering a Bulk Group Chat:**
+```javascript
+import { useService } from "@web/core/utils/hooks";
+
+this.messageService = useService("hr_staff_directory.message");
+
+// Pass an array of objects containing partner_ids
+const selectedUsers = [
+    { partner_id: 10 },
+    { partner_id: 11 },
+    { partner_id: 12 }
+];
+this.messageService.showBulk(selectedUsers);
+```

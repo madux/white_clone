@@ -1066,6 +1066,14 @@ export class StaffDirectoryDashboard extends Component {
         this.state.hasMessageError = false;
     }
 
+    openBulkChatBox() {
+        if (this.state.selectedPeople.length === 0) return;
+        const selectedPeople = this.state.people.filter(p => this.state.selectedPeople.includes(p.id));
+        if (this.env.services["hr_staff_directory.message"]) {
+            this.env.services["hr_staff_directory.message"].showBulk(selectedPeople);
+        }
+    }
+
     openBulkMessageBox() {
         if (this.state.selectedPeople.length === 0) return;
 
@@ -1086,6 +1094,13 @@ export class StaffDirectoryDashboard extends Component {
         this.state.messageBox.body = '';
         this.state.messageBox.sending = false;
         this.state.hasMessageError = false;
+    }
+
+    openSegmentChatBox(segmentData) {
+        if (!segmentData || !segmentData.members) return;
+        if (this.env.services["hr_staff_directory.message"]) {
+            this.env.services["hr_staff_directory.message"].showBulk(segmentData.members);
+        }
     }
 
     openSegmentMessageBox(segmentData) {

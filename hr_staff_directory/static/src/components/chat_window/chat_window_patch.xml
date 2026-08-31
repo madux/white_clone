@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="mail.ChatWindow" t-inherit-mode="extension">
+        <!-- Inject full screen class -->
+        <xpath expr="//div[hasclass('o-mail-ChatWindow')]" position="attributes">
+            <attribute name="t-attf-class">{{ sdirState.isFullScreen ? 'o-chat-fullscreen' : '' }}</attribute>
+        </xpath>
+
+        <!-- Redesign Header -->
+        <xpath expr="//div[hasclass('o-mail-ChatWindow-header')]" position="replace">
+            <div class="o-mail-ChatWindow-header d-flex align-items-center flex-shrink-0 bg-100 cursor-pointer border-bottom" style="height: 60px; background-color: rgb(255, 255, 255); padding: 0px 16px; gap: 12px; box-shadow: rgba(0, 0, 0, 0.06) 0px 1px 4px;">
+                <!-- Avatar & Online Status -->
+                <div class="position-relative flex-shrink-0 o-mail-ChatWindow-command" t-on-click="onClickHeader">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background-color: rgb(139, 92, 246); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: rgb(255, 255, 255); overflow: hidden;">
+                        <img t-if="props.chatWindow.thread and props.chatWindow.thread.chatPartner" t-attf-src="/web/image/res.partner/{{props.chatWindow.thread.chatPartner.id}}/avatar_128" style="width:100%; height:100%; object-fit: cover;"/><img t-elif="props.chatWindow.thread and props.chatWindow.thread.imgUrl" t-att-src="props.chatWindow.thread.imgUrl" style="width:100%; height:100%; object-fit: cover;"/>
+                        <span t-else=""><t t-esc="(props.chatWindow.displayName || '  ').substring(0,2).toUpperCase()"/></span>
+                    </div>
+                    <div class="position-absolute" style="bottom: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgb(255, 255, 255);" t-att-style="(props.chatWindow.thread and props.chatWindow.thread.imStatus === 'online') ? 'background-color: rgb(16, 185, 129);' : 'background-color: rgb(156, 163, 175);'"></div>
+                </div>
+                
+                <!-- Name -->
+                <div class="flex-grow-1 min-w-0 o-mail-ChatWindow-command" t-on-click="onClickHeader">
+                    <div style="font-size: 14px; font-weight: 700; color: rgb(17, 24, 39); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <t t-esc="props.chatWindow.displayName"/>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="d-flex gap-2 flex-shrink-0">
+                    <t t-if="threadActions.actions.length > 0">
+                        <t t-foreach="threadActions.actions" t-as="action" t-key="action.id">
+                            <button t-if="action.id === 'call' or action.id === 'settings' or action.id === 'search'"
+                                class="btn d-flex align-items-center justify-content-center p-0"
+                                style="width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgb(232, 232, 238); background-color: rgb(249, 250, 251); cursor: pointer;"
+                                t-att-title="action.name"
+                                t-on-click.stop="() => action.onSelect()">
+                                <i t-att-class="(action.icon ? action.icon : 'fa fa-fw') + ' text-muted'"></i>
+                            </button>
+                        </t>
+                    </t>
+                    <!-- Expand / Minimize Button -->
+                    <button class="btn d-flex align-items-center justify-content-center p-0" title="Toggle Full Screen" t-on-click="toggleFullScreen" style="width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgb(232, 232, 238); background-color: rgb(249, 250, 251); cursor: pointer;">
+                        <i t-att-class="sdirState.isFullScreen ? 'fa fa-fw fa-compress text-muted' : 'fa fa-fw fa-expand text-muted'"></i>
+                    </button>
+                    <!-- Close Button -->
+                    <button class="btn d-flex align-items-center justify-content-center p-0" title="Close" t-on-click="() => this.chatWindowService.close(props.chatWindow)" style="width: 34px; height: 34px; border-radius: 9px; border: 1px solid rgb(232, 232, 238); background-color: rgb(249, 250, 251); cursor: pointer;">
+                        <i class="fa fa-fw fa-times text-muted"></i>
+                    </button>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

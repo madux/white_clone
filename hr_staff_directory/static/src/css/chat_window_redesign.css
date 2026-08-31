@@ -1,0 +1,283 @@
+/* Full Screen Toggle */
+.o-mail-ChatWindow.o-chat-fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: none !important;
+    max-width: none !important;
+    z-index: 10050 !important;
+    border-radius: 0 !important;
+    right: 0 !important;
+}
+
+.o-mail-ChatWindowContainer {
+    z-index: 10000 !important;
+}
+
+/* Base Chat Window Reset */
+.o-mail-ChatWindow {
+    background-color: rgb(240, 242, 245) !important;
+    border: none !important;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px !important;
+    width: 450px !important;
+    max-height: 500px !important;
+    margin-right: 24px !important;
+    margin-bottom: 24px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    z-index: 10050 !important;
+}
+.o-mail-ChatWindow > .bg-view {
+    background-color: transparent !important;
+}
+.o-mail-Thread {
+    background-color: rgb(240, 242, 245) !important;
+    padding: 0 16px !important;
+}
+
+/* Chat Bubbles Flex Restructuring */
+/* Received messages (Left) */
+.o-mail-ChatWindow .o-mail-Message {
+    background-color: transparent !important;
+    padding: 0 !important;
+    margin-top: 12px !important;
+}
+.o-mail-ChatWindow .o-mail-Message-core {
+    align-items: flex-end !important; /* Avatar at bottom */
+    gap: 8px !important;
+}
+.o-mail-ChatWindow .o-mail-Message-sidebar {
+    width: 30px !important;
+    height: 30px !important;
+    margin-right: 0 !important;
+}
+.o-mail-ChatWindow .o-mail-Message-avatarContainer {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+}
+.o-mail-ChatWindow .o-mail-Message-avatar {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.o-mail-ChatWindow .o-mail-Message .w-100.o-min-width-0 {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    max-width: 68% !important;
+    width: auto !important;
+}
+
+.o-mail-ChatWindow .o-mail-Message-header {
+    order: 2 !important; /* Move date below */
+    margin: 0 !important;
+    padding-left: 2px !important;
+}
+.o-mail-ChatWindow .o-mail-Message-date {
+    font-size: 10px !important;
+    color: rgb(156, 163, 175) !important;
+}
+
+.o-mail-ChatWindow .o-mail-Message-content {
+    order: 1 !important;
+}
+.o-mail-ChatWindow .o-mail-Message-textContent {
+    background-color: rgb(255, 255, 255) !important;
+    padding: 10px 14px !important;
+    border-radius: 16px 16px 16px 4px !important;
+    color: rgb(31, 41, 55) !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 1px 4px !important;
+    border: 1px solid rgb(232, 232, 238) !important;
+}
+.o-mail-ChatWindow .o-mail-Message-bubble {
+    display: none !important; /* Hide Odoo's native bubble background */
+}
+.o-mail-ChatWindow .o-mail-Message-body {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Sent messages (Right) */
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-core {
+    flex-direction: row-reverse !important;
+}
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .w-100.o-min-width-0 {
+    align-items: flex-end !important;
+}
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-header {
+    padding-left: 0 !important;
+    padding-right: 2px !important;
+}
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-textContent {
+    background-color: rgb(233, 30, 140) !important;
+    color: rgb(255, 255, 255) !important;
+    border-radius: 16px 16px 4px 16px !important;
+    border: none !important;
+    box-shadow: rgba(233, 30, 140, 0.19) 0px 2px 8px !important;
+}
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-body p,
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-body span,
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-body a {
+    color: rgb(255, 255, 255) !important;
+}
+
+/* Hide Avatar for Self Authored */
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-sidebar {
+    display: none !important;
+}
+
+/* Composer Footer Redesign */
+.sdir-native-composer {
+    background-color: rgb(255, 255, 255) !important;
+    border-top: 1px solid rgb(232, 232, 238) !important;
+    padding: 12px 20px !important;
+}
+.sdir-native-composer .o-mail-Composer-coreMain {
+    flex-direction: row-reverse !important;
+    gap: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+.sdir-native-composer .o-mail-Composer-coreMain > .bg-view {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    gap: 10px !important;
+}
+.sdir-native-composer .position-relative.flex-grow-1 {
+    order: 2 !important;
+    position: relative !important;
+}
+.sdir-native-composer .o-mail-Composer-input {
+    height: 42px !important;
+    padding: 12px 44px 12px 16px !important;
+    border: 1.5px solid rgb(232, 232, 238) !important;
+    border-radius: 12px !important;
+    font-size: 13px !important;
+    outline: none !important;
+    background-color: rgb(249, 250, 251) !important;
+    color: rgb(17, 24, 39) !important;
+    box-shadow: none !important;
+    line-height: 1.2 !important;
+}
+.sdir-native-composer .o-mail-Composer-actions {
+    order: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+.sdir-native-composer .o-mail-Composer-attachFiles {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgb(232, 232, 238) !important;
+    background-color: rgb(249, 250, 251) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #6B7280 !important;
+    padding: 0 !important;
+}
+/* Emoji Button Flex */
+.sdir-native-composer button[aria-label="Emojis"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgb(232, 232, 238) !important;
+    background-color: rgb(249, 250, 251) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #6B7280 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+/* Send Button */
+.sdir-native-composer .btn-primary {
+    order: 3 !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    background-color: #E91E8C !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    border: none !important;
+}
+.sdir-native-composer .btn-primary:disabled {
+    background-color: rgb(229, 231, 235) !important;
+    color: #9CA3AF !important;
+}
+
+/* Aggressively kill horizontal scrolling */.o-mail-ChatWindow > .bg-view,
+.o-mail-ChatWindow .o-mail-Thread,
+.sdir-native-composer,
+.o-mail-ChatWindow-header {
+    overflow-x: hidden !important;
+}
+
+/* Fix message actions position clipping */
+.o-mail-ChatWindow .o-mail-Message-actions {
+    top: -15px !important;
+    margin-top: 0 !important;
+    background-color: rgb(255, 255, 255) !important;
+    border-radius: 8px !important;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 8px !important;
+    padding: 2px !important;
+    z-index: 10 !important;
+}
+/* Received messages */
+.o-mail-ChatWindow .o-mail-Message:not(.o-selfAuthored) .o-mail-Message-actions {
+    left: 40px !important;
+    right: auto !important;
+    margin-left: 0 !important;
+}
+/* Sent messages */
+.o-mail-ChatWindow .o-mail-Message.o-selfAuthored .o-mail-Message-actions {
+    right: 10px !important;
+    left: auto !important;
+    margin-left: 0 !important;
+}
+
+/* Microphone Button */
+.sdir-native-composer .o-mail-VoiceRecorder button {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgb(232, 232, 238) !important;
+    background-color: rgb(249, 250, 251) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #6B7280 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+/* Ensure the icon inside is also styled correctly */
+.sdir-native-composer .o-mail-VoiceRecorder button i {
+    font-size: 14px !important;
+}
+
+/* Inner composer actions gap */
+.sdir-native-composer .o-mail-Composer-actions .d-flex.flex-grow-1.align-items-center {
+    gap: 8px !important;
+}

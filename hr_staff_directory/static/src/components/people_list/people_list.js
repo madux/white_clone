@@ -39,8 +39,10 @@ export class StaffDirectoryPeopleList extends Component {
         selectedPeopleCount: { type: Number },
         exportSelected: { type: Function },
         openBulkMessageBox: { type: Function },
+        openBulkChatBox: { type: Function },
         openMessageBox: { type: Function },
         openSegmentMessageBox: { type: Function },
+        openSegmentChatBox: { type: Function },
         deptKey: { type: Function },
         lifecycleLabel: { type: Function },
         getLifecycleDotClass: { type: Function },
@@ -812,6 +814,12 @@ export class StaffDirectoryPeopleList extends Component {
         } catch (error) {
             console.error("Error deleting segment", error);
         }
+    }
+
+    openSegmentChatBox() {
+        const seg = this.state.currentSegmentData;
+        if (!seg) return;
+        this.props.openSegmentChatBox(seg);
     }
 
     openSegmentMessageBox() {

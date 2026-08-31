@@ -68,7 +68,8 @@ export class StaffDirectoryMailModal extends Component {
 }
 
 export const sdirMailModalService = {
-    start(env) {
+    dependencies: ["mail.chat_window"],
+    start(env, { "mail.chat_window": chatWindowService }) {
         const state = reactive({ 
             isVisible: false,
             isMinimized: false,
@@ -85,7 +86,11 @@ export const sdirMailModalService = {
         
         return {
             state,
-            show(profile) {
+            async show(profile) {
+                const visibleWindows = [...chatWindowService.visible];
+                for (const cw of visibleWindows) {
+                    await chatWindowService.close(cw);
+                }
                 state.profile = profile;
                 state.isVisible = true;
             },

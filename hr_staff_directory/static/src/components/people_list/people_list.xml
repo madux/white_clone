@@ -448,7 +448,7 @@
                             <div class="sdir-sel-badge" t-esc="props.selectedPeople.length"/>
                             <div class="sdir-sel-label">selected</div>
                             <div class="sdir-sel-divider"/>
-                            <button class="sdir-sel-btn">Message All</button>
+                            <button class="sdir-sel-btn" t-on-click="() => props.openBulkChatBox()">Message All</button>
                             <button class="sdir-sel-btn" t-on-click="() => props.openBulkMessageBox()">Send Email</button>
                             <button class="sdir-sel-btn" t-on-click="() => props.exportSelected()">Export CSV</button>
                             <button class="sdir-sel-btn">Add to Segment</button>
@@ -543,11 +543,11 @@
                                                                     <polyline points="22,6 12,13 2,6"/>
                                                                 </svg>
                                                             </button>
-                                                            <button type="button" class="sdir-contact-btn sdir-contact-phone" t-att-title="'Call ' + person.name">
+                                                            <a t-attf-href="tel:{{ person.work_phone || person.mobile_phone || '' }}" class="sdir-contact-btn sdir-contact-phone" t-att-title="'Call ' + person.name" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
                                                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l.94-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                                                                 </svg>
-                                                            </button>
+                                                            </a>
                                                             <button type="button" class="sdir-contact-btn sdir-contact-chat" t-att-title="'Message ' + person.name" t-on-click.stop="() => this.messageService.show(person)">
                                                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -1326,7 +1326,7 @@
                     </button>
                 </div>
                 <div class="sdir-pl-act-body">
-                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.closeActOnSegmentModal(); this.openSegmentMessageBox(); }">
+                    <button class="sdir-pl-act-btn sdir-pl-act-btn-default" t-on-click="() => { this.closeActOnSegmentModal(); this.openSegmentChatBox(); }">
                         <div class="sdir-pl-act-icon-wrap sdir-pl-act-icon-blue">
                             <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                         </div>
