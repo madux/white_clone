@@ -32,7 +32,6 @@ export class GetStartedPage extends Component {
             wizardStep: 1,
             reviewMode: false,
             showCompletionModal: false,
-            viewMode: "admin",
             progressExpanded: true,
         });
 
@@ -152,13 +151,6 @@ export class GetStartedPage extends Component {
     }
 
     // ── Navigation Actions ─────────────────────────────────────
-
-    setViewMode(mode) {
-        if (mode === "employee") {
-            return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
-        }
-        this.state.viewMode = mode;
-    }
 
     openDashboard() {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");

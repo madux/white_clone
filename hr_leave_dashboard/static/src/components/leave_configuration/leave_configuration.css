@@ -1,0 +1,64 @@
+.o_leave_configuration_main {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow: auto;
+    background: #f7f8fc;
+    margin-left: 230px;
+    transition: margin-left .3s;
+}
+
+.o_leave_sidebar_collapsed .o_leave_configuration_main { margin-left: 68px; }
+
+.o_leave_configuration_header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px 12px;
+    background: #fff;
+}
+
+.o_leave_configuration_header h2 { margin: 0; font-size: 24px; }
+.o_leave_configuration_header p { margin: 3px 0 0; color: #71809d; }
+
+.o_leave_configuration_tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 24px;
+    border-bottom: 1px solid #e4e8f1;
+    background: #fff;
+}
+
+.o_leave_configuration_tabs button {
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: #52617d;
+    padding: 13px 18px 11px;
+    font-weight: 600;
+}
+
+.o_leave_configuration_tabs button i { margin-right: 7px; }
+.o_leave_configuration_tabs button:hover,
+.o_leave_configuration_tabs button.active { color: #e91e78; border-bottom-color: #e91e78; }
+
+.o_leave_configuration_loading,
+.o_leave_configuration_denied { padding: 60px 24px; text-align: center; color: #71809d; }
+.o_leave_configuration_denied i { font-size: 30px; }
+
+.o_leave_config_embedded {
+    min-height: auto;
+    height: auto;
+    width: 100%;
+}
+
+.o_leave_config_embedded > .o_leave_dashboard,
+.o_leave_config_embedded > .o_lb_main,
+.o_leave_config_embedded > .o_ls_main {
+    width: 100%;
+    min-width: 0;
+    margin-left: 0 !important;
+}
+
+.o_leave_config_embedded .o_ls_footer { left: 230px; }
+.o_leave_sidebar_collapsed .o_leave_config_embedded .o_ls_footer { left: 68px; }

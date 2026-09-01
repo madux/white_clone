@@ -10,6 +10,7 @@ import { LeaveTypeFormModal } from "./leave_type_form_modal";
 export class LeaveTypesPage extends Component {
     static template = "hr_leave_dashboard.LeaveTypesPage";
     static components = { CalendarSidebar, LeaveTypeDetailDrawer, LeaveTypeFormModal };
+    static props = { embedded: { type: Boolean, optional: true } };
 
     setup() {
         this.orm = useService("orm");
@@ -18,7 +19,9 @@ export class LeaveTypesPage extends Component {
 
         this.state = useState({
             loading: true,
-            viewMode: "admin", // "admin" | "employee"
+            // This page is configuration-only.  The fixed value preserves
+            // existing template branches without exposing a role switch.
+            viewMode: "admin",
             leaveTypes: [],
 
             departments: [],
@@ -90,11 +93,6 @@ export class LeaveTypesPage extends Component {
 
     get filteredLeaveTypes() {
         let list = this.state.leaveTypes;
-
-        // In Employee View mode, only show active and employee-visible leave types
-        if (this.state.viewMode === "employee") {
-            list = list.filter(lt => lt.active && lt.visible_to_employees);
-        }
 
         const term = (this.state.searchTerm || "").trim().toLowerCase();
         if (term) {
@@ -172,11 +170,6 @@ export class LeaveTypesPage extends Component {
         }
     }
 
-    toggleViewMode() {
-        this.state.viewMode = this.state.viewMode === "admin" ? "employee" : "admin";
-        this.state.currentPage = 1;
-    }
-
     startTour() {
         this.state.tourActive = true;
         this.state.tourStep = 1;
@@ -219,8 +212,8 @@ export class LeaveTypesPage extends Component {
     // FR-195: Drag and Drop Sequence Reordering on Master Array
 
     onRowDragStart(ev, leaveTypeItem) {
-        if (this.hasActiveFilters || this.state.viewMode === "employee") {
-            this.notification.add("Reordering sequence is disabled while filters or Employee View are active.", { type: "warning" });
+        if (this.hasActiveFilters) {
+            this.notification.add("Reordering sequence is disabled while filters are active.", { type: "warning" });
             ev.preventDefault();
             return;
         }
@@ -235,7 +228,7 @@ export class LeaveTypesPage extends Component {
 
     async onRowDrop(ev, targetLeaveTypeItem) {
         ev.preventDefault();
-        if (this.hasActiveFilters || this.state.viewMode === "employee") return;
+        if (this.hasActiveFilters) return;
 
         const srcId = this.state.draggedLeaveTypeId;
         const targetId = targetLeaveTypeItem.id;

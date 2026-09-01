@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
   <t t-name="hr_leave_dashboard.LeaveBalancesPage">
-    <div class="leaveapp o_lb_page" t-on-click="closeMoreOptions">
-      <CalendarSidebar activeMenu="'balances'"/>
+    <div t-att-class="'leaveapp o_lb_page ' + (props.embedded ? 'o_leave_config_embedded' : '')" t-on-click="closeMoreOptions">
+      <CalendarSidebar t-if="!props.embedded" activeMenu="'configuration'"/>
       <main class="o_leave_dashboard o_lb_main">
         <!-- Amber expiry alert banner -->
         <div t-if="state.expiryBanner and state.kpis.expiring_employees" class="o_lb_alert">

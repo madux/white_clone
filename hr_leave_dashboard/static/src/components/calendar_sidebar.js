@@ -13,20 +13,31 @@ export class CalendarSidebar extends Component {
 
     setup() {
         this.action = useService("action");
-        this.user = useService("user");
         this.notification = useService("notification");
         this.orm = useService("orm");
-        this.state = useState({ collapsed: localStorage.getItem("cleonhr_leave_sidebar_collapsed") === "1", isAdmin: false, employeeMode: this.props.mode === "employee", pending: 0, configOpen: true });
+        this.state = useState({
+            collapsed: localStorage.getItem("cleonhr_leave_sidebar_collapsed") === "1",
+            access: {
+                hasPersonalScope: false,
+                canApprove: false,
+                canOperate: false,
+                canConfigure: false,
+                canViewAudit: false,
+                canViewReports: false,
+            },
+            pending: 0,
+        });
         onWillStart(async () => {
-            this.state.isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
-            const isEmployeeMode = window.localStorage.getItem("cleonhr_interface_mode") === "employee";
-            this.state.employeeMode = this.props.mode === "employee" || (!this.state.isAdmin && this.props.mode !== "admin") || (isEmployeeMode && this.props.mode !== "admin");
-            try {
-                const data = this.state.employeeMode
-                    ? await this.orm.call("hr.leave", "get_my_leave_requests", ["all", "", false])
-                    : await this.orm.call("hr.leave", "get_leave_requests_page", ["", "all", false, false, 1, 10]);
-                this.state.pending = data.counts?.pending || 0;
-            } catch (_error) { this.state.pending = 0; }
+            const profile = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.access = {
+                hasPersonalScope: profile.has_personal_scope,
+                canApprove: profile.can_approve,
+                canOperate: profile.can_operate,
+                canConfigure: profile.can_configure,
+                canViewAudit: profile.can_view_audit,
+                canViewReports: profile.can_view_operational_reports,
+            };
+            this.state.pending = profile.pending_approvals || 0;
         });
         this.externalToggle = () => this.toggleCollapsed();
         onMounted(() => { this.applyCollapsedClass(); window.addEventListener("cleonhr:toggle-leave-sidebar", this.externalToggle); });
@@ -35,10 +46,12 @@ export class CalendarSidebar extends Component {
 
     applyCollapsedClass() { document.documentElement.classList.toggle("o_leave_sidebar_collapsed", this.state.collapsed); }
     toggleCollapsed() { this.state.collapsed = !this.state.collapsed; localStorage.setItem("cleonhr_leave_sidebar_collapsed", this.state.collapsed ? "1" : "0"); this.applyCollapsedClass(); }
-    toggleConfiguration() { this.state.configOpen = !this.state.configOpen; }
-
     openDashboard() {
-        this.action.doAction(this.state.employeeMode ? "hr_leave_dashboard.action_hr_leave_employee_dashboard" : "hr_leave_dashboard.action_hr_leave_dashboard");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
+    }
+
+    openOperationsRequests() {
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
     }
 
     openSetupExperience() {
@@ -49,34 +62,32 @@ export class CalendarSidebar extends Component {
         }
     }
 
-    openTour() { this.notification.add(this.state.employeeMode ? "Use Dashboard, Calendar and My Leave Requests to manage your leave." : "Use this navigation to move through setup, requests, policies, balances and reports.", { title: "Leave Management Tour", type: "info" }); }
+    openTour() { this.notification.add("Your Leave menu combines personal, approval, and administrative sections according to your current permissions.", { title: "Leave Management Tour", type: "info" }); }
 
     openCalendar() {
         this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar");
     }
 
     async openRequests() {
-        this.action.doAction(this.state.employeeMode ? "hr_leave_dashboard.action_hr_leave_my_requests" : "hr_leave_dashboard.action_hr_leave_requests_custom");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests");
     }
 
-    openLeaveTypes() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_types_custom");
+    openApprovals() {
+        this.action.doAction(this.state.access.hasPersonalScope
+            ? "hr_leave_dashboard.action_hr_leave_my_requests"
+            : "hr_leave_dashboard.action_hr_leave_requests_custom");
     }
 
-    openLeaveBalances() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
+    openConfiguration() {
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration");
     }
 
     openReports() {
-        if (this.state.employeeMode) this.notification.add("Employee leave reports will be available here in the employee reporting screen.", { type: "info" });
-        else this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom");
     }
 
     openAuditLog() {
         this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom");
     }
 
-    openSettings() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_settings_custom");
-    }
 }

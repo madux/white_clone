@@ -40,7 +40,7 @@ export class LeaveRequestsPage extends Component {
 
             selectedIds: [],
             sidebarCollapsed: false,
-            viewMode: "admin",
+            canCreate: false,
 
             // ── Review Detail Modal ──
             showReviewModal: false,
@@ -75,6 +75,8 @@ export class LeaveRequestsPage extends Component {
         });
 
         onWillStart(async () => {
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canCreate = access.can_configure;
             await this.loadRequests();
         });
     }
@@ -478,14 +480,6 @@ export class LeaveRequestsPage extends Component {
         window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
     }
 
-    setViewMode(mode) {
-        if (!["admin", "employee"].includes(mode)) return;
-        this.state.viewMode = mode;
-        if (mode === "employee") {
-            this.notification.add("Employee preview view will be available when employee portal screens are loaded.", { type: "info" });
-        }
-    }
-
     openDashboard() {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
     }
@@ -495,7 +489,7 @@ export class LeaveRequestsPage extends Component {
     }
 
     openLeaveTypes() {
-        return this.action.doAction("hr_holidays.open_view_holiday_status");
+        return this.openConfiguration("leave_types");
     }
 
     openLeaveCalendar() {
@@ -503,7 +497,7 @@ export class LeaveRequestsPage extends Component {
     }
 
     openLeaveBalances() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
+        return this.openConfiguration("balances");
     }
 
     openReports() {
@@ -511,7 +505,13 @@ export class LeaveRequestsPage extends Component {
     }
 
     openSettings() {
-        return this.action.doAction("base_setup.action_general_configuration");
+        return this.openConfiguration("general");
+    }
+
+    openConfiguration(tab) {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
+            additionalContext: { configuration_tab: tab },
+        });
     }
 
     openAuditLog() {

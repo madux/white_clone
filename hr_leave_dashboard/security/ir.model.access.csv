@@ -16,3 +16,8 @@ access_hr_leave_blackout_period_manager,hr.leave.blackout.period manager,model_h
 access_hr_leave_blackout_period_system,hr.leave.blackout.period system,model_hr_leave_blackout_period,base.group_system,1,1,1,1
 access_hr_leave_accrual_run_manager,hr.leave.accrual.run manager,model_hr_leave_accrual_run,hr_holidays.group_hr_holidays_manager,1,0,0,0
 access_hr_leave_accrual_run_system,hr.leave.accrual.run system,model_hr_leave_accrual_run,base.group_system,1,1,1,1
+access_hr_leave_audit_log_auditor,hr.leave.audit.log reader,model_hr_leave_audit_log,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
+access_hr_leave_balance_transaction_auditor,hr.leave.balance.transaction reader,model_hr_leave_balance_transaction,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
+access_hr_leave_accrual_run_auditor,hr.leave.accrual.run reader,model_hr_leave_accrual_run,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
+access_hr_leave_request_auditor,hr.leave request reader,hr_holidays.model_hr_leave,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
+access_hr_leave_allocation_auditor,hr.leave allocation reader,hr_holidays.model_hr_leave_allocation,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0

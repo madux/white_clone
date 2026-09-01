@@ -99,9 +99,8 @@ class HrLeaveSettings(models.Model):
 
     @api.model
     def _check_leave_settings_access(self):
-        if not (
-            self.env.user.has_group("hr_holidays.group_hr_holidays_manager")
-            or self.env.user.has_group("base.group_system")
+        if not self.env.user.has_group(
+            "hr_leave_dashboard.group_leave_permission_configuration"
         ):
             raise AccessError(_("Only a Time Off Administrator can manage Leave settings."))
 
@@ -136,21 +135,19 @@ class HrLeaveSettings(models.Model):
         for leave_type in leave_types:
             workflow_counts[leave_type.approval_workflow or "single"] += 1
 
-        role_refs = [
-            ("base.group_system", _("System Administrator"), _("All system and Leave Management configuration")),
-            ("hr_holidays.group_hr_holidays_manager", _("Time Off Administrator"), _("Policies, balances, requests, reports and audit")),
-            ("hr_holidays.group_hr_holidays_user", _("Time Off Officer"), _("Operational request and allocation processing")),
-            ("base.group_user", _("Employee"), _("Personal leave requests and balances according to record rules")),
-        ]
-        roles = []
-        for xmlid, label, description in role_refs:
-            group = self.env.ref(xmlid, raise_if_not_found=False)
-            roles.append({
-                "xmlid": xmlid,
-                "name": label,
-                "description": description,
-                "users": len(group.sudo().users) if group else 0,
-            })
+        role_category = self.env.ref(
+            "hr_leave_dashboard.module_category_leave_management"
+        )
+        role_groups = self.env["res.groups"].sudo().search([
+            ("category_id", "=", role_category.id),
+        ], order="name")
+        external_ids = role_groups.get_external_id()
+        roles = [{
+            "xmlid": external_ids.get(group.id) or "res.groups,%d" % group.id,
+            "name": group.name,
+            "description": group.comment or _("Configurable Leave Management role"),
+            "users": len(group.users),
+        } for group in role_groups]
 
         return {
             "company": {"id": company.id, "name": company.name},

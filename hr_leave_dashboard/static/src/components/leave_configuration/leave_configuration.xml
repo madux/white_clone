@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.LeaveConfiguration" owl="1">
+    <div class="leaveapp o_leave_configuration">
+      <CalendarSidebar activeMenu="'configuration'"/>
+      <main class="o_leave_configuration_main">
+        <header class="o_leave_configuration_header">
+          <button type="button" class="cleon-header-plain-btn" t-on-click="toggleSidebar" title="Toggle Leave navigation"><i class="fa fa-columns"/></button>
+          <div><h2>Leave Configuration</h2><p>Manage leave types, balances, and organisation-wide settings</p></div>
+        </header>
+        <div t-if="state.loading" class="o_leave_configuration_loading"><i class="fa fa-spinner fa-spin"/> Loading configuration…</div>
+        <t t-else="">
+          <nav t-if="availableTabs.length" class="o_leave_configuration_tabs" aria-label="Leave configuration sections">
+            <button t-foreach="availableTabs" t-as="tab" t-key="tab.key" t-att-class="state.activeTab === tab.key ? 'active' : ''" t-on-click="() => this.setTab(tab.key)">
+              <i t-att-class="'fa ' + tab.icon"/><span t-esc="tab.label"/>
+            </button>
+          </nav>
+          <div t-if="!state.activeTab" class="o_leave_configuration_denied">
+            <i class="fa fa-lock"/><h3>Configuration access is not assigned</h3><p>Ask an administrator to grant an operational or configuration permission.</p>
+          </div>
+          <LeaveTypesPage t-elif="state.activeTab === 'leave_types'" embedded="true"/>
+          <LeaveBalancesPage t-elif="state.activeTab === 'balances'" embedded="true"/>
+          <LeaveSettingsPage t-elif="state.activeTab === 'general'" embedded="true" onOpenLeaveTypes.bind="openLeaveTypes"/>
+        </t>
+      </main>
+    </div>
+  </t>
+</templates>

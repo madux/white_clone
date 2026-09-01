@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_leave_dashboard.Dashboard">
-        <div class="leaveapp">
+        <div t-att-class="props.embedded ? 'leaveapp o_leave_admin_embedded' : 'leaveapp'">
 
             <!-- ════════════════════════════════════════════════════
                  WELCOME MODAL  (Screen 1 — FR-001 to FR-009)
@@ -97,7 +97,7 @@
                 onClose.bind="closeCompletionScreen"/>
 
             <!-- Shared Module Sidebar -->
-            <CalendarSidebar activeMenu="'dashboard'"/>
+            <CalendarSidebar t-if="!props.embedded" activeMenu="'dashboard'"/>
 
             <!-- ════════════════════════════════════════════════════
                  MAIN DASHBOARD AREA (Screen 8 — FR-055 to FR-072)
@@ -105,7 +105,7 @@
             <div class="o_leave_dashboard">
 
                 <!-- FR-071 and FR-072: Header -->
-                <div class="cleon-dash-header">
+                <div t-if="!props.embedded" class="cleon-dash-header">
                     <div class="cleon-dash-header-left">
                         <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
                             <i class="fa fa-columns"/>
@@ -127,17 +127,6 @@
                             <i class="fa fa-magic"/>
                         </button>
 
-                        <!-- View Switcher -->
-                        <div class="cleon-view-toggle">
-                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('admin')">
-                                <i class="fa fa-circle-o"/> Admin View
-                            </button>
-                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('employee')">
-                                <i class="fa fa-user-o"/> Employee View
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -435,12 +424,12 @@
                 </div>
 
                 <!-- Quick Actions Bar -->
-                <div class="panel quick-actions-panel">
+                <div t-if="!props.embedded" class="panel quick-actions-panel">
                     <div class="panel-head">
                         <h5><i class="fa fa-bolt"/> Quick Actions</h5>
                     </div>
                     <div class="quick-actions">
-                        <button class="quick-action quick-pink" t-on-click="openLeaveRequests">
+                        <button t-if="!props.access or props.access.can_approve or props.access.can_operate" class="quick-action quick-pink" t-on-click="openLeaveRequests">
                             <i class="fa fa-check-circle-o"/>
                             <strong>Review Pending</strong>
                             <small><t t-esc="state.kpis.pending_approvals"/> awaiting</small>
@@ -452,25 +441,25 @@
                             <small>View schedule</small>
                         </button>
 
-                        <button class="quick-action quick-green" t-on-click="openLeaveBalances">
+                        <button t-if="!props.access or props.access.can_operate" class="quick-action quick-green" t-on-click="openLeaveBalances">
                             <i class="fa fa-globe"/>
                             <strong>Manage Balances</strong>
                             <small>Allocations</small>
                         </button>
 
-                        <button class="quick-action quick-purple" t-on-click="openLeaveTypes">
+                        <button t-if="!props.access or props.access.can_configure" class="quick-action quick-purple" t-on-click="openLeaveTypes">
                             <i class="fa fa-tags"/>
                             <strong>Leave Types</strong>
                             <small>Configure</small>
                         </button>
 
-                        <button class="quick-action quick-orange" t-on-click="openReports">
+                        <button t-if="!props.access or props.access.can_view_operational_reports or props.access.can_view_strategic_reports" class="quick-action quick-orange" t-on-click="openReports">
                             <i class="fa fa-bar-chart"/>
                             <strong>Reports</strong>
                             <small>Analytics</small>
                         </button>
 
-                        <button class="quick-action quick-dark" t-on-click="openAuditLog">
+                        <button t-if="!props.access or props.access.can_view_audit" class="quick-action quick-dark" t-on-click="openAuditLog">
                             <i class="fa fa-file-text-o"/>
                             <strong>Audit Log</strong>
                             <small>Activity trail</small>

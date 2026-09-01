@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
   <t t-name="hr_leave_dashboard.LeaveSettingsPage" owl="1">
-    <div class="leaveapp o_ls_page">
-      <CalendarSidebar activeMenu="'settings'" mode="'admin'"/>
+    <div t-att-class="'leaveapp o_ls_page ' + (props.embedded ? 'o_leave_config_embedded' : '')">
+      <CalendarSidebar t-if="!props.embedded" activeMenu="'configuration'" mode="'admin'"/>
       <main class="o_ls_main">
         <header class="o_ls_header">
           <div>
-            <h1>Settings</h1>
+            <h1>General Settings</h1>
             <p>Configure company-wide Leave Management preferences</p>
           </div>
           <button class="o_ls_icon_button" title="Settings guide" t-on-click="openTour"><i class="fa fa-question-circle-o"/></button>

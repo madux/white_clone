@@ -1523,3 +1523,82 @@
 .quick-purple { background: linear-gradient(135deg, #6d28d9, #8b5cf6); }
 .quick-orange { background: linear-gradient(135deg, #f97316, #fb923c); }
 .quick-dark   { background: linear-gradient(135deg, #334155, #475569); }
+
+/* Unified role-aware dashboard shell. Personal and organisation sections
+   remain their proven components; embedding only removes duplicate chrome. */
+.o_leave_unified_main {
+    flex: 1;
+    min-width: 0;
+    margin-left: 230px;
+    padding: 0 16px 32px;
+    background: #f5f6fa;
+    transition: margin-left .3s;
+}
+
+.o_leave_sidebar_collapsed .o_leave_unified_main {
+    margin-left: 68px;
+}
+
+.o_leave_unified_header {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #e5e8ef;
+    margin-bottom: 16px;
+    background: #fff;
+    padding: 12px 16px;
+}
+
+.o_leave_unified_header h2,
+.o_leave_unified_header p {
+    margin: 0;
+}
+
+.o_leave_unified_header h2 { font-size: 22px; }
+.o_leave_unified_header p { color: #8490a7; margin-top: 3px; }
+.o_leave_unified_actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.o_leave_unified_actions button {
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    background: #fff;
+    border: 1px solid #e2e7ef;
+    border-radius: 9px;
+    color: #2f3b52;
+}
+.o_leave_unified_actions button:hover { border-color: #ed277c; color: #df1d6d; }
+.o_leave_unified_actions button > i {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 32px;
+    border-radius: 8px;
+    color: #ed277c;
+    background: #fde8f2;
+}
+.o_leave_unified_actions b,
+.o_leave_unified_actions small { display: block; }
+.o_leave_unified_actions b { font-size: 12px; }
+.o_leave_unified_actions small { color: #8a95a8; margin-top: 2px; font-size: 10px; }
+.o_leave_unified_main .o_ed_embedded { min-height: auto; }
+.o_leave_unified_main .o_ed_embedded .o_ed_main { margin-left: 0; padding: 0; }
+.o_leave_unified_main .o_leave_admin_embedded { min-height: auto; margin-top: 18px; }
+.o_leave_unified_main .o_leave_admin_embedded .o_leave_dashboard { margin-left: 0; padding: 0; }
+.o_leave_dashboard_empty_access {
+    padding: 40px;
+    text-align: center;
+    color: #718096;
+    background: #fff;
+    border: 1px solid #e3e7ee;
+    border-radius: 10px;
+}

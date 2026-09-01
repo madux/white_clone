@@ -31,17 +31,6 @@
                             <i class="fa fa-question-circle-o"/>
                         </button>
 
-                        <!-- View Switcher -->
-                        <div class="cleon-view-toggle">
-                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('admin')">
-                                <i class="fa fa-circle-o"/> Admin View
-                            </button>
-                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('employee')">
-                                <i class="fa fa-user-o"/> Employee View
-                            </button>
-                        </div>
                     </div>
                 </div>
 

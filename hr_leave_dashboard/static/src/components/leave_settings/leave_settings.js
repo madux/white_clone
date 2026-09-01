@@ -8,6 +8,7 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class LeaveSettingsPage extends Component {
     static template = "hr_leave_dashboard.LeaveSettingsPage";
     static components = { CalendarSidebar };
+    static props = { embedded: { type: Boolean, optional: true }, onOpenLeaveTypes: { type: Function, optional: true } };
 
     setup() {
         this.orm = useService("orm");
@@ -94,7 +95,10 @@ export class LeaveSettingsPage extends Component {
     }
 
     openLeaveTypes() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_types_custom");
+        if (this.props.onOpenLeaveTypes) return this.props.onOpenLeaveTypes();
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
+            additionalContext: { configuration_tab: "leave_types" },
+        });
     }
 
     openPublicHolidays() {

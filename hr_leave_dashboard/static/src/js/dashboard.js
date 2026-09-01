@@ -10,6 +10,10 @@ import { LeaveSetupCompletion, LeaveSetupWizard } from "../components/setup_wiza
 export class HrLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.Dashboard";
     static components = { CalendarSidebar, LeaveSetupWizard, LeaveSetupCompletion };
+    static props = {
+        embedded: { type: Boolean, optional: true },
+        access: { type: Object, optional: true },
+    };
 
     setup() {
         this.action = useService("action");
@@ -40,7 +44,6 @@ export class HrLeaveDashboard extends Component {
             departmentCoverage: [],
             recentRequests: [],
             sidebarCollapsed: false,
-            viewMode: "admin",
             loading: true,
             // ── Welcome Modal ──────────────────────────
             showWelcomeModal: false,
@@ -71,10 +74,11 @@ export class HrLeaveDashboard extends Component {
 
         onWillStart(async () => {
             const force = new URLSearchParams(window.location.search).get("leave_setup") === "1" || Boolean(this.props.action?.context?.open_setup_wizard);
-            const [, setup] = await Promise.all([
-                loadBundle("web.chartjs_lib"),
-                this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force }),
-            ]);
+            const canConfigure = !this.props.embedded || Boolean(this.props.access?.can_configure);
+            const setupPromise = canConfigure
+                ? this.orm.call("hr.leave.setup.progress", "get_welcome_state", [], { force })
+                : Promise.resolve({ state: "completed", current_step: 0, show_welcome: false });
+            const [, setup] = await Promise.all([loadBundle("web.chartjs_lib"), setupPromise]);
             this.state.setupState = setup.state;
             this.state.setupStep = setup.current_step;
             if (setup.checklist) {
@@ -133,15 +137,6 @@ export class HrLeaveDashboard extends Component {
 
     toggleLeaveSidebar() {
         window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
-    }
-
-    /* FR-072: Admin vs Employee View toggle. */
-    setViewMode(mode) {
-        if (!["admin", "employee"].includes(mode)) return;
-        this.state.viewMode = mode;
-        if (mode === "employee") {
-            return this.action.doAction("hr_leave_dashboard.action_hr_leave_employee_dashboard");
-        }
     }
 
     /* FR-067: Coverage percentage color class helper. */
@@ -284,7 +279,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveTypes() {
-        return this.action.doAction("hr_holidays.open_view_holiday_status");
+        return this.openConfiguration("leave_types");
     }
 
     openLeaveRequests() {
@@ -296,7 +291,7 @@ export class HrLeaveDashboard extends Component {
     }
 
     openLeaveBalances() {
-        return this.action.doAction("hr_leave_dashboard.action_hr_leave_balances_custom");
+        return this.openConfiguration("balances");
     }
 
     openStaffContext() {
@@ -317,7 +312,13 @@ export class HrLeaveDashboard extends Component {
     }
 
     openSettings() {
-        return this.action.doAction("base_setup.action_general_configuration");
+        return this.openConfiguration("general");
+    }
+
+    openConfiguration(tab) {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
+            additionalContext: { configuration_tab: tab },
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════

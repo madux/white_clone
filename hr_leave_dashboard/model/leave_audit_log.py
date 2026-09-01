@@ -141,8 +141,10 @@ class HrLeaveAuditLog(models.Model):
 
     @api.model
     def get_audit_page_data(self, filters=None, sort=None, offset=0, limit=25):
-        if not (self.env.user.has_group("base.group_system") or self.env.user.has_group("hr_holidays.group_hr_holidays_manager")):
-            raise AccessError(_("Only a Time Off Administrator can access the audit log."))
+        if not any((
+            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_audit"),
+        )):
+            raise AccessError(_("You do not have Leave audit access."))
         filters = filters or {}; domain = [("company_id", "in", self.env.companies.ids)]
         for field_name in ("action", "module_area", "entity_type", "event_status", "source", "department_id"):
             value = filters.get(field_name)

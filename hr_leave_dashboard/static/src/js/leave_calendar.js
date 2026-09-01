@@ -20,7 +20,6 @@ export class LeaveCalendarPage extends Component {
         this.orm = useService("orm");
         this.action = useService("action");
         this.notification = useService("notification");
-        this.user = useService("user");
 
         const today = new Date();
 
@@ -31,7 +30,8 @@ export class LeaveCalendarPage extends Component {
             currentDate: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
             coverageMode: false,
             employeeView: false,
-            isAdmin: false,
+            canRequest: false,
+            canViewCoverage: false,
 
             leaves: [],
             holidays: [],
@@ -74,9 +74,13 @@ export class LeaveCalendarPage extends Component {
         });
 
         onWillStart(async () => {
-            this.state.isAdmin = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
-            const requestedEmployee = this.props.forceEmployee || this.props.action?.params?.force_employee_view || window.localStorage.getItem("cleonhr_interface_mode") === "employee";
-            this.state.employeeView = Boolean(requestedEmployee || !this.state.isAdmin);
+            const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canRequest = access.has_personal_scope;
+            this.state.canViewCoverage = access.has_team_scope || access.can_operate || access.can_view_audit;
+            // The backend derives the exact record scope from RBAC.  This
+            // flag now means personal/team-safe calendar rather than a mode
+            // selected by the user.
+            this.state.employeeView = !(access.can_operate || access.can_view_audit);
             await this.loadCalendarData();
         });
     }
@@ -195,18 +199,12 @@ export class LeaveCalendarPage extends Component {
         this.state.coverageMode = !this.state.coverageMode;
     }
 
-    toggleAdminEmployeeView(employeeViewVal) {
-        if (!this.state.isAdmin && !employeeViewVal) return;
-        this.state.employeeView = employeeViewVal;
-        this.loadCalendarData();
-    }
-
     openEmployeeRequest() {
         this.state.employeeRequestInitial = {};
         this.state.employeeRequestOpen = true;
     }
     openDateRequest(ymd) {
-        if (!this.state.employeeView || this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length) return;
+        if (!this.state.canRequest || this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length) return;
         this.state.employeeRequestInitial = { date_from: ymd, date_to: ymd };
         this.state.employeeRequestOpen = true;
     }

@@ -5,7 +5,7 @@
         <div t-att-class="props.embedded ? 'leaveapp leaveapp-embedded' : 'leaveapp'">
 
             <!-- Shared Sidebar -->
-            <CalendarSidebar t-if="!props.embedded" activeMenu="'calendar'" mode="state.employeeView ? 'employee' : 'auto'" t-key="state.employeeView"/>
+            <CalendarSidebar t-if="!props.embedded" activeMenu="'calendar'"/>
 
             <!-- Main Content Area -->
             <div class="o_leave_dashboard">
@@ -24,20 +24,6 @@
 
                         <!-- Header Right Controls -->
                         <div class="d-flex align-items-center gap-2 flex-wrap">
-
-                            <!-- Admin / Employee View Toggle -->
-                            <div t-if="state.isAdmin and !props.forceEmployee" class="cleon-calendar-view-switch" role="group">
-                                <button type="button"
-                                        t-att-class="!state.employeeView ? 'active' : ''"
-                                        t-on-click="() => this.toggleAdminEmployeeView(false)">
-                                    Admin View
-                                </button>
-                                <button type="button"
-                                        t-att-class="state.employeeView ? 'active' : ''"
-                                        t-on-click="() => this.toggleAdminEmployeeView(true)">
-                                    Employee View
-                                </button>
-                            </div>
 
                             <!-- View Mode Icon Switcher -->
                             <div class="btn-group btn-group-sm ms-2" role="group">
@@ -68,7 +54,7 @@
                             </div>
 
                             <!-- Coverage Analysis Toggle Button -->
-                            <button t-if="!state.employeeView" type="button"
+                            <button t-if="state.canViewCoverage" type="button"
                                     t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
                                     t-on-click="toggleCoverageMode">
                                 <i class="fa fa-line-chart me-1"/> Coverage Analysis
@@ -83,7 +69,7 @@
                             </button>
 
                             <!-- Download Dropdown Button -->
-                            <button type="button" t-att-class="'btn btn-sm btn-pink-active cleon-calendar-request-slot ' + (state.employeeView ? '' : 'cleon-calendar-request-hidden')" t-on-click="openEmployeeRequest" t-att-tabindex="state.employeeView ? 0 : -1"><i class="fa fa-plus"/> Request Leave</button>
+                            <button t-if="state.canRequest" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
                                     <i class="fa fa-download me-1"/> Download

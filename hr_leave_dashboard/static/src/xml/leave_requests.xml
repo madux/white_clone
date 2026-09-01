@@ -4,7 +4,7 @@
         <div class="leaveapp">
 
             <!-- Shared Module Sidebar -->
-            <CalendarSidebar activeMenu="'requests'"/>
+            <CalendarSidebar activeMenu="'operations_requests'"/>
 
             <!-- ════════════════════════════════════════════════════
                  MAIN CONTENT AREA (Screen 9 — FR-073 to FR-113)
@@ -29,7 +29,7 @@
                     </div>
                     <div class="cleon-dash-header-right">
                         <!-- Create Leave Request Button -->
-                        <button type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
+                        <button t-if="state.canCreate" type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
                             <i class="fa fa-plus me-1"/> Create Leave Request
                         </button>
 
@@ -43,17 +43,6 @@
                             <i class="fa fa-magic"/>
                         </button>
 
-                        <!-- View Switcher -->
-                        <div class="cleon-view-toggle">
-                            <button t-att-class="state.viewMode === 'admin' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('admin')">
-                                <i class="fa fa-circle-o"/> Admin View
-                            </button>
-                            <button t-att-class="state.viewMode === 'employee' ? 'cleon-view-option active' : 'cleon-view-option'"
-                                    t-on-click="() => this.setViewMode('employee')">
-                                <i class="fa fa-user-o"/> Employee View
-                            </button>
-                        </div>
                     </div>
                 </div>
 

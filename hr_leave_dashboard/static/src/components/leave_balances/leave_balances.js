@@ -9,6 +9,7 @@ import { LeaveRequestDetailModal } from "../leave_request_detail/leave_request_d
 export class LeaveBalancesPage extends Component {
     static template = "hr_leave_dashboard.LeaveBalancesPage";
     static components = { CalendarSidebar, LeaveRequestDetailModal };
+    static props = { embedded: { type: Boolean, optional: true } };
 
     setup() {
         this.orm = useService("orm");

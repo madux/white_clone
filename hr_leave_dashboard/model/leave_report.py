@@ -13,8 +13,11 @@ class HrLeaveReportService(models.AbstractModel):
 
     @api.model
     def _check_access(self):
-        if not (self.env.user.has_group("base.group_system") or self.env.user.has_group("hr_holidays.group_hr_holidays_manager")):
-            raise AccessError(_("Only a Time Off Administrator can access leave reports."))
+        if not any((
+            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_operational_reports"),
+            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_strategic_reports"),
+        )):
+            raise AccessError(_("You do not have operational Leave reporting access."))
 
     @api.model
     def _employee_identification(self, employee):

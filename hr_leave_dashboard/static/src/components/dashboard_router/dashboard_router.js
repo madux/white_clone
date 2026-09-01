@@ -1,20 +1,46 @@
 /** @odoo-module **/
 
-import { Component, onWillStart } from "@odoo/owl";
+import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { HrLeaveDashboard } from "../../js/dashboard";
+import { EmployeeLeaveDashboard } from "../employee_dashboard/employee_dashboard";
+import { CalendarSidebar } from "../calendar_sidebar";
+import { EmployeeRequestModal } from "../employee_request_modal/employee_request_modal";
 
 export class LeaveDashboardRouter extends Component {
     static template = "hr_leave_dashboard.DashboardRouter";
+    static components = { HrLeaveDashboard, EmployeeLeaveDashboard, CalendarSidebar, EmployeeRequestModal };
     setup() {
         this.action = useService("action");
-        this.user = useService("user");
+        this.orm = useService("orm");
+        this.state = useState({ loading: true, access: {}, requestOpen: false, revision: 0 });
         onWillStart(async () => {
-            const isEmployeeMode = window.localStorage.getItem("cleonhr_interface_mode") === "employee";
-            const hasAdminGroup = await this.user.hasGroup("hr_holidays.group_hr_holidays_manager") || await this.user.hasGroup("base.group_system");
-            const isAdmin = hasAdminGroup && !isEmployeeMode;
-            await this.action.doAction(isAdmin ? "hr_leave_dashboard.action_hr_leave_admin_dashboard" : "hr_leave_dashboard.action_hr_leave_employee_dashboard", { clearBreadcrumbs: true });
+            this.state.access = await this.orm.call(
+                "hr.leave", "get_leave_access_profile", []
+            );
+            this.state.loading = false;
         });
     }
+
+    toggleSidebar() {
+        window.dispatchEvent(new CustomEvent("cleonhr:toggle-leave-sidebar"));
+    }
+
+    requestLeave() { this.state.requestOpen = true; }
+    closeRequest() { this.state.requestOpen = false; }
+    requestSubmitted() { this.state.requestOpen = false; this.state.revision += 1; }
+    openMyRequests() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
+    openApprovals() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom"); }
+    openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
+    openBalances() { return this.openConfiguration("balances"); }
+    openLeaveTypes() { return this.openConfiguration("leave_types"); }
+    openConfiguration(tab = "leave_types") {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
+            additionalContext: { configuration_tab: tab },
+        });
+    }
+    openReports() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_reports_custom"); }
+    openAudit() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_audit_custom"); }
 }
 registry.category("actions").add("hr_leave_dashboard.Router", LeaveDashboardRouter);

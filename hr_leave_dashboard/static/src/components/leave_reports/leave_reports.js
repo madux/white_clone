@@ -21,10 +21,10 @@ export class LeaveReportsPage extends Component {
         this.charts = {};
         this.state = useState({
             loading: true, data: { kpis: {}, status: {}, monthly: {}, by_type: [], departments: [], leave_types: [], leave_type_summary: [], type_usage: [], type_totals: {}, type_kpis: {}, department_summary: [], employee_summary: [], period: {}, balance: { allocated: 0, used: 0, pending: 0, remaining: 0, utilisation: 0, rows: [] } },
-            activeTab: "overview", viewMode: "admin", lastRefreshed: "", exportOpen: false, revision: 0, selectedDepartmentId: null,
+            activeTab: "overview", lastRefreshed: "", exportOpen: false, revision: 0, selectedDepartmentId: null,
             filters: { date_range: "this_year", department_id: "", leave_type_id: "", start_date: "", end_date: "" },
         });
-        for (const name of ["setTab", "setViewMode", "selectDepartment", "exportReport"]) this[name] = this[name].bind(this);
+        for (const name of ["setTab", "selectDepartment", "exportReport"]) this[name] = this[name].bind(this);
         onWillStart(async () => { await loadBundle("web.chartjs_lib"); await this.refresh(); });
         useEffect(() => { if (!this.state.loading) this.renderCharts(); return () => this.destroyCharts(); }, () => [this.state.revision, this.state.activeTab]);
         onWillUnmount(() => this.destroyCharts());
@@ -41,7 +41,6 @@ export class LeaveReportsPage extends Component {
         finally { this.state.loading = false; }
     }
     setTab(key) { this.state.activeTab = key; }
-    setViewMode(mode) { this.state.viewMode = mode; }
     openTour() { this.notification.add("Choose a report tab, then use the shared filters to update every report view.", { title: "Reports Tour", type: "info" }); }
     openHelp() { this.notification.add("Refresh retrieves live data; Print and Export use the active tab and filters.", { title: "Reports Guide", type: "info" }); }
     openSetup() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_admin_dashboard", { additionalContext: { open_setup_wizard: true } }); }
