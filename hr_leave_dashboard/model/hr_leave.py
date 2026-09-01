@@ -152,14 +152,27 @@ class HrLeave(models.Model):
     def _resolve_stage_approver(self, stage):
         self.ensure_one()
         employee = self.employee_id
+        requester = employee.user_id
+
+        def next_non_self_manager(candidate):
+            """Walk the reporting chain instead of returning the requester."""
+            visited = set()
+            while candidate and candidate == requester and candidate.id not in visited:
+                visited.add(candidate.id)
+                manager_employee = self.env["hr.employee"].sudo().search([
+                    ("user_id", "=", candidate.id),
+                    ("company_id", "=", employee.company_id.id),
+                    ("active", "=", True),
+                ], limit=1)
+                candidate = manager_employee.leave_manager_id or manager_employee.parent_id.user_id
+            return candidate if candidate and candidate != requester else self.env["res.users"]
+
         if stage.approver_type == "direct_manager":
             approver = employee.leave_manager_id or employee.parent_id.user_id
-            return approver if approver != employee.user_id else False
+            return next_non_self_manager(approver)
         if stage.approver_type == "department_head":
             approver = employee.department_id.manager_id.user_id if employee.department_id.manager_id else False
-            if approver and approver != employee.user_id:
-                return approver
-            return employee.parent_id.user_id if employee.parent_id.user_id != employee.user_id else False
+            return next_non_self_manager(approver or employee.parent_id.user_id)
         group_xmlid = {
             "hr_manager": "hr_holidays.group_hr_holidays_manager",
             "hr_director": "hr_holidays.group_hr_holidays_manager",
@@ -181,12 +194,18 @@ class HrLeave(models.Model):
             if leave.holiday_status_id.approval_workflow != "multi" or not stages or leave.approval_line_ids:
                 continue
             for index, stage in enumerate(stages):
+                approver = leave._resolve_stage_approver(stage)
+                if not approver:
+                    raise ValidationError(_(
+                        "No non-self approver could be resolved for approval level %(level)s (%(stage)s). Configure a valid reporting manager or fallback approver.",
+                        level=index + 1, stage=stage.display_name,
+                    ))
                 line = Line.create({
                     "leave_id": leave.id,
                     "stage_id": stage.id,
                     "sequence": stage.sequence,
                     "level": index + 1,
-                    "approver_id": leave._resolve_stage_approver(stage).id,
+                    "approver_id": approver.id,
                     "status": "pending" if index == 0 else "waiting",
                 })
                 if index == 0:
@@ -336,16 +355,22 @@ class HrLeave(models.Model):
             ("is_cancelled", "=", False),
             ("employee_id.user_id", "!=", user.id),
         ]
-        if self._leave_is_administrator(user):
-            return expression.AND([company_domain, pending_domain])
+        if not self._leave_has_group("hr_leave_dashboard.group_leave_permission_approve", user):
+            return [("id", "=", 0)]
         assigned_leave_ids = self.env["hr.leave.approval.line"].sudo().search([
             ("approver_id", "=", user.id),
             ("status", "=", "pending"),
         ]).mapped("leave_id").ids
-        responsibility_domain = expression.OR([
-            [("id", "in", assigned_leave_ids)],
+        manager_domain = expression.OR([
             [("employee_id.leave_manager_id", "=", user.id)],
             [("employee_id.parent_id.user_id", "=", user.id)],
+        ])
+        responsibility_domain = expression.OR([
+            [("id", "in", assigned_leave_ids)],
+            expression.AND([
+                [("holiday_status_id.approval_workflow", "!=", "multi")],
+                manager_domain,
+            ]),
         ])
         return expression.AND([company_domain, pending_domain, responsibility_domain])
 
@@ -355,8 +380,6 @@ class HrLeave(models.Model):
         user = user or self.env.user
         if self.employee_id.user_id == user:
             return False
-        if self._leave_is_administrator(user):
-            return self.employee_id.company_id in user.company_ids
         if not self._leave_has_group(
             "hr_leave_dashboard.group_leave_permission_approve", user,
         ):
@@ -364,11 +387,13 @@ class HrLeave(models.Model):
         assigned_stage = self.approval_line_ids.filtered(
             lambda line: line.status == "pending" and line.approver_id == user
         )
+        if self.holiday_status_id.approval_workflow == "multi":
+            return bool(assigned_stage)
         is_manager = (
             self.employee_id.leave_manager_id == user
             or self.employee_id.parent_id.user_id == user
         )
-        return bool(assigned_stage or is_manager)
+        return bool(is_manager)
 
     @api.model
     def _check_leave_review_access(self, leaves):
@@ -435,7 +460,7 @@ class HrLeave(models.Model):
             "can_view_audit": can_audit,
             "can_view_operational_reports": can_operational_reports,
             "can_view_strategic_reports": can_strategic_reports,
-            "show_organisation_dashboard": is_officer or is_admin,
+            "show_organisation_dashboard": has_team_scope or is_officer or is_admin,
             "is_system": is_system,
         }
 
@@ -453,14 +478,29 @@ class HrLeave(models.Model):
 
     @api.model
     def _check_leave_organisation_dashboard_access(self):
-        if not (self._leave_is_officer() or self._leave_is_administrator()):
+        profile = self.get_leave_access_profile()
+        if not profile["show_organisation_dashboard"]:
             raise AccessError(_("You do not have access to the organisation Leave dashboard."))
 
     @api.model
+    def _get_dashboard_employee_ids(self):
+        """Resolve the widest authorised scope without leaking organisation data."""
+        user = self.env.user
+        base_domain = [("active", "=", True), ("company_id", "in", user.company_ids.ids)]
+        if self._leave_is_officer(user) or self._leave_is_administrator(user):
+            return self.env["hr.employee"].search(base_domain).ids
+        if self._leave_has_group("hr_leave_dashboard.group_leave_permission_team", user):
+            return self.env["hr.employee"].search(base_domain + [
+                "|", ("leave_manager_id", "=", user.id), ("parent_id.user_id", "=", user.id),
+            ]).ids
+        return []
+
+    @api.model
     def _get_company_employee_ids(self):
+        """Organisation-operation scope; dashboard callers use the narrower resolver above."""
         return self.env["hr.employee"].search([
             ("active", "=", True),
-            ("company_id", "=", self.env.company.id),
+            ("company_id", "in", self.env.user.company_ids.ids),
         ]).ids
 
     @api.model
@@ -468,7 +508,7 @@ class HrLeave(models.Model):
         self._check_leave_organisation_dashboard_access()
 
         months = int(months) if months in (6, 12) else 6
-        emp_ids = self._get_company_employee_ids()
+        emp_ids = self._get_dashboard_employee_ids()
         coverage = self._get_department_coverage(emp_ids)
 
         return {
@@ -506,21 +546,17 @@ class HrLeave(models.Model):
         approved = Leave.search(base_domain + [("state", "=", "validate")])
         pending = Leave.search(base_domain + [("state", "in", ("confirm", "validate1"))])
         type_ids = (allocations.mapped("holiday_status_id") | approved.mapped("holiday_status_id") | pending.mapped("holiday_status_id")).ids
+        balance_components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            [employee.id], type_ids,
+        )
         balances = []
         for leave_type in self.env["hr.leave.type"].sudo().browse(type_ids).sorted("name"):
-            allocated_days = sum(allocations.filtered(lambda a: a.holiday_status_id == leave_type).mapped("number_of_days"))
-            used_days = sum(approved.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
-            pending_days = sum(pending.filtered(lambda l: l.holiday_status_id == leave_type).mapped("number_of_days"))
-            # Pending requests reserve entitlement and must reduce the amount
-            # that the employee can request again.
-            remaining = allocated_days - used_days - pending_days
-            carried_days = sum(self.env["hr.leave.balance.transaction"].sudo().search([
-                ("employee_id", "=", employee.id),
-                ("leave_type_id", "=", leave_type.id),
-                ("transaction_type", "=", "carry_forward"),
-                ("effective_date", ">=", year_start),
-                ("effective_date", "<=", year_end),
-            ]).mapped("delta"))
+            component = balance_components.get((employee.id, leave_type.id), {})
+            allocated_days = component.get("total_entitlement", 0.0)
+            used_days = component.get("used", 0.0)
+            pending_days = component.get("pending", 0.0)
+            remaining = component.get("available", 0.0)
+            carried_days = component.get("carried_forward", 0.0)
             balances.append({
                 "id": leave_type.id, "name": leave_type.name,
                 "color": leave_type.cleon_color_hex or "#3B82F6",
@@ -567,11 +603,11 @@ class HrLeave(models.Model):
         }
 
     @api.model
-    def _employee_for_current_user(self):
+    def _employee_for_current_user(self, required=True):
         employee = self.env["hr.employee"].sudo().search([
             ("user_id", "=", self.env.user.id), ("company_id", "in", self.env.companies.ids), ("active", "=", True),
         ], limit=1)
-        if not employee:
+        if not employee and required:
             raise AccessError(_("Your user is not linked to an active employee record."))
         return employee
 
@@ -582,9 +618,9 @@ class HrLeave(models.Model):
             ("active", "=", True), ("visible_to_employees", "=", True),
             "|", ("company_id", "=", False), ("company_id", "=", employee.company_id.id),
         ]).filtered(lambda leave_type: employee in leave_type._get_eligible_employees())
-        allocations = self.env["hr.leave.allocation"].sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("holiday_status_id", "in", types.ids)])
-        approved = self.sudo().search([("employee_id", "=", employee.id), ("state", "=", "validate"), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
-        pending = self.sudo().search([("employee_id", "=", employee.id), ("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False), ("holiday_status_id", "in", types.ids)])
+        components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            [employee.id], types.ids,
+        )
         return {"employee": {
             "id": employee.id,
             "name": employee.name,
@@ -592,9 +628,10 @@ class HrLeave(models.Model):
             "identification_id": self._employee_identification(employee),
         }, "leave_types": [{
             "id": leave_type.id, "name": leave_type.name, "color": leave_type.cleon_color_hex or "#3B82F6",
-            "allocated": round(sum(allocations.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
-            "used": round(sum(approved.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
-            "pending": round(sum(pending.filtered(lambda row: row.holiday_status_id == leave_type).mapped("number_of_days")), 1),
+            "allocated": components.get((employee.id, leave_type.id), {}).get("total_entitlement", 0.0),
+            "used": components.get((employee.id, leave_type.id), {}).get("used", 0.0),
+            "pending": components.get((employee.id, leave_type.id), {}).get("pending", 0.0),
+            "available": components.get((employee.id, leave_type.id), {}).get("available", 0.0),
             "unlimited": bool(leave_type.unlimited_entitlement), "allow_half_day": bool(leave_type.allow_half_day),
         } for leave_type in types]}
 
@@ -612,7 +649,7 @@ class HrLeave(models.Model):
         duration = 0.5 if half_day else round(preview.number_of_days or 0.0, 1)
         policy = self.env["hr.leave.type"].sudo().evaluate_leave_request_policy(employee.id, leave_type.id, date_from, date_to, duration, half_day)
         row = next(item for item in options["leave_types"] if item["id"] == leave_type.id)
-        remaining = row["allocated"] - row["used"] - row["pending"]
+        remaining = row["available"]
         holidays = self.env["resource.calendar.leaves"].sudo().search_count([
             ("date_from", "<=", date_to + " 23:59:59"), ("date_to", ">=", date_from + " 00:00:00"),
             ("calendar_id", "=", employee.resource_calendar_id.id),
@@ -672,7 +709,9 @@ class HrLeave(models.Model):
 
     @api.model
     def get_my_leave_requests(self, status="all", search="", leave_type_id=False):
-        employee = self._employee_for_current_user()
+        employee = self._employee_for_current_user(required=False)
+        if not employee:
+            return {"rows": [], "counts": {key: 0 for key in ("all", "pending", "approved", "rejected", "cancelled")}, "leave_types": []}
         domain = [("employee_id", "=", employee.id)]
         if status == "pending": domain += [("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False)]
         elif status == "approved": domain += [("state", "=", "validate"), ("is_cancelled", "=", False)]

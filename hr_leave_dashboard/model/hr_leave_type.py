@@ -223,7 +223,10 @@ class HrLeaveType(models.Model):
 
         # 2. Employment type filter
         if self.employee_type_ids:
-            emps = emps.filtered(lambda e: hasattr(e, "contract_type_id") and e.contract_type_id.id in self.employee_type_ids.ids)
+            emps = emps.filtered(
+                lambda e: hasattr(e, "employee_type_id")
+                and e.employee_type_id.id in self.employee_type_ids.ids
+            )
 
         # 3. Location filter
         if self.location_ids:
@@ -845,33 +848,10 @@ class HrLeaveType(models.Model):
 
         # 7. Balance & Allow Negative Balance Check
         if not lt.unlimited_entitlement:
-            allocs = self.env["hr.leave.allocation"].search([
-                ("holiday_status_id", "=", lt.id),
-                ("employee_id", "=", emp.id),
-                ("state", "=", "validate"),
-            ])
-            total_alloc = sum(allocs.mapped("number_of_days")) or (lt.max_entitlement if lt.max_entitlement is not None else 20.0)
-
-            used_domain = [
-                ("holiday_status_id", "=", lt.id),
-                ("employee_id", "=", emp.id),
-                ("state", "=", "validate"),
-                ("is_cancelled", "=", False),
-            ]
-            pending_domain = [
-                ("holiday_status_id", "=", lt.id),
-                ("employee_id", "=", emp.id),
-                ("state", "in", ("confirm", "validate1")),
-                ("is_cancelled", "=", False),
-            ]
-            if exclude_leave_id:
-                used_domain.append(("id", "!=", int(exclude_leave_id)))
-                pending_domain.append(("id", "!=", int(exclude_leave_id)))
-            used_leaves = self.env["hr.leave"].search(used_domain)
-            total_used = sum(used_leaves.mapped("number_of_days"))
-            pending_leaves = self.env["hr.leave"].search(pending_domain)
-            total_pending = sum(pending_leaves.mapped("number_of_days"))
-            remaining_balance = total_alloc - total_used - total_pending
+            components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+                [emp.id], [lt.id], exclude_leave_id=exclude_leave_id,
+            )
+            remaining_balance = components.get((emp.id, lt.id), {}).get("available", 0.0)
 
             if requested_days > remaining_balance:
                 if not lt.allow_negative_balance:

@@ -13,10 +13,7 @@ class HrLeaveReportService(models.AbstractModel):
 
     @api.model
     def _check_access(self):
-        if not any((
-            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_operational_reports"),
-            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_strategic_reports"),
-        )):
+        if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_operational_reports"):
             raise AccessError(_("You do not have operational Leave reporting access."))
 
     @api.model

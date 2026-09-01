@@ -73,9 +73,7 @@ export class CalendarSidebar extends Component {
     }
 
     openApprovals() {
-        this.action.doAction(this.state.access.hasPersonalScope
-            ? "hr_leave_dashboard.action_hr_leave_my_requests"
-            : "hr_leave_dashboard.action_hr_leave_requests_custom");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests");
     }
 
     openConfiguration() {

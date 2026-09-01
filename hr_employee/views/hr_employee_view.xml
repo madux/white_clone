@@ -174,6 +174,9 @@
                 <field name="employee_number" string="Staff Number" placeholder="e.g. EMP-001"/>
                 <field name="identification_id" string="Identification Number" placeholder="e.g. ID-12345" groups="hr.group_hr_user"/>
             </xpath>
+            <xpath expr="//field[@name='department_id']" position="after">
+                <field name="unit_id" groups="hr.group_hr_user"/>
+            </xpath>
         </field>
     </record>
 

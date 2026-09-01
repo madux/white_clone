@@ -126,6 +126,7 @@ class HrEmployee(models.Model):
     middle_name = fields.Char(string="Middle name", copy=False)
     branch_id = fields.Many2one('multi.branch', string='Branch')
     grade_id = fields.Many2one('hr.grade', string='Grade')
+    unit_id = fields.Many2one('hr.unit', string='Unit', index=True)
     employee_type_id = fields.Many2one('hr.core_employment_type', string='Employment type')
     
     last_name = fields.Char("Surname", required=True, copy=False)

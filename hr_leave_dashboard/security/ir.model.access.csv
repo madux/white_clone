@@ -8,6 +8,8 @@ access_hr_leave_type_tenure_tier_officer,hr.leave.type.tenure.tier officer,model
 access_hr_leave_type_tenure_tier_manager,hr.leave.type.tenure.tier manager,model_hr_leave_type_tenure_tier,hr_holidays.group_hr_holidays_manager,1,1,1,1
 access_hr_leave_balance_transaction_manager,hr.leave.balance.transaction manager,model_hr_leave_balance_transaction,hr_holidays.group_hr_holidays_manager,1,0,0,0
 access_hr_leave_balance_transaction_system,hr.leave.balance.transaction system,model_hr_leave_balance_transaction,base.group_system,1,0,0,0
+access_hr_leave_balance_transaction_operator,hr.leave.balance.transaction operator,model_hr_leave_balance_transaction,hr_leave_dashboard.group_leave_permission_operations,1,0,0,0
+access_hr_leave_allocation_operator,hr.leave allocation operator,hr_holidays.model_hr_leave_allocation,hr_leave_dashboard.group_leave_permission_operations,1,1,1,0
 access_hr_leave_type_approval_stage_user,hr.leave.type.approval.stage user,model_hr_leave_type_approval_stage,base.group_user,1,0,0,0
 access_hr_leave_type_approval_stage_manager,hr.leave.type.approval.stage manager,model_hr_leave_type_approval_stage,hr_holidays.group_hr_holidays_manager,1,1,1,1
 access_hr_leave_approval_line_user,hr.leave.approval.line user,model_hr_leave_approval_line,base.group_user,1,0,0,0

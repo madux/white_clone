@@ -21,7 +21,8 @@ export class LeaveBalancesPage extends Component {
         for (const methodName of [
             "sortBy", "toggleSelected", "toggleArray", "toggleEmployee",
             "toggleAllocationGroup", "setSelectionMode", "onKpiClick", "openDetails", "openAdjust", "openHistory",
-            "doYearEndReset", "doCarryForward", "importBalances",
+            "removeSelectedEmployee", "clearAllocationSelection", "toggleAllocationLeaveType",
+            "goToAllocationStep2", "setAllTypeAmount", "refreshAllocationPreview", "addAllocationLeaveType", "allocationRowTotal",
             "toggleLtFilter", "setLtFilter", "clearLtFilter",
             "decrementAdjustment", "incrementAdjustment",
             "setGroupBy", "toggleGroupByDropdown", "toggleGroup", "toggleGroupSelected", "toggleExpandAll",
@@ -35,8 +36,12 @@ export class LeaveBalancesPage extends Component {
             filters: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "", expiring_only: false },
             filterDraft: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "" },
             filtersOpen: false, expiryBanner: true, selectedKeys: [], actionKey: null, moreOptionsOpen: false,
-            allocationOpen: false, allocationStep: 1, selectionMode: "individual", employeeSearch: "", allocationGroupIds: [],
-            selectedEmployeeIds: [], allocation: { leave_type_id: "", amount: 0, reason: "", effective_date: this.today(), notes: "" },
+            allocationOpen: false, allocationStep: 1, selectionMode: "individual", employeeSearch: "", selectedEmployeeSearch: "",
+            allocationScopes: { departments: [], units: [], grades: [], jobs: [], locations: [], employment_types: [] },
+            selectedScopeIds: { department: [], unit: [], grade: [], job: [], location: [], employment_type: [] },
+            individualEmployeeIds: [], excludedEmployeeIds: [], selectedLeaveTypeIds: [], leaveTypeToAdd: "",
+            allocationPreviewRows: [], allocationIncompatible: [], allocationPreviewLoading: false,
+            bulkAmounts: {}, allocation: { reason: "", effective_date: this.today(), expiry_date: "", notes: "" },
             details: null, detailsOpen: false,
             adjustmentOpen: false, adjustmentEmployee: null, adjustments: [], adjustmentReason: "",
             historyOpen: false, history: null, historySearch: "", historyStatus: "all",
@@ -104,12 +109,7 @@ export class LeaveBalancesPage extends Component {
     }
     get filteredEmployees() {
         const term = this.state.employeeSearch.trim().toLowerCase();
-        let list = this.employees;
-        if (this.state.selectionMode === "department" && this.state.allocationGroupIds.length)
-            list = list.filter(e => this.state.allocationGroupIds.includes(e.department_id));
-        if (this.state.selectionMode === "grade" && this.state.allocationGroupIds.length)
-            list = list.filter(e => this.state.allocationGroupIds.includes(e.grade_id));
-        return term ? list.filter(e => `${e.employee_name} ${e.employee_code} ${e.department}`.toLowerCase().includes(term)) : list;
+        return term ? this.employees.filter(e => `${e.employee_name} ${e.employee_code} ${e.department} ${e.unit} ${e.job} ${e.location} ${e.employment_type}`.toLowerCase().includes(term)) : this.employees;
     }
     get activeFilterCount() {
         return this.state.filters.department_ids.length + this.state.filters.location_ids.length + this.state.filters.leave_type_ids.length + this.state.filters.policy_ids.length + (this.state.filters.employee_search ? 1 : 0) + (this.state.filters.expiring_only ? 1 : 0);
@@ -131,7 +131,7 @@ export class LeaveBalancesPage extends Component {
             { key: "total_employees", label: "Total Employees", icon: "fa-users", color: "blue", displayValue: format(kpis.total_employees), ...trend(kpis.total_employees_trend_pct, "%") },
             { key: "allocated", label: "Total Leave Days Allocated", icon: "fa-calendar-check-o", color: "rose", displayValue: format(kpis.allocated), ...trend(kpis.allocated_trend_pct, "%") },
             { key: "used", label: "Total Leave Days Used", icon: "fa-check-circle", color: "green", displayValue: format(kpis.used), ...trend(kpis.used_trend_pct, "%") },
-            { key: "remaining", label: "Total Remaining", icon: "fa-balance-scale", color: "amber", displayValue: format(kpis.remaining), highlight: true, ...trend(kpis.remaining_trend_pct, "%") },
+            { key: "remaining", label: "Total Available", icon: "fa-balance-scale", color: "amber", displayValue: format(kpis.remaining), highlight: true, ...trend(kpis.remaining_trend_pct, "%") },
             // orange/amber alert icon, count in red when > 0
 
             { key: "negative_employees", label: "Employees with Negative Balance", icon: "fa-exclamation-triangle", color: "orange", displayValue: format(negCount), redCount: negCount > 0, ...trend(kpis.negative_employees_trend) },
@@ -139,14 +139,55 @@ export class LeaveBalancesPage extends Component {
         ];
     }
     onKpiClick(card) { if (card.key === "expiring_employees") this.showExpiring(); }
-    get selectedEmployees() { return this.employees.filter(e => this.state.selectedEmployeeIds.includes(e.employee_id)); }
-    get selectedAllocationLeaveTypeName() {
-        const selectedId = Number(this.state.allocation.leave_type_id);
-        return this.state.leaveTypes.find((leaveType) => leaveType.id === selectedId)?.name || "";
+    get scopeDefinitions() {
+        return [
+            { key: "individual", label: "Individual", field: null, options: null },
+            { key: "department", label: "Department", field: "department_id", options: "departments" },
+            { key: "unit", label: "Unit", field: "unit_id", options: "units" },
+            { key: "grade", label: "Grade Level", field: "grade_id", options: "grades" },
+            { key: "job", label: "Job Role", field: "job_id", options: "jobs" },
+            { key: "location", label: "Location", field: "location_id", options: "locations" },
+            { key: "employment_type", label: "Employment Type", field: "employment_type_id", options: "employment_types" },
+        ];
+    }
+    get activeScopeDefinition() { return this.scopeDefinitions.find(item => item.key === this.state.selectionMode); }
+    get activeScopeOptions() { return this.state.allocationScopes[this.activeScopeDefinition?.options] || []; }
+    get selectedEmployeeIds() {
+        const selected = new Set(this.state.individualEmployeeIds);
+        for (const definition of this.scopeDefinitions.filter(item => item.field)) {
+            const scopeIds = this.state.selectedScopeIds[definition.key] || [];
+            if (!scopeIds.length) continue;
+            for (const employee of this.employees) {
+                if (scopeIds.includes(employee[definition.field])) selected.add(employee.employee_id);
+            }
+        }
+        for (const employeeId of this.state.excludedEmployeeIds) selected.delete(employeeId);
+        return [...selected];
+    }
+    get selectedEmployees() { return this.employees.filter(e => this.selectedEmployeeIds.includes(e.employee_id)); }
+    get filteredSelectedEmployees() {
+        const term = this.state.selectedEmployeeSearch.trim().toLowerCase();
+        return term ? this.selectedEmployees.filter(e => `${e.employee_name} ${e.employee_code} ${e.department} ${e.job}`.toLowerCase().includes(term)) : this.selectedEmployees;
+    }
+    get selectedLeaveTypes() { return this.state.leaveTypes.filter(type => this.state.selectedLeaveTypeIds.includes(type.id)); }
+    get allocationLines() {
+        return this.state.allocationPreviewRows.flatMap(row => row.cells.map(cell => ({
+            employee_id: row.employee_id, leave_type_id: cell.leave_type_id, amount: Number(cell.amount),
+        })));
+    }
+    get allocationTotalDays() { return this.allocationLines.reduce((total, line) => total + (Number(line.amount) || 0), 0); }
+    allocationRowTotal(row) {
+        const total = (row?.cells || []).reduce(
+            (sum, cell) => sum + (cell.eligible ? (Number(cell.amount) || 0) : 0),
+            0,
+        );
+        return total.toFixed(2);
     }
     get allocationValid() {
         const a = this.state.allocation;
-        return Number(a.leave_type_id) && Number(a.amount) > 0 && a.reason.trim() && a.effective_date;
+        return this.selectedLeaveTypes.length > 0 && this.state.allocationPreviewRows.length > 0
+            && !this.state.allocationPreviewLoading && !this.state.allocationIncompatible.length
+            && this.allocationLines.every(line => line.amount > 0) && a.reason.trim() && a.effective_date;
     }
     get filteredHistory() {
         if (!this.state.history) return [];
@@ -228,34 +269,121 @@ export class LeaveBalancesPage extends Component {
     }
 
     async openAllocation() {
-        if (!this.state.employeeOptions.length) {
-            try {
-                this.state.employeeOptions = await this.orm.call(
-                    "hr.leave.balance.transaction", "get_balance_employee_options", [],
-                );
-            } catch (error) {
-                this.notification.add(error.message || "Unable to load employees.", { type: "danger" });
-                return;
-            }
+        try {
+            const data = await this.orm.call("hr.leave.balance.transaction", "get_balance_allocation_options", []);
+            this.state.employeeOptions = data.employees || [];
+            this.state.leaveTypes = data.leave_types || [];
+            this.state.allocationScopes = data.scopes || {};
+        } catch (error) {
+            this.notification.add(error.message || "Unable to load allocation options.", { type: "danger" });
+            return;
         }
-        this.state.allocationOpen = true; this.state.allocationStep = 1; this.state.selectedEmployeeIds = []; this.state.allocationGroupIds = []; this.state.selectionMode = "individual";
-        this.state.allocation = { leave_type_id: "", amount: 0, reason: "", effective_date: this.today(), notes: "" };
+        this.state.allocationOpen = true; this.state.allocationStep = 1; this.state.selectionMode = "individual";
+        this.state.employeeSearch = ""; this.state.selectedEmployeeSearch = "";
+        this.state.selectedScopeIds = { department: [], unit: [], grade: [], job: [], location: [], employment_type: [] };
+        this.state.individualEmployeeIds = []; this.state.excludedEmployeeIds = []; this.state.selectedLeaveTypeIds = [];
+        this.state.leaveTypeToAdd = "";
+        this.state.allocationPreviewRows = []; this.state.allocationIncompatible = []; this.state.bulkAmounts = {};
+        this.state.allocation = { reason: "", effective_date: this.today(), expiry_date: "", notes: "" };
     }
-    toggleEmployee(id) { const a = this.state.selectedEmployeeIds; const i = a.indexOf(id); i === -1 ? a.push(id) : a.splice(i, 1); }
-    setSelectionMode(mode) { this.state.selectionMode = mode; this.state.allocationGroupIds = []; this.state.selectedEmployeeIds = []; }
-    toggleAllocationGroup(id) { const a = this.state.allocationGroupIds; const i = a.indexOf(id); i === -1 ? a.push(id) : a.splice(i, 1); }
+    isEmployeeSelected(id) { return this.selectedEmployeeIds.includes(id); }
+    toggleEmployee(id) {
+        if (this.isEmployeeSelected(id)) return this.removeSelectedEmployee(id);
+        if (!this.state.individualEmployeeIds.includes(id)) this.state.individualEmployeeIds.push(id);
+        const excludedIndex = this.state.excludedEmployeeIds.indexOf(id);
+        if (excludedIndex !== -1) this.state.excludedEmployeeIds.splice(excludedIndex, 1);
+    }
+    setSelectionMode(mode) { this.state.selectionMode = mode; this.state.employeeSearch = ""; }
+    toggleAllocationGroup(id) {
+        const values = this.state.selectedScopeIds[this.state.selectionMode];
+        const index = values.indexOf(id);
+        index === -1 ? values.push(id) : values.splice(index, 1);
+    }
+    removeSelectedEmployee(id) {
+        const manualIndex = this.state.individualEmployeeIds.indexOf(id);
+        if (manualIndex !== -1) this.state.individualEmployeeIds.splice(manualIndex, 1);
+        if (!this.state.excludedEmployeeIds.includes(id)) this.state.excludedEmployeeIds.push(id);
+    }
+    clearAllocationSelection() {
+        this.state.individualEmployeeIds = [];
+        this.state.excludedEmployeeIds = [];
+        this.state.selectedScopeIds = { department: [], unit: [], grade: [], job: [], location: [], employment_type: [] };
+    }
     selectAllEmployees() {
         const allIds = this.filteredEmployees.map(e => e.employee_id);
-        const allSelected = allIds.length > 0 && allIds.every(id => this.state.selectedEmployeeIds.includes(id));
-        // Toggle: if all are selected → deselect all; otherwise → select all
-        this.state.selectedEmployeeIds = allSelected ? [] : allIds;
+        const allSelected = allIds.length > 0 && allIds.every(id => this.isEmployeeSelected(id));
+        for (const id of allIds) {
+            if (allSelected) this.removeSelectedEmployee(id);
+            else {
+                if (!this.state.individualEmployeeIds.includes(id)) this.state.individualEmployeeIds.push(id);
+                const excludedIndex = this.state.excludedEmployeeIds.indexOf(id);
+                if (excludedIndex !== -1) this.state.excludedEmployeeIds.splice(excludedIndex, 1);
+            }
+        }
+    }
+    async goToAllocationStep2() {
+        if (!this.selectedEmployeeIds.length) return;
+        this.state.allocationStep = 2;
+    }
+    async toggleAllocationLeaveType(id) {
+        const values = this.state.selectedLeaveTypeIds;
+        const index = values.indexOf(id);
+        if (index === -1) {
+            values.push(id);
+            this.state.bulkAmounts[id] = this.state.leaveTypes.find(type => type.id === id)?.default_amount || 0;
+        } else {
+            values.splice(index, 1);
+            delete this.state.bulkAmounts[id];
+        }
+        await this.refreshAllocationPreview();
+    }
+    async addAllocationLeaveType(event) {
+        const id = Number(event.target.value);
+        this.state.leaveTypeToAdd = "";
+        if (!id || this.state.selectedLeaveTypeIds.includes(id)) return;
+        this.state.selectedLeaveTypeIds.push(id);
+        this.state.bulkAmounts[id] = this.state.leaveTypes.find(type => type.id === id)?.default_amount || 0;
+        await this.refreshAllocationPreview();
+    }
+    async refreshAllocationPreview() {
+        if (!this.selectedEmployeeIds.length || !this.state.selectedLeaveTypeIds.length) {
+            this.state.allocationPreviewRows = [];
+            this.state.allocationIncompatible = [];
+            return;
+        }
+        this.state.allocationPreviewLoading = true;
+        try {
+            const preview = await this.orm.call("hr.leave.balance.transaction", "preview_leave_allocation", [
+                this.selectedEmployeeIds, this.state.selectedLeaveTypeIds, this.state.allocation.effective_date,
+            ]);
+            this.state.allocationPreviewRows = preview.rows || [];
+            this.state.allocationIncompatible = preview.incompatible || [];
+            for (const leaveType of this.selectedLeaveTypes) {
+                if (this.state.bulkAmounts[leaveType.id] === undefined) this.state.bulkAmounts[leaveType.id] = leaveType.default_amount;
+            }
+        } catch (error) {
+            this.notification.add(error.message || "Unable to build the allocation preview.", { type: "danger" });
+        } finally {
+            this.state.allocationPreviewLoading = false;
+        }
+    }
+    setAllTypeAmount(leaveTypeId) {
+        const amount = Number(this.state.bulkAmounts[leaveTypeId]);
+        if (!(amount > 0)) return;
+        for (const row of this.state.allocationPreviewRows) {
+            const cell = row.cells.find(item => item.leave_type_id === leaveTypeId);
+            if (cell?.eligible) cell.amount = amount;
+        }
     }
     async applyAllocation() {
+        if (!this.allocationValid) return;
         try {
             const a = this.state.allocation;
-            const result = await this.orm.call("hr.leave.balance.transaction", "apply_leave_allocation", [this.state.selectedEmployeeIds, Number(a.leave_type_id), Number(a.amount), a.reason, a.effective_date, a.notes]);
+            const result = await this.orm.call("hr.leave.balance.transaction", "apply_leave_allocation_matrix", [
+                this.allocationLines, a.reason, a.effective_date, a.notes, a.expiry_date || false,
+            ]);
             this.state.allocationOpen = false;
-            this.notification.add(`Leave allocated to ${result.count} employee(s) successfully.`, { type: "success" });
+            this.notification.add(`${result.allocation_count} allocations across ${result.employee_count} employee(s) and ${result.leave_type_count} Leave Type(s) were applied.`, { type: "success" });
             await this.refreshPage();
         } catch (error) { this.notification.add(error.message || "Allocation failed.", { type: "danger" }); }
     }
@@ -321,7 +449,7 @@ export class LeaveBalancesPage extends Component {
             group_by: "none",
             pagination: { page: 1, page_size: 0 },
         });
-        const header = ["Employee ID","Employee","Department","Location","Leave Type","Allocated","Used","Pending","Remaining","Carried Forward","Expiring Days","Expiry Date","Last Updated"];
+        const header = ["Employee ID","Employee","Department","Location","Leave Type","Entitlement","Used","Pending","Available","Carried Forward","Expiring Days","Expiry Date","Last Updated"];
         const lines = (data.rows || []).map(r => [r.employee_code,r.employee_name,r.department,r.location,r.leave_type,r.allocated,r.used,r.pending,r.remaining,r.carried_forward,r.expiring_days,r.expiry_date,r.last_updated].map(v => `"${String(v ?? "").replaceAll('"','""')}"`).join(","));
         const url = URL.createObjectURL(new Blob(["\uFEFF" + [header.join(","), ...lines].join("\n")], { type: "text/csv;charset=utf-8" }));
         const a = document.createElement("a"); a.href = url; a.download = "leave_balances.csv"; a.click(); URL.revokeObjectURL(url);
@@ -341,27 +469,6 @@ export class LeaveBalancesPage extends Component {
         this.state.ltFilterOpen = false;   // also close LT quick-filter
         this.state.groupByOpen = false;    // also close group-by menu
     }
-    async doYearEndReset() {
-        this.state.moreOptionsOpen = false;
-        try {
-            const result = await this.orm.call("hr.leave.balance.transaction", "bulk_year_end_reset", []);
-            this.notification.add(`Year-end reset applied to ${result.count || 0} employee(s).`, { type: "success" });
-            await this.refreshPage();
-        } catch (error) { this.notification.add(error.message || "Year-end reset failed.", { type: "danger" }); }
-    }
-    async doCarryForward() {
-        this.state.moreOptionsOpen = false;
-        try {
-            const result = await this.orm.call("hr.leave.balance.transaction", "bulk_carry_forward", []);
-            this.notification.add(`Carry-forward processed for ${result.count || 0} employee(s).`, { type: "success" });
-            await this.refreshPage();
-        } catch (error) { this.notification.add(error.message || "Carry-forward processing failed.", { type: "danger" }); }
-    }
-    importBalances() {
-        this.state.moreOptionsOpen = false;
-        this.state.importOpen = true;
-    }
-
     // ── Grouping Methods ──────────────────────────────────────────
 
     async setGroupBy(mode) {

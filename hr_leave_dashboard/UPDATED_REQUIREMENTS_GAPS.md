@@ -97,3 +97,49 @@ not represented by invented screens. They should be added to the same workspace
 when the remaining Part 11 data models, lifecycle rules and acceptance criteria
 are supplied. Existing blackout and leave-type approval enforcement continues
 to operate in the meantime.
+
+## Leave Balance allocation delivered in this increment
+
+The approved employee-first workflow is now implemented as a two-step operation:
+
+- Individual, Department, Unit, Grade Level, Job Role, Location and Employment
+  Type selections accumulate into one removable employee audience;
+- Leave Types are added as allocation lines, with a default day amount per line;
+- the preview expands those lines into an employee-by-Leave-Type matrix and
+  supports both per-cell overrides and whole-column bulk edits;
+- incompatible employee/policy combinations block submission instead of being
+  silently allocated;
+- the whole matrix is validated and written atomically as native Odoo leave
+  allocations, immutable balance-ledger entries and audit entries; and
+- effective date is required while expiry date is optional. A missing expiry is
+  not replaced by an invented year-end date.
+
+The canonical displayed Available Balance is now calculated from the same
+components used by request policy checks: Opening Entitlement + Carried Forward
+- Used - Pending. No sample entitlement fallback is used when an employee has no
+validated allocation.
+
+## Leave Balance work intentionally not exposed yet
+
+The following features are specified, but are not presented as working controls
+until their complete operational behaviour is implemented:
+
+- CSV allocation import (template, validation preview, partial-row error report
+  and confirmation);
+- idempotent cycle close, carry-forward and expiry processing; and
+- approval-gated balance allocation/adjustment through the shared
+  `cleon_approval` engine. The allocation batch needs its own pending record and
+  finalisation hooks so no balance changes before approval. Direct allocation is
+  currently restricted to the Leave Balance Operations capability; it must not
+  be described as approval-routed yet.
+
+The four enforcement modes (Strict, Allow Negative Balance with a configured
+limit, Allow Request with Exception Approval, and Not Enforced) also depend on
+the final versioned Leave Policy hierarchy. The existing Leave Type enforcement
+must not be presented as full coverage of that contract.
+
+## AI capability deferral
+
+AI Balance Lookup and smart leave-date recommendations are recorded for later
+traceability only. They have not been implemented, called, simulated or exposed
+in this increment, as requested.
