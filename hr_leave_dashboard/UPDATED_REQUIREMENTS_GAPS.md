@@ -78,7 +78,9 @@ contracts and have not been represented by sample data:
 - policy-anniversary events, which depend on the future Leave Policy model;
 - policy-review-due triggers;
 - configurable trigger reminder intervals and notification delivery; and
-- the AI Leave Assistant.
+- provider-generated dashboard narrative and follow-up answers. A global,
+  permission-aware assistant shell now exists, but dashboard-specific context
+  and tools have not yet been published to it.
 
 Existing live KPI, trend, distribution, balance, approval, coverage and recent
 request widgets remain in place. Their eventual compact/expanded presentation
@@ -138,8 +140,55 @@ limit, Allow Request with Exception Approval, and Not Enforced) also depend on
 the final versioned Leave Policy hierarchy. The existing Leave Type enforcement
 must not be presented as full coverage of that contract.
 
-## AI capability deferral
+## Leave Calendar delivered in this increment
 
-AI Balance Lookup and smart leave-date recommendations are recorded for later
-traceability only. They have not been implemented, called, simulated or exposed
-in this increment, as requested.
+The existing calendar is now one role-aware workspace rather than separate
+screens that can drift apart. It includes:
+
+- organisation and personal/team perspectives, shown only when the signed-in
+  user is authorised for each perspective;
+- Month, Week and Day views for employees, with Year and coverage views kept
+  behind organisation-calendar capability;
+- a date roster that lists every visible employee away on the selected day,
+  including the records hidden behind a `+N more` calendar indicator;
+- click-to-open details without exposing a colleague's private request detail;
+- drag selection across Month cells to prefill a personal leave request or an
+  administrator Book Time Off form for the selected range; and
+- administrator booking that validates the employee, leave type, dates,
+  policy and overlap before submission. `No Approval Required` Leave Types are
+  approved immediately; all other Leave Types enter their configured approval
+  workflow.
+
+The detailed standalone coverage-analysis modal, inline Insights panel,
+Google/Outlook calendar publishing, true XLSX/PDF generation, and the full
+mobile-specific calendar composition remain requirements gaps. The current
+download control exports current-view data as CSV or opens the print-to-PDF
+flow and must not be described as a native XLSX/PDF generator.
+
+The later review also references configurable Full, Limited and Anonymous
+calendar privacy levels plus forced anonymisation for sensitive Leave Types.
+Those definitions are not present in the supplied Section 6.2–6.4 extract:
+there is no configuration owner, default, field matrix, or list/flag defining
+sensitive types. The current server serializer continues to protect colleague
+notes and full details in personal/team scope, but it must not be described as
+implementing that newer three-level privacy contract until those rules are
+supplied.
+
+## AI foundation delivered; provider execution deferred
+
+A provider-neutral CleonAI shell now floats across backend modules. Leave
+Calendar publishes its current view, date range, perspective and filters; the
+server rebuilds the visible dataset under the signed-in user's permissions and
+returns a deterministic calendar summary. The backend also publishes an
+allowlisted tool catalogue, distinguishing read, navigation and
+confirmation-required preparation tools.
+
+No external model is called and no API key is stored by this increment. The
+gateway has explicit provider/model/live-call configuration boundaries so a
+future adapter can target a local model or a hosted provider without moving
+permission checks into the browser. Provider adapters, secrets management,
+model governance, audit/usage controls, prompt-injection defences, and an MCP
+server/client boundary remain deferred. AI Balance Lookup, smart leave-date
+recommendations, generated follow-up answers, and automated actions are not
+implemented; any future write-capable tool must preserve explicit user review
+and confirmation.

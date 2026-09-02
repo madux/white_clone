@@ -78,7 +78,7 @@ class HrLeave(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self._leave_can_mutate_requests():
+        if any(not self._leave_can_mutate_requests(values=vals) for vals in vals_list):
             raise AccessError(_("You do not have permission to create leave requests."))
         for vals in vals_list:
             if not vals.get("request_ref"):
@@ -118,7 +118,7 @@ class HrLeave(models.Model):
             "state", "notes", "name", "is_cancelled", "cancellation_reason",
             "admin_created", "admin_creation_note", "admin_overlap_override",
         }
-        if lifecycle_fields.intersection(values) and not self._leave_can_mutate_requests():
+        if lifecycle_fields.intersection(values) and not self._leave_can_mutate_requests(records=self, values=values):
             raise AccessError(_("You do not have permission to modify leave requests."))
         previous_states = {leave.id: leave.state for leave in self}
         result = super().write(values)
@@ -140,7 +140,7 @@ class HrLeave(models.Model):
         return result
 
     def unlink(self):
-        if not self._leave_can_mutate_requests():
+        if not self._leave_can_mutate_requests(records=self):
             raise AccessError(_("You do not have permission to delete leave requests."))
         return super().unlink()
 
@@ -323,27 +323,35 @@ class HrLeave(models.Model):
         user = user or self.env.user
         return self._leave_has_group(
             "hr_leave_dashboard.group_leave_permission_operations", user,
-        ) or self._leave_is_administrator(user)
+        )
 
     @api.model
-    def _leave_can_mutate_requests(self, user=None):
-        """Capability union: read access never revokes another granted right."""
+    def _leave_can_mutate_requests(self, user=None, records=None, values=None):
+        """Authorize generic mutation for own records or HR Operations only.
+
+        Approval RPCs elevate only after ``_leave_can_review`` has authorised
+        the exact request. Configuration and Approve capabilities therefore
+        cannot be reused as generic create/write/delete grants.
+        """
         user = user or self.env.user
-        has_employee = bool(self.env["hr.employee"].sudo().search_count([
+        if self.env.su or self._leave_has_group(
+            "hr_leave_dashboard.group_leave_permission_operations", user,
+        ):
+            return True
+        employee_ids = self.env["hr.employee"].sudo().search([
             ("user_id", "=", user.id),
             ("company_id", "in", user.company_ids.ids),
             ("active", "=", True),
-        ]))
-        positive_permission = any((
-            self._leave_has_group("hr_leave_dashboard.group_leave_permission_personal", user),
-            self._leave_has_group("hr_leave_dashboard.group_leave_permission_approve", user),
-            self._leave_has_group("hr_leave_dashboard.group_leave_permission_operations", user),
-            self._leave_has_group("hr_leave_dashboard.group_leave_permission_configuration", user),
-        ))
-        audit_only = self._leave_has_group(
-            "hr_leave_dashboard.group_leave_permission_audit", user,
-        ) and not positive_permission
-        return not audit_only and (has_employee or positive_permission)
+        ]).ids
+        if not employee_ids:
+            return False
+        records = records or self.env["hr.leave"]
+        if records and any(record.employee_id.id not in employee_ids for record in records):
+            return False
+        target_employee_id = (values or {}).get("employee_id")
+        if target_employee_id and int(target_employee_id) not in employee_ids:
+            return False
+        return bool(records or target_employee_id)
 
     @api.model
     def _leave_pending_approval_domain(self, user=None):
@@ -472,6 +480,24 @@ class HrLeave(models.Model):
             raise AccessError(_("Only a Time Off Administrator can access this dashboard."))
 
     @api.model
+    def _check_leave_calendar_access(self, employee_scope=False, calendar_scope=None):
+        """Authorize the calendar without broadening mutation endpoints.
+
+        Personal/team visibility is constrained again by the server-built
+        calendar domain.  Organisation visibility is reserved for explicit
+        configuration, operations, or audit capabilities.
+        """
+        profile = self.get_leave_access_profile()
+        scope = calendar_scope or ("personal" if employee_scope else "organisation")
+        if scope == "personal" and profile["has_personal_scope"]:
+            return scope
+        if scope == "team" and profile["has_team_scope"]:
+            return scope
+        if scope == "organisation" and (profile["can_operate"] or profile["can_view_audit"]):
+            return scope
+        raise AccessError(_("You do not have access to the requested Leave Calendar scope."))
+
+    @api.model
     def _check_leave_operations_access(self):
         if not self._leave_is_officer():
             raise AccessError(_("Only an authorised Leave Officer can access operational leave records."))
@@ -498,7 +524,7 @@ class HrLeave(models.Model):
     @api.model
     def _get_company_employee_ids(self):
         """Organisation-operation scope; dashboard callers use the narrower resolver above."""
-        return self.env["hr.employee"].search([
+        return self.env["hr.employee"].sudo().search([
             ("active", "=", True),
             ("company_id", "in", self.env.user.company_ids.ids),
         ]).ids
@@ -705,6 +731,7 @@ class HrLeave(models.Model):
             self.env["ir.attachment"].sudo().create({"name": attachment.get("name") or _("Supporting document"), "datas": attachment["data"], "mimetype": attachment.get("mimetype"), "res_model": "hr.leave", "res_id": leave.id})
         if leave.state == "draft":
             leave.action_confirm()
+
         return {"id": leave.id, "reference": leave.request_ref, "message": _("Your leave request has been submitted for approval.")}
 
     @api.model
@@ -1748,7 +1775,7 @@ class HrLeave(models.Model):
 
     @api.model
     def cancel_approved_leave(self, leave_id, reason=""):
-        self._check_leave_dashboard_access()
+        self._check_leave_operations_access()
         reason = (reason or "").strip()
         if len(reason) < 3:
             raise ValidationError(_("A cancellation reason is required (at least 3 characters)."))
@@ -1788,9 +1815,9 @@ class HrLeave(models.Model):
 
     @api.model
     def get_admin_create_options(self):
-        self._check_leave_dashboard_access()
+        self._check_leave_operations_access()
         emp_ids = self._get_company_employee_ids()
-        employees = self.env["hr.employee"].browse(emp_ids).filtered("active")
+        employees = self.env["hr.employee"].sudo().browse(emp_ids).filtered("active")
         return {
             "employees": [{
                 "id": emp.id,
@@ -1799,18 +1826,19 @@ class HrLeave(models.Model):
                 "identification_id": self._employee_identification(emp),
                 "department": emp.department_id.name or "No Department",
                 "job_title": emp.job_title or (emp.job_id.name if hasattr(emp, "job_id") and emp.job_id else "") or "Employee",
+                "is_current_user": emp.user_id == self.env.user,
                 "label": f"{emp.name} ({emp.employee_number or _('Staff number not assigned')} - {emp.department_id.name or _('No Department')})",
             } for emp in employees],
         }
 
     @api.model
     def get_admin_leave_types_for_employee(self, employee_id):
-        self._check_leave_dashboard_access()
-        employee = self.env["hr.employee"].browse(int(employee_id)).exists()
+        self._check_leave_operations_access()
+        employee = self.env["hr.employee"].sudo().browse(int(employee_id)).exists()
         if not employee or employee.company_id != self.env.company:
             raise ValidationError(_("Invalid employee."))
 
-        LeaveType = self.env["hr.leave.type"].with_context(
+        LeaveType = self.env["hr.leave.type"].sudo().with_context(
             employee_id=employee.id,
             default_employee_id=employee.id,
         )
@@ -1831,10 +1859,10 @@ class HrLeave(models.Model):
 
     @api.model
     def preview_admin_leave_request(self, employee_id, leave_type_id, date_from, date_to, half_day=False, period="am"):
-        self._check_leave_dashboard_access()
-        employee = self.env["hr.employee"].browse(int(employee_id)).exists()
-        leave_type = self.env["hr.leave.type"].browse(int(leave_type_id)).exists()
-        if not employee or not leave_type:
+        self._check_leave_operations_access()
+        employee = self.env["hr.employee"].sudo().browse(int(employee_id)).exists()
+        leave_type = self.env["hr.leave.type"].sudo().browse(int(leave_type_id)).exists()
+        if not employee or employee.company_id not in self.env.user.company_ids or not leave_type:
             raise ValidationError(_("Invalid leave request data."))
 
         vals = {
@@ -1845,7 +1873,7 @@ class HrLeave(models.Model):
             "request_unit_half": bool(half_day),
             "request_date_from_period": period,
         }
-        preview = self.new(vals)
+        preview = self.sudo().new(vals)
         if hasattr(preview, "_compute_department_id"):
             preview._compute_department_id()
         if hasattr(preview, "_compute_resource_calendar_id"):
@@ -1856,7 +1884,7 @@ class HrLeave(models.Model):
         days = preview.number_of_days or 0.0
 
         # Check overlapping existing leave requests for FR-107.
-        conflicts = self.search([
+        conflicts = self.sudo().search([
             ("employee_id", "=", employee.id),
             ("state", "in", ("confirm", "validate1", "validate")),
             ("request_date_from", "<=", date_to),
@@ -1885,14 +1913,32 @@ class HrLeave(models.Model):
         half_day=False,
         period="am",
         override_conflict=False,
+        note="",
+        attachment=None,
     ):
-        self._check_leave_dashboard_access()
+        self._check_leave_operations_access()
         admin_note = (admin_note or "").strip()
+        note = (note or "").strip()
+        attachment = attachment or {}
         if len(admin_note) < 10:
             raise ValidationError(_("Admin Note / Reason must contain at least 10 characters."))
+        if len(note) > 1000:
+            raise ValidationError(_("The optional note must not exceed 1,000 characters."))
+        if attachment.get("data") and attachment.get("mimetype") not in (
+            "application/pdf", "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/jpeg", "image/png",
+        ):
+            raise ValidationError(_("Only PDF, DOC, DOCX, JPG, and PNG attachments are supported."))
+        if attachment.get("data"):
+            try:
+                if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:
+                    raise ValidationError(_("The attachment must not exceed 10 MB."))
+            except ValueError:
+                raise ValidationError(_("The supporting document is not a valid encoded file."))
 
-        employee = self.env["hr.employee"].browse(int(employee_id)).exists()
-        leave_type = self.env["hr.leave.type"].browse(int(leave_type_id)).exists()
+        employee = self.env["hr.employee"].sudo().browse(int(employee_id)).exists()
+        leave_type = self.env["hr.leave.type"].sudo().browse(int(leave_type_id)).exists()
         if not employee or employee.company_id != self.env.company or not leave_type:
             raise ValidationError(_("Invalid request data."))
         if self._employee_has_active_disciplinary_suspension(employee):
@@ -1923,7 +1969,7 @@ class HrLeave(models.Model):
             "holiday_status_id": leave_type.id,
             "request_date_from": date_from,
             "request_date_to": date_to,
-            "notes": admin_note,
+            "notes": admin_note + (("\n\n" + note) if note else ""),
             "request_unit_half": bool(half_day),
             "request_date_from_period": period,
             "admin_created": True,
@@ -1931,13 +1977,31 @@ class HrLeave(models.Model):
             "admin_overlap_override": bool(override_conflict),
         }
 
-        LeaveObj = self
+        LeaveObj = self.sudo()
         if override_conflict:
             LeaveObj = LeaveObj.with_context(leave_skip_date_check=True)
 
         leave = LeaveObj.create(vals)
         if leave.state == "draft":
             leave.action_confirm()
+
+        if attachment.get("data"):
+            self.env["ir.attachment"].sudo().create({
+                "name": attachment.get("name") or _("Supporting document"),
+                "datas": attachment["data"],
+                "mimetype": attachment.get("mimetype"),
+                "res_model": "hr.leave",
+                "res_id": leave.id,
+            })
+
+        # A calendar booking uses the same approval contract as every other
+        # leave request. Only an explicitly configured "No Approval
+        # Required" type may take effect immediately; single and multi-level
+        # workflows remain pending for their configured approvers.
+        if leave_type.approval_workflow == "none" and leave.state in ("confirm", "validate1"):
+            leave.sudo().action_approve()
+            if leave.state == "validate1":
+                leave.sudo().action_validate()
 
         # Notify employee via chatter (FR-110)
         leave._post_configured_leave_update(
@@ -1955,21 +2019,22 @@ class HrLeave(models.Model):
         action_type = "override_conflict" if override_conflict else "admin_create"
         leave._create_audit_record(action_type, note=admin_note)
 
-        return {"created": True, "id": leave.id}
+        return {
+            "created": True,
+            "id": leave.id,
+            "state": leave.state,
+            "approved": leave.state == "validate",
+            "message": _("Time off was booked and approved.") if leave.state == "validate" else _("The booking was submitted to its configured approval workflow."),
+        }
 
     # ---------------------------------------------------------
     # SCREEN 11: LEAVE CALENDAR BACKEND API (FR-138 to FR-177)
     # ---------------------------------------------------------
 
     @api.model
-    def _employee_calendar_visibility_domain(self, employee_view):
-        """Return the role-derived personal/team calendar domain.
-
-        ``employee_view`` remains in the RPC contract for compatibility, but
-        it is no longer a user-selected mode.  Team visibility comes from the
-        reporting relationship and never from department membership alone.
-        """
-        if not employee_view:
+    def _calendar_visibility_domain(self, calendar_scope):
+        """Return a fail-closed record domain for an authorised scope."""
+        if calendar_scope == "organisation":
             return [], False
         employee = self.env["hr.employee"].sudo().search([
             ("user_id", "=", self.env.user.id),
@@ -1978,21 +2043,20 @@ class HrLeave(models.Model):
         ], limit=1)
         if not employee:
             return [("id", "=", 0)], False
-        own = [("employee_id", "=", employee.id)]
+        if calendar_scope == "personal":
+            return [("employee_id", "=", employee.id)], employee
         direct_reports = self.env["hr.employee"].sudo().search([
             ("company_id", "in", self.env.companies.ids),
             ("active", "=", True),
             "|", ("leave_manager_id", "=", self.env.user.id),
                  ("parent_id", "=", employee.id),
         ])
-        if not direct_reports:
-            return own, employee
         team_approved = [
             ("employee_id", "in", direct_reports.ids),
             ("state", "=", "validate"),
             ("is_cancelled", "=", False),
         ]
-        return expression.OR([own, team_approved]), employee
+        return team_approved, employee
 
     @api.model
     def get_leave_calendar_data(
@@ -2004,8 +2068,12 @@ class HrLeave(models.Model):
         statuses=None,
         employee_ids=None,
         employee_view=False,
+        calendar_scope=None,
     ):
-        self._check_leave_dashboard_access(employee_scope=employee_view)
+        scope = self._check_leave_calendar_access(
+            employee_scope=employee_view, calendar_scope=calendar_scope,
+        )
+        employee_view = scope != "organisation"
 
         department_ids = [int(x) for x in (department_ids or []) if x]
         leave_type_ids = [int(x) for x in (leave_type_ids or []) if x]
@@ -2018,10 +2086,10 @@ class HrLeave(models.Model):
             ("request_date_to", ">=", date_from),
         ]
 
-        visibility_domain, curr_emp = self._employee_calendar_visibility_domain(employee_view)
+        visibility_domain, curr_emp = self._calendar_visibility_domain(scope)
         if visibility_domain:
             domain = expression.AND([domain, visibility_domain])
-        elif employee_ids:
+        if employee_ids:
             domain.append(("employee_id", "in", employee_ids))
 
         if department_ids:
@@ -2055,7 +2123,10 @@ class HrLeave(models.Model):
         # Employee record rules normally hide colleagues' leave.  The sudo is
         # safe here because the server-built visibility domain above permits
         # only the employee's own records and approved records in their team.
-        CalendarLeave = self.sudo() if employee_view else self
+        # The explicit capability check above and company domain make sudo
+        # safe for the organisation calendar while avoiding dependence on
+        # unrelated native Time Off record rules.
+        CalendarLeave = self.sudo()
         leaves = CalendarLeave.search(domain, order="request_date_from asc")
 
         leave_list = []
@@ -2069,6 +2140,7 @@ class HrLeave(models.Model):
                 "employee_name": l.employee_id.name or "",
                 "department_id": l.employee_id.department_id.id if l.employee_id.department_id else False,
                 "department_name": l.employee_id.department_id.name or "No Department",
+                "job_title": l.employee_id.job_title or (l.employee_id.job_id.name if l.employee_id.job_id else "") or _("Employee"),
                 "leave_type_id": l.holiday_status_id.id,
                 "leave_type_name": l.holiday_status_id.name or "",
                 "color": getattr(l.holiday_status_id, "color", 0),
@@ -2077,6 +2149,7 @@ class HrLeave(models.Model):
                 "date_to": fields.Date.to_string(l.request_date_to),
                 "duration": round(l.number_of_days or 0.0, 1),
                 "status": status,
+                "status_label": dict(self._fields["state"]._description_selection(self.env)).get(l.state, status.title()),
                 "half_day": bool(l.request_unit_half),
                 "half_day_period": l.request_date_from_period if l.request_unit_half else False,
                 "notes": (l.notes or l.admin_creation_note or "") if (not employee_view or is_own) else "",
@@ -2088,27 +2161,37 @@ class HrLeave(models.Model):
             ("active", "=", True),
             ("company_id", "in", [False, self.env.company.id]),
         ])
-        if employee_view:
-            visible_employee_ids = [curr_emp.id] if curr_emp else []
-            if curr_emp:
-                visible_employee_ids += self.env["hr.employee"].sudo().search([
+        if scope != "organisation":
+            if scope == "personal":
+                visible_employee_ids = [curr_emp.id] if curr_emp else []
+            else:
+                visible_employee_ids = self.env["hr.employee"].sudo().search([
                     ("company_id", "in", self.env.companies.ids),
                     ("active", "=", True),
                     "|", ("leave_manager_id", "=", self.env.user.id),
                          ("parent_id", "=", curr_emp.id),
-                ]).ids
+                ]).ids if curr_emp else []
             company_employees = self.env["hr.employee"].sudo().browse(
                 list(set(visible_employee_ids)),
             ).exists()
             departments = company_employees.mapped("department_id")
         else:
-            departments = self.env["hr.department"].search([
+            departments = self.env["hr.department"].sudo().search([
                 ("company_id", "=", self.env.company.id),
             ])
-            company_employees = self.env["hr.employee"].search([
+            company_employees = self.env["hr.employee"].sudo().search([
                 ("company_id", "=", self.env.company.id),
                 ("active", "=", True),
             ])
+
+        if department_ids:
+            company_employees = company_employees.filtered(
+                lambda employee: employee.department_id.id in department_ids
+            )
+        if employee_ids:
+            company_employees = company_employees.filtered(
+                lambda employee: employee.id in employee_ids
+            )
 
         public_holidays = self.env["resource.calendar.leaves"].sudo().search([
             ("company_id", "in", [False, self.env.company.id]),
@@ -2135,6 +2218,7 @@ class HrLeave(models.Model):
                 "department": emp.department_id.name or "No Department",
             } for emp in company_employees],
             "total_active_employees": len(company_employees) or 1,
+            "calendar_scope": scope,
             "holidays": [{
                 "id": holiday.id,
                 "name": holiday.name or _("Public Holiday"),
@@ -2152,9 +2236,13 @@ class HrLeave(models.Model):
         statuses=None,
         employee_ids=None,
         employee_view=False,
+        calendar_scope=None,
         country_id=None,
     ):
-        self._check_leave_dashboard_access(employee_scope=employee_view)
+        scope = self._check_leave_calendar_access(
+            employee_scope=employee_view, calendar_scope=calendar_scope,
+        )
+        employee_view = scope != "organisation"
         year = int(year)
         date_from = f"{year}-01-01"
         date_to = f"{year}-12-31"
@@ -2170,10 +2258,10 @@ class HrLeave(models.Model):
             ("request_date_to", ">=", date_from),
         ]
 
-        visibility_domain, _curr_emp = self._employee_calendar_visibility_domain(employee_view)
+        visibility_domain, _curr_emp = self._calendar_visibility_domain(scope)
         if visibility_domain:
             domain = expression.AND([domain, visibility_domain])
-        elif employee_ids:
+        if employee_ids:
             domain.append(("employee_id", "in", employee_ids))
 
         if department_ids:
@@ -2204,7 +2292,7 @@ class HrLeave(models.Model):
                 ("is_cancelled", "=", False),
             ])
 
-        CalendarLeave = self.sudo() if employee_view else self
+        CalendarLeave = self.sudo()
         leaves = CalendarLeave.search(domain)
 
         month_summary = {m: {"approved": 0, "pending": 0, "holidays": 0} for m in range(1, 13)}
@@ -2240,7 +2328,7 @@ class HrLeave(models.Model):
                 curr += relativedelta(days=1)
 
         # Dynamic Public Holidays (Feedback 6 & 7 - No hardcoded fallback)
-        public_leaves = self.env["resource.calendar.leaves"].search([
+        public_leaves = self.env["resource.calendar.leaves"].sudo().search([
             ("company_id", "in", [False, self.env.company.id]),
             ("resource_id", "=", False),
             ("date_from", "<=", f"{year}-12-31 23:59:59"),
@@ -2264,11 +2352,11 @@ class HrLeave(models.Model):
 
         selected_country = None
         if country_id:
-            selected_country = self.env["res.country"].browse(int(country_id))
+            selected_country = self.env["res.country"].sudo().browse(int(country_id))
         if not selected_country or not selected_country.exists():
             selected_country = self.env.company.country_id
         if not selected_country:
-            selected_country = self.env["res.country"].search([], limit=1)
+            selected_country = self.env["res.country"].sudo().search([], limit=1)
 
         country_dict = {
             "id": selected_country.id if selected_country else 0,
@@ -2278,7 +2366,7 @@ class HrLeave(models.Model):
 
         all_countries = [
             {"id": c.id, "name": c.name, "code": c.code}
-            for c in self.env["res.country"].search([], order="name asc", limit=250)
+            for c in self.env["res.country"].sudo().search([], order="name asc", limit=250)
         ]
 
         return {
@@ -2295,10 +2383,9 @@ class HrLeaveAllocation(models.Model):
     _inherit = "hr.leave.allocation"
 
     def _check_leave_allocation_mutation(self):
-        if not any((
-            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_operations"),
-            self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"),
-        )):
+        if not self.env.user.has_group(
+            "hr_leave_dashboard.group_leave_permission_operations"
+        ):
             raise AccessError(_("You do not have permission to allocate or amend leave balances."))
 
     @api.model_create_multi

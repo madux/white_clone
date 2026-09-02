@@ -10,6 +10,7 @@
     background-color: #d81b60 !important;
     color: #ffffff !important;
 }
+.o_cc_perspective{display:flex;background:#f1f4f8;border-radius:8px;padding:3px}.o_cc_perspective button{border:0;background:transparent;border-radius:6px;padding:6px 10px;color:#778399;font-size:12px;font-weight:700}.o_cc_perspective button.active{background:#fff;color:#ed1970;box-shadow:0 1px 4px #17203318}
 
 .period-picker-dropdown {
     position: absolute;
@@ -83,6 +84,7 @@
     background: #fdf2f8 !important;
     border: 2px solid #e91e8c !important;
 }
+.calendar-day-cell.range-selected{background:#fff0f6!important;box-shadow:inset 0 0 0 2px #ed1970}.calendar-day-cell{user-select:none}
 
 .day-number-label {
     font-size: 12px;
@@ -407,3 +409,11 @@
     }
 }
 .cleon-calendar-view-switch{display:grid;grid-template-columns:108px 118px;align-items:center;padding:3px;border:1px solid #e1e5ec;border-radius:8px;background:#f3f5f8}.cleon-calendar-view-switch button{height:32px;border:0!important;border-radius:6px;background:transparent!important;color:#566278!important;font-weight:500;box-shadow:none!important;outline:0!important;white-space:nowrap}.cleon-calendar-view-switch button.active{background:#fff!important;color:#e91e75!important;font-weight:600;box-shadow:0 1px 4px #cbd2dd!important}.cleon-calendar-view-switch button:focus-visible{outline:2px solid #ed3b8b!important;outline-offset:1px!important}.cleon-calendar-request-slot{width:116px;transition:none!important}.cleon-calendar-request-hidden{visibility:hidden;pointer-events:none}
+
+.o_cdp_roster article.is-openable { cursor: pointer; }
+.o_cdp_roster article.is-openable:hover { border-color: #ed1970; background: #fff8fb; }
+.o_cdp_roster article.is-private { cursor: default; }
+.o_cdp_status_groups { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.o_cdp_status_groups button { border: 1px solid #dce2ec; border-radius: 999px; background: #fff; color: #667085; padding: 6px 10px; font-size: 11px; font-weight: 600; }
+.o_cdp_status_groups button span { display: inline-block; margin-left: 4px; background: #eef2f7; border-radius: 999px; padding: 1px 6px; }
+.o_cdp_status_groups button.active { border-color: #ed1970; background: #fff2f7; color: #bd185b; }

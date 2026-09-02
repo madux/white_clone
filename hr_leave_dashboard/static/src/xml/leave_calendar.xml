@@ -25,6 +25,12 @@
                         <!-- Header Right Controls -->
                         <div class="d-flex align-items-center gap-2 flex-wrap">
 
+                            <div t-if="state.canSwitchPerspective" class="o_cc_perspective">
+                                <button t-if="state.canUseOrganisation" t-att-class="state.calendarScope === 'organisation' ? 'active' : ''" t-on-click="() => this.setPerspective('organisation')">Organisation</button>
+                                <button t-if="state.canUseTeam" t-att-class="state.calendarScope === 'team' ? 'active' : ''" t-on-click="() => this.setPerspective('team')">Team</button>
+                                <button t-if="state.canUsePersonal" t-att-class="state.calendarScope === 'personal' ? 'active' : ''" t-on-click="() => this.setPerspective('personal')">My Calendar</button>
+                            </div>
+
                             <!-- View Mode Icon Switcher -->
                             <div class="btn-group btn-group-sm ms-2" role="group">
                                 <button type="button"
@@ -45,7 +51,7 @@
                                         title="Day View">
                                     <i class="fa fa-calendar-minus-o"/>
                                 </button>
-                                <button type="button"
+                                <button t-if="!state.employeeView" type="button"
                                         t-att-class="'btn ' + (state.viewMode === 'year' ? 'btn-primary' : 'btn-outline-secondary')"
                                         t-on-click="() => this.setViewMode('year')"
                                         title="Year View">
@@ -54,7 +60,7 @@
                             </div>
 
                             <!-- Coverage Analysis Toggle Button -->
-                            <button t-if="state.canViewCoverage" type="button"
+                            <button t-if="state.canViewCoverage and state.calendarScope !== 'personal'" type="button"
                                     t-att-class="'btn btn-sm ' + (state.coverageMode ? 'btn-pink-active' : 'btn-outline-secondary')"
                                     t-on-click="toggleCoverageMode">
                                 <i class="fa fa-line-chart me-1"/> Coverage Analysis
@@ -69,7 +75,8 @@
                             </button>
 
                             <!-- Download Dropdown Button -->
-                            <button t-if="state.canRequest" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
+                            <button t-if="state.canRequest and state.employeeView" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="openEmployeeRequest"><i class="fa fa-plus"/> Request Leave</button>
+                            <button t-if="state.canBook and state.calendarScope === 'organisation'" type="button" class="btn btn-sm btn-pink-active cleon-calendar-request-slot" t-on-click="() => this.openDayPanel(this.formatYMD(state.currentDate), this.formatYMD(state.currentDate), true)"><i class="fa fa-plus"/> Book Time Off</button>
                             <div class="dropdown d-inline-block">
                                 <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" t-on-click="toggleDownloadDropdown">
                                     <i class="fa fa-download me-1"/> Download
@@ -157,9 +164,11 @@
                             <t t-foreach="this.monthGridWeeks" t-as="week" t-key="week_index">
                                 <div class="calendar-week-row">
                                     <t t-foreach="week" t-as="day" t-key="day.ymd">
-                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '')"
-                                             t-on-click="() => this.openDateRequest(day.ymd)"
-                                             t-att-title="state.employeeView and this.getDayLeaves(day.ymd).length === 0 and this.getDayHolidays(day.ymd).length === 0 ? 'Request leave for this date' : ''">
+                                        <div t-att-class="'calendar-day-cell ' + (day.isCurrentMonth ? '' : 'other-month ') + (day.isToday ? 'today-highlight ' : '') + (this.isDateSelected(day.ymd) ? 'range-selected ' : '')"
+                                             t-on-mousedown="(event) => this.beginDateSelection(day.ymd, event)"
+                                             t-on-mouseenter="() => this.extendDateSelection(day.ymd)"
+                                             t-on-mouseup="() => this.finishDateSelection(day.ymd)"
+                                             t-att-title="state.employeeView ? 'Click for day details; drag to request a date range' : 'Click for roster; drag to book a date range'">
 
                                             <!-- Day Number in Top Left -->
                                             <span class="day-number-label"><t t-esc="day.dayNumber"/></span>
@@ -177,7 +186,7 @@
                                             <t t-else="">
                                                 <div class="day-cell-leave-stack">
                                                     <t t-foreach="this.getDayHolidays(day.ymd)" t-as="holiday" t-key="'holiday-' + holiday.id">
-                                                        <div class="calendar-leave-block bg-light text-dark border" t-att-title="holiday.name">
+                                                        <div class="calendar-leave-block bg-light text-dark border" t-on-mousedown.stop="" t-att-title="holiday.name">
                                                             <i class="fa fa-star me-1 text-warning"/><span class="leave-block-name"><t t-esc="holiday.name"/></span>
                                                         </div>
                                                     </t>
@@ -186,6 +195,7 @@
                                                     <t t-foreach="dayLeaves.slice(0, 3)" t-as="leave" t-key="leave.id">
                                                         <div t-att-class="'calendar-leave-block ' + (leave.status === 'pending' ? 'pending ' : '')"
                                                              t-att-style="'background-color: ' + this.getLeaveTypeColor(leave.color_hex)"
+                                                             t-on-mousedown.stop=""
                                                              t-on-click.stop="() => this.openLeaveDetail(leave.id)"
                                                              t-att-title="leave.employee_name + ' (' + leave.leave_type_name + ')'">
                                                             <span class="leave-block-name"><t t-esc="leave.employee_name"/></span>
@@ -194,7 +204,7 @@
 
                                                     <!-- Stack Overflow Indicator "+N more" -->
                                                     <t t-if="dayLeaves.length > 3">
-                                                        <div class="leave-overflow-badge" t-on-click.stop="() => this.openLeaveDetail(dayLeaves[3].id)">
+                                                        <div class="leave-overflow-badge" t-on-mousedown.stop="" t-on-click.stop="() => this.openDayPanel(day.ymd)">
                                                             +<t t-esc="dayLeaves.length - 3"/> more
                                                         </div>
                                                     </t>
@@ -534,6 +544,7 @@
                     onChanged.bind="loadCalendarData"/>
             </t>
             <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData" initial="state.employeeRequestInitial"/>
+            <CalendarDayPanel t-if="state.dayPanelOpen" dateFrom="state.dayPanelDateFrom" dateTo="state.dayPanelDateTo" leaves="dayPanelLeaves" holidays="dayPanelHolidays" canBook="state.canBook and state.calendarScope === 'organisation'" startOnBook="state.dayPanelBook" canRequest="state.canRequest" openRequest.bind="openRequestRange" openDetail.bind="openLeaveDetail" close.bind="closeDayPanel" submitted.bind="loadCalendarData"/>
 
         </div>
     </t>

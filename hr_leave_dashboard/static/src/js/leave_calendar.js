@@ -1,15 +1,16 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../components/calendar_sidebar";
 import { LeaveRequestDetailModal } from "../components/leave_request_detail/leave_request_detail";
 import { EmployeeRequestModal } from "../components/employee_request_modal/employee_request_modal";
+import { CalendarDayPanel } from "../components/calendar_day_panel/calendar_day_panel";
 
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
-    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal };
+    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel };
     static props = {
         embedded: { type: Boolean, optional: true },
         forceEmployee: { type: Boolean, optional: true },
@@ -30,6 +31,12 @@ export class LeaveCalendarPage extends Component {
             currentDate: new Date(today.getFullYear(), today.getMonth(), today.getDate()),
             coverageMode: false,
             employeeView: false,
+            calendarScope: "personal",
+            canSwitchPerspective: false,
+            canUsePersonal: false,
+            canUseTeam: false,
+            canUseOrganisation: false,
+            canBook: false,
             canRequest: false,
             canViewCoverage: false,
 
@@ -67,6 +74,12 @@ export class LeaveCalendarPage extends Component {
             },
 
             detailRequestId: null,
+            dayPanelOpen: false,
+            dayPanelDateFrom: "",
+            dayPanelDateTo: "",
+            dayPanelBook: false,
+            selectionStart: "",
+            selectionCurrent: "",
             employeeRequestOpen: false,
             employeeRequestInitial: {},
             loadError: "",
@@ -75,14 +88,23 @@ export class LeaveCalendarPage extends Component {
 
         onWillStart(async () => {
             const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
+            this.state.canBook = access.can_operate;
             this.state.canRequest = access.has_personal_scope;
             this.state.canViewCoverage = access.has_team_scope || access.can_operate || access.can_view_audit;
-            // The backend derives the exact record scope from RBAC.  This
-            // flag now means personal/team-safe calendar rather than a mode
-            // selected by the user.
-            this.state.employeeView = !(access.can_operate || access.can_view_audit);
+            this.state.canUsePersonal = access.has_personal_scope;
+            this.state.canUseTeam = access.has_team_scope;
+            this.state.canUseOrganisation = access.can_operate || access.can_view_audit;
+            const scopes = [this.state.canUsePersonal, this.state.canUseTeam, this.state.canUseOrganisation].filter(Boolean);
+            this.state.canSwitchPerspective = scopes.length > 1;
+            this.state.calendarScope = Boolean(this.props.forceEmployee)
+                ? "personal"
+                : this.state.canUseOrganisation ? "organisation" : this.state.canUseTeam ? "team" : "personal";
+            this.state.employeeView = this.state.calendarScope !== "organisation";
             await this.loadCalendarData();
         });
+        // The global assistant may mount after the initial RPC completes, so
+        // publish the same permission-safe context once the page is present.
+        onMounted(() => this.emitAssistantContext());
     }
 
     // ---------------------------------------------------------
@@ -106,6 +128,7 @@ export class LeaveCalendarPage extends Component {
                         statuses: this.state.filters.statuses,
                         employee_ids: this.state.filters.employeeIds,
                         employee_view: this.state.employeeView,
+                        calendar_scope: this.state.calendarScope,
                         country_id: this.state.selectedCountryId || false,
                     }
                 );
@@ -130,6 +153,7 @@ export class LeaveCalendarPage extends Component {
                         statuses: this.state.filters.statuses,
                         employee_ids: this.state.filters.employeeIds,
                         employee_view: this.state.employeeView,
+                        calendar_scope: this.state.calendarScope,
                     }
                 );
 
@@ -140,6 +164,7 @@ export class LeaveCalendarPage extends Component {
                 this.state.employees = res.employees || [];
                 this.state.totalActiveEmployees = res.total_active_employees || 1;
             }
+            this.emitAssistantContext();
         } catch (err) {
             console.error("Failed to load leave calendar data", err);
             this.state.loadError = "Calendar data could not be loaded. Check your connection and try again.";
@@ -191,8 +216,25 @@ export class LeaveCalendarPage extends Component {
     // ---------------------------------------------------------
 
     setViewMode(mode) {
+        if (this.state.employeeView && mode === "year") return;
         this.state.viewMode = mode;
         this.loadCalendarData();
+    }
+
+    async setPerspective(scope) {
+        const allowed = {
+            personal: this.state.canUsePersonal,
+            team: this.state.canUseTeam,
+            organisation: this.state.canUseOrganisation,
+        };
+        if (!allowed[scope]) return;
+        this.state.calendarScope = scope;
+        this.state.employeeView = scope !== "organisation";
+        if (this.state.employeeView && this.state.viewMode === "year") this.state.viewMode = "month";
+        if (this.state.employeeView) this.state.coverageMode = false;
+        this.state.employeeEventFilters = ["all"];
+        this.state.filters = { dateFrom: "", dateTo: "", departmentIds: [], leaveTypeIds: [], statuses: [], employeeIds: [] };
+        await this.loadCalendarData();
     }
 
     toggleCoverageMode() {
@@ -203,10 +245,56 @@ export class LeaveCalendarPage extends Component {
         this.state.employeeRequestInitial = {};
         this.state.employeeRequestOpen = true;
     }
-    openDateRequest(ymd) {
-        if (!this.state.canRequest || this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length) return;
-        this.state.employeeRequestInitial = { date_from: ymd, date_to: ymd };
+    openRequestRange(dateFrom, dateTo = dateFrom) {
+        if (!this.state.canRequest) return;
+        this.state.dayPanelOpen = false;
+        this.state.employeeRequestInitial = { date_from: dateFrom, date_to: dateTo };
         this.state.employeeRequestOpen = true;
+    }
+    openDayPanel(dateFrom, dateTo = dateFrom, book = false) {
+        this.state.dayPanelDateFrom = dateFrom;
+        this.state.dayPanelDateTo = dateTo;
+        this.state.dayPanelBook = Boolean(book);
+        this.state.dayPanelOpen = true;
+    }
+    closeDayPanel() { this.state.dayPanelOpen = false; this.state.dayPanelBook = false; }
+    get dayPanelLeaves() {
+        const from = this.state.dayPanelDateFrom;
+        const to = this.state.dayPanelDateTo || from;
+        return this.visibleLeaves.filter(leave => leave.date_from <= to && leave.date_to >= from);
+    }
+    get dayPanelHolidays() {
+        const from = this.state.dayPanelDateFrom;
+        const to = this.state.dayPanelDateTo || from;
+        return this.visibleHolidays.filter(holiday => holiday.date_from <= to && holiday.date_to >= from);
+    }
+    beginDateSelection(ymd, event) {
+        if (event.button !== 0 || !this.state.canRequest && !this.state.canBook) return;
+        this.state.selectionStart = ymd;
+        this.state.selectionCurrent = ymd;
+    }
+    extendDateSelection(ymd) {
+        if (this.state.selectionStart) this.state.selectionCurrent = ymd;
+    }
+    finishDateSelection(ymd) {
+        if (!this.state.selectionStart) return;
+        const values = [this.state.selectionStart, ymd].sort();
+        const isRange = values[0] !== values[1];
+        this.state.selectionStart = "";
+        this.state.selectionCurrent = "";
+        if (isRange) {
+            if (this.state.canBook && !this.state.employeeView) this.openDayPanel(values[0], values[1], true);
+            else this.openRequestRange(values[0], values[1]);
+            return;
+        }
+        const hasEntries = this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length;
+        if (!this.state.employeeView || hasEntries) this.openDayPanel(ymd);
+        else this.openRequestRange(ymd);
+    }
+    isDateSelected(ymd) {
+        if (!this.state.selectionStart) return false;
+        const [from, to] = [this.state.selectionStart, this.state.selectionCurrent].sort();
+        return ymd >= from && ymd <= to;
     }
     closeEmployeeRequest() {
         this.state.employeeRequestOpen = false;
@@ -672,6 +760,27 @@ export class LeaveCalendarPage extends Component {
 
     closeDetailModal() {
         this.state.detailRequestId = null;
+    }
+
+    emitAssistantContext() {
+        const year = this.state.currentDate.getFullYear();
+        const range = this.state.viewMode === "year"
+            ? { dateFrom: `${year}-01-01`, dateTo: `${year}-12-31` }
+            : this.getRangeForView();
+        window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: {
+            screen: "leave_calendar",
+            title: "Leave Calendar",
+            view_mode: this.state.viewMode,
+            perspective: this.state.calendarScope,
+            date_from: this.state.filters.dateFrom || range.dateFrom,
+            date_to: this.state.filters.dateTo || range.dateTo,
+            filters: {
+                department_ids: [...this.state.filters.departmentIds],
+                leave_type_ids: [...this.state.filters.leaveTypeIds],
+                statuses: [...this.state.filters.statuses],
+                employee_ids: [...this.state.filters.employeeIds],
+            },
+        }}));
     }
 
     getLeaveTypeColor(colorHex) {
