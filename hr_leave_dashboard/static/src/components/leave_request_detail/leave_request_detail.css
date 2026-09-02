@@ -136,6 +136,7 @@
     color: #475569;
     border: 1px solid #cbd5e1;
 }
+.leave-detail-status-pill.changes_requested{background:#f3e8ff;color:#7e22ce;border:1px solid #d8b4fe}
 
 .leave-detail-submitted-date {
     font-size: 12px;
@@ -495,6 +496,9 @@
 .btn-detail-reject:hover {
     background: #b91c1c;
 }
+
+.btn-detail-changes{background:#fff;color:#7c3aed;border:1px solid #c4b5fd;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}.btn-detail-changes:hover{background:#f5f3ff}
+.leave-ai-insights{border:1px solid #ddd6fe;border-radius:12px;background:#faf9ff;overflow:hidden}.leave-ai-insights>header{display:flex;justify-content:space-between;align-items:center;padding:13px 14px;background:#f3f0ff;border-bottom:1px solid #e5e0ff}.leave-ai-insights>header strong{color:#6d28d9}.leave-ai-insights>header small{display:block;color:#7c8495;font-size:10px}.leave-ai-insights>header>span{font-size:10px;text-transform:uppercase;background:#fff;border:1px solid #c4b5fd;color:#6d28d9;border-radius:999px;padding:4px 8px}.leave-ai-insights article{display:flex;gap:10px;margin:10px 12px;padding:10px;background:#fff;border:1px solid #ece9f8;border-radius:9px}.leave-ai-insights article>i{color:#7c3aed;margin-top:2px}.leave-ai-insights article strong{font-size:12px}.leave-ai-insights article p{font-size:12px;margin:3px 0}.leave-ai-insights article small{font-size:10px;color:#8490a3}.leave-ai-conflict{margin:10px 12px;padding:9px;border-radius:8px;background:#fff1f2;color:#be123c;font-size:12px}.leave-ai-recommendation{margin:10px 12px;padding:10px;border-left:3px solid #7c3aed;background:#f3f0ff}.leave-ai-recommendation strong{font-size:11px;color:#6d28d9}.leave-ai-recommendation p{font-size:12px;margin:3px 0 0}.leave-ai-insights>footer{display:flex;align-items:center;justify-content:flex-end;gap:7px;padding:0 12px 12px;font-size:11px;color:#667085}.leave-ai-insights>footer button{border:1px solid #ddd6fe;background:#fff;color:#6d28d9;border-radius:6px;width:30px;height:28px}
 
 .btn-detail-cancel {
     background: #f59e0b;

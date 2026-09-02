@@ -291,7 +291,9 @@
                     <span class="text-muted">Specify the reason for rejection</span>
                 </div>
                 <div class="py-3">
-                    <label class="form-label font-weight-bold">Rejection Reason *</label>
+                    <label class="form-label font-weight-bold">Rejection Category *</label>
+                    <select class="form-select mb-3" t-model="state.rejectCategory"><option value="">Select a reason...</option><option value="coverage">Insufficient Team Coverage</option><option value="balance">Insufficient Leave Balance</option><option value="policy">Policy Requirement Not Met</option><option value="dates">Dates Not Approved</option><option value="documentation">Documentation Incomplete</option><option value="other">Other</option></select>
+                    <label class="form-label font-weight-bold">Comments *</label>
                     <textarea class="form-control" rows="3"
                               placeholder="Provide a clear reason for rejecting this leave request..."
                               t-model="state.rejectReason"/>

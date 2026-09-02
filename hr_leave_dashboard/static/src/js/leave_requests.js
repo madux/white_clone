@@ -50,6 +50,7 @@ export class LeaveRequestsPage extends Component {
             // ── Reject Reason Modal ──
             showRejectModal: false,
             rejectReason: "",
+            rejectCategory: "",
             rejectTargetId: null, // null means bulk reject selectedIds
 
             // ── Admin Create Modal ──
@@ -114,6 +115,12 @@ export class LeaveRequestsPage extends Component {
             this.state.to = pager.to;
 
             this.state.selectedIds = [];
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: {
+                screen: "leave_requests_admin", title: "Leave Requests — Admin",
+                status: this.state.status, search: this.state.search,
+                leave_type_id: this.state.leaveTypeId || false,
+                department_id: this.state.departmentId || false,
+            }}));
         } finally {
             this.state.loading = false;
         }
@@ -229,18 +236,20 @@ export class LeaveRequestsPage extends Component {
         if (!this.state.selectedIds.length) return;
         this.state.rejectTargetId = null;
         this.state.rejectReason = "";
+        this.state.rejectCategory = "";
         this.state.showRejectModal = true;
     }
 
     openSingleReject(id) {
         this.state.rejectTargetId = id;
         this.state.rejectReason = "";
+        this.state.rejectCategory = "";
         this.state.showRejectModal = true;
     }
 
     async confirmReject() {
-        if (!this.state.rejectReason.trim() || this.state.rejectReason.trim().length < 3) {
-            this.notification.add("A rejection reason is required (at least 3 characters).", { type: "warning" });
+        if (!this.state.rejectCategory || !this.state.rejectReason.trim() || this.state.rejectReason.trim().length < 3) {
+            this.notification.add("Select a rejection category and provide comments of at least 3 characters.", { type: "warning" });
             return;
         }
 
@@ -248,10 +257,12 @@ export class LeaveRequestsPage extends Component {
         const res = await this.orm.call("hr.leave", "bulk_reject_leave_requests", [], {
             leave_ids: ids,
             reason: this.state.rejectReason.trim(),
+            category: this.state.rejectCategory,
         });
 
         this.state.showRejectModal = false;
         this.state.rejectReason = "";
+        this.state.rejectCategory = "";
         this.state.rejectTargetId = null;
 
         if (this.state.showReviewModal) {

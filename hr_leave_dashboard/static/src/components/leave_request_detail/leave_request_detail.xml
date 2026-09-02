@@ -47,6 +47,9 @@
                             <t t-elif="state.detail.status === 'rejected'">
                                 <i class="fa fa-times me-1"/> Rejected
                             </t>
+                            <t t-elif="state.detail.status === 'changes_requested'">
+                                <i class="fa fa-pencil-square-o me-1"/> Changes Requested
+                            </t>
                             <t t-else="">
                                 <i class="fa fa-ban me-1"/> Cancelled
                             </t>
@@ -169,6 +172,29 @@
                         <strong><i class="fa fa-level-up me-1"/> Escalated for review</strong>
                         <p class="mb-0 mt-1"><t t-esc="state.detail.escalation_note || 'Priority review requested.'"/></p>
                     </div>
+                    <div t-if="state.detail.status === 'changes_requested'" class="alert alert-warning mb-4">
+                        <strong><i class="fa fa-pencil-square-o me-1"/> Changes requested</strong>
+                        <p class="mb-0 mt-1"><t t-esc="state.detail.changes_requested_comment"/></p>
+                        <small t-if="state.detail.changes_requested_by">Requested by <t t-esc="state.detail.changes_requested_by"/> · <t t-esc="formatDateTime(state.detail.changes_requested_at)"/></small>
+                    </div>
+
+                    <div t-if="state.detail.handover and state.detail.handover.enabled" class="leave-detail-section mb-4">
+                        <div class="detail-section-title">Handover Information</div>
+                        <div class="reason-content-box">
+                            <p><strong>Backup colleagues:</strong> <t t-foreach="state.detail.handover.backup_colleagues" t-as="person" t-key="person.id"><span class="badge bg-light text-dark me-1" t-esc="person.name"/></t></p>
+                            <p t-if="state.detail.handover.emergency_contact"><strong>Reachout information:</strong> <t t-esc="state.detail.handover.emergency_contact"/></p>
+                            <p t-if="state.detail.handover.notes" class="mb-0"><strong>Notes:</strong> <t t-esc="state.detail.handover.notes"/></p>
+                        </div>
+                    </div>
+
+                    <section t-if="state.insights" class="leave-ai-insights mb-4">
+                        <header><div><strong><i class="fa fa-magic"/> AI Insights</strong><small>Generated <t t-esc="formatDateTime(state.insights.generated_at)"/></small></div><span>Advisory only</span></header>
+                        <div t-if="state.insights.conflict" class="leave-ai-conflict"><i class="fa fa-exclamation-triangle"/> Staffing coverage is projected below 70%. Verify the coverage details before deciding.</div>
+                        <article t-foreach="state.insights.insights" t-as="insight" t-key="insight.key"><i t-att-class="'fa '+insight.icon"/><div><strong t-esc="insight.title"/><p t-esc="insight.text"/><small>Source: <t t-esc="insight.source"/></small></div></article>
+                        <div class="leave-ai-recommendation"><strong>AI Recommendation (Advisory Only)</strong><p t-esc="state.insights.recommendation"/></div>
+                        <footer t-if="state.insightFeedback === null"><span>Was this insight helpful?</span><button t-on-click="()=>rateInsight(true)"><i class="fa fa-thumbs-o-up"/></button><button t-on-click="()=>rateInsight(false)"><i class="fa fa-thumbs-o-down"/></button></footer>
+                        <footer t-else=""><span>Thank you. Your feedback was recorded.</span></footer>
+                    </section>
 
                     <!-- Collapsible Balance Impact Section -->
                     <div class="leave-detail-section mb-4">
@@ -286,6 +312,11 @@
                             Reject
                         </button>
                     </t>
+                    <t t-if="!props.readOnly and state.detail.actions.can_request_changes">
+                        <button type="button" class="btn-detail-changes" t-on-click="openChanges" t-att-disabled="state.processing">
+                            <i class="fa fa-reply me-1"/> Request Changes
+                        </button>
+                    </t>
                     <t t-if="!props.readOnly and state.detail.actions.can_approve">
                         <button type="button" class="btn-detail-approve" t-on-click="approve" t-att-disabled="state.processing">
                             <i class="fa fa-check me-1"/> Approve
@@ -306,6 +337,16 @@
                 </div>
             </t>
 
+            <t t-if="state.showChangesModal">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeChanges"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
+                    <button type="button" class="cleon-welcome-close" t-on-click="closeChanges"><i class="fa fa-times"/></button>
+                    <div class="cleon-detail-header"><h4><i class="fa fa-reply me-1"/> Request Changes</h4><span class="text-muted">Send this request back to the employee for modification.</span></div>
+                    <div class="py-3"><label class="form-label font-weight-bold">Comments *</label><textarea maxlength="500" class="form-control" rows="4" placeholder="State exactly what the employee needs to change..." t-model="state.changesComment"/><small><t t-esc="state.changesComment.length"/> / 500</small></div>
+                    <div class="cleon-detail-footer"><button type="button" class="btn btn-secondary" t-on-click="closeChanges">Cancel</button><button type="button" class="btn btn-primary ms-2" t-on-click="confirmChanges" t-att-disabled="state.processing or !state.changesComment.trim()">Send for Changes</button></div>
+                </div>
+            </t>
+
             <!-- Nested Rejection Reason Modal -->
             <t t-if="state.showRejectModal">
                 <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="closeReject"/>
@@ -316,7 +357,9 @@
                         <span class="text-muted">Specify the reason for rejection</span>
                     </div>
                     <div class="py-3">
-                        <label class="form-label font-weight-bold">Rejection Reason * (min 3 chars)</label>
+                        <label class="form-label font-weight-bold">Rejection Category *</label>
+                        <select class="form-select mb-3" t-model="state.rejectCategory"><option value="">Select a reason...</option><option value="coverage">Insufficient Team Coverage</option><option value="balance">Insufficient Leave Balance</option><option value="policy">Policy Requirement Not Met</option><option value="dates">Dates Not Approved</option><option value="documentation">Documentation Incomplete</option><option value="other">Other</option></select>
+                        <label class="form-label font-weight-bold">Comments * (min 3 chars)</label>
                         <textarea class="form-control" rows="3"
                                   placeholder="Provide a clear reason for rejecting this leave request..."
                                   t-model="state.rejectReason"/>

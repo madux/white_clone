@@ -75,6 +75,29 @@ class HrLeave(models.Model):
     escalated_by_id = fields.Many2one("res.users", readonly=True, copy=False)
     escalated_at = fields.Datetime(readonly=True, copy=False)
     rejection_reason = fields.Text(readonly=True, copy=False)
+    rejection_category = fields.Selection([
+        ("coverage", "Insufficient Team Coverage"),
+        ("balance", "Insufficient Leave Balance"),
+        ("policy", "Policy Requirement Not Met"),
+        ("dates", "Dates Not Approved"),
+        ("documentation", "Documentation Incomplete"),
+        ("other", "Other"),
+    ], readonly=True, copy=False)
+    handover_enabled = fields.Boolean(string="Handover Arranged", copy=False)
+    backup_colleague_ids = fields.Many2many(
+        "hr.employee", "hr_leave_backup_colleague_rel", "leave_id", "employee_id",
+        string="Backup Colleagues", copy=False,
+    )
+    emergency_contact = fields.Char(string="Emergency / Reachout Information", copy=False)
+    handover_notes = fields.Text(copy=False)
+    changes_requested = fields.Boolean(readonly=True, copy=False, index=True)
+    changes_requested_comment = fields.Text(readonly=True, copy=False)
+    changes_requested_by_id = fields.Many2one("res.users", readonly=True, copy=False)
+    changes_requested_at = fields.Datetime(readonly=True, copy=False)
+    submission_channel = fields.Selection([
+        ("form", "Manual Form"), ("ai_assisted", "AI Assisted"),
+        ("admin", "Administrator"),
+    ], default="form", required=True, readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -114,12 +137,27 @@ class HrLeave(models.Model):
             "number_of_days",
             "request_unit_half",
         }
-        lifecycle_fields = policy_input_fields | {
-            "state", "notes", "name", "is_cancelled", "cancellation_reason",
-            "admin_created", "admin_creation_note", "admin_overlap_override",
+        workflow_fields = {
+            "state", "is_cancelled", "cancellation_reason", "cancelled_by_id",
+            "cancelled_at", "admin_created", "admin_creation_note",
+            "admin_overlap_override", "changes_requested",
+            "changes_requested_comment", "changes_requested_by_id",
+            "changes_requested_at", "rejection_reason", "rejection_category",
+            "escalated", "escalation_note", "escalated_by_id", "escalated_at",
+            "submission_channel",
         }
-        if lifecycle_fields.intersection(values) and not self._leave_can_mutate_requests(records=self, values=values):
-            raise AccessError(_("You do not have permission to modify leave requests."))
+        self_service_fields = policy_input_fields | {
+            "notes", "name", "handover_enabled", "backup_colleague_ids",
+            "emergency_contact", "handover_notes",
+        }
+        is_operator = self.env.su or self._leave_is_officer()
+        if workflow_fields.intersection(values) and not is_operator:
+            raise AccessError(_("Workflow-controlled leave fields can only be changed through an authorised action."))
+        if self_service_fields.intersection(values) and not is_operator:
+            if not self._leave_can_mutate_requests(records=self, values=values):
+                raise AccessError(_("You can only edit your own leave request."))
+            if any(leave.state != "draft" and not leave.changes_requested for leave in self):
+                raise AccessError(_("This request is not currently open for employee editing."))
         previous_states = {leave.id: leave.state for leave in self}
         result = super().write(values)
 
@@ -140,7 +178,10 @@ class HrLeave(models.Model):
         return result
 
     def unlink(self):
-        if not self._leave_can_mutate_requests(records=self):
+        if not self._leave_can_mutate_requests(records=self) or (
+            not (self.env.su or self._leave_is_officer())
+            and any(leave.state != "draft" for leave in self)
+        ):
             raise AccessError(_("You do not have permission to delete leave requests."))
         return super().unlink()
 
@@ -361,6 +402,7 @@ class HrLeave(models.Model):
         pending_domain = [
             ("state", "in", ("confirm", "validate1")),
             ("is_cancelled", "=", False),
+            ("changes_requested", "=", False),
             ("employee_id.user_id", "!=", user.id),
         ]
         if not self._leave_has_group("hr_leave_dashboard.group_leave_permission_approve", user):
@@ -459,9 +501,7 @@ class HrLeave(models.Model):
             # custom roles, while existing employee users remain compatible.
             "has_personal_scope": has_employee,
             "has_team_scope": has_team_scope,
-            # Per the acceptance criteria, Approvals is absent—not empty—if
-            # the user currently has no routed pending item.
-            "can_approve": can_decide and pending_approvals > 0,
+            "can_approve": can_decide,
             "pending_approvals": pending_approvals,
             "can_operate": is_officer,
             "can_configure": is_admin or is_system,
@@ -647,12 +687,20 @@ class HrLeave(models.Model):
         components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
             [employee.id], types.ids,
         )
+        colleagues = self.env["hr.employee"].sudo().search([
+            ("company_id", "=", employee.company_id.id),
+            ("active", "=", True), ("id", "!=", employee.id),
+        ], order="name")
         return {"employee": {
             "id": employee.id,
             "name": employee.name,
             "employee_number": employee.employee_number or "",
             "identification_id": self._employee_identification(employee),
-        }, "leave_types": [{
+        }, "backup_colleagues": [{
+            "id": colleague.id,
+            "name": colleague.name,
+            "department": colleague.department_id.name or _("No Department"),
+        } for colleague in colleagues], "leave_types": [{
             "id": leave_type.id, "name": leave_type.name, "color": leave_type.cleon_color_hex or "#3B82F6",
             "allocated": components.get((employee.id, leave_type.id), {}).get("total_entitlement", 0.0),
             "used": components.get((employee.id, leave_type.id), {}).get("used", 0.0),
@@ -723,14 +771,34 @@ class HrLeave(models.Model):
                     raise ValidationError(_("The attachment must not exceed 10 MB."))
             except ValueError:
                 raise ValidationError(_("The supporting document is not a valid encoded file."))
-        notes = reason
-        if values.get("emergency_contact"):
-            notes += "\n" + _("Emergency contact: %s") % values["emergency_contact"]
-        leave = self.create({"employee_id": employee.id, "holiday_status_id": int(values["leave_type_id"]), "request_date_from": values["date_from"], "request_date_to": values["date_to"], "request_unit_half": bool(values.get("half_day")), "request_date_from_period": values.get("period", "am"), "notes": notes})
+        handover_enabled = bool(values.get("handover_enabled"))
+        backup_ids = [int(item) for item in (values.get("backup_colleague_ids") or [])]
+        valid_backups = self.env["hr.employee"].sudo().search([
+            ("id", "in", backup_ids), ("company_id", "=", employee.company_id.id),
+            ("active", "=", True), ("id", "!=", employee.id),
+        ])
+        if handover_enabled and not valid_backups:
+            raise ValidationError(_("Select at least one backup colleague for the handover."))
+        if len((values.get("handover_notes") or "")) > 500:
+            raise ValidationError(_("Handover notes must not exceed 500 characters."))
+        if preview.get("document_required") and not attachment.get("data"):
+            raise ValidationError(_("A supporting document is required for this Leave Type and duration."))
+        leave = self.create({
+            "employee_id": employee.id,
+            "holiday_status_id": int(values["leave_type_id"]),
+            "request_date_from": values["date_from"], "request_date_to": values["date_to"],
+            "request_unit_half": bool(values.get("half_day")),
+            "request_date_from_period": values.get("period", "am"),
+            "notes": reason, "handover_enabled": handover_enabled,
+            "backup_colleague_ids": [(6, 0, valid_backups.ids)] if handover_enabled else [(5, 0, 0)],
+            "emergency_contact": (values.get("emergency_contact") or "").strip(),
+            "handover_notes": (values.get("handover_notes") or "").strip(),
+            "submission_channel": "ai_assisted" if values.get("submission_channel") == "ai_assisted" else "form",
+        })
         if attachment.get("data"):
             self.env["ir.attachment"].sudo().create({"name": attachment.get("name") or _("Supporting document"), "datas": attachment["data"], "mimetype": attachment.get("mimetype"), "res_model": "hr.leave", "res_id": leave.id})
         if leave.state == "draft":
-            leave.action_confirm()
+            leave.sudo().action_confirm()
 
         return {"id": leave.id, "reference": leave.request_ref, "message": _("Your leave request has been submitted for approval.")}
 
@@ -738,11 +806,12 @@ class HrLeave(models.Model):
     def get_my_leave_requests(self, status="all", search="", leave_type_id=False):
         employee = self._employee_for_current_user(required=False)
         if not employee:
-            return {"rows": [], "counts": {key: 0 for key in ("all", "pending", "approved", "rejected", "cancelled")}, "leave_types": []}
+            return {"rows": [], "counts": {key: 0 for key in ("all", "pending", "approved", "rejected", "changes_requested", "cancelled")}, "leave_types": []}
         domain = [("employee_id", "=", employee.id)]
-        if status == "pending": domain += [("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False)]
+        if status == "pending": domain += [("state", "in", ("confirm", "validate1")), ("is_cancelled", "=", False), ("changes_requested", "=", False)]
         elif status == "approved": domain += [("state", "=", "validate"), ("is_cancelled", "=", False)]
         elif status == "rejected": domain += [("state", "=", "refuse"), ("is_cancelled", "=", False)]
+        elif status == "changes_requested": domain += [("changes_requested", "=", True), ("is_cancelled", "=", False)]
         elif status == "cancelled": domain += [("is_cancelled", "=", True)]
         if leave_type_id: domain.append(("holiday_status_id", "=", int(leave_type_id)))
         search = (search or "").strip()
@@ -751,14 +820,15 @@ class HrLeave(models.Model):
         records = self.sudo().search(domain, order="create_date desc, id desc")
         def request_status(record):
             if record.is_cancelled: return "cancelled"
+            if record.changes_requested: return "changes_requested"
             return "approved" if record.state == "validate" else "pending" if record.state in ("confirm", "validate1") else "rejected" if record.state == "refuse" else "draft"
-        counts = {key: 0 for key in ("all", "pending", "approved", "rejected", "cancelled")}; counts["all"] = len(all_records)
+        counts = {key: 0 for key in ("all", "pending", "approved", "rejected", "changes_requested", "cancelled")}; counts["all"] = len(all_records)
         for record in all_records: counts[request_status(record)] = counts.get(request_status(record), 0) + 1
         rows = []
         for record in records:
             approver = record.second_approver_id or record.first_approver_id
             if not approver and employee.parent_id: approver = employee.parent_id.user_id
-            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) in ("pending", "approved"), "can_escalate": request_status(record) == "pending" and not record.escalated, "escalated": bool(record.escalated), "can_resubmit": request_status(record) == "rejected"})
+            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) in ("pending", "approved", "changes_requested"), "can_escalate": request_status(record) == "pending" and not record.escalated, "escalated": bool(record.escalated), "can_resubmit": request_status(record) in ("rejected", "changes_requested"), "changes_requested_comment": record.changes_requested_comment or "", "handover_enabled": bool(record.handover_enabled), "backup_colleague_ids": record.backup_colleague_ids.ids, "emergency_contact": record.emergency_contact or "", "handover_notes": record.handover_notes or ""})
         types = self.env["hr.leave.type"].sudo().browse(all_records.mapped("holiday_status_id").ids).sorted("name")
         return {"rows": rows, "counts": counts, "leave_types": [{"id": item.id, "name": item.name} for item in types]}
 
@@ -817,6 +887,81 @@ class HrLeave(models.Model):
         leave._create_audit_record("escalated", note=note)
         leave._post_configured_leave_update(_("Leave request escalated by %(employee)s: %(note)s", employee=employee.name, note=note))
         return {"ok": True, "message": _("Your request has been escalated for review.")}
+
+    @api.model
+    def resubmit_employee_leave_request(self, leave_id, values):
+        """Edit and resubmit the same record, preserving its audit history."""
+        employee = self._employee_for_current_user()
+        leave = self.sudo().search([
+            ("id", "=", int(leave_id)), ("employee_id", "=", employee.id),
+            ("is_cancelled", "=", False),
+        ], limit=1)
+        if not leave or not (leave.changes_requested or leave.state == "refuse"):
+            return {"ok": False, "message": _("Only a returned or rejected request can be edited and resubmitted.")}
+        reason = (values.get("reason") or "").strip()
+        if len(reason) < 5:
+            return {"ok": False, "message": _("Please provide a reason of at least 5 characters.")}
+        preview = self.preview_employee_leave_request(
+            values.get("leave_type_id"), values.get("date_from"), values.get("date_to"),
+            values.get("half_day", False), values.get("period", "am"),
+        )
+        attachment = values.get("attachment") or {}
+        if not preview.get("eligible") or preview.get("errors"):
+            return {"ok": False, "message": "\n".join(preview.get("errors") or [_('This request does not comply with the leave policy.')])}
+        if attachment.get("data") and attachment.get("mimetype") not in (
+            "application/pdf", "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "image/jpeg", "image/png",
+        ):
+            return {"ok": False, "message": _("Only PDF, DOC, DOCX, JPG, and PNG attachments are supported.")}
+        if attachment.get("data"):
+            try:
+                if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:
+                    return {"ok": False, "message": _("The attachment must not exceed 10 MB.")}
+            except ValueError:
+                return {"ok": False, "message": _("The supporting document is not a valid encoded file.")}
+        if preview.get("document_required") and not attachment.get("data") and not self.env["ir.attachment"].sudo().search_count([("res_model", "=", "hr.leave"), ("res_id", "=", leave.id)]):
+            return {"ok": False, "message": _("A supporting document is required.")}
+        backup_ids = [int(item) for item in (values.get("backup_colleague_ids") or [])]
+        backups = self.env["hr.employee"].sudo().search([("id", "in", backup_ids), ("company_id", "=", employee.company_id.id), ("active", "=", True), ("id", "!=", employee.id)])
+        if values.get("handover_enabled") and not backups:
+            return {"ok": False, "message": _("Select at least one backup colleague.")}
+        if len((values.get("handover_notes") or "")) > 500:
+            return {"ok": False, "message": _("Handover notes must not exceed 500 characters.")}
+        was_rejected = leave.state == "refuse"
+        paused_lines = leave.approval_line_ids.filtered(lambda line: line.status == "waiting")
+        if was_rejected:
+            leave.action_draft()
+        leave.sudo().write({
+            "holiday_status_id": int(values["leave_type_id"]), "request_date_from": values["date_from"],
+            "request_date_to": values["date_to"], "request_unit_half": bool(values.get("half_day")),
+            "request_date_from_period": values.get("period", "am"), "notes": reason,
+            "handover_enabled": bool(values.get("handover_enabled")),
+            "backup_colleague_ids": [(6, 0, backups.ids)] if values.get("handover_enabled") else [(5, 0, 0)],
+            "emergency_contact": (values.get("emergency_contact") or "").strip(),
+            "handover_notes": (values.get("handover_notes") or "").strip(),
+            "changes_requested": False, "changes_requested_comment": False,
+            "changes_requested_by_id": False, "changes_requested_at": False,
+            "rejection_reason": False, "rejection_category": False,
+        })
+        route_mode = self.env["ir.config_parameter"].sudo().get_param("cleon_leave.changes_resubmit_route", "same_level")
+        if was_rejected or route_mode == "restart_first":
+            leave.approval_line_ids.sudo().unlink()
+            leave.action_confirm()
+            leave._initialize_configured_approval_lines()
+        elif paused_lines:
+            resumed_line = paused_lines.sorted(lambda line: (line.sequence, line.id))[:1]
+            resumed_line.sudo().write({
+                "status": "pending",
+                "comments": False,
+                "deadline": resumed_line._deadline_from_stage(fields.Datetime.now()),
+            })
+        if attachment.get("data"):
+            self.env["ir.attachment"].sudo().search([("res_model", "=", "hr.leave"), ("res_id", "=", leave.id)]).unlink()
+            self.env["ir.attachment"].sudo().create({"name": attachment.get("name") or _("Supporting document"), "datas": attachment["data"], "mimetype": attachment.get("mimetype"), "res_model": "hr.leave", "res_id": leave.id})
+        leave._create_audit_record("resubmitted", note=_("Request edited and resubmitted by the employee."))
+        leave._post_configured_leave_update(_("Leave request edited and resubmitted by %s.", employee.name))
+        return {"ok": True, "id": leave.id, "reference": leave.request_ref, "message": _("Leave request resubmitted successfully.")}
 
     # ---------------------------------------------------------
     # KPI CARDS (FR-055 to FR-060)
@@ -1168,6 +1313,8 @@ class HrLeave(models.Model):
         self.ensure_one()
         if self.is_cancelled:
             return "cancelled"
+        if self.changes_requested:
+            return "changes_requested"
         return {
             "draft": "draft",
             "confirm": "pending",
@@ -1214,6 +1361,9 @@ class HrLeave(models.Model):
             "escalated": bool(rec.escalated),
             "escalation_note": rec.escalation_note or "",
             "rejection_reason": rec.rejection_reason or "",
+            "rejection_category": rec.rejection_category or "",
+            "has_handover": bool(rec.handover_enabled and rec.backup_colleague_ids),
+            "changes_requested_comment": rec.changes_requested_comment or "",
             "notes": rec.notes or rec.admin_creation_note or "",
         }
 
@@ -1360,8 +1510,10 @@ class HrLeave(models.Model):
         return {"processed": processed}
 
     @api.model
-    def bulk_reject_leave_requests(self, leave_ids, reason=""):
+    def bulk_reject_leave_requests(self, leave_ids, reason="", category=""):
         reason = (reason or "").strip()
+        if category not in dict(self._fields["rejection_category"].selection):
+            raise ValidationError(_("Select a valid rejection category."))
         if len(reason) < 3:
             raise ValidationError(_("A rejection reason is required (at least 3 characters)."))
         leaves = self.sudo().browse(leave_ids).exists().filtered(
@@ -1375,7 +1527,7 @@ class HrLeave(models.Model):
                      user=self.env.user.name, reason=reason)
             leave._post_configured_leave_update(body)
             leave._reject_configured_stages(reason)
-            leave.sudo().write({"rejection_reason": reason})
+            leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
             leave.action_refuse()
             # Immutable Audit Log Entry (FR-111)
             leave._create_audit_record("reject", note=reason)
@@ -1683,6 +1835,9 @@ class HrLeave(models.Model):
                     "reject": "Rejected",
                     "cancelled": "Cancelled",
                     "escalated": "Escalated",
+                    "request_changes": "Changes Requested",
+                    "resubmitted": "Request Resubmitted",
+                    "insight_feedback": "AI Insight Feedback",
                     "override_conflict": "Conflict Overridden",
                 }.get(log.action, log.action)
                 title = f"{action_label} by {actor}{role}"
@@ -1697,6 +1852,7 @@ class HrLeave(models.Model):
         actions = {
             "can_approve": can_review and status == "pending" and not leave.is_cancelled,
             "can_reject": can_review and status == "pending" and not leave.is_cancelled,
+            "can_request_changes": can_review and status == "pending" and not leave.is_cancelled,
             "can_cancel": access["can_operate"] and status == "approved" and not leave.is_cancelled,
         }
 
@@ -1711,6 +1867,17 @@ class HrLeave(models.Model):
             "escalated": bool(leave.escalated),
             "escalation_note": leave.escalation_note or "",
             "rejection_reason": leave.rejection_reason or "",
+            "rejection_category": leave.rejection_category or "",
+            "changes_requested_comment": leave.changes_requested_comment or "",
+            "changes_requested_by": leave.changes_requested_by_id.name if leave.changes_requested_by_id else "",
+            "changes_requested_at": fields.Datetime.to_string(leave.changes_requested_at) if leave.changes_requested_at else "",
+            "handover": {
+                "enabled": bool(leave.handover_enabled),
+                "backup_colleagues": [{"id": employee.id, "name": employee.name} for employee in leave.backup_colleague_ids],
+                "emergency_contact": leave.emergency_contact or "",
+                "notes": leave.handover_notes or "",
+            },
+            "submission_channel": leave.submission_channel,
             "cancelled_by": leave.cancelled_by_id.name if leave.cancelled_by_id else "",
             "cancelled_at": fields.Datetime.to_string(leave.cancelled_at) if leave.cancelled_at else "",
         })
@@ -1753,8 +1920,10 @@ class HrLeave(models.Model):
         return self.get_leave_request_detail(leave.id)
 
     @api.model
-    def reject_leave_request(self, leave_id, reason=""):
+    def reject_leave_request(self, leave_id, reason="", category=""):
         reason = (reason or "").strip()
+        if category not in dict(self._fields["rejection_category"].selection):
+            raise ValidationError(_("A categorised rejection reason is required."))
         if len(reason) < 3:
             raise ValidationError(_("A rejection reason is required (at least 3 characters)."))
         leave = self.sudo().browse(int(leave_id)).exists()
@@ -1768,9 +1937,36 @@ class HrLeave(models.Model):
                  user=self.env.user.name, reason=reason)
         leave._post_configured_leave_update(body)
         leave._reject_configured_stages(reason)
-        leave.sudo().write({"rejection_reason": reason})
+        leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
         leave.action_refuse()
         leave._create_audit_record("reject", note=reason)
+        return self.get_leave_request_detail(leave.id)
+
+    @api.model
+    def request_leave_changes(self, leave_id, comment=""):
+        comment = (comment or "").strip()
+        if not comment or len(comment) > 500:
+            raise ValidationError(_("A comment of no more than 500 characters is required."))
+        leave = self.sudo().browse(int(leave_id)).exists()
+        if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
+            raise ValidationError(_("Invalid leave request."))
+        self._check_leave_review_access(leave)
+        if leave.state not in ("confirm", "validate1") or leave.is_cancelled or leave.changes_requested:
+            raise ValidationError(_("Only a pending leave request can be returned for changes."))
+        leave.approval_line_ids.filtered(lambda line: line.status == "pending").sudo().write({
+            "status": "waiting", "comments": comment,
+        })
+        leave.sudo().write({
+            "changes_requested": True,
+            "changes_requested_comment": comment,
+            "changes_requested_by_id": self.env.user.id,
+            "changes_requested_at": fields.Datetime.now(),
+        })
+        leave._create_audit_record("request_changes", note=comment)
+        leave._post_configured_leave_update(_(
+            "%(approver)s requested modifications.<br/><strong>Comment:</strong> %(comment)s",
+            approver=self.env.user.name, comment=comment,
+        ))
         return self.get_leave_request_detail(leave.id)
 
     @api.model
@@ -1806,8 +2002,8 @@ class HrLeave(models.Model):
         return self.bulk_approve_leave_requests([leave_id])
 
     @api.model
-    def reject_single_request(self, leave_id, reason=""):
-        return self.bulk_reject_leave_requests([leave_id], reason)
+    def reject_single_request(self, leave_id, reason="", category=""):
+        return self.bulk_reject_leave_requests([leave_id], reason, category)
 
     # ---------------------------------------------------------
     # ADMIN CREATE LEAVE REQUEST METHODS (FR-101 to FR-112)

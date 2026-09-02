@@ -67,6 +67,7 @@
             'hr_leave_dashboard/static/src/components/my_leave_requests/my_leave_requests.js',
             'hr_leave_dashboard/static/src/components/my_leave_requests/my_leave_requests.xml',
             'hr_leave_dashboard/static/src/components/my_leave_requests/my_leave_requests.css',
+            'hr_leave_dashboard/static/src/components/my_leave_requests/my_leave_requests_extensions.css',
             'hr_leave_dashboard/static/src/components/get_started/get_started.js',
             'hr_leave_dashboard/static/src/components/get_started/get_started.xml',
             'hr_leave_dashboard/static/src/components/get_started/get_started.css',

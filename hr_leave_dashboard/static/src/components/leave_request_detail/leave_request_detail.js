@@ -25,9 +25,15 @@ export class LeaveRequestDetailModal extends Component {
 
             showRejectModal: false,
             rejectReason: "",
+            rejectCategory: "",
 
             showCancelModal: false,
             cancelReason: "",
+
+            showChangesModal: false,
+            changesComment: "",
+            insights: null,
+            insightFeedback: null,
 
             processing: false,
         });
@@ -51,6 +57,11 @@ export class LeaveRequestDetailModal extends Component {
                 "get_leave_request_detail",
                 [this.props.requestId]
             );
+            if (!this.props.readOnly && this.state.detail.actions?.can_approve) {
+                this.state.insights = await this.orm.call(
+                    "hr.leave.ai.service", "get_approval_insights", [this.props.requestId]
+                );
+            }
         } catch (err) {
             this.notification.add("Failed to load leave request details.", { type: "danger" });
             this.props.close();
@@ -109,6 +120,7 @@ export class LeaveRequestDetailModal extends Component {
 
     openReject() {
         this.state.rejectReason = "";
+        this.state.rejectCategory = "";
         this.state.showRejectModal = true;
     }
 
@@ -118,8 +130,8 @@ export class LeaveRequestDetailModal extends Component {
 
     async confirmReject() {
         const reason = (this.state.rejectReason || "").trim();
-        if (reason.length < 3) {
-            this.notification.add("Rejection reason must contain at least 3 characters.", { type: "warning" });
+        if (!this.state.rejectCategory || reason.length < 3) {
+            this.notification.add("Select a category and provide comments of at least 3 characters.", { type: "warning" });
             return;
         }
 
@@ -129,7 +141,7 @@ export class LeaveRequestDetailModal extends Component {
                 "hr.leave",
                 "reject_leave_request",
                 [],
-                { leave_id: this.props.requestId, reason: reason }
+                { leave_id: this.props.requestId, reason: reason, category: this.state.rejectCategory }
             );
             this.state.detail = updated;
             this.state.showRejectModal = false;
@@ -140,6 +152,41 @@ export class LeaveRequestDetailModal extends Component {
         } finally {
             this.state.processing = false;
         }
+    }
+
+    openChanges() {
+        this.state.changesComment = "";
+        this.state.showChangesModal = true;
+    }
+
+    closeChanges() {
+        this.state.showChangesModal = false;
+    }
+
+    async confirmChanges() {
+        const comment = this.state.changesComment.trim();
+        if (!comment || comment.length > 500) {
+            this.notification.add("A comment of no more than 500 characters is required.", { type: "warning" });
+            return;
+        }
+        this.state.processing = true;
+        try {
+            this.state.detail = await this.orm.call("hr.leave", "request_leave_changes", [this.props.requestId, comment]);
+            this.state.showChangesModal = false;
+            this.state.insights = null;
+            this.notification.add("Request returned to the employee for changes.", { type: "info" });
+            this.props.onChanged?.();
+        } catch (err) {
+            this.notification.add(err.message || "Could not request changes.", { type: "danger" });
+        } finally {
+            this.state.processing = false;
+        }
+    }
+
+    async rateInsight(helpful) {
+        await this.orm.call("hr.leave.ai.service", "record_approval_insight_feedback", [this.props.requestId, helpful]);
+        this.state.insightFeedback = helpful;
+        this.notification.add("Insight feedback recorded.", { type: "success" });
     }
 
     openCancel() {
