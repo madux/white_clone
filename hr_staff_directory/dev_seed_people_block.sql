@@ -181,11 +181,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Sarah Johnson', v_res_sarah, v_company_id, true,
             'VP of Human Resources', v_dept_hr, v_loc_nyc,
-            'EMP-2019-0001', 'employee', 'female',
+            'EMP-2019-0001', 'employee', 'female', '+1 (212) 555-0147', '+1 (212) 555-0147',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_sarah;
 
@@ -202,11 +202,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('David Park', v_res_david, v_company_id, true,
             'Chief Financial Officer', v_dept_finance, v_loc_nyc, v_emp_sarah,
-            'EMP-2018-0004', 'employee', 'male',
+            'EMP-2018-0004', 'employee', 'male', '+1 (212) 555-0163', '+1 (212) 555-0163',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_david;
 
@@ -223,11 +223,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Michael Chen', v_res_michael, v_company_id, true,
             'Engineering Director', v_dept_eng, v_loc_sf, v_emp_sarah,
-            'EMP-2020-0002', 'employee', 'male',
+            'EMP-2020-0002', 'employee', 'male', '+1 (415) 555-0192', '+1 (415) 555-0192',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_michael;
 
@@ -245,11 +245,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Liam Torres', v_res_liam, v_company_id, true,
             'HR Business Partner', v_dept_hr, v_loc_nyc, v_emp_sarah,
-            'EMP-2025-0005', 'employee', 'male',
+            'EMP-2025-0005', 'employee', 'male', '+1 (646) 555-0172', '+1 (646) 555-0172',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_liam;
 
@@ -266,11 +266,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Emma Williams', v_res_emma, v_company_id, true,
             'Senior Data Analyst', v_dept_eng, v_loc_lagoshq, v_emp_michael,
-            'EMP-2021-0003', 'employee', 'female',
+            'EMP-2021-0003', 'employee', 'female', '+234 803 456 7890', '+234 803 456 7890',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_emma;
 
@@ -288,11 +288,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Raj Mehta', v_res_raj, v_company_id, true,
             'Backend Engineer', v_dept_eng, v_loc_abuja, v_emp_michael,
-            'EMP-WL-012', 'employee', 'male',
+            'EMP-WL-012', 'employee', 'male', '+234 802 345 6789', '+234 802 345 6789',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_raj;
 
@@ -309,11 +309,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Amira Suleiman', v_res_amira, v_company_id, true,
             'Product Designer', v_dept_design, v_loc_lagos, v_emp_liam,
-            'EMP-WL-005', 'employee', 'female',
+            'EMP-WL-005', 'employee', 'female', '+234 803 456 7890', '+234 803 456 7890',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_amira;
 

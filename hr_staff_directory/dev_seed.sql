@@ -214,11 +214,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Sarah Johnson', v_res_sarah, v_company_id, true,
             'VP of Human Resources', v_dept_hr, v_loc_nyc,
-            'EMP-2019-0001', 'employee', 'female',
+            'EMP-2019-0001', 'employee', 'female', '+1 (212) 555-0147', '+1 (212) 555-0147',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_sarah;
 
@@ -235,11 +235,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('David Park', v_res_david, v_company_id, true,
             'Chief Financial Officer', v_dept_finance, v_loc_nyc, v_emp_sarah,
-            'EMP-2018-0004', 'employee', 'male',
+            'EMP-2018-0004', 'employee', 'male', '+1 (212) 555-0163', '+1 (212) 555-0163',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_david;
 
@@ -256,11 +256,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Michael Chen', v_res_michael, v_company_id, true,
             'Engineering Director', v_dept_eng, v_loc_sf, v_emp_sarah,
-            'EMP-2020-0002', 'employee', 'male',
+            'EMP-2020-0002', 'employee', 'male', '+1 (415) 555-0192', '+1 (415) 555-0192',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_michael;
 
@@ -278,11 +278,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Liam Torres', v_res_liam, v_company_id, true,
             'HR Business Partner', v_dept_hr, v_loc_nyc, v_emp_sarah,
-            'EMP-2025-0005', 'employee', 'male',
+            'EMP-2025-0005', 'employee', 'male', '+1 (646) 555-0172', '+1 (646) 555-0172',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_liam;
 
@@ -299,11 +299,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Emma Williams', v_res_emma, v_company_id, true,
             'Senior Data Analyst', v_dept_eng, v_loc_lagoshq, v_emp_michael,
-            'EMP-2021-0003', 'employee', 'female',
+            'EMP-2021-0003', 'employee', 'female', '+234 803 456 7890', '+234 803 456 7890',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_emma;
 
@@ -321,11 +321,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Raj Mehta', v_res_raj, v_company_id, true,
             'Backend Engineer', v_dept_eng, v_loc_abuja, v_emp_michael,
-            'EMP-WL-012', 'employee', 'male',
+            'EMP-WL-012', 'employee', 'male', '+234 802 345 6789', '+234 802 345 6789',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_raj;
 
@@ -342,11 +342,11 @@ BEGIN
 
     INSERT INTO hr_employee(name, resource_id, company_id, active,
                             job_title, department_id, work_location_id, parent_id,
-                            barcode, employee_type, gender,
+                            barcode, employee_type, gender, work_phone, mobile_phone,
                             create_uid, write_uid, create_date, write_date)
     VALUES ('Amira Suleiman', v_res_amira, v_company_id, true,
             'Product Designer', v_dept_design, v_loc_lagos, v_emp_liam,
-            'EMP-WL-005', 'employee', 'female',
+            'EMP-WL-005', 'employee', 'female', '+234 803 456 7890', '+234 803 456 7890',
             v_admin_uid, v_admin_uid, NOW(), NOW())
     RETURNING id INTO v_emp_amira;
 
@@ -749,13 +749,13 @@ FROM _seed_emp s;
 INSERT INTO hr_employee(name, resource_id, company_id, active,
                         job_title, department_id, work_location_id,
                         barcode, employee_number, employee_type, work_email,
-                        mobile_phone, grade_id, work_mode, gender,
+                        work_phone, mobile_phone, grade_id, work_mode, gender,
                         sdir_employment_type, performance_score, flight_risk,
                         retention_priority, skills, languages, availability, last_active,
                         create_uid, write_uid, create_date, write_date)
 SELECT s.name, r.id, :company_id, s.is_active,
        s.job_title, d.id, l.id,
-       s.barcode, s.emp_no, 'employee', s.email, s.phone,
+       s.barcode, s.emp_no, 'employee', s.email, s.phone, s.phone,
        g.id, s.work_mode, s.gender,
        s.sdir_employment_type, s.performance_score, s.flight_risk,
        s.retention_priority, s.skills, s.languages, s.availability, s.last_active,
@@ -823,229 +823,3 @@ BEGIN
 END $$;
 
 COMMIT;
-
-
--- =============================================
--- Update create_dates for realistic timeline
--- =============================================
-BEGIN;
-UPDATE hr_employee SET create_date = '2020-01-17 08:00:00'::timestamp WHERE barcode = 'EMP-WL-019';
-UPDATE hr_employee SET create_date = '2024-09-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-130';
-UPDATE hr_employee SET create_date = '2020-08-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-115';
-UPDATE hr_employee SET create_date = '2024-05-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-043';
-UPDATE hr_employee SET create_date = '2019-05-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-207';
-UPDATE hr_employee SET create_date = '2022-12-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-044';
-UPDATE hr_employee SET create_date = '2023-12-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-057';
-UPDATE hr_employee SET create_date = '2024-03-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-111';
-UPDATE hr_employee SET create_date = '2021-12-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-184';
-UPDATE hr_employee SET create_date = '2019-04-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-053';
-UPDATE hr_employee SET create_date = '2025-10-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-113';
-UPDATE hr_employee SET create_date = '2022-11-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-100';
-UPDATE hr_employee SET create_date = '2024-07-06 08:00:00'::timestamp WHERE barcode = 'EMP-WL-136';
-UPDATE hr_employee SET create_date = '2021-03-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-167';
-UPDATE hr_employee SET create_date = '2021-08-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-189';
-UPDATE hr_employee SET create_date = '2022-04-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-028';
-UPDATE hr_employee SET create_date = '2023-04-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-083';
-UPDATE hr_employee SET create_date = '2020-08-07 08:00:00'::timestamp WHERE barcode = 'EMP-WL-038';
-UPDATE hr_employee SET create_date = '2023-04-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-107';
-UPDATE hr_employee SET create_date = '2025-06-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-060';
-UPDATE hr_employee SET create_date = '2018-11-16 08:00:00'::timestamp WHERE barcode = 'EMP-WL-180';
-UPDATE hr_employee SET create_date = '2022-06-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-070';
-UPDATE hr_employee SET create_date = '2022-06-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-005';
-UPDATE hr_employee SET create_date = '2019-12-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-132';
-UPDATE hr_employee SET create_date = '2019-12-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-063';
-UPDATE hr_employee SET create_date = '2023-04-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-152';
-UPDATE hr_employee SET create_date = '2019-04-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-175';
-UPDATE hr_employee SET create_date = '2024-04-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-051';
-UPDATE hr_employee SET create_date = '2024-10-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-099';
-UPDATE hr_employee SET create_date = '2023-12-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-090';
-UPDATE hr_employee SET create_date = '2019-02-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-125';
-UPDATE hr_employee SET create_date = '2021-05-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-146';
-UPDATE hr_employee SET create_date = '2022-07-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-020';
-UPDATE hr_employee SET create_date = '2019-08-07 08:00:00'::timestamp WHERE barcode = 'EMP-WL-182';
-UPDATE hr_employee SET create_date = '2020-01-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-104';
-UPDATE hr_employee SET create_date = '2023-08-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-166';
-UPDATE hr_employee SET create_date = '2020-10-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-093';
-UPDATE hr_employee SET create_date = '2023-05-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-143';
-UPDATE hr_employee SET create_date = '2023-05-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-127';
-UPDATE hr_employee SET create_date = '2022-08-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-185';
-UPDATE hr_employee SET create_date = '2024-07-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-126';
-UPDATE hr_employee SET create_date = '2023-02-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-144';
-UPDATE hr_employee SET create_date = '2016-01-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-206';
-UPDATE hr_employee SET create_date = '2019-01-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-009';
-UPDATE hr_employee SET create_date = '2023-10-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-048';
-UPDATE hr_employee SET create_date = '2025-03-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-017';
-UPDATE hr_employee SET create_date = '2022-10-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-045';
-UPDATE hr_employee SET create_date = '2018-08-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-176';
-UPDATE hr_employee SET create_date = '2022-11-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-148';
-UPDATE hr_employee SET create_date = '2021-11-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-192';
-UPDATE hr_employee SET create_date = '2025-07-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-122';
-UPDATE hr_employee SET create_date = '2020-05-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-181';
-UPDATE hr_employee SET create_date = '2023-08-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-190';
-UPDATE hr_employee SET create_date = '2021-03-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-010';
-UPDATE hr_employee SET create_date = '2025-12-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-195';
-UPDATE hr_employee SET create_date = '2024-05-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-114';
-UPDATE hr_employee SET create_date = '2018-09-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-030';
-UPDATE hr_employee SET create_date = '2024-05-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-018';
-UPDATE hr_employee SET create_date = '2018-08-09 08:00:00'::timestamp WHERE barcode = 'EMP-2018-0004';
-UPDATE hr_employee SET create_date = '2023-03-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-077';
-UPDATE hr_employee SET create_date = '2024-06-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-008';
-UPDATE hr_employee SET create_date = '2024-10-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-209';
-UPDATE hr_employee SET create_date = '2024-10-16 08:00:00'::timestamp WHERE barcode = 'EMP-WL-191';
-UPDATE hr_employee SET create_date = '2025-08-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-096';
-UPDATE hr_employee SET create_date = '2021-08-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-147';
-UPDATE hr_employee SET create_date = '2024-09-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-171';
-UPDATE hr_employee SET create_date = '2021-03-15 08:00:00'::timestamp WHERE barcode = 'EMP-2021-0003';
-UPDATE hr_employee SET create_date = '2024-04-27 08:00:00'::timestamp WHERE barcode = 'EMP-WL-172';
-UPDATE hr_employee SET create_date = '2018-02-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-023';
-UPDATE hr_employee SET create_date = '2025-07-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-069';
-UPDATE hr_employee SET create_date = '2023-07-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-047';
-UPDATE hr_employee SET create_date = '2020-12-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-133';
-UPDATE hr_employee SET create_date = '2019-09-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-075';
-UPDATE hr_employee SET create_date = '2019-05-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-131';
-UPDATE hr_employee SET create_date = '2021-04-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-196';
-UPDATE hr_employee SET create_date = '2022-11-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-036';
-UPDATE hr_employee SET create_date = '2025-02-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-014';
-UPDATE hr_employee SET create_date = '2021-01-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-081';
-UPDATE hr_employee SET create_date = '2019-09-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-155';
-UPDATE hr_employee SET create_date = '2019-02-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-042';
-UPDATE hr_employee SET create_date = '2022-12-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-141';
-UPDATE hr_employee SET create_date = '2024-08-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-110';
-UPDATE hr_employee SET create_date = '2025-04-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-016';
-UPDATE hr_employee SET create_date = '2021-02-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-158';
-UPDATE hr_employee SET create_date = '2022-04-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-007';
-UPDATE hr_employee SET create_date = '2023-02-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-164';
-UPDATE hr_employee SET create_date = '2020-12-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-106';
-UPDATE hr_employee SET create_date = '2020-03-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-173';
-UPDATE hr_employee SET create_date = '2021-06-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-193';
-UPDATE hr_employee SET create_date = '2021-12-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-022';
-UPDATE hr_employee SET create_date = '2020-08-17 08:00:00'::timestamp WHERE barcode = 'EMP-WL-089';
-UPDATE hr_employee SET create_date = '2025-12-07 08:00:00'::timestamp WHERE barcode = 'EMP-WL-129';
-UPDATE hr_employee SET create_date = '2022-11-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-094';
-UPDATE hr_employee SET create_date = '2023-02-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-109';
-UPDATE hr_employee SET create_date = '2022-12-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-108';
-UPDATE hr_employee SET create_date = '2025-06-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-161';
-UPDATE hr_employee SET create_date = '2020-02-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-208';
-UPDATE hr_employee SET create_date = '2023-03-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-072';
-UPDATE hr_employee SET create_date = '2020-10-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-142';
-UPDATE hr_employee SET create_date = '2020-04-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-035';
-UPDATE hr_employee SET create_date = '2024-05-06 08:00:00'::timestamp WHERE barcode = 'EMP-WL-188';
-UPDATE hr_employee SET create_date = '2021-01-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-085';
-UPDATE hr_employee SET create_date = '2018-01-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-029';
-UPDATE hr_employee SET create_date = '2019-10-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-026';
-UPDATE hr_employee SET create_date = '2020-09-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-013';
-UPDATE hr_employee SET create_date = '2023-04-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-034';
-UPDATE hr_employee SET create_date = '2024-03-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-087';
-UPDATE hr_employee SET create_date = '2024-02-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-082';
-UPDATE hr_employee SET create_date = '2025-01-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-088';
-UPDATE hr_employee SET create_date = '2024-06-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-124';
-UPDATE hr_employee SET create_date = '2018-10-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-056';
-UPDATE hr_employee SET create_date = '2025-02-01 08:00:00'::timestamp WHERE barcode = 'EMP-2025-0005';
-UPDATE hr_employee SET create_date = '2020-12-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-105';
-UPDATE hr_employee SET create_date = '2024-05-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-071';
-UPDATE hr_employee SET create_date = '2022-04-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-025';
-UPDATE hr_employee SET create_date = '2020-07-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-052';
-UPDATE hr_employee SET create_date = '2022-03-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-011';
-UPDATE hr_employee SET create_date = '2019-06-04 08:00:00'::timestamp WHERE barcode = 'EMP-WL-159';
-UPDATE hr_employee SET create_date = '2019-06-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-064';
-UPDATE hr_employee SET create_date = '2023-03-16 08:00:00'::timestamp WHERE barcode = 'EMP-WL-086';
-UPDATE hr_employee SET create_date = '2020-04-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-058';
-UPDATE hr_employee SET create_date = '2018-04-27 08:00:00'::timestamp WHERE barcode = 'EMP-WL-032';
-UPDATE hr_employee SET create_date = '2020-06-05 08:00:00'::timestamp WHERE barcode = 'EMP-2020-0002';
-UPDATE hr_employee SET create_date = '2022-05-22 08:00:00'::timestamp WHERE barcode = 'EMP-WL-179';
-UPDATE hr_employee SET create_date = '2018-10-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-066';
-UPDATE hr_employee SET create_date = '2020-08-27 08:00:00'::timestamp WHERE barcode = 'EMP-WL-021';
-UPDATE hr_employee SET create_date = '2023-01-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-061';
-UPDATE hr_employee SET create_date = '2025-11-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-031';
-UPDATE hr_employee SET create_date = '2020-01-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-160';
-UPDATE hr_employee SET create_date = '2022-04-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-102';
-UPDATE hr_employee SET create_date = '2023-03-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-151';
-UPDATE hr_employee SET create_date = '2022-04-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-039';
-UPDATE hr_employee SET create_date = '2020-02-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-186';
-UPDATE hr_employee SET create_date = '2024-07-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-194';
-UPDATE hr_employee SET create_date = '2024-06-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-050';
-UPDATE hr_employee SET create_date = '2024-12-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-149';
-UPDATE hr_employee SET create_date = '2021-02-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-049';
-UPDATE hr_employee SET create_date = '2022-11-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-140';
-UPDATE hr_employee SET create_date = '2025-07-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-137';
-UPDATE hr_employee SET create_date = '2020-04-28 08:00:00'::timestamp WHERE barcode = 'EMP-WL-024';
-UPDATE hr_employee SET create_date = '2018-04-09 08:00:00'::timestamp WHERE barcode = 'EMP-WL-178';
-UPDATE hr_employee SET create_date = '2018-02-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-163';
-UPDATE hr_employee SET create_date = '2024-06-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-174';
-UPDATE hr_employee SET create_date = '2023-09-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-095';
-UPDATE hr_employee SET create_date = '2020-02-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-098';
-UPDATE hr_employee SET create_date = '2019-06-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-135';
-UPDATE hr_employee SET create_date = '2023-12-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-139';
-UPDATE hr_employee SET create_date = '2024-01-23 08:00:00'::timestamp WHERE barcode = 'EMP-WL-134';
-UPDATE hr_employee SET create_date = '2024-02-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-123';
-UPDATE hr_employee SET create_date = '2023-08-20 08:00:00'::timestamp WHERE barcode = 'EMP-WL-012';
-UPDATE hr_employee SET create_date = '2020-05-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-177';
-UPDATE hr_employee SET create_date = '2022-03-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-150';
-UPDATE hr_employee SET create_date = '2022-12-16 08:00:00'::timestamp WHERE barcode = 'EMP-WL-103';
-UPDATE hr_employee SET create_date = '2023-02-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-067';
-UPDATE hr_employee SET create_date = '2019-10-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-084';
-UPDATE hr_employee SET create_date = '2020-03-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-092';
-UPDATE hr_employee SET create_date = '2024-05-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-118';
-UPDATE hr_employee SET create_date = '2019-05-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-080';
-UPDATE hr_employee SET create_date = '2023-08-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-091';
-UPDATE hr_employee SET create_date = '2020-04-07 08:00:00'::timestamp WHERE barcode = 'EMP-WL-040';
-UPDATE hr_employee SET create_date = '2018-04-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-162';
-UPDATE hr_employee SET create_date = '2024-01-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-120';
-UPDATE hr_employee SET create_date = '2022-01-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-041';
-UPDATE hr_employee SET create_date = '2019-07-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-097';
-UPDATE hr_employee SET create_date = '2025-01-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-153';
-UPDATE hr_employee SET create_date = '2024-08-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-117';
-UPDATE hr_employee SET create_date = '2025-05-08 08:00:00'::timestamp WHERE barcode = 'EMP-WL-156';
-UPDATE hr_employee SET create_date = '2021-08-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-128';
-UPDATE hr_employee SET create_date = '2019-03-12 08:00:00'::timestamp WHERE barcode = 'EMP-2019-0001';
-UPDATE hr_employee SET create_date = '2024-02-10 08:00:00'::timestamp WHERE barcode = 'EMP-WL-169';
-UPDATE hr_employee SET create_date = '2019-11-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-027';
-UPDATE hr_employee SET create_date = '2018-10-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-059';
-UPDATE hr_employee SET create_date = '2018-11-27 08:00:00'::timestamp WHERE barcode = 'EMP-WL-046';
-UPDATE hr_employee SET create_date = '2020-10-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-062';
-UPDATE hr_employee SET create_date = '2021-05-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-079';
-UPDATE hr_employee SET create_date = '2021-07-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-065';
-UPDATE hr_employee SET create_date = '2022-10-26 08:00:00'::timestamp WHERE barcode = 'EMP-WL-037';
-UPDATE hr_employee SET create_date = '2020-10-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-168';
-UPDATE hr_employee SET create_date = '2021-09-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-054';
-UPDATE hr_employee SET create_date = '2018-11-11 08:00:00'::timestamp WHERE barcode = 'EMP-WL-078';
-UPDATE hr_employee SET create_date = '2018-10-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-145';
-UPDATE hr_employee SET create_date = '2024-02-05 08:00:00'::timestamp WHERE barcode = 'EMP-WL-068';
-UPDATE hr_employee SET create_date = '2024-08-01 08:00:00'::timestamp WHERE barcode = 'EMP-WL-033';
-UPDATE hr_employee SET create_date = '2023-01-19 08:00:00'::timestamp WHERE barcode = 'EMP-WL-015';
-UPDATE hr_employee SET create_date = '2018-05-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-112';
-UPDATE hr_employee SET create_date = '2018-05-14 08:00:00'::timestamp WHERE barcode = 'EMP-WL-187';
-UPDATE hr_employee SET create_date = '2025-12-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-101';
-UPDATE hr_employee SET create_date = '2020-06-21 08:00:00'::timestamp WHERE barcode = 'EMP-WL-183';
-UPDATE hr_employee SET create_date = '2023-02-18 08:00:00'::timestamp WHERE barcode = 'EMP-WL-076';
-UPDATE hr_employee SET create_date = '2024-12-24 08:00:00'::timestamp WHERE barcode = 'EMP-WL-154';
-UPDATE hr_employee SET create_date = '2019-08-12 08:00:00'::timestamp WHERE barcode = 'EMP-WL-055';
-UPDATE hr_employee SET create_date = '2018-12-15 08:00:00'::timestamp WHERE barcode = 'EMP-WL-138';
-UPDATE hr_employee SET create_date = '2020-06-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-170';
-UPDATE hr_employee SET create_date = '2018-09-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-119';
-UPDATE hr_employee SET create_date = '2018-02-07 08:00:00'::timestamp WHERE barcode = 'EMP-WL-116';
-UPDATE hr_employee SET create_date = '2019-06-13 08:00:00'::timestamp WHERE barcode = 'EMP-WL-121';
-UPDATE hr_employee SET create_date = '2025-08-25 08:00:00'::timestamp WHERE barcode = 'EMP-WL-073';
-UPDATE hr_employee SET create_date = '2025-08-02 08:00:00'::timestamp WHERE barcode = 'EMP-WL-074';
-UPDATE hr_employee SET create_date = '2022-02-03 08:00:00'::timestamp WHERE barcode = 'EMP-WL-157';
-UPDATE hr_employee SET create_date = '2022-03-06 08:00:00'::timestamp WHERE barcode = 'EMP-WL-165';
-COMMIT;
-
-
--- =============================================
--- Generate missing work_contact_id partners
--- =============================================
-DO $$ 
-DECLARE 
-    emp RECORD;
-    new_partner_id INTEGER;
-BEGIN 
-    FOR emp IN (SELECT id, name, work_email, work_phone FROM hr_employee WHERE work_contact_id IS NULL) 
-    LOOP 
-        INSERT INTO res_partner (name, email, phone, company_id, active, employee) 
-        VALUES (emp.name, emp.work_email, emp.work_phone, 1, true, true) 
-        RETURNING id INTO new_partner_id;
-
-        UPDATE hr_employee SET work_contact_id = new_partner_id WHERE id = emp.id;
-    END LOOP;
-END $$;

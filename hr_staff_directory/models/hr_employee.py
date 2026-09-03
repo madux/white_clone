@@ -47,9 +47,12 @@ class HrEmployeeStaffDirectory(models.Model):
     # ─────────────────────────────────────────────────────────────────────────
 
     sdir_employment_type = fields.Selection([
+        ('Permanent Full-Time', 'Permanent Full-Time'),
+        ('Fixed-Term', 'Fixed-Term'),
         ('Contract', 'Contract'),
         ('Part-Time', 'Part-Time'),
-        ('Permanent Full-Time', 'Permanent Full-Time'),
+        ('Intern', 'Intern'),
+        ('Consultant', 'Consultant'),
     ], string='Employment Type (Staff Directory)', help='Single Source of Truth for employment type on the Staff Directory Dashboard. Differentiates Part-Time/Full-Time without relying on hr.contract structures.')
 
     performance_score = fields.Integer(string='Performance Score', help='Single Source of Truth for employee performance metric on the dashboard (0-100).')
@@ -76,6 +79,23 @@ class HrEmployeeStaffDirectory(models.Model):
     ], string='Availability', help='Current availability status.')
     
     last_active = fields.Char(string='Last Active', help='Last active string (e.g. "2 hours ago").')
+    
+    sdir_lifecycle_status = fields.Selection([
+        ('active', 'Active'),
+        ('probation', 'Probation'),
+        ('onleave', 'On Leave'),
+        ('suspended', 'Suspended'),
+        ('terminated', 'Terminated'),
+        ('exiting', 'Exiting'),
+        ('alumni', 'Alumni'),
+    ], string='Lifecycle Status (SSOT)', default='active', help='Single Source of Truth for lifecycle state on the Staff Directory Dashboard.')
+
+    sdir_status_effective_date = fields.Date(string='Lifecycle Effective Date', help='Effective date of the current lifecycle status.')
+    
+    sdir_status_notes = fields.Text(string='Lifecycle Status Notes', help='Notes or reason for the current lifecycle status.')
+
+    sdir_home_address = fields.Text(string='Home Address', help='Custom text field for Home Address to bypass complex partner linkage in the Staff Directory.')
+    sdir_emergency_relationship = fields.Char(string='Emergency Contact Relationship', help='Stores the relationship of the emergency contact, which is missing from base Odoo.')
 
     # ─── Entry point ─────────────────────────────────────────────────────────
 
@@ -691,6 +711,52 @@ class HrEmployeeStaffDirectory(models.Model):
         return {'status': 'error', 'message': 'Employee not found'}
 
     @api.model
+    def update_lifecycle_status(self, employee_id, status, date_str, notes):
+        # Use active_test=False to find terminated/inactive employees as well
+        emp = self.with_context(active_test=False).browse(employee_id)
+        if emp.exists():
+            emp.sdir_lifecycle_status = status
+            if date_str:
+                emp.sdir_status_effective_date = date_str
+            if notes:
+                emp.sdir_status_notes = notes
+            
+            # Single Source of Truth rule (as per implementation plan): 
+            # If status is Terminated or Alumni, set native Odoo active = False 
+            # so they are properly archived/hidden from standard views.
+            if status in ('terminated', 'alumni'):
+                emp.active = False
+            else:
+                emp.active = True
+                
+            # Log the change in the chatter for other devs and future reference
+            log_msg = f"Lifecycle Status changed to {status.title()}"
+            if date_str:
+                log_msg += f" effective {date_str}"
+            if notes:
+                log_msg += f"<br/>Reason: {notes}"
+            emp.message_post(body=log_msg)
+            
+            return {'status': 'success'}
+        return {'status': 'error', 'message': 'Employee not found'}
+
+    @api.model
+    def update_contact_info(self, employee_id, contact_data):
+        emp = self.browse(employee_id)
+        if emp.exists():
+            emp.work_email = contact_data.get('work_email')
+            emp.work_phone = contact_data.get('work_phone')
+            emp.sdir_home_address = contact_data.get('address')
+            emp.emergency_contact = contact_data.get('em_name')
+            emp.sdir_emergency_relationship = contact_data.get('em_relation')
+            emp.emergency_phone = contact_data.get('em_phone')
+            
+            # Post chatter log
+            emp.message_post(body="Contact Information was updated via the Staff Directory.")
+            return True
+        return False
+
+    @api.model
     def email_employees(self, employee_ids, subject, body_text):
         """Email the given employees (People-list selection mode).
         Posts a message to the employee's chatter which handles the actual email dispatch.
@@ -1001,56 +1067,15 @@ class HrEmployeeStaffDirectory(models.Model):
 
     @api.model
     def _sd_people_list(self):
-        """Return one dict per active employee for the People Tab table."""
+        """Return one dict per employee for the People Tab table."""
         today = Date.context_today(self)
 
-        # Pre-compute who is on leave today (avoid per-emp query)
-        on_leave_ids = set(self.env['hr.leave'].search([
-            ('state', '=', 'validate'),
-            ('date_from', '<=', today.strftime('%Y-%m-%d 23:59:59')),
-            ('date_to',   '>=', today.strftime('%Y-%m-%d 00:00:00')),
-        ]).mapped('employee_id').ids)
-
-        # Pre-compute probation employee IDs
-        probation_emp_ids = set()
-        try:
-            contracts = self.env['hr.contract'].search([
-                ('state', '=', 'open'),
-                ('trial_date_end', '!=', False),
-                ('trial_date_end', '>=', today.strftime('%Y-%m-%d')),
-                ('employee_id.active', '=', True),
-            ])
-            probation_emp_ids = set(contracts.mapped('employee_id').ids)
-        except Exception:
-            pass
-
-        # Pre-compute exiting employee IDs (contract ends within 60 days)
-        exiting_emp_ids = set()
-        try:
-            in_60 = today + __import__('datetime').timedelta(days=60)
-            ex_contracts = self.env['hr.contract'].search([
-                ('state', '=', 'open'),
-                ('date_end', '!=', False),
-                ('date_end', '>=', today.strftime('%Y-%m-%d')),
-                ('date_end', '<=', in_60.strftime('%Y-%m-%d')),
-                ('employee_id.active', '=', True),
-            ])
-            exiting_emp_ids = set(ex_contracts.mapped('employee_id').ids)
-        except Exception:
-            pass
-
-        employees = self.search([('active', '=', True)], order='name asc')
+        # Use active_test=False to include Terminated/Alumni employees where active=False
+        employees = self.with_context(active_test=False).search([], order='name asc')
         result = []
         for emp in employees:
             # ── Lifecycle State ──────────────────────────────────────────────
-            if emp.id in on_leave_ids:
-                lifecycle_state = 'on_leave'
-            elif emp.id in probation_emp_ids:
-                lifecycle_state = 'probation'
-            elif emp.id in exiting_emp_ids:
-                lifecycle_state = 'exiting'
-            else:
-                lifecycle_state = 'active'
+            lifecycle_state = emp.sdir_lifecycle_status or 'active'
 
             # ── Work Mode ────────────────────────────────────────────────────
             work_mode = 'Hybrid'
@@ -1127,7 +1152,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 'department':        emp.department_id.name if emp.department_id else '',
                 'lifecycle_state':   lifecycle_state,
                 'work_mode':         work_mode,
+                'work_mode_raw':     emp.work_mode or 'hybrid',
                 'work_location':     work_location,
+                'work_location_id':  emp.work_location_id.id if emp.work_location_id else False,
                 'work_location_lat': emp.work_location_id.latitude if emp.work_location_id else False,
                 'work_location_lng': emp.work_location_id.longitude if emp.work_location_id else False,
                 'manager_name':      emp.parent_id.name if emp.parent_id else 'CEO',
@@ -1154,6 +1181,10 @@ class HrEmployeeStaffDirectory(models.Model):
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
+                'sdir_home_address':  getattr(emp, 'sdir_home_address', ''),
+                'emergency_contact':  getattr(emp, 'emergency_contact', ''),
+                'sdir_emergency_relationship': getattr(emp, 'sdir_emergency_relationship', ''),
+                'emergency_phone':    getattr(emp, 'emergency_phone', ''),
                 'has_image':          bool(getattr(emp, 'image_128', False) or getattr(emp, 'avatar_128', False)),
                 'avatar_cache_key':   str(emp.write_date.timestamp()) if emp.write_date else '0',
                 'is_pinned':          self.env.user.id in emp.pinned_by_user_ids.ids,

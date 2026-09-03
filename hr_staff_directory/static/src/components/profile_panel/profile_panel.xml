@@ -819,54 +819,76 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Full Name</p>
                                     </div>
-                                    <input class="sdir-edit-modal-input" t-att-value="props.activeProfile.name or 'Aaron Park'"/>
+                                    <input class="sdir-edit-modal-input" t-model="state.editForm.name"/>
                                 </div>
                                 <div class="sdir-edit-modal-field">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Job Title / Role</p>
                                     </div>
-                                    <input class="sdir-edit-modal-input" t-att-value="props.activeProfile.job_title or 'Relationship Manager'"/>
+                                    <input class="sdir-edit-modal-input" t-model="state.editForm.job_title"/>
                                 </div>
                                 <div class="sdir-edit-modal-grid">
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Location</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" placeholder="e.g. Lagos HQ" t-att-value="props.activeProfile.location or 'Lagos HQ'"/>
+                                        <select class="sdir-edit-modal-select" t-model="state.editForm.work_location_id">
+                                            <option value="">-- Select Location --</option>
+                                            <t t-foreach="this.locations" t-as="loc" t-key="loc.id">
+                                                <option t-att-value="loc.id" t-esc="loc.name"/>
+                                            </t>
+                                        </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Work Mode</p>
                                         </div>
-                                        <select class="sdir-edit-modal-select">
-                                            <option>Office</option>
-                                            <option>Hybrid</option>
-                                            <option>Remote</option>
+                                        <select class="sdir-edit-modal-select" t-model="state.editForm.work_mode">
+                                            <option value="office">Office</option>
+                                            <option value="hybrid">Hybrid</option>
+                                            <option value="remote">Remote</option>
                                         </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Employment Type</p>
                                         </div>
-                                        <select class="sdir-edit-modal-select">
-                                            <option>Permanent Full-Time</option>
-                                            <option>Fixed-Term</option>
-                                            <option>Contract</option>
-                                            <option>Intern</option>
-                                            <option>Consultant</option>
+                                        <select class="sdir-edit-modal-select" t-model="state.editForm.employment_type">
+                                            <option value="Permanent Full-Time">Permanent Full-Time</option>
+                                            <option value="Fixed-Term">Fixed-Term</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Part-Time">Part-Time</option>
+                                            <option value="Intern">Intern</option>
+                                            <option value="Consultant">Consultant</option>
                                         </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Grade / Band</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" placeholder="e.g. L4 · Senior" value="L1 · Individual Contributor"/>
+                                        <select class="sdir-edit-modal-select" t-model="state.editForm.grade">
+                                            <option value="">-- Select Grade --</option>
+                                            <option value="L1 · Junior Associate">L1 · Junior Associate</option>
+                                            <option value="L2 · Associate">L2 · Associate</option>
+                                            <option value="L3 · Senior Associate">L3 · Senior Associate</option>
+                                            <option value="L4 · Associate">L4 · Associate</option>
+                                            <option value="L4 · Manager">L4 · Manager</option>
+                                            <option value="L5 · Senior Manager">L5 · Senior Manager</option>
+                                            <option value="L6 · Director">L6 · Director</option>
+                                            <option value="L7 · Executive">L7 · Executive</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeEditModal()">Cancel</button>
-                                <button class="sdir-edit-modal-save" t-on-click="() => this.closeEditModal()">Save Profile</button>
+                                <button class="sdir-edit-modal-save" t-on-click="() => this.saveProfile()">Save Profile</button>
                             </div>
                         </div>
                     </div>
@@ -883,7 +905,7 @@
                                     </div>
                                     <div>
                                         <p class="sdir-edit-modal-title">Change Lifecycle Status</p>
-                                        <p class="sdir-edit-modal-subtitle">Current: Active</p>
+                                        <p class="sdir-edit-modal-subtitle">Current: <t t-esc="props.activeProfile.lifecycle_state || 'active'"/></p>
                                     </div>
                                 </div>
                                 <button class="sdir-edit-modal-close" t-on-click="() => this.closeStatusModal()">
@@ -962,23 +984,29 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Effective Date</p>
                                         </div>
-                                        <input type="date" value="2026-08-26" class="sdir-edit-modal-input"/>
+                                        <input type="date" class="sdir-edit-modal-input" t-model="state.statusForm.date" t-att-min="state.statusForm.minDate" t-att-style="this.statusErrors?.field === 'date' ? 'border-color: #EF4444;' : ''"/>
                                     </div>
                                 </div>
                                 <div class="sdir-edit-modal-field" style="margin-top: 16px;">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Reason / Notes</p>
                                     </div>
-                                    <textarea placeholder="Provide context for this status change..." rows="3" class="sdir-status-textarea"></textarea>
+                                    <textarea placeholder="Provide context for this status change..." rows="3" class="sdir-status-textarea" t-model="state.statusForm.notes" t-att-style="this.statusErrors?.field === 'notes' ? 'border-color: #EF4444;' : ''"></textarea>
                                 </div>
                                 <label class="sdir-status-confirm-label">
-                                    <input type="checkbox" class="sdir-status-confirm-checkbox"/>
-                                    <span class="sdir-status-confirm-text">I confirm this status change for <t t-esc="props.activeProfile.name or 'Aaron Park'"/> and understand its implications</span>
+                                    <input type="checkbox" class="sdir-status-confirm-checkbox" t-model="state.statusForm.confirmChecked"/>
+                                    <span class="sdir-status-confirm-text" t-att-style="this.statusErrors?.field === 'confirmChecked' ? 'color: #EF4444;' : ''">I confirm this status change for <t t-esc="props.activeProfile.name or 'Aaron Park'"/> and understand its implications</span>
                                 </label>
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeStatusModal()">Cancel</button>
-                                <button class="sdir-edit-modal-save" t-on-click="() => this.closeStatusModal()">Apply Status Change</button>
+                                <button class="sdir-edit-modal-save" t-on-click="() => this.saveStatusChange()">Apply Status Change</button>
                             </div>
                         </div>
                     </div>
@@ -1007,21 +1035,34 @@
                                     <div class="sdir-photo-current-wrap">
                                         <p class="sdir-photo-current-label">Current Photo</p>
                                         <div class="sdir-photo-current-avatar">
-                                            <img t-if="props.activeProfile.image_1920" t-attf-src="data:image/png;base64,{{props.activeProfile.image_1920}}" alt="" class="sdir-photo-current-img"/>
+                                            <img t-if="state.photoForm.preview" t-att-src="state.photoForm.preview" alt="" class="sdir-photo-current-img"/>
+                                            <img t-elif="props.activeProfile.has_image" t-attf-src="/web/image?model=hr.employee&amp;field=image_1920&amp;id={{props.activeProfile.id}}&amp;unique={{props.activeProfile.avatar_cache_key}}" alt="" class="sdir-photo-current-img"/>
                                             <img t-else="" src="https://i.pravatar.cc/150?img=1" alt="" class="sdir-photo-current-img"/>
                                         </div>
                                     </div>
                                 </div>
-                                <label class="sdir-photo-dropzone">
+                                <label class="sdir-photo-dropzone" t-att-class="state.photoForm.isDragging ? 'sdir-photo-dropzone sdir-dropzone-active' : 'sdir-photo-dropzone'" t-on-dragover.prevent="onDragOver" t-on-dragleave.prevent="onDragLeave" t-on-drop.prevent="onDrop">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload sdir-photo-dropzone-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
                                     <p class="sdir-photo-dropzone-title">Drop photo here or click to browse</p>
-                                    <p class="sdir-photo-dropzone-subtitle">PNG, JPG, WEBP — max 5MB. Recommended: 400×400px</p>
-                                    <input type="file" accept="image/*" style="display: none;"/>
+                                    <p class="sdir-photo-dropzone-subtitle">PNG, JPG, WEBP — max 10MB. Recommended: 400×400px</p>
+                                    <input type="file" accept="image/*" style="display: none;" t-on-change="onPhotoSelected"/>
                                 </label>
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
+                            <t t-if="state.photoForm.error">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="state.photoForm.error"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closePhotoModal()">Cancel</button>
-                                <button class="sdir-edit-modal-save" t-on-click="() => this.closePhotoModal()">Upload Photo</button>
+                                <button class="sdir-edit-modal-save" t-on-click="() => this.uploadPhoto()">Upload Photo</button>
                             </div>
                         </div>
                     </div>
@@ -1052,21 +1093,21 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Work Email</p>
                                     </div>
-                                    <input type="email" class="sdir-edit-modal-input" t-att-value="props.activeProfile.work_email or 'aaron.park@cleonhr.com'"/>
+                                    <input type="email" t-attf-class="sdir-edit-modal-input {{ this.contactErrors?.field === 'work_email' ? 'sdir-input-error' : '' }}" t-model="state.contactForm.work_email" t-att-style="this.contactErrors?.field === 'work_email' ? 'border-color: #EF4444;' : ''"/>
                                 </div>
                                 
                                 <div class="sdir-edit-modal-field">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Phone Number</p>
                                     </div>
-                                    <input type="tel" class="sdir-edit-modal-input" placeholder="+234 xxx xxxx xxx" t-att-value="props.activeProfile.work_phone or '+234 801 676 7547'"/>
+                                    <input type="tel" class="sdir-edit-modal-input" placeholder="+234 xxx xxxx xxx" t-model="state.contactForm.work_phone"/>
                                 </div>
                                 
                                 <div class="sdir-edit-modal-field" style="margin-bottom: 24px;">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Office / Home Address</p>
                                     </div>
-                                    <textarea rows="2" class="sdir-status-textarea"></textarea>
+                                    <textarea rows="2" class="sdir-status-textarea" t-model="state.contactForm.address"></textarea>
                                 </div>
                                 
                                 <p class="sdir-contact-section-title">Emergency Contact</p>
@@ -1076,25 +1117,31 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Contact Name</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" value=""/>
+                                        <input class="sdir-edit-modal-input" t-model="state.contactForm.em_name"/>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Relationship</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" placeholder="e.g. Spouse" value=""/>
+                                        <input class="sdir-edit-modal-input" placeholder="e.g. Spouse" t-model="state.contactForm.em_relation"/>
                                     </div>
                                     <div style="grid-column: 1 / -1;">
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Emergency Phone</p>
                                         </div>
-                                        <input type="tel" class="sdir-edit-modal-input" value=""/>
+                                        <input type="tel" class="sdir-edit-modal-input" t-model="state.contactForm.em_phone"/>
                                     </div>
                                 </div>
                             </div>
+                            <t t-if="this.contactErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.contactErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeContactModal()">Cancel</button>
-                                <button class="sdir-edit-modal-save" t-on-click="() => this.closeContactModal()">Save Contact Info</button>
+                                <button class="sdir-edit-modal-save" t-on-click="() => this.saveContactInfo()">Save Contact Info</button>
                             </div>
                         </div>
                     </div>
@@ -1182,6 +1229,12 @@
                                     </label>
                                 </div>
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeTransferModal()">Cancel</button>
                                 <button class="sdir-transfer-btn-save" t-on-click="() => this.closeTransferModal()">Initiate Transfer</button>
@@ -1257,6 +1310,12 @@
                                     <span class="sdir-transfer-checkbox-text">Announce promotion to the team</span>
                                 </label>
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closePromoteModal()">Cancel</button>
                                 <button class="sdir-transfer-btn-save" t-on-click="() => this.closePromoteModal()">Confirm Promotion</button>
@@ -1321,6 +1380,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeChangeDeptModal()">Cancel</button>
                                 <button class="sdir-transfer-btn-save" t-on-click="() => this.closeChangeDeptModal()">Change Department</button>
@@ -1392,6 +1457,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeReassignModal()">Cancel</button>
                                 <button class="sdir-transfer-btn-save" t-on-click="() => this.closeReassignModal()">Reassign Manager</button>
@@ -1487,6 +1558,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeGrantPermModal()">Cancel</button>
                                 <button class="sdir-btn-amber" t-on-click="() => this.closeGrantPermModal()">Grant Permissions</button>
@@ -1574,6 +1651,12 @@
                                 </label>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeRevokeModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeRevokeModal()">Revoke Access</button>
@@ -1640,6 +1723,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeResetPasswordModal()">Cancel</button>
                                 <t t-if="state.resetPasswordMode === 'email'">
@@ -1728,6 +1817,12 @@
                                 </label>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeSuspendModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeSuspendModal()">Suspend Account</button>
@@ -1809,6 +1904,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeOnboardingModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeOnboardingModal()">Start Onboarding</button>
@@ -1929,6 +2030,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeOffboardingModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeOffboardingModal()">Start Offboarding</button>
@@ -1997,6 +2104,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeProbationModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeProbationModal()">
@@ -2092,6 +2205,12 @@
                                 </div>
                                 
                             </div>
+                            <t t-if="this.statusErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.statusErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeRehireModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeRehireModal()">Initiate Rehire</button>

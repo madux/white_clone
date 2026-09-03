@@ -800,6 +800,10 @@
     background-color: #F3F4F6;
     border-color: #9CA3AF;
 }
+.sdir-photo-dropzone.sdir-dropzone-active {
+    background-color: #EEF2FF !important;
+    border-color: #6366F1 !important;
+}
 .sdir-photo-dropzone-icon {
     margin-bottom: 10px;
 }

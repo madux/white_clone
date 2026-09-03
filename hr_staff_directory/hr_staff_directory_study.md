@@ -26,6 +26,27 @@ This method acts as the primary data provider for the frontend dashboard. It que
     *   progress_score: A pseudo-random integer.
     *   skills: Uses a deterministic helper method (_mock_skills_for_employee) to assign skills like "AWS", "B2B Sales", or "Operational Risk" based on the employee's ID and department. This is explicitly marked with a TODO to wire up to real performance/skill fields later.
 
+### Job Title (`job_title`) vs Job Position (`job_id`)
+We deliberately use `hr_employee.job_title` (a Char field) instead of `hr_employee.job_id` (a Many2one to `hr.job`) as the **Single Source of Truth** for the employee's role in the directory.
+* **Why:** In Odoo, `job_id` is a structural field used heavily by the Recruitment app for managing open headcount and formal job descriptions. Many companies leave it empty or use highly generic categories (e.g., all developers share the "Software Engineer" `job_id`). 
+* **The Solution:** The free-text `job_title` field acts as the exact "Business Card" title. By relying on it, the Staff Directory ensures it displays exactly what the person is actually called internally, circumventing missing or rigid structural data.
+
+### Lifecycle Status (`sdir_lifecycle_status`)
+We deliberately use a custom Selection field `sdir_lifecycle_status` on `hr.employee` as the **Single Source of Truth** for the employee's lifecycle state (Active, Probation, On Leave, Suspended, Terminated, Exiting, Alumni) rather than relying on native Odoo structures like `hr.contract` and `hr.leave`.
+* **Why:** While Odoo normally derives states like "Probation" from a Contract's trial dates, or "On Leave" from active Time Off requests, generating full legal contracts and leave requests just to update a visual dashboard badge is poor UX for an HR Admin managing the directory. 
+* **The Solution:** The Staff Directory relies solely on `sdir_lifecycle_status`. When an admin changes the status to "Terminated" or "Alumni" via the directory modal, the backend automatically flips the native Odoo `active = False` field so they are properly hidden from standard Odoo views, maintaining system-wide consistency while offering a streamlined interface.
+
+### Employee Profile Photo (`image_1920`)
+Unlike other metadata fields where we've created custom variables (like `job_title` instead of `job_id`), the **Single Source of Truth** for the employee's profile photo remains Odoo's native `image_1920` field.
+* **Why:** Odoo's `image.mixin` natively handles uploading a high-resolution image to `image_1920` and automatically generates scaled-down optimized variants (`avatar_128`, `image_512`, etc.) behind the scenes.
+* **The Solution:** By writing the base64 image data directly to `image_1920` from the Staff Directory's "Update Profile Photo" modal, the photo instantly propagates across all Odoo apps, chatter, and standard forms without any extra logic required.
+
+### Contact Information
+The "Edit Contact Information" modal updates the employee's contact details adhering to a mix of native Odoo fields and custom SSOT fields depending on complexity:
+* **Native Fields:** We strictly use the native `work_email`, `work_phone`, `emergency_contact`, and `emergency_phone` fields as the SSOT. They map 1:1 with Odoo's standard design.
+* **Custom Field - `sdir_home_address` (Text):** Base Odoo natively manages home addresses via a complex Many2one relationship to a `res.partner` (`address_home_id`). To keep the Staff Directory streamlined, we bypass this by using a simple `sdir_home_address` Text field.
+* **Custom Field - `sdir_emergency_relationship` (Char):** Base Odoo is entirely missing a field to store the relationship of the emergency contact (e.g. "Spouse"). We created `sdir_emergency_relationship` to serve as this SSOT.
+
 ### Other Models
 *   hr_work_location.py: Likely extends the work location model, possibly adding coordinate data (latitude/longitude) required by the geographic_map component.
 

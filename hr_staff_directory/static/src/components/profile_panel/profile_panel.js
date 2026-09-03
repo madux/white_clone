@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, useState } from "@odoo/owl";
+import { Component, useState, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 export class StaffDirectoryProfilePanel extends Component {
@@ -24,13 +24,54 @@ export class StaffDirectoryProfilePanel extends Component {
     setup() {
         this.messageService = useService("hr_staff_directory.message");
         this.mailModalService = useService("hr_staff_directory.mail_modal");
+        this.orm = useService("orm");
+        this.toast = useService("hr_staff_directory.toast");
+        
+        this.locations = [];
+        onWillStart(async () => {
+            try {
+                this.locations = await this.orm.searchRead("hr.work.location", [], ["id", "name"]);
+            } catch (e) {
+                console.error("Failed to load locations", e);
+            }
+        });
         this.state = useState({
             profileActiveTab: 'overview',
             showEditModal: false,
+            editForm: {
+                name: '',
+                job_title: '',
+                work_location_id: false,
+                work_mode: 'office',
+                employment_type: 'Permanent Full-Time',
+                grade: ''
+            },
             showStatusModal: false,
             statusSelected: 'active',
+            statusForm: {
+                date: '',
+                notes: '',
+                confirmChecked: false,
+                error: '',
+                minDate: new Date().toISOString().split('T')[0]
+            },
             showPhotoModal: false,
+            photoForm: {
+                preview: null,
+                base64Data: null,
+                error: '',
+                isDragging: false
+            },
             showContactModal: false,
+            contactForm: {
+                work_email: '',
+                work_phone: '',
+                address: '',
+                em_name: '',
+                em_relation: '',
+                em_phone: '',
+                hasAttemptedSave: false
+            },
             showTransferModal: false,
             transferTargetDept: '',
             showPromoteModal: false,
@@ -121,6 +162,16 @@ export class StaffDirectoryProfilePanel extends Component {
     }
 
     openEditModal() {
+        if (this.props.activeProfile) {
+            this.state.editForm = {
+                name: this.props.activeProfile.name || '',
+                job_title: this.props.activeProfile.job_title || '',
+                work_location_id: this.props.activeProfile.work_location_id || false,
+                work_mode: this.props.activeProfile.work_mode_raw || 'hybrid',
+                employment_type: this.props.activeProfile.employment_type || 'Permanent Full-Time',
+                grade: this.props.activeProfile.grade || ''
+            };
+        }
         this.state.showEditModal = true;
     }
 
@@ -128,7 +179,62 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showEditModal = false;
     }
 
+    async saveProfile() {
+        if (!this.props.activeProfile) return;
+        
+        try {
+            const updateData = {
+                name: this.state.editForm.name,
+                job_title: this.state.editForm.job_title,
+                work_mode: this.state.editForm.work_mode,
+                sdir_employment_type: this.state.editForm.employment_type,
+                grade: this.state.editForm.grade
+            };
+            
+            if (this.state.editForm.work_location_id) {
+                updateData.work_location_id = parseInt(this.state.editForm.work_location_id, 10);
+            } else {
+                updateData.work_location_id = false;
+            }
+
+            await this.orm.write("hr.employee", [this.props.activeProfile.id], updateData);
+            
+            if (this.toast) {
+                this.toast.show("success", "Profile updated successfully!");
+            }
+            this.closeEditModal();
+        } catch (e) {
+            console.error("Failed to update profile", e);
+            if (this.toast) {
+                this.toast.show("error", "Failed to update profile.");
+            }
+        }
+    }
+
+    get statusErrors() {
+        const form = this.state.statusForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (!form.date) return { field: 'date', msg: 'Effective Date is required.' };
+        if (form.date < form.minDate) return { field: 'date', msg: 'Effective Date cannot be in the past.' };
+        if (!form.notes || !form.notes.trim()) return { field: 'notes', msg: 'Reason / Notes are required.' };
+        if (!form.confirmChecked) return { field: 'confirmChecked', msg: 'Please confirm the status change by checking the box.' };
+        
+        return null;
+    }
+
     openStatusModal() {
+        if (this.props.activeProfile) {
+            this.state.statusSelected = this.props.activeProfile.lifecycle_state || 'active';
+            const todayStr = new Date().toISOString().split('T')[0];
+            this.state.statusForm = {
+                date: todayStr,
+                notes: '',
+                confirmChecked: false,
+                hasAttemptedSave: false,
+                minDate: todayStr
+            };
+        }
         this.state.showStatusModal = true;
     }
 
@@ -136,7 +242,42 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showStatusModal = false;
     }
 
+    async saveStatusChange() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.statusForm.hasAttemptedSave = true;
+        
+        if (this.statusErrors) {
+            return; // Stop if there are validation errors
+        }
+        
+        const form = this.state.statusForm;
+        
+        try {
+            await this.orm.call("hr.employee", "update_lifecycle_status", [
+                this.props.activeProfile.id,
+                this.state.statusSelected,
+                form.date,
+                form.notes
+            ]);
+            
+            this.toast.show("success", "Successfully changed lifecycle status.");
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closeStatusModal();
+        } catch (error) {
+            console.error("Failed to update status:", error);
+            this.toast.show("error", "Could not update lifecycle status.");
+        }
+    }
+
     openPhotoModal() {
+        this.state.photoForm = {
+            preview: null,
+            base64Data: null,
+            error: '',
+            isDragging: false
+        };
         this.state.showPhotoModal = true;
     }
 
@@ -144,8 +285,141 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showPhotoModal = false;
     }
 
+    onDragOver(ev) {
+        this.state.photoForm.isDragging = true;
+    }
+
+    onDragLeave(ev) {
+        this.state.photoForm.isDragging = false;
+    }
+
+    onDrop(ev) {
+        this.state.photoForm.isDragging = false;
+        if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length > 0) {
+            const file = ev.dataTransfer.files[0];
+            this._processPhotoFile(file);
+        }
+    }
+
+    onPhotoSelected(ev) {
+        const file = ev.target.files[0];
+        if (file) {
+            this._processPhotoFile(file);
+        }
+    }
+
+    _processPhotoFile(file) {
+        // Validation: 10MB limit
+        if (file.size > 10 * 1024 * 1024) {
+            this.state.photoForm.error = "File is too large. Max size is 10MB.";
+            return;
+        }
+
+        this.state.photoForm.error = '';
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            this.state.photoForm.preview = dataUrl;
+            
+            // Extract base64 without prefix for Odoo
+            const base64Str = dataUrl.split(',')[1];
+            this.state.photoForm.base64Data = base64Str;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async uploadPhoto() {
+        if (!this.props.activeProfile || !this.state.photoForm.base64Data) {
+            this.state.photoForm.error = "Please select a photo to upload.";
+            return;
+        }
+        
+        try {
+            await this.orm.write("hr.employee", [this.props.activeProfile.id], {
+                image_1920: this.state.photoForm.base64Data
+            });
+            
+            if (this.toast) {
+                this.toast.show("success", "Profile photo updated successfully!");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closePhotoModal();
+        } catch (error) {
+            console.error("Failed to upload photo:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not upload photo.");
+            }
+        }
+    }
+
     openContactModal() {
+        if (this.props.activeProfile) {
+            this.state.contactForm = {
+                work_email: this.props.activeProfile.work_email || '',
+                work_phone: this.props.activeProfile.work_phone || '',
+                address: this.props.activeProfile.sdir_home_address || '',
+                em_name: this.props.activeProfile.emergency_contact || '',
+                em_relation: this.props.activeProfile.sdir_emergency_relationship || '',
+                em_phone: this.props.activeProfile.emergency_phone || '',
+                hasAttemptedSave: false
+            };
+        }
         this.state.showContactModal = true;
+    }
+
+    get contactErrors() {
+        const form = this.state.contactForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (form.work_email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(form.work_email)) {
+                return { field: 'work_email', msg: 'Please enter a valid email address.' };
+            }
+        }
+        
+        if (!form.work_email && !form.work_phone) {
+            return { field: 'work_email', msg: 'Please provide at least a work email or phone number.' };
+        }
+        
+        return null;
+    }
+
+    async saveContactInfo() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.contactForm.hasAttemptedSave = true;
+        if (this.contactErrors) return;
+        
+        const form = this.state.contactForm;
+        
+        try {
+            await this.orm.call("hr.employee", "update_contact_info", [
+                this.props.activeProfile.id,
+                {
+                    work_email: form.work_email,
+                    work_phone: form.work_phone,
+                    address: form.address,
+                    em_name: form.em_name,
+                    em_relation: form.em_relation,
+                    em_phone: form.em_phone
+                }
+            ]);
+            
+            if (this.toast) {
+                this.toast.show("success", "Contact information updated successfully.");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closeContactModal();
+        } catch (error) {
+            console.error("Failed to update contact info:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not update contact information.");
+            }
+        }
     }
 
     closeContactModal() {
