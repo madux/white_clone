@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="cleon_ai.CleonAiAssistant" owl="1">
+    <div class="o_cai_root">
+      <button class="o_cai_fab" t-on-click="toggle" title="CleonAI — aware of your current screen">
+        <i class="fa fa-magic"/>
+      </button>
+      <aside t-if="state.open" class="o_cai_panel">
+        <header>
+          <div>
+            <h3>CleonAI</h3>
+            <p t-esc="state.context?.title || 'Workspace Assistant'"/>
+          </div>
+          <button t-on-click="toggle">&#215;</button>
+        </header>
+        <div class="o_cai_body">
+          <div t-if="!state.context" class="o_cai_empty">
+            <i class="fa fa-compass"/>
+            <b>This screen is not connected yet</b>
+            <span>Open a supported CleonHR workspace.</span>
+          </div>
+          <t t-else="">
+            <div class="o_cai_scope">
+              <i class="fa fa-shield"/> Answers are restricted to your <b t-esc="state.summary?.scope || state.context.perspective || 'assigned'"/> visibility.
+            </div>
+            <div t-if="state.loading" class="o_cai_loading">
+              <i class="fa fa-spinner fa-spin"/> Summarizing the current screen…
+            </div>
+            <t t-elif="state.summary">
+              <section class="o_cai_summary">
+                <h4 t-esc="state.summary.heading || 'Current screen summary'"/>
+                <ul>
+                  <li t-foreach="state.summary.bullets" t-as="bullet" t-key="bullet" t-esc="bullet"/>
+                </ul>
+              </section>
+              <div t-if="!state.summary.provider or !state.summary.provider.configured or !state.summary.provider.live_calls_enabled" class="o_cai_provider">
+                <i class="fa fa-plug"/> Live provider not enabled. The secure context and tool boundary are ready.
+              </div>
+              <div t-if="state.summary.suggestions and state.summary.suggestions.length" class="o_cai_suggestions">
+                <button t-foreach="state.summary.suggestions" t-as="suggestion" t-key="suggestion" t-on-click="() => this.ask(suggestion)" t-esc="suggestion"/>
+              </div>
+              <div class="o_cai_messages">
+                <p t-foreach="state.messages" t-as="message" t-key="message_index" t-att-class="message.role" t-esc="message.text"/>
+              </div>
+            </t>
+          </t>
+        </div>
+        <div class="o_cai_input">
+          <input t-model="state.question" t-on-keydown="onQuestionKeydown" placeholder="Ask about the current screen…"/>
+          <button t-on-click="() => this.ask()"><i class="fa fa-paper-plane"/></button>
+        </div>
+        <footer>
+          <button t-on-click="refreshSummary"><i class="fa fa-refresh"/> Refresh</button>
+          <button t-on-click="copySummary"><i class="fa fa-copy"/> Copy</button>
+          <button t-on-click="emailSummary"><i class="fa fa-envelope-o"/> Email</button>
+        </footer>
+      </aside>
+    </div>
+  </t>
+</templates>

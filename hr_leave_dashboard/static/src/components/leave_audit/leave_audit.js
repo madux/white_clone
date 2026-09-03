@@ -37,6 +37,9 @@ export class LeaveAuditPage extends Component {
             this.state.rows = result.rows || []; this.state.total = result.total || 0; this.state.summary = result.summary || {}; this.state.actions = result.actions || []; this.state.departments = result.departments || []; this.state.roles = result.roles || [];
             if (silent && this.state.initialLoaded && result.rows?.[0]?.id && result.rows[0].id !== previousFirstId) this.notification.add("New leave audit entries received.", { type: "info" });
             this.state.initialLoaded = true;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.audit", title: "Leave Audit Log" },
+            }));
         } catch (error) { if (!silent) this.notification.add(error.message || "Unable to load the audit log.", { type: "danger" }); }
         finally { this.state.loading = false; }
     }

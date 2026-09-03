@@ -161,6 +161,10 @@ class CleonApprovalInstance(models.Model):
                     if not step.specific_user_id or not step.specific_user_id.active:
                         raise UserError(_("Submission blocked: Specific approver user for step '%s' is inactive or unassigned.") % step.name)
                     resolved_users = step.specific_user_id
+                elif step.approver_type == "specific_users":
+                    if not step.approver_user_ids:
+                        raise ValidationError(_("Step '%s' has no designated approver users.") % step.name)
+                    resolved_users = step.approver_user_ids.filtered(lambda u: u.active)
 
                 # Central company-validation and employee self-filtering for EVERY step
                 filtered_step_users = resolved_users.sudo().filtered(lambda u: u.active and company.id in u.company_ids.ids)
@@ -174,6 +178,7 @@ class CleonApprovalInstance(models.Model):
                     "instance_id": instance.id,
                     "sequence": step.sequence,
                     "name": step.name,
+                    "completion_mode": step.completion_mode,
                     "approver_type": step.approver_type,
                     "resolved_user_ids": [(6, 0, resolved_users.ids)],
                     "state": "waiting",
@@ -247,6 +252,7 @@ class CleonApprovalInstance(models.Model):
             "instance_id": instance.id,
             "sequence": 10,
             "name": _("Fallback Approval Step"),
+            "completion_mode": "single" if len(resolved_users) == 1 else "any",
             "approver_type": "specific_user" if len(resolved_users) == 1 else "group",
             "resolved_user_ids": [(6, 0, resolved_users.ids)],
             "state": "waiting",
@@ -273,6 +279,7 @@ class CleonApprovalInstance(models.Model):
             pending_steps = inst.step_ids.filtered(lambda s: s.state in ("pending", "waiting"))
             for step in pending_steps:
                 step._close_activity()
+                step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
                 step.sudo().write({"state": "skipped"})
             inst.sudo().write({
                 "state": "cancelled",
@@ -295,6 +302,9 @@ class CleonApprovalInstance(models.Model):
             raise UserError(_("No pending step found for approval instance %s.") % self.id)
         current_step = current_step[0]
 
+        now = fields.Datetime.now()
+        deciding_user = self.env.user if not automated else self.env.ref("base.user_root")
+
         # Authorization check
         if not automated and not (self.env.su or self.env.user.has_group("base.group_system")):
             if self.env.user not in current_step.resolved_user_ids:
@@ -303,13 +313,31 @@ class CleonApprovalInstance(models.Model):
             if submitting_user and self.env.user == submitting_user:
                 raise AccessError(_("Self-approval is prohibited for '%s'.") % current_step.name)
 
+            user_decision = current_step.decision_ids.filtered(
+                lambda d: d.user_id == self.env.user and d.state == "pending"
+            )
+            if not user_decision:
+                raise UserError(_("You have already recorded a decision on this approval step, or the step is no longer awaiting your action."))
+
         # Target record validation hook
         target_record._approval_validate_decision(decision, automated=automated, comment=comment)
 
-        now = fields.Datetime.now()
-        deciding_user = self.env.user if not automated else self.env.ref("base.user_root")
-
         if decision == "reject":
+            # Rejection immediately terminates step and workflow
+            if not automated:
+                current_step.decision_ids.filtered(lambda d: d.user_id == deciding_user).sudo().write({
+                    "state": "rejected",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+            else:
+                current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({
+                    "state": "rejected",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+            # Skip any remaining pending decisions
+            current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
             current_step.sudo().write({
                 "state": "rejected",
                 "decision_user_id": deciding_user.id,
@@ -329,6 +357,19 @@ class CleonApprovalInstance(models.Model):
         if decision == "request_changes":
             if not hasattr(target_record, "_approval_finalize_request_changes"):
                 raise ValidationError(_("Workflow target record '%s' does not support requesting changes.") % target_record.display_name)
+            if not automated:
+                current_step.decision_ids.filtered(lambda d: d.user_id == deciding_user).sudo().write({
+                    "state": "changes_requested",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+            else:
+                current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({
+                    "state": "changes_requested",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+            current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
             current_step.sudo().write({
                 "state": "rejected",
                 "decision_user_id": deciding_user.id,
@@ -346,6 +387,36 @@ class CleonApprovalInstance(models.Model):
             return True
 
         if decision == "approve":
+            if not automated:
+                current_step.decision_ids.filtered(lambda d: d.user_id == deciding_user).sudo().write({
+                    "state": "approved",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+            else:
+                current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({
+                    "state": "approved",
+                    "decision_at": now,
+                    "decision_comment": comment,
+                })
+
+            mode = current_step.completion_mode
+            step_completed = False
+
+            if mode in ("single", "any") or automated:
+                step_completed = True
+                # Mark any remaining decisions on this step as skipped
+                current_step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
+            elif mode == "all":
+                pending_decisions = current_step.decision_ids.filtered(lambda d: d.state == "pending")
+                if not pending_decisions:
+                    step_completed = True
+
+            if not step_completed:
+                # In 'all' mode with pending decisions, step remains pending. Update activity if needed.
+                return True
+
+            # Step is fully completed
             current_step.sudo().write({
                 "state": "approved",
                 "decision_user_id": deciding_user.id,
@@ -401,6 +472,7 @@ class CleonApprovalInstance(models.Model):
                     elif step.sla_action == "escalate_next":
                         next_steps = instance.step_ids.filtered(lambda s: s.sequence > step.sequence and s.state == "waiting").sorted("sequence")
                         if next_steps:
+                            step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
                             step.sudo().write({"state": "escalated"})
                             step._close_activity()
                             next_step = next_steps[0]
@@ -437,12 +509,19 @@ class CleonApprovalInstanceStep(models.Model):
     instance_id = fields.Many2one("cleon.approval.instance", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer(required=True)
     name = fields.Char(required=True)
+    completion_mode = fields.Selection([
+        ("single", "Single Approver"),
+        ("any", "Any One Approver"),
+        ("all", "All Approvers"),
+    ], default="single", required=True, string="Completion Mode")
     approver_type = fields.Selection([
         ("line_manager", "Direct Manager"),
         ("group", "User Group / Role"),
         ("specific_user", "Specific User"),
+        ("specific_users", "Multiple Specific Users"),
     ], required=True)
     resolved_user_ids = fields.Many2many("res.users", string="Resolved Approver Users")
+    decision_ids = fields.One2many("cleon.approval.instance.step.decision", "step_id", string="Approver Decisions")
     state = fields.Selection([
         ("waiting", "Waiting"),
         ("pending", "Pending"),
@@ -472,6 +551,18 @@ class CleonApprovalInstanceStep(models.Model):
             "state": "pending",
             "deadline": deadline,
         })
+        # Create pending decision records for all resolved users if not already present
+        existing_users = self.decision_ids.mapped("user_id")
+        new_decisions = []
+        for u in self.resolved_user_ids:
+            if u not in existing_users:
+                new_decisions.append({
+                    "step_id": self.id,
+                    "user_id": u.id,
+                    "state": "pending",
+                })
+        if new_decisions:
+            self.env["cleon.approval.instance.step.decision"].sudo().create(new_decisions)
         self._create_activity()
 
     def _create_activity(self):
@@ -520,7 +611,7 @@ class CleonApprovalInstanceStep(models.Model):
 
     def write(self, vals):
         if not (self.env.su or self.env.user.has_group("cleon_approval.group_cleon_approval_manager")):
-            protected = {"state", "deadline", "decision_user_id", "decision_at", "decision_comment", "resolved_user_ids", "sla_timeout_hours", "sla_action"}
+            protected = {"state", "deadline", "decision_user_id", "decision_at", "decision_comment", "resolved_user_ids", "sla_timeout_hours", "sla_action", "completion_mode"}
             if protected.intersection(vals.keys()):
                 raise AccessError(_("Direct mutation of approval step execution records is restricted."))
         return super().write(vals)
@@ -529,4 +620,40 @@ class CleonApprovalInstanceStep(models.Model):
     def create(self, vals_list):
         if not (self.env.su or self.env.user.has_group("cleon_approval.group_cleon_approval_manager")):
             raise AccessError(_("Direct creation of approval step execution records is restricted."))
+        return super().create(vals_list)
+
+
+class CleonApprovalInstanceStepDecision(models.Model):
+    _name = "cleon.approval.instance.step.decision"
+    _description = "CleonHR Approval Step Decision Record"
+    _order = "id asc"
+
+    step_id = fields.Many2one("cleon.approval.instance.step", required=True, ondelete="cascade", index=True)
+    instance_id = fields.Many2one(related="step_id.instance_id", store=True, readonly=True, index=True)
+    user_id = fields.Many2one("res.users", required=True, index=True)
+    state = fields.Selection([
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+        ("changes_requested", "Changes Requested"),
+        ("skipped", "Skipped / Not Required"),
+    ], default="pending", required=True, index=True)
+    decision_at = fields.Datetime()
+    decision_comment = fields.Text()
+
+    _sql_constraints = [
+        ("step_user_unique", "unique(step_id, user_id)", "Each user can only have one decision record per approval step."),
+    ]
+
+    def write(self, vals):
+        if not (self.env.su or self.env.user.has_group("cleon_approval.group_cleon_approval_manager")):
+            protected = {"state", "decision_at", "decision_comment", "user_id", "step_id"}
+            if protected.intersection(vals.keys()):
+                raise AccessError(_("Direct mutation of approval decision records is restricted."))
+        return super().write(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not (self.env.su or self.env.user.has_group("cleon_approval.group_cleon_approval_manager")):
+            raise AccessError(_("Direct creation of approval decision records is restricted."))
         return super().create(vals_list)

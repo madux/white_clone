@@ -116,6 +116,11 @@ class HrLeave(models.Model):
             # Odoo may create an HR-approved leave type directly in the
             # "To Approve" state, without calling action_confirm().
             if leave.state in ("confirm", "validate1"):
+                if "cleon.approval.instance" in self.env:
+                    try:
+                        self.env["cleon.approval.instance"].sudo().action_start(leave)
+                    except Exception as exc:
+                        _logger.warning("Failed to start cleon.approval.instance for leave %s: %s", leave.id, exc)
                 leave._initialize_configured_approval_lines()
         return leaves
 
@@ -185,8 +190,63 @@ class HrLeave(models.Model):
             raise AccessError(_("You do not have permission to delete leave requests."))
         return super().unlink()
 
+    def _approval_workflow_code(self):
+        return "leave_request"
+
+    def _approval_employee(self):
+        return self.employee_id
+
+    def _approval_company(self):
+        return self.employee_id.company_id or self.company_id or self.env.company
+
+    def _approval_period(self):
+        self.ensure_one()
+        return self.request_date_from or self.date_from, self.request_date_to or self.date_to
+
+    def _approval_validate_decision(self, decision, automated=False, comment=False):
+        self.ensure_one()
+        if self._has_active_disciplinary_suspension():
+            raise ValidationError(_("Cannot approve leave request for an employee with an active disciplinary suspension."))
+        return True
+
+    def _approval_finalize_approve(self):
+        self.ensure_one()
+        super(HrLeave, self.with_context(cleon_final_approval=True)).action_approve()
+
+    def _approval_finalize_reject(self, reason=False):
+        self.ensure_one()
+        self.sudo().write({"changes_requested": False, "rejection_reason": reason or False})
+        super(HrLeave, self.with_context(cleon_final_approval=True)).action_refuse()
+
+    def _approval_finalize_request_changes(self, reason=False):
+        self.ensure_one()
+        self.sudo().write({
+            "changes_requested": True,
+            "changes_requested_comment": reason or False,
+            "changes_requested_by_id": self.env.user.id if not self.env.su else False,
+            "changes_requested_at": fields.Datetime.now(),
+            "state": "confirm",
+        })
+        self.message_post(body=_("Changes requested by approver: %s") % (reason or ""))
+
+    def _approval_fallback_config(self):
+        self.ensure_one()
+        if self.holiday_status_id and self.holiday_status_id.approval_workflow == "none":
+            return {"require_approval": False}
+        parent_user = self.employee_id.leave_manager_id or self.employee_id.parent_id.user_id
+        return {
+            "require_approval": True,
+            "fallback_users": parent_user or self.env["res.users"],
+        }
+
     def action_confirm(self):
         result = super().action_confirm()
+        if "cleon.approval.instance" in self.env:
+            for leave in self:
+                try:
+                    self.env["cleon.approval.instance"].sudo().action_start(leave)
+                except Exception as exc:
+                    _logger.warning("Failed to start cleon.approval.instance for leave %s: %s", leave.id, exc)
         self._initialize_configured_approval_lines()
         return result
 
@@ -1717,7 +1777,38 @@ class HrLeave(models.Model):
         )
 
         workflow = []
-        if leave.approval_line_ids:
+        approval_inst = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+        ], limit=1, order="id desc") if "cleon.approval.instance" in self.env else False
+
+        if approval_inst and approval_inst.step_ids:
+            for step in approval_inst.step_ids.sorted(lambda s: (s.sequence, s.id)):
+                approver_names = ", ".join(step.resolved_user_ids.mapped("name")) or _("Unassigned")
+                decisions_list = []
+                for dec in step.decision_ids:
+                    decisions_list.append({
+                        "user_id": dec.user_id.id,
+                        "user_name": dec.user_id.name,
+                        "state": dec.state,
+                        "decision_at": fields.Datetime.to_string(dec.decision_at) if dec.decision_at else False,
+                        "comments": dec.decision_comment or "",
+                    })
+                mode_label = dict(step._fields["completion_mode"].selection).get(step.completion_mode, step.completion_mode)
+                workflow.append({
+                    "key": "cleon_step_%d" % step.id,
+                    "label": "%s (%s)" % (step.name, mode_label),
+                    "actor": approver_names,
+                    "role": dict(step._fields["state"].selection).get(step.state, step.state),
+                    "timestamp": fields.Datetime.to_string(step.decision_at) if step.decision_at else False,
+                    "state": "done" if step.state == "approved" else ("rejected" if step.state == "rejected" else step.state),
+                    "completion_mode": step.completion_mode,
+                    "decisions": decisions_list,
+                    "comments": step.decision_comment or "",
+                    "escalated": step.state == "escalated",
+                    "system": False,
+                })
+        elif leave.approval_line_ids:
             workflow = [{
                 "key": "approval_stage_%d" % line.id,
                 "label": "%s · Level %d" % (line.stage_id.approver_type.replace("_", " ").title(), line.level),

@@ -94,6 +94,9 @@ export class LeaveBalancesPage extends Component {
             this.state.pagination.totalItems = pager.total_items || 0;
             this.state.pagination.totalPages = pager.total_pages || 1;
             this.state.pagination.itemLabel = pager.item_label || (this.state.groupBy === "none" ? "records" : "groups");
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.balances", title: "Leave Balance Management" },
+            }));
         } catch (error) {
             this.notification.add(error.message || "Unable to load leave balances.", { type: "danger" });
         } finally {

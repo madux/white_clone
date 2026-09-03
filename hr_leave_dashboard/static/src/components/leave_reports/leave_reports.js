@@ -37,6 +37,9 @@ export class LeaveReportsPage extends Component {
         try {
             this.state.data = await this.orm.call("hr.leave.report.service", "get_report_data", [], { filters: { ...this.state.filters } });
             this.state.lastRefreshed = new Date().toLocaleTimeString(); this.state.revision++;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.reports", title: "Leave Reports" },
+            }));
         } catch (error) { this.notification.add(error.message || "Unable to load leave reports.", { type: "danger" }); }
         finally { this.state.loading = false; }
     }

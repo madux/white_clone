@@ -46,6 +46,12 @@
             <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
         </record>
 
+        <record id="rule_cleon_approval_instance_step_decision_company" model="ir.rule">
+            <field name="name">Cleon Approval Instance Step Decision Multi-Company</field>
+            <field name="model_id" ref="model_cleon_approval_instance_step_decision"/>
+            <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
+        </record>
+
         <!-- User Visibility Rules for Instances & Steps -->
         <record id="rule_cleon_approval_instance_user_visibility" model="ir.rule">
             <field name="name">Cleon Approval Instance User Visibility</field>
@@ -71,6 +77,20 @@
         <record id="rule_cleon_approval_instance_step_manager" model="ir.rule">
             <field name="name">Cleon Approval Instance Step Administrator All</field>
             <field name="model_id" ref="model_cleon_approval_instance_step"/>
+            <field name="groups" eval="[(4, ref('group_cleon_approval_manager'))]"/>
+            <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
+        </record>
+
+        <record id="rule_cleon_approval_instance_step_decision_user_visibility" model="ir.rule">
+            <field name="name">Cleon Approval Instance Step Decision User Visibility</field>
+            <field name="model_id" ref="model_cleon_approval_instance_step_decision"/>
+            <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+            <field name="domain_force">['|', ('instance_id.employee_id.user_id', '=', user.id), ('user_id', '=', user.id)]</field>
+        </record>
+
+        <record id="rule_cleon_approval_instance_step_decision_manager" model="ir.rule">
+            <field name="name">Cleon Approval Instance Step Decision Administrator All</field>
+            <field name="model_id" ref="model_cleon_approval_instance_step_decision"/>
             <field name="groups" eval="[(4, ref('group_cleon_approval_manager'))]"/>
             <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
         </record>

@@ -116,7 +116,7 @@ export class LeaveRequestsPage extends Component {
 
             this.state.selectedIds = [];
             window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: {
-                screen: "leave_requests_admin", title: "Leave Requests — Admin",
+                screen: "leave.requests.admin", title: "Leave Requests — Admin",
                 status: this.state.status, search: this.state.search,
                 leave_type_id: this.state.leaveTypeId || false,
                 department_id: this.state.departmentId || false,

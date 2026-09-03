@@ -847,7 +847,7 @@ class HrLeaveType(models.Model):
             res["errors"].append(_("Half-day requests are not permitted for %s.") % lt.name)
 
         # 7. Balance & Allow Negative Balance Check
-        if not lt.unlimited_entitlement:
+        if not lt.unlimited_entitlement and lt.requires_allocation == "yes":
             components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
                 [emp.id], [lt.id], exclude_leave_id=exclude_leave_id,
             )

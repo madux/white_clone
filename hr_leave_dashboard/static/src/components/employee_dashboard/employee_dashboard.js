@@ -20,7 +20,12 @@ export class EmployeeLeaveDashboard extends Component {
     }
     async load() {
         this.state.loading = true;
-        try { this.state.data = await this.orm.call("hr.leave", "get_employee_dashboard_data", []); }
+        try {
+            this.state.data = await this.orm.call("hr.leave", "get_employee_dashboard_data", []);
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.employee_dashboard", title: "My Leave Dashboard" },
+            }));
+        }
         catch (error) { this.notification.add(error.message || "Unable to load your leave dashboard.", { type: "danger" }); }
         finally { this.state.loading = false; }
     }

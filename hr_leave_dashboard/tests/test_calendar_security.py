@@ -156,3 +156,134 @@ class TestLeaveCalendarSecurity(TransactionCase):
         self.request.invalidate_recordset()
         self.assertFalse(self.request.changes_requested)
         self.assertIn(self.request.state, ("confirm", "validate1"))
+
+    def test_gateway_leave_balances_ai_requires_operations_permission(self):
+        """Member user cannot access Leave Balance AI assistance via the gateway."""
+        with self.assertRaises(AccessError):
+            self.env["cleon.ai.gateway"].with_user(self.member_user).get_assistant_state({
+                "screen": "leave.balances",
+            })
+
+    def test_gateway_unattached_context_returns_empty_tools(self):
+        """Unattached context returns no business tools."""
+        tools = self.env["cleon.ai.gateway"].with_user(self.operator_user).get_tool_catalog({})
+        self.assertEqual(tools, [])
+        state = self.env["cleon.ai.gateway"].with_user(self.operator_user).get_assistant_state({})
+        self.assertEqual(state["tools"], [])
+
+    def test_gateway_leave_tools_registered_for_leave_user(self):
+        """Leave tools are registered on the gateway for authorised leave users and screen context."""
+        tools = self.env["cleon.ai.gateway"].with_user(self.operator_user).get_tool_catalog({"screen": "leave.calendar"})
+        tool_names = [t["name"] for t in tools]
+        self.assertIn("leave.calendar.summarize", tool_names)
+        self.assertIn("leave.calendar.day_roster", tool_names)
+        self.assertIn("leave.prepare_admin_booking", tool_names)
+
+    def test_gateway_tool_execution_enforces_screen_and_rbac(self):
+        """Executing leave tools revalidates permissions across both catalogue and dispatcher layers."""
+        # 1. Operator can execute summarize on calendar
+        res = self.env["cleon.ai.gateway"].with_user(self.operator_user).execute_tool(
+            "leave.calendar.summarize", screen_context={"screen": "leave.calendar"}
+        )
+        self.assertTrue(res["ok"])
+
+        # 2. Operator can execute day roster with perspective
+        roster_res = self.env["cleon.ai.gateway"].with_user(self.operator_user).execute_tool(
+            "leave.calendar.day_roster",
+            params={"date": fields.Date.to_string(fields.Date.today())},
+            screen_context={"screen": "leave.calendar", "perspective": "organisation"},
+        )
+        self.assertTrue(roster_res["ok"])
+        self.assertIn("roster", roster_res)
+
+        # 3. Layer 1: Catalogue rejection - member user cannot see or execute admin booking on calendar
+        with self.assertRaises(ValidationError):
+            self.env["cleon.ai.gateway"].with_user(self.member_user).execute_tool(
+                "leave.prepare_admin_booking",
+                params={"confirmed": True},
+                screen_context={"screen": "leave.calendar"},
+            )
+
+        # 4. Layer 2: Dispatcher rejection - direct call to business dispatcher as member user raises AccessError
+        with self.assertRaises(AccessError):
+            self.env["cleon.ai.gateway"].with_user(self.member_user)._dispatch_tool_execution(
+                "leave.prepare_admin_booking",
+                params={"confirmed": True},
+                screen_context={"screen": "leave.calendar"},
+            )
+
+    def test_gateway_day_roster_respects_department_filter(self):
+        """AI day roster respects active department filters from screen context."""
+        dept_a = self.env["hr.department"].create({"name": "Engineering AI Test"})
+        dept_b = self.env["hr.department"].create({"name": "Marketing AI Test"})
+        self.member_employee.write({"department_id": dept_a.id})
+        self.manager_employee.write({"department_id": dept_a.id})
+
+        other_user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Other Dept User",
+            "login": "other.dept.user",
+            "email": "other@example.test",
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
+        })
+        other_employee = self.env["hr.employee"].create({
+            "name": "Other Dept Employee",
+            "user_id": other_user.id,
+            "department_id": dept_b.id,
+            "company_id": self.env.company.id,
+        })
+
+        test_date = fields.Date.today() + timedelta(days=60)
+        test_date_str = fields.Date.to_string(test_date)
+
+        member_req = self.env["hr.leave"].sudo().create({
+            "employee_id": self.member_employee.id,
+            "holiday_status_id": self.leave_type.id,
+            "request_date_from": test_date,
+            "request_date_to": test_date + timedelta(days=1),
+            "notes": "Member leave request for roster test.",
+        })
+        member_req.sudo().action_validate()
+
+        other_req = self.env["hr.leave"].sudo().create({
+            "employee_id": other_employee.id,
+            "holiday_status_id": self.leave_type.id,
+            "request_date_from": test_date,
+            "request_date_to": test_date + timedelta(days=1),
+            "notes": "Other employee leave request for roster test.",
+        })
+        other_req.sudo().action_validate()
+
+        # 1. Day roster filtered by Department A returns only member_employee
+        res = self.env["cleon.ai.gateway"].with_user(self.operator_user).execute_tool(
+            "leave.calendar.day_roster",
+            params={"date": test_date_str},
+            screen_context={
+                "screen": "leave.calendar",
+                "perspective": "organisation",
+                "filters": {"department_ids": [dept_a.id]},
+            },
+        )
+        roster_names = [item["employee_name"] for item in res["roster"]]
+        self.assertIn(self.member_employee.name, roster_names)
+        self.assertNotIn(other_employee.name, roster_names)
+
+        # 2. Manager requesting organisation scope is downgraded to team scope and only sees team member
+        mgr_res = self.env["cleon.ai.gateway"].with_user(self.manager_user).execute_tool(
+            "leave.calendar.day_roster",
+            params={"date": test_date_str},
+            screen_context={
+                "screen": "leave.calendar",
+                "perspective": "organisation",
+            },
+        )
+        self.assertEqual(mgr_res["scope"], "team")
+        mgr_roster_names = [item["employee_name"] for item in mgr_res["roster"]]
+        self.assertIn(self.member_employee.name, mgr_roster_names)
+        self.assertNotIn(other_employee.name, mgr_roster_names)
+
+
+
+
+
+

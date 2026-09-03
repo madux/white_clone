@@ -28,6 +28,9 @@ export class LeaveConfiguration extends Component {
             const permitted = this.availableTabs.map((tab) => tab.key);
             this.state.activeTab = permitted.includes(requested) ? requested : permitted[0] || null;
             this.state.loading = false;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.configuration", title: "Leave Configuration" },
+            }));
         });
     }
 
@@ -46,7 +49,12 @@ export class LeaveConfiguration extends Component {
     }
 
     setTab(tab) {
-        if (this.availableTabs.some((item) => item.key === tab)) this.state.activeTab = tab;
+        if (this.availableTabs.some((item) => item.key === tab)) {
+            this.state.activeTab = tab;
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.configuration", title: "Leave Configuration", tab },
+            }));
+        }
     }
 
     openLeaveTypes() {

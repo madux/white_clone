@@ -318,9 +318,18 @@ class TestApprovalEngine(TransactionCase):
             "company_ids": [(6, 0, [self.company.id])],
             "groups_id": [(6, 0, [self.env.ref("base.group_user").id, fallback_group.id])],
         })
-        company_b = self.env["res.company"].create({
-            "name": "Company B Test",
-        })
+        company_b = self.env["res.company"].search([("id", "!=", self.company.id)], limit=1)
+        if not company_b:
+            company_b = self.env["res.company"].sudo().create({
+                "name": "Company B Test",
+                "po_lead": 0.0,
+                "security_lead": 0.0,
+                "leave_default_approval_workflow": "single",
+                "leave_default_supporting_document_policy": "optional",
+                "fiscalyear_last_day": 31,
+                "fiscalyear_last_month": "12",
+                "account_opening_date": "2026-01-01",
+            })
         user_b = self.env["res.users"].create({
             "name": "Company B User",
             "login": "company_b_user",

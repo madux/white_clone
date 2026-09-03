@@ -768,7 +768,7 @@ export class LeaveCalendarPage extends Component {
             ? { dateFrom: `${year}-01-01`, dateTo: `${year}-12-31` }
             : this.getRangeForView();
         window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: {
-            screen: "leave_calendar",
+            screen: "leave.calendar",
             title: "Leave Calendar",
             view_mode: this.state.viewMode,
             perspective: this.state.calendarScope,

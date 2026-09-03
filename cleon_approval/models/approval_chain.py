@@ -45,13 +45,26 @@ class CleonApprovalStep(models.Model):
     chain_id = fields.Many2one("cleon.approval.chain", required=True, ondelete="cascade", index=True)
     sequence = fields.Integer(default=10, required=True)
     name = fields.Char(required=True, string="Step Name")
+    completion_mode = fields.Selection([
+        ("single", "Single Approver"),
+        ("any", "Any One Approver"),
+        ("all", "All Approvers"),
+    ], default="single", required=True, string="Completion Mode")
     approver_type = fields.Selection([
         ("line_manager", "Direct Manager"),
         ("group", "User Group / Role"),
         ("specific_user", "Specific User"),
+        ("specific_users", "Multiple Specific Users"),
     ], default="line_manager", required=True)
     approver_group_id = fields.Many2one("res.groups", string="Approver Group / Role")
     specific_user_id = fields.Many2one("res.users", string="Specific Approver User")
+    approver_user_ids = fields.Many2many(
+        "res.users",
+        "cleon_approval_step_users_rel",
+        "step_id",
+        "user_id",
+        string="Specific Approver Users",
+    )
     sla_timeout_hours = fields.Integer(default=24, string="SLA Timeout (Hours)")
     sla_action = fields.Selection([
         ("escalate_next", "Escalate to Next Step"),
@@ -69,10 +82,14 @@ class CleonApprovalStep(models.Model):
             if step.sla_timeout_hours < 0:
                 raise ValidationError(_("Step '%s': SLA timeout hours cannot be negative.") % step.name)
 
-    @api.constrains("approver_type", "approver_group_id", "specific_user_id")
+    @api.constrains("approver_type", "approver_group_id", "specific_user_id", "approver_user_ids", "completion_mode")
     def _check_approver_fields(self):
         for step in self:
             if step.approver_type == "group" and not step.approver_group_id:
                 raise ValidationError(_("Step '%s': An approver group must be specified when approver type is 'User Group / Role'.") % step.name)
             if step.approver_type == "specific_user" and not step.specific_user_id:
                 raise ValidationError(_("Step '%s': A specific approver user must be designated when approver type is 'Specific User'.") % step.name)
+            if step.approver_type == "specific_users" and not step.approver_user_ids:
+                raise ValidationError(_("Step '%s': At least one designated user must be selected when approver type is 'Multiple Specific Users'.") % step.name)
+            if step.completion_mode == "single" and step.approver_type == "specific_users" and len(step.approver_user_ids) > 1:
+                raise ValidationError(_("Step '%s': 'Single Approver' mode requires exactly one approver. Use 'Any One Approver' or 'All Approvers' for multiple designated users.") % step.name)

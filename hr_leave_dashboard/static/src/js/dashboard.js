@@ -355,6 +355,10 @@ export class HrLeaveDashboard extends Component {
             if (data.trends) this.renderTrends(data.trends);
             if (data.by_type) this.renderByType(data.by_type);
             if (data.approval_overview) this.renderApproval(data.approval_overview);
+
+            window.dispatchEvent(new CustomEvent("cleon-ai-context", {
+                detail: { screen: "leave.dashboard", title: "Leave Dashboard" },
+            }));
         }).fail((err) => {
             if (err.statusText === "abort") return;
             console.error("Dashboard load failed", err);
