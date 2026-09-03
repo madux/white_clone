@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_doc_compliance_policy_type_tree" model="ir.ui.view">
+        <field name="name">doc.compliance.policy.type.tree</field>
+        <field name="model">doc.compliance.policy.type</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_policy_type_form" model="ir.ui.view">
+        <field name="name">doc.compliance.policy.type.form</field>
+        <field name="model">doc.compliance.policy.type</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Policy Type">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="active"/>
+                    </group>
+                    <field name="description"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_policy_tree" model="ir.ui.view">
+        <field name="name">doc.compliance.policy.tree</field>
+        <field name="model">doc.compliance.policy</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="policy_type_id"/>
+                <field name="applies_to"/>
+                <field name="schedule"/>
+                <field name="effective_date"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_policy_form" model="ir.ui.view">
+        <field name="name">doc.compliance.policy.form</field>
+        <field name="model">doc.compliance.policy</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Policy">
+                <header>
+                    <button name="action_evaluate" type="object" string="Evaluate Now" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="policy_type_id"/>
+                            <field name="description"/>
+                            <field name="active"/>
+                        </group>
+                        <group>
+                            <field name="effective_date"/>
+                            <field name="schedule"/>
+                            <field name="custom_schedule_days" invisible="schedule != 'custom'"/>
+                            <field name="minimum_documents"/>
+                            <field name="grace_period_days"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Document Types">
+                            <field name="document_type_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Applies To">
+                            <field name="applies_to"/>
+                            <field name="department_ids" widget="many2many_tags" invisible="applies_to != 'department'"/>
+                            <field name="grade_ids" widget="many2many_tags" invisible="applies_to != 'grade'"/>
+                            <field name="employee_ids" widget="many2many_tags" invisible="applies_to != 'employee'"/>
+                        </page>
+                        <page string="Requirements">
+                            <field name="requirement_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="minimum_documents"/>
+                                    <field name="grace_period_days"/>
+                                    <field name="active"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_requirement_tree" model="ir.ui.view">
+        <field name="name">doc.compliance.requirement.tree</field>
+        <field name="model">doc.compliance.requirement</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="policy_id"/>
+                <field name="minimum_documents"/>
+                <field name="grace_period_days"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_requirement_form" model="ir.ui.view">
+        <field name="name">doc.compliance.requirement.form</field>
+        <field name="model">doc.compliance.requirement</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Requirement">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="policy_id"/>
+                        <field name="document_type_ids" widget="many2many_tags" readonly="1"/>
+                        <field name="minimum_documents"/>
+                        <field name="grace_period_days"/>
+                        <field name="active"/>
+                    </group>
+                    <field name="description"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_exception_tree" model="ir.ui.view">
+        <field name="name">doc.compliance.exception.tree</field>
+        <field name="model">doc.compliance.exception</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="employee_id"/>
+                <field name="policy_id"/>
+                <field name="valid_until"/>
+                <field name="status"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_exception_form" model="ir.ui.view">
+        <field name="name">doc.compliance.exception.form</field>
+        <field name="model">doc.compliance.exception</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Exception">
+                <header>
+                    <button name="action_approve" type="object" string="Approve" invisible="status != 'draft'"/>
+                    <button name="action_reject" type="object" string="Reject" invisible="status != 'draft'"/>
+                    <field name="status" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="policy_id"/>
+                        <field name="valid_until"/>
+                        <field name="approved_by"/>
+                        <field name="approved_at"/>
+                    </group>
+                    <field name="reason"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_evaluation_tree" model="ir.ui.view">
+        <field name="name">doc.compliance.evaluation.tree</field>
+        <field name="model">doc.compliance.evaluation</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="employee_id"/>
+                <field name="policy_id"/>
+                <field name="score"/>
+                <field name="complete_count"/>
+                <field name="missing_count"/>
+                <field name="status"/>
+                <field name="evaluated_at"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_doc_compliance_evaluation_form" model="ir.ui.view">
+        <field name="name">doc.compliance.evaluation.form</field>
+        <field name="model">doc.compliance.evaluation</field>
+        <field name="arch" type="xml">
+            <form string="Compliance Evaluation">
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="policy_id"/>
+                        <field name="score"/>
+                        <field name="status"/>
+                        <field name="complete_count"/>
+                        <field name="missing_count"/>
+                        <field name="evaluated_at"/>
+                        <field name="exception_id"/>
+                    </group>
+                    <field name="line_ids">
+                        <tree>
+                            <field name="requirement_id"/>
+                            <field name="required_count"/>
+                            <field name="matched_count"/>
+                            <field name="status"/>
+                            <field name="document_ids" widget="many2many_tags"/>
+                        </tree>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

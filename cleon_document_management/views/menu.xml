@@ -45,34 +45,6 @@
         <field name="view_mode">tree,form</field>
     </record>
 
-    <!-- Compliance Record -->
-    <record id="action_doc_compliance_record" model="ir.actions.act_window">
-        <field name="name">Compliance Records</field>
-        <field name="res_model">doc.compliance.record</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
-    <!-- Compliance Requirement -->
-    <record id="action_doc_compliance_requirement" model="ir.actions.act_window">
-        <field name="name">Compliance Requirements</field>
-        <field name="res_model">doc.compliance.requirement</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
-    <!-- Compliance Checklist -->
-    <record id="action_hr_document_checklist" model="ir.actions.act_window">
-        <field name="name">Compliance Checklist</field>
-        <field name="res_model">hr_document_checklist</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
-    <!-- Templates -->
-    <record id="action_hr_document_template" model="ir.actions.act_window">
-        <field name="name">Document Templates</field>
-        <field name="res_model">hr_document_template</field>
-        <field name="view_mode">tree,form</field>
-    </record>
-
     <!-- Document Types -->
     <record id="action_doc_document_type" model="ir.actions.act_window">
         <field name="name">Document Types</field>
@@ -86,6 +58,36 @@
         <field name="res_model">doc.retention.policy</field>
         <field name="view_mode">tree,form</field>
     </record>
+
+        <record id="action_doc_compliance_policy_type" model="ir.actions.act_window">
+            <field name="name">Compliance Policy Types</field>
+            <field name="res_model">doc.compliance.policy.type</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_doc_compliance_policy" model="ir.actions.act_window">
+            <field name="name">Compliance Policies</field>
+            <field name="res_model">doc.compliance.policy</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_doc_compliance_requirement" model="ir.actions.act_window">
+            <field name="name">Compliance Requirements</field>
+            <field name="res_model">doc.compliance.requirement</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_doc_compliance_exception" model="ir.actions.act_window">
+            <field name="name">Compliance Exceptions</field>
+            <field name="res_model">doc.compliance.exception</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record id="action_doc_compliance_evaluation" model="ir.actions.act_window">
+            <field name="name">Compliance Evaluations</field>
+            <field name="res_model">doc.compliance.evaluation</field>
+            <field name="view_mode">tree,form</field>
+        </record>
 
     <!-- Storage -->
     <!-- <record id="action_document_storage_management" model="ir.actions.act_window">
@@ -160,49 +162,6 @@
         sequence="4"/>
 
 
-    <!-- Compliance -->
-    <menuitem
-        id="menu_document_compliance"
-        name="Compliance"
-        parent="menu_document_root"
-        sequence="20"/>
-
-    <menuitem
-        id="menu_compliance_record"
-        name="Compliance Records"
-        parent="menu_document_compliance"
-        action="action_doc_compliance_record"
-        sequence="1"/>
-
-    <menuitem
-        id="menu_compliance_requirement"
-        name="Compliance Requirements"
-        parent="menu_document_compliance"
-        action="action_doc_compliance_requirement"
-        sequence="2"/>
-
-    <menuitem
-        id="menu_compliance_checklist"
-        name="Compliance Checklist"
-        parent="menu_document_compliance"
-        action="action_hr_document_checklist"
-        sequence="3"/>
-
-
-    <!-- Templates -->
-    <menuitem
-        id="menu_document_template_root"
-        name="Templates"
-        parent="menu_document_root"
-        sequence="30"/>
-
-    <menuitem
-        id="menu_document_template"
-        name="Document Templates"
-        parent="menu_document_template_root"
-        action="action_hr_document_template"
-        sequence="1"/>
-
 
     <!-- Configuration -->
     <menuitem
@@ -227,6 +186,13 @@
         action="action_doc_retention_policy"
         sequence="2"
         groups="base.group_system"/>
+
+        <menuitem id="menu_document_compliance" name="Compliance" parent="menu_document_root" sequence="30" groups="base.group_system"/>
+        <menuitem id="menu_compliance_policy_type" name="Policy Types" parent="menu_document_compliance" action="action_doc_compliance_policy_type" sequence="1"/>
+        <menuitem id="menu_compliance_policy" name="Policies" parent="menu_document_compliance" action="action_doc_compliance_policy" sequence="2"/>
+        <menuitem id="menu_compliance_requirement" name="Requirements" parent="menu_document_compliance" action="action_doc_compliance_requirement" sequence="3"/>
+        <menuitem id="menu_compliance_exception" name="Exceptions" parent="menu_document_compliance" action="action_doc_compliance_exception" sequence="4"/>
+        <menuitem id="menu_compliance_evaluation" name="Evaluations" parent="menu_document_compliance" action="action_doc_compliance_evaluation" sequence="5"/>
 
     <!-- <menuitem
         id="menu_storage_management"

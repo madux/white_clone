@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_expire_compliance_exceptions" model="ir.cron">
+        <field name="name">Expire Compliance Exceptions</field>
+        <field name="model_id" ref="model_doc_compliance_exception"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_expire_exceptions()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+    <record id="ir_cron_evaluate_compliance_policies" model="ir.cron">
+        <field name="name">Evaluate Compliance Policies</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_evaluate_policies()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<record id="view_doc_folder_list" model="ir.ui.view">
+		<field name="name">doc.folder.list</field>
+		<field name="model">doc.folder</field>
+		<field name="arch" type="xml">
+			<tree>
+				<field name="folder_name"/>
+				<field name="folder_type"/>
+				<field name="owner_id"/>
+				<field name="document_count"/>
+				<field name="active"/>
+			</tree>
+		</field>
+	</record>
+
+	<record id="view_doc_folder_form" model="ir.ui.view">
+		<field name="name">doc.folder.form</field>
+		<field name="model">doc.folder</field>
+		<field name="arch" type="xml">
+			<form string="Document Folder">
+				<header>
+					<button name="action_toggle_favorite" type="object" string="Favorite"/>
+					<button name="action_toggle_pin" type="object" string="Pin"/>
+					<button name="action_duplicate" type="object" string="Duplicate"/>
+					<button name="action_lock" type="object" string="Lock" invisible="is_locked"/>
+					<button name="action_unlock" type="object" string="Unlock" invisible="not is_locked"/>
+					<button name="action_archive" type="object" string="Archive" invisible="not active"/>
+					<button name="action_restore" type="object" string="Restore" invisible="active"/>
+				</header>
+				<sheet>
+					<group>
+						<group>
+							<field name="folder_name"/>
+							<field name="description"/>
+							<field name="folder_type"/>
+							<field name="owner_id"/>
+							<field name="parent_id"/>
+							<field name="company_id"/>
+						</group>
+						<group>
+							<field name="color" widget="color_picker"/>
+							<field name="retention_period"/>
+							<field name="is_locked"/>
+							<field name="locked_by"/>
+							<field name="active" invisible="1"/>
+						</group>
+					</group>
+					<notebook>
+						<page string="Access">
+							<group>
+								<field name="access_scope"/>
+								<field name="department_ids" widget="many2many_tags"/>
+								<field name="branch_ids" widget="many2many_tags"/>
+								<field name="grade_ids" widget="many2many_tags"/>
+								<field name="employment_type_ids" widget="many2many_tags"/>
+								<field name="role_group_ids" widget="many2many_tags"/>
+								<field name="allowed_user_ids" widget="many2many_tags"/>
+							</group>
+						</page>
+						<page string="Categories">
+							<field name="allowed_document_type_ids" widget="many2many_tags"/>
+						</page>
+						<page string="Approval">
+							<group>
+								<field name="require_upload_approval"/>
+								<field name="approval_flow" invisible="not require_upload_approval"/>
+								<field name="approver_ids" widget="many2many_tags" invisible="not require_upload_approval"/>
+							</group>
+						</page>
+						<page string="Employees">
+							<field name="employee_ids" widget="many2many_tags"/>
+						</page>
+						<page string="Documents">
+							<field name="document_ids">
+								<tree>
+									<field name="name"/>
+									<field name="employee_id"/>
+									<field name="document_type_id"/>
+									<field name="state"/>
+									<field name="ocr_state"/>
+								</tree>
+							</field>
+						</page>
+					</notebook>
+				</sheet>
+			</form>
+		</field>
+	</record>
+
+	<record id="view_doc_document_list" model="ir.ui.view">
+		<field name="name">doc.document.list</field>
+		<field name="model">doc.document</field>
+		<field name="arch" type="xml">
+			<tree>
+				<field name="name"/>
+				<field name="folder_id"/>
+				<field name="employee_id"/>
+				<field name="document_type_id"/>
+				<field name="state"/>
+				<field name="ocr_state"/>
+				<field name="expiry_date"/>
+			</tree>
+		</field>
+	</record>
+
+	<record id="view_doc_document_form" model="ir.ui.view">
+		<field name="name">doc.document.form</field>
+		<field name="model">doc.document</field>
+		<field name="arch" type="xml">
+			<form string="Document">
+				<header>
+					<button name="action_toggle_favorite" type="object" string="Favorite"/>
+					<button name="action_toggle_pin" type="object" string="Pin"/>
+					<field name="state" widget="statusbar"/>
+				</header>
+				<sheet>
+					<group>
+						<group>
+							<field name="name"/>
+							<field name="folder_id"/>
+							<field name="employee_id"/>
+							<field name="document_type_id"/>
+							<field name="attachment_id"/>
+						</group>
+						<group>
+							<field name="owner_id"/>
+							<field name="uploaded_by"/>
+							<field name="has_expiry"/>
+							<field name="expiry_date" invisible="not has_expiry"/>
+							<field name="approval_state"/>
+							<field name="ocr_state"/>
+						</group>
+					</group>
+					<notebook>
+						<page string="Extracted Text">
+							<field name="extracted_text"/>
+							<field name="ocr_error" invisible="ocr_state != 'failed'"/>
+						</page>
+						<page string="Approvals">
+							<field name="approval_ids">
+								<tree>
+									<field name="sequence"/>
+									<field name="approver_id"/>
+									<field name="state"/>
+									<field name="decision_date"/>
+								</tree>
+							</field>
+						</page>
+					</notebook>
+				</sheet>
+			</form>
+		</field>
+	</record>
+</odoo>
