@@ -1,174 +1,961 @@
 # -*- coding: utf-8 -*-
+import base64
+import csv
+import io
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
+
+
+class ResCompanyLeaveAnalytics(models.Model):
+    _inherit = "res.company"
+
+    leave_bradford_enabled = fields.Boolean(default=True)
+    leave_bradford_window_weeks = fields.Integer(default=52)
+    leave_bradford_min_spell_days = fields.Integer(default=1)
+    leave_bradford_caution = fields.Integer(default=51)
+    leave_bradford_concern = fields.Integer(default=101)
+    leave_bradford_serious = fields.Integer(default=201)
+    leave_bradford_critical = fields.Integer(default=401)
+
+
+class HrLeaveTypeAbsenceRisk(models.Model):
+    _inherit = "hr.leave.type"
+
+    bradford_count_mode = fields.Selection([
+        ("exclude", "Excluded"),
+        ("short_notice", "Short-notice absences only"),
+        ("all", "All approved absences"),
+    ], default="exclude", required=True, string="Bradford Factor Treatment")
+    bradford_treatment_configured = fields.Boolean(default=False, copy=False)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for values in vals_list:
+            if "bradford_count_mode" not in values:
+                label = self._bradford_label(values.get("name"), values.get("leave_code"))
+                values["bradford_count_mode"] = "short_notice" if self._bradford_is_sickness(label) else "exclude"
+        return super().create(vals_list)
+
+    @api.model
+    def _bradford_label(self, name, code=""):
+        if isinstance(name, dict):
+            name = next(iter(name.values()), "")
+        return "%s %s" % (name or "", code or "")
+
+    @api.model
+    def _bradford_is_protected(self, label):
+        value = (label or "").lower()
+        return any(token in value for token in ("annual", "vacation", "maternity", "paternity", "parental"))
+
+    @api.model
+    def _bradford_is_sickness(self, label):
+        value = (label or "").lower()
+        return any(token in value for token in ("sick", "illness", "medical")) and not self._bradford_is_protected(value)
+
+    def _effective_bradford_mode(self):
+        self.ensure_one()
+        label = self._bradford_label(self.name, self.leave_code)
+        if self._bradford_is_protected(label):
+            return "exclude"
+        if not self.bradford_treatment_configured and self._bradford_is_sickness(label):
+            return "short_notice"
+        return self.bradford_count_mode
+
+    def write(self, values):
+        if "bradford_count_mode" in values:
+            for leave_type in self:
+                label = leave_type._bradford_label(leave_type.name, leave_type.leave_code)
+                if leave_type._bradford_is_protected(label) and values["bradford_count_mode"] != "exclude":
+                    raise ValidationError(_("Annual and parental Leave Types are always excluded from Bradford scoring."))
+            values.setdefault("bradford_treatment_configured", True)
+        result = super().write(values)
+        if "bradford_count_mode" in values and not self.env.context.get("skip_bradford_refresh"):
+            companies = self.mapped("company_id") | self.env.company
+            for company in companies.filtered("leave_bradford_enabled"):
+                self.env["hr.leave.report.service"].sudo()._refresh_risk_snapshots(company)
+        return result
+
+
+class HrLeaveAbsenceRisk(models.Model):
+    _name = "hr.leave.absence.risk"
+    _description = "Current Bradford Factor Absence Risk"
+    _order = "score desc, employee_id"
+
+    company_id = fields.Many2one("res.company", required=True, index=True, ondelete="cascade")
+    employee_id = fields.Many2one("hr.employee", required=True, index=True, ondelete="cascade")
+    score = fields.Integer(readonly=True)
+    band = fields.Selection([
+        ("low", "Low"), ("caution", "Caution"), ("concern", "Concern"),
+        ("serious", "Serious"), ("critical", "Critical"),
+    ], default="low", required=True, readonly=True, index=True)
+    spell_count = fields.Integer(readonly=True)
+    day_count = fields.Integer(readonly=True)
+    window_start = fields.Date(readonly=True)
+    window_end = fields.Date(readonly=True)
+    calculated_at = fields.Datetime(readonly=True)
+
+    _sql_constraints = [
+        ("employee_company_unique", "unique(employee_id, company_id)", "Only one current absence-risk score is allowed per employee and company."),
+    ]
+
+    @api.model
+    def _cron_recalculate(self):
+        companies = self.env["res.company"].sudo().search([("leave_bradford_enabled", "=", True)])
+        for company in companies:
+            self.env["hr.leave.report.service"].sudo()._refresh_risk_snapshots(company)
+        return True
+
+
+class HrLeaveReportFields(models.Model):
+    _inherit = "hr.leave"
+
+    bradford_excluded = fields.Boolean(readonly=True, copy=False)
+    bradford_exclusion_reason = fields.Text(readonly=True, copy=False)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._refresh_changed_absence_risk()
+        return records
+
+    def write(self, values):
+        monitored = {
+            "employee_id", "holiday_status_id", "state", "is_cancelled",
+            "request_date_from", "request_date_to", "bradford_excluded",
+        }
+        employees = self.mapped("employee_id") if monitored.intersection(values) else self.env["hr.employee"]
+        result = super().write(values)
+        if employees or monitored.intersection(values):
+            (employees | self.mapped("employee_id"))._refresh_leave_absence_risk()
+        return result
+
+    def _refresh_changed_absence_risk(self):
+        self.filtered(lambda leave: leave.state == "validate").mapped("employee_id")._refresh_leave_absence_risk()
+
+
+class HrEmployeeAbsenceRiskRefresh(models.Model):
+    _inherit = "hr.employee"
+
+    def _refresh_leave_absence_risk(self):
+        for company in self.mapped("company_id").filtered("leave_bradford_enabled"):
+            employees = self.filtered(lambda employee, company=company: employee.company_id == company)
+            self.env["hr.leave.report.service"].sudo()._refresh_risk_snapshots(company, employees)
+        return True
+
 
 class HrLeaveReportService(models.AbstractModel):
     _name = "hr.leave.report.service"
     _description = "CleonHR Leave Reports Service"
 
-    @api.model
-    def _check_access(self):
-        if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_operational_reports"):
-            raise AccessError(_("You do not have operational Leave reporting access."))
+    REPORT_KEYS = {
+        "utilisation", "balances", "request_volume", "turnaround", "trends",
+        "frequency", "policy_usage", "absence_risk",
+    }
 
     @api.model
-    def _employee_identification(self, employee):
-        if not self.env.user.has_group("hr.group_hr_user"):
-            return ""
-        return employee.sudo().identification_id or ""
+    def _has_group(self, xmlid):
+        return self.env.user.has_group(xmlid)
+
+    @api.model
+    def _risk_actor_role(self):
+        return _("HR Director") if self._has_group("hr_leave_dashboard.group_role_hr_director") else _("HR Administrator")
+
+    @api.model
+    def _access(self):
+        operational = self._has_group("hr_leave_dashboard.group_leave_permission_operational_reports")
+        strategic = self._has_group("hr_leave_dashboard.group_leave_permission_strategic_reports")
+        team = self._has_group("hr_leave_dashboard.group_leave_permission_team")
+        if not (operational or strategic or team):
+            raise AccessError(_("You do not have Leave reporting access."))
+
+        Employee = self.env["hr.employee"].sudo()
+        if operational or strategic:
+            employees = Employee.search([
+                ("active", "=", True), ("company_id", "=", self.env.company.id),
+            ])
+            scope = "organisation"
+        else:
+            employees = Employee.search([
+                ("active", "=", True), ("company_id", "=", self.env.company.id),
+                "|", ("leave_manager_id", "=", self.env.user.id),
+                     ("parent_id.user_id", "=", self.env.user.id),
+            ])
+            scope = "team"
+            if not employees:
+                raise AccessError(_("You do not have an assigned reporting team."))
+
+        risk_detail = self._has_group("hr_leave_dashboard.group_leave_administrator") or self._has_group(
+            "hr_leave_dashboard.group_role_hr_director"
+        )
+        risk_configure = risk_detail and (
+            self._has_group("hr_leave_dashboard.group_leave_permission_configuration")
+            or self._has_group("hr_leave_dashboard.group_role_hr_director")
+        )
+        return {
+            "scope": scope,
+            "employees": employees,
+            "operational": operational,
+            "strategic": strategic,
+            "risk_detail": risk_detail,
+            "risk_configure": risk_configure,
+        }
 
     @api.model
     def _date_range(self, preset, start_date=None, end_date=None):
         today = fields.Date.context_today(self)
         if preset == "today":
-            start, end = today, today
+            start = end = today
         elif preset == "this_week":
             start, end = today - timedelta(days=today.weekday()), today + timedelta(days=6 - today.weekday())
         elif preset == "this_month":
             start, end = today.replace(day=1), today + relativedelta(months=1, day=1, days=-1)
         elif preset == "last_month":
-            end = today.replace(day=1) - timedelta(days=1); start = end.replace(day=1)
+            end = today.replace(day=1) - timedelta(days=1)
+            start = end.replace(day=1)
         elif preset == "this_quarter":
-            start = today.replace(month=((today.month - 1) // 3) * 3 + 1, day=1); end = start + relativedelta(months=3, days=-1)
-        elif preset == "custom" and start_date and end_date:
-            start, end = fields.Date.from_string(start_date), fields.Date.from_string(end_date)
+            start = today.replace(month=((today.month - 1) // 3) * 3 + 1, day=1)
+            end = start + relativedelta(months=3, days=-1)
+        elif preset == "last_quarter":
+            current = today.replace(month=((today.month - 1) // 3) * 3 + 1, day=1)
+            end = current - timedelta(days=1)
+            start = current - relativedelta(months=3)
+        elif preset == "custom":
+            if not start_date or not end_date:
+                raise ValidationError(_("Select both dates for a custom report range."))
+            start, end = fields.Date.to_date(start_date), fields.Date.to_date(end_date)
         else:
             start, end = today.replace(month=1, day=1), today.replace(month=12, day=31)
+        if not start or not end or start > end:
+            raise ValidationError(_("The report start date must be on or before the end date."))
         return start, end
 
     @api.model
-    def get_report_data(self, filters=None):
-        self._check_access()
-        filters = filters or {}
-        start, end = self._date_range(filters.get("date_range", "this_year"), filters.get("start_date"), filters.get("end_date"))
-        domain = [
-            ("employee_id.company_id", "in", self.env.companies.ids),
-            ("request_date_from", "<=", end), ("request_date_to", ">=", start),
-        ]
-        if filters.get("department_id"):
-            domain.append(("employee_id.department_id", "=", int(filters["department_id"])))
-        if filters.get("leave_type_id"):
-            domain.append(("holiday_status_id", "=", int(filters["leave_type_id"])))
-        leaves = self.env["hr.leave"].search(domain, order="request_date_from, id")
-        status = lambda leave: "cancelled" if leave.is_cancelled else ("approved" if leave.state == "validate" else "pending" if leave.state in ("confirm", "validate1") else "rejected" if leave.state == "refuse" else "cancelled")
-        counts = defaultdict(int); days = defaultdict(float); by_type = defaultdict(float); by_department = defaultdict(lambda: defaultdict(float)); by_employee = defaultdict(lambda: defaultdict(float))
-        month_cursor = start.replace(day=1); months = []
-        while month_cursor <= end:
-            months.append(month_cursor); month_cursor += relativedelta(months=1)
-        monthly = {month: defaultdict(int) for month in months}
-        for leave in leaves:
-            state = status(leave); duration = leave.number_of_days or 0
-            counts[state] += 1; days[state] += duration
-            by_type[leave.holiday_status_id] += duration
-            by_department[leave.employee_id.department_id][state] += 1
-            by_department[leave.employee_id.department_id]["days"] += duration
-            by_employee[leave.employee_id][state] += duration
-            by_employee[leave.employee_id][state + "_requests"] += 1
-            month = (leave.request_date_from or start).replace(day=1)
-            if month in monthly:
-                monthly[month][state] += 1
-        total = len(leaves); total_days = round(sum(leaves.mapped("number_of_days")), 2)
-        types = self.env["hr.leave.type"].with_context(active_test=False).search([("company_id", "in", [False] + self.env.companies.ids)], order="name")
-        if filters.get("leave_type_id"):
-            types = types.filtered(lambda leave_type: leave_type.id == int(filters["leave_type_id"]))
-        departments = self.env["hr.department"].search([("company_id", "in", self.env.companies.ids)], order="name")
-        palette = ["#3b82f6", "#ef4444", "#ec4899", "#14b8a6", "#f59e0b", "#10b981", "#8b5cf6", "#64748b"]
-        type_usage = []
-        category_labels = dict(self.env["hr.leave.type"]._fields["cleon_category"].selection)
-        scoped_employee_ids = set(self.env["hr.employee"].search([
-            ("active", "=", True), ("company_id", "in", self.env.companies.ids),
-            *(([("department_id", "=", int(filters["department_id"]))]) if filters.get("department_id") else []),
-        ]).ids)
-        for index, leave_type in enumerate(types):
-            type_leaves = leaves.filtered(lambda leave, selected_type=leave_type: leave.holiday_status_id == selected_type)
-            type_counts = defaultdict(int)
-            for leave in type_leaves:
-                type_counts[status(leave)] += 1
-            approved_leaves = type_leaves.filtered(lambda leave: status(leave) == "approved")
-            days_taken = round(sum(approved_leaves.mapped("number_of_days")), 2)
-            eligible_ids = set(leave_type._get_eligible_employees().ids) & scoped_employee_ids
-            type_usage.append({
-                "id": leave_type.id, "rank": 0, "name": leave_type.name,
-                "color": leave_type.cleon_color_hex or palette[index % len(palette)],
-                "category": leave_type.cleon_category or "paid",
-                "category_label": category_labels.get(leave_type.cleon_category, _("Paid")),
-                "entitlement": _("Unlimited") if leave_type.unlimited_entitlement else _("%s days") % ("%g" % leave_type.max_entitlement),
-                "employees": len(eligible_ids), "requests": len(type_leaves),
-                "approved": type_counts["approved"], "pending": type_counts["pending"],
-                "rejected": type_counts["rejected"], "cancelled": type_counts["cancelled"],
-                "days_taken": days_taken,
-                "average_days": round(days_taken / len(approved_leaves), 1) if approved_leaves else 0,
-            })
-        type_usage.sort(key=lambda row: (-row["days_taken"], row["name"]))
-        total_approved_days = sum(row["days_taken"] for row in type_usage)
-        for rank, row in enumerate(type_usage, 1):
-            row["rank"] = rank
-            row["share"] = round(row["days_taken"] * 100 / total_approved_days, 1) if total_approved_days else 0
-        type_totals = {
-            key: round(sum(row[key] for row in type_usage), 2)
-            for key in ("employees", "requests", "approved", "pending", "rejected", "cancelled", "days_taken")
+    def _filter_ids(self, filters, plural, singular=None):
+        values = filters.get(plural) or []
+        if not values and singular and filters.get(singular):
+            values = [filters[singular]]
+        if not isinstance(values, (list, tuple)):
+            values = [values]
+        result = []
+        for value in values:
+            try:
+                value = int(value)
+            except (TypeError, ValueError):
+                continue
+            if value and value not in result:
+                result.append(value)
+        return result
+
+    @api.model
+    def _scope(self, filters):
+        access = self._access()
+        employees = access["employees"]
+        dimensions = {
+            "department_ids": "department_id",
+            "location_ids": "work_location_id",
+            "unit_ids": "unit_id",
+            "employee_ids": "id",
         }
-        most_used = type_usage[0] if type_usage and type_usage[0]["days_taken"] else False
-        allocation_domain = [
-            ("state", "=", "validate"), ("employee_id.company_id", "in", self.env.companies.ids),
-            ("date_from", "<=", end), "|", ("date_to", "=", False), ("date_to", ">=", start),
-        ]
-        if filters.get("department_id"):
-            allocation_domain.append(("employee_id.department_id", "=", int(filters["department_id"])))
-        if filters.get("leave_type_id"):
-            allocation_domain.append(("holiday_status_id", "=", int(filters["leave_type_id"])))
-        allocated_days = round(sum(self.env["hr.leave.allocation"].search(allocation_domain).mapped("number_of_days")), 2)
-        used_days = round(days["approved"], 2); pending_days = round(days["pending"], 2)
-        remaining_days = round(allocated_days - used_days, 2)
-        balance_values = {"allocated": allocated_days, "used": used_days, "pending": pending_days, "remaining": remaining_days}
-        balance_rows = []
-        for key, label, color in (("allocated", _("Total Allocated"), "#172033"), ("used", _("Used"), "#3b82f6"), ("pending", _("Pending"), "#f59e0b"), ("remaining", _("Remaining"), "#10b981")):
-            value = balance_values[key]
-            balance_rows.append({"key": key, "label": label, "days": value, "percentage": round(value * 100 / allocated_days, 1) if allocated_days else 0, "color": color})
+        for key, field_name in dimensions.items():
+            singular = {"department_ids": "department_id", "location_ids": "location_id", "unit_ids": "unit_id", "employee_ids": "employee_id"}[key]
+            selected = set(self._filter_ids(filters, key, singular))
+            if selected:
+                employees = employees.filtered(lambda employee, field_name=field_name, selected=selected: (
+                    employee.id if field_name == "id" else employee[field_name].id
+                ) in selected)
+        return access, employees
+
+    @api.model
+    def _status(self, leave):
+        if leave.is_cancelled:
+            return "cancelled"
+        if leave.changes_requested:
+            return "changes_requested"
         return {
-            "period": {"start": fields.Date.to_string(start), "end": fields.Date.to_string(end)},
-            "kpis": {"total": total, "approved": counts["approved"], "pending": counts["pending"], "total_days": total_days, "approval_rate": round(counts["approved"] * 100 / total, 1) if total else 0, "average_days": round(total_days / total, 1) if total else 0},
-            "status": {key: counts[key] for key in ("approved", "pending", "rejected", "cancelled")},
-            "by_type": [{"id": leave_type.id, "name": leave_type.name, "days": round(by_type[leave_type], 2), "color": leave_type.cleon_color_hex or palette[index % len(palette)]} for index, leave_type in enumerate(types) if by_type[leave_type]],
-            "monthly": {"labels": [month.strftime("%b %Y") for month in months], **{key: [monthly[month][key] for month in months] for key in ("approved", "pending", "rejected")}},
-            "leave_type_summary": [{"name": leave_type.name, "requests": len(leaves.filtered(lambda leave, lt=leave_type: leave.holiday_status_id == lt)), "days": round(by_type[leave_type], 2), "color": leave_type.cleon_color_hex or palette[index % len(palette)]} for index, leave_type in enumerate(types) if by_type[leave_type]],
-            "type_usage": type_usage, "type_totals": type_totals,
-            "type_kpis": {"active_types": len(types.filtered("active")), "total_requests": len(leaves), "days_taken": round(total_approved_days, 2), "most_used_name": most_used["name"] if most_used else _("None"), "most_used_days": most_used["days_taken"] if most_used else 0, "most_used_employees": most_used["employees"] if most_used else 0},
-            "department_summary": [{"id": department.id, "name": department.name, "total": int(by_department[department]["approved"] + by_department[department]["pending"] + by_department[department]["rejected"] + by_department[department]["cancelled"]), "days": round(by_department[department]["days"], 2), "average_days": round(by_department[department]["days"] / (by_department[department]["approved"] + by_department[department]["pending"] + by_department[department]["rejected"] + by_department[department]["cancelled"]), 1) if (by_department[department]["approved"] + by_department[department]["pending"] + by_department[department]["rejected"] + by_department[department]["cancelled"]) else 0, "approved": int(by_department[department]["approved"]), "pending": int(by_department[department]["pending"]), "rejected": int(by_department[department]["rejected"])} for department in departments if by_department[department]],
-            "balance": {**balance_values, "utilisation": round(used_days * 100 / allocated_days, 1) if allocated_days else 0, "rows": balance_rows},
-            "employee_summary": self._employee_summary_rows(by_employee),
-            "departments": [{"id": department.id, "name": department.name} for department in departments],
-            "leave_types": [{"id": leave_type.id, "name": leave_type.name} for leave_type in types],
+            "validate": "approved", "confirm": "pending", "validate1": "pending",
+            "refuse": "rejected", "draft": "draft",
+        }.get(leave.state, leave.state)
+
+    @api.model
+    def _base_data(self, filters):
+        filters = filters or {}
+        access, employees = self._scope(filters)
+        start, end = self._date_range(
+            filters.get("date_range", "this_year"), filters.get("start_date"), filters.get("end_date")
+        )
+        type_ids = self._filter_ids(filters, "leave_type_ids", "leave_type_id")
+        leave_domain = [
+            ("employee_id", "in", employees.ids), ("request_date_from", "<=", end),
+            ("request_date_to", ">=", start), ("state", "!=", "draft"),
+        ]
+        submitted_domain = [
+            ("employee_id", "in", employees.ids),
+            ("create_date", ">=", datetime.combine(start, time.min)),
+            ("create_date", "<=", datetime.combine(end, time.max)),
+            ("state", "!=", "draft"),
+        ]
+        if type_ids:
+            leave_domain.append(("holiday_status_id", "in", type_ids))
+            submitted_domain.append(("holiday_status_id", "in", type_ids))
+        Leave = self.env["hr.leave"].sudo()
+        leave_types = self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
+            ("company_id", "in", [False, self.env.company.id]),
+            *(([("id", "in", type_ids)]) if type_ids else []),
+        ], order="sequence, name")
+        return {
+            "filters": filters, "access": access, "employees": employees,
+            "start": start, "end": end, "types": leave_types,
+            "leaves": Leave.search(leave_domain, order="request_date_from, id"),
+            "submitted": Leave.search(submitted_domain, order="create_date, id"),
         }
 
     @api.model
-    def _employee_summary_rows(self, by_employee):
-        rows = []
-        for employee, values in by_employee.items():
-            approved_days = round(values["approved"], 2)
-            approved_requests = int(values["approved_requests"])
-            if not approved_days:
-                continue
-            rows.append({
+    def _options(self, scoped_employees, leave_types):
+        def rows(records):
+            return [{"id": record.id, "name": record.name} for record in records if record]
+        return {
+            "departments": rows(scoped_employees.mapped("department_id").sorted("name")),
+            "locations": rows(scoped_employees.mapped("work_location_id").sorted("name")),
+            "units": rows(scoped_employees.mapped("unit_id").sorted("name")),
+            "employees": [{
                 "id": employee.id, "name": employee.name,
-                "code": employee.employee_number or "",
-                "employee_number": employee.employee_number or "",
-                "identification_id": self._employee_identification(employee),
                 "department": employee.department_id.name or _("No Department"),
-                "avatar_url": "/web/image/hr.employee/%s/image_128" % employee.id,
-                "total_days": approved_days, "requests": approved_requests,
-                "average_days": round(approved_days / approved_requests, 1) if approved_requests else 0,
+            } for employee in scoped_employees.sorted("name")],
+            "leave_types": [{
+                "id": leave_type.id, "name": leave_type.name,
+                "bradford_count_mode": leave_type.bradford_count_mode,
+            } for leave_type in leave_types],
+        }
+
+    @api.model
+    def _utilisation(self, data):
+        components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            data["employees"].ids, data["types"].ids,
+        )
+        employee_map = {employee.id: employee for employee in data["employees"]}
+        type_map = {leave_type.id: leave_type for leave_type in data["types"]}
+        employee_totals = defaultdict(lambda: defaultdict(float))
+        type_totals = defaultdict(lambda: defaultdict(float))
+        for (employee_id, type_id), values in components.items():
+            for key in ("total_entitlement", "used", "pending", "available"):
+                employee_totals[employee_id][key] += values.get(key, 0.0)
+                type_totals[type_id][key] += values.get(key, 0.0)
+        def row(record, values):
+            allocated, used = values["total_entitlement"], values["used"]
+            return {
+                "id": record.id, "name": record.name,
+                "allocated": round(allocated, 2), "used": round(used, 2),
+                "pending": round(values["pending"], 2), "available": round(values["available"], 2),
+                "utilisation": round(used * 100 / allocated, 1) if allocated else 0,
+            }
+        by_type = [row(type_map[key], values) for key, values in type_totals.items() if key in type_map]
+        by_employee = [
+            {**row(employee_map[key], values), "department": employee_map[key].department_id.name or _("No Department")}
+            for key, values in employee_totals.items() if key in employee_map
+        ]
+        by_type.sort(key=lambda item: (-item["utilisation"], item["name"]))
+        by_employee.sort(key=lambda item: (-item["utilisation"], item["name"]))
+        return {"by_type": by_type, "by_employee": by_employee}
+
+    @api.model
+    def _balances(self, data):
+        components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            data["employees"].ids, data["types"].ids,
+        )
+        employee_map = {employee.id: employee for employee in data["employees"]}
+        type_map = {leave_type.id: leave_type for leave_type in data["types"]}
+        rows = []
+        totals = defaultdict(float)
+        for (employee_id, type_id), values in components.items():
+            if employee_id not in employee_map or type_id not in type_map:
+                continue
+            row = {
+                "employee_id": employee_id, "employee": employee_map[employee_id].name,
+                "department": employee_map[employee_id].department_id.name or _("No Department"),
+                "leave_type_id": type_id, "leave_type": type_map[type_id].name,
+                "available": values.get("available", 0.0), "used": values.get("used", 0.0),
+                "pending": values.get("pending", 0.0), "carried_forward": values.get("carried_forward", 0.0),
+                "expiring": values.get("expiring", 0.0),
+                "expiry_date": fields.Date.to_string(values.get("expiry_date")) if values.get("expiry_date") else "",
+            }
+            rows.append(row)
+            for key in ("available", "used", "pending", "carried_forward", "expiring"):
+                totals[key] += row[key]
+        rows.sort(key=lambda item: (item["employee"], item["leave_type"]))
+        return {"rows": rows, "totals": {key: round(value, 2) for key, value in totals.items()}}
+
+    @api.model
+    def _request_volume(self, data):
+        counts = defaultdict(int)
+        month = data["start"].replace(day=1)
+        months = []
+        while month <= data["end"]:
+            months.append(month)
+            month += relativedelta(months=1)
+        monthly = {value: defaultdict(int) for value in months}
+        for leave in data["submitted"]:
+            status = self._status(leave)
+            counts[status] += 1
+            bucket = leave.create_date.date().replace(day=1)
+            if bucket in monthly:
+                monthly[bucket][status] += 1
+        keys = ("approved", "pending", "rejected", "cancelled", "changes_requested")
+        rows = [{"month": value.strftime("%b %Y"), **{key: monthly[value][key] for key in keys}} for value in months]
+        for row in rows:
+            row["submitted"] = sum(row[key] for key in keys)
+        current_total = len(data["submitted"])
+        previous_start = data["start"] - (data["end"] - data["start"] + timedelta(days=1))
+        previous_end = data["start"] - timedelta(days=1)
+        previous_domain = [
+            ("employee_id", "in", data["employees"].ids),
+            ("create_date", ">=", datetime.combine(previous_start, time.min)),
+            ("create_date", "<=", datetime.combine(previous_end, time.max)),
+            ("state", "!=", "draft"),
+        ]
+        type_ids = self._filter_ids(data["filters"], "leave_type_ids", "leave_type_id")
+        if type_ids:
+            previous_domain.append(("holiday_status_id", "in", type_ids))
+        previous_total = self.env["hr.leave"].sudo().search_count(previous_domain)
+        comparison = 0 if current_total == previous_total else (100 if not previous_total else round((current_total - previous_total) * 100 / previous_total, 1))
+        return {
+            "counts": {key: counts[key] for key in keys},
+            "total": current_total, "previous_total": previous_total, "change_percent": comparison, "monthly": rows,
+        }
+
+    @api.model
+    def _turnaround(self, data):
+        leaves = data["submitted"]
+        logs = self.env["hr.leave.audit.log"].sudo().search([
+            ("leave_id", "in", leaves.ids),
+            ("action", "in", ("approve", "first_approval", "final_approval", "reject")),
+        ], order="leave_id, occurred_at, id")
+        by_leave = defaultdict(list)
+        for log in logs:
+            by_leave[log.leave_id.id].append(log)
+        by_approver = defaultdict(list)
+        by_type = defaultdict(list)
+        samples = []
+        for leave in leaves:
+            leave_logs = by_leave.get(leave.id, [])
+            if not leave_logs or not leave.create_date:
+                continue
+            previous = leave.create_date
+            for log in leave_logs:
+                step_hours = max((log.occurred_at - previous).total_seconds() / 3600, 0)
+                approver = log.actor_label or log.actor_id.name or _("System")
+                by_approver[approver].append(step_hours)
+                previous = log.occurred_at
+            total_hours = max((leave_logs[-1].occurred_at - leave.create_date).total_seconds() / 3600, 0)
+            by_type[leave.holiday_status_id.name].append(total_hours)
+            samples.append(total_hours)
+        def grouped(mapping):
+            rows = [{"name": name, "decisions": len(values), "average_hours": round(sum(values) / len(values), 1), "longest_hours": round(max(values), 1)} for name, values in mapping.items()]
+            return sorted(rows, key=lambda item: (-item["average_hours"], item["name"]))
+        return {
+            "average_hours": round(sum(samples) / len(samples), 1) if samples else 0,
+            "longest_hours": round(max(samples), 1) if samples else 0,
+            "decisions": len(samples), "by_approver": grouped(by_approver), "by_type": grouped(by_type),
+        }
+
+    @api.model
+    def _trends(self, data):
+        approved = data["leaves"].filtered(lambda leave: self._status(leave) == "approved")
+        month = data["start"].replace(day=1)
+        buckets = []
+        while month <= data["end"]:
+            buckets.append(month)
+            month += relativedelta(months=1)
+        values = {bucket: {"requests": 0, "days": 0.0} for bucket in buckets}
+        for leave in approved:
+            clipped_start = max(leave.request_date_from, data["start"])
+            clipped_end = min(leave.request_date_to, data["end"])
+            touched = set()
+            total_span = max((leave.request_date_to - leave.request_date_from).days + 1, 1)
+            day = clipped_start
+            while day <= clipped_end:
+                bucket = day.replace(day=1)
+                if bucket in values:
+                    values[bucket]["days"] += (leave.number_of_days or 0.0) / total_span
+                    touched.add(bucket)
+                day += timedelta(days=1)
+            for bucket in touched:
+                values[bucket]["requests"] += 1
+        holiday_dates = set()
+        calendars = data["employees"].mapped("resource_calendar_id")
+        holidays = self.env["resource.calendar.leaves"].sudo().search([
+            ("calendar_id", "in", calendars.ids),
+            ("date_from", "<=", datetime.combine(data["end"], time.max)),
+            ("date_to", ">=", datetime.combine(data["start"], time.min)),
+        ]) if calendars else self.env["resource.calendar.leaves"]
+        for holiday in holidays:
+            holiday_dates.add(holiday.date_from.date())
+        adjacent = sum(1 for leave in approved if any(abs((leave.request_date_from - day).days) <= 1 or abs((leave.request_date_to - day).days) <= 1 for day in holiday_dates))
+        return {
+            "monthly": [{"month": bucket.strftime("%b %Y"), "requests": values[bucket]["requests"], "days": round(values[bucket]["days"], 2)} for bucket in buckets],
+            "holiday_adjacent_requests": adjacent,
+        }
+
+    @api.model
+    def _frequency(self, data):
+        result = {}
+        for key, field_name, empty_label in (
+            ("department", "department_id", _("No Department")),
+            ("location", "work_location_id", _("No Location")),
+            ("unit", "unit_id", _("No Unit")),
+        ):
+            groups = {}
+            for employee in data["employees"]:
+                record = employee[field_name]
+                group_key = record.id or 0
+                groups.setdefault(group_key, {"id": group_key, "name": record.name if record else empty_label, "headcount": 0, "requests": 0, "days": 0.0})
+                groups[group_key]["headcount"] += 1
+            for leave in data["leaves"]:
+                record = leave.employee_id[field_name]
+                row = groups.get(record.id or 0)
+                if not row:
+                    continue
+                row["requests"] += 1
+                if self._status(leave) == "approved":
+                    row["days"] += leave.number_of_days or 0.0
+            rows = list(groups.values())
+            for row in rows:
+                row["days"] = round(row["days"], 2)
+                row["requests_per_employee"] = round(row["requests"] / row["headcount"], 2) if row["headcount"] else 0
+            rows.sort(key=lambda item: (-item["requests"], -item["requests_per_employee"], item["name"]))
+            for rank, row in enumerate(rows, 1):
+                row["rank"] = rank
+            result[key] = rows
+        return result
+
+    @api.model
+    def _policy_usage(self, data):
+        rows = []
+        for leave_type in data["types"]:
+            type_leaves = data["leaves"].filtered(lambda leave, leave_type=leave_type: leave.holiday_status_id == leave_type)
+            eligible = leave_type._get_eligible_employees() & data["employees"]
+            notice_values = [max((leave.request_date_from - leave.create_date.date()).days, 0) for leave in type_leaves if leave.create_date and leave.request_date_from]
+            longest = max(type_leaves.mapped("number_of_days") or [0])
+            notice_limit = leave_type.minimum_notice_days
+            consecutive_limit = leave_type.max_consecutive_days
+            average_notice = sum(notice_values) / len(notice_values) if notice_values else 0
+            rows.append({
+                "id": leave_type.id, "name": leave_type.name,
+                "employees": len(eligible), "requests": len(type_leaves),
+                "average_notice": round(average_notice, 1), "notice_limit": notice_limit,
+                "notice_usage": round(notice_limit * 100 / average_notice, 1) if notice_limit and average_notice else 0,
+                "longest_request": round(longest, 1), "consecutive_limit": consecutive_limit,
+                "consecutive_usage": round(longest * 100 / consecutive_limit, 1) if consecutive_limit else 0,
+                "blackout_periods": self.env["hr.leave.blackout.period"].sudo().search_count([
+                    ("company_id", "=", self.env.company.id), ("active", "=", True),
+                    "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", leave_type.id),
+                ]),
             })
-        rows.sort(key=lambda row: (-row["total_days"], -row["requests"], row["name"]))
-        top_rows = rows[:10]
-        maximum = top_rows[0]["total_days"] if top_rows else 0
-        for rank, row in enumerate(top_rows, 1):
-            row["rank"] = rank
-            ratio = row["total_days"] / maximum if maximum else 0
-            row["volume"] = "high" if ratio >= .67 else ("medium" if ratio >= .34 else "low")
-        return top_rows
+        rows.sort(key=lambda item: (-item["requests"], item["name"]))
+        return rows
+
+    @api.model
+    def _band(self, company, score):
+        if score >= company.leave_bradford_critical:
+            return "critical"
+        if score >= company.leave_bradford_serious:
+            return "serious"
+        if score >= company.leave_bradford_concern:
+            return "concern"
+        if score >= company.leave_bradford_caution:
+            return "caution"
+        return "low"
+
+    @api.model
+    def _employee_risk(self, employee, company, window_end=None):
+        window_end = fields.Date.to_date(window_end) if window_end else fields.Date.context_today(self)
+        window_start = window_end - timedelta(weeks=company.leave_bradford_window_weeks) + timedelta(days=1)
+        leaves = self.env["hr.leave"].sudo().search([
+            ("employee_id", "=", employee.id), ("state", "=", "validate"),
+            ("is_cancelled", "=", False), ("bradford_excluded", "=", False),
+            ("request_date_from", "<=", window_end), ("request_date_to", ">=", window_start),
+        ], order="request_date_from, request_date_to, id")
+        intervals = []
+        for leave in leaves:
+            mode = leave.holiday_status_id._effective_bradford_mode()
+            if mode == "exclude":
+                continue
+            notice = (leave.request_date_from - leave.create_date.date()).days if leave.create_date else 0
+            if mode == "short_notice" and notice >= leave.holiday_status_id.minimum_notice_days:
+                continue
+            start = max(leave.request_date_from, window_start)
+            end = min(leave.request_date_to, window_end)
+            intervals.append((start, end))
+        spells = []
+        for start, end in intervals:
+            if spells and self._same_continuous_spell(employee, spells[-1][1], start):
+                spells[-1] = (spells[-1][0], max(spells[-1][1], end))
+            else:
+                spells.append((start, end))
+        spells = [spell for spell in spells if (spell[1] - spell[0]).days + 1 >= company.leave_bradford_min_spell_days]
+        days = sum((end - start).days + 1 for start, end in spells)
+        score = len(spells) ** 2 * days
+        return {
+            "employee_id": employee.id, "employee": employee.name,
+            "department": employee.department_id.name or _("No Department"),
+            "location": employee.work_location_id.name or _("No Location"),
+            "score": score, "band": self._band(company, score),
+            "spells": len(spells), "days": days,
+            "window_start": fields.Date.to_string(window_start), "window_end": fields.Date.to_string(window_end),
+        }
+
+    @api.model
+    def _same_continuous_spell(self, employee, previous_end, next_start):
+        if next_start <= previous_end + timedelta(days=1):
+            return True
+        working_weekdays = set(employee.resource_calendar_id.attendance_ids.mapped("dayofweek"))
+        day = previous_end + timedelta(days=1)
+        while day < next_start:
+            if str(day.weekday()) in working_weekdays:
+                return False
+            day += timedelta(days=1)
+        return True
+
+    @api.model
+    def _absence_risk(self, data):
+        access = data["access"]
+        company = self.env.company
+        settings = {
+            "enabled": company.leave_bradford_enabled,
+            "window_weeks": company.leave_bradford_window_weeks,
+            "minimum_spell_days": company.leave_bradford_min_spell_days,
+            "thresholds": {
+                "caution": company.leave_bradford_caution, "concern": company.leave_bradford_concern,
+                "serious": company.leave_bradford_serious, "critical": company.leave_bradford_critical,
+            },
+            "leave_type_modes": [{
+                "id": leave_type.id, "name": leave_type.name,
+                "mode": leave_type._effective_bradford_mode(),
+                "locked": leave_type._bradford_is_protected(leave_type._bradford_label(leave_type.name, leave_type.leave_code)),
+            } for leave_type in self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
+                ("company_id", "in", [False, company.id]),
+            ], order="sequence, name")],
+        }
+        if not company.leave_bradford_enabled:
+            return {"mode": "disabled", "rows": [], "bands": {}, "settings": settings}
+        Risk = self.env["hr.leave.absence.risk"].sudo()
+        snapshots = Risk.search([("employee_id", "in", data["employees"].ids)])
+        snapshot_by_employee = {snapshot.employee_id.id: snapshot for snapshot in snapshots}
+        missing = data["employees"].filtered(lambda employee: employee.id not in snapshot_by_employee)
+        for employee_company in missing.mapped("company_id"):
+            company_employees = missing.filtered(lambda employee, employee_company=employee_company: employee.company_id == employee_company)
+            self._refresh_risk_snapshots(employee_company, company_employees, notify_crossing=False)
+        if missing:
+            snapshots = Risk.search([("employee_id", "in", data["employees"].ids)])
+            snapshot_by_employee = {snapshot.employee_id.id: snapshot for snapshot in snapshots}
+        calculated = []
+        for employee in data["employees"]:
+            snapshot = snapshot_by_employee.get(employee.id)
+            if not snapshot:
+                continue
+            calculated.append({
+                "employee_id": employee.id, "employee": employee.name,
+                "department": employee.department_id.name or _("No Department"),
+                "location": employee.work_location_id.name or _("No Location"),
+                "score": snapshot.score, "band": snapshot.band,
+                "spells": snapshot.spell_count, "days": snapshot.day_count,
+                "window_start": fields.Date.to_string(snapshot.window_start),
+                "window_end": fields.Date.to_string(snapshot.window_end),
+            })
+        band_counts = defaultdict(int)
+        for row in calculated:
+            band_counts[row["band"]] += 1
+        if access["risk_detail"]:
+            rows = sorted(calculated, key=lambda item: (-item["score"], item["employee"]))
+            mode = "detail"
+        elif access["scope"] == "team":
+            rows = [{
+                "employee_id": row["employee_id"], "employee": row["employee"],
+                "department": row["department"], "flag": "watch" if row["band"] != "low" else "low",
+            } for row in calculated]
+            mode = "team_flags"
+            band_counts = {}
+        else:
+            rows = []
+            mode = "aggregate"
+        if not access["risk_configure"]:
+            settings = {}
+        return {"mode": mode, "rows": rows, "bands": dict(band_counts), "settings": settings}
+
+    @api.model
+    def get_report_data(self, filters=None, report_key="request_volume"):
+        if report_key not in self.REPORT_KEYS:
+            raise ValidationError(_("Unsupported leave report."))
+        data = self._base_data(filters or {})
+        all_types = self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
+            ("company_id", "in", [False, self.env.company.id])
+        ], order="sequence, name")
+        builders = {
+            "utilisation": lambda: self._utilisation(data),
+            "balances": lambda: self._balances(data),
+            "request_volume": lambda: self._request_volume(data),
+            "turnaround": lambda: self._turnaround(data),
+            "trends": lambda: self._trends(data),
+            "frequency": lambda: self._frequency(data),
+            "policy_usage": lambda: self._policy_usage(data),
+            "absence_risk": lambda: self._absence_risk(data),
+        }
+        metric_basis = {
+            "utilisation": _("Current entitlement and balance snapshot"),
+            "balances": _("Current balances as of today"),
+            "absence_risk": _("Current rolling Bradford window ending today"),
+        }.get(report_key, "")
+        options = self._options(data["access"]["employees"], all_types)
+        if not data["access"]["risk_configure"]:
+            for leave_type in options["leave_types"]:
+                leave_type.pop("bradford_count_mode", None)
+        return {
+            "meta": {
+                "scope": data["access"]["scope"],
+                "scope_label": _("My Team") if data["access"]["scope"] == "team" else _("Authorised Organisation"),
+                "can_view_risk_details": data["access"]["risk_detail"],
+                "can_configure_risk": data["access"]["risk_configure"],
+                "period": {"start": fields.Date.to_string(data["start"]), "end": fields.Date.to_string(data["end"])},
+                "generated_at": fields.Datetime.to_string(fields.Datetime.now()),
+                "employee_count": len(data["employees"]),
+                "metric_basis": metric_basis,
+            },
+            "options": options,
+            "reports": {report_key: builders[report_key]()},
+        }
+
+    @api.model
+    def get_report_drilldown(self, dimension, dimension_id, filters=None):
+        if dimension not in ("department", "location", "unit"):
+            raise ValidationError(_("Unsupported report drill-down."))
+        data = self._base_data(filters or {})
+        field_name = {"department": "department_id", "location": "work_location_id", "unit": "unit_id"}[dimension]
+        dimension_id = int(dimension_id or 0)
+        leaves = data["leaves"].filtered(lambda leave: (leave.employee_id[field_name].id or 0) == dimension_id)
+        return {"rows": [{
+            "id": leave.id, "reference": leave.request_ref or "LR-%06d" % leave.id,
+            "employee": leave.employee_id.name, "leave_type": leave.holiday_status_id.name,
+            "date_from": fields.Date.to_string(leave.request_date_from),
+            "date_to": fields.Date.to_string(leave.request_date_to),
+            "days": round(leave.number_of_days or 0.0, 2), "status": self._status(leave),
+        } for leave in leaves]}
+
+    @api.model
+    def save_absence_risk_settings(self, values):
+        access = self._access()
+        if not access["risk_configure"]:
+            raise AccessError(_("Only an HR Administrator or HR Director can configure absence-risk scoring."))
+        values = values or {}
+        thresholds = values.get("thresholds") or {}
+        numbers = [int(thresholds.get(key, 0)) for key in ("caution", "concern", "serious", "critical")]
+        window = int(values.get("window_weeks", 52))
+        minimum = int(values.get("minimum_spell_days", 1))
+        if window < 1 or minimum < 1 or any(value < 1 for value in numbers) or numbers != sorted(numbers) or len(set(numbers)) != 4:
+            raise ValidationError(_("Use a positive window/minimum spell and four strictly increasing score thresholds."))
+        company = self.env.company
+        before = {
+            "enabled": company.leave_bradford_enabled, "window_weeks": company.leave_bradford_window_weeks,
+            "minimum_spell_days": company.leave_bradford_min_spell_days,
+            "thresholds": [company.leave_bradford_caution, company.leave_bradford_concern, company.leave_bradford_serious, company.leave_bradford_critical],
+        }
+        company.sudo().write({
+            "leave_bradford_enabled": bool(values.get("enabled")),
+            "leave_bradford_window_weeks": window,
+            "leave_bradford_min_spell_days": minimum,
+            "leave_bradford_caution": numbers[0], "leave_bradford_concern": numbers[1],
+            "leave_bradford_serious": numbers[2], "leave_bradford_critical": numbers[3],
+        })
+        leave_type_modes = values.get("leave_type_modes") or []
+        allowed_modes = {"exclude", "short_notice", "all"}
+        allowed_types = self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
+            ("company_id", "in", [False, company.id]),
+        ])
+        allowed_by_id = {leave_type.id: leave_type for leave_type in allowed_types}
+        for item in leave_type_modes:
+            leave_type = allowed_by_id.get(int(item.get("id") or 0))
+            mode = item.get("mode")
+            if not leave_type or mode not in allowed_modes:
+                raise ValidationError(_("Invalid Leave Type absence-risk treatment."))
+            if leave_type._bradford_is_protected(leave_type._bradford_label(leave_type.name, leave_type.leave_code)) and mode != "exclude":
+                raise ValidationError(_("Annual and parental Leave Types are always excluded from Bradford scoring."))
+            leave_type.with_context(skip_bradford_refresh=True).write({
+                "bradford_count_mode": mode, "bradford_treatment_configured": True,
+            })
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "risk_configuration_change", "company_id": company.id,
+            "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "actor_role": self._risk_actor_role(), "entity_type": "absence_risk",
+            "entity_name": _("Bradford Factor configuration"), "before_values": before,
+            "after_values": values, "note": _("Absence-risk settings updated."),
+        })
+        self._refresh_risk_snapshots(company, notify_crossing=False)
+        return True
+
+    @api.model
+    def set_bradford_exclusion(self, leave_id, excluded, reason=""):
+        access = self._access()
+        if not access["risk_detail"]:
+            raise AccessError(_("Only an HR Administrator or HR Director can change absence-risk exclusions."))
+        leave = self.env["hr.leave"].sudo().browse(int(leave_id)).exists()
+        if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
+            raise AccessError(_("This leave record is outside your authorised companies."))
+        reason = (reason or "").strip()
+        if excluded and len(reason) < 3:
+            raise ValidationError(_("An exclusion reason is required."))
+        before = {"excluded": leave.bradford_excluded, "reason": leave.bradford_exclusion_reason or ""}
+        leave.sudo().write({"bradford_excluded": bool(excluded), "bradford_exclusion_reason": reason if excluded else False})
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "risk_exclusion_change", "company_id": leave.employee_id.company_id.id,
+            "leave_id": leave.id, "employee_id": leave.employee_id.id,
+            "leave_type_id": leave.holiday_status_id.id,
+            "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "actor_role": self._risk_actor_role(), "entity_type": "absence_risk",
+            "entity_name": leave.employee_id.name, "before_values": before,
+            "after_values": {"excluded": bool(excluded), "reason": reason if excluded else ""},
+            "note": reason or _("Absence-risk exclusion removed."),
+        })
+        return True
+
+    @api.model
+    def _refresh_risk_snapshots(self, company, employees=None, notify_crossing=True):
+        employees = employees or self.env["hr.employee"].sudo().search([
+            ("company_id", "=", company.id), ("active", "=", True),
+        ])
+        Risk = self.env["hr.leave.absence.risk"].sudo()
+        band_order = {"low": 0, "caution": 1, "concern": 2, "serious": 3, "critical": 4}
+        for employee in employees:
+            result = self._employee_risk(employee, company)
+            current = Risk.search([("company_id", "=", company.id), ("employee_id", "=", employee.id)], limit=1)
+            old_band = current.band if current else "low"
+            values = {
+                "company_id": company.id, "employee_id": employee.id,
+                "score": result["score"], "band": result["band"],
+                "spell_count": result["spells"], "day_count": result["days"],
+                "window_start": result["window_start"], "window_end": result["window_end"],
+                "calculated_at": fields.Datetime.now(),
+            }
+            if current:
+                current.write(values)
+            else:
+                Risk.create(values)
+            if notify_crossing and band_order[result["band"]] > band_order.get(old_band, 0):
+                self.env["hr.leave.audit.log"].sudo().create({
+                    "action": "risk_band_crossing", "company_id": company.id,
+                    "employee_id": employee.id, "entity_type": "absence_risk",
+                    "entity_name": employee.name, "before_values": {"band": old_band},
+                    "after_values": {"band": result["band"], "score": result["score"]},
+                    "note": _("Absence risk moved from %(old)s to %(new)s.", old=old_band.title(), new=result["band"].title()),
+                    "is_system": True,
+                })
+                self._notify_risk_band_crossing(company, employee, old_band, result)
+        return True
+
+    @api.model
+    def _notify_risk_band_crossing(self, company, employee, old_band, result):
+        groups = (
+            self.env.ref("hr_leave_dashboard.group_leave_administrator", raise_if_not_found=False)
+            | self.env.ref("hr_leave_dashboard.group_role_hr_director", raise_if_not_found=False)
+        )
+        users = groups.mapped("users").filtered(lambda user: company in user.company_ids and user.active)
+        if users:
+            users.mapped("partner_id").message_notify(
+                subject=_("Absence risk band changed"),
+                body=_(
+                    "%(employee)s moved from %(old)s to %(new)s (score %(score)s). Review the attendance pattern; no automatic action has been taken.",
+                    employee=employee.name, old=old_band.title(), new=result["band"].title(), score=result["score"],
+                ),
+            )
+
+    @api.model
+    def _export_rows(self, report_key, payload, filters):
+        reports = payload["reports"]
+        if report_key == "utilisation":
+            return [["Leave Type", "Allocated", "Used", "Pending", "Available", "Utilisation %"]] + [[row["name"], row["allocated"], row["used"], row["pending"], row["available"], row["utilisation"]] for row in reports["utilisation"]["by_type"]]
+        if report_key == "balances":
+            return [["Employee", "Department", "Leave Type", "Available", "Used", "Pending", "Carried Forward", "Expiring", "Expiry Date"]] + [[row[key] for key in ("employee", "department", "leave_type", "available", "used", "pending", "carried_forward", "expiring", "expiry_date")] for row in reports["balances"]["rows"]]
+        if report_key == "request_volume":
+            return [["Month", "Submitted", "Approved", "Pending", "Rejected", "Cancelled"]] + [[row[key] for key in ("month", "submitted", "approved", "pending", "rejected", "cancelled")] for row in reports["request_volume"]["monthly"]]
+        if report_key == "turnaround":
+            return [["Approver", "Decisions", "Average Hours", "Longest Hours"]] + [[row[key] for key in ("name", "decisions", "average_hours", "longest_hours")] for row in reports["turnaround"]["by_approver"]]
+        if report_key == "trends":
+            return [["Month", "Approved Requests", "Approved Days"]] + [[row[key] for key in ("month", "requests", "days")] for row in reports["trends"]["monthly"]]
+        if report_key == "frequency":
+            dimension = (filters or {}).get("frequency_dimension", "department")
+            return [[dimension.title(), "Requests", "Total Days", "Headcount", "Requests per Employee"]] + [[row[key] for key in ("name", "requests", "days", "headcount", "requests_per_employee")] for row in reports["frequency"].get(dimension, [])]
+        if report_key == "policy_usage":
+            return [["Policy / Leave Type", "Employees", "Requests", "Average Notice", "Notice Limit", "Longest Request", "Consecutive Limit", "Blackout Rules"]] + [[row[key] for key in ("name", "employees", "requests", "average_notice", "notice_limit", "longest_request", "consecutive_limit", "blackout_periods")] for row in reports["policy_usage"]]
+        risk = reports["absence_risk"]
+        if risk["mode"] == "detail":
+            return [["Employee", "Department", "Location", "Score", "Band", "Spells", "Days", "Window Start", "Window End"]] + [[row[key] for key in ("employee", "department", "location", "score", "band", "spells", "days", "window_start", "window_end")] for row in risk["rows"]]
+        if risk["mode"] == "team_flags":
+            return [["Employee", "Department", "Attendance Pattern"]] + [[row["employee"], row["department"], _("Attendance pattern under review") if row["flag"] == "watch" else _("Low")] for row in risk["rows"]]
+        if risk["mode"] == "aggregate":
+            return [["Band", "Employees"]] + [[band.title(), risk["bands"].get(band, 0)] for band in ("low", "caution", "concern", "serious", "critical")]
+        return [["Absence Risk", "Disabled"]]
+
+    @api.model
+    def export_report(self, report_key, filters=None, file_format="csv"):
+        if report_key not in self.REPORT_KEYS or file_format not in ("csv", "xlsx", "pdf"):
+            raise ValidationError(_("Unsupported report export."))
+        payload = self.get_report_data(filters or {}, report_key)
+        rows = self._export_rows(report_key, payload, filters or {})
+        filename = "leave_%s_%s" % (report_key, fields.Date.context_today(self))
+        if file_format == "csv":
+            stream = io.StringIO()
+            writer = csv.writer(stream)
+            writer.writerows(rows)
+            content = stream.getvalue().encode("utf-8-sig")
+            mimetype, extension = "text/csv;charset=utf-8", "csv"
+        elif file_format == "xlsx":
+            import xlsxwriter
+            stream = io.BytesIO()
+            workbook = xlsxwriter.Workbook(stream, {"in_memory": True})
+            sheet = workbook.add_worksheet("Leave Report")
+            header = workbook.add_format({"bold": True, "bg_color": "#D90868", "font_color": "#FFFFFF"})
+            for row_index, row in enumerate(rows):
+                sheet.write_row(row_index, 0, row, header if row_index == 0 else None)
+            if rows:
+                sheet.autofilter(0, 0, max(len(rows) - 1, 0), len(rows[0]) - 1)
+                sheet.freeze_panes(1, 0)
+                sheet.set_column(0, len(rows[0]) - 1, 18)
+            workbook.close()
+            content = stream.getvalue()
+            mimetype, extension = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"
+        else:
+            from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, landscape
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            stream = io.BytesIO()
+            document = SimpleDocTemplate(stream, pagesize=landscape(A4), leftMargin=24, rightMargin=24, topMargin=24, bottomMargin=24)
+            styles = getSampleStyleSheet()
+            story = [Paragraph("CleonHR Leave Report — %s" % report_key.replace("_", " ").title(), styles["Title"]), Spacer(1, 12)]
+            table = Table([[str(value) for value in row] for row in rows], repeatRows=1)
+            table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#D90868")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("GRID", (0, 0), (-1, -1), .4, colors.HexColor("#D9DEE8")),
+                ("FONTSIZE", (0, 0), (-1, -1), 7),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+            ]))
+            story.append(table)
+            document.build(story)
+            content = stream.getvalue()
+            mimetype, extension = "application/pdf", "pdf"
+        if report_key == "absence_risk":
+            self.env["hr.leave.audit.log"].sudo().create({
+                "action": "risk_export", "company_id": self.env.company.id,
+                "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+                "actor_role": self._risk_actor_role(), "entity_type": "absence_risk",
+                "entity_name": _("Absence Risk export"), "note": _("Absence Risk report exported as %s.") % extension,
+            })
+        return {
+            "filename": "%s.%s" % (filename, extension), "mimetype": mimetype,
+            "data": base64.b64encode(content).decode("ascii"),
+        }

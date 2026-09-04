@@ -145,7 +145,7 @@ class HrLeave(models.Model):
             "changes_requested_comment", "changes_requested_by_id",
             "changes_requested_at", "rejection_reason", "rejection_category",
             "escalated", "escalation_note", "escalated_by_id", "escalated_at",
-            "submission_channel",
+            "submission_channel", "bradford_excluded", "bradford_exclusion_reason",
         }
         self_service_fields = policy_input_fields | {
             "notes", "name", "handover_enabled", "backup_colleague_ids",
@@ -690,6 +690,7 @@ class HrLeave(models.Model):
             "can_view_audit": can_audit,
             "can_view_operational_reports": can_operational_reports,
             "can_view_strategic_reports": can_strategic_reports,
+            "can_view_reports": can_operational_reports or can_strategic_reports or has_team_scope,
             "show_organisation_dashboard": has_team_scope or is_officer or is_admin,
             "is_system": is_system,
         }

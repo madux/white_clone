@@ -33,6 +33,10 @@ class HrLeaveAuditLog(models.Model):
         ("request_changes", "Changes Requested"),
         ("resubmitted", "Request Resubmitted"),
         ("insight_feedback", "AI Insight Feedback"),
+        ("risk_band_crossing", "Absence Risk Band Changed"),
+        ("risk_configuration_change", "Absence Risk Configuration Changed"),
+        ("risk_exclusion_change", "Absence Risk Exclusion Changed"),
+        ("risk_export", "Absence Risk Exported"),
         ("override_conflict", "Conflict Override"),
         ("edit", "Request Edited"),
         ("comment", "Comment Added"),
@@ -55,7 +59,7 @@ class HrLeaveAuditLog(models.Model):
         ("leave_request", "Leave Request"), ("leave_type", "Leave Type"),
         ("policy", "Policy"), ("balance", "Balance"),
         ("accrual_plan", "Accrual Plan"), ("eligibility_rule", "Eligibility Rule"),
-        ("system", "System"),
+        ("system", "System"), ("absence_risk", "Absence Risk"),
     ], required=True, readonly=True, index=True, default="leave_request")
     entity_name = fields.Char(readonly=True, index=True)
     entity_reference = fields.Char(readonly=True, index=True)
@@ -104,6 +108,8 @@ class HrLeaveAuditLog(models.Model):
                 vals.setdefault("module_area", "calendar"); vals.setdefault("entity_type", "system")
             elif action == "settings_change":
                 vals.setdefault("module_area", "settings"); vals.setdefault("entity_type", "system")
+            elif action in ("risk_band_crossing", "risk_configuration_change", "risk_exclusion_change", "risk_export"):
+                vals.setdefault("module_area", "requests"); vals.setdefault("entity_type", "absence_risk")
             else:
                 vals.setdefault("module_area", "requests"); vals.setdefault("entity_type", "leave_request")
             vals.setdefault("entity_name", leave.display_name if leave else (leave_type.name if leave_type else action_labels.get(action, _("System Event"))))
@@ -133,7 +139,7 @@ class HrLeaveAuditLog(models.Model):
     @api.constrains("action", "leave_id", "employee_id", "leave_type_id")
     def _check_audit_references(self):
         for log in self:
-            if log.action in ("policy_change", "balance_adjustment", "balance_allocation", "accrual_processed", "calendar_change", "settings_change", "failed"):
+            if log.action in ("policy_change", "balance_adjustment", "balance_allocation", "accrual_processed", "calendar_change", "settings_change", "risk_band_crossing", "risk_configuration_change", "risk_export", "failed"):
                 if log.action in ("balance_adjustment", "balance_allocation") and not log.leave_type_id:
                     raise ValidationError(_("Balance audit logs require a valid Leave Type reference."))
                 if log.action in ("balance_adjustment", "balance_allocation") and not log.employee_id:

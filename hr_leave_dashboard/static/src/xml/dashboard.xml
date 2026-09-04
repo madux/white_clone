@@ -453,7 +453,7 @@
                             <small>Configure</small>
                         </button>
 
-                        <button t-if="!props.access or props.access.can_view_operational_reports or props.access.can_view_strategic_reports" class="quick-action quick-orange" t-on-click="openReports">
+                        <button t-if="!props.access or props.access.can_view_reports" class="quick-action quick-orange" t-on-click="openReports">
                             <i class="fa fa-bar-chart"/>
                             <strong>Reports</strong>
                             <small>Analytics</small>

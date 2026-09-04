@@ -24,7 +24,7 @@
             <button t-on-click="openCalendar"><i class="fa fa-calendar"/><span><b>Leave Calendar</b><small>View schedules</small></span></button>
             <button t-if="state.access.can_operate" t-on-click="openBalances"><i class="fa fa-balance-scale"/><span><b>Manage Balances</b><small>Allocate and amend</small></span></button>
             <button t-if="state.access.can_configure" t-on-click="openLeaveTypes"><i class="fa fa-tags"/><span><b>Leave Configuration</b><small>Types and policies</small></span></button>
-            <button t-if="state.access.can_view_operational_reports or state.access.can_view_strategic_reports" t-on-click="openReports"><i class="fa fa-bar-chart"/><span><b>Reports</b><small>Leave analytics</small></span></button>
+            <button t-if="state.access.can_view_reports" t-on-click="openReports"><i class="fa fa-bar-chart"/><span><b>Reports</b><small>Leave analytics</small></span></button>
             <button t-if="state.access.can_view_audit" t-on-click="openAudit"><i class="fa fa-shield"/><span><b>Audit Trail</b><small>Compliance history</small></span></button>
           </section>
           <EmployeeLeaveDashboard t-key="'personal-'+state.revision" t-if="state.access.has_personal_scope" embedded="true"/>

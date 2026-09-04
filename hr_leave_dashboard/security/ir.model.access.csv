@@ -21,5 +21,7 @@ access_hr_leave_accrual_run_system,hr.leave.accrual.run system,model_hr_leave_ac
 access_hr_leave_audit_log_auditor,hr.leave.audit.log reader,model_hr_leave_audit_log,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
 access_hr_leave_balance_transaction_auditor,hr.leave.balance.transaction reader,model_hr_leave_balance_transaction,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
 access_hr_leave_accrual_run_auditor,hr.leave.accrual.run reader,model_hr_leave_accrual_run,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
+access_hr_leave_absence_risk_admin,hr.leave.absence.risk administrator,model_hr_leave_absence_risk,hr_leave_dashboard.group_leave_administrator,1,0,0,0
+access_hr_leave_absence_risk_director,hr.leave.absence.risk HR director,model_hr_leave_absence_risk,hr_leave_dashboard.group_role_hr_director,1,0,0,0
 access_hr_leave_request_auditor,hr.leave request reader,hr_holidays.model_hr_leave,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0
 access_hr_leave_allocation_auditor,hr.leave allocation reader,hr_holidays.model_hr_leave_allocation,hr_leave_dashboard.group_leave_permission_audit,1,0,0,0

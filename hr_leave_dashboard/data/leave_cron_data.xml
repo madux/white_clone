@@ -18,4 +18,14 @@
         <field name="interval_type">days</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_recalculate_leave_absence_risk" model="ir.cron">
+        <field name="name">Leave: Recalculate Bradford absence risk</field>
+        <field name="model_id" ref="model_hr_leave_absence_risk"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_recalculate()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="nextcall" eval="(DateTime.now() + relativedelta(days=1)).replace(hour=1, minute=0, second=0).strftime('%Y-%m-%d %H:%M:%S')"/>
+        <field name="active">True</field>
+    </record>
 </odoo>

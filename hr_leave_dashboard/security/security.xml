@@ -147,6 +147,12 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('hr_holidays.group_hr_holidays_manager')), (4, ref('base.group_system')), (4, ref('hr_leave_dashboard.group_leave_permission_audit'))]"/>
     </record>
+    <record id="rule_hr_leave_absence_risk_company" model="ir.rule">
+        <field name="name">Leave absence risk: allowed companies</field>
+        <field name="model_id" ref="model_hr_leave_absence_risk"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_leave_dashboard.group_leave_administrator')), (4, ref('hr_leave_dashboard.group_role_hr_director'))]"/>
+    </record>
 
     <record id="rule_leave_hr_officer_read_scope" model="ir.rule">
         <field name="name">Leave HR Officer: company records (read)</field>

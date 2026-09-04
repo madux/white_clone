@@ -1,374 +1,156 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
   <t t-name="hr_leave_dashboard.LeaveReportsPage" owl="1">
-    <div class="leaveapp o_lr_page">
+    <div class="leaveapp o_lr_page o_lra_page">
       <CalendarSidebar activeMenu="'reports'"/>
-      <main class="o_leave_dashboard o_lr_main">
-        
-        <!-- Module Header -->
-        <header class="o_lr_page_header">
+      <main class="o_leave_dashboard o_lr_main o_lra_main">
+        <header class="o_lra_header">
           <div>
-            <h2>Reports</h2>
-            <p>Generate and export leave management reports</p>
+            <p class="o_lra_eyebrow">Reporting &amp; Analytics</p>
+            <h2>Leave Reports</h2>
+            <p>Live, permission-scoped analysis of leave activity, balances, approval performance and absence patterns.</p>
           </div>
-          <div class="o_lr_header_actions"><button title="Section Tour" t-on-click="openTour"><i class="fa fa-paper-plane-o"/></button><button title="Help / Guide" t-on-click="openHelp"><i class="fa fa-question-circle-o"/></button><button title="Setup Wizard" t-on-click="openSetup"><i class="fa fa-magic"/></button></div>
+          <div class="o_lra_header_meta">
+            <span><i class="fa fa-shield"/> <t t-esc="state.data.meta.scope_label || 'Authorised scope'"/></span>
+            <small><t t-esc="state.data.meta.employee_count || 0"/> employees · refreshed <t t-esc="state.lastRefreshed || '—'"/></small>
+          </div>
         </header>
 
-        <section class="o_lr_panel">
-          <!-- Section Title & Actions Header -->
-          <div class="o_lr_section_header">
-            <div>
-              <h3>Leave Reports</h3>
-              <p>Generate and export leave management reports</p>
-              <small class="text-muted"><i class="fa fa-clock-o"/> Last refreshed: <t t-esc="state.lastRefreshed || '—'"/></small>
-            </div>
-            <div class="o_lr_actions">
-              <button class="o_lr_btn_action" t-on-click="refresh" t-att-disabled="state.loading">
-                <i t-att-class="state.loading ? 'fa fa-refresh fa-spin':'fa fa-refresh'"/> Refresh
-              </button>
-              <button class="o_lr_btn_action" t-on-click="printReport">
-                <i class="fa fa-print"/> Print
-              </button>
-              <div class="o_lr_export">
-                <button class="o_lr_btn_primary" t-on-click="() => state.exportOpen = !state.exportOpen">
-                  <i class="fa fa-download"/> Export <i class="fa fa-caret-down"/>
-                </button>
-                <div t-if="state.exportOpen" class="o_lr_export_menu">
-                  <button t-on-click="() => exportReport('csv')"><i class="fa fa-file-text-o"/> Export CSV</button>
-                  <button t-on-click="() => exportReport('excel')"><i class="fa fa-file-excel-o"/> Export Excel</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Global Filter Bar -->
-          <div class="o_lr_filters_row">
-            <span class="o_lr_filter_label"><i class="fa fa-filter"/> Filters:</span>
-            
-            <!-- Date Range Filter -->
-            <select class="o_lr_filter_select" t-model="state.filters.date_range" t-on-change="refresh">
-              <option value="this_week">This Week</option>
+        <section class="o_lra_toolbar">
+          <label class="o_lra_picker">
+            <span>Report</span>
+            <select t-model="state.activeReport" t-on-change="(ev) => this.setReport(ev.target.value)">
+              <option t-foreach="reports" t-as="report" t-key="report.key" t-att-value="report.key" t-esc="report.label"/>
+            </select>
+          </label>
+          <label t-if="usesDateRange" class="o_lra_picker o_lra_period">
+            <span>Date range</span>
+            <select t-model="state.filters.date_range" t-on-change="setDateRange">
               <option value="this_month">This Month</option>
-              <option value="last_month">Last Month</option>
+              <option value="last_quarter">Last Quarter</option>
               <option value="this_quarter">This Quarter</option>
               <option value="this_year">This Year</option>
-              <option value="custom">Custom Range</option>
+              <option value="custom">Custom</option>
             </select>
-
-            <!-- Department Filter -->
-            <select class="o_lr_filter_select" t-model="state.filters.department_id" t-on-change="refresh">
-              <option value="">All Departments</option>
-              <option t-foreach="state.data.departments" t-as="department" t-key="department.id" t-att-value="department.id" t-esc="department.name"/>
-            </select>
-
-            <!-- Leave Type Filter -->
-            <select class="o_lr_filter_select" t-model="state.filters.leave_type_id" t-on-change="refresh">
-              <option value="">All Leave Types</option>
-              <option t-foreach="state.data.leave_types" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/>
-            </select>
-
-            <!-- Inline Custom Date Range Pickers -->
-            <t t-if="state.filters.date_range === 'custom'">
-              <input type="date" class="o_lr_filter_date" t-model="state.filters.start_date"/>
-              <span class="text-muted">to</span>
-              <input type="date" class="o_lr_filter_date" t-model="state.filters.end_date"/>
-              <button class="o_lr_btn_apply" t-on-click="refresh">Apply</button>
-            </t>
-          </div>
-
-          <!-- Five Report Tabs Navigation -->
-          <nav class="o_lr_tabs">
-            <button t-foreach="tabs" t-as="tab" t-key="tab.key"
-                    t-att-class="state.activeTab === tab.key ? 'active':''"
-                    t-on-click="() => setTab(tab.key)">
-              <i t-att-class="'fa ' + tab.icon"/>
-              <t t-esc="tab.label"/>
+          </label>
+          <t t-if="usesDateRange and state.filters.date_range === 'custom'">
+            <input class="o_lra_date" type="date" t-model="state.filters.start_date"/>
+            <span>to</span>
+            <input class="o_lra_date" type="date" t-model="state.filters.end_date"/>
+            <button class="o_lra_apply" t-on-click="refresh">Apply</button>
+          </t>
+          <div class="o_lra_filter_control">
+            <button class="o_lra_filter_button" t-on-click="() => this.state.filtersOpen = !this.state.filtersOpen">
+              <i class="fa fa-filter"/> Filters <b t-if="activeFilterCount" t-esc="activeFilterCount"/>
             </button>
-            <button t-if="state.activeTab === 'types'" class="o_lr_today_link" t-on-click="viewToday">
-              <i class="fa fa-calendar-check-o"/> View Today's Status
+            <div t-if="state.filtersOpen" class="o_lra_filter_popover">
+              <header><strong>Filter report</strong><button t-if="activeFilterCount" t-on-click="clearFilters">Clear all</button></header>
+              <div class="o_lra_filter_groups">
+                <section t-foreach="filterGroups" t-as="group" t-key="group.key">
+                  <h4 t-esc="group.label"/>
+                  <label t-foreach="group.rows" t-as="row" t-key="row.id">
+                    <input type="checkbox" t-att-checked="isSelected(group.key, row.id)" t-on-change="() => this.toggleFilter(group.key, row.id)"/>
+                    <span t-esc="row.name"/>
+                  </label>
+                  <small t-if="!group.rows.length">No options in your scope</small>
+                </section>
+              </div>
+              <footer><button t-on-click="() => this.state.filtersOpen = false">Cancel</button><button class="primary" t-on-click="applyFilters">Apply filters</button></footer>
+            </div>
+          </div>
+          <div class="o_lra_export">
+            <button class="o_lra_export_button" t-on-click="() => this.state.exportOpen = !this.state.exportOpen" t-att-disabled="state.exporting">
+              <i t-att-class="state.exporting ? 'fa fa-spinner fa-spin' : 'fa fa-download'"/> Export <i class="fa fa-caret-down"/>
             </button>
-          </nav>
-
-          <!-- Loading State -->
-          <div t-if="state.loading" class="o_lr_loading">
-            <i class="fa fa-spinner fa-spin"/> Loading report data...
-          </div>
-
-          <!-- Tab 1: Overview -->
-          <div t-elif="state.activeTab === 'overview'" class="o_lr_overview">
-            
-            <!-- Overview 4 KPI Summary Tiles -->
-            <div class="o_lr_kpis">
-              <article class="o_lr_kpi_card">
-                <div>
-                  <small>Total Requests</small>
-                  <strong t-esc="state.data.kpis.total || 0"/>
-                  <em>All statuses</em>
-                </div>
-                <span class="o_lr_kpi_icon blue"><i class="fa fa-file-text-o"/></span>
-              </article>
-
-              <article class="o_lr_kpi_card">
-                <div>
-                  <small>Approved</small>
-                  <strong t-esc="state.data.kpis.approved || 0"/>
-                  <em><t t-esc="state.data.kpis.approval_rate || 0"/>% approval rate</em>
-                </div>
-                <span class="o_lr_kpi_icon green"><i class="fa fa-check-circle-o"/></span>
-              </article>
-
-              <article class="o_lr_kpi_card">
-                <div>
-                  <small>Pending</small>
-                  <strong t-esc="state.data.kpis.pending || 0"/>
-                  <em>Awaiting approval</em>
-                </div>
-                <span class="o_lr_kpi_icon amber"><i class="fa fa-clock-o"/></span>
-              </article>
-
-              <article class="o_lr_kpi_card">
-                <div>
-                  <small>Total Days</small>
-                  <strong t-esc="state.data.kpis.total_days || 0"/>
-                  <em>Avg: <t t-esc="state.data.kpis.average_days || 0"/> days/request</em>
-                </div>
-                <span class="o_lr_kpi_icon rose"><i class="fa fa-calendar"/></span>
-              </article>
+            <div t-if="state.exportOpen" class="o_lra_export_menu">
+              <button t-on-click="() => this.exportReport('xlsx')"><i class="fa fa-file-excel-o"/> Excel (.xlsx)</button>
+              <button t-on-click="() => this.exportReport('csv')"><i class="fa fa-file-text-o"/> CSV</button>
+              <button t-on-click="() => this.exportReport('pdf')"><i class="fa fa-file-pdf-o"/> PDF</button>
             </div>
-
-            <!-- Charts Row  & -->
-            <div class="o_lr_charts">
-              <article class="o_lr_chart_card">
-                <h4>Leave Distribution by Type</h4>
-                <div class="o_lr_canvas">
-                  <canvas t-ref="typeChart"/>
-                </div>
-              </article>
-              <article class="o_lr_chart_card">
-                <h4>Monthly Request Trend</h4>
-                <div class="o_lr_canvas">
-                  <canvas t-ref="trendChart"/>
-                </div>
-              </article>
-            </div>
-
-            <!-- Request Status Breakdown Tiles -->
-            <article class="o_lr_status_breakdown">
-              <h4>Request Status Breakdown</h4>
-              <div class="o_lr_status_grid">
-                <div class="o_lr_status_tile approved">
-                  <b t-esc="state.data.status.approved || 0"/>
-                  <span>Approved</span>
-                </div>
-                <div class="o_lr_status_tile pending">
-                  <b t-esc="state.data.status.pending || 0"/>
-                  <span>Pending</span>
-                </div>
-                <div class="o_lr_status_tile rejected">
-                  <b t-esc="state.data.status.rejected || 0"/>
-                  <span>Rejected</span>
-                </div>
-                <div class="o_lr_status_tile cancelled">
-                  <b t-esc="state.data.status.cancelled || 0"/>
-                  <span>Cancelled</span>
-                </div>
-              </div>
-            </article>
-
           </div>
-
-          <!-- Tab 2: Leave Type Summary -->
-          <div t-elif="state.activeTab === 'types'" class="o_lr_types">
-            <div class="o_lr_info">
-              <i class="fa fa-info-circle"/> <b>Daily Leave Status Report — <t t-esc="dailyStatusLabel"/>:</b> Breakdown of requests per leave type. Select Today in the filter above to view today's live daily status.
-            </div>
-            <div class="o_lr_type_kpis">
-              <article><div><small>Active Types</small><strong t-esc="state.data.type_kpis.active_types || 0"/><em>Configured &amp; active</em></div><span class="rose"><i class="fa fa-tags"/></span></article>
-              <article><div><small>Total Requests</small><strong t-esc="state.data.type_kpis.total_requests || 0"/><em>All leave types · selected period</em></div><span class="blue"><i class="fa fa-file-text-o"/></span></article>
-              <article><div><small>Days Taken</small><strong t-esc="state.data.type_kpis.days_taken || 0"/><em>Approved leave days</em></div><span class="purple"><i class="fa fa-calendar"/></span></article>
-              <article><div><small>Most Used</small><strong class="o_lr_type_name" t-esc="state.data.type_kpis.most_used_name || 'None'"/><em><t t-esc="state.data.type_kpis.most_used_days || 0"/> days · <t t-esc="state.data.type_kpis.most_used_employees || 0"/> emp.</em></div><span class="green"><i class="fa fa-line-chart"/></span></article>
-            </div>
-            <section class="o_lr_usage">
-              <header>
-                <div>
-                  <h3>Leave Types Usage Report</h3>
-                  <small>Period: <t t-esc="state.data.period.start"/> – <t t-esc="state.data.period.end"/> · Generated <t t-esc="dailyStatusLabel"/></small>
-                </div>
-                <span class="o_lr_badge_count"><t t-esc="state.data.type_usage.length"/> type(s)</span>
-              </header>
-              <div class="o_lr_usage_totals">
-                <span><b t-esc="state.data.type_totals.employees || 0"/>Employees</span>
-                <span><b t-esc="state.data.type_totals.requests || 0"/>Requests</span>
-                <span class="good"><b t-esc="state.data.type_totals.approved || 0"/>Approved</span>
-                <span class="warn"><b t-esc="state.data.type_totals.pending || 0"/>Pending</span>
-                <span class="bad"><b t-esc="state.data.type_totals.rejected || 0"/>Rejected</span>
-                <span class="pink"><b t-esc="state.data.type_totals.days_taken || 0"/>Days Taken</span>
-              </div>
-              <div class="o_lr_usage_table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th><th>Leave Type</th><th>Category</th><th>Entitlement</th><th>Employees</th><th>Requests</th><th>Approved</th><th>Pending</th><th>Rejected</th><th>Cancelled</th><th>Days Taken</th><th>Avg Days</th><th>Share</th><th>Usage Bar</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr t-foreach="state.data.type_usage" t-as="row" t-key="row.id">
-                      <td><b t-esc="row.rank"/></td>
-                      <td><span class="o_lb_dot" t-att-style="'background:'+row.color"/><b t-esc="row.name"/></td>
-                      <td><span t-att-class="'o_lr_category '+row.category" t-esc="row.category_label"/></td>
-                      <td t-esc="row.entitlement"/>
-                      <td><i class="fa fa-users"/> <t t-esc="row.employees"/></td>
-                      <td><b t-esc="row.requests"/></td>
-                      <td><span class="o_lr_count good" t-esc="row.approved"/></td>
-                      <td><span class="o_lr_count warn" t-esc="row.pending"/></td>
-                      <td><span class="o_lr_count bad" t-esc="row.rejected"/></td>
-                      <td><span class="o_lr_count neutral" t-esc="row.cancelled"/></td>
-                      <td>
-                        <t t-if="row.days_taken &gt; 0">
-                          <span class="o_lr_days" t-att-style="'background:'+row.color" t-esc="row.days_taken+'d'"/>
-                        </t>
-                        <t t-else="">
-                          <span class="o_lr_days_zero">0d</span>
-                        </t>
-                      </td>
-                      <td><t t-esc="row.average_days"/>d</td>
-                      <td><t t-esc="row.share"/>%</td>
-                      <td><div class="o_lr_usage_bar"><i t-att-style="'width:'+row.share+'%;background:'+row.color"/></div></td>
-                    </tr>
-                    <tr class="o_lr_grand">
-                      <td colspan="4">GRAND TOTAL</td>
-                      <td t-esc="state.data.type_totals.employees || 0"/>
-                      <td t-esc="state.data.type_totals.requests || 0"/>
-                      <td t-esc="state.data.type_totals.approved || 0"/>
-                      <td t-esc="state.data.type_totals.pending || 0"/>
-                      <td t-esc="state.data.type_totals.rejected || 0"/>
-                      <td t-esc="state.data.type_totals.cancelled || 0"/>
-                      <td><span class="o_lr_days_total"><t t-esc="state.data.type_totals.days_taken || 0"/>d</span></td>
-                      <td>—</td>
-                      <td>100%</td>
-                      <td/>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <footer class="o_lr_snapshot">
-                <b>Quick Snapshot — Days Taken per Type</b>
-                <div>
-                  <span t-foreach="state.data.type_usage" t-as="row" t-key="row.id">
-                    <span class="o_lb_dot" t-att-style="'background:'+row.color"/>
-                    <b t-esc="row.name"/> <t t-esc="row.days_taken"/>d (<t t-esc="row.share"/>%)
-                  </span>
-                </div>
-              </footer>
-            </section>
-          </div>
-
-          <!-- Tab 3: Department Analysis -->
-          <div t-elif="state.activeTab === 'departments'" class="o_lr_department">
-            <section class="o_lr_chart_panel">
-              <h3>Leave Days by Department</h3>
-              <div class="o_lr_department_canvas">
-                <canvas t-ref="departmentChart"/>
-              </div>
-            </section>
-            <section class="o_lr_table">
-              <h3>Department Breakdown</h3>
-              <table>
-                <thead>
-                  <tr><th>Department</th><th>Total Requests</th><th>Total Days</th><th>Avg Days/Request</th></tr>
-                </thead>
-                <tbody>
-                  <tr t-foreach="state.data.department_summary" t-as="row" t-key="row.id"
-                      t-att-class="state.selectedDepartmentId === row.id ? 'o_lr_selected_row':''"
-                      t-on-click="() => selectDepartment(row.id)">
-                    <td><i class="fa fa-building-o"/> <b t-esc="row.name"/></td>
-                    <td t-esc="row.total"/>
-                    <td t-esc="row.days"/>
-                    <td t-esc="row.average_days"/>
-                  </tr>
-                  <tr t-if="!state.data.department_summary.length">
-                    <td colspan="4">No department data for this report scope.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
-          </div>
-
-          <!-- Tab 4: Balance Report -->
-          <div t-elif="state.activeTab === 'balances'" class="o_lr_balance">
-            <div class="o_lr_balance_kpis">
-              <article><small>Total Allocated</small><strong t-esc="state.data.balance.allocated || 0"/><em>days across all employees</em></article>
-              <article class="used"><small>Total Used</small><strong t-esc="state.data.balance.used || 0"/><em><t t-esc="state.data.balance.utilisation || 0"/>% utilisation</em></article>
-              <article class="pending"><small>Pending</small><strong t-esc="state.data.balance.pending || 0"/><em>days pending approval</em></article>
-              <article class="remaining"><small>Remaining</small><strong t-esc="state.data.balance.remaining || 0"/><em>days available</em></article>
-            </div>
-            <section class="o_lr_chart_panel">
-              <h3>Leave Balance Overview</h3>
-              <div class="o_lr_balance_canvas">
-                <canvas t-ref="balanceChart"/>
-              </div>
-            </section>
-            <section class="o_lr_table">
-              <h3>Balance Summary Table</h3>
-              <table>
-                <thead>
-                  <tr><th>Metric</th><th>Days</th><th>% of Allocated</th></tr>
-                </thead>
-                <tbody>
-                  <tr t-foreach="state.data.balance.rows" t-as="row" t-key="row.key">
-                    <td><span class="o_lb_dot" t-att-style="'background:'+row.color"/><b t-esc="row.label"/></td>
-                    <td t-att-style="'color:'+row.color" t-esc="row.days"/>
-                    <td><t t-esc="row.percentage"/>%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
-          </div>
-
-          <!-- Tab 5: Employee Summary -->
-          <div t-else="" class="o_lr_employees">
-            <section class="o_lr_table">
-              <header class="o_lr_employee_title">
-                <div>
-                  <h3>Top 10 Leave Takers</h3>
-                  <p>Employees with the most approved leave days</p>
-                </div>
-                <span class="o_lr_badge_count"><t t-esc="state.data.employee_summary.length"/> ranked employee(s)</span>
-              </header>
-              <table>
-                <thead>
-                  <tr><th>Rank</th><th>Employee</th><th>Department</th><th>Total Days</th><th>Requests</th><th>Avg Days/Request</th></tr>
-                </thead>
-                <tbody>
-                  <tr t-foreach="state.data.employee_summary" t-as="row" t-key="row.id">
-                    <td><span t-att-class="'o_lr_rank ' + (row.rank === 1 ? 'first':'')" t-esc="row.rank"/></td>
-                    <td>
-                      <div class="o_lr_employee_cell">
-                        <img t-att-src="row.avatar_url"/>
-                        <span>
-                          <b t-esc="row.name"/>
-                          <small>
-                            <t t-if="row.employee_number">Staff No: <t t-esc="row.employee_number"/></t>
-                            <t t-if="row.identification_id"> · ID: <t t-esc="row.identification_id"/></t>
-                          </small>
-                        </span>
-                      </div>
-                    </td>
-                    <td t-esc="row.department"/>
-                    <td><span t-att-class="'o_lr_day_volume ' + row.volume"><t t-esc="row.total_days"/> days</span></td>
-                    <td t-esc="row.requests"/>
-                    <td t-esc="row.average_days"/>
-                  </tr>
-                  <tr t-if="!state.data.employee_summary.length">
-                    <td colspan="6" class="o_lr_no_data">No approved leave exists for the selected scope.</td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
-          </div>
-
         </section>
+
+        <div t-if="activeChips.length" class="o_lra_chips">
+          <span t-foreach="activeChips" t-as="chip" t-key="chip.key + '_' + chip.id"><t t-esc="chip.label"/><button t-on-click="() => this.removeChip(chip)">×</button></span>
+          <button t-on-click="clearFilters">Clear all</button>
+        </div>
+
+        <nav class="o_lra_tabs">
+          <button t-foreach="reports" t-as="report" t-key="report.key" t-att-class="state.activeReport === report.key ? 'active' : ''" t-on-click="() => this.setReport(report.key)">
+            <i t-att-class="'fa ' + report.icon"/><span t-esc="report.label"/>
+          </button>
+        </nav>
+
+        <div t-if="state.loading" class="o_lra_loading"><i class="fa fa-spinner fa-spin"/><strong>Building authorised report…</strong><span>Calculating from current leave and balance records.</span></div>
+        <t t-else="">
+          <section class="o_lra_report_heading">
+            <div><h3 t-esc="activeDefinition.label"/><p t-if="usesDateRange"><t t-esc="state.data.meta.period.start"/> – <t t-esc="state.data.meta.period.end"/></p><p t-else="" t-esc="state.data.meta.metric_basis"/></div>
+            <button t-if="state.activeReport === 'absence_risk' and state.data.meta.can_configure_risk" t-on-click="openRiskSettings"><i class="fa fa-cog"/> Configure scoring</button>
+          </section>
+
+          <section t-if="['request_volume','utilisation','turnaround','trends','frequency','absence_risk'].includes(state.activeReport)" class="o_lra_chart_card">
+            <div class="o_lra_chart"><canvas t-ref="reportChart"/></div>
+          </section>
+
+          <t t-if="state.activeReport === 'request_volume'">
+            <div class="o_lra_kpis">
+              <article><small>Submitted</small><strong t-esc="state.data.reports.request_volume.total"/><span><t t-esc="state.data.reports.request_volume.change_percent"/>% vs prior period</span></article>
+              <article class="good"><small>Approved</small><strong t-esc="state.data.reports.request_volume.counts.approved || 0"/></article>
+              <article class="warn"><small>Pending</small><strong t-esc="state.data.reports.request_volume.counts.pending || 0"/></article>
+              <article class="bad"><small>Rejected / Cancelled</small><strong><t t-esc="(state.data.reports.request_volume.counts.rejected || 0) + (state.data.reports.request_volume.counts.cancelled || 0)"/></strong></article>
+            </div>
+            <section class="o_lra_table_card"><h4>Monthly request volume</h4><div class="o_lra_table_wrap"><table><thead><tr><th>Month</th><th>Submitted</th><th>Approved</th><th>Pending</th><th>Changes Requested</th><th>Rejected</th><th>Cancelled</th></tr></thead><tbody><tr t-foreach="state.data.reports.request_volume.monthly" t-as="row" t-key="row.month"><td><b t-esc="row.month"/></td><td t-esc="row.submitted"/><td t-esc="row.approved"/><td t-esc="row.pending"/><td t-esc="row.changes_requested"/><td t-esc="row.rejected"/><td t-esc="row.cancelled"/></tr></tbody></table></div></section>
+          </t>
+
+          <t t-elif="state.activeReport === 'utilisation'">
+            <div class="o_lra_split">
+              <section class="o_lra_table_card"><h4>Utilisation by Leave Type</h4><div class="o_lra_table_wrap"><table><thead><tr><th>Leave Type</th><th>Allocated</th><th>Used</th><th>Pending</th><th>Available</th><th>Utilisation</th></tr></thead><tbody><tr t-foreach="state.data.reports.utilisation.by_type" t-as="row" t-key="row.id"><td><b t-esc="row.name"/></td><td t-esc="row.allocated"/><td t-esc="row.used"/><td t-esc="row.pending"/><td t-esc="row.available"/><td><div class="o_lra_meter"><i t-att-style="'width:' + Math.min(row.utilisation, 100) + '%'"/></div><span><t t-esc="row.utilisation"/>%</span></td></tr></tbody></table></div></section>
+              <section class="o_lra_table_card"><h4>Utilisation by Employee</h4><div class="o_lra_table_wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Allocated</th><th>Used</th><th>Available</th><th>Utilisation</th></tr></thead><tbody><tr t-foreach="state.data.reports.utilisation.by_employee" t-as="row" t-key="row.id"><td><b t-esc="row.name"/></td><td t-esc="row.department"/><td t-esc="row.allocated"/><td t-esc="row.used"/><td t-esc="row.available"/><td><span class="o_lra_percent"><t t-esc="row.utilisation"/>%</span></td></tr></tbody></table></div></section>
+            </div>
+          </t>
+
+          <t t-elif="state.activeReport === 'balances'">
+            <div class="o_lra_kpis five"><article><small>Available</small><strong t-esc="state.data.reports.balances.totals.available || 0"/></article><article><small>Used</small><strong t-esc="state.data.reports.balances.totals.used || 0"/></article><article><small>Pending</small><strong t-esc="state.data.reports.balances.totals.pending || 0"/></article><article><small>Carried Forward</small><strong t-esc="state.data.reports.balances.totals.carried_forward || 0"/></article><article class="warn"><small>Expiring</small><strong t-esc="state.data.reports.balances.totals.expiring || 0"/></article></div>
+            <section class="o_lra_table_card"><h4>Current balance detail</h4><div class="o_lra_table_wrap"><table><thead><tr><th>Employee</th><th>Department</th><th>Leave Type</th><th>Available</th><th>Used</th><th>Pending</th><th>Carried Forward</th><th>Expiring</th><th>Expiry</th></tr></thead><tbody><tr t-foreach="state.data.reports.balances.rows" t-as="row" t-key="row.employee_id + '_' + row.leave_type_id"><td><b t-esc="row.employee"/></td><td t-esc="row.department"/><td t-esc="row.leave_type"/><td t-esc="row.available"/><td t-esc="row.used"/><td t-esc="row.pending"/><td t-esc="row.carried_forward"/><td t-esc="row.expiring"/><td t-esc="formatDate(row.expiry_date)"/></tr></tbody></table></div></section>
+          </t>
+
+          <t t-elif="state.activeReport === 'turnaround'">
+            <div class="o_lra_kpis"><article><small>Average turnaround</small><strong><t t-esc="state.data.reports.turnaround.average_hours"/>h</strong></article><article class="warn"><small>Longest decision</small><strong><t t-esc="state.data.reports.turnaround.longest_hours"/>h</strong></article><article><small>Completed decisions</small><strong t-esc="state.data.reports.turnaround.decisions"/></article></div>
+            <div class="o_lra_split"><section class="o_lra_table_card"><h4>By approver</h4><table><thead><tr><th>Approver</th><th>Decisions</th><th>Average</th><th>Longest</th></tr></thead><tbody><tr t-foreach="state.data.reports.turnaround.by_approver" t-as="row" t-key="row.name"><td><b t-esc="row.name"/></td><td t-esc="row.decisions"/><td><t t-esc="row.average_hours"/>h</td><td><t t-esc="row.longest_hours"/>h</td></tr></tbody></table></section><section class="o_lra_table_card"><h4>By Leave Type</h4><table><thead><tr><th>Leave Type</th><th>Decisions</th><th>Average</th><th>Longest</th></tr></thead><tbody><tr t-foreach="state.data.reports.turnaround.by_type" t-as="row" t-key="row.name"><td><b t-esc="row.name"/></td><td t-esc="row.decisions"/><td><t t-esc="row.average_hours"/>h</td><td><t t-esc="row.longest_hours"/>h</td></tr></tbody></table></section></div>
+          </t>
+
+          <t t-elif="state.activeReport === 'trends'">
+            <div class="o_lra_info"><i class="fa fa-calendar"/><span><b t-esc="state.data.reports.trends.holiday_adjacent_requests || 0"/> approved request(s) begin or end adjacent to a public holiday in this period.</span></div>
+            <section class="o_lra_table_card"><h4>Monthly absence trend</h4><table><thead><tr><th>Month</th><th>Approved Requests</th><th>Approved Days</th></tr></thead><tbody><tr t-foreach="state.data.reports.trends.monthly" t-as="row" t-key="row.month"><td><b t-esc="row.month"/></td><td t-esc="row.requests"/><td t-esc="row.days"/></tr></tbody></table></section>
+          </t>
+
+          <t t-elif="state.activeReport === 'frequency'">
+            <div class="o_lra_segmented"><button t-foreach="['department','location','unit']" t-as="dimension" t-key="dimension" t-att-class="state.frequencyDimension === dimension ? 'active' : ''" t-on-click="() => this.setFrequencyDimension(dimension)"><t t-esc="dimension.charAt(0).toUpperCase() + dimension.slice(1)"/></button></div>
+            <section class="o_lra_table_card"><h4>Ranked Leave Frequency</h4><p>Raw volume and normalised rate are shown together. Select a row to see its individual requests.</p><div class="o_lra_table_wrap"><table class="clickable"><thead><tr><th>Rank</th><th><t t-esc="state.frequencyDimension.charAt(0).toUpperCase() + state.frequencyDimension.slice(1)"/></th><th>Requests</th><th>Total Days Taken</th><th>Headcount</th><th>Requests / Employee</th><th/></tr></thead><tbody><tr t-foreach="currentFrequencyRows" t-as="row" t-key="row.id" t-on-click="() => this.openDrilldown(row)"><td><span class="o_lra_rank" t-esc="row.rank"/></td><td><b t-esc="row.name"/></td><td t-esc="row.requests"/><td t-esc="row.days"/><td t-esc="row.headcount"/><td><span class="o_lra_rate" t-esc="row.requests_per_employee"/></td><td><i class="fa fa-chevron-right"/></td></tr></tbody></table></div></section>
+          </t>
+
+          <t t-elif="state.activeReport === 'policy_usage'">
+            <section class="o_lra_table_card"><h4>Policy usage and configured limits</h4><p>The current build stores these policy controls on Leave Types pending the versioned Leave Policy migration.</p><div class="o_lra_table_wrap"><table><thead><tr><th>Policy / Leave Type</th><th>Covered Employees</th><th>Requests</th><th>Avg Notice</th><th>Notice Limit</th><th>Longest Request</th><th>Consecutive Limit</th><th>Blackout Rules</th></tr></thead><tbody><tr t-foreach="state.data.reports.policy_usage" t-as="row" t-key="row.id"><td><b t-esc="row.name"/></td><td t-esc="row.employees"/><td t-esc="row.requests"/><td><t t-esc="row.average_notice"/> days</td><td><t t-esc="row.notice_limit"/> days</td><td><t t-esc="row.longest_request"/> days</td><td><t t-esc="row.consecutive_limit || 'No limit'"/></td><td t-esc="row.blackout_periods"/></tr></tbody></table></div></section>
+          </t>
+
+          <t t-else="">
+            <div class="o_lra_privacy"><i class="fa fa-lock"/><div><b>Privacy-controlled workforce signal</b><p t-if="state.data.reports.absence_risk.mode === 'detail'">You can view the formula inputs and numeric score because you hold an HR Administrator or HR Director role.</p><p t-elif="state.data.reports.absence_risk.mode === 'team_flags'">Managers see only Low/Watch flags for their own team; numeric scores, spell dates and day counts remain private.</p><p t-else="">This view is aggregated. Individual employees and scores are not exposed to this reporting role.</p></div></div>
+            <div t-if="state.data.reports.absence_risk.mode !== 'team_flags'" class="o_lra_band_cards"><article class="low"><small>Low</small><strong t-esc="state.data.reports.absence_risk.bands.low || 0"/></article><article class="caution"><small>Caution</small><strong t-esc="state.data.reports.absence_risk.bands.caution || 0"/></article><article class="concern"><small>Concern</small><strong t-esc="state.data.reports.absence_risk.bands.concern || 0"/></article><article class="serious"><small>Serious</small><strong t-esc="state.data.reports.absence_risk.bands.serious || 0"/></article><article class="critical"><small>Critical</small><strong t-esc="state.data.reports.absence_risk.bands.critical || 0"/></article></div>
+            <section t-if="state.data.reports.absence_risk.mode === 'detail'" class="o_lra_table_card"><h4>Bradford Factor detail</h4><p>S² × D over the configured rolling window. This is advisory only and never triggers an automatic decision.</p><table><thead><tr><th>Employee</th><th>Department</th><th>Location</th><th>Score</th><th>Band</th><th>Spells</th><th>Days</th></tr></thead><tbody><tr t-foreach="state.data.reports.absence_risk.rows" t-as="row" t-key="row.employee_id"><td><b t-esc="row.employee"/></td><td t-esc="row.department"/><td t-esc="row.location"/><td><strong t-esc="row.score"/></td><td><span t-att-class="'o_lra_band ' + row.band" t-esc="formatBand(row.band)"/></td><td t-esc="row.spells"/><td t-esc="row.days"/></tr></tbody></table></section>
+            <section t-if="state.data.reports.absence_risk.mode === 'team_flags'" class="o_lra_table_card"><h4>Team attendance pattern flags</h4><table><thead><tr><th>Employee</th><th>Department</th><th>Attendance Pattern</th></tr></thead><tbody><tr t-foreach="state.data.reports.absence_risk.rows" t-as="row" t-key="row.employee_id"><td><b t-esc="row.employee"/></td><td t-esc="row.department"/><td><span t-att-class="'o_lra_flag ' + row.flag" t-esc="row.flag === 'watch' ? 'Attendance pattern under review' : 'Low'"/></td></tr></tbody></table></section>
+          </t>
+        </t>
       </main>
+
+      <t t-if="state.drilldown">
+        <div class="o_lra_backdrop" t-on-click="closeDrilldown"/>
+        <aside class="o_lra_drawer"><header><div><small>Underlying requests</small><h3 t-esc="state.drilldown.title"/></div><button t-on-click="closeDrilldown">×</button></header><div t-if="state.drilldown.loading" class="o_lra_loading"><i class="fa fa-spinner fa-spin"/> Loading…</div><div t-else="" class="o_lra_table_wrap"><table><thead><tr><th>Request</th><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Days</th><th>Status</th></tr></thead><tbody><tr t-foreach="state.drilldown.rows" t-as="row" t-key="row.id"><td><b t-esc="row.reference"/></td><td t-esc="row.employee"/><td t-esc="row.leave_type"/><td><t t-esc="row.date_from"/> – <t t-esc="row.date_to"/></td><td t-esc="row.days"/><td><span t-att-class="'o_lra_status ' + row.status" t-esc="row.status"/></td></tr><tr t-if="!state.drilldown.rows.length"><td colspan="6">No matching requests.</td></tr></tbody></table></div></aside>
+      </t>
+
+      <t t-if="state.riskSettingsOpen">
+        <div class="o_lra_backdrop" t-on-click="closeRiskSettings"/>
+        <section class="o_lra_modal"><header><div><small>Absence Risk</small><h3>Bradford Factor settings</h3></div><button t-on-click="closeRiskSettings">×</button></header><div class="o_lra_modal_body"><label class="toggle"><input type="checkbox" t-model="state.riskForm.enabled"/><span>Enable Bradford scoring</span></label><div class="o_lra_form_grid"><label><span>Rolling window (weeks)</span><input type="number" min="1" t-model.number="state.riskForm.window_weeks"/></label><label><span>Minimum spell (days)</span><input type="number" min="1" t-model.number="state.riskForm.minimum_spell_days"/></label><label><span>Caution starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.caution"/></label><label><span>Concern starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.concern"/></label><label><span>Serious starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.serious"/></label><label><span>Critical starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.critical"/></label></div><h4>Leave Type treatment</h4><div class="o_lra_type_modes"><label t-foreach="state.riskForm.leave_type_modes || []" t-as="item" t-key="item.id"><span t-esc="item.name"/><select t-model="item.mode" t-att-disabled="item.locked"><option value="exclude">Excluded</option><option value="short_notice">Short-notice only</option><option value="all">All approved absences</option></select></label></div><p class="o_lra_notice">Changes take effect on the next calculation and do not create automatic disciplinary or leave decisions.</p></div><footer><button t-on-click="closeRiskSettings">Cancel</button><button class="primary" t-on-click="saveRiskSettings">Save settings</button></footer></section>
+      </t>
     </div>
   </t>
 </templates>

@@ -35,7 +35,7 @@ export class CalendarSidebar extends Component {
                 canOperate: profile.can_operate,
                 canConfigure: profile.can_configure,
                 canViewAudit: profile.can_view_audit,
-                canViewReports: profile.can_view_operational_reports,
+                canViewReports: profile.can_view_reports,
             };
             this.state.pending = profile.pending_approvals || 0;
         });
