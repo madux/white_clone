@@ -57,6 +57,46 @@ class ComplianceController(http.Controller):
         }
 
     @http.route(
+        "/api/compliance/targets",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_targets(self, **kwargs):
+        """Return named records used by policy scope selectors."""
+        employees = request.env["hr.employee"].search(
+            [("active", "=", True)], order="name"
+        )
+        departments = request.env["hr.department"].search([], order="name")
+        grades = request.env["hr.grade"].search([], order="name")
+        return {
+            "success": True,
+            "data": {
+                "employees": [
+                    {
+                        "id": employee.id,
+                        "name": employee.name,
+                        "job_title": employee.job_title or "",
+                        "department": employee.department_id.name or "",
+                        "department_id": employee.department_id.id or False,
+                        "grade": employee.grade_id.name or "",
+                        "grade_id": employee.grade_id.id or False,
+                        "work_email": employee.work_email or "",
+                        "work_phone": employee.work_phone or "",
+                        "location": employee.work_location or "",
+                    }
+                    for employee in employees
+                ],
+                "departments": [
+                    {"id": department.id, "name": department.name}
+                    for department in departments
+                ],
+                "grades": [{"id": grade.id, "name": grade.name} for grade in grades],
+            },
+        }
+
+    @http.route(
         "/api/compliance/policy-types",
         type="json",
         auth="user",
@@ -163,6 +203,52 @@ class ComplianceController(http.Controller):
         policy = request.env["doc.compliance.policy"].create(values)
         return {"success": True, "data": self._policy_data(policy)}
 
+    @http.route("/api/compliance/policies/update", type="json", auth="user", methods=["POST"], csrf=False)
+    def update_policy(self, **kwargs):
+        policy = request.env["doc.compliance.policy"].browse(kwargs.get("id")).exists()
+        if not policy:
+            return {"success": False, "message": "Policy not found."}
+        values = {
+            key: kwargs[key]
+            for key in ("name", "description", "effective_date", "active", "schedule", "custom_schedule_days", "applies_to", "minimum_documents", "grace_period_days")
+            if key in kwargs
+        }
+        if "policy_type_id" in kwargs:
+            values["policy_type_id"] = request.env["doc.compliance.policy.type"].browse(int(kwargs["policy_type_id"])).exists().id
+        for field_name, model_name in (
+            ("document_type_ids", "doc.document.type"),
+            ("department_ids", "hr.department"),
+            ("grade_ids", "hr.grade"),
+            ("employee_ids", "hr.employee"),
+        ):
+            if field_name in kwargs:
+                values[field_name] = [
+                    fields.Command.set(
+                        request.env[model_name]
+                        .browse(kwargs[field_name] or [])
+                        .exists()
+                        .ids
+                    )
+                ]
+        if "schedule" in values and values["schedule"] == "manual":
+            values["schedule"] = False
+        if "custom_schedule_days" in values:
+            values["custom_schedule_days"] = int(values["custom_schedule_days"])
+        if "minimum_documents" in values:
+            values["minimum_documents"] = int(values["minimum_documents"])
+        if "grace_period_days" in values:
+            values["grace_period_days"] = int(values["grace_period_days"])
+        policy.write(values)
+        return {"success": True, "data": self._policy_data(policy)}
+
+    @http.route("/api/compliance/policies/delete", type="json", auth="user", methods=["POST"], csrf=False)
+    def delete_policy(self, id=None, **kwargs):
+        policy = request.env["doc.compliance.policy"].browse(id).exists()
+        if not policy:
+            return {"success": False, "message": "Policy not found."}
+        policy.unlink()
+        return {"success": True, "message": "Policy deleted."}
+
     @http.route(
         "/api/compliance/policies/<int:policy_id>/evaluate",
         type="json",
@@ -228,6 +314,7 @@ class ComplianceController(http.Controller):
                     "reason": record.reason,
                     "valid_until": str(record.valid_until),
                     "status": record.status,
+                    "active": record.active,
                 }
                 for record in records
             ],
@@ -272,8 +359,45 @@ class ComplianceController(http.Controller):
                 "employee_id": exception.employee_id.id,
                 "policy_id": exception.policy_id.id,
                 "status": exception.status,
+                "active": exception.active,
             },
         }
+
+    def _get_exception(self, exception_id):
+        return request.env["doc.compliance.exception"].browse(exception_id).exists()
+
+    @http.route(
+        "/api/compliance/exceptions/<int:exception_id>/deactivate",
+        type="json", auth="user", methods=["POST"], csrf=False,
+    )
+    def deactivate_exception(self, exception_id, **kwargs):
+        exception = self._get_exception(exception_id)
+        if not exception:
+            return {"success": False, "message": "Exception not found."}
+        exception.action_deactivate()
+        return {"success": True, "active": exception.active}
+
+    @http.route(
+        "/api/compliance/exceptions/<int:exception_id>/reactivate",
+        type="json", auth="user", methods=["POST"], csrf=False,
+    )
+    def reactivate_exception(self, exception_id, **kwargs):
+        exception = self._get_exception(exception_id)
+        if not exception:
+            return {"success": False, "message": "Exception not found."}
+        exception.action_reactivate()
+        return {"success": True, "active": exception.active}
+
+    @http.route(
+        "/api/compliance/exceptions/<int:exception_id>/delete",
+        type="json", auth="user", methods=["POST"], csrf=False,
+    )
+    def delete_exception(self, exception_id, **kwargs):
+        exception = self._get_exception(exception_id)
+        if not exception:
+            return {"success": False, "message": "Exception not found."}
+        exception.action_delete()
+        return {"success": True, "message": "Exception deleted."}
 
     @http.route(
         "/api/compliance/exceptions/<int:exception_id>/approve",

@@ -100,6 +100,9 @@ class CompliancePolicy(models.Model):
         "policy_id",
         string="Evaluations",
     )
+    auto_requirement_id = fields.Many2one(
+        "doc.compliance.requirement", copy=False, readonly=True
+    )
 
     @api.constrains("minimum_documents", "grace_period_days", "custom_schedule_days")
     def _check_positive_values(self):
@@ -112,6 +115,12 @@ class CompliancePolicy(models.Model):
                 )
             if policy.schedule == "custom" and policy.custom_schedule_days < 1:
                 raise ValidationError(_("A custom schedule must be at least 1 day."))
+
+    @api.constrains("document_type_ids")
+    def _check_document_types(self):
+        for policy in self:
+            if not policy.document_type_ids:
+                raise ValidationError(_("Select at least one required document type."))
 
     @api.constrains("applies_to", "department_ids", "grade_ids", "employee_ids")
     def _check_scope(self):
@@ -138,8 +147,39 @@ class CompliancePolicy(models.Model):
             "custom": relativedelta(days=custom_days),
         }.get(schedule)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        policies = super().create(vals_list)
+        Requirement = self.env["doc.compliance.requirement"]
+        for policy in policies:
+            policy.auto_requirement_id = Requirement.create(
+                {
+                    "name": policy.name,
+                    "policy_id": policy.id,
+                    "minimum_documents": policy.minimum_documents,
+                    "grace_period_days": policy.grace_period_days,
+                    "active": policy.active,
+                }
+            )
+        policies.action_set_next_run()
+        return policies
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"schedule", "custom_schedule_days"}.intersection(vals):
+            self.action_set_next_run()
+        if {"name", "minimum_documents", "grace_period_days", "active"}.intersection(vals):
+            self.auto_requirement_id.write(
+                {
+                    field_name: vals[field_name]
+                    for field_name in ("name", "minimum_documents", "grace_period_days", "active")
+                    if field_name in vals
+                }
+            )
+        return result
+
     def action_run_now(self):
-        self.write({"last_run_at": fields.Datetime.now()})
+        self.action_evaluate()
 
     def action_set_next_run(self):
         for policy in self:
@@ -183,6 +223,7 @@ class CompliancePolicy(models.Model):
                 ("policy_id", "=", self.id),
                 ("employee_id", "=", employee.id),
                 ("status", "=", "approved"),
+                ("active", "=", True),
                 ("valid_until", ">=", today),
             ],
             limit=1,
@@ -241,6 +282,16 @@ class CompliancePolicy(models.Model):
 
     def action_evaluate(self):
         for policy in self:
+            if not policy.requirement_ids:
+                policy.auto_requirement_id = self.env["doc.compliance.requirement"].create(
+                    {
+                        "name": policy.name,
+                        "policy_id": policy.id,
+                        "minimum_documents": policy.minimum_documents,
+                        "grace_period_days": policy.grace_period_days,
+                        "active": policy.active,
+                    }
+                )
             for employee in policy._target_employees():
                 policy.evaluate_employee(employee)
             policy.write({"last_run_at": fields.Datetime.now()})
@@ -249,15 +300,24 @@ class CompliancePolicy(models.Model):
     @api.model
     def _cron_evaluate_policies(self):
         today = fields.Date.context_today(self)
+        now = fields.Datetime.now()
         policies = self.search(
             [
                 ("active", "=", True),
                 ("effective_date", "<=", today),
                 ("schedule", "!=", False),
-                "|",
-                ("next_run_at", "=", False),
-                ("next_run_at", "<=", fields.Datetime.now()),
             ]
+        ).filtered(
+            lambda policy: (
+                (policy.schedule == "one_time" and not policy.last_run_at)
+                or (
+                    policy.schedule != "one_time"
+                    and (
+                        not policy.next_run_at
+                        or policy.next_run_at <= now
+                    )
+                )
+            )
         )
         policies.action_evaluate()
 
@@ -409,6 +469,15 @@ class ComplianceException(models.Model):
     approved_by = fields.Many2one("res.users", readonly=True)
     approved_at = fields.Datetime(readonly=True)
     active = fields.Boolean(default=True)
+
+    def action_deactivate(self):
+        self.write({"active": False})
+
+    def action_reactivate(self):
+        self.write({"active": True})
+
+    def action_delete(self):
+        self.unlink()
 
     def action_approve(self):
         self.write(

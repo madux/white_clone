@@ -16,6 +16,36 @@ def safe_filename(value):
 class DocumentFolderDownloadController(http.Controller):
 
     @http.route(
+        "/document-management/employee/<int:employee_id>/download",
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def download_employee(self, employee_id):
+        documents = request.env["doc.document"].search(
+            [("employee_id", "=", employee_id), ("active", "=", True)]
+        )
+        output = io.BytesIO()
+        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for document in documents:
+                attachment = document.attachment_id
+                if attachment and attachment.datas:
+                    archive.writestr(
+                        safe_filename(document.name or attachment.name),
+                        base64.b64decode(attachment.datas),
+                    )
+        output.seek(0)
+        employee = request.env["hr.employee"].browse(employee_id).exists()
+        filename = f"{safe_filename(employee.name if employee else 'employee')}.zip"
+        return request.make_response(
+            output.getvalue(),
+            headers=[
+                ("Content-Type", "application/zip"),
+                ("Content-Disposition", f'attachment; filename="{filename}"'),
+            ],
+        )
+
+    @http.route(
         "/document-management/folder/<int:folder_id>/download",
         type="http",
         auth="user",
