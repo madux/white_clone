@@ -13,6 +13,26 @@ class Document(models.Model):
         required=True,
     )
 
+    description = fields.Text(string="Description")
+
+    is_policy = fields.Boolean(
+        string="Is Policy",
+        default=False,
+    )
+
+    policy_visibility = fields.Selection(
+        [
+            ("employees", "Visible to Employees"),
+            ("hr_only", "HR Only"),
+        ],
+        string="Policy Visibility",
+        default="employees",
+    )
+
+    policy_content = fields.Html(string="Policy Content")
+
+    effective_date = fields.Date(string="Effective Date")
+
     folder_id = fields.Many2one(
         "doc.folder",
         required=True,
@@ -169,6 +189,17 @@ class Document(models.Model):
             if document.has_expiry and not document.expiry_date:
                 raise ValidationError(
                     _("An expiry date is required when expiry is enabled.")
+                )
+
+    @api.constrains("is_policy", "folder_id")
+    def _check_policy_folder(self):
+        for document in self:
+            if (
+                document.is_policy
+                and document.folder_id.folder_type != "organizational"
+            ):
+                raise ValidationError(
+                    _("Policy documents must be stored in an organizational folder.")
                 )
 
     @api.constrains("folder_id", "document_type_id")
