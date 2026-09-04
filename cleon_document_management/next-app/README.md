@@ -1,51 +1,176 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CLEONHR Document Management Frontend
 
-## Local Test Data
+This is the Next.js frontend for the Odoo `cleon_document_management` module.
+The frontend is exported as static files and served by Odoo at:
 
-Development uses realistic document-management fixtures when
-`NEXT_PUBLIC_USE_TEST_DATA=true` is set in `.env.development`. The flag is
-ignored outside `NODE_ENV=development`, so production builds always use Odoo.
+```text
+/document-management
+```
 
-Run the frontend locally with:
+## Requirements
+
+- Node.js and npm
+- The Odoo project and Python environment used by this repository
+- A running Odoo instance for backend-backed testing
+
+Install dependencies from this directory:
+
+```bash
+cd cleon_document_management/next-app
+npm install
+```
+
+## Development
+
+Start the Next.js development server:
 
 ```bash
 npm run dev
 ```
 
-Read operations use the fixtures. Create, update, and delete operations still
-use the Odoo API and should only be tested against a development database.
+Open:
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+http://localhost:3030/document-management
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The development environment is configured in `.env.development`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+NEXT_PUBLIC_HMR_PORT=3030
+WDS_SOCKET_PORT=3030
+NEXT_PUBLIC_ODOO_URL=http://localhost:8069
+NEXT_PUBLIC_USE_TEST_DATA=true
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`NEXT_PUBLIC_USE_TEST_DATA=true` uses realistic local fixtures during
+development. It only applies when `NODE_ENV=development`; production builds
+use Odoo. Restart Next.js after changing environment variables.
 
-## Learn More
+To test the frontend against real Odoo data, use:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+NEXT_PUBLIC_USE_TEST_DATA=false
+NEXT_PUBLIC_ODOO_URL=http://localhost:8069
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy Into Odoo
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run this from `next-app`:
 
-## Deploy on Vercel
+```bash
+cd cleon_document_management/next-app
+npm run deploy
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`npm run deploy`:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Runs `next build --webpack` and creates the static export in `next-app/out`.
+2. Runs `npm run sync` and copies the export into:
+
+```text
+cleon_document_management/static/src/nextapp
+```
+
+Never manually edit `static/src/nextapp`; it is generated output and is
+replaced by the next sync.
+
+After deployment, restart Odoo or update the module so Odoo serves the new
+assets. A typical development command from the Odoo project directory is:
+
+```bash
+../white_clone/.venv/bin/python odoo-bin \
+  -c odoo.conf \
+  -d white_cleon_17 \
+  -u cleon_document_management \
+  --dev=all
+```
+
+Then open:
+
+```text
+http://localhost:8069/document-management
+```
+
+Use a hard refresh if the browser still shows older assets.
+
+## Useful Commands
+
+```bash
+npm run dev       # Next.js development server on port 3030
+npm run build     # Production static build only
+npm run sync      # Copy an existing out/ export into Odoo static files
+npm run deploy    # Build with Webpack and sync into Odoo
+npx tsc --noEmit  # TypeScript validation
+```
+
+Run `npm run deploy`, rather than only `npm run build`, whenever the goal is
+to update the Odoo-served frontend.
+
+## Routing
+
+The Next.js base path is configured as `/document-management` in
+`next.config.ts`. Application routes are written without that prefix:
+
+```text
+/pages/employee
+/pages/organization
+/pages/compliance
+/pages/document-intelligence
+```
+
+Next.js adds the base path to browser links automatically. Backend API calls
+use `NEXT_PUBLIC_ODOO_URL` in development and the current Odoo origin in the
+deployed static app.
+
+## Troubleshooting
+
+### “Next.js build not found”
+
+Odoo cannot find the generated export. Run:
+
+```bash
+npm run deploy
+```
+
+Confirm that `cleon_document_management/static/src/nextapp` contains
+`index.html` and the `_next` assets.
+
+### It works on port 3030 but not through Odoo
+
+The development server and Odoo serve different builds. Run `npm run deploy`,
+restart/update Odoo, and open port `8069`.
+
+### API calls return HTML instead of JSON or a download
+
+In development, backend requests must target `NEXT_PUBLIC_ODOO_URL`, normally
+`http://localhost:8069`. If it is missing, the Next.js dev server can return
+its HTML fallback for an Odoo route.
+
+### `useSearchParams()` build error
+
+Routes using `useSearchParams()` must render their client component inside a
+React `Suspense` boundary in `page.tsx`, otherwise static export fails during
+prerendering.
+
+### Mock data is still visible
+
+Set `NEXT_PUBLIC_USE_TEST_DATA=false` or unset it, restart Next.js, rebuild,
+run `npm run sync`, and restart/update Odoo.
+
+### New code is not visible
+
+Check that `npm run deploy` completed, `static/src/nextapp` was updated, Odoo
+was restarted or the module updated, and the browser was hard-refreshed.
+
+## Backend Changes
+
+Frontend API routes are implemented in:
+
+```text
+cleon_document_management/controllers
+cleon_document_management/models
+```
+
+When adding a backend controller or model field, restart Odoo and update the
+module before testing the production/static frontend path.
