@@ -13,29 +13,32 @@
 # testing
 /coverage
 
-# next.js
+# next.js build outputs
 /.next/
 /out/
 
-# production
+# build & cache files
 /build
+.turbo/
+.eslintcache
+*.tsbuildinfo
 
-# misc
+# typescript generated files
+next-env.d.ts
+
+# environment variables
+.env
+.env*.local
+.env.production
+.env.development
+
+# debug & OS logs
 .DS_Store
 *.pem
-
-# debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
 # vercel
 .vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
