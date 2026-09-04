@@ -49,13 +49,15 @@ class CleonApprovalStep(models.Model):
         ("single", "Single Approver"),
         ("any", "Any One Approver"),
         ("all", "All Approvers"),
-    ], default="single", required=True, string="Completion Mode")
+    ], default="any", required=True, string="Completion Mode")
     approver_type = fields.Selection([
         ("line_manager", "Direct Manager"),
         ("group", "User Group / Role"),
         ("specific_user", "Specific User"),
         ("specific_users", "Multiple Specific Users"),
+        ("target_resolver", "Target Record Dynamic Resolver"),
     ], default="line_manager", required=True)
+    step_code = fields.Char(string="Step Code / Target Resolver Key", index=True)
     approver_group_id = fields.Many2one("res.groups", string="Approver Group / Role")
     specific_user_id = fields.Many2one("res.users", string="Specific Approver User")
     approver_user_ids = fields.Many2many(

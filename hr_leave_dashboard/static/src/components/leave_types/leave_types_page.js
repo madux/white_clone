@@ -10,7 +10,7 @@ import { LeaveTypeFormModal } from "./leave_type_form_modal";
 export class LeaveTypesPage extends Component {
     static template = "hr_leave_dashboard.LeaveTypesPage";
     static components = { CalendarSidebar, LeaveTypeDetailDrawer, LeaveTypeFormModal };
-    static props = { embedded: { type: Boolean, optional: true } };
+    static props = { embedded: { type: Boolean, optional: true }, "*": true };
 
     setup() {
         this.orm = useService("orm");

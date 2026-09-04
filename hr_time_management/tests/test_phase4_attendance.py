@@ -359,7 +359,8 @@ class TestPhase4Attendance(TransactionCase):
     def test_18_date_aware_leave_in_multi_day_report(self):
         """Test leave on single day (Wed Aug 12) only sets on_leave status for that specific date in multi-day report."""
         leave_type = self.env["hr.leave.type"].create({
-            "name": "Paid Annual Leave",
+            "name": "Paid Annual Leave %s" % self.id,
+            "leave_code": "P18",
             "requires_allocation": "no",
             "retroactive_request_days": 365,
         })

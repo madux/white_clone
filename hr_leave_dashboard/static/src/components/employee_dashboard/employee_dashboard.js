@@ -9,7 +9,7 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class EmployeeLeaveDashboard extends Component {
     static template = "hr_leave_dashboard.EmployeeDashboard";
     static components = { EmployeeRequestModal, CalendarSidebar };
-    static props = { embedded: {type: Boolean, optional: true}, startRequest: {type: Boolean, optional: true} };
+    static props = { embedded: {type: Boolean, optional: true}, startRequest: {type: Boolean, optional: true}, "*": true };
 
     setup() {
         this.orm = useService("orm");

@@ -12,6 +12,18 @@ class TestTimeManagementSecurity(TransactionCase):
         super().setUpClass()
         cls.company = cls.env.company
 
+        # Ensure company time policy exists and enables overtime
+        cls.policy = cls.env["cleon.time.policy"].search([("company_id", "=", cls.company.id)], limit=1)
+        policy_vals = {
+            "company_id": cls.company.id,
+            "enable_overtime": True,
+            "overtime_request_mode": "both",
+        }
+        if not cls.policy:
+            cls.policy = cls.env["cleon.time.policy"].create(policy_vals)
+        else:
+            cls.policy.write(policy_vals)
+
         # Create HR Admin User
         cls.hr_admin_user = cls.env["res.users"].create({
             "name": "TM HR Admin User",
@@ -96,11 +108,11 @@ class TestTimeManagementSecurity(TransactionCase):
         })
 
         # Create Company B Fixtures for Cross-Company Isolation
-        cls.company_b = cls.env["res.company"].create({"name": "Company B Test"})
+        cls.company_b = cls.env["res.company"].create({"name": "Company B Isolation Security Test"})
         cls.company_b_user = cls.env["res.users"].create({
             "name": "Company B Employee User",
-            "login": "comp_b_user",
-            "email": "comp_b@example.com",
+            "login": "comp_b_sec_iso_user",
+            "email": "comp_b_sec_iso@example.com",
             "company_id": cls.company_b.id,
             "company_ids": [(6, 0, [cls.company_b.id])],
             "groups_id": [(6, 0, [

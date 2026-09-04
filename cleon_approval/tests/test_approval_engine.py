@@ -318,22 +318,47 @@ class TestApprovalEngine(TransactionCase):
             "company_ids": [(6, 0, [self.company.id])],
             "groups_id": [(6, 0, [self.env.ref("base.group_user").id, fallback_group.id])],
         })
-        company_b = self.env["res.company"].search([("id", "!=", self.company.id)], limit=1)
-        if not company_b:
-            company_b = self.env["res.company"].sudo().create({
-                "name": "Company B Test",
-                "po_lead": 0.0,
-                "security_lead": 0.0,
-                "leave_default_approval_workflow": "single",
-                "leave_default_supporting_document_policy": "optional",
-                "fiscalyear_last_day": 31,
-                "fiscalyear_last_month": "12",
-                "account_opening_date": "2026-01-01",
+        def _test_copy_company(company_rec, default=None):
+            default = dict(default or {})
+            c_name = default.get("name", "Company B Test Engine Isolated %s" % self.id)
+            c_partner = self.env["res.partner"].create({
+                "name": c_name,
+                "is_company": True,
+            })
+            cr = self.env.cr
+            cr.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'res_company'
+                ORDER BY ordinal_position
+            """)
+            cols = [r[0] for r in cr.fetchall() if r[0] != 'id']
+            select_exprs = []
+            for c in cols:
+                if c == 'name':
+                    select_exprs.append("%s")
+                elif c == 'partner_id':
+                    select_exprs.append(str(c_partner.id))
+                else:
+                    select_exprs.append(f'"{c}"')
+            query = f'''
+                INSERT INTO res_company ({', '.join(f'"{c}"' for c in cols)})
+                SELECT {', '.join(select_exprs)} FROM res_company WHERE id = %s
+                RETURNING id
+            '''
+            cr.execute(query, [c_name, company_rec.id])
+            new_id = cr.fetchone()[0]
+            return self.env["res.company"].browse(new_id)
+
+        from unittest.mock import patch
+        with patch.object(type(self.env["res.company"]), "copy", _test_copy_company):
+            company_b = self.company.copy({
+                "name": "Company B Test Engine Isolated %s" % self.id,
             })
         user_b = self.env["res.users"].create({
             "name": "Company B User",
-            "login": "company_b_user",
-            "email": "companyb@example.com",
+            "login": "company_b_user_iso_%s" % self.id,
+            "email": "companyb_iso_%s@example.com" % self.id,
             "company_id": company_b.id,
             "company_ids": [(6, 0, [company_b.id])],
             "groups_id": [(6, 0, [self.env.ref("base.group_user").id, fallback_group.id])],

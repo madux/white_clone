@@ -117,11 +117,7 @@ class HrLeave(models.Model):
             # "To Approve" state, without calling action_confirm().
             if leave.state in ("confirm", "validate1"):
                 if "cleon.approval.instance" in self.env:
-                    try:
-                        self.env["cleon.approval.instance"].sudo().action_start(leave)
-                    except Exception as exc:
-                        _logger.warning("Failed to start cleon.approval.instance for leave %s: %s", leave.id, exc)
-                leave._initialize_configured_approval_lines()
+                    self.env["cleon.approval.instance"].sudo().action_start(leave)
         return leaves
 
     def write(self, values):
@@ -205,49 +201,162 @@ class HrLeave(models.Model):
 
     def _approval_validate_decision(self, decision, automated=False, comment=False):
         self.ensure_one()
-        if self._has_active_disciplinary_suspension():
-            raise ValidationError(_("Cannot approve leave request for an employee with an active disciplinary suspension."))
+        if decision == "approve":
+            if self._has_active_disciplinary_suspension():
+                raise ValidationError(_("Cannot approve leave request for an employee with an active disciplinary suspension."))
+            self._validate_leave_policy(enforce_submission_timing=False)
         return True
+
+    def _check_double_validation_rules(self, employees, state):
+        if self.env.context.get("cleon_final_approval"):
+            return
+        return super()._check_double_validation_rules(employees, state)
 
     def _approval_finalize_approve(self):
         self.ensure_one()
-        super(HrLeave, self.with_context(cleon_final_approval=True)).action_approve()
+        ctx = dict(self.env.context, cleon_final_approval=True)
+        leave = self.sudo().with_context(ctx)
+        if leave.state == "confirm":
+            super(HrLeave, leave).action_approve()
+        if leave.state == "validate1":
+            super(HrLeave, leave).action_validate()
 
     def _approval_finalize_reject(self, reason=False):
         self.ensure_one()
         self.sudo().write({"changes_requested": False, "rejection_reason": reason or False})
         super(HrLeave, self.with_context(cleon_final_approval=True)).action_refuse()
 
-    def _approval_finalize_request_changes(self, reason=False):
+    def _approval_finalize_request_changes(self, reason=False, deciding_user=False):
         self.ensure_one()
+        actor = deciding_user or (self.env.user if not self.env.su else False)
         self.sudo().write({
             "changes_requested": True,
             "changes_requested_comment": reason or False,
-            "changes_requested_by_id": self.env.user.id if not self.env.su else False,
+            "changes_requested_by_id": actor.id if actor else False,
             "changes_requested_at": fields.Datetime.now(),
             "state": "confirm",
         })
         self.message_post(body=_("Changes requested by approver: %s") % (reason or ""))
+
+    def _approval_resolve_chain(self, workflow_type=False):
+        self.ensure_one()
+        leave_type = self.holiday_status_id
+        if not leave_type:
+            return False
+        if leave_type.approval_workflow == "none":
+            return "no_approval"
+        if leave_type.approval_workflow == "single":
+            return "single_fallback"
+        if leave_type.approval_workflow == "multi":
+            if not leave_type.approval_chain_id or not leave_type.approval_chain_id.active:
+                raise UserError(_("Configuration Integrity Error: Multi-stage Leave Type '%s' has no linked approval chain.") % leave_type.name)
+            return leave_type.approval_chain_id
+        return False
+
+    def _approval_resolve_step_users(self, step, employee):
+        self.ensure_one()
+        code = getattr(step, "step_code", False)
+        if not code and getattr(step, "approver_type", False) == "line_manager":
+            code = "direct_manager"
+
+        requester = employee.sudo().user_id
+
+        def next_non_self_manager(candidate):
+            visited = set()
+            while candidate and candidate == requester and candidate.id not in visited:
+                visited.add(candidate.id)
+                manager_employee = self.env["hr.employee"].sudo().search([
+                    ("user_id", "=", candidate.id),
+                    ("company_id", "=", employee.company_id.id),
+                    ("active", "=", True),
+                ], limit=1)
+                candidate = manager_employee.leave_manager_id or manager_employee.parent_id.user_id
+            return candidate if candidate and candidate != requester else self.env["res.users"]
+
+        if code == "direct_manager":
+            manager = employee.sudo().leave_manager_id or employee.sudo().parent_id.sudo().user_id
+            res = next_non_self_manager(manager)
+            if not res:
+                raise UserError(_("Configuration Error: No direct manager found for employee '%s'.") % employee.name)
+            return res
+
+        if code == "department_head":
+            dept = employee.sudo().department_id
+            dept_mgr = dept.sudo().manager_id if dept else False
+            dept_user = dept_mgr.sudo().user_id if dept_mgr else False
+            if not dept or not dept_mgr or not dept_user:
+                raise UserError(_("Configuration Error: Department '%s' has no valid department head user configured.") % (dept.name if dept else "None"))
+            res = next_non_self_manager(dept_user)
+            if not res:
+                raise UserError(_("Configuration Error: Department head user for '%s' cannot self-approve their own request.") % dept.name)
+            return res
+
+        if code == "hr_manager":
+            grp = self.env.ref("hr_leave_dashboard.group_leave_permission_approve", raise_if_not_found=False)
+            users = grp.users.filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids) if grp else self.env["res.users"]
+            if not users:
+                raise UserError(_("Configuration Error: No active HR Manager user found for company '%s'.") % self.company_id.name)
+            return users
+
+        if code == "hr_director":
+            param_uid = self.env["ir.config_parameter"].sudo().get_param("cleon_approval.hr_director_user_id")
+            if param_uid:
+                user = self.env["res.users"].browse(int(param_uid)).filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids)
+                if user:
+                    return user
+            grp = self.env.ref("hr_leave_dashboard.group_role_hr_director", raise_if_not_found=False)
+            users = grp.users.filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids) if grp else self.env["res.users"]
+            if not users:
+                raise UserError(_("Configuration Error: No authoritative HR Director is configured for company '%s'. System Admin or generic permissions do not confer HR Director authority.") % self.company_id.name)
+            return users
+
+        if code == "finance_director":
+            param_uid = self.env["ir.config_parameter"].sudo().get_param("cleon_approval.finance_director_user_id")
+            if param_uid:
+                user = self.env["res.users"].browse(int(param_uid)).filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids)
+                if user:
+                    return user
+            grp = self.env.ref("hr_leave_dashboard.group_role_finance_director", raise_if_not_found=False)
+            users = grp.users.filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids) if grp else self.env["res.users"]
+            if not users:
+                raise UserError(_("Configuration Error: No authoritative Finance Director is configured for company '%s'.") % self.company_id.name)
+            return users
+
+        if code == "ceo":
+            param_uid = self.env["ir.config_parameter"].sudo().get_param("cleon_approval.ceo_user_id")
+            if param_uid:
+                user = self.env["res.users"].browse(int(param_uid)).filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids)
+                if user:
+                    return user
+            grp = self.env.ref("hr_leave_dashboard.group_role_ceo", raise_if_not_found=False)
+            users = grp.users.filtered(lambda u: u.active and self.company_id.id in u.company_ids.ids) if grp else self.env["res.users"]
+            if not users:
+                raise UserError(_("Configuration Error: No authoritative CEO / Managing Director is configured for company '%s'. System Administrator membership does not confer CEO approval authority.") % self.company_id.name)
+            return users
+
+        return self.env["res.users"]
 
     def _approval_fallback_config(self):
         self.ensure_one()
         if self.holiday_status_id and self.holiday_status_id.approval_workflow == "none":
             return {"require_approval": False}
         parent_user = self.employee_id.leave_manager_id or self.employee_id.parent_id.user_id
+        if not parent_user:
+            approve_grp = self.env.ref("hr_leave_dashboard.group_leave_permission_approve", raise_if_not_found=False)
+            if approve_grp and approve_grp.users:
+                parent_user = approve_grp.users
+        if not parent_user:
+            raise UserError(_("No eligible approver could be resolved for employee '%s'.") % self.employee_id.name)
         return {
             "require_approval": True,
-            "fallback_users": parent_user or self.env["res.users"],
+            "fallback_users": parent_user,
         }
 
     def action_confirm(self):
         result = super().action_confirm()
         if "cleon.approval.instance" in self.env:
             for leave in self:
-                try:
-                    self.env["cleon.approval.instance"].sudo().action_start(leave)
-                except Exception as exc:
-                    _logger.warning("Failed to start cleon.approval.instance for leave %s: %s", leave.id, exc)
-        self._initialize_configured_approval_lines()
+                self.env["cleon.approval.instance"].sudo().action_start(leave)
         return result
 
     def _resolve_stage_approver(self, stage):
@@ -467,10 +576,16 @@ class HrLeave(models.Model):
         ]
         if not self._leave_has_group("hr_leave_dashboard.group_leave_permission_approve", user):
             return [("id", "=", 0)]
-        assigned_leave_ids = self.env["hr.leave.approval.line"].sudo().search([
-            ("approver_id", "=", user.id),
-            ("status", "=", "pending"),
-        ]).mapped("leave_id").ids
+
+        cleon_decisions = self.env["cleon.approval.instance.step.decision"].sudo().search([
+            ("user_id", "=", user.id),
+            ("state", "=", "pending"),
+            ("step_id.state", "=", "pending"),
+            ("instance_id.state", "=", "pending"),
+            ("instance_id.res_model", "=", "hr.leave"),
+        ]) if "cleon.approval.instance.step.decision" in self.env else False
+        assigned_leave_ids = cleon_decisions.mapped("instance_id.res_id") if cleon_decisions else []
+
         manager_domain = expression.OR([
             [("employee_id.leave_manager_id", "=", user.id)],
             [("employee_id.parent_id.user_id", "=", user.id)],
@@ -494,11 +609,18 @@ class HrLeave(models.Model):
             "hr_leave_dashboard.group_leave_permission_approve", user,
         ):
             return False
-        assigned_stage = self.approval_line_ids.filtered(
-            lambda line: line.status == "pending" and line.approver_id == user
-        )
-        if self.holiday_status_id.approval_workflow == "multi":
-            return bool(assigned_stage)
+        if "cleon.approval.instance" in self.env:
+            inst = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", "hr.leave"),
+                ("res_id", "=", self.id),
+                ("state", "=", "pending"),
+            ], limit=1)
+            if inst:
+                current_step = inst.step_ids.filtered(lambda s: s.state == "pending")
+                if current_step and user in current_step.resolved_user_ids:
+                    pending_dec = current_step.decision_ids.filtered(lambda d: d.user_id == user and d.state == "pending")
+                    return bool(pending_dec)
+                return False
         is_manager = (
             self.employee_id.leave_manager_id == user
             or self.employee_id.parent_id.user_id == user
@@ -916,6 +1038,8 @@ class HrLeave(models.Model):
         if leave.state not in ("confirm", "validate1", "validate") or leave.is_cancelled: return {"ok": False, "message": _("Only a pending or approved leave request can be cancelled.")}
         try:
             with self.env.cr.savepoint():
+                if "cleon.approval.instance" in self.env:
+                    self.env["cleon.approval.instance"].sudo().action_cancel_for_target(leave, reason=reason)
                 leave.sudo().action_refuse()
                 leave.sudo().write({"is_cancelled": True, "cancelled_by_id": self.env.user.id, "cancelled_at": fields.Datetime.now(), "cancellation_reason": reason})
                 leave.sudo()._create_audit_record("cancelled", note=reason)
@@ -989,33 +1113,32 @@ class HrLeave(models.Model):
         if len((values.get("handover_notes") or "")) > 500:
             return {"ok": False, "message": _("Handover notes must not exceed 500 characters.")}
         was_rejected = leave.state == "refuse"
-        paused_lines = leave.approval_line_ids.filtered(lambda line: line.status == "waiting")
         if was_rejected:
             leave.action_draft()
         leave.sudo().write({
-            "holiday_status_id": int(values["leave_type_id"]), "request_date_from": values["date_from"],
-            "request_date_to": values["date_to"], "request_unit_half": bool(values.get("half_day")),
-            "request_date_from_period": values.get("period", "am"), "notes": reason,
+            "holiday_status_id": int(values["leave_type_id"]),
+            "request_date_from": values["date_from"],
+            "request_date_to": values["date_to"],
+            "request_unit_half": bool(values.get("half_day")),
+            "request_date_from_period": values.get("period", "am"),
+            "notes": reason,
+            "name": reason,
             "handover_enabled": bool(values.get("handover_enabled")),
             "backup_colleague_ids": [(6, 0, backups.ids)] if values.get("handover_enabled") else [(5, 0, 0)],
             "emergency_contact": (values.get("emergency_contact") or "").strip(),
             "handover_notes": (values.get("handover_notes") or "").strip(),
-            "changes_requested": False, "changes_requested_comment": False,
-            "changes_requested_by_id": False, "changes_requested_at": False,
-            "rejection_reason": False, "rejection_category": False,
+            "changes_requested": False,
+            "changes_requested_comment": False,
+            "changes_requested_by_id": False,
+            "changes_requested_at": False,
+            "rejection_reason": False,
+            "rejection_category": False,
+            "state": "confirm",
         })
-        route_mode = self.env["ir.config_parameter"].sudo().get_param("cleon_leave.changes_resubmit_route", "same_level")
-        if was_rejected or route_mode == "restart_first":
-            leave.approval_line_ids.sudo().unlink()
-            leave.action_confirm()
-            leave._initialize_configured_approval_lines()
-        elif paused_lines:
-            resumed_line = paused_lines.sorted(lambda line: (line.sequence, line.id))[:1]
-            resumed_line.sudo().write({
-                "status": "pending",
-                "comments": False,
-                "deadline": resumed_line._deadline_from_stage(fields.Datetime.now()),
-            })
+        # Sole runtime source of truth: start a new generic approval instance restarting at Stage 1.
+        # Historical approval instance(s) remain immutable in state 'changes_requested'.
+        if "cleon.approval.instance" in self.env:
+            self.env["cleon.approval.instance"].sudo().action_start(leave)
         if attachment.get("data"):
             self.env["ir.attachment"].sudo().search([("res_model", "=", "hr.leave"), ("res_id", "=", leave.id)]).unlink()
             self.env["ir.attachment"].sudo().create({"name": attachment.get("name") or _("Supporting document"), "datas": attachment["data"], "mimetype": attachment.get("mimetype"), "res_model": "hr.leave", "res_id": leave.id})
@@ -1746,11 +1869,22 @@ class HrLeave(models.Model):
         actor = self.env.user
         access = self.get_leave_access_profile()
         leave = self.sudo().browse(int(leave_id)).exists()
-        if not leave or leave.employee_id.company_id != self.env.company:
+        if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
             raise ValidationError(_("Invalid leave request."))
         can_review = leave._leave_can_review(actor)
         can_read_operations = access["can_operate"] or access["can_view_audit"]
-        if not (leave.employee_id.user_id == actor or can_review or can_read_operations):
+        is_approver_on_workflow = False
+        if "cleon.approval.instance" in self.env:
+            inst = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", "hr.leave"),
+                ("res_id", "=", leave.id),
+            ], limit=1)
+            if inst:
+                all_step_users = inst.step_ids.mapped("resolved_user_ids")
+                if actor in all_step_users:
+                    is_approver_on_workflow = True
+
+        if not (leave.employee_id.user_id == actor or can_review or can_read_operations or is_approver_on_workflow):
             raise AccessError(_("You can only view your own or assigned leave requests."))
 
         res = self._serialize_leave_request(leave)
@@ -1795,14 +1929,28 @@ class HrLeave(models.Model):
                         "comments": dec.decision_comment or "",
                     })
                 mode_label = dict(step._fields["completion_mode"].selection).get(step.completion_mode, step.completion_mode)
+                total_approvers = len(step.decision_ids)
+                approved_count = len(step.decision_ids.filtered(lambda d: d.state == "approved"))
+
+                if step.completion_mode == "all":
+                    progress_label = _("%(approved)d of %(total)d Approved") % {"approved": approved_count, "total": total_approvers}
+                elif step.completion_mode == "any":
+                    progress_label = _("Any 1 of %(total)d Approvers") % {"total": total_approvers}
+                else:
+                    progress_label = _("Single Approver")
+
+                step_state_val = "done" if step.state == "approved" else ("rejected" if step.state == "rejected" else ("changes_requested" if step.state == "changes_requested" else step.state))
                 workflow.append({
                     "key": "cleon_step_%d" % step.id,
                     "label": "%s (%s)" % (step.name, mode_label),
                     "actor": approver_names,
                     "role": dict(step._fields["state"].selection).get(step.state, step.state),
                     "timestamp": fields.Datetime.to_string(step.decision_at) if step.decision_at else False,
-                    "state": "done" if step.state == "approved" else ("rejected" if step.state == "rejected" else step.state),
+                    "state": step_state_val,
                     "completion_mode": step.completion_mode,
+                    "progress_label": progress_label,
+                    "total_approvers": total_approvers,
+                    "approved_count": approved_count,
                     "decisions": decisions_list,
                     "comments": step.decision_comment or "",
                     "escalated": step.state == "escalated",
@@ -1979,32 +2127,21 @@ class HrLeave(models.Model):
         leave = self.sudo().browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
             raise ValidationError(_("Invalid leave request."))
-        self._check_leave_review_access(leave)
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
             raise ValidationError(_("This leave request is not awaiting approval."))
 
-        if leave._has_active_disciplinary_suspension():
-            self.env["hr.leave.audit.log"].sudo().create({
-                "leave_id": leave.id, "action": "failed", "event_status": "failed",
-                "employee_id": leave.employee_id.id, "leave_type_id": leave.holiday_status_id.id,
-                "actor_id": self.env.user.id, "actor_label": self.env.user.name,
-                "note": _("Approval blocked: employee is under an active disciplinary suspension."),
-            })
-            return {"ok": False, "message": _("This request cannot be approved while the employee is under an active disciplinary suspension.")}
-        if leave.holiday_status_id.approval_workflow == "multi" and leave.approval_line_ids:
-            stage_result = leave._approve_configured_stage()
-            event = "final_approval" if stage_result == "final" else "first_approval"
-        elif leave.state == "confirm":
-            leave.action_approve()
-            event = "first_approval" if leave.state == "validate1" else "final_approval"
-        elif leave.state == "validate1":
-            leave.action_validate()
-            event = "final_approval"
-        else:
-            event = "approve"
+        inst = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+            ("state", "=", "pending"),
+        ], limit=1) if "cleon.approval.instance" in self.env else False
 
-        leave._create_audit_record(event)
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
 
+        inst.with_user(self.env.user).action_decide("approve")
+
+        leave._create_audit_record("approve")
         leave._post_configured_leave_update(
             _("Leave request approved by %s.", self.env.user.name)
         )
@@ -2020,16 +2157,25 @@ class HrLeave(models.Model):
         leave = self.sudo().browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
             raise ValidationError(_("Invalid leave request."))
-        self._check_leave_review_access(leave)
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
             raise ValidationError(_("Only a pending leave request can be rejected."))
 
         body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
                  user=self.env.user.name, reason=reason)
         leave._post_configured_leave_update(body)
-        leave._reject_configured_stages(reason)
         leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
-        leave.action_refuse()
+
+        inst = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+            ("state", "=", "pending"),
+        ], limit=1) if "cleon.approval.instance" in self.env else False
+
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
+
+        inst.with_user(self.env.user).action_decide("reject", comment=reason)
+
         leave._create_audit_record("reject", note=reason)
         return self.get_leave_request_detail(leave.id)
 
@@ -2041,18 +2187,20 @@ class HrLeave(models.Model):
         leave = self.sudo().browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
             raise ValidationError(_("Invalid leave request."))
-        self._check_leave_review_access(leave)
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled or leave.changes_requested:
             raise ValidationError(_("Only a pending leave request can be returned for changes."))
-        leave.approval_line_ids.filtered(lambda line: line.status == "pending").sudo().write({
-            "status": "waiting", "comments": comment,
-        })
-        leave.sudo().write({
-            "changes_requested": True,
-            "changes_requested_comment": comment,
-            "changes_requested_by_id": self.env.user.id,
-            "changes_requested_at": fields.Datetime.now(),
-        })
+
+        inst = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+            ("state", "=", "pending"),
+        ], limit=1) if "cleon.approval.instance" in self.env else False
+
+        if not inst:
+            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
+
+        inst.with_user(self.env.user).action_decide("request_changes", comment=comment)
+
         leave._create_audit_record("request_changes", note=comment)
         leave._post_configured_leave_update(_(
             "%(approver)s requested modifications.<br/><strong>Comment:</strong> %(comment)s",
@@ -2072,6 +2220,9 @@ class HrLeave(models.Model):
 
         if leave.state != "validate" or leave.is_cancelled:
             raise ValidationError(_("Only active approved leave requests can be cancelled."))
+
+        if "cleon.approval.instance" in self.env:
+            self.env["cleon.approval.instance"].sudo().action_cancel_for_target(leave, reason=reason)
 
         leave.action_refuse()
         leave.write({

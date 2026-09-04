@@ -8,7 +8,7 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class LeaveSettingsPage extends Component {
     static template = "hr_leave_dashboard.LeaveSettingsPage";
     static components = { CalendarSidebar };
-    static props = { embedded: { type: Boolean, optional: true }, onOpenLeaveTypes: { type: Function, optional: true } };
+    static props = { embedded: { type: Boolean, optional: true }, onOpenLeaveTypes: { type: Function, optional: true }, "*": true };
 
     setup() {
         this.orm = useService("orm");

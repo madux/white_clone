@@ -32,6 +32,23 @@ class HrLeaveTypeApprovalStage(models.Model):
         if any(stage.escalation_value < 0 for stage in self):
             raise ValidationError(_("Escalation time cannot be negative."))
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records.mapped("leave_type_id")._sync_cleon_approval_chain()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        self.mapped("leave_type_id")._sync_cleon_approval_chain()
+        return res
+
+    def unlink(self):
+        leave_types = self.mapped("leave_type_id")
+        res = super().unlink()
+        leave_types._sync_cleon_approval_chain()
+        return res
+
 
 class HrLeaveApprovalLine(models.Model):
     _name = "hr.leave.approval.line"

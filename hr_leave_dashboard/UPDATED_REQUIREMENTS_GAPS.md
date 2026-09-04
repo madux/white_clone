@@ -23,15 +23,17 @@ invented.
 
 ## Workflow actions still needing their detailed contract
 
-- Request Changes (including resulting state, employee response and SLA)
 - Withdraw versus Cancel semantics
 - Leave extension requests and extension approval
 - the three Return Overdue actions
 - approver escalation destination and authority
 
-Approve, Reject and employee escalation continue to use the currently defined
-workflow. The missing actions should be added when their complete requirements
-and acceptance criteria are supplied.
+Request Changes and same-record employee resubmission are now implemented on the
+signed-off `cleon_approval` runtime. The remaining Leave Requests, Extension and
+Return lifecycle contract is consolidated in
+[`PART8_IMPLEMENTATION_BASELINE.md`](PART8_IMPLEMENTATION_BASELINE.md), including
+the Return Overdue action-set and date-semantics decisions that Product must
+reconcile before implementation.
 
 ## Preferences and strategic reporting
 

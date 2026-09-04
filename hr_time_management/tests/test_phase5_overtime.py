@@ -127,6 +127,8 @@ class TestPhase5Overtime(TransactionCase):
             "holiday_overtime_rate": 2.5,
             "weekend_days": "5,6",
             "overtime_request_mode": "both",
+            "enable_break_period": True,
+            "default_break_minutes": 60,
         }
         if not self.policy:
             self.policy = self.env["cleon.time.policy"].create(policy_vals)
@@ -146,7 +148,7 @@ class TestPhase5Overtime(TransactionCase):
             d_offset += 1
         daily_date = today - timedelta(days=d_offset)
 
-        h_offset = d_offset + 1
+        h_offset = d_offset + 3
         while (today - timedelta(days=h_offset)).weekday() >= 5 or (today - timedelta(days=h_offset)) == daily_date:
             h_offset += 1
         holiday_date = today - timedelta(days=h_offset)

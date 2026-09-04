@@ -106,6 +106,9 @@ class HrLeaveType(models.Model):
         "hr.leave.type.approval.stage", "leave_type_id", string="Approval Stages",
         copy=True,
     )
+    approval_chain_id = fields.Many2one(
+        "cleon.approval.chain", string="Linked Approval Chain", ondelete="set null", copy=False
+    )
     supporting_document_policy = fields.Selection(
         [
             ("always", "Always Required"),
@@ -239,6 +242,89 @@ class HrLeaveType(models.Model):
             emps = emps.filtered(lambda e: getattr(e, "gender", False) == "female")
 
         return emps
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._sync_cleon_approval_chain()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ("approval_workflow", "approval_stage_ids", "name", "company_id")):
+            self._sync_cleon_approval_chain()
+        return res
+
+    def _sync_cleon_approval_chain(self):
+        for leave_type in self:
+            if "cleon.approval.chain" not in self.env or "cleon.approval.workflow.type" not in self.env:
+                continue
+            if leave_type.approval_workflow != "multi" or not leave_type.approval_stage_ids:
+                if leave_type.approval_chain_id:
+                    leave_type.approval_chain_id.sudo().write({"active": False})
+                    leave_type.sudo().write({"approval_chain_id": False})
+                continue
+            wft = self.env["cleon.approval.workflow.type"].sudo().search([("code", "=", "leave_request")], limit=1)
+            if not wft:
+                continue
+            chain = leave_type.approval_chain_id
+            company = leave_type.company_id or self.env.company
+            if not chain or not chain.exists():
+                chain = self.env["cleon.approval.chain"].sudo().create({
+                    "name": _("%s Approval Chain") % leave_type.name,
+                    "company_id": company.id,
+                    "workflow_type_id": wft.id,
+                    "active": True,
+                    "is_default": False,
+                })
+                leave_type.sudo().write({"approval_chain_id": chain.id})
+            else:
+                chain.sudo().write({
+                    "name": _("%s Approval Chain") % leave_type.name,
+                    "company_id": company.id,
+                    "active": True,
+                })
+
+            existing_steps = chain.step_ids
+            new_steps_vals = []
+            for stage in leave_type.approval_stage_ids.sorted("sequence"):
+                timeout_hours = stage.escalation_value * (24 if stage.escalation_unit == "days" else 1) if stage.escalation_value else 24
+                st = stage.approver_type
+                if st == "direct_manager":
+                    approver_type = "line_manager"
+                    completion_mode = "single"
+                elif st == "department_head":
+                    approver_type = "target_resolver"
+                    completion_mode = "single"
+                elif st in ("hr_manager", "hr_director", "finance_director", "ceo"):
+                    approver_type = "target_resolver"
+                    completion_mode = "any"
+                else:
+                    approver_type = "target_resolver"
+                    completion_mode = "any"
+
+                new_steps_vals.append({
+                    "chain_id": chain.id,
+                    "sequence": stage.sequence,
+                    "name": st.replace("_", " ").title(),
+                    "step_code": st,
+                    "completion_mode": completion_mode,
+                    "approver_type": approver_type,
+                    "approver_group_id": False,
+                    "sla_timeout_hours": timeout_hours,
+                    "sla_action": "escalate_next",
+                })
+            existing_steps.sudo().unlink()
+            self.env["cleon.approval.step"].sudo().create(new_steps_vals)
+
+    @api.model
+    def _backfill_legacy_approval_chains(self):
+        """Internal / migration helper to synchronize all existing Leave Types."""
+        if not self.env.is_superuser() and not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
+            raise AccessError(_("Only Configuration managers or migrations may run the approval chain backfill."))
+        leave_types = self.sudo().search([])
+        leave_types._sync_cleon_approval_chain()
+        return len(leave_types)
 
     def _annual_entitlement_for_employee(self, employee, effective_date):
         self.ensure_one()

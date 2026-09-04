@@ -260,19 +260,42 @@
                                         <div t-att-class="'step-dot ' + step.state">
                                             <t t-if="step.state === 'done'">✓</t>
                                             <t t-elif="step.state === 'rejected'">✕</t>
+                                            <t t-elif="step.state === 'changes_requested'">↩</t>
                                             <t t-else=""></t>
                                         </div>
                                     </div>
                                     <div class="timeline-step-content">
                                         <div class="d-flex justify-content-between align-items-start">
-                                            <strong class="step-label"><t t-esc="step.label"/></strong>
+                                            <div>
+                                                <strong class="step-label"><t t-esc="step.label"/></strong>
+                                                <t t-if="step.progress_label">
+                                                    <span class="badge bg-light text-primary font-weight-normal ms-2"><t t-esc="step.progress_label"/></span>
+                                                </t>
+                                            </div>
                                             <t t-if="step.state === 'pending'">
                                                 <span class="badge bg-light text-muted font-weight-normal ms-2">Pending</span>
+                                            </t>
+                                            <t t-elif="step.state === 'changes_requested'">
+                                                <span class="badge bg-warning-subtle text-warning font-weight-normal ms-2">Changes Requested</span>
                                             </t>
                                         </div>
                                         <div class="step-actor text-muted">
                                             <t t-esc="step.actor"/> <t t-if="step.role and step.role !== 'Automated'">(<t t-esc="step.role"/>)</t>
                                         </div>
+                                        <t t-if="step.decisions and step.decisions.length > 1">
+                                            <div class="approver-decisions-list mt-1">
+                                                <t t-foreach="step.decisions" t-as="dec" t-key="dec.user_id">
+                                                    <span t-att-class="'badge me-1 ' + (dec.state === 'approved' ? 'bg-success-subtle text-success' : (dec.state === 'rejected' ? 'bg-danger-subtle text-danger' : (dec.state === 'changes_requested' ? 'bg-warning-subtle text-warning' : (dec.state === 'skipped' ? 'bg-light text-muted' : 'bg-light text-dark'))))" style="font-size: 11px;">
+                                                        <t t-esc="dec.user_name"/>: <t t-esc="dec.state === 'approved' ? 'Approved' : (dec.state === 'rejected' ? 'Rejected' : (dec.state === 'changes_requested' ? 'Changes Requested' : (dec.state === 'skipped' ? 'Skipped' : 'Pending')))"/>
+                                                    </span>
+                                                </t>
+                                            </div>
+                                        </t>
+                                        <t t-if="step.comments">
+                                            <div class="step-comments text-muted fst-italic mt-1" style="font-size: 11.5px;">
+                                                “<t t-esc="step.comments"/>”
+                                            </div>
+                                        </t>
                                         <t t-if="step.timestamp">
                                             <small class="step-time text-muted"><t t-esc="this.formatDateTime(step.timestamp)"/></small>
                                         </t>

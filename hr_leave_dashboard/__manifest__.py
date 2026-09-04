@@ -1,6 +1,6 @@
 {
     'name': 'CLEONHR Leave',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.1.0',
     'category': 'CleonHR-HR ADMIN',
     'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration', 'hr_employee', 'cleon_ai', 'cleon_approval'],
     'data': [

@@ -2,6 +2,7 @@
 import { Component, onWillStart, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
+import { standardActionServiceProps } from "@web/webclient/actions/action_service";
 import { EmployeeRequestModal } from "../employee_request_modal/employee_request_modal";
 import { LeaveRequestDetailModal } from "../leave_request_detail/leave_request_detail";
 import { CalendarSidebar } from "../calendar_sidebar";
@@ -9,8 +10,72 @@ import { CalendarSidebar } from "../calendar_sidebar";
 export class MyLeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.MyLeaveRequestsPage";
     static components = { EmployeeRequestModal, LeaveRequestDetailModal, CalendarSidebar };
-    static props = { embedded: {type: Boolean, optional: true} };
-    setup(){this.orm=useService("orm");this.action=useService("action");this.notification=useService("notification");this.state=useState({loading:true,rows:[],counts:{},types:[],status:"all",activeView:"my",search:"",typeId:"",requestOpen:false,initial:null,existingRequestId:null,detailId:null,detailReadOnly:true,cancelId:null,cancelReason:"",cancelError:"",escalateId:null,escalationNote:"",escalationError:"",access:{can_approve:false},approvalRows:[],approvalRejectId:null,approvalRejectCategory:"",approvalRejectReason:"",approvalRejectError:""});onWillStart(()=>this.load());}
+    static props = {
+        ...standardActionServiceProps,
+        embedded: { type: Boolean, optional: true },
+        "*": true,
+    };
+    setup() {
+        this.orm = useService("orm");
+        this.action = useService("action");
+        this.notification = useService("notification");
+        this.state = useState({
+            loading: true,
+            rows: [],
+            counts: {},
+            types: [],
+            status: "all",
+            activeView: "my",
+            search: "",
+            typeId: "",
+            requestOpen: false,
+            initial: null,
+            existingRequestId: null,
+            detailId: null,
+            detailReadOnly: true,
+            cancelId: null,
+            cancelReason: "",
+            cancelError: "",
+            escalateId: null,
+            escalationNote: "",
+            escalationError: "",
+            access: { can_approve: false },
+            approvalRows: [],
+            approvalRejectId: null,
+            approvalRejectCategory: "",
+            approvalRejectReason: "",
+            approvalRejectError: "",
+        });
+
+        this.load = this.load.bind(this);
+        this.setStatus = this.setStatus.bind(this);
+        this.setView = this.setView.bind(this);
+        this.onSearchKeydown = this.onSearchKeydown.bind(this);
+        this.openNew = this.openNew.bind(this);
+        this.closeNew = this.closeNew.bind(this);
+        this.view = this.view.bind(this);
+        this.viewApproval = this.viewApproval.bind(this);
+        this.closeDetail = this.closeDetail.bind(this);
+        this.approveApproval = this.approveApproval.bind(this);
+        this.openApprovalReject = this.openApprovalReject.bind(this);
+        this.closeApprovalReject = this.closeApprovalReject.bind(this);
+        this.rejectApproval = this.rejectApproval.bind(this);
+        this.resubmit = this.resubmit.bind(this);
+        this.openCancel = this.openCancel.bind(this);
+        this.closeCancel = this.closeCancel.bind(this);
+        this.cancel = this.cancel.bind(this);
+        this.openEscalate = this.openEscalate.bind(this);
+        this.closeEscalate = this.closeEscalate.bind(this);
+        this.escalate = this.escalate.bind(this);
+        this.formatDate = this.formatDate.bind(this);
+        this.formatSubmitted = this.formatSubmitted.bind(this);
+        this.exportCsv = this.exportCsv.bind(this);
+        this.openDashboard = this.openDashboard.bind(this);
+        this.openCalendar = this.openCalendar.bind(this);
+        this.openReports = this.openReports.bind(this);
+
+        onWillStart(() => this.load());
+    }
     async load(){this.state.loading=true;try{const [data,access]=await Promise.all([this.orm.call("hr.leave","get_my_leave_requests",[this.state.status,this.state.search,this.state.typeId||false]),this.orm.call("hr.leave","get_leave_access_profile",[])]);this.state.rows=data.rows||[];this.state.counts=data.counts||{};this.state.types=data.leave_types||[];this.state.access=access;this.state.approvalRows=access.can_approve?(await this.orm.call("hr.leave","get_pending_my_leave_approvals",[])).rows||[]:[];window.dispatchEvent(new CustomEvent("cleon-ai-context",{detail:{screen:"leave.requests",title:this.state.activeView==="approvals"?"Leave Approvals":"My Leave Requests",view:this.state.activeView,status:this.state.status,search:this.state.search,leave_type_id:this.state.typeId||false}}));}finally{this.state.loading=false;}}
     async setStatus(status){this.state.status=status;await this.load();}
     setView(view){this.state.activeView=view;window.dispatchEvent(new CustomEvent("cleon-ai-context",{detail:{screen:"leave.requests",title:view==="approvals"?"Leave Approvals":"My Leave Requests",view,status:this.state.status,search:this.state.search,leave_type_id:this.state.typeId||false}}));}
