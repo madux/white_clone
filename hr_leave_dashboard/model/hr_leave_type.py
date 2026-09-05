@@ -853,29 +853,35 @@ class HrLeaveType(models.Model):
             res["errors"].append(_("Invalid leave type or employee selection."))
             return res
 
+        request = self.env["hr.leave"].sudo().browse(int(exclude_leave_id)).exists() if exclude_leave_id else self.env["hr.leave"]
+        policy_line = request._policy_rule_line() if request and request.governing_rule_snapshot else lt._active_policy_line(emp, date_from)
+        policy = policy_line.policy_id if policy_line else False
+
         # 1. Full Eligibility Rule Check
         eligible_emps = lt._get_eligible_employees()
-        if emp.id not in eligible_emps.ids:
+        if not (request and request.governing_policy_id) and emp.id not in eligible_emps.ids:
             res["eligible"] = False
             res["errors"].append(_("Employee %s is not eligible for %s under its policy rules.") % (emp.name, lt.name))
 
         # 2. Minimum Service Period Check (using hire/contract date)
-        if lt.minimum_service_months > 0:
+        minimum_service_months = policy.minimum_tenure_months if policy else lt.minimum_service_months
+        if minimum_service_months > 0:
             hire_date = getattr(emp, "first_contract_date", None) or getattr(emp, "employment_date", None) or (emp.create_date.date() if emp.create_date else fields.Date.today())
             service_days = (fields.Date.today() - hire_date).days
-            required_days = lt.minimum_service_months * 30
+            required_days = minimum_service_months * 30
             if service_days < required_days:
                 res["eligible"] = False
-                res["errors"].append(_("Minimum service period of %d months required. (Current service: %d days).") % (lt.minimum_service_months, service_days))
+                res["errors"].append(_("Minimum service period of %d months required. (Current service: %d days).") % (minimum_service_months, service_days))
 
         # 3. Minimum Notice Period Check
-        if enforce_submission_timing and lt.minimum_notice_days > 0 and date_from:
+        minimum_notice_days = policy_line.minimum_notice_days if policy_line else lt.minimum_notice_days
+        if enforce_submission_timing and minimum_notice_days > 0 and date_from:
             try:
                 start_dt = fields.Date.from_string(date_from)
                 notice_given = (start_dt - fields.Date.today()).days
-                if notice_given < lt.minimum_notice_days:
+                if notice_given < minimum_notice_days:
                     res["notice_ok"] = False
-                    res["warnings"].append(_("Notice period of %d days required. (Given: %d days).") % (lt.minimum_notice_days, max(0, notice_given)))
+                    res["warnings"].append(_("Notice period of %d days required. (Given: %d days).") % (minimum_notice_days, max(0, notice_given)))
             except Exception:
                 pass
 
@@ -884,22 +890,24 @@ class HrLeaveType(models.Model):
         today = fields.Date.context_today(self)
         if enforce_submission_timing and start_dt:
             days_before_today = (today - start_dt).days
-            if days_before_today > lt.retroactive_request_days:
+            retroactive_days = lt.retroactive_request_days if not policy_line else (999999 if policy_line.allow_backdated else 0)
+            if days_before_today > retroactive_days:
                 res["errors"].append(
                     _("The selected start date is outside the allowed retroactive request window of %d day(s).")
-                    % lt.retroactive_request_days
+                    % retroactive_days
                 )
             days_in_advance = (start_dt - today).days
-            if lt.advance_booking_days and days_in_advance > lt.advance_booking_days:
+            if not policy_line and lt.advance_booking_days and days_in_advance > lt.advance_booking_days:
                 res["errors"].append(
                     _("Requests may be booked at most %d day(s) in advance.")
                     % lt.advance_booking_days
                 )
 
-        if lt.minimum_request_days and requested_days < lt.minimum_request_days:
+        minimum_request_days = policy_line.minimum_duration if policy_line else lt.minimum_request_days
+        if minimum_request_days and requested_days < minimum_request_days:
             res["errors"].append(
                 _("Request length (%.1f days) is below the minimum of %.1f days.")
-                % (requested_days, lt.minimum_request_days)
+                % (requested_days, minimum_request_days)
             )
 
         if start_dt and end_dt and "hr.leave.blackout.period" in self.env:
@@ -911,6 +919,8 @@ class HrLeaveType(models.Model):
                 "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lt.id),
                 "|", ("department_ids", "=", False), ("department_ids", "in", emp.department_id.id),
             ]
+            if policy_line:
+                blackout_domain.append(("id", "in", policy_line.blackout_period_ids.ids))
             blackout = self.env["hr.leave.blackout.period"].sudo().search(blackout_domain, limit=1)
             if blackout:
                 res["errors"].append(
@@ -918,18 +928,21 @@ class HrLeaveType(models.Model):
                 )
 
         # 4. Supporting Document Policy
-        if lt.supporting_document_policy == "always":
+        if policy_line:
+            res["document_required"] = bool(policy_line.document_required_after_days and requested_days >= policy_line.document_required_after_days)
+        elif lt.supporting_document_policy == "always":
             res["document_required"] = True
         elif lt.supporting_document_policy == "conditional" and requested_days > 3:
             res["document_required"] = True
 
         # 5. Consecutive Days Restriction
-        if lt.max_consecutive_days > 0 and requested_days > lt.max_consecutive_days:
+        maximum_duration = policy_line.maximum_duration if policy_line else lt.max_consecutive_days
+        if maximum_duration > 0 and requested_days > maximum_duration:
             res["max_consecutive_ok"] = False
-            res["errors"].append(_("Request length (%.1f days) exceeds maximum consecutive days limit (%d days).") % (requested_days, lt.max_consecutive_days))
+            res["errors"].append(_("Request length (%.1f days) exceeds maximum consecutive days limit (%.1f days).") % (requested_days, maximum_duration))
 
         # 6. Half Day Request Restriction
-        if half_day and not lt.allow_half_day:
+        if half_day and not (policy_line.allow_half_day and policy.allow_half_day if policy_line else lt.allow_half_day):
             res["errors"].append(_("Half-day requests are not permitted for %s.") % lt.name)
 
         # 7. Balance & Allow Negative Balance Check
@@ -954,7 +967,7 @@ class HrLeaveType(models.Model):
                     )
 
         # 8. Team Overlap Calculation & Block Threshold Check
-        if lt.team_overlap_percent > 0 and emp.department_id and date_from and date_to:
+        if not policy_line and lt.team_overlap_percent > 0 and emp.department_id and date_from and date_to:
             dept_emps = self.env["hr.employee"].search([
                 ("department_id", "=", emp.department_id.id),
                 ("active", "=", True),
@@ -992,4 +1005,19 @@ class HrLeaveType(models.Model):
                         % (lt.team_overlap_percent, overlap_pct)
                     )
 
+        if policy_line:
+            if policy_line.waiting_period_days:
+                hire_date = getattr(emp, "first_contract_date", False)
+                if not hire_date or not start_dt or (start_dt - hire_date).days < policy_line.waiting_period_days:
+                    res["eligible"] = False
+                    res["errors"].append(_("The policy waiting period has not been met, or the employee's hire date is missing."))
+            if not policy.allow_multiple_requests:
+                pending = self.env["hr.leave"].sudo().search_count([
+                    ("employee_id", "=", emp.id), ("holiday_status_id", "=", lt.id),
+                    ("id", "!=", int(exclude_leave_id or 0)), ("is_cancelled", "=", False),
+                    ("state", "in", ["confirm", "validate1", "validate"]),
+                    ("request_date_to", ">=", today),
+                ])
+                if pending:
+                    res["errors"].append(_("This policy does not allow multiple future requests for the same Leave Type."))
         return res

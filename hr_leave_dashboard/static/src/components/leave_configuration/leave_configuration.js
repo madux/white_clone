@@ -5,7 +5,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { standardActionServiceProps } from "@web/webclient/actions/action_service";
 import { CalendarSidebar } from "../calendar_sidebar";
-import { LeaveTypesPage } from "../leave_types/leave_types_page";
+import { LeavePoliciesPage } from "../leave_policies/leave_policies";
 import { LeaveBalancesPage } from "../leave_balances/leave_balances";
 import { LeaveSettingsPage } from "../leave_settings/leave_settings";
 
@@ -13,7 +13,7 @@ export class LeaveConfiguration extends Component {
     static template = "hr_leave_dashboard.LeaveConfiguration";
     static components = {
         CalendarSidebar,
-        LeaveTypesPage,
+        LeavePoliciesPage,
         LeaveBalancesPage,
         LeaveSettingsPage,
     };
@@ -37,7 +37,7 @@ export class LeaveConfiguration extends Component {
     get availableTabs() {
         const tabs = [];
         if (this.state.access.can_configure) {
-            tabs.push({ key: "leave_types", label: "Leave Types", icon: "fa-tags" });
+            tabs.push({ key: "policies", label: "Leave Policies", icon: "fa-file-text-o" });
         }
         if (this.state.access.can_operate) {
             tabs.push({ key: "balances", label: "Leave Balances", icon: "fa-balance-scale" });
@@ -58,7 +58,7 @@ export class LeaveConfiguration extends Component {
     }
 
     openLeaveTypes() {
-        this.setTab("leave_types");
+        this.setTab("policies");
     }
 
     toggleSidebar() {

@@ -6,6 +6,7 @@ from . import hr_leave_type
 from . import hr_leave_type_tenure_tier
 from . import leave_balance_transaction
 from . import leave_report
+from . import leave_policy
 from . import leave_settings
 from . import leave_approval
 from . import leave_ai_service

@@ -1,6 +1,6 @@
 {
     'name': 'CLEONHR Leave',
-    'version': '17.0.1.1.0',
+    'version': '17.0.1.2.1',
     'category': 'CleonHR-HR ADMIN',
     'depends': ['hr_holidays', 'web', 'hr_company_calendar', 'hr_administration', 'hr_employee', 'cleon_ai', 'cleon_approval'],
     'data': [
@@ -43,6 +43,9 @@
             'hr_leave_dashboard/static/src/components/leave_types/leave_type_form_modal.js',
             'hr_leave_dashboard/static/src/components/leave_types/leave_types.xml',
             'hr_leave_dashboard/static/src/css/leave_types.css',
+            'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.js',
+            'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.xml',
+            'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.css',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.js',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.xml',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.css',

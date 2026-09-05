@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
+from types import SimpleNamespace
 from dateutil.relativedelta import relativedelta
 from odoo import models, fields, api, _
 from odoo.exceptions import AccessError, ValidationError, UserError
@@ -98,20 +99,69 @@ class HrLeave(models.Model):
         ("form", "Manual Form"), ("ai_assisted", "AI Assisted"),
         ("admin", "Administrator"),
     ], default="form", required=True, readonly=True, copy=False)
+    submitted_at = fields.Datetime(
+        string="Submitted At", readonly=True, copy=False, index=True,
+        help="Business submission timestamp; unlike create_date this changes on a genuine resubmission.",
+    )
+
+    governing_policy_id = fields.Many2one("hr.leave.policy", readonly=True, copy=False, ondelete="restrict", index=True)
+    governing_policy_line_id = fields.Many2one("hr.leave.policy.line", readonly=True, copy=False, ondelete="restrict")
+    governing_assignment_id = fields.Many2one("hr.leave.policy.assignment", readonly=True, copy=False, ondelete="restrict")
+    governing_rule_snapshot = fields.Json(readonly=True, copy=False)
+
+    def _capture_policy_provenance(self):
+        for leave in self:
+            if leave.governing_rule_snapshot:
+                continue
+            line = leave.holiday_status_id._active_policy_line(leave.employee_id, leave.request_date_from)
+            assignment = self.env["hr.leave.policy.assignment"].sudo().search([
+                ("policy_line_id", "=", line.id if line else False),
+                ("employee_id", "=", leave.employee_id.id), ("superseded", "=", False),
+                ("date_from", "<=", leave.request_date_from), "|",
+                ("date_to", "=", False), ("date_to", ">=", leave.request_date_from),
+            ], limit=1) if line else self.env["hr.leave.policy.assignment"]
+            values = {
+                "governing_policy_id": line.policy_id.id if line else False,
+                "governing_policy_line_id": line.id if line else False,
+                "governing_assignment_id": assignment.id,
+                "governing_rule_snapshot": (assignment.rule_snapshot or line.policy_id._rule_snapshot(line)) if line else {"legacy": True},
+            }
+            # Bypass this class's public write guard only inside this private method.
+            super(HrLeave, leave.sudo()).write(values)
+
+    def _policy_rule_line(self):
+        self.ensure_one()
+        snapshot = self.governing_rule_snapshot
+        if not snapshot:
+            return self.holiday_status_id._active_policy_line(self.employee_id, self.request_date_from)
+        if snapshot.get("legacy"):
+            return False
+        policy = dict(snapshot["policy"])
+        policy["approval_chain_id"] = self.env["cleon.approval.chain"].sudo().browse(policy["approval_chain_id"])
+        line = dict(snapshot["line"])
+        line["blackout_period_ids"] = self.env["hr.leave.blackout.period"].sudo().browse(line["blackout_period_ids"])
+        line["policy_id"] = SimpleNamespace(**policy)
+        return SimpleNamespace(**line)
 
     @api.model_create_multi
     def create(self, vals_list):
         if any(not self._leave_can_mutate_requests(values=vals) for vals in vals_list):
             raise AccessError(_("You do not have permission to create leave requests."))
         for vals in vals_list:
+            if any(key.startswith("governing_") for key in vals):
+                raise AccessError(_("Policy provenance is assigned by the submission workflow."))
             if not vals.get("request_ref"):
                 vals["request_ref"] = (
                     self.env["ir.sequence"].next_by_code("hr.leave.request.ref") or _("New")
                 )
+            vals.pop("submitted_at", None)
         leaves = super().create(vals_list)
+        for leave in leaves.filtered(lambda item: item.state != "draft"):
+            super(HrLeave, leave.sudo()).write({"submitted_at": fields.Datetime.now()})
+            leave._capture_policy_provenance()
         leaves._validate_leave_policy(enforce_submission_timing=True)
         for leave in leaves:
-            if not leave.admin_created:
+            if not leave.admin_created and leave.state != "draft":
                 leave._create_audit_record("submitted", note=leave.notes or "")
             # Odoo may create an HR-approved leave type directly in the
             # "To Approve" state, without calling action_confirm().
@@ -128,6 +178,10 @@ class HrLeave(models.Model):
         synchronising employee data.  Those maintenance writes must not turn
         historical submission windows into database invariants.
         """
+        if any(key.startswith("governing_") for key in values):
+            raise AccessError(_("Submitted policy provenance is immutable."))
+        if "submitted_at" in values and not self.env.su:
+            raise AccessError(_("Submission time is assigned by the workflow."))
         policy_input_fields = {
             "holiday_status_id",
             "employee_id",
@@ -170,6 +224,9 @@ class HrLeave(models.Model):
                     continue
                 old_state = previous_states.get(leave.id)
                 entering_submission = leave.state == "confirm" and old_state != "confirm"
+                if entering_submission:
+                    super(HrLeave, leave.sudo()).write({"submitted_at": fields.Datetime.now()})
+                    leave._capture_policy_provenance()
                 editing_pending = inputs_changed and leave.state in ("confirm", "validate1")
                 approving = state_changed and leave.state in ("validate1", "validate")
                 if entering_submission or editing_pending or approving:
@@ -243,6 +300,16 @@ class HrLeave(models.Model):
         leave_type = self.holiday_status_id
         if not leave_type:
             return False
+        policy_line = self._policy_rule_line()
+        if policy_line:
+            policy = policy_line.policy_id
+            if not policy.approval_required:
+                return "no_approval"
+            if policy.approval_workflow == "custom":
+                if not policy.approval_chain_id or not policy.approval_chain_id.active:
+                    raise UserError(_("Configuration Integrity Error: Policy '%s' has no active custom approval route.") % policy.name)
+                return policy.approval_chain_id
+            return "single_fallback"
         if leave_type.approval_workflow == "none":
             return "no_approval"
         if leave_type.approval_workflow == "single":
@@ -338,7 +405,10 @@ class HrLeave(models.Model):
 
     def _approval_fallback_config(self):
         self.ensure_one()
-        if self.holiday_status_id and self.holiday_status_id.approval_workflow == "none":
+        policy_line = self._policy_rule_line() if self.holiday_status_id else False
+        if policy_line and not policy_line.policy_id.approval_required:
+            return {"require_approval": False}
+        if not policy_line and self.holiday_status_id and self.holiday_status_id.approval_workflow == "none":
             return {"require_approval": False}
         parent_user = self.employee_id.leave_manager_id or self.employee_id.parent_id.user_id
         if not parent_user:
@@ -1037,6 +1107,9 @@ class HrLeave(models.Model):
         leave = self.search([("id", "=", int(leave_id)), ("employee_id", "=", employee.id)], limit=1)
         if not leave: return {"ok": False, "message": _("This leave request could not be found.")}
         if leave.state not in ("confirm", "validate1", "validate") or leave.is_cancelled: return {"ok": False, "message": _("Only a pending or approved leave request can be cancelled.")}
+        policy_line = leave._policy_rule_line()
+        if policy_line and not policy_line.policy_id.allow_withdrawal:
+            return {"ok": False, "message": _("Withdrawal is not permitted by this request's governing policy.")}
         try:
             with self.env.cr.savepoint():
                 if "cleon.approval.instance" in self.env:
@@ -1135,6 +1208,7 @@ class HrLeave(models.Model):
             "rejection_reason": False,
             "rejection_category": False,
             "state": "confirm",
+            "submitted_at": fields.Datetime.now(),
         })
         # Sole runtime source of truth: start a new generic approval instance restarting at Stage 1.
         # Historical approval instance(s) remain immutable in state 'changes_requested'.
@@ -1537,7 +1611,7 @@ class HrLeave(models.Model):
             "status": status,
             "approver": self._get_leave_approver_label(rec),
             "submitted": fields.Date.to_string(rec.create_date.date()) if rec.create_date else "",
-            "submitted_at": fields.Datetime.to_string(rec.create_date) if rec.create_date else "",
+            "submitted_at": fields.Datetime.to_string(rec.submitted_at) if rec.submitted_at else "",
             "admin_created": rec.admin_created,
             "admin_created_by": rec.create_uid.name if rec.admin_created else "",
             "admin_created_at": fields.Date.to_string(rec.create_date.date()) if rec.admin_created and rec.create_date else "",

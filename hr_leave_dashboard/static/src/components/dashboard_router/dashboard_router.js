@@ -34,8 +34,8 @@ export class LeaveDashboardRouter extends Component {
     openApprovals() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
     openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     openBalances() { return this.openConfiguration("balances"); }
-    openLeaveTypes() { return this.openConfiguration("leave_types"); }
-    openConfiguration(tab = "leave_types") {
+    openLeaveTypes() { return this.openConfiguration("policies"); }
+    openConfiguration(tab = "policies") {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
             additionalContext: { configuration_tab: tab },
         });

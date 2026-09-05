@@ -153,6 +153,24 @@
         <field name="domain_force">[('company_id', 'in', company_ids)]</field>
         <field name="groups" eval="[(4, ref('hr_leave_dashboard.group_leave_administrator')), (4, ref('hr_leave_dashboard.group_role_hr_director'))]"/>
     </record>
+    <record id="rule_hr_leave_policy_company" model="ir.rule">
+        <field name="name">Leave policies: allowed companies</field>
+        <field name="model_id" ref="model_hr_leave_policy"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_configuration'))]"/>
+    </record>
+    <record id="rule_hr_leave_policy_line_company" model="ir.rule">
+        <field name="name">Leave policy lines: allowed companies</field>
+        <field name="model_id" ref="model_hr_leave_policy_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_configuration'))]"/>
+    </record>
+    <record id="rule_hr_leave_policy_assignment_company" model="ir.rule">
+        <field name="name">Leave policy assignments: allowed companies</field>
+        <field name="model_id" ref="model_hr_leave_policy_assignment"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        <field name="groups" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_operations'))]"/>
+    </record>
 
     <record id="rule_leave_hr_officer_read_scope" model="ir.rule">
         <field name="name">Leave HR Officer: company records (read)</field>

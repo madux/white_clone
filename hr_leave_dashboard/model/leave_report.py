@@ -4,6 +4,7 @@ import csv
 import io
 from collections import defaultdict
 from datetime import datetime, time, timedelta
+from pytz import UTC
 
 from dateutil.relativedelta import relativedelta
 
@@ -32,13 +33,14 @@ class HrLeaveTypeAbsenceRisk(models.Model):
         ("all", "All approved absences"),
     ], default="exclude", required=True, string="Bradford Factor Treatment")
     bradford_treatment_configured = fields.Boolean(default=False, copy=False)
+    bradford_protected = fields.Boolean(string="Protected parental / long-term leave", default=False)
 
     @api.model_create_multi
     def create(self, vals_list):
         for values in vals_list:
             if "bradford_count_mode" not in values:
-                label = self._bradford_label(values.get("name"), values.get("leave_code"))
-                values["bradford_count_mode"] = "short_notice" if self._bradford_is_sickness(label) else "exclude"
+                classification = values.get("policy_classification")
+                values["bradford_count_mode"] = "short_notice" if classification == "sick" else "exclude"
         return super().create(vals_list)
 
     @api.model
@@ -48,7 +50,9 @@ class HrLeaveTypeAbsenceRisk(models.Model):
         return "%s %s" % (name or "", code or "")
 
     @api.model
-    def _bradford_is_protected(self, label):
+    def _bradford_is_protected(self, label, classification=None):
+        if classification in ("annual", "family"):
+            return True
         value = (label or "").lower()
         return any(token in value for token in ("annual", "vacation", "maternity", "paternity", "parental"))
 
@@ -59,18 +63,17 @@ class HrLeaveTypeAbsenceRisk(models.Model):
 
     def _effective_bradford_mode(self):
         self.ensure_one()
-        label = self._bradford_label(self.name, self.leave_code)
-        if self._bradford_is_protected(label):
+        if self.bradford_protected or self.policy_classification == "annual":
             return "exclude"
-        if not self.bradford_treatment_configured and self._bradford_is_sickness(label):
+        if not self.bradford_treatment_configured and self.policy_classification == "sick":
             return "short_notice"
         return self.bradford_count_mode
 
     def write(self, values):
         if "bradford_count_mode" in values:
             for leave_type in self:
-                label = leave_type._bradford_label(leave_type.name, leave_type.leave_code)
-                if leave_type._bradford_is_protected(label) and values["bradford_count_mode"] != "exclude":
+                classification = values.get("policy_classification", leave_type.policy_classification)
+                if (values.get("bradford_protected", leave_type.bradford_protected) or classification == "annual") and values["bradford_count_mode"] != "exclude":
                     raise ValidationError(_("Annual and parental Leave Types are always excluded from Bradford scoring."))
             values.setdefault("bradford_treatment_configured", True)
         result = super().write(values)
@@ -282,12 +285,12 @@ class HrLeaveReportService(models.AbstractModel):
         }.get(leave.state, leave.state)
 
     @api.model
-    def _base_data(self, filters):
+    def _base_data(self, filters, report_key=None):
         filters = filters or {}
         access, employees = self._scope(filters)
-        start, end = self._date_range(
-            filters.get("date_range", "this_year"), filters.get("start_date"), filters.get("end_date")
-        )
+        snapshot = report_key in ("utilisation", "balances", "absence_risk")
+        range_key = "this_year" if snapshot else filters.get("date_range", "this_year")
+        start, end = self._date_range(range_key, None if snapshot else filters.get("start_date"), None if snapshot else filters.get("end_date"))
         type_ids = self._filter_ids(filters, "leave_type_ids", "leave_type_id")
         leave_domain = [
             ("employee_id", "in", employees.ids), ("request_date_from", "<=", end),
@@ -295,8 +298,8 @@ class HrLeaveReportService(models.AbstractModel):
         ]
         submitted_domain = [
             ("employee_id", "in", employees.ids),
-            ("create_date", ">=", datetime.combine(start, time.min)),
-            ("create_date", "<=", datetime.combine(end, time.max)),
+            ("submitted_at", ">=", datetime.combine(start, time.min)),
+            ("submitted_at", "<=", datetime.combine(end, time.max)),
             ("state", "!=", "draft"),
         ]
         if type_ids:
@@ -311,7 +314,7 @@ class HrLeaveReportService(models.AbstractModel):
             "filters": filters, "access": access, "employees": employees,
             "start": start, "end": end, "types": leave_types,
             "leaves": Leave.search(leave_domain, order="request_date_from, id"),
-            "submitted": Leave.search(submitted_domain, order="create_date, id"),
+            "submitted": Leave.search(submitted_domain, order="submitted_at, id"),
         }
 
     @api.model
@@ -401,7 +404,7 @@ class HrLeaveReportService(models.AbstractModel):
         for leave in data["submitted"]:
             status = self._status(leave)
             counts[status] += 1
-            bucket = leave.create_date.date().replace(day=1)
+            bucket = leave.submitted_at.date().replace(day=1)
             if bucket in monthly:
                 monthly[bucket][status] += 1
         keys = ("approved", "pending", "rejected", "cancelled", "changes_requested")
@@ -413,8 +416,8 @@ class HrLeaveReportService(models.AbstractModel):
         previous_end = data["start"] - timedelta(days=1)
         previous_domain = [
             ("employee_id", "in", data["employees"].ids),
-            ("create_date", ">=", datetime.combine(previous_start, time.min)),
-            ("create_date", "<=", datetime.combine(previous_end, time.max)),
+            ("submitted_at", ">=", datetime.combine(previous_start, time.min)),
+            ("submitted_at", "<=", datetime.combine(previous_end, time.max)),
             ("state", "!=", "draft"),
         ]
         type_ids = self._filter_ids(data["filters"], "leave_type_ids", "leave_type_id")
@@ -430,27 +433,31 @@ class HrLeaveReportService(models.AbstractModel):
     @api.model
     def _turnaround(self, data):
         leaves = data["submitted"]
-        logs = self.env["hr.leave.audit.log"].sudo().search([
-            ("leave_id", "in", leaves.ids),
-            ("action", "in", ("approve", "first_approval", "final_approval", "reject")),
-        ], order="leave_id, occurred_at, id")
-        by_leave = defaultdict(list)
-        for log in logs:
-            by_leave[log.leave_id.id].append(log)
+        instances = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"), ("res_id", "in", leaves.ids),
+            ("state", "in", ("approved", "rejected")),
+        ], order="create_date, id")
+        leave_by_id = {leave.id: leave for leave in leaves}
         by_approver = defaultdict(list)
         by_type = defaultdict(list)
         samples = []
-        for leave in leaves:
-            leave_logs = by_leave.get(leave.id, [])
-            if not leave_logs or not leave.create_date:
+        for instance in instances:
+            leave = leave_by_id.get(instance.res_id)
+            decided_steps = instance.step_ids.filtered(lambda step: step.decision_at)
+            if not leave or not decided_steps or not instance.create_date:
                 continue
-            previous = leave.create_date
-            for log in leave_logs:
-                step_hours = max((log.occurred_at - previous).total_seconds() / 3600, 0)
-                approver = log.actor_label or log.actor_id.name or _("System")
-                by_approver[approver].append(step_hours)
-                previous = log.occurred_at
-            total_hours = max((leave_logs[-1].occurred_at - leave.create_date).total_seconds() / 3600, 0)
+            for step in decided_steps.sorted(key=lambda step: (step.decision_at, step.id)):
+                # Each decision row is created when its step is activated,
+                # including concurrent approvers. Never invent a combined user.
+                decisions = step.decision_ids.filtered(lambda decision: decision.decision_at and decision.state in ("approved", "rejected"))
+                for decision in decisions:
+                    step_hours = max((decision.decision_at - decision.create_date).total_seconds() / 3600, 0)
+                    by_approver[decision.user_id.name].append(step_hours)
+                if not decisions and step.decision_user_id:
+                    # Legacy steps without per-user decision history cannot
+                    # supply an authoritative activation duration.
+                    continue
+            total_hours = max((max(decided_steps.mapped("decision_at")) - instance.create_date).total_seconds() / 3600, 0)
             by_type[leave.holiday_status_id.name].append(total_hours)
             samples.append(total_hours)
         def grouped(mapping):
@@ -460,7 +467,34 @@ class HrLeaveReportService(models.AbstractModel):
             "average_hours": round(sum(samples) / len(samples), 1) if samples else 0,
             "longest_hours": round(max(samples), 1) if samples else 0,
             "decisions": len(samples), "by_approver": grouped(by_approver), "by_type": grouped(by_type),
+            "changes_request_treatment": _("Each resubmission starts a new approval instance; employee revision time is outside turnaround."),
         }
+
+    @api.model
+    def _clipped_leave_days(self, leave, start, end):
+        """Return one authoritative calendar-aware duration for a report slice."""
+        clipped_start = max(leave.request_date_from, start)
+        clipped_end = min(leave.request_date_to, end)
+        if clipped_start > clipped_end:
+            return 0.0
+        if clipped_start == leave.request_date_from and clipped_end == leave.request_date_to:
+            return leave.number_of_days or 0.0
+        calendar = leave.employee_id.resource_calendar_id
+        resource = leave.employee_id.resource_id
+        if not calendar or not resource:
+            span = max((leave.request_date_to - leave.request_date_from).days + 1, 1)
+            return (leave.number_of_days or 0.0) * ((clipped_end - clipped_start).days + 1) / span
+        def hours(date_from, date_to):
+            start_dt = datetime.combine(date_from, time.min).replace(tzinfo=UTC)
+            end_dt = datetime.combine(date_to + timedelta(days=1), time.min).replace(tzinfo=UTC)
+            intervals = calendar._work_intervals_batch(
+                start_dt, end_dt, resources=resource,
+                domain=["|", ("holiday_id", "=", False), ("holiday_id", "!=", leave.id)],
+            )[resource.id]
+            return sum((stop - begin).total_seconds() for begin, stop, _meta in intervals) / 3600
+        full_hours = hours(leave.request_date_from, leave.request_date_to)
+        clipped_hours = hours(clipped_start, clipped_end)
+        return (leave.number_of_days or 0.0) * clipped_hours / full_hours if full_hours else 0.0
 
     @api.model
     def _trends(self, data):
@@ -475,14 +509,14 @@ class HrLeaveReportService(models.AbstractModel):
             clipped_start = max(leave.request_date_from, data["start"])
             clipped_end = min(leave.request_date_to, data["end"])
             touched = set()
-            total_span = max((leave.request_date_to - leave.request_date_from).days + 1, 1)
             day = clipped_start
             while day <= clipped_end:
                 bucket = day.replace(day=1)
                 if bucket in values:
-                    values[bucket]["days"] += (leave.number_of_days or 0.0) / total_span
+                    month_end = (bucket + relativedelta(months=1)) - timedelta(days=1)
+                    values[bucket]["days"] += self._clipped_leave_days(leave, max(day, bucket), min(clipped_end, month_end))
                     touched.add(bucket)
-                day += timedelta(days=1)
+                day = (bucket + relativedelta(months=1))
             for bucket in touched:
                 values[bucket]["requests"] += 1
         holiday_dates = set()
@@ -521,7 +555,7 @@ class HrLeaveReportService(models.AbstractModel):
                     continue
                 row["requests"] += 1
                 if self._status(leave) == "approved":
-                    row["days"] += leave.number_of_days or 0.0
+                    row["days"] += self._clipped_leave_days(leave, data["start"], data["end"])
             rows = list(groups.values())
             for row in rows:
                 row["days"] = round(row["days"], 2)
@@ -535,16 +569,23 @@ class HrLeaveReportService(models.AbstractModel):
     @api.model
     def _policy_usage(self, data):
         rows = []
-        for leave_type in data["types"]:
-            type_leaves = data["leaves"].filtered(lambda leave, leave_type=leave_type: leave.holiday_status_id == leave_type)
-            eligible = leave_type._get_eligible_employees() & data["employees"]
-            notice_values = [max((leave.request_date_from - leave.create_date.date()).days, 0) for leave in type_leaves if leave.create_date and leave.request_date_from]
+        policies = self.env["hr.leave.policy"].sudo().with_context(active_test=False).search([
+            ("company_id", "=", self.env.company.id),
+        ], order="name")
+        selected_type_ids = set(data["types"].ids)
+        for policy in policies:
+            lines = policy.line_ids.filtered(lambda line: line.active and line.leave_type_id.id in selected_type_ids)
+            if not lines:
+                continue
+            type_leaves = data["leaves"].filtered(lambda leave: leave.governing_policy_id.id == policy.id and leave.holiday_status_id.id in selected_type_ids)
+            eligible = policy._eligible_employees() & data["employees"]
+            notice_values = [max((leave.request_date_from - leave.submitted_at.date()).days, 0) for leave in type_leaves if leave.submitted_at and leave.request_date_from]
             longest = max(type_leaves.mapped("number_of_days") or [0])
-            notice_limit = leave_type.minimum_notice_days
-            consecutive_limit = leave_type.max_consecutive_days
+            notice_limit = max(lines.mapped("minimum_notice_days") or [0])
+            consecutive_limit = max(lines.mapped("maximum_duration") or [0])
             average_notice = sum(notice_values) / len(notice_values) if notice_values else 0
             rows.append({
-                "id": leave_type.id, "name": leave_type.name,
+                "id": policy.id, "name": policy.name,
                 "employees": len(eligible), "requests": len(type_leaves),
                 "average_notice": round(average_notice, 1), "notice_limit": notice_limit,
                 "notice_usage": round(notice_limit * 100 / average_notice, 1) if notice_limit and average_notice else 0,
@@ -552,7 +593,7 @@ class HrLeaveReportService(models.AbstractModel):
                 "consecutive_usage": round(longest * 100 / consecutive_limit, 1) if consecutive_limit else 0,
                 "blackout_periods": self.env["hr.leave.blackout.period"].sudo().search_count([
                     ("company_id", "=", self.env.company.id), ("active", "=", True),
-                    "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", leave_type.id),
+                    "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lines.leave_type_id.ids),
                 ]),
             })
         rows.sort(key=lambda item: (-item["requests"], item["name"]))
@@ -584,7 +625,7 @@ class HrLeaveReportService(models.AbstractModel):
             mode = leave.holiday_status_id._effective_bradford_mode()
             if mode == "exclude":
                 continue
-            notice = (leave.request_date_from - leave.create_date.date()).days if leave.create_date else 0
+            notice = (leave.request_date_from - leave.submitted_at.date()).days if leave.submitted_at else 0
             if mode == "short_notice" and notice >= leave.holiday_status_id.minimum_notice_days:
                 continue
             start = max(leave.request_date_from, window_start)
@@ -612,13 +653,12 @@ class HrLeaveReportService(models.AbstractModel):
     def _same_continuous_spell(self, employee, previous_end, next_start):
         if next_start <= previous_end + timedelta(days=1):
             return True
-        working_weekdays = set(employee.resource_calendar_id.attendance_ids.mapped("dayofweek"))
-        day = previous_end + timedelta(days=1)
-        while day < next_start:
-            if str(day.weekday()) in working_weekdays:
-                return False
-            day += timedelta(days=1)
-        return True
+        calendar, resource = employee.resource_calendar_id, employee.resource_id
+        if not calendar or not resource:
+            return next_start <= previous_end + timedelta(days=1)
+        start_dt = datetime.combine(previous_end + timedelta(days=1), time.min).replace(tzinfo=UTC)
+        end_dt = datetime.combine(next_start, time.min).replace(tzinfo=UTC)
+        return not bool(calendar._work_intervals_batch(start_dt, end_dt, resources=resource)[resource.id])
 
     @api.model
     def _absence_risk(self, data):
@@ -635,7 +675,7 @@ class HrLeaveReportService(models.AbstractModel):
             "leave_type_modes": [{
                 "id": leave_type.id, "name": leave_type.name,
                 "mode": leave_type._effective_bradford_mode(),
-                "locked": leave_type._bradford_is_protected(leave_type._bradford_label(leave_type.name, leave_type.leave_code)),
+                "locked": leave_type.bradford_protected or leave_type.policy_classification == "annual",
             } for leave_type in self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
                 ("company_id", "in", [False, company.id]),
             ], order="sequence, name")],
@@ -690,7 +730,7 @@ class HrLeaveReportService(models.AbstractModel):
     def get_report_data(self, filters=None, report_key="request_volume"):
         if report_key not in self.REPORT_KEYS:
             raise ValidationError(_("Unsupported leave report."))
-        data = self._base_data(filters or {})
+        data = self._base_data(filters or {}, report_key)
         all_types = self.env["hr.leave.type"].sudo().with_context(active_test=False).search([
             ("company_id", "in", [False, self.env.company.id])
         ], order="sequence, name")
@@ -780,7 +820,7 @@ class HrLeaveReportService(models.AbstractModel):
             mode = item.get("mode")
             if not leave_type or mode not in allowed_modes:
                 raise ValidationError(_("Invalid Leave Type absence-risk treatment."))
-            if leave_type._bradford_is_protected(leave_type._bradford_label(leave_type.name, leave_type.leave_code)) and mode != "exclude":
+            if (leave_type.bradford_protected or leave_type.policy_classification == "annual") and mode != "exclude":
                 raise ValidationError(_("Annual and parental Leave Types are always excluded from Bradford scoring."))
             leave_type.with_context(skip_bradford_refresh=True).write({
                 "bradford_count_mode": mode, "bradford_treatment_configured": True,

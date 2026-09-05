@@ -97,7 +97,7 @@ export class LeaveSettingsPage extends Component {
     openLeaveTypes() {
         if (this.props.onOpenLeaveTypes) return this.props.onOpenLeaveTypes();
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
-            additionalContext: { configuration_tab: "leave_types" },
+            additionalContext: { configuration_tab: "policies" },
         });
     }
 

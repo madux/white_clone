@@ -81,7 +81,10 @@ export class LeaveReportsPage extends Component {
     }
 
     async refresh() {
-        if (this.state.filters.date_range === "custom" && (!this.state.filters.start_date || !this.state.filters.end_date)) return;
+        if (this.usesDateRange && this.state.filters.date_range === "custom" && (!this.state.filters.start_date || !this.state.filters.end_date)) {
+            this.state.loading = false;
+            return;
+        }
         const loadSequence = ++this.loadSequence;
         const reportKey = this.state.activeReport;
         this.state.loading = true;
