@@ -880,12 +880,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeEditModal()">Cancel</button>
                                 <button class="sdir-edit-modal-save" t-on-click="() => this.saveProfile()">Save Profile</button>
@@ -998,12 +993,7 @@
                                     <span class="sdir-status-confirm-text" t-att-style="this.statusErrors?.field === 'confirmChecked' ? 'color: #EF4444;' : ''">I confirm this status change for <t t-esc="props.activeProfile.name or 'Aaron Park'"/> and understand its implications</span>
                                 </label>
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeStatusModal()">Cancel</button>
                                 <button class="sdir-edit-modal-save" t-on-click="() => this.saveStatusChange()">Apply Status Change</button>
@@ -1048,12 +1038,7 @@
                                     <input type="file" accept="image/*" style="display: none;" t-on-change="onPhotoSelected"/>
                                 </label>
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <t t-if="state.photoForm.error">
                                 <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -1158,7 +1143,7 @@
                                     </div>
                                     <div>
                                         <p class="sdir-edit-modal-title">Transfer Employee</p>
-                                        <p class="sdir-edit-modal-subtitle">From <t t-esc="props.activeProfile.department_name or 'Sales &amp; Business Development'"/></p>
+                                        <p class="sdir-edit-modal-subtitle">From <t t-esc="props.activeProfile.department or 'No Department'"/></p>
                                     </div>
                                 </div>
                                 <button class="sdir-edit-modal-close" t-on-click="() => this.closeTransferModal()">
@@ -1169,12 +1154,14 @@
                                 <div class="sdir-transfer-dept-banner">
                                     <div class="sdir-transfer-dept-col">
                                         <p class="sdir-transfer-dept-label">Current Department</p>
-                                        <p class="sdir-transfer-dept-name-current" t-esc="props.activeProfile.department_name or 'Sales &amp; Business Development'"/>
+                                        <p class="sdir-transfer-dept-name-current" t-esc="props.activeProfile.department or 'No Department'"/>
                                     </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#E91E63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-right sdir-transfer-dept-icon"><path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path></svg>
                                     <div class="sdir-transfer-dept-col">
                                         <p class="sdir-transfer-dept-label">Target Department</p>
-                                        <p t-if="state.transferTargetDept" class="sdir-transfer-dept-name-target" t-esc="state.transferTargetDept"/>
+                                        <p t-if="state.transferForm.target_dept_id" class="sdir-transfer-dept-name-target">
+                                            <t t-esc="this.departments.find(d => d.id == state.transferForm.target_dept_id)?.name"/>
+                                        </p>
                                         <p t-else="" class="sdir-transfer-dept-name-target sdir-transfer-dept-not-selected">Not selected</p>
                                     </div>
                                 </div>
@@ -1182,20 +1169,11 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Transfer To Department</p>
                                     </div>
-                                    <select class="sdir-edit-modal-select" t-on-change="(ev) => this.onTransferDeptChange(ev)">
+                                    <select t-attf-class="sdir-edit-modal-select {{ this.transferErrors?.field === 'target_dept_id' ? 'sdir-input-error' : '' }}" t-model="state.transferForm.target_dept_id" t-att-style="this.transferErrors?.field === 'target_dept_id' ? 'border-color: #EF4444;' : ''">
                                         <option value="">Select department...</option>
-                                        <option>Compliance &amp; Risk</option>
-                                        <option>Customer Service</option>
-                                        <option>Design</option>
-                                        <option>Engineering</option>
-                                        <option>Engineering/IT</option>
-                                        <option>Executive</option>
-                                        <option>Finance</option>
-                                        <option>Human Resources</option>
-                                        <option>Internal Audit</option>
-                                        <option>Legal</option>
-                                        <option>Marketing</option>
-                                        <option>Operations</option>
+                                        <t t-foreach="this.departments" t-as="dept" t-key="dept.id">
+                                            <option t-att-value="dept.id" t-esc="dept.name"/>
+                                        </t>
                                     </select>
                                 </div>
                                 <div class="sdir-edit-modal-grid">
@@ -1203,41 +1181,46 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">New Location</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" placeholder="e.g. Lagos HQ" value=""/>
+                                        <select t-attf-class="sdir-edit-modal-select {{ this.transferErrors?.field === 'location_id' ? 'sdir-input-error' : '' }}" t-model="state.transferForm.location_id" t-att-style="this.transferErrors?.field === 'location_id' ? 'border-color: #EF4444;' : ''">
+                                            <option value="">Select location...</option>
+                                            <t t-foreach="this.locations" t-as="loc" t-key="loc.id">
+                                                <option t-att-value="loc.id" t-esc="loc.name"/>
+                                            </t>
+                                        </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Effective Date</p>
                                         </div>
-                                        <input type="date" class="sdir-edit-modal-input" value="2026-08-26"/>
+                                        <input type="date" t-att-min="state.promoteForm.minDate" t-attf-class="sdir-edit-modal-input {{ this.promoteErrors?.field === 'date' ? 'sdir-input-error' : '' }}" t-model="state.promoteForm.date" t-att-style="this.promoteErrors?.field === 'date' ? 'border-color: #EF4444;' : ''"/>
                                     </div>
                                 </div>
                                 <div class="sdir-edit-modal-field" style="margin-top: 16px;">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Reason for Transfer</p>
                                     </div>
-                                    <textarea rows="3" class="sdir-status-textarea" placeholder="Business justification for this transfer..."></textarea>
+                                    <textarea rows="3" t-attf-class="sdir-status-textarea {{ this.transferErrors?.field === 'reason' ? 'sdir-input-error' : '' }}" placeholder="Business justification for this transfer..." t-model="state.transferForm.reason" t-att-style="this.transferErrors?.field === 'reason' ? 'border-color: #EF4444;' : ''"></textarea>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 8px;">
                                     <label class="sdir-transfer-checkbox-label">
-                                        <input type="checkbox" checked="checked" class="sdir-transfer-checkbox-input"/>
+                                        <input type="checkbox" class="sdir-transfer-checkbox-input" t-model="state.transferForm.notify_manager"/>
                                         <span class="sdir-transfer-checkbox-text">Notify current &amp; new manager</span>
                                     </label>
                                     <label class="sdir-transfer-checkbox-label">
-                                        <input type="checkbox" checked="checked" class="sdir-transfer-checkbox-input"/>
+                                        <input type="checkbox" class="sdir-transfer-checkbox-input" t-model="state.transferForm.require_approval"/>
                                         <span class="sdir-transfer-checkbox-text">Require department head approval</span>
                                     </label>
                                 </div>
                             </div>
-                            <t t-if="this.statusErrors">
+                            <t t-if="this.transferErrors">
                                 <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
+                                    <t t-esc="this.transferErrors.msg"/>
                                 </div>
                             </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeTransferModal()">Cancel</button>
-                                <button class="sdir-transfer-btn-save" t-on-click="() => this.closeTransferModal()">Initiate Transfer</button>
+                                <button class="sdir-transfer-btn-save" t-on-click="() => this.submitTransfer()">Initiate Transfer</button>
                             </div>
                         </div>
                     </div>
@@ -1264,14 +1247,14 @@
                             <div class="sdir-edit-modal-body">
                                 <div class="sdir-promote-current-banner">
                                     <p class="sdir-promote-current-label">Current Position</p>
-                                    <p class="sdir-promote-current-text"><t t-esc="props.activeProfile.job_title or 'Relationship Manager'"/> <span style="color: #9CA3AF; font-weight: 400;">·</span> <span style="color: #6B7280; font-weight: 500;">L1 · Individual Contributor</span></p>
+                                    <p class="sdir-promote-current-text"><t t-esc="props.activeProfile.job_title"/> <span style="color: #9CA3AF; font-weight: 400;">·</span> <span style="color: #6B7280; font-weight: 500;"><t t-esc="props.activeProfile.sdir_grade or 'No Grade'"/></span></p>
                                 </div>
                                 
                                 <div class="sdir-edit-modal-field">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">New Job Title *</p>
                                     </div>
-                                    <input class="sdir-edit-modal-input" placeholder="e.g. Senior Software Engineer" value=""/>
+                                    <input t-attf-class="sdir-edit-modal-input {{ this.promoteErrors?.field === 'job_title' ? 'sdir-input-error' : '' }}" t-att-style="this.promoteErrors?.field === 'job_title' ? 'border-color: #EF4444;' : ''" placeholder="e.g. Senior Software Engineer" t-model="state.promoteForm.job_title"/>
                                 </div>
                                 
                                 <div class="sdir-edit-modal-grid">
@@ -1279,13 +1262,23 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">New Grade / Level</p>
                                         </div>
-                                        <input class="sdir-edit-modal-input" placeholder="e.g. L5 · Senior" value=""/>
+                                        <select t-attf-class="sdir-edit-modal-select {{ this.promoteErrors?.field === 'grade' ? 'sdir-input-error' : '' }}" t-att-style="this.promoteErrors?.field === 'grade' ? 'border-color: #EF4444;' : ''" t-model="state.promoteForm.grade">
+                                            <option value="">-- Select Grade --</option>
+                                            <option value="L1 · Junior Associate">L1 · Junior Associate</option>
+                                            <option value="L2 · Associate">L2 · Associate</option>
+                                            <option value="L3 · Senior Associate">L3 · Senior Associate</option>
+                                            <option value="L4 · Associate">L4 · Associate</option>
+                                            <option value="L4 · Manager">L4 · Manager</option>
+                                            <option value="L5 · Senior Manager">L5 · Senior Manager</option>
+                                            <option value="L6 · Director">L6 · Director</option>
+                                            <option value="L7 · Executive">L7 · Executive</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Effective Date</p>
                                         </div>
-                                        <input type="date" class="sdir-edit-modal-input" value="2026-08-26"/>
+                                        <input type="date" t-att-min="state.promoteForm.minDate" t-attf-class="sdir-edit-modal-input {{ this.promoteErrors?.field === 'date' ? 'sdir-input-error' : '' }}" t-model="state.promoteForm.date" t-att-style="this.promoteErrors?.field === 'date' ? 'border-color: #EF4444;' : ''"/>
                                     </div>
                                 </div>
                                 
@@ -1293,7 +1286,7 @@
                                     <legend class="sdir-promote-legend">Salary Adjustment</legend>
                                     <div class="sdir-promote-salary-wrap">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-percent" style="flex-shrink: 0;"><line x1="19" x2="5" y1="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
-                                        <input type="number" placeholder="0" min="0" max="100" class="sdir-promote-salary-input" value=""/>
+                                        <input type="number" placeholder="0" min="0" max="100" t-attf-class="sdir-promote-salary-input {{ this.promoteErrors?.field === 'salary_adjustment' ? 'sdir-input-error' : '' }}" t-att-style="this.promoteErrors?.field === 'salary_adjustment' ? 'border-color: #EF4444;' : ''" t-model="state.promoteForm.salary_adjustment"/>
                                         <span class="sdir-promote-salary-text">% increase</span>
                                     </div>
                                 </fieldset>
@@ -1302,23 +1295,23 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Promotion Rationale</p>
                                     </div>
-                                    <textarea rows="3" class="sdir-status-textarea" placeholder="Achievement highlights and business justification..."></textarea>
+                                    <textarea rows="3" t-attf-class="sdir-status-textarea {{ this.promoteErrors?.field === 'reason' ? 'sdir-input-error' : '' }}" t-att-style="this.promoteErrors?.field === 'reason' ? 'border-color: #EF4444;' : ''" placeholder="Achievement highlights and business justification..." t-model="state.promoteForm.reason"></textarea>
                                 </div>
                                 
                                 <label class="sdir-transfer-checkbox-label">
-                                    <input type="checkbox" checked="checked" class="sdir-transfer-checkbox-input"/>
+                                    <input type="checkbox" class="sdir-transfer-checkbox-input" t-model="state.promoteForm.announce_team"/>
                                     <span class="sdir-transfer-checkbox-text">Announce promotion to the team</span>
                                 </label>
                             </div>
-                            <t t-if="this.statusErrors">
+                            <t t-if="this.promoteErrors">
                                 <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
+                                    <t t-esc="this.promoteErrors.msg"/>
                                 </div>
                             </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closePromoteModal()">Cancel</button>
-                                <button class="sdir-transfer-btn-save" t-on-click="() => this.closePromoteModal()">Confirm Promotion</button>
+                                <button class="sdir-transfer-btn-save" t-on-click="() => this.submitPromotion()">Confirm Promotion</button>
                             </div>
                         </div>
                     </div>
@@ -1348,20 +1341,11 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">New Department *</p>
                                     </div>
-                                    <select class="sdir-edit-modal-select">
+                                    <select t-attf-class="sdir-edit-modal-select {{ this.changeDeptErrors?.field === 'target_dept_id' ? 'sdir-input-error' : '' }}" t-att-style="this.changeDeptErrors?.field === 'target_dept_id' ? 'border-color: #EF4444;' : ''" t-model="state.changeDeptForm.target_dept_id">
                                         <option value="">Select department...</option>
-                                        <option>Compliance &amp; Risk</option>
-                                        <option>Customer Service</option>
-                                        <option>Design</option>
-                                        <option>Engineering</option>
-                                        <option>Engineering/IT</option>
-                                        <option>Executive</option>
-                                        <option>Finance</option>
-                                        <option>Human Resources</option>
-                                        <option>Internal Audit</option>
-                                        <option>Legal</option>
-                                        <option>Marketing</option>
-                                        <option>Operations</option>
+                                        <t t-foreach="this.departments" t-as="dept" t-key="dept.id">
+                                            <option t-att-value="dept.id"><t t-esc="dept.name"/></option>
+                                        </t>
                                     </select>
                                 </div>
                                 
@@ -1369,26 +1353,31 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Effective Date</p>
                                     </div>
-                                    <input type="date" class="sdir-edit-modal-input" value="2026-08-26"/>
+                                    <input type="date" t-att-min="state.changeDeptForm.minDate" t-attf-class="sdir-edit-modal-input {{ this.changeDeptErrors?.field === 'date' ? 'sdir-input-error' : '' }}" t-att-style="this.changeDeptErrors?.field === 'date' ? 'border-color: #EF4444;' : ''" t-model="state.changeDeptForm.date"/>
                                 </div>
                                 
                                 <div class="sdir-edit-modal-field" style="margin-bottom: 16px;">
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Reason</p>
                                     </div>
-                                    <textarea rows="3" class="sdir-status-textarea" placeholder="Why is this change being made?"></textarea>
+                                    <textarea rows="3" t-attf-class="sdir-status-textarea {{ this.changeDeptErrors?.field === 'reason' ? 'sdir-input-error' : '' }}" t-att-style="this.changeDeptErrors?.field === 'reason' ? 'border-color: #EF4444;' : ''" placeholder="Why is this change being made?" t-model="state.changeDeptForm.reason"></textarea>
+                                
+                                <label class="sdir-transfer-checkbox-label" style="margin-top: 16px;">
+                                    <input type="checkbox" class="sdir-transfer-checkbox-input" t-model="state.changeDeptForm.notify_manager"/>
+                                    <span class="sdir-transfer-checkbox-text">Notify Managers (Current &amp; New)</span>
+                                </label>
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
+                            <t t-if="this.changeDeptErrors">
                                 <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
+                                    <t t-esc="this.changeDeptErrors.msg"/>
                                 </div>
                             </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeChangeDeptModal()">Cancel</button>
-                                <button class="sdir-transfer-btn-save" t-on-click="() => this.closeChangeDeptModal()">Change Department</button>
+                                <button class="sdir-transfer-btn-save" t-on-click="() => this.submitChangeDept()">Change Department</button>
                             </div>
                         </div>
                     </div>
@@ -1405,7 +1394,7 @@
                                     </div>
                                     <div>
                                         <p class="sdir-edit-modal-title">Reassign Reporting Manager</p>
-                                        <p class="sdir-edit-modal-subtitle">Currently reports to: <t t-esc="props.activeProfile.manager_name or 'Samuel Brown'"/></p>
+                                        <p class="sdir-edit-modal-subtitle">Currently reports to: <t t-esc="props.activeProfile.manager_name or 'No Manager'"/></p>
                                     </div>
                                 </div>
                                 <button class="sdir-edit-modal-close" t-on-click="() => this.closeReassignModal()">
@@ -1420,7 +1409,7 @@
                                     </div>
                                     <div class="sdir-reassign-search-wrap">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-reassign-search-icon lucide lucide-search"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-                                        <input placeholder="Search by name or role..." class="sdir-reassign-search-input" value=""/>
+                                        <input placeholder="Search by name or role..." class="sdir-reassign-search-input" t-model="state.reassignForm.search"/>
                                     </div>
                                 </div>
                                 
@@ -1429,11 +1418,11 @@
                                     <div class="sdir-reassign-selected-banner">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg>
                                         <div class="sdir-reassign-sel-avatar-wrap">
-                                            <img t-attf-src="https://i.pravatar.cc/150?img={{selMgr.img}}" alt="" class="sdir-reassign-list-avatar-img"/>
+                                            <img t-attf-src="/web/image/hr.employee/{{selMgr.id}}/avatar_128" alt="" class="sdir-reassign-list-avatar-img"/>
                                         </div>
                                         <div class="sdir-reassign-sel-info">
                                             <p class="sdir-reassign-sel-name" t-esc="selMgr.name"/>
-                                            <p class="sdir-reassign-sel-role" t-esc="selMgr.role"/>
+                                            <p class="sdir-reassign-sel-role" t-esc="selMgr.job_title"/>
                                         </div>
                                         <button class="sdir-reassign-sel-clear" t-on-click="() => this.clearSelectedManager()">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
@@ -1441,31 +1430,31 @@
                                     </div>
                                 </t>
                                 
-                                <div class="sdir-reassign-list-wrap">
-                                    <t t-foreach="this.managersList" t-as="mgr" t-key="mgr.id">
-                                        <button t-attf-class="sdir-reassign-list-item {{ state.selectedManagerId === mgr.id ? 'sdir-reassign-list-item-active' : '' }}" t-on-click="() => this.selectManager(mgr.id)">
+                                <div t-attf-class="sdir-reassign-list-wrap {{ this.reassignErrors?.field === 'selectedManagerId' ? 'sdir-input-error' : '' }}" t-att-style="this.reassignErrors?.field === 'selectedManagerId' ? 'border-color: #EF4444; border-style: solid; border-width: 1px;' : ''">
+                                    <t t-foreach="this.filteredManagers" t-as="mgr" t-key="mgr.id">
+                                        <button t-attf-class="sdir-reassign-list-item {{ state.reassignForm.selectedManagerId === mgr.id ? 'sdir-reassign-list-item-active' : '' }}" t-on-click="() => this.selectManager(mgr.id)">
                                             <div class="sdir-reassign-list-avatar-wrap">
-                                                <img t-attf-src="https://i.pravatar.cc/150?img={{mgr.img}}" alt="" class="sdir-reassign-list-avatar-img"/>
+                                                <img t-attf-src="/web/image/hr.employee/{{mgr.id}}/avatar_128" alt="" class="sdir-reassign-list-avatar-img"/>
                                             </div>
                                             <div class="sdir-reassign-list-info">
                                                 <p class="sdir-reassign-list-name" t-esc="mgr.name"/>
-                                                <p class="sdir-reassign-list-role" t-esc="mgr.role"/>
+                                                <p class="sdir-reassign-list-role" t-esc="mgr.job_title"/>
                                             </div>
-                                            <svg t-if="state.selectedManagerId === mgr.id" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg>
+                                            <svg t-if="state.reassignForm.selectedManagerId === mgr.id" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"></path></svg>
                                         </button>
                                     </t>
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
+                            <t t-if="this.reassignErrors">
                                 <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
+                                    <t t-esc="this.reassignErrors.msg"/>
                                 </div>
                             </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeReassignModal()">Cancel</button>
-                                <button class="sdir-transfer-btn-save" t-on-click="() => this.closeReassignModal()">Reassign Manager</button>
+                                <button class="sdir-transfer-btn-save" t-on-click="() => this.submitReassign()">Reassign Manager</button>
                             </div>
                         </div>
                     </div>
@@ -1506,8 +1495,8 @@
                                             <input type="checkbox" t-att-checked="state.permissions.hrLeave" class="sdir-perm-input"/>
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.hrLeave ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Manage Leave</span>
                                         </label>
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.hrReports ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('hrReports')">
-                                            <input type="checkbox" t-att-checked="state.permissions.hrReports" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.hrReports ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.hrReports" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.hrReports ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Run HR Reports</span>
                                         </label>
                                     </div>
@@ -1516,20 +1505,20 @@
                                 <div style="margin-bottom: 18px;">
                                     <p class="sdir-perm-category-title">Finance &amp; Payroll</p>
                                     <div class="sdir-perm-grid">
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finView ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('finView')">
-                                            <input type="checkbox" t-att-checked="state.permissions.finView" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finView ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.finView" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.finView ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">View Payroll</span>
                                         </label>
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finProcess ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('finProcess')">
-                                            <input type="checkbox" t-att-checked="state.permissions.finProcess" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finProcess ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.finProcess" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.finProcess ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Process Payroll</span>
                                         </label>
                                         <label t-attf-class="sdir-perm-label {{ state.permissions.finBudgets ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('finBudgets')">
                                             <input type="checkbox" t-att-checked="state.permissions.finBudgets" class="sdir-perm-input"/>
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.finBudgets ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">View Budgets</span>
                                         </label>
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finApprove ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('finApprove')">
-                                            <input type="checkbox" t-att-checked="state.permissions.finApprove" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.finApprove ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.finApprove" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.finApprove ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Approve Expenses</span>
                                         </label>
                                     </div>
@@ -1538,16 +1527,16 @@
                                 <div style="margin-bottom: 18px;">
                                     <p class="sdir-perm-category-title">Operations</p>
                                     <div class="sdir-perm-grid">
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsProjects ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('opsProjects')">
-                                            <input type="checkbox" t-att-checked="state.permissions.opsProjects" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsProjects ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.opsProjects" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.opsProjects ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Manage Projects</span>
                                         </label>
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsAssets ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('opsAssets')">
-                                            <input type="checkbox" t-att-checked="state.permissions.opsAssets" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsAssets ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.opsAssets" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.opsAssets ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">Asset Management</span>
                                         </label>
-                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsAnalytics ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('opsAnalytics')">
-                                            <input type="checkbox" t-att-checked="state.permissions.opsAnalytics" class="sdir-perm-input"/>
+                                        <label t-attf-class="sdir-perm-label {{ state.permissions.opsAnalytics ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" ><!-- disabled -->
+                                            <input type="checkbox" t-att-checked="state.permissions.opsAnalytics" class="sdir-perm-input" disabled="disabled" />
                                             <span t-attf-class="sdir-perm-text {{ state.permissions.opsAnalytics ? 'sdir-perm-text-active' : 'sdir-perm-text-inactive' }}">View Analytics</span>
                                         </label>
                                         <label t-attf-class="sdir-perm-label {{ state.permissions.opsSystem ? 'sdir-perm-label-active' : 'sdir-perm-label-inactive' }}" t-on-click="() => this.togglePermission('opsSystem')">
@@ -1558,15 +1547,10 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeGrantPermModal()">Cancel</button>
-                                <button class="sdir-btn-amber" t-on-click="() => this.closeGrantPermModal()">Grant Permissions</button>
+                                <button class="sdir-btn-amber" t-on-click="() => this.submitGrantPermissions()">Grant Permissions</button>
                             </div>
                         </div>
                     </div>
@@ -1608,29 +1592,29 @@
                                         <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.hrLeave ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('hrLeave')">
                                             <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.hrLeave"/><span class="sdir-perm-text">Manage Leave</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.hrReports ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('hrReports')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.hrReports"/><span class="sdir-perm-text">Run HR Reports</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">Run HR Reports</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.finView ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('finView')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.finView"/><span class="sdir-perm-text">View Payroll</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">View Payroll</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.finProcess ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('finProcess')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.finProcess"/><span class="sdir-perm-text">Process Payroll</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">Process Payroll</span>
                                         </label>
                                         <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.finBudgets ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('finBudgets')">
                                             <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.finBudgets"/><span class="sdir-perm-text">View Budgets</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.finApprove ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('finApprove')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.finApprove"/><span class="sdir-perm-text">Approve Expenses</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">Approve Expenses</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.opsProjects ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('opsProjects')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.opsProjects"/><span class="sdir-perm-text">Manage Projects</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">Manage Projects</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.opsAssets ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('opsAssets')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.opsAssets"/><span class="sdir-perm-text">Asset Management</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">Asset Management</span>
                                         </label>
-                                        <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.opsAnalytics ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('opsAnalytics')">
-                                            <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.opsAnalytics"/><span class="sdir-perm-text">View Analytics</span>
+                                        <label class="sdir-revoke-item-label sdir-revoke-item-inactive" style="opacity: 0.5; cursor: not-allowed;" title="Module not installed">
+                                            <input type="checkbox" class="sdir-revoke-item-input" disabled="disabled"/><span class="sdir-perm-text">View Analytics</span>
                                         </label>
                                         <label t-attf-class="sdir-revoke-item-label {{ state.revokePermissions.opsSystem ? 'sdir-revoke-item-active' : 'sdir-revoke-item-inactive' }}" t-on-click="() => this.toggleRevokePermission('opsSystem')">
                                             <input type="checkbox" class="sdir-revoke-item-input" t-att-checked="state.revokePermissions.opsSystem"/><span class="sdir-perm-text">System Settings</span>
@@ -1642,24 +1626,21 @@
                                     <div style="margin-bottom: 6px;">
                                         <p class="sdir-edit-modal-label">Reason for Revocation</p>
                                     </div>
-                                    <textarea rows="2" class="sdir-status-textarea" placeholder="Security incident, role change, disciplinary action..."></textarea>
+                                    <textarea rows="2" t-att-class="'sdir-status-textarea ' + (this.revokeErrors?.field === 'reason' ? 'sdir-status-textarea-error' : '')" placeholder="Security incident, role change, disciplinary action..." t-model="state.revokeReason"></textarea>
+                                    <t t-if="this.revokeErrors?.field === 'reason'"><div class="sdir-inline-error" style="color: #EF4444; font-size: 13px; margin-top: 4px;"><t t-esc="this.revokeErrors.msg"/></div></t>
                                 </div>
                                 
                                 <label class="sdir-revoke-confirm-banner">
-                                    <input type="checkbox" class="sdir-revoke-item-input"/>
+                                    <input type="checkbox" class="sdir-revoke-item-input" t-model="state.revokeConfirm"/>
                                     <span class="sdir-revoke-confirm-text">I confirm this access revocation for <t t-esc="props.activeProfile.name or 'Aaron Park'"/></span>
                                 </label>
+                                <t t-if="this.revokeErrors?.field === 'confirm'"><div class="sdir-inline-error" style="color: #EF4444; font-size: 13px; margin-top: 4px; margin-bottom: 16px;"><t t-esc="this.revokeErrors.msg"/></div></t>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeRevokeModal()">Cancel</button>
-                                <button class="sdir-btn-red" t-on-click="() => this.closeRevokeModal()">Revoke Access</button>
+                                <button class="sdir-btn-red" t-on-click="() => this.submitRevokePermissions()">Revoke Access</button>
                             </div>
                         </div>
                     </div>
@@ -1705,13 +1686,18 @@
                                 
                                 <t t-if="state.resetPasswordMode === 'temp'">
                                     <div class="sdir-reset-temp-info">
-                                        <p class="sdir-reset-temp-title">Generated Temporary Password</p>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <p class="sdir-reset-temp-title" style="margin-bottom: 0;">Generated Temporary Password</p>
+                                            <button t-on-click="() => this.generateTempPassword()" title="Regenerate Password" style="padding: 4px; border-radius: 4px; background: transparent; border: none; cursor: pointer; color: #6B7280; display: flex; align-items: center; justify-content: center; transition: color 0.2s, background-color 0.2s;" onmouseover="this.style.color='#111827'; this.style.backgroundColor='#F3F4F6'" onmouseout="this.style.color='#6B7280'; this.style.backgroundColor='transparent'">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                            </button>
+                                        </div>
                                         <div class="sdir-reset-temp-row">
-                                            <code class="sdir-reset-temp-code" t-esc="state.tempPasswordVisible ? 'XyZ9$kP21Lq' : '••••••••••••'"/>
+                                            <code class="sdir-reset-temp-code" t-esc="state.tempPasswordVisible ? state.tempPassword : '••••••••••••'"/>
                                             <button class="sdir-reset-temp-eye" t-on-click="() => this.toggleTempPassword()">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path><circle cx="12" cy="12" r="3"></circle></svg>
                                             </button>
-                                            <button class="sdir-reset-temp-copy">
+                                            <button class="sdir-reset-temp-copy" t-on-click="() => this.copyTempPassword()">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> Copy
                                             </button>
                                         </div>
@@ -1723,19 +1709,14 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeResetPasswordModal()">Cancel</button>
                                 <t t-if="state.resetPasswordMode === 'email'">
-                                    <button class="sdir-btn-amber" t-on-click="() => this.closeResetPasswordModal()">Send Reset Link</button>
+                                    <button class="sdir-btn-amber" t-on-click="() => this.submitResetPassword()">Send Reset Link</button>
                                 </t>
                                 <t t-if="state.resetPasswordMode === 'temp'">
-                                    <button class="sdir-btn-amber" t-on-click="() => this.closeResetPasswordModal()">Apply Temp Password</button>
+                                    <button class="sdir-btn-amber" t-on-click="() => this.submitResetPassword()">Apply Temp Password</button>
                                 </t>
                             </div>
                         </div>
@@ -1812,17 +1793,12 @@
                                 </div>
                                 
                                 <label class="sdir-revoke-confirm-banner">
-                                    <input type="checkbox" class="sdir-revoke-item-input"/>
+                                    <input type="checkbox" class="sdir-revoke-item-input" t-model="state.revokeConfirm"/>
                                     <span class="sdir-revoke-confirm-text">I confirm the suspension of <t t-esc="props.activeProfile.name or 'Aaron Park'"/>'s account</span>
                                 </label>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeSuspendModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeSuspendModal()">Suspend Account</button>
@@ -1904,12 +1880,7 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeOnboardingModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeOnboardingModal()">Start Onboarding</button>
@@ -2030,12 +2001,7 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeOffboardingModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeOffboardingModal()">Start Offboarding</button>
@@ -2104,12 +2070,7 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeProbationModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeProbationModal()">
@@ -2205,12 +2166,7 @@
                                 </div>
                                 
                             </div>
-                            <t t-if="this.statusErrors">
-                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                                    <t t-esc="this.statusErrors.msg"/>
-                                </div>
-                            </t>
+
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeRehireModal()">Cancel</button>
                                 <button class="sdir-btn-red" t-on-click="() => this.closeRehireModal()">Initiate Rehire</button>

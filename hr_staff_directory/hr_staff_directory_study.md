@@ -47,6 +47,17 @@ The "Edit Contact Information" modal updates the employee's contact details adhe
 * **Custom Field - `sdir_home_address` (Text):** Base Odoo natively manages home addresses via a complex Many2one relationship to a `res.partner` (`address_home_id`). To keep the Staff Directory streamlined, we bypass this by using a simple `sdir_home_address` Text field.
 * **Custom Field - `sdir_emergency_relationship` (Char):** Base Odoo is entirely missing a field to store the relationship of the emergency contact (e.g. "Spouse"). We created `sdir_emergency_relationship` to serve as this SSOT.
 
+### Transfer Employee
+The "Transfer Employee" modal is designed to move an employee to a new department and location.
+* **Department and Location (`department_id`, `work_location_id`):** We strictly use Odoo's native `department_id` and `work_location_id` (Many2one) fields as the SSOT. The frontend dynamically fetches all active departments and work locations from the backend so the user selects actual Odoo records, ensuring absolute data integrity.
+* **Transfer Metadata:** Base Odoo does not natively track the "reason" or "effective date" of a department transfer directly on the employee model. We created two custom fields `sdir_transfer_date` (Date) and `sdir_transfer_reason` (Text) to store this metadata as the SSOT. A rich automated message is also posted to the employee's chatter log detailing the old vs new department/location for historical audit trails.
+
+### Promote Employee
+The "Promote Employee" modal allows an administrator to quickly elevate an employee's title and level.
+* **Job Title (`job_title`):** We explicitly update the free-text `job_title` field as the SSOT, rather than the structural `job_id` field.
+* **Promotion Metadata (`sdir_grade`, `sdir_salary_adjustment`):** Base Odoo natively isolates salary and grade logic into the `hr.contract` model. Consistent with the module's simplified approach, we bypass `hr.contract` and instead store `sdir_grade` (Char), `sdir_salary_adjustment` (Integer), `sdir_promotion_date` (Date), and `sdir_promotion_reason` (Text) directly on `hr.employee`. 
+* **Team Announcements:** When the "Announce to team" flag is checked, the backend automatically looks up the employee's department manager and all co-workers in the same department, tagging them via their `partner_id` in the chatter log to generate an instant Odoo notification.
+
 ### Other Models
 *   hr_work_location.py: Likely extends the work location model, possibly adding coordinate data (latitude/longitude) required by the geographic_map component.
 
@@ -287,3 +298,35 @@ patch(notificationService, {
 });
 ```
 This patch script is then registered directly into the `__manifest__.py` under the `web.assets_backend` bundle so it loads seamlessly with the Odoo webclient.
+
+### Grant Permissions
+The "Grant Permissions" modal is mapped directly to native Odoo 17 User Groups (`res.groups`), diverging from the custom SSOT fields used for other metadata. This is because Odoo's native permissions are intrinsically linked to system login accounts (`res.users`), not HR profiles.
+* **User Account Guard:** If an employee does not have a linked `user_id`, the system blocks the grant action and prompts the HR admin to create a system account first.
+* **Supported Mappings:**
+  * View Employee Records ➔ `hr.group_hr_user`
+  * Edit Employee Records ➔ `hr.group_hr_manager`
+  * Manage Leave ➔ `hr_holidays.group_hr_holidays_user`
+  * View Budgets ➔ `account.group_account_readonly`
+  * System Settings ➔ `base.group_system`
+* **Unsupported Mappings (Greyed Out):** Toggles requiring missing/uninstalled modules (e.g., Payroll, Expenses, Projects) or those without standard equivalents (HR Reports) are made uncheckable on the UI to prevent false-positive permission assignments.
+
+### Known Issue: Implied Groups Reverting Toggles
+- **Issue:** Due to Odoo's native `res.groups` hierarchy, certain groups imply others (e.g., `hr.group_hr_manager` implies `hr_holidays.group_hr_holidays_user`). If a user attempts to uncheck a lower-level permission (like "Manage Leave") while keeping a higher-level permission (like "Edit Employee Records") checked, Odoo's backend automatically re-grants the implied group. This causes the UI to show the permission as re-checked upon reloading.
+- **Status:** Temporarily deferred. Needs a more robust solution to handle `implied_ids` in Odoo groups, possibly by unlinking implied groups or fully decoupling the UI toggles from exact 1-to-1 Odoo group mappings.
+
+### Revoke Permissions
+The "Revoke Permissions" modal extends the same group-mapping logic from the Grant modal but adds reverse-implied validation.
+* **Modes:** Supports both "Specific" (cherry-picked revocation) and "All" (complete access termination).
+* **Audit Trail:** Any revoked access prompts the admin for a mandatory "Reason for revocation", which is securely logged to the employee's chatter history alongside the exact permissions removed.
+* **Reverse Implied Validation:** If a high-level permission implies a low-level permission (e.g., HR Manager implies Time Off Officer), the UI forces the admin to revoke the high-level permission if they attempt to revoke the low-level permission, aligning perfectly with Odoo's backend constraints.
+
+### Known Issue: "Manage Leave" Checked By Default
+- **Issue:** When granting or revoking permissions, the "Manage Leave" toggle frequently appears checked by default and refuses to stay unchecked. This is not a UI bug, but rather Odoo's native security engine asserting dominance. When an employee is given a system account (Internal User), Odoo often automatically grants basic leave management privileges (Time Off Officer) depending on the installed modules. Furthermore, if the user holds "Edit Employee Records" (HR Manager), Odoo structurally forces "Manage Leave" to be true via `implied_ids`.
+- **Status:** Documented. Modifying this would require fundamentally altering Odoo's native internal user default configurations and group implications.
+
+### Reset Password Modal
+The "Reset Password" modal is deeply integrated with Odoo's native authentication system (`res.users`), allowing HR administrators to securely manage system access for employees. It supports two distinct operational modes:
+* **Email Reset Link:** Leverages Odoo's native secure password reset system by invoking `user.sudo().action_reset_password()`. This automatically generates a temporary secure token and sends the standard Odoo password reset email directly to the employee's inbox.
+* **Temporary Password:** Generates a secure, 12-character alphanumeric password dynamically on the frontend via JavaScript. Administrators can easily copy this password using the native browser clipboard API (`navigator.clipboard.writeText`). Upon submission, the backend forces a direct password update (`user.sudo().write({'password': temp_password})`).
+* **Audit Trail:** Both the Email Link dispatch and the application of a Temporary Password are synchronously logged to the employee's chatter history for complete auditability.
+* **User Account Guard:** Similar to the permissions modals, the backend actively guards against attempting to reset a password for an HR profile that lacks a linked `res.users` account, bubbling up an appropriate Toast error if triggered.

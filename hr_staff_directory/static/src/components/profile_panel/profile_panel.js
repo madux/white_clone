@@ -28,11 +28,14 @@ export class StaffDirectoryProfilePanel extends Component {
         this.toast = useService("hr_staff_directory.toast");
         
         this.locations = [];
+        this.departments = [];
         onWillStart(async () => {
             try {
                 this.locations = await this.orm.searchRead("hr.work.location", [], ["id", "name"]);
+                this.departments = await this.orm.searchRead("hr.department", [], ["id", "name"]);
+                this.allEmployees = await this.orm.searchRead("hr.employee", [["active", "=", true]], ["id", "name", "job_title"]);
             } catch (e) {
-                console.error("Failed to load locations", e);
+                console.error("Failed to load reference data", e);
             }
         });
         this.state = useState({
@@ -73,17 +76,53 @@ export class StaffDirectoryProfilePanel extends Component {
                 hasAttemptedSave: false
             },
             showTransferModal: false,
-            transferTargetDept: '',
+            transferForm: {
+                target_dept_id: '',
+                location_id: '',
+                date: new Date().toISOString().split('T')[0],
+                minDate: new Date().toISOString().split('T')[0],
+                reason: '',
+                notify_manager: false,
+                require_approval: false,
+                hasAttemptedSave: false
+            },
             showPromoteModal: false,
+            promoteForm: {
+                job_title: '',
+                grade: '',
+                date: new Date().toISOString().split('T')[0],
+                minDate: new Date().toISOString().split('T')[0],
+                salary_adjustment: '',
+                reason: '',
+                announce_team: false,
+                hasAttemptedSave: false
+            },
             showChangeDeptModal: false,
+            changeDeptForm: {
+                target_dept_id: '',
+                date: new Date().toISOString().split('T')[0],
+                minDate: new Date().toISOString().split('T')[0],
+                reason: '',
+                notify_manager: false,
+                hasAttemptedSave: false
+            },
             showReassignModal: false,
-            selectedManagerId: null,
+            reassignForm: {
+                search: '',
+                selectedManagerId: null,
+                hasAttemptedSave: false
+            },
             showGrantPermModal: false,
             showRevokeModal: false,
             revokeMode: 'specific',
+            revokeReason: '',
+            revokeConfirm: false,
+            revokeAttemptedSave: false,
+
             showResetPasswordModal: false,
             resetPasswordMode: 'email',
             tempPasswordVisible: false,
+            tempPassword: "",
             showSuspendModal: false,
             showOnboardingModal: false,
             showOffboardingModal: false,
@@ -209,6 +248,13 @@ export class StaffDirectoryProfilePanel extends Component {
                 this.toast.show("error", "Failed to update profile.");
             }
         }
+    }
+
+    get revokeErrors() {
+        if (!this.state.revokeAttemptedSave) return null;
+        if (!this.state.revokeReason || !this.state.revokeReason.trim()) return { field: 'reason', msg: 'Reason for revocation is required.' };
+        if (!this.state.revokeConfirm) return { field: 'confirm', msg: 'Please confirm the access revocation.' };
+        return null;
     }
 
     get statusErrors() {
@@ -427,6 +473,16 @@ export class StaffDirectoryProfilePanel extends Component {
     }
 
     openTransferModal() {
+        this.state.transferForm = {
+            target_dept_id: '',
+            location_id: '',
+            date: new Date().toISOString().split('T')[0],
+            minDate: new Date().toISOString().split('T')[0],
+            reason: '',
+            notify_manager: false,
+            require_approval: false,
+            hasAttemptedSave: false
+        };
         this.state.showTransferModal = true;
     }
 
@@ -434,11 +490,71 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showTransferModal = false;
     }
 
-    onTransferDeptChange(ev) {
-        this.state.transferTargetDept = ev.target.value;
+    get transferErrors() {
+        const form = this.state.transferForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (!form.target_dept_id) {
+            return { field: 'target_dept_id', msg: 'Please select a target department.' };
+        }
+        if (!form.location_id) {
+            return { field: 'location_id', msg: 'Please select a new location.' };
+        }
+        if (!form.date) {
+            return { field: 'date', msg: 'Please provide an effective date.' };
+        }
+        if (!form.reason) {
+            return { field: 'reason', msg: 'Please provide a reason for the transfer.' };
+        }
+        return null;
+    }
+
+    async submitTransfer() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.transferForm.hasAttemptedSave = true;
+        if (this.transferErrors) return;
+        
+        const form = this.state.transferForm;
+        
+        try {
+            await this.orm.call("hr.employee", "transfer_employee", [
+                this.props.activeProfile.id,
+                {
+                    target_dept_id: form.target_dept_id,
+                    location_id: form.location_id,
+                    date: form.date,
+                    reason: form.reason,
+                    notify_manager: form.notify_manager,
+                    require_approval: form.require_approval
+                }
+            ]);
+            
+            if (this.toast) {
+                this.toast.show("success", "Employee transferred successfully.");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closeTransferModal();
+        } catch (error) {
+            console.error("Failed to transfer employee:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not transfer employee.");
+            }
+        }
     }
 
     openPromoteModal() {
+        this.state.promoteForm = {
+            job_title: '',
+            grade: '',
+            date: new Date().toISOString().split('T')[0],
+            minDate: new Date().toISOString().split('T')[0],
+            salary_adjustment: '',
+            reason: '',
+            announce_team: false,
+            hasAttemptedSave: false
+        };
         this.state.showPromoteModal = true;
     }
 
@@ -446,7 +562,72 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showPromoteModal = false;
     }
 
+    get promoteErrors() {
+        const form = this.state.promoteForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (!form.job_title) {
+            return { field: 'job_title', msg: 'Please provide a new job title.' };
+        }
+        if (!form.grade) {
+            return { field: 'grade', msg: 'Please select a new grade/level.' };
+        }
+        if (!form.date) {
+            return { field: 'date', msg: 'Please provide an effective date.' };
+        }
+        if (form.salary_adjustment === '') {
+            return { field: 'salary_adjustment', msg: 'Please provide a salary adjustment percentage.' };
+        }
+        if (!form.reason) {
+            return { field: 'reason', msg: 'Please provide a promotion rationale.' };
+        }
+        return null;
+    }
+
+    async submitPromotion() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.promoteForm.hasAttemptedSave = true;
+        if (this.promoteErrors) return;
+        
+        const form = this.state.promoteForm;
+        
+        try {
+            await this.orm.call("hr.employee", "promote_employee", [
+                this.props.activeProfile.id,
+                {
+                    job_title: form.job_title,
+                    grade: form.grade,
+                    date: form.date,
+                    reason: form.reason,
+                    salary_adjustment: form.salary_adjustment,
+                    announce_team: form.announce_team
+                }
+            ]);
+            
+            if (this.toast) {
+                this.toast.show("success", "Employee promoted successfully.");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closePromoteModal();
+        } catch (error) {
+            console.error("Failed to promote employee:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not promote employee.");
+            }
+        }
+    }
+
     openChangeDeptModal() {
+        this.state.changeDeptForm = {
+            target_dept_id: '',
+            date: new Date().toISOString().split('T')[0],
+            minDate: new Date().toISOString().split('T')[0],
+            reason: '',
+            notify_manager: false,
+            hasAttemptedSave: false
+        };
         this.state.showChangeDeptModal = true;
     }
 
@@ -454,9 +635,62 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.showChangeDeptModal = false;
     }
 
+    get changeDeptErrors() {
+        const form = this.state.changeDeptForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (!form.target_dept_id) {
+            return { field: 'target_dept_id', msg: 'Please select a new department.' };
+        }
+        if (!form.date) {
+            return { field: 'date', msg: 'Please provide an effective date.' };
+        }
+        if (!form.reason) {
+            return { field: 'reason', msg: 'Please provide a reason for the department change.' };
+        }
+        return null;
+    }
+
+    async submitChangeDept() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.changeDeptForm.hasAttemptedSave = true;
+        if (this.changeDeptErrors) return;
+        
+        const form = this.state.changeDeptForm;
+        
+        try {
+            await this.orm.call("hr.employee", "transfer_employee", [
+                this.props.activeProfile.id,
+                {
+                    target_dept_id: form.target_dept_id,
+                    date: form.date,
+                    reason: form.reason,
+                    notify_manager: form.notify_manager
+                }
+            ]);
+            
+            if (this.toast) {
+                this.toast.show("success", "Department changed successfully.");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closeChangeDeptModal();
+        } catch (error) {
+            console.error("Failed to change department:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not change department.");
+            }
+        }
+    }
+
     openReassignModal() {
+        this.state.reassignForm = {
+            search: '',
+            selectedManagerId: null,
+            hasAttemptedSave: false
+        };
         this.state.showReassignModal = true;
-        this.state.selectedManagerId = null;
     }
 
     closeReassignModal() {
@@ -464,19 +698,103 @@ export class StaffDirectoryProfilePanel extends Component {
     }
 
     selectManager(id) {
-        this.state.selectedManagerId = id;
+        this.state.reassignForm.selectedManagerId = id;
     }
 
     clearSelectedManager() {
-        this.state.selectedManagerId = null;
+        this.state.reassignForm.selectedManagerId = null;
     }
 
     getSelectedManager() {
-        return this.managersList.find(m => m.id === this.state.selectedManagerId);
+        if (!this.state.reassignForm.selectedManagerId) return null;
+        return this.allEmployees?.find(m => m.id === this.state.reassignForm.selectedManagerId) || null;
+    }
+
+    get filteredManagers() {
+        if (!this.allEmployees) return [];
+        let list = this.allEmployees.filter(e => e.id !== this.props.activeProfile?.id);
+        const q = this.state.reassignForm.search.toLowerCase();
+        if (q) {
+            list = list.filter(e => (e.name && e.name.toLowerCase().includes(q)) || (e.job_title && e.job_title.toLowerCase().includes(q)));
+        }
+        return list;
+    }
+
+    get reassignErrors() {
+        const form = this.state.reassignForm;
+        if (!form.hasAttemptedSave) return null;
+        if (!form.selectedManagerId) {
+            return { field: 'selectedManagerId', msg: 'Please select a new reporting manager.' };
+        }
+        return null;
+    }
+
+    async submitReassign() {
+        if (!this.props.activeProfile) return;
+        
+        this.state.reassignForm.hasAttemptedSave = true;
+        if (this.reassignErrors) return;
+        
+        try {
+            await this.orm.call("hr.employee", "reassign_manager", [
+                this.props.activeProfile.id,
+                this.state.reassignForm.selectedManagerId
+            ]);
+            
+            if (this.toast) {
+                this.toast.show("success", "Manager reassigned successfully.");
+            }
+            
+            this.env.bus.trigger('sdir_refresh');
+            this.closeReassignModal();
+        } catch (error) {
+            console.error("Failed to reassign manager:", error);
+            if (this.toast) {
+                this.toast.show("error", "Could not reassign manager.");
+            }
+        }
     }
 
     openGrantPermModal() {
+        const p = this.props.activeProfile.permissions || {};
+        this.state.permissions = {
+            hrView: p.hrView || false,
+            hrEdit: p.hrEdit || false,
+            hrLeave: p.hrLeave || false,
+            hrReports: false,
+            finView: false,
+            finProcess: false,
+            finBudgets: p.finBudgets || false,
+            finApprove: false,
+            opsProjects: false,
+            opsAssets: false,
+            opsAnalytics: false,
+            opsSystem: p.opsSystem || false,
+        };
         this.state.showGrantPermModal = true;
+    }
+    
+    async submitGrantPermissions() {
+        if (!this.props.activeProfile) return;
+        
+        try {
+            const result = await this.orm.call("hr.employee", "grant_permissions", [
+                this.props.activeProfile.id,
+                this.state.permissions
+            ]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) this.toast.show("success", "Permissions updated successfully.");
+            this.env.bus.trigger('sdir_refresh');
+            this.closeGrantPermModal();
+        } catch (error) {
+            console.error(error);
+            if (this.toast) this.toast.show("error", "Failed to update permissions.");
+        }
     }
 
     closeGrantPermModal() {
@@ -485,10 +803,67 @@ export class StaffDirectoryProfilePanel extends Component {
 
     togglePermission(key) {
         this.state.permissions[key] = !this.state.permissions[key];
+        
+        // Reactive validation to match Odoo's implied groups
+        if (this.state.permissions[key]) {
+            // If checking a parent, automatically check its implied children
+            if (key === 'opsSystem') {
+                this.state.permissions.hrEdit = true;
+                this.state.permissions.hrView = true;
+                this.state.permissions.hrLeave = true;
+                this.state.permissions.finBudgets = true;
+            }
+            if (key === 'hrEdit') {
+                this.state.permissions.hrView = true;
+                this.state.permissions.hrLeave = true;
+            }
+        } else {
+            // If unchecking a child, automatically uncheck its parents
+            if (key === 'hrView') {
+                this.state.permissions.hrEdit = false;
+                this.state.permissions.opsSystem = false;
+            }
+            if (key === 'hrLeave') {
+                this.state.permissions.hrEdit = false;
+                this.state.permissions.opsSystem = false;
+            }
+            if (key === 'hrEdit' || key === 'finBudgets') {
+                this.state.permissions.opsSystem = false;
+            }
+        }
     }
 
     getSelectedPermissionsCount() {
         return Object.values(this.state.permissions).filter(Boolean).length;
+    }
+
+        async submitRevokePermissions() {
+        this.state.revokeAttemptedSave = true;
+        if (this.revokeErrors) return;
+        
+        try {
+            const result = await this.orm.call("hr.employee", "revoke_permissions", [
+                this.props.activeProfile.id,
+                {
+                    mode: this.state.revokeMode,
+                    perms: this.state.revokePermissions,
+                    reason: this.state.revokeReason
+                }
+            ]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) this.toast.show("success", "System access has been successfully revoked.");
+            this.env.bus.trigger('sdir_refresh');
+            this.closeRevokeModal();
+            
+        } catch (error) {
+            console.error("Failed to revoke permissions:", error);
+            if (this.toast) this.toast.show("error", "Failed to revoke permissions.");
+        }
     }
 
     openRevokeModal() {
@@ -498,6 +873,9 @@ export class StaffDirectoryProfilePanel extends Component {
 
     closeRevokeModal() {
         this.state.showRevokeModal = false;
+        this.state.revokeReason = '';
+        this.state.revokeConfirm = false;
+        this.state.revokeAttemptedSave = false;
     }
 
     setRevokeMode(mode) {
@@ -506,12 +884,65 @@ export class StaffDirectoryProfilePanel extends Component {
 
     toggleRevokePermission(key) {
         this.state.revokePermissions[key] = !this.state.revokePermissions[key];
+        
+        // Reverse implied validation for revoking
+        if (this.state.revokePermissions[key]) {
+            // If checking a base permission to revoke it, force checking its parent admins too
+            if (key === 'hrView') {
+                this.state.revokePermissions.hrEdit = true;
+                this.state.revokePermissions.opsSystem = true;
+            }
+            if (key === 'hrEdit' || key === 'hrLeave' || key === 'finBudgets') {
+                this.state.revokePermissions.opsSystem = true;
+            }
+        } else {
+            // If unchecking an admin permission (deciding NOT to revoke it), 
+            // you cannot revoke the base permission it implies!
+            if (key === 'opsSystem') {
+                this.state.revokePermissions.hrEdit = false;
+                this.state.revokePermissions.hrView = false;
+                this.state.revokePermissions.hrLeave = false;
+                this.state.revokePermissions.finBudgets = false;
+            }
+            if (key === 'hrEdit') {
+                this.state.revokePermissions.hrView = false;
+            }
+        }
+    }
+
+    async submitResetPassword() {
+        try {
+            const result = await this.orm.call("hr.employee", "reset_user_password", [
+                this.props.activeProfile.id,
+                this.state.resetPasswordMode,
+                this.state.tempPassword
+            ]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) {
+                if (this.state.resetPasswordMode === 'email') {
+                    this.toast.show("success", "Password reset link sent successfully.");
+                } else {
+                    this.toast.show("success", "Temporary password applied successfully.");
+                }
+            }
+            this.closeResetPasswordModal();
+            
+        } catch (error) {
+            console.error("Failed to reset password:", error);
+            if (this.toast) this.toast.show("error", "Failed to reset password.");
+        }
     }
 
     openResetPasswordModal() {
         this.state.showResetPasswordModal = true;
         this.state.resetPasswordMode = 'email';
         this.state.tempPasswordVisible = false;
+        this.state.tempPassword = "";
     }
 
     closeResetPasswordModal() {
@@ -520,6 +951,29 @@ export class StaffDirectoryProfilePanel extends Component {
 
     setResetPasswordMode(mode) {
         this.state.resetPasswordMode = mode;
+        if (mode === 'temp' && !this.state.tempPassword) {
+            this.generateTempPassword();
+        }
+    }
+
+    async copyTempPassword() {
+        if (!this.state.tempPassword) return;
+        try {
+            await navigator.clipboard.writeText(this.state.tempPassword);
+            if (this.toast) this.toast.show("success", "Password copied to clipboard.");
+        } catch (err) {
+            console.error("Failed to copy text: ", err);
+            if (this.toast) this.toast.show("error", "Failed to copy password.");
+        }
+    }
+
+    generateTempPassword() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        let temp = "";
+        for (let i = 0; i < 12; i++) {
+            temp += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        this.state.tempPassword = temp;
     }
 
     toggleTempPassword() {

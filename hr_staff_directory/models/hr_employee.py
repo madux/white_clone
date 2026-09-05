@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.fields import Date
+from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
 
@@ -96,6 +97,14 @@ class HrEmployeeStaffDirectory(models.Model):
 
     sdir_home_address = fields.Text(string='Home Address', help='Custom text field for Home Address to bypass complex partner linkage in the Staff Directory.')
     sdir_emergency_relationship = fields.Char(string='Emergency Contact Relationship', help='Stores the relationship of the emergency contact, which is missing from base Odoo.')
+
+    sdir_transfer_date = fields.Date(string='Transfer Date', help='Metadata field to track the effective date of the last transfer.')
+    sdir_transfer_reason = fields.Text(string='Transfer Reason', help='Business justification or reason for the last transfer.')
+
+    sdir_grade = fields.Char(string='Grade/Level', help='Custom field for directory Grade.')
+    sdir_promotion_date = fields.Date(string='Last Promotion Date')
+    sdir_promotion_reason = fields.Text(string='Promotion Rationale')
+    sdir_salary_adjustment = fields.Integer(string='Salary Adjustment (%)')
 
     # ─── Entry point ─────────────────────────────────────────────────────────
 
@@ -735,7 +744,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 log_msg += f" effective {date_str}"
             if notes:
                 log_msg += f"<br/>Reason: {notes}"
-            emp.message_post(body=log_msg)
+            emp.message_post(body=Markup(log_msg))
             
             return {'status': 'success'}
         return {'status': 'error', 'message': 'Employee not found'}
@@ -753,6 +762,249 @@ class HrEmployeeStaffDirectory(models.Model):
             
             # Post chatter log
             emp.message_post(body="Contact Information was updated via the Staff Directory.")
+            return True
+        return False
+
+    @api.model
+    def transfer_employee(self, employee_id, transfer_data):
+        emp = self.browse(employee_id)
+        if emp.exists():
+            old_dept = emp.department_id
+            old_loc = emp.work_location_id.name or 'No Location'
+            
+            target_dept_id = transfer_data.get('target_dept_id')
+            location_id = transfer_data.get('location_id')
+            
+            old_manager = emp.parent_id.name or 'No Manager'
+            
+            if target_dept_id:
+                emp.department_id = int(target_dept_id)
+                emp.parent_id = emp.department_id.manager_id.id if emp.department_id.manager_id else False
+            if location_id:
+                emp.work_location_id = int(location_id)
+                
+            emp.sdir_transfer_date = transfer_data.get('date')
+            emp.sdir_transfer_reason = transfer_data.get('reason')
+            
+            new_dept = emp.department_id
+            new_loc = emp.work_location_id.name or 'No Location'
+            new_manager = emp.parent_id.name or 'No Manager'
+            
+            approval_text = "Yes (Manual verification required)" if transfer_data.get('require_approval') else "No"
+            
+            is_change_dept_only = not location_id
+            title = "Department Changed" if is_change_dept_only else "Employee Transferred"
+            
+            log_parts = [
+                f"<li>Department: {old_dept.name or 'No Department'} ➔ {new_dept.name or 'No Department'}</li>",
+                f"<li>Manager: {old_manager} ➔ {new_manager}</li>"
+            ]
+            if not is_change_dept_only:
+                log_parts.append(f"<li>Location: {old_loc} ➔ {new_loc}</li>")
+                
+            log_parts.append(f"<li>Effective: {emp.sdir_transfer_date}</li>")
+            log_parts.append(f"<li>Reason: {emp.sdir_transfer_reason}</li>")
+            
+            if 'require_approval' in transfer_data:
+                log_parts.append(f"<li>Approval Required: {approval_text}</li>")
+                
+            ul_content = "".join(log_parts)
+            log_msg = f"{title}<br/><ul>{ul_content}</ul>"
+            
+            partner_ids = []
+            if transfer_data.get('notify_manager'):
+                if old_dept.manager_id and old_dept.manager_id.user_id:
+                    partner_ids.append(old_dept.manager_id.user_id.partner_id.id)
+                if new_dept.manager_id and new_dept.manager_id.user_id:
+                    partner_ids.append(new_dept.manager_id.user_id.partner_id.id)
+            
+            if partner_ids:
+                # Add a ping in the message body so they definitely get notified
+                ping_str = " ".join([f"<a href='#' data-oe-model='res.partner' data-oe-id='{pid}'>@manager</a>" for pid in set(partner_ids)])
+                log_msg = f"{ping_str}<br/><br/>{log_msg}"
+                emp.message_post(body=Markup(log_msg), partner_ids=list(set(partner_ids)))
+            else:
+                emp.message_post(body=Markup(log_msg))
+                
+            return True
+        return False
+
+    @api.model
+    @api.model
+    def reassign_manager(self, employee_id, manager_id):
+        emp = self.browse(employee_id)
+        if emp.exists() and manager_id:
+            old_manager = emp.parent_id
+            new_manager = self.browse(manager_id)
+            
+            emp.parent_id = new_manager.id
+            
+            # Construct chatter log
+            log_msg = f"Manager Reassigned<br/><ul><li>Manager: {old_manager.name or 'No Manager'} ➔ {new_manager.name or 'No Manager'}</li></ul>"
+            
+            # Tag old and new manager
+            partner_ids = []
+            if old_manager and old_manager.user_id:
+                partner_ids.append(old_manager.user_id.partner_id.id)
+            if new_manager and new_manager.user_id:
+                partner_ids.append(new_manager.user_id.partner_id.id)
+                
+            if partner_ids:
+                ping_str = " ".join([f"<a href='#' data-oe-model='res.partner' data-oe-id='{pid}'>@manager</a>" for pid in set(partner_ids)])
+                log_msg = f"{ping_str}<br/><br/>{log_msg}"
+                emp.message_post(body=Markup(log_msg), partner_ids=list(set(partner_ids)))
+            else:
+                emp.message_post(body=Markup(log_msg))
+
+    @api.model
+    def grant_permissions(self, employee_id, perms):
+        from markupsafe import Markup
+        emp = self.browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+        if not emp.user_id:
+            return {'status': 'error', 'msg': 'Cannot grant permissions: Employee has no system account'}
+        
+        user = emp.user_id
+        def update_group(xml_id, grant):
+            group = self.env.ref(xml_id, raise_if_not_found=False)
+            if not group: return
+            if grant and group not in user.groups_id:
+                user.write({'groups_id': [(4, group.id)]})
+            elif not grant and group in user.groups_id:
+                user.write({'groups_id': [(3, group.id)]})
+                
+        update_group('hr.group_hr_user', perms.get('hrView'))
+        update_group('hr.group_hr_manager', perms.get('hrEdit'))
+        update_group('hr_holidays.group_hr_holidays_user', perms.get('hrLeave'))
+        update_group('account.group_account_readonly', perms.get('finBudgets'))
+        update_group('base.group_system', perms.get('opsSystem'))
+        
+        # Chatter note
+        granted = []
+        if perms.get('hrView'): granted.append("View Employee Records")
+        if perms.get('hrEdit'): granted.append("Edit Employee Records")
+        if perms.get('hrLeave'): granted.append("Manage Leave")
+        if perms.get('finBudgets'): granted.append("View Budgets")
+        if perms.get('opsSystem'): granted.append("System Settings")
+        
+        log_msg = f"System Access Permissions were updated.<br/>Granted permissions: {', '.join(granted) if granted else 'None'}"
+        emp.message_post(body=Markup(log_msg))
+        return {'status': 'success'}
+
+    @api.model
+    @api.model
+    def reset_user_password(self, employee_id, mode, temp_password=False):
+        emp = self.browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+            
+        user = emp.user_id
+        if not user:
+            return {'status': 'error', 'msg': 'Cannot reset password: Employee has no system account'}
+            
+        try:
+            if mode == 'email':
+                # Trigger Odoo's native password reset flow
+                user.sudo().action_reset_password()
+                emp.message_post(body="A password reset link was emailed to the user.")
+                return {'status': 'success'}
+            elif mode == 'temp':
+                if not temp_password:
+                    return {'status': 'error', 'msg': 'No temporary password provided'}
+                # Set password directly
+                user.sudo().write({'password': temp_password})
+                emp.message_post(body="A temporary password was generated and applied to this user's account.")
+                return {'status': 'success'}
+            else:
+                return {'status': 'error', 'msg': 'Invalid reset mode'}
+        except Exception as e:
+            return {'status': 'error', 'msg': f'Failed to reset password: {str(e)}'}
+
+    def revoke_permissions(self, employee_id, revoke_data):
+        from markupsafe import Markup
+        emp = self.browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+        if not emp.user_id:
+            return {'status': 'error', 'msg': 'Cannot revoke permissions: Employee has no system account'}
+        
+        user = emp.user_id
+        def remove_group(xml_id):
+            group = self.env.ref(xml_id, raise_if_not_found=False)
+            if group and group in user.groups_id:
+                user.write({'groups_id': [(3, group.id)]})
+                return True
+            return False
+
+        mode = revoke_data.get('mode', 'specific')
+        perms = revoke_data.get('perms', {})
+        reason = revoke_data.get('reason', '')
+        
+        revoked = []
+        
+        if mode == 'all':
+            if remove_group('base.group_system'): revoked.append("System Settings")
+            if remove_group('account.group_account_readonly'): revoked.append("View Budgets")
+            if remove_group('hr_holidays.group_hr_holidays_user'): revoked.append("Manage Leave")
+            if remove_group('hr.group_hr_manager'): revoked.append("Edit Employee Records")
+            if remove_group('hr.group_hr_user'): revoked.append("View Employee Records")
+        else:
+            if perms.get('opsSystem') and remove_group('base.group_system'): revoked.append("System Settings")
+            if perms.get('finBudgets') and remove_group('account.group_account_readonly'): revoked.append("View Budgets")
+            if perms.get('hrLeave') and remove_group('hr_holidays.group_hr_holidays_user'): revoked.append("Manage Leave")
+            if perms.get('hrEdit') and remove_group('hr.group_hr_manager'): revoked.append("Edit Employee Records")
+            if perms.get('hrView') and remove_group('hr.group_hr_user'): revoked.append("View Employee Records")
+
+        if not revoked:
+            log_msg = "Access revocation was requested, but no active permissions were found to revoke."
+        else:
+            log_msg = f"System Access Permissions were revoked.<br/>Revoked permissions: {', '.join(revoked)}"
+            
+        if reason:
+            log_msg += f"<br/><br/><b>Reason:</b> {reason}"
+            
+        emp.message_post(body=Markup(log_msg))
+        return {'status': 'success'}
+
+    def promote_employee(self, employee_id, promotion_data):
+        emp = self.browse(employee_id)
+        if emp.exists():
+            old_title = emp.job_title or 'No Title'
+            old_grade = emp.sdir_grade or 'No Grade'
+            
+            emp.job_title = promotion_data.get('job_title')
+            if promotion_data.get('grade'):
+                emp.sdir_grade = promotion_data.get('grade')
+            emp.sdir_promotion_date = promotion_data.get('date')
+            emp.sdir_promotion_reason = promotion_data.get('reason')
+            if promotion_data.get('salary_adjustment'):
+                emp.sdir_salary_adjustment = int(promotion_data.get('salary_adjustment'))
+                
+            new_title = emp.job_title or 'No Title'
+            new_grade = emp.sdir_grade or 'No Grade'
+            adj = f"{emp.sdir_salary_adjustment}%" if emp.sdir_salary_adjustment else "None recorded"
+            
+            log_msg = f"Employee Promoted 🎉<br/><ul><li>Job Title: {old_title} ➔ {new_title}</li><li>Grade: {old_grade} ➔ {new_grade}</li><li>Effective: {emp.sdir_promotion_date}</li><li>Salary Adjustment: {adj}</li><li>Rationale: {emp.sdir_promotion_reason}</li></ul>"
+            
+            partner_ids = []
+            if promotion_data.get('announce_team') and emp.department_id:
+                # Add manager
+                if emp.department_id.manager_id and emp.department_id.manager_id.user_id:
+                    partner_ids.append(emp.department_id.manager_id.user_id.partner_id.id)
+                # Add department members
+                team_members = self.search([('department_id', '=', emp.department_id.id)])
+                for member in team_members:
+                    if member.user_id and member.user_id.partner_id:
+                        partner_ids.append(member.user_id.partner_id.id)
+                        
+            if partner_ids:
+                ping_str = " ".join([f"<a href='#' data-oe-model='res.partner' data-oe-id='{pid}'>@team</a>" for pid in set(partner_ids)])
+                log_msg = f"{ping_str}<br/><br/>{log_msg}"
+                emp.message_post(body=Markup(log_msg), partner_ids=list(set(partner_ids)))
+            else:
+                emp.message_post(body=Markup(log_msg))
+                
             return True
         return False
 
@@ -1143,7 +1395,28 @@ class HrEmployeeStaffDirectory(models.Model):
             
             timeline_data = self._get_activity_timeline(emp)
 
+            permissions_dict = {
+                'hrView': False, 'hrEdit': False, 'hrLeave': False, 'hrReports': False,
+                'finView': False, 'finProcess': False, 'finBudgets': False, 'finApprove': False,
+                'opsProjects': False, 'opsAssets': False, 'opsAnalytics': False, 'opsSystem': False,
+                'hasUser': False
+            }
+            if emp.user_id:
+                permissions_dict['hasUser'] = True
+                user_groups = emp.user_id.groups_id
+                if self.env.ref('hr.group_hr_user', raise_if_not_found=False) in user_groups:
+                    permissions_dict['hrView'] = True
+                if self.env.ref('hr.group_hr_manager', raise_if_not_found=False) in user_groups:
+                    permissions_dict['hrEdit'] = True
+                if self.env.ref('hr_holidays.group_hr_holidays_user', raise_if_not_found=False) in user_groups:
+                    permissions_dict['hrLeave'] = True
+                if self.env.ref('account.group_account_readonly', raise_if_not_found=False) in user_groups:
+                    permissions_dict['finBudgets'] = True
+                if self.env.ref('base.group_system', raise_if_not_found=False) in user_groups:
+                    permissions_dict['opsSystem'] = True
+
             result.append({
+                'permissions': permissions_dict,
                 'id':              emp.id,
                 'name':            emp.name or '',
                 'emp_ref':           emp_ref,
