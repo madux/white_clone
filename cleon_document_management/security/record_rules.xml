@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Administrators receive the unrestricted rule through group inheritance. -->
+    <record id="rule_doc_folder_user_visibility" model="ir.rule">
+        <field name="name">Document folders: permitted employee access</field>
+        <field name="model_id" ref="model_doc_folder"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[
+            '|', ('owner_id', '=', user.id),
+            '|',
+            '&amp;', ('folder_type', '=', 'employee'), ('employee_ids.user_id', '=', user.id),
+            '&amp;', ('folder_type', '=', 'organizational'),
+            '|', ('access_scope', '=', 'all_staff'),
+            '|', ('allowed_user_ids', 'in', [user.id]),
+            '|', ('department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', ('grade_ids', 'in', [user.employee_id.grade_id.id]),
+            '|', ('employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
+            ('role_group_ids', 'in', user.groups_id.ids)
+        ]</field>
+    </record>
+
+    <record id="rule_doc_folder_admin_visibility" model="ir.rule">
+        <field name="name">Document folders: administrators</field>
+        <field name="model_id" ref="model_doc_folder"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_doc_document_user_visibility" model="ir.rule">
+        <field name="name">Documents: permitted employee access</field>
+        <field name="model_id" ref="model_doc_document"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[
+            '|', ('owner_id', '=', user.id),
+            '|', ('allowed_user_ids', 'in', [user.id]),
+            '|', ('allowed_group_ids', 'in', user.groups_id.ids),
+            '|', ('employee_id.user_id', '=', user.id),
+            '|', ('folder_id.employee_ids.user_id', '=', user.id),
+            '&amp;', ('folder_id.folder_type', '=', 'organizational'),
+            '|', ('folder_id.access_scope', '=', 'all_staff'),
+            '|', ('folder_id.allowed_user_ids', 'in', [user.id]),
+            '|', ('folder_id.department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', ('folder_id.grade_ids', 'in', [user.employee_id.grade_id.id]),
+            '|', ('folder_id.employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
+            ('folder_id.role_group_ids', 'in', user.groups_id.ids)
+        ]</field>
+    </record>
+
+    <record id="rule_doc_document_admin_visibility" model="ir.rule">
+        <field name="name">Documents: administrators</field>
+        <field name="model_id" ref="model_doc_document"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_doc_document_acknowledgement_user_visibility" model="ir.rule">
+        <field name="name">Document acknowledgements: own records</field>
+        <field name="model_id" ref="model_doc_document_acknowledgement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_doc_document_acknowledgement_admin_visibility" model="ir.rule">
+        <field name="name">Document acknowledgements: administrators</field>
+        <field name="model_id" ref="model_doc_document_acknowledgement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_policy_user_visibility" model="ir.rule">
+        <field name="name">Compliance policies: employee scope</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[
+            '|', ('department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', ('grade_ids', 'in', [user.employee_id.grade_id.id]),
+            ('employee_ids.user_id', '=', user.id)
+        ]</field>
+    </record>
+
+    <record id="rule_compliance_policy_admin_visibility" model="ir.rule">
+        <field name="name">Compliance policies: administrators</field>
+        <field name="model_id" ref="model_doc_compliance_policy"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_requirement_user_visibility" model="ir.rule">
+        <field name="name">Compliance requirements: employee scope</field>
+        <field name="model_id" ref="model_doc_compliance_requirement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[
+            '|', ('policy_id.department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', ('policy_id.grade_ids', 'in', [user.employee_id.grade_id.id]),
+            ('policy_id.employee_ids.user_id', '=', user.id)
+        ]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_user_visibility" model="ir.rule">
+        <field name="name">Compliance evaluations: own employee record</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_line_user_visibility" model="ir.rule">
+        <field name="name">Compliance evaluation lines: own employee record</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_line"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('evaluation_id.employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_exception_user_visibility" model="ir.rule">
+        <field name="name">Compliance exceptions: own employee record</field>
+        <field name="model_id" ref="model_doc_compliance_exception"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_exception_admin_visibility" model="ir.rule">
+        <field name="name">Compliance exceptions: administrators</field>
+        <field name="model_id" ref="model_doc_compliance_exception"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>

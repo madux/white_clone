@@ -8,7 +8,12 @@
     <record id="group_document_user" model="res.groups">
         <field name="name">Document User</field>
         <field name="category_id" ref="module_category_document_management"/>
-        <field name="implied_ids" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="implied_ids" eval="[]"/>
+    </record>
+
+    <!-- Every internal user can use their own document workspace. -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
     </record>
 
     <record id="group_document_manager" model="res.groups">
@@ -21,5 +26,10 @@
         <field name="name">Document Administrator</field>
         <field name="category_id" ref="module_category_document_management"/>
         <field name="implied_ids" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+    </record>
+
+    <!-- Odoo administrators must also receive the document-management role. -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
     </record>
 </odoo>

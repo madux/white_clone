@@ -1,5 +1,7 @@
+from datetime import timedelta
+
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class Document(models.Model):
@@ -169,6 +171,10 @@ class Document(models.Model):
         string="Approvals",
     )
 
+    acknowledgement_ids = fields.One2many(
+        "doc.document.acknowledgement", "document_id", string="Acknowledgements"
+    )
+
     approval_state = fields.Selection(
         [
             ("not_required", "Not Required"),
@@ -182,6 +188,15 @@ class Document(models.Model):
 
     is_locked = fields.Boolean(default=False)
     active = fields.Boolean(default=True)
+    distribution_status = fields.Selection(
+        [("active", "Active"), ("archived", "Archived"), ("deactivated", "Deactivated")],
+        default="active", required=True, index=True,
+    )
+    deleted_at = fields.Datetime(string="Moved to Recycle Bin", readonly=True, index=True)
+    deleted_by = fields.Many2one("res.users", string="Deleted By", readonly=True)
+    recycle_bin_until = fields.Datetime(
+        string="Recycle Bin Retention Until", readonly=True, index=True
+    )
 
     @api.constrains("has_expiry", "expiry_date")
     def _check_expiry_date(self):
@@ -233,6 +248,57 @@ class Document(models.Model):
             )
             document.write({"pinned_user_ids": [command]})
 
+    def _is_document_manager(self):
+        return self.env.user.has_group("cleon_document_management.group_document_manager")
+
+    def write(self, vals):
+        if not self._is_document_manager():
+            allowed = {"favorite_user_ids", "pinned_user_ids"}
+            if set(vals) - allowed:
+                raise AccessError(_("You can only update your document favorites and pins."))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete documents."))
+        return super().unlink()
+
+    def action_archive(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can archive documents."))
+        self.write({"active": False, "distribution_status": "archived", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
+
+    def action_restore(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can restore documents."))
+        self.write({"active": True, "distribution_status": "active", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
+
+    def action_deactivate(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can deactivate documents."))
+        self.write({"active": False, "distribution_status": "deactivated", "deleted_at": False, "deleted_by": False, "recycle_bin_until": False})
+
+    def action_move_to_recycle_bin(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete documents."))
+        now = fields.Datetime.now()
+        self.write({
+            "active": False,
+            "distribution_status": "deactivated",
+            "deleted_at": now,
+            "deleted_by": self.env.user.id,
+            "recycle_bin_until": now + timedelta(days=30),
+        })
+
+    @api.model
+    def _cron_empty_recycle_bin(self):
+        expired = self.sudo().search([
+            ("deleted_at", "!=", False),
+            ("recycle_bin_until", "<=", fields.Datetime.now()),
+        ])
+        if expired:
+            expired.unlink()
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -243,6 +309,11 @@ class Document(models.Model):
                 attachment = self.env["ir.attachment"].browse(attachment_id).exists()
                 if not attachment:
                     raise ValidationError(_("The selected attachment does not exist."))
+
+            if not self._is_document_manager():
+                folder = self.env["doc.folder"].browse(vals.get("folder_id")).exists()
+                if not folder or not folder._user_can_access():
+                    raise AccessError(_("You do not have access to upload into this folder."))
 
             if employee_id and not vals.get("folder_id"):
                 employee = self.env["hr.employee"].browse(employee_id).exists()
@@ -270,12 +341,19 @@ class Document(models.Model):
                         document.folder_id.approver_ids, start=1
                     )
                 ]
-                document.write(
+                document.sudo().write(
                     {
                         "approval_ids": approval_commands,
                         "approval_state": "pending",
                         "state": "processing",
                     }
+                )
+            if not self.env.user.has_group("cleon_document_management.group_document_manager"):
+                admins = self.env.ref("cleon_document_management.group_document_admin").users
+                document.sudo().message_post(
+                    body=_("%s submitted %s for review.") % (self.env.user.name, document.name),
+                    partner_ids=admins.mapped("partner_id").ids,
+                    subtype_xmlid="mail.mt_note",
                 )
         return documents
 

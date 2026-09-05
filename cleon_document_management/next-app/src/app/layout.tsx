@@ -5,6 +5,7 @@ import Header from "@/app/components/Header";
 import Sidebar from "@/app/components/Sidebar";
 import Providers from "@/app/providers";
 import "@/app/globals.css";
+import { SortableTableManager } from "@/app/components/SortableTable";
 import { Inter } from "next/font/google";
 export const metadata: Metadata = {
   title: "CLEONHR — Document Management",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={font.variable}>
       <body>
         <Providers>
+          <SortableTableManager />
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
             <div className="flex flex-col flex-1 gap-4 overflow-hidden">

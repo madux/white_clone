@@ -17,12 +17,15 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   useCreateFolder,
+  useCurrentUser,
   useDocumentTypes,
   useDocuments,
   useFolders,
+  useComplianceTargets,
 } from "../../../hooks/useDocuments";
 import FolderActions from "./FolderActions";
 import BulkFolderActions from "./BulkFolderActions";
+import SortableTable from "./SortableTable";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
@@ -37,6 +40,7 @@ const formatDate = (value: string) =>
 export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const folders = useFolders();
   const documents = useDocuments();
+  const currentUser = useCurrentUser();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<number[]>([]);
@@ -126,14 +130,16 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
               Compliance
             </Link>
           )}
-          <button
-            type="button"
-            onClick={() => setShowCreateFolder(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 transition hover:shadow-pink-300"
-          >
-            <FilePlus2 className="h-4 w-4" />
-            Create Folder
-          </button>
+          {currentUser.data?.is_document_manager !== false && (
+            <button
+              type="button"
+              onClick={() => setShowCreateFolder(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 transition hover:shadow-pink-300"
+            >
+              <FilePlus2 className="h-4 w-4" />
+              Create Folder
+            </button>
+          )}
         </div>
       </div>
 
@@ -201,7 +207,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           </div>
         ) : viewMode === "list" ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left">
+            <SortableTable className="w-full min-w-[800px] text-left">
               <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
                 <tr>
                   <th className="w-12 px-5 py-4">
@@ -352,7 +358,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                   },
                 )}
               </tbody>
-            </table>
+            </SortableTable>
           </div>
         ) : (
           <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
@@ -457,6 +463,7 @@ function FolderCreateModal({
 }) {
   const create = useCreateFolder();
   const documentTypes = useDocumentTypes();
+  const targets = useComplianceTargets();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [accessScope, setAccessScope] = useState(
@@ -465,6 +472,9 @@ function FolderCreateModal({
   const [retention, setRetention] = useState("7");
   const [approval, setApproval] = useState(false);
   const [allowedTypes, setAllowedTypes] = useState<number[]>([]);
+  const [folderBasis, setFolderBasis] = useState("individual");
+  const [scopeIds, setScopeIds] = useState<number[]>([]);
+  const [scopeSearch, setScopeSearch] = useState("");
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     await create.mutateAsync({
@@ -475,6 +485,10 @@ function FolderCreateModal({
       retention_period: retention,
       require_upload_approval: approval,
       allowed_document_type_ids: allowedTypes,
+      folder_basis: folderBasis,
+      employee_ids: folderBasis === "individual" ? scopeIds : [],
+      department_ids: folderBasis === "department" ? scopeIds : [],
+      grade_ids: folderBasis === "grade" ? scopeIds : [],
     });
     onClose();
   };
@@ -602,6 +616,19 @@ function FolderCreateModal({
                 </div>
               </details>
             </>
+          )}
+          {kind === "employee" && (
+            <div className="sm:col-span-2 rounded-2xl border border-pink-100 bg-pink-50/40 p-4">
+              <span className="label">Add employees to this folder</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[['individual', 'Select employees'], ['department', 'By department'], ['grade', 'By grade']].map(([value, label]) => <button key={value} type="button" onClick={() => { setFolderBasis(value); setScopeIds([]); }} className={`rounded-full px-3 py-2 text-xs font-bold ${folderBasis === value ? 'bg-gradient-to-r from-brand-text to-brand-pink text-white' : 'bg-white text-slate-600'}`}>{label}</button>)}
+              </div>
+              <input value={scopeSearch} onChange={(event) => setScopeSearch(event.target.value)} placeholder={`Search ${folderBasis === 'department' ? 'departments' : folderBasis === 'grade' ? 'grades' : 'employees'}...`} className="field mt-3" />
+              <div className="mt-3 grid max-h-36 gap-2 overflow-y-auto sm:grid-cols-2">
+                {(folderBasis === 'department' ? targets.data?.departments : folderBasis === 'grade' ? targets.data?.grades : targets.data?.employees)?.filter((item: any) => item.name.toLowerCase().includes(scopeSearch.toLowerCase())).map((item: any) => <label key={item.id} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm"><input type="checkbox" checked={scopeIds.includes(item.id)} onChange={() => setScopeIds(scopeIds.includes(item.id) ? scopeIds.filter((id) => id !== item.id) : [...scopeIds, item.id])} className="h-4 w-4 accent-pink-600" />{item.name}</label>)}
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{folderBasis === 'individual' ? 'Selected employees will be added immediately.' : 'Every active employee matching the selected scope will be added immediately.'}</p>
+            </div>
           )}
         </div>
         <div className="mt-6 flex justify-end gap-2">

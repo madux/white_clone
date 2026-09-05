@@ -1,25 +1,27 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_doc_folder_user,doc.folder user,model_doc_folder,base.group_user,1,1,1,0
-access_doc_folder_admin,doc.folder admin,model_doc_folder,base.group_system,1,1,1,1
+access_doc_folder_user,doc.folder user,model_doc_folder,cleon_document_management.group_document_user,1,1,0,0
+access_doc_folder_admin,doc.folder admin,model_doc_folder,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_document_user,doc.document user,model_doc_document,base.group_user,1,1,1,0
-access_doc_document_admin,doc.document admin,model_doc_document,base.group_system,1,1,1,1
+access_doc_document_user,doc.document user,model_doc_document,cleon_document_management.group_document_user,1,1,1,0
+access_doc_document_admin,doc.document admin,model_doc_document,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_document_approval_user,doc.document.approval user,model_doc_document_approval,cleon_document_management.group_document_user,1,1,1,0
 access_doc_document_approval_admin,doc.document.approval admin,model_doc_document_approval,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_document_acknowledgement_user,doc.document.acknowledgement user,model_doc_document_acknowledgement,cleon_document_management.group_document_user,1,0,1,0
+access_doc_document_acknowledgement_admin,doc.document.acknowledgement admin,model_doc_document_acknowledgement,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_document_type_user,doc.document.type user,model_doc_document_type,base.group_user,1,1,1,0
-access_doc_document_type_admin,doc.document.type admin,model_doc_document_type,base.group_system,1,1,1,1
+access_doc_document_type_user,doc.document.type user,model_doc_document_type,cleon_document_management.group_document_user,1,0,0,0
+access_doc_document_type_admin,doc.document.type admin,model_doc_document_type,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_retention_policy_user,doc.retention.policy user,model_doc_retention_policy,base.group_user,1,1,1,0
-access_doc_retention_policy_admin,doc.retention.policy admin,model_doc_retention_policy,base.group_system,1,1,1,1
+access_doc_retention_policy_user,doc.retention.policy user,model_doc_retention_policy,cleon_document_management.group_document_user,1,0,0,0
+access_doc_retention_policy_admin,doc.retention.policy admin,model_doc_retention_policy,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_share_link_user,doc.share.link user,model_doc_share_link,base.group_user,1,1,1,0
-access_doc_share_link_admin,doc.share.link admin,model_doc_share_link,base.group_system,1,1,1,1
+access_doc_share_link_user,doc.share.link user,model_doc_share_link,cleon_document_management.group_document_user,1,0,0,0
+access_doc_share_link_admin,doc.share.link admin,model_doc_share_link,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_folder_share_link_user,doc.folder.share.link user,model_doc_folder_share_link,cleon_document_management.group_document_user,1,1,1,0
 access_doc_folder_share_link_admin,doc.folder.share.link admin,model_doc_folder_share_link,cleon_document_management.group_document_admin,1,1,1,1
 
-access_doc_document_version_user,doc.document.version user,model_doc_document_version,base.group_user,1,1,1,0
-access_doc_document_version_admin,doc.document.version admin,model_doc_document_version,base.group_system,1,1,1,1
+access_doc_document_version_user,doc.document.version user,model_doc_document_version,cleon_document_management.group_document_user,1,0,0,0
+access_doc_document_version_admin,doc.document.version admin,model_doc_document_version,cleon_document_management.group_document_admin,1,1,1,1
 
 access_doc_compliance_policy_type_user,doc.compliance.policy.type user,model_doc_compliance_policy_type,cleon_document_management.group_document_user,1,0,0,0
 access_doc_compliance_policy_type_admin,doc.compliance.policy.type admin,model_doc_compliance_policy_type,cleon_document_management.group_document_admin,1,1,1,1
@@ -33,4 +35,3 @@ access_doc_compliance_evaluation_user,doc.compliance.evaluation user,model_doc_c
 access_doc_compliance_evaluation_admin,doc.compliance.evaluation admin,model_doc_compliance_evaluation,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_compliance_evaluation_line_user,doc.compliance.evaluation.line user,model_doc_compliance_evaluation_line,cleon_document_management.group_document_user,1,0,0,0
 access_doc_compliance_evaluation_line_admin,doc.compliance.evaluation.line admin,model_doc_compliance_evaluation_line,cleon_document_management.group_document_admin,1,1,1,1
-

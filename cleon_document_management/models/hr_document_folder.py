@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class DocumentFolder(models.Model):
@@ -258,6 +258,60 @@ class DocumentFolder(models.Model):
                     _("Organizational folders cannot contain employee assignments.")
                 )
 
+    def _is_document_manager(self):
+        return self.env.user.has_group("cleon_document_management.group_document_manager")
+
+    def _user_can_access(self, user=None):
+        """Return whether a document user can access this folder.
+
+        Record rules enforce reads, while this helper also protects controller and
+        model create paths where no record exists yet for Odoo to evaluate.
+        """
+        self.ensure_one()
+        user = user or self.env.user
+        if user.has_group("cleon_document_management.group_document_admin"):
+            return True
+        if self.owner_id == user or user in self.allowed_user_ids:
+            return True
+        employee = user.employee_id
+        if self.folder_type == "employee":
+            return employee in self.employee_ids
+        if self.access_scope == "admin_only":
+            return False
+        if self.access_scope == "all_staff":
+            return True
+        if not employee:
+            return False
+        if self.access_scope == "department":
+            return employee.department_id in self.department_ids
+        if self.access_scope == "grade":
+            return employee.grade_id in self.grade_ids
+        if self.access_scope == "employment_type":
+            return employee.employee_type_id in self.employment_type_ids
+        if self.access_scope == "role":
+            return bool(self.role_group_ids & user.groups_id)
+        if self.access_scope == "business_unit":
+            return employee.branch_id in self.branch_ids
+        return False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can create folders."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self._is_document_manager():
+            allowed = {"favorite_user_ids", "pinned_user_ids"}
+            if set(vals) - allowed:
+                raise AccessError(_("You can only update your folder favorites and pins."))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete folders."))
+        return super().unlink()
+
     def action_toggle_favorite(self):
         for folder in self:
             command = (
@@ -314,21 +368,21 @@ class DocumentFolder(models.Model):
         if not department:
             return self.browse()
 
-        folder = self.search(
+        folder = self.sudo().search(
             [
                 ("folder_type", "=", "employee"),
-                ("department_id", "=", department.id),
+                ("department_ids", "in", [department.id]),
             ],
             limit=1,
         )
         if not folder:
-            folder = self.create(
+            folder = self.sudo().create(
                 {
                     "folder_name": department.name,
                     "description": _("Employee files for %s") % department.name,
                     "folder_type": "employee",
-                    "department_id": department.id,
                     "department_ids": [fields.Command.link(department.id)],
+                    "access_scope": "department",
                 }
             )
         return folder

@@ -49,6 +49,19 @@ class DocumentUICreation(http.Controller):
                 "retention_period": kwargs.get("retention_period") or "7",
                 "require_upload_approval": bool(kwargs.get("require_upload_approval", False)),
             }
+            if folder_type == "employee":
+                basis = kwargs.get("folder_basis") or "individual"
+                employee_model = request.env["hr.employee"]
+                employees = employee_model.browse(kwargs.get("employee_ids", [])).exists()
+                if basis == "department":
+                    departments = request.env["hr.department"].browse(kwargs.get("department_ids", [])).exists()
+                    employees = employee_model.search([("active", "=", True), ("department_id", "in", departments.ids)])
+                    values["access_scope"] = "department"
+                elif basis == "grade":
+                    grades = request.env["hr.grade"].browse(kwargs.get("grade_ids", [])).exists()
+                    employees = employee_model.search([("active", "=", True), ("grade_id", "in", grades.ids)])
+                    values["access_scope"] = "grade"
+                values["employee_ids"] = [fields.Command.set(employees.ids)]
             if folder_type == "organizational":
                 values["allowed_document_type_ids"] = [fields.Command.set(
                     request.env["doc.document.type"].browse(kwargs.get("allowed_document_type_ids", [])).exists().ids
@@ -257,7 +270,7 @@ class DocumentUICreation(http.Controller):
     )
     def get_documents(self, folder_id=False, **kwargs):
         """List documents, optionally filtered by folder_id."""
-        domain = [("active", "=", True)]
+        domain = [] if kwargs.get("include_inactive") and request.env.user.has_group("cleon_document_management.group_document_manager") else [("active", "=", True)]
         if folder_id:
             domain.append(("folder_id", "=", int(folder_id)))
 
@@ -287,12 +300,114 @@ class DocumentUICreation(http.Controller):
                         "attachment_id": d.attachment_id.id,
                         "created_at": d.create_date,
                         "write_date": d.write_date,
+                        "active": d.active,
+                        "favorite": request.env.user in d.favorite_user_ids,
+                        "pinned": request.env.user in d.pinned_user_ids,
+                        "distribution_status": d.distribution_status,
                     }
                     for d in documents
                 ],
                 "total_count": len(documents.ids),
             },
         }
+
+    @http.route("/api/quick-access", type="json", auth="user", methods=["POST"], csrf=False)
+    def quick_access(self, **kwargs):
+        user = request.env.user
+        folders = request.env["doc.folder"].search([("active", "=", True), ("pinned_user_ids", "in", user.id)], order="write_date desc")
+        documents = request.env["doc.document"].search([("active", "=", True), ("deleted_at", "=", False), ("pinned_user_ids", "in", user.id)], order="write_date desc")
+        return {"success": True, "data": {"folders": [{"id": folder.id, "folder_name": folder.folder_name, "description": folder.description or "", "folder_type": folder.folder_type, "pinned": True} for folder in folders], "documents": [{"id": document.id, "name": document.name, "description": document.description or "", "folder_id": document.folder_id.id, "folder_name": document.folder_id.folder_name, "employee_id": document.employee_id.id or False, "employee_name": document.employee_id.name or "N/A", "document_type_id": document.document_type_id.id, "document_type": document.document_type_id.name, "state": document.state, "approval_state": document.approval_state, "ocr_state": document.ocr_state, "has_expiry": document.has_expiry, "expiry_date": document.expiry_date, "mime_type": document.mime_type, "file_size": document.file_size, "attachment_id": document.attachment_id.id, "created_at": document.create_date, "write_date": document.write_date, "pinned": True} for document in documents]}}
+
+    @http.route("/api/my-documents", type="json", auth="user", methods=["POST"], csrf=False)
+    def my_documents(self, **kwargs):
+        employee = request.env.user.employee_id
+        domain = ["|"]
+        domain += [("owner_id", "=", request.env.user.id)]
+        domain += [("employee_id", "=", employee.id or 0)]
+        documents = request.env["doc.document"].search(
+            domain + [("active", "=", True), ("deleted_at", "=", False)],
+            order="write_date desc",
+        )
+        return {"success": True, "data": [{
+            "id": d.id, "name": d.name, "description": d.description or "",
+            "folder_id": d.folder_id.id, "folder_name": d.folder_id.folder_name,
+            "employee_id": d.employee_id.id or False, "employee_name": d.employee_id.name or "N/A",
+            "document_type_id": d.document_type_id.id, "document_type": d.document_type_id.name,
+            "state": d.state, "approval_state": d.approval_state, "ocr_state": d.ocr_state,
+            "has_expiry": d.has_expiry, "expiry_date": d.expiry_date, "mime_type": d.mime_type,
+            "file_size": d.file_size, "attachment_id": d.attachment_id.id,
+            "created_at": d.create_date, "write_date": d.write_date,
+        } for d in documents]}
+
+    @http.route("/api/my-workspace", type="json", auth="user", methods=["POST"], csrf=False)
+    def my_workspace(self, **kwargs):
+        user = request.env.user
+        employee = user.employee_id
+        own_domain = ["|", ("owner_id", "=", user.id), ("employee_id", "=", employee.id or 0)]
+        shared_domain = [
+            ("folder_id.folder_type", "=", "organizational"),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("state", "!=", "draft"),
+            "|", ("allowed_user_ids", "in", [user.id]),
+            "|", ("allowed_group_ids", "in", user.groups_id.ids),
+            "|", ("folder_id.allowed_user_ids", "in", [user.id]),
+            "&", ("folder_id.access_scope", "=", "role"),
+            ("folder_id.role_group_ids", "in", user.groups_id.ids),
+        ]
+        own = request.env["doc.document"].search(own_domain + [("active", "=", True), ("deleted_at", "=", False)], order="write_date desc")
+        shared = request.env["doc.document"].search(shared_domain, order="write_date desc")
+        combined = own | shared
+        outstanding = []
+        if employee:
+            policies = request.env["doc.compliance.policy"].search([("active", "=", True)])
+            for policy in policies:
+                if not policy._applies_to_employee(employee):
+                    continue
+                for document_type in policy.document_type_ids:
+                    matching = combined.filtered(lambda item, type_id=document_type.id: item.employee_id == employee and item.document_type_id.id == type_id and item.state not in ("rejected", "expired"))
+                    if not matching:
+                        outstanding.append({
+                            "id": -(policy.id * 10000 + document_type.id), "name": document_type.name,
+                            "description": "Required by %s" % policy.name, "folder_id": False,
+                            "folder_name": "Outstanding requirements", "employee_id": employee.id,
+                            "employee_name": employee.name, "document_type_id": document_type.id,
+                            "document_type": document_type.name, "state": "missing",
+                            "approval_state": "pending", "ocr_state": "pending", "has_expiry": False,
+                            "expiry_date": False, "mime_type": "", "file_size": 0, "attachment_id": False,
+                            "created_at": False, "write_date": False,
+                        })
+
+        def serialize(document):
+            return {
+                "id": document.id, "name": document.name, "description": document.description or "",
+                "folder_id": document.folder_id.id, "folder_name": document.folder_id.folder_name,
+                "employee_id": document.employee_id.id or False, "employee_name": document.employee_id.name or "N/A",
+                "document_type_id": document.document_type_id.id, "document_type": document.document_type_id.name,
+                "state": document.state, "approval_state": document.approval_state, "distribution_status": document.distribution_status, "ocr_state": document.ocr_state,
+                "has_expiry": document.has_expiry, "expiry_date": document.expiry_date, "mime_type": document.mime_type,
+                "file_size": document.file_size, "attachment_id": document.attachment_id.id,
+                "created_at": document.create_date, "write_date": document.write_date,
+                "favorite": user in document.favorite_user_ids,
+                "acknowledged": bool(document.acknowledgement_ids.filtered(lambda item: item.user_id == user)),
+            }
+
+        activities = [{
+            "id": document.id, "document_id": document.id, "document": document.name,
+            "folder": document.folder_id.folder_name, "event": "Updated" if document.write_date != document.create_date else "Added",
+            "occurred_at": document.write_date or document.create_date,
+        } for document in combined[:20]]
+        states = {state: len(combined.filtered(lambda item, value=state: item.state == value)) for state in ("approved", "processing", "draft", "rejected", "expired")}
+        return {"success": True, "data": {
+            "my_files": [serialize(document) for document in own],
+            "shared_documents": [serialize(document) for document in shared if document not in own],
+            "outstanding": outstanding,
+            "activity": activities,
+            "dashboard": {
+                "total": len(combined), "expiring": len(combined.filtered(lambda item: item.has_expiry and item.expiry_date)),
+                "states": states,
+            },
+        }}
 
     @http.route(
         "/api/view-document/<int:id>",
@@ -366,6 +481,7 @@ class DocumentUICreation(http.Controller):
         document_type = request.env["doc.document.type"].browse(int(document_type_id)).exists()
         if not folder or folder.folder_type != "organizational" or not document_type:
             return request.make_json_response({"success": False, "message": "A valid organizational folder and document type are required."}, status=400)
+        folder.check_access_rule("read")
         content = upload.read()
         attachment = request.env["ir.attachment"].create({
             "name": upload.filename or "document",
@@ -411,6 +527,7 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(doc_id).exists()
         if not doc or not doc.attachment_id:
             return request.not_found()
+        doc.check_access_rule("read")
         attachment = doc.attachment_id
         data = attachment.datas or b""
         return request.make_response(

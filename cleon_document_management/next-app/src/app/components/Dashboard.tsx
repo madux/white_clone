@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BarChart3,
   BellRing,
+  Brain,
   CheckCircle2,
   Clock3,
   FileText,
@@ -47,6 +48,7 @@ const statusStyles = {
   draft: "bg-slate-100 text-slate-600",
   rejected: "bg-red-50 text-red-700",
   expired: "bg-orange-50 text-orange-700",
+  missing: "bg-orange-50 text-orange-700",
 };
 
 export default function Dashboard() {
@@ -61,16 +63,39 @@ export default function Dashboard() {
   const approvalProgress = documentRows.length
     ? Math.round((approvedDocuments / documentRows.length) * 100)
     : 0;
-  const chartValues = [
-    documentRows.filter((document) => document.state === "approved").length,
-    documentRows.filter((document) => document.state === "processing").length,
-    documentRows.filter((document) => document.state === "draft").length,
-    documentRows.filter((document) => document.state === "rejected").length,
-    documentRows.filter((document) => document.state === "expired").length,
-    folders.data?.length ?? 0,
-    stats.data?.pending_approvals ?? 0,
+  const statusMetrics = [
+    {
+      label: "Approved",
+      value: documentRows.filter((document) => document.state === "approved")
+        .length,
+      color: "bg-brand-pink",
+    },
+    {
+      label: "Processing",
+      value: documentRows.filter((document) => document.state === "processing")
+        .length,
+      color: "bg-amber-400",
+    },
+    {
+      label: "Draft",
+      value: documentRows.filter((document) => document.state === "draft")
+        .length,
+      color: "bg-slate-300",
+    },
+    {
+      label: "Rejected",
+      value: documentRows.filter((document) => document.state === "rejected")
+        .length,
+      color: "bg-red-400",
+    },
+    {
+      label: "Expired",
+      value: documentRows.filter((document) => document.state === "expired")
+        .length,
+      color: "bg-orange-400",
+    },
   ];
-  const chartMax = Math.max(...chartValues, 1);
+  const chartMax = Math.max(...statusMetrics.map((metric) => metric.value), 1);
   const statCards: Array<{
     label: string;
     value: number | undefined;
@@ -155,7 +180,9 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-                <div className={`rounded-xl p-2.5 ${isFirst ? "bg-white/20 text-white" : "bg-pink-50 text-brand-pink"}`}>
+                <div
+                  className={`rounded-xl p-2.5 ${isFirst ? "bg-white/20 text-white" : "bg-pink-50 text-brand-pink"}`}
+                >
                   <Icon className="h-5 w-5" />
                 </div>
               </div>
@@ -300,36 +327,22 @@ export default function Dashboard() {
             <BarChart3 className="h-5 w-5 text-brand-pink" />
           </div>
           <div className="flex h-44 items-end justify-between gap-3 px-2">
-            {chartValues.map((value, index) => (
+            {statusMetrics.map((metric) => (
               <div
-                key={index}
+                key={metric.label}
                 className="flex h-full flex-1 flex-col items-center justify-end gap-2"
               >
                 <div
-                  className={`w-full max-w-10 rounded-t-full ${index === 3 ? "bg-brand-pink" : index === 2 ? "bg-pink-300" : "bg-[repeating-linear-gradient(135deg,#f2a6c5_0,#f2a6c5_3px,transparent_3px,transparent_7px)]"}`}
+                  className={`w-full max-w-10 rounded-t-full ${metric.color}`}
                   style={{
-                    height: `${Math.max(12, (value / chartMax) * 100)}%`,
+                    height: `${Math.max(12, (metric.value / chartMax) * 100)}%`,
                   }}
                 />
-                <span className="text-[10px] font-semibold text-slate-400">
-                  {["M", "T", "W", "T", "F", "S", "S"][index]}
+                <span className="text-center text-[10px] font-semibold text-slate-400">
+                  {metric.label}
                 </span>
               </div>
             ))}
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-5 text-xs text-slate-500">
-            <span className="flex items-center gap-2">
-              <i className="h-2.5 w-2.5 rounded-full bg-brand-pink" />
-              Approved
-            </span>
-            <span className="flex items-center gap-2">
-              <i className="h-2.5 w-2.5 rounded-full bg-pink-300" />
-              Processing
-            </span>
-            <span className="flex items-center gap-2">
-              <i className="h-2.5 w-2.5 rounded-full bg-pink-100" />
-              Other
-            </span>
           </div>
         </div>
 
@@ -496,8 +509,8 @@ export default function Dashboard() {
               className="flex items-center justify-between rounded-xl border border-pink-100 bg-pink-50/50 p-4 text-sm font-semibold text-brand-text transition hover:bg-pink-100"
             >
               <span className="flex items-center gap-3">
-                <FileText className="h-4 w-4" />
-                Run intelligence
+                <Brain className="h-4 w-4" />
+                Ask AI
               </span>
               <ArrowUpRight className="h-4 w-4" />
             </Link>

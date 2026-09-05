@@ -3,9 +3,12 @@ import axios from "axios";
 import type {
   DocFolder,
   DocDocument,
+  MyWorkspace,
   CompliancePolicy,
   ComplianceTargets,
   User,
+  AdminAttention,
+  QuickAccess,
   DashboardStats,
   DocumentType,
   ShareLink,
@@ -42,6 +45,8 @@ declare global {
       company_id?: number;
       company_name?: string;
       tz?: string;
+      is_admin?: boolean;
+      is_document_manager?: boolean;
     };
   }
 }
@@ -107,6 +112,8 @@ export const api = {
         company_id: rawUser.company_id || 0,
         company_name: rawUser.company_name || "",
         tz: rawUser.tz || "",
+        is_admin: rawUser.is_admin,
+        is_document_manager: rawUser.is_document_manager,
       };
       if (
         typeof window !== "undefined" &&
@@ -152,6 +159,10 @@ export const api = {
           data: { data: DocFolder[]; total_count: number };
         }>("/api/get-folder", {})
     ).then((r) => r.data.data),
+
+  getQuickAccess: () => useTestData
+    ? Promise.resolve({ data: { folders: TEST_FOLDERS.filter((folder) => folder.pinned), documents: TEST_DOCUMENTS.filter((document) => document.pinned) } as QuickAccess })
+    : rpc<{ success: boolean; data: QuickAccess }>("/api/quick-access", {}),
 
   getFolder: (id: number) =>
     rpc<{ success: boolean; data: { data: DocFolder } }>(
@@ -251,21 +262,44 @@ export const api = {
           payload,
         ),
 
-  getDocuments: (folderId?: number | null) =>
+  getDocuments: (folderId?: number | null, includeInactive = false) =>
     (useTestData
       ? Promise.resolve({
           data: {
             data: folderId
-              ? TEST_DOCUMENTS.filter((doc) => doc.folder_id === folderId)
-              : TEST_DOCUMENTS,
+              ? TEST_DOCUMENTS.filter((doc) => doc.folder_id === folderId && (includeInactive || doc.active !== false))
+              : TEST_DOCUMENTS.filter((doc) => includeInactive || doc.active !== false),
           },
         })
       : rpc<{
           success: boolean;
           count: number;
           data: { data: DocDocument[]; total_count: number };
-        }>("/api/get-document", { folder_id: folderId || false })
+        }>("/api/get-document", { folder_id: folderId || false, include_inactive: includeInactive })
     ).then((r) => r.data.data),
+
+  getMyDocuments: () =>
+    useTestData
+      ? Promise.resolve({ data: TEST_DOCUMENTS.filter((document) => document.employee_id === TEST_USER.id) })
+      : rpc<{ success: boolean; data: DocDocument[] }>("/api/my-documents", {}),
+
+  getMyWorkspace: () => {
+    if (useTestData) {
+      const myFiles = TEST_DOCUMENTS.filter((document) => document.employee_id === TEST_USER.id);
+      const sharedDocuments = TEST_DOCUMENTS.filter((document) => document.folder_id === 2 && document.state !== "draft");
+      const combined = [...myFiles, ...sharedDocuments];
+      return Promise.resolve({
+        data: {
+          my_files: myFiles,
+          shared_documents: sharedDocuments,
+          outstanding: [{ ...TEST_DOCUMENTS[0], id: -4, name: "Training Certificate", description: "Required document not yet submitted.", document_type: "Training Certificate", document_type_id: 4, state: "missing" } as DocDocument],
+          activity: combined.slice(0, 20).map((document) => ({ id: document.id, document_id: document.id, document: document.name, folder: document.folder_name, event: "Updated", occurred_at: document.write_date })),
+          dashboard: { total: combined.length, expiring: combined.filter((document) => document.has_expiry).length, states: Object.fromEntries(["approved", "processing", "draft", "rejected", "expired"].map((state) => [state, combined.filter((document) => document.state === state).length])) },
+        } as MyWorkspace,
+      });
+    }
+    return rpc<{ success: boolean; data: MyWorkspace }>("/api/my-workspace", {});
+  },
 
   getDocument: (id: number) =>
     rpc<{ success: boolean; data: DocDocument }>(
@@ -307,17 +341,70 @@ export const api = {
 
   documentAction: (payload: {
     id: number;
-    action: "favorite" | "pin" | "delete";
+    action: "favorite" | "pin" | "delete" | "archive" | "restore" | "activate" | "deactivate" | "permanent_delete";
   }) =>
     useTestData
       ? Promise.resolve({
           success: true,
           data: { id: payload.id, action: payload.action },
+        }).then((result) => {
+          const document = TEST_DOCUMENTS.find((item) => item.id === payload.id) as (DocDocument & { deleted_at?: string; recycle_bin_until?: string }) | undefined;
+          if (document && payload.action === "delete") {
+            document.active = false;
+            document.deleted_at = new Date().toISOString();
+            document.recycle_bin_until = new Date(Date.now() + 30 * 86400000).toISOString();
+          }
+          if (document && payload.action === "archive") {
+            document.active = false;
+            document.distribution_status = "archived";
+            delete document.deleted_at;
+          }
+          if (document && payload.action === "deactivate") { document.active = false; document.distribution_status = "deactivated"; }
+          if (document && payload.action === "activate") { document.active = true; document.distribution_status = "active"; }
+          if (document && payload.action === "pin") document.pinned = !document.pinned;
+          if (document && payload.action === "restore") {
+            document.active = true;
+            delete document.deleted_at;
+            delete document.recycle_bin_until;
+          }
+          if (document && payload.action === "permanent_delete") {
+            const index = TEST_DOCUMENTS.findIndex((item) => item.id === payload.id);
+            if (index >= 0) TEST_DOCUMENTS.splice(index, 1);
+          }
+          return result;
         })
       : rpc<{ success: boolean; data: { id: number; action: string } }>(
           "/api/document-action",
           payload,
-        ),
+      ),
+
+  acknowledgeDocument: (id: number) =>
+    useTestData
+      ? Promise.resolve().then(() => { const document = TEST_DOCUMENTS.find((item) => item.id === id); if (document) document.acknowledged = true; return { success: true, data: { acknowledged: true } }; })
+      : rpc<{ success: boolean; data: { acknowledged: boolean } }>("/api/document/acknowledge", { id }),
+
+  getAdminAttention: () =>
+    useTestData
+      ? Promise.resolve().then(() => { const items = TEST_DOCUMENTS.filter((document) => document.approval_state === "pending").map((document) => ({ id: document.id, document_id: document.id, employee_id: document.employee_id || 0, document: document.name, employee: document.employee_name, message: `Hello ${TEST_USER.name}, your attention is required to approve or reject ${document.employee_name} file they just uploaded.`, created_at: document.created_at })); return { data: { count: items.length, notifications: items, mailbox: items } as AdminAttention }; })
+      : rpc<{ success: boolean; data: AdminAttention }>("/api/admin-attention", {}),
+
+  reviewDocument: (payload: { id: number; action: "approve" | "reject"; reason?: string }) =>
+    useTestData
+      ? Promise.resolve({ success: true, data: { id: payload.id, state: payload.action === "approve" ? "approved" : "rejected", approval_state: payload.action === "approve" ? "approved" : "rejected" } })
+      : rpc<{ success: boolean; data: any }>("/api/document-review", payload),
+
+  getDocumentLifecycle: (lifecycle: "archived" | "recycle_bin") =>
+    useTestData
+      ? Promise.resolve({
+          data: TEST_DOCUMENTS.filter((document) =>
+            lifecycle === "archived"
+              ? document.active === false && !(document as any).deleted_at
+              : Boolean((document as any).deleted_at),
+          ),
+        })
+      : rpc<{ success: boolean; data: DocDocument[] }>("/api/document-lifecycle", {
+          lifecycle,
+        }),
 
   getPolicyTypes: () =>
     (useTestData

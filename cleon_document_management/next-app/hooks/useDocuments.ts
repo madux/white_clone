@@ -10,6 +10,7 @@ export const QUERY_KEYS = {
   folders: ["folders"],
   folder: (id: number) => ["folders", id],
   documents: (folderId?: number | null) => ["documents", { folderId }],
+  lifecycleDocuments: (lifecycle: string) => ["documents", lifecycle],
   document: (id: number) => ["documents", id],
   documentTypes: ["documentTypes"],
   policies: ["policies"],
@@ -50,10 +51,39 @@ export function useFolders() {
   });
 }
 
-export function useDocuments(folderId?: number | null) {
+export function useDocuments(folderId?: number | null, includeInactive = false) {
   return useQuery({
-    queryKey: QUERY_KEYS.documents(folderId),
-    queryFn: () => api.getDocuments(folderId),
+    queryKey: [...QUERY_KEYS.documents(folderId), includeInactive],
+    queryFn: () => api.getDocuments(folderId, includeInactive),
+  });
+}
+
+export function useMyDocuments() {
+  return useQuery({
+    queryKey: ["documents", "mine"],
+    queryFn: () => api.getMyDocuments().then((result) => result.data),
+  });
+}
+
+export function useMyWorkspace() {
+  return useQuery({
+    queryKey: ["documents", "workspace"],
+    queryFn: () => api.getMyWorkspace().then((result) => result.data),
+  });
+}
+
+export function useAdminAttention(enabled = true) {
+  return useQuery({ queryKey: ["admin", "attention"], queryFn: () => api.getAdminAttention().then((result) => result.data), enabled, refetchInterval: 30000 });
+}
+
+export function useQuickAccess() {
+  return useQuery({ queryKey: ["quick-access"], queryFn: () => api.getQuickAccess().then((result) => result.data) });
+}
+
+export function useDocumentLifecycle(lifecycle: "archived" | "recycle_bin") {
+  return useQuery({
+    queryKey: QUERY_KEYS.lifecycleDocuments(lifecycle),
+    queryFn: () => api.getDocumentLifecycle(lifecycle).then((result) => result.data),
   });
 }
 
@@ -221,6 +251,20 @@ export function useDocumentAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.documentAction,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats });
+      queryClient.invalidateQueries({ queryKey: ["quick-access"] });
+    },
   });
+}
+
+export function useAcknowledgeDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: api.acknowledgeDocument, onSuccess: () => queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] }) });
+}
+
+export function useReviewDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({ mutationFn: api.reviewDocument, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] }); queryClient.invalidateQueries({ queryKey: ["documents"] }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.stats }); } });
 }

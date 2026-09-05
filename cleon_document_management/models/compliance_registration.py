@@ -1,7 +1,7 @@
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class CompliancePolicyType(models.Model):
@@ -135,6 +135,9 @@ class CompliancePolicy(models.Model):
                     _("Select at least one record for the selected policy scope.")
                 )
 
+    def _is_document_manager(self):
+        return self.env.user.has_group("cleon_document_management.group_document_manager")
+
     @api.model
     def _schedule_delta(self, schedule, custom_days=0):
         return {
@@ -149,6 +152,8 @@ class CompliancePolicy(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can create compliance policies."))
         policies = super().create(vals_list)
         Requirement = self.env["doc.compliance.requirement"]
         for policy in policies:
@@ -165,6 +170,8 @@ class CompliancePolicy(models.Model):
         return policies
 
     def write(self, vals):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can edit compliance policies."))
         result = super().write(vals)
         if {"schedule", "custom_schedule_days"}.intersection(vals):
             self.action_set_next_run()
@@ -177,6 +184,11 @@ class CompliancePolicy(models.Model):
                 }
             )
         return result
+
+    def unlink(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete compliance policies."))
+        return super().unlink()
 
     def action_run_now(self):
         self.action_evaluate()
@@ -469,6 +481,23 @@ class ComplianceException(models.Model):
     approved_by = fields.Many2one("res.users", readonly=True)
     approved_at = fields.Datetime(readonly=True)
     active = fields.Boolean(default=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self.env.user.has_group("cleon_document_management.group_document_manager"):
+            employee = self.env.user.employee_id
+            for vals in vals_list:
+                if not employee or int(vals.get("employee_id", 0)) != employee.id:
+                    raise AccessError(_("You can only submit an exception for yourself."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self.env.user.has_group("cleon_document_management.group_document_manager"):
+            if any(record.employee_id.user_id != self.env.user for record in self):
+                raise AccessError(_("You can only update your own compliance exception."))
+            if set(vals) - {"reason", "valid_until"}:
+                raise AccessError(_("You cannot change the status of a compliance exception."))
+        return super().write(vals)
 
     def action_deactivate(self):
         self.write({"active": False})
