@@ -12,20 +12,25 @@ import {
   LayoutDashboard,
   Search,
   Share2,
+  SlidersHorizontal,
   Star,
   Upload,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAcknowledgeDocument,
   useCurrentUser,
+  useDocumentTypes,
   useMyWorkspace,
+  useRequestDocumentApproval,
+  useUploadMyDocument,
 } from "../../../hooks/useDocuments";
 import { api, useTestData } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import SortableTable from "./SortableTable";
+import ThemedSelect from "./ThemedSelect";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
@@ -45,12 +50,16 @@ function DocumentTable({
   shared,
   readOnly,
   onView,
+  onRequestApproval,
+  onUploadOutstanding,
 }: {
   documents: any[];
   search: string;
   shared?: boolean;
   readOnly?: boolean;
   onView: (document: any) => void;
+  onRequestApproval?: (document: any) => void;
+  onUploadOutstanding?: (document: any) => void;
 }) {
   const rows = documents.filter((document) =>
     `${document.name} ${document.document_type} ${document.folder_name}`
@@ -118,8 +127,12 @@ function DocumentTable({
                     >
                       View
                     </button>
+                    {document.state === "missing" && onUploadOutstanding && (
+                      <button type="button" onClick={() => onUploadOutstanding(document)} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-3 py-2 text-xs font-bold text-white">Upload</button>
+                    )}
                     {!readOnly && !shared && (
                       <>
+                        {document.state === "draft" || document.state === "rejected" ? <button type="button" onClick={() => onRequestApproval?.(document)} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-3 py-2 text-xs font-bold text-white">Request approval</button> : null}
                         <DocumentActions
                           documentId={document.id}
                           documentName={document.name}
@@ -146,15 +159,27 @@ export default function MyDocumentsPage() {
   const workspace = useMyWorkspace();
   const user = useCurrentUser();
   const acknowledge = useAcknowledgeDocument();
+  const upload = useUploadMyDocument();
+  const requestApproval = useRequestDocumentApproval();
+  const documentTypes = useDocumentTypes();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [fileView, setFileView] = useState<FileView>("files");
   const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState<any>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState("");
+  const [uploadRequirement, setUploadRequirement] = useState<any>(null);
+  const [uploadError, setUploadError] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [showTypeFilter, setShowTypeFilter] = useState(false);
+  const typeFilterRef = useRef<HTMLDivElement>(null);
   const data = workspace.data;
   const myFiles = data?.my_files ?? [];
   const shared = data?.shared_documents ?? [];
   const outstanding = data?.outstanding ?? [];
   const combined = [...myFiles, ...shared];
+  const filteredMyFiles = typeFilter === "all" ? myFiles : myFiles.filter((document) => String(document.document_type_id) === typeFilter);
   const pending = combined.filter(
     (document) =>
       document.approval_state === "pending" ||
@@ -186,6 +211,33 @@ export default function MyDocumentsPage() {
     viewing?.id > 0
       ? `${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`
       : "";
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (typeFilterRef.current && !typeFilterRef.current.contains(event.target as Node)) setShowTypeFilter(false);
+    };
+    const escape = (event: KeyboardEvent) => { if (event.key === "Escape") setShowTypeFilter(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", escape);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", escape); };
+  }, []);
+  const submitUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!uploadFile || !uploadType) return;
+    setUploadError("");
+    try {
+      const result = await upload.mutateAsync({ file: uploadFile, document_type_id: Number(uploadType) });
+      const response = result as { success: boolean; data?: { id: number }; message?: string };
+      if (!response.success || !response.data?.id) throw new Error(response.message || "The document could not be uploaded.");
+      await requestApproval.mutateAsync(response.data.id);
+    } catch (caught: any) {
+      setUploadError(caught?.message || "The document could not be submitted for approval.");
+      return;
+    }
+    setUploadFile(null);
+    setUploadType("");
+    setUploadRequirement(null);
+    setShowUpload(false);
+  };
 
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-5 rounded-2xl bg-gray-100 p-6 pb-10">
@@ -199,6 +251,7 @@ export default function MyDocumentsPage() {
             {user.data?.company_name || "Document Management"}
           </p>
         </div>
+        <button type="button" onClick={() => { setUploadRequirement(null); setUploadError(""); setShowUpload(true); }} className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200"><Upload className="h-4 w-4" /> Upload document</button>
       </header>
       <nav className="flex flex-wrap gap-1 border-b border-slate-200">
         {tabs.map(({ id, label, icon: Icon, count }) => (
@@ -414,22 +467,12 @@ export default function MyDocumentsPage() {
             </p>
           </div>
           {tab === "files" && (
-            <div className="flex w-fit gap-1 rounded-full border border-slate-200 bg-white p-1">
-              <button
-                type="button"
-                onClick={() => setFileView("files")}
-                className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "files" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white" : "text-slate-500"}`}
-              >
-                My Files
-              </button>
-              <button
-                type="button"
-                onClick={() => setFileView("outstanding")}
-                className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "outstanding" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white" : "text-slate-500"}`}
-              >
-                Outstanding Documents{" "}
-                <span className="ml-1">{outstanding.length}</span>
-              </button>
+            <div className="space-y-3">
+              <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+                <button type="button" onClick={() => setFileView("files")} className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "files" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}>My Files</button>
+                <button type="button" onClick={() => setFileView("outstanding")} className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "outstanding" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}>Outstanding Documents <span className="ml-1">{outstanding.length}</span></button>
+              </div>
+              {fileView === "files" && <div ref={typeFilterRef} className="relative"><button type="button" aria-haspopup="menu" aria-expanded={showTypeFilter} onClick={() => setShowTypeFilter((current) => !current)} className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition ${typeFilter !== "all" || showTypeFilter ? "border-brand-pink bg-pink-50 text-brand-text" : "border-slate-200 bg-white text-slate-600 hover:border-brand-pink hover:text-brand-text"}`}><SlidersHorizontal className="h-4 w-4" /> Filter{typeFilter !== "all" && <span className="h-1.5 w-1.5 rounded-full bg-brand-pink" />}</button>{showTypeFilter && <div role="menu" className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-2xl border border-pink-100 bg-white p-2 shadow-xl shadow-slate-900/10"><div className="border-b border-slate-100 px-3 py-2"><p className="text-xs font-bold text-slate-800">Filter by document type</p><p className="mt-0.5 text-[11px] text-slate-400">Choose which files to show</p></div><div className="mt-1 space-y-0.5"><button type="button" role="menuitem" onClick={() => { setTypeFilter("all"); setShowTypeFilter(false); }} className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${typeFilter === "all" ? "bg-pink-50 font-bold text-brand-text" : "text-slate-600 hover:bg-pink-50/70"}`}>All types{typeFilter === "all" && <Check className="h-4 w-4" />}</button>{documentTypes.data?.map((type) => <button key={type.id} type="button" role="menuitem" onClick={() => { setTypeFilter(String(type.id)); setShowTypeFilter(false); }} className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${typeFilter === String(type.id) ? "bg-pink-50 font-bold text-brand-text" : "text-slate-600 hover:bg-pink-50/70"}`}>{type.name}{typeFilter === String(type.id) && <Check className="h-4 w-4" />}</button>)}</div></div>}</div>}
             </div>
           )}
           <label className="relative block max-w-md">
@@ -447,12 +490,16 @@ export default function MyDocumentsPage() {
                 ? shared
                 : fileView === "outstanding"
                   ? outstanding
-                  : myFiles
+                  : filteredMyFiles
             }
             search={search}
             shared={tab === "shared"}
             readOnly={fileView === "outstanding"}
             onView={setViewing}
+            onRequestApproval={async (document) => {
+              if (window.confirm(`Send "${document.name}" to an administrator for review?`)) await requestApproval.mutateAsync(document.id);
+            }}
+            onUploadOutstanding={(document) => { setUploadRequirement(document); setUploadType(String(document.document_type_id)); setUploadFile(null); setUploadError(""); setShowUpload(true); }}
           />
         </section>
       )}
@@ -578,6 +625,7 @@ export default function MyDocumentsPage() {
           </div>
         </div>
       )}
+      {showUpload && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowUpload(false); }}><form onSubmit={submitUpload} className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">Employee files</p><h2 className="mt-1 text-xl font-bold text-slate-900">{uploadRequirement ? "Complete outstanding document" : "Upload a document"}</h2><p className="mt-1 text-sm text-slate-500">{uploadRequirement ? "This upload will be sent to an administrator for review immediately." : "Your document will be saved as a draft and can be submitted for approval."}</p></div><button type="button" onClick={() => setShowUpload(false)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X className="h-5 w-5" /></button></div><label className="mt-5 block"><span className="label">File</span><span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text"><Upload className="h-5 w-5" />{uploadFile?.name ?? "Choose a file from your computer"}<input required type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} className="hidden" /></span></label>{uploadRequirement ? <div className="mt-4 rounded-2xl border border-pink-100 bg-pink-50/50 p-3"><span className="label">Required document type</span><p className="text-sm font-bold text-brand-text">{uploadRequirement.document_type}</p><p className="mt-1 text-xs text-slate-500">Automatically assigned from the outstanding requirement.</p></div> : <label className="mt-4 block"><span className="label">Document type</span><ThemedSelect value={uploadType} onChange={setUploadType} placeholder="Select document type" options={(documentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} /></label>}{uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}<div className="mt-6 flex justify-end gap-2"><button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button><button disabled={upload.isPending || requestApproval.isPending || !uploadFile || !uploadType} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{upload.isPending ? "Uploading..." : requestApproval.isPending ? "Sending for review..." : uploadRequirement ? "Upload and request review" : "Upload draft"}</button></div></form></div>}
     </div>
   );
 }

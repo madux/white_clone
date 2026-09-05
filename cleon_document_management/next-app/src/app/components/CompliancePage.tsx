@@ -29,6 +29,8 @@ import {
 } from "../../../hooks/useDocuments";
 import PolicyActions from "./PolicyActions";
 import SortableTable from "./SortableTable";
+import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
+import ThemedSelect from "./ThemedSelect";
 
 type Tab = "policies" | "exceptions" | "history";
 const schedules = [
@@ -460,21 +462,7 @@ function PolicyForm({
           />
         </Field>
         <Field label="Policy type">
-          <select
-            required
-            className="field"
-            value={form.policy_type_id}
-            onChange={(e) =>
-              setForm({ ...form, policy_type_id: e.target.value })
-            }
-          >
-            <option value="">Select type</option>
-            {types.map((item: any) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.policy_type_id} onChange={(value) => setForm({ ...form, policy_type_id: value })} placeholder="Select type" options={types.map((item: any) => ({ value: String(item.id), label: item.name }))} />
         </Field>
         <Field label="Description" full>
           <textarea
@@ -484,7 +472,7 @@ function PolicyForm({
           />
         </Field>
         <Field label="Required document types" full>
-          <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="mb-2 flex items-center justify-between"><span className="text-xs text-slate-500">Select every document this policy requires.</span><InlineDocumentTypeCreator onCreated={(item) => setForm({ ...form, document_type_ids: [...form.document_type_ids, item.id] })} /></div><div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
             {documents.map((item: any) => (
               <label
                 key={item.id}
@@ -513,17 +501,7 @@ function PolicyForm({
           </div>
         </Field>
         <Field label="Applies to">
-          <select
-            className="field"
-            value={form.applies_to}
-            onChange={(e) =>
-              setForm({ ...form, applies_to: e.target.value, scope_ids: [] })
-            }
-          >
-            <option value="department">Departments</option>
-            <option value="grade">Grades</option>
-            <option value="employee">Employees</option>
-          </select>
+          <ThemedSelect value={form.applies_to} onChange={(value) => setForm({ ...form, applies_to: value, scope_ids: [] })} options={[{ value: "department", label: "Departments" }, { value: "grade", label: "Grades" }, { value: "employee", label: "Employees" }]} />
         </Field>
         <Field label={`Select ${form.applies_to}s`} full>
           <div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
@@ -551,17 +529,7 @@ function PolicyForm({
           </div>
         </Field>
         <Field label="Schedule">
-          <select
-            className="field"
-            value={form.schedule}
-            onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-          >
-            {schedules.map((item) => (
-              <option key={item} value={item}>
-                {item.replace("_", " ")}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.schedule} onChange={(value) => setForm({ ...form, schedule: value })} options={schedules.map((item) => ({ value: item, label: item.replace("_", " ") }))} />
         </Field>
         <Field label="Effective date">
           <input
@@ -622,19 +590,7 @@ function ExceptionForm({
       <form onSubmit={onSubmit} className="grid gap-4">
         <EmployeeChecklist employees={employees} form={form} setForm={setForm} />
         <Field label="Policy">
-          <select
-            required
-            className="field"
-            value={form.policy_id}
-            onChange={(e) => setForm({ ...form, policy_id: e.target.value })}
-          >
-            <option value="">Select policy</option>
-            {policies.map((item: any) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.policy_id} onChange={(value) => setForm({ ...form, policy_id: value })} placeholder="Select policy" options={policies.map((item: any) => ({ value: String(item.id), label: item.name }))} />
         </Field>
         <Field label="Reason">
           <textarea

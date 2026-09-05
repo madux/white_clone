@@ -1,6 +1,6 @@
 import json
 from datetime import date, datetime, timedelta
-from odoo import fields, http
+from odoo import _, fields, http
 from odoo.http import request, Response
 from odoo.modules.module import get_resource_path
 import base64
@@ -10,6 +10,67 @@ _logger = logging.getLogger(__name__)
 
 
 class DocumentUICreation(http.Controller):
+
+    @http.route(
+        "/api/get-document-type", type="json", auth="user", methods=["GET", "POST"], csrf=False
+    )
+    def get_document_types(self, **kwargs):
+        """Return active document types available to document-management forms."""
+        types = request.env["doc.document.type"].search([("active", "=", True)])
+        return {
+            "success": True,
+            "data": [{
+                "id": item.id,
+                "name": item.name,
+                "category": item.category,
+                "description": item.description or "",
+                "is_mandatory_default": item.is_mandatory_default,
+                "default_retention_years": item.default_retention_years,
+                "active": item.active,
+            } for item in types],
+        }
+
+    @http.route(
+        "/api/create-document-type", type="json", auth="user", methods=["POST"], csrf=False
+    )
+    def create_document_type(self, **kwargs):
+        """Create a document type without leaving the current document form."""
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Only document managers can create document types."}
+
+        name = (kwargs.get("name") or "").strip()
+        if not name:
+            return {"success": False, "message": "Document type name is required."}
+
+        category = kwargs.get("category") or "other"
+        valid_categories = {"hr", "finance", "legal", "identity", "employment", "medical", "training", "other"}
+        if category not in valid_categories:
+            return {"success": False, "message": "Select a valid document type category."}
+
+        model = request.env["doc.document.type"]
+        if model.search([("name", "ilike", name)], limit=1):
+            return {"success": False, "message": "A document type with this name already exists."}
+
+        item = model.create({
+            "name": name,
+            "category": category,
+            "description": (kwargs.get("description") or "").strip(),
+            "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
+            "default_retention_years": max(int(kwargs.get("default_retention_years") or 7), 0),
+        })
+        return {
+            "success": True,
+            "message": "Document type created successfully.",
+            "data": {
+                "id": item.id,
+                "name": item.name,
+                "category": item.category,
+                "description": item.description or "",
+                "is_mandatory_default": item.is_mandatory_default,
+                "default_retention_years": item.default_retention_years,
+                "active": item.active,
+            },
+        }
 
     @http.route(
         [
@@ -136,10 +197,14 @@ class DocumentUICreation(http.Controller):
                         {
                             "id": folder.id,
                             "folder_name": folder.folder_name,
+                            "folder_type": folder.folder_type,
                             "description": folder.description,
                             "folder_count": folder.description,
                             "last_modified": folder.write_date,
                             "owner_id": folder.owner_id.name or "N/A",
+                            "owner_name": folder.owner_id.name or "N/A",
+                            "access_scope": folder.access_scope,
+                            "color": folder.color,
                             "document_count": len(folder.document_ids.ids),
                             "favorite": request.env.user in folder.favorite_user_ids,
                             "pinned": request.env.user in folder.pinned_user_ids,
@@ -338,6 +403,66 @@ class DocumentUICreation(http.Controller):
             "file_size": d.file_size, "attachment_id": d.attachment_id.id,
             "created_at": d.create_date, "write_date": d.write_date,
         } for d in documents]}
+
+    @http.route("/api/my-documents/upload", type="http", auth="user", methods=["POST"], csrf=False)
+    def upload_my_document(self, **kwargs):
+        """Upload a personal employee document as a draft."""
+        employee = request.env.user.employee_id
+        upload = request.httprequest.files.get("file")
+        document_type_id = request.httprequest.form.get("document_type_id")
+        if not employee:
+            return request.make_json_response({"success": False, "message": "Your user account is not linked to an employee record."}, status=400)
+        if not upload or not document_type_id:
+            return request.make_json_response({"success": False, "message": "File and document type are required."}, status=400)
+        document_type = request.env["doc.document.type"].browse(int(document_type_id)).exists()
+        if not document_type:
+            return request.make_json_response({"success": False, "message": "Select a valid document type."}, status=400)
+        folder = request.env["doc.folder"].link_employee_to_department_folder(employee)
+        if not folder:
+            return request.make_json_response({"success": False, "message": "Your employee record needs a department before uploading a document."}, status=400)
+        content = upload.read()
+        attachment = request.env["ir.attachment"].sudo().create({
+            "name": upload.filename or "employee-document",
+            "datas": base64.b64encode(content),
+            "mimetype": upload.mimetype or "application/octet-stream",
+        })
+        document = request.env["doc.document"].create({
+            "name": upload.filename or "Employee document",
+            "folder_id": folder.id,
+            "employee_id": employee.id,
+            "document_type_id": document_type.id,
+            "attachment_id": attachment.id,
+            "state": "draft",
+            "approval_state": "not_required",
+        })
+        return request.make_json_response({"success": True, "data": {"id": document.id, "name": document.name}})
+
+    @http.route("/api/my-documents/request-approval", type="json", auth="user", methods=["POST"], csrf=False)
+    def request_my_document_approval(self, id=None, **kwargs):
+        """Submit an employee-owned draft to the document administrators."""
+        document = request.env["doc.document"].browse(int(id or 0)).exists()
+        if not document or document.owner_id != request.env.user or document.employee_id != request.env.user.employee_id:
+            return {"success": False, "message": "You can only request approval for your own employee documents."}
+        if document.state not in ("draft", "rejected"):
+            return {"success": False, "message": "Only draft or rejected documents can be submitted for approval."}
+        approval_model = request.env["doc.document.approval"].sudo()
+        approval_model.search([("document_id", "=", document.id)]).unlink()
+        approvers = request.env.ref("cleon_document_management.group_document_admin").users.filtered(lambda user: user != request.env.user)
+        if not approvers:
+            approvers = request.env.ref("cleon_document_management.group_document_admin").users
+        if not approvers:
+            return {"success": False, "message": "No document administrator is available to review this document."}
+        document.sudo().write({
+            "state": "processing",
+            "approval_state": "pending",
+            "approval_ids": [fields.Command.create({"approver_id": approver.id, "sequence": sequence, "state": "pending" if sequence == 1 else "waiting"}) for sequence, approver in enumerate(approvers, start=1)],
+        })
+        document.sudo().message_post(
+            body=_("%s submitted %s for review.") % (request.env.user.name, document.name),
+            partner_ids=approvers.mapped("partner_id").ids,
+            subtype_xmlid="mail.mt_note",
+        )
+        return {"success": True, "data": {"id": document.id, "state": document.state, "approval_state": document.approval_state}}
 
     @http.route("/api/my-workspace", type="json", auth="user", methods=["POST"], csrf=False)
     def my_workspace(self, **kwargs):

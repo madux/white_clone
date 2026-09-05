@@ -26,6 +26,7 @@ import {
 import FolderActions from "./FolderActions";
 import BulkFolderActions from "./BulkFolderActions";
 import SortableTable from "./SortableTable";
+import ThemedSelect from "./ThemedSelect";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
@@ -531,14 +532,7 @@ function FolderCreateModal({
             <>
               <label>
                 <span className="label">Access scope</span>
-                <select
-                  className="field"
-                  value={accessScope}
-                  onChange={(event) => setAccessScope(event.target.value)}
-                >
-                  <option value="all_staff">All staff</option>
-                  <option value="admin_only">Admin only</option>
-                </select>
+                <ThemedSelect value={accessScope} onChange={setAccessScope} options={[{ value: "all_staff", label: "All staff" }, { value: "admin_only", label: "Admin only" }]} />
               </label>
               <label className="sm:col-span-2">
                 <span className="label">Description</span>
@@ -557,18 +551,7 @@ function FolderCreateModal({
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label>
                     <span className="label">Retention period</span>
-                    <select
-                      className="field"
-                      value={retention}
-                      onChange={(event) => setRetention(event.target.value)}
-                    >
-                      <option value="1">1 year</option>
-                      <option value="3">3 years</option>
-                      <option value="5">5 years</option>
-                      <option value="7">7 years</option>
-                      <option value="10">10 years</option>
-                      <option value="permanent">Permanent</option>
-                    </select>
+                    <ThemedSelect value={retention} onChange={setRetention} options={[{ value: "1", label: "1 year" }, { value: "3", label: "3 years" }, { value: "5", label: "5 years" }, { value: "7", label: "7 years" }, { value: "10", label: "10 years" }, { value: "permanent", label: "Permanent" }]} />
                   </label>
                   <label className="flex items-center gap-3 self-end pb-2 text-sm font-semibold text-slate-700">
                     <input

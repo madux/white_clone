@@ -348,7 +348,8 @@ class Document(models.Model):
                         "state": "processing",
                     }
                 )
-            if not self.env.user.has_group("cleon_document_management.group_document_manager"):
+            if (not self.env.user.has_group("cleon_document_management.group_document_manager")
+                    and document.approval_state == "pending"):
                 admins = self.env.ref("cleon_document_management.group_document_admin").users
                 document.sudo().message_post(
                     body=_("%s submitted %s for review.") % (self.env.user.name, document.name),

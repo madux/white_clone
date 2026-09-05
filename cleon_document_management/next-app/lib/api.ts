@@ -144,7 +144,7 @@ export const api = {
   dashboardStats: () =>
     useTestData
       ? Promise.resolve(TEST_STATS)
-      : rpc<DashboardStats>("/api/dashboard-stats"),
+      : rpc<{ success: boolean; data: DashboardStats }>("/api/dashboard-stats").then((result) => result.data),
 
   getFolders: () =>
     (useTestData
@@ -331,6 +331,34 @@ export const api = {
     form.append("folder_id", String(payload.folder_id));
     form.append("document_type_id", String(payload.document_type_id));
     return client.post<{ success: boolean; data: DocDocument }>("/api/upload-document", form).then((response) => response.data);
+  },
+
+  uploadMyDocument: (payload: { file: File; document_type_id: number }) => {
+    if (useTestData) {
+      const id = Math.max(...TEST_DOCUMENTS.map((document) => document.id), 0) + 1;
+      const document = {
+        ...TEST_DOCUMENTS[0], id, name: payload.file.name, folder_id: 1, folder_name: "Employee Files",
+        employee_id: TEST_USER.id, employee_name: TEST_USER.name, document_type_id: payload.document_type_id,
+        document_type: TEST_DOCUMENT_TYPES.find((type) => type.id === payload.document_type_id)?.name ?? "Document",
+        state: "draft", approval_state: "not_required", file_size: payload.file.size,
+        mime_type: payload.file.type || "application/octet-stream", write_date: new Date().toISOString(),
+      } as DocDocument;
+      TEST_DOCUMENTS.push(document);
+      return Promise.resolve({ success: true, data: document });
+    }
+    const form = new FormData();
+    form.append("file", payload.file);
+    form.append("document_type_id", String(payload.document_type_id));
+    return client.post<{ success: boolean; data: DocDocument; message?: string }>("/api/my-documents/upload", form).then((response) => response.data);
+  },
+
+  requestDocumentApproval: (id: number) => {
+    if (useTestData) {
+      const document = TEST_DOCUMENTS.find((item) => item.id === id);
+      if (document) { document.state = "processing"; document.approval_state = "pending"; }
+      return Promise.resolve({ success: true, data: { id, state: "processing", approval_state: "pending" } });
+    }
+    return rpc<{ success: boolean; data: { id: number; state: string; approval_state: string }; message?: string }>("/api/my-documents/request-approval", { id });
   },
 
   updateDocument: (payload: { id: number; [key: string]: any }) =>
@@ -549,6 +577,31 @@ export const api = {
           {},
         )
     ).then((r) => r.data),
+
+  createDocumentType: (payload: {
+    name: string;
+    category: string;
+    description?: string;
+    is_mandatory_default?: boolean;
+    default_retention_years?: number;
+  }) =>
+    useTestData
+      ? Promise.resolve().then(() => {
+          const type: DocumentType = {
+            id: Math.max(...TEST_DOCUMENT_TYPES.map((item) => item.id), 0) + 1,
+            name: payload.name.trim(),
+            category: payload.category,
+            is_mandatory_default: Boolean(payload.is_mandatory_default),
+            default_retention_years: payload.default_retention_years ?? 7,
+            active: true,
+          };
+          TEST_DOCUMENT_TYPES.push(type);
+          return { success: true, data: type };
+        })
+      : rpc<{ success: boolean; data: DocumentType; message?: string }>(
+          "/api/create-document-type",
+          payload,
+        ),
 
   getShareLinks: () =>
     (useTestData

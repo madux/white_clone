@@ -94,6 +94,14 @@ export function useDocumentTypes() {
   });
 }
 
+export function useCreateDocumentType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createDocumentType,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes }),
+  });
+}
+
 export function usePolicies() {
   return useQuery({
     queryKey: QUERY_KEYS.policies,
@@ -232,6 +240,28 @@ export function useUploadDocument() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documents(variables.folder_id) });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+    },
+  });
+}
+
+export function useUploadMyDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.uploadMyDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
+    },
+  });
+}
+
+export function useRequestDocumentApproval() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.requestDocumentApproval,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
     },
   });
 }
