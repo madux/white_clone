@@ -337,3 +337,21 @@ The "Reset Password" modal is deeply integrated with Odoo's native authenticatio
 If a user bypasses the custom modals and manually archives an employee via the native Odoo 17 Employee backend form (`active = False`), the "Staff Directory" should dynamically sync this. 
 We need to implement an `override` on the native Odoo archiving process (or an automated watcher) so that when an employee is natively archived, their `sdir_lifecycle_status` automatically changes to either "Suspended" or "Terminated" based on the reason for archiving.
 Currently, archiving/suspending via the custom Staff Directory modals handles this elegantly and keeps them out of the active directory, but natively archiving an employee could cause status desync if not properly caught.
+
+---
+
+## Work Anniversary Calculation Logic
+The Staff Directory profile panel displays an upcoming Work Anniversary card dynamically. The calculation logic (handled within `_sd_people_list` in `hr_employee.py`) works as follows:
+
+1. **Source of Truth for Start Date**:
+   - The system first attempts to read `date_start` from the employee's active `hr.contract`.
+   - If no contract exists or `date_start` is missing, it gracefully falls back to the employee record's `create_date`.
+2. **Anniversary Date Calculation**:
+   - It calculates the number of years between the current year and the join year.
+   - It projects the anniversary date into the current year (using `.replace(year=today.year)`).
+   - If the anniversary date has already passed in the current year (`anniv < today`), the target year is bumped to the next year (`today.year + 1`), and the `years` counter is incremented by 1.
+3. **Leap Year Handling**:
+   - If the employee joined on February 29th and the target year is not a leap year, Python's `.replace()` will throw a `ValueError`. This exception is explicitly caught, and the anniversary date gracefully defaults to February 28th for that year.
+4. **Card Rendering**:
+   - The card only renders if `anniv_display` is present (meaning a valid join date was found).
+   - It only calculates for employees who have been at the company for more than 0 years (their first anniversary or beyond).

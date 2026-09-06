@@ -1455,6 +1455,36 @@ class HrEmployeeStaffDirectory(models.Model):
         employees = self.with_context(active_test=False).search([], order='name asc')
         result = []
         for emp in employees:
+            # ── Work Anniversary ───────────────────────────────────────────────
+            anniv_display = ""
+            anniv_days_until = ""
+            anniv_years = ""
+            join_date = None
+            try:
+                if emp.contract_id and emp.contract_id.date_start:
+                    join_date = emp.contract_id.date_start
+            except Exception:
+                pass
+            if not join_date and emp.create_date:
+                join_date = emp.create_date.date()
+                
+            if join_date:
+                years = today.year - join_date.year
+                if years > 0:
+                    try:
+                        anniv = join_date.replace(year=today.year)
+                    except ValueError:
+                        anniv = join_date.replace(year=today.year, day=28)
+                    if anniv < today:
+                        years += 1
+                        try:
+                            anniv = join_date.replace(year=today.year + 1)
+                        except ValueError:
+                            anniv = join_date.replace(year=today.year + 1, day=28)
+                    anniv_days_until = (anniv - today).days
+                    anniv_display = anniv.strftime('%d %b')
+                    anniv_years = years
+
             # ── Lifecycle State ──────────────────────────────────────────────
             lifecycle_state = emp.sdir_lifecycle_status or 'active'
 
@@ -1595,6 +1625,9 @@ class HrEmployeeStaffDirectory(models.Model):
                 'leave_history':      self._get_leave_history(emp),
                 'activity_timeline':  timeline_data,
                 'promotions_count':   sum(1 for year_events in timeline_data.values() for event in year_events if event.get('title') == 'Promoted'),
+                'anniv_display':      anniv_display,
+                'anniv_days_until':   anniv_days_until,
+                'anniv_years':        anniv_years,
             })
         return result
 

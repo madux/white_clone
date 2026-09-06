@@ -1039,6 +1039,18 @@ export class StaffDirectoryProfilePanel extends Component {
         }
     }
 
+    openSocialModal(networkName) {
+        if (this.toast) {
+            this.toast.show("warning", `${networkName} not linked for this employee yet.`);
+        }
+    }
+
+    openNoteModal() {
+        if (this.toast) {
+            this.toast.show("warning", "Note feature not yet implemented.");
+        }
+    }
+
     openSuspendModal() {
         this.state.suspendCategory = 'Investigation';
         this.state.suspendDuration = 7;

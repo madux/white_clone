@@ -40,13 +40,13 @@
                         </div>
                         
                         <div class="sdir-prof-social">
-                            <a href="#" class="sdir-social-btn sdir-social-li">
+                            <a href="#" class="sdir-social-btn sdir-social-li" t-on-click.prevent="() => this.openSocialModal('LinkedIn')">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
                             </a>
-                            <a href="#" class="sdir-social-btn sdir-social-fb">
+                            <a href="#" class="sdir-social-btn sdir-social-fb" t-on-click.prevent="() => this.openSocialModal('Facebook')">
                                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
                             </a>
-                            <a href="#" class="sdir-social-btn sdir-social-ig">
+                            <a href="#" class="sdir-social-btn sdir-social-ig" t-on-click.prevent="() => this.openSocialModal('Instagram')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                             </a>
                         </div>
@@ -75,19 +75,33 @@
                         </div>
                         
                         <div class="sdir-prof-actions-secondary">
-                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-red sdir-prof-btn-small">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-red sdir-prof-btn-small" t-on-click="() => this.openSuspendModal()">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                                 Suspend
                             </button>
-                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small" t-on-click="() => this.openNoteModal()">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                                 Note
                             </button>
-                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small">
+                            <button type="button" class="sdir-prof-btn-outline sdir-prof-btn-gray-alt sdir-prof-btn-small" t-on-click="() => this.openTransferModal()">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 8 16 13"></polyline><line x1="21" y1="8" x2="9" y2="8"></line><polyline points="8 21 3 16 8 11"></polyline><line x1="3" y1="16" x2="15" y2="16"></line></svg>
                                 Transfer
                             </button>
                         </div>
+                        
+                        <!-- Work Anniversary Card -->
+                        <t t-if="props.activeProfile.anniv_display">
+                            <div class="sdir-anniv-card">
+                                <div class="sdir-anniv-card-inner">
+                                    <span class="sdir-anniv-icon">🎉</span>
+                                    <div class="sdir-anniv-content">
+                                        <div class="sdir-anniv-label">Work Anniversary</div>
+                                        <div class="sdir-anniv-date"><t t-esc="props.activeProfile.anniv_display"/></div>
+                                    </div>
+                                    <span class="sdir-anniv-badge"><t t-esc="props.activeProfile.anniv_years"/>y in <t t-esc="props.activeProfile.anniv_days_until"/> days</span>
+                                </div>
+                            </div>
+                        </t>
                         </div>
                         
                         <div class="sdir-prof-sidebar-footer">

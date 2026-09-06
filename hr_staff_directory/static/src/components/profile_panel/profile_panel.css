@@ -105,7 +105,7 @@
 .sdir-prof-btn-red { background: rgb(255, 245, 245); border: 1.5px solid rgb(252, 165, 165); color: rgb(239, 68, 68); }
 .sdir-prof-btn-small { padding: 8px; font-size: 12px; }
 
-.sdir-prof-actions-secondary { display: flex; gap: 8px; width: 100%; margin-bottom: 24px; }
+.sdir-prof-actions-secondary { display: flex; gap: 8px; width: 100%; margin-bottom: 16px; }
 .sdir-prof-actions-secondary button { flex: 1; }
 
 .sdir-prof-sidebar-footer { width: 100%; border-top: 1px solid rgb(249, 215, 232); padding: 24px 36px 32px 36px; margin-top: auto; box-shadow: rgba(233, 30, 99, 0.06) 0px -4px 16px; }
@@ -1944,4 +1944,58 @@
 .sdir-prof-org-teams-empty {
     font-size: 13px;
     color: #9CA3AF;
+}
+
+/* Work Anniversary Card */
+.sdir-anniv-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.sdir-anniv-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background-color: rgb(253, 242, 248);
+    border-radius: 10px;
+    border: 1px solid rgba(233, 30, 99, 0.133);
+}
+
+.sdir-anniv-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.sdir-anniv-content {
+    min-width: 0px;
+    flex: 1 1 0%;
+}
+
+.sdir-anniv-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgb(156, 163, 175);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sdir-anniv-date {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgb(17, 24, 39);
+}
+
+.sdir-anniv-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgb(233, 30, 99);
+    background-color: rgba(233, 30, 99, 0.082);
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid rgba(233, 30, 99, 0.19);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
