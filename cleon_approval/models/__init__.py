@@ -2,3 +2,4 @@
 from . import workflow_type
 from . import approval_chain
 from . import approval_instance
+from . import approval_configuration

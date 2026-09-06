@@ -2,7 +2,7 @@
 {
     "name": "CleonHR Workflows & Approvals Core",
     "summary": "Shared multi-level approval engine, SLA escalations, and activity tracking for CleonHR",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.1.0",
     "category": "Human Resources",
     "author": "CleonHR Team",
     "license": "LGPL-3",

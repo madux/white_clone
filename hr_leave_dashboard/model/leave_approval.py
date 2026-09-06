@@ -440,8 +440,6 @@ class CleonApprovalChainLeaveSettings(models.Model):
 class CleonApprovalInstanceLeaveTimers(models.Model):
     _inherit = "cleon.approval.instance"
 
-    source_chain_id = fields.Many2one("cleon.approval.chain", readonly=True, ondelete="restrict", index=True)
-
     @api.model
     def _cron_process_approval_escalations(self):
         result = super()._cron_process_approval_escalations()

@@ -16,7 +16,7 @@ export class WorkflowsApp extends Component {
         this.dialog = useService("dialog");
 
         this.state = useState({
-            activeTab: "chains",
+            activeTab: "types",
             loading: false,
             approvalChains: [],
             approvalTemplates: [],
@@ -24,6 +24,8 @@ export class WorkflowsApp extends Component {
             expandedChainIds: [],
             approvalRules: [],
             escalations: [],
+            delegations: [],
+            history: [],
         });
 
         onWillStart(async () => {
@@ -35,19 +37,36 @@ export class WorkflowsApp extends Component {
         this.state.loading = true;
         try {
             const dbChains = await this.orm.call("cleon.approval.chain", "search_read", [], {
-                fields: ["id", "name", "description", "workflow_type_id", "active", "is_default", "step_ids", "backup_approver_ids", "escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids", "create_uid", "write_date"],
+                fields: ["id", "name", "code", "description", "workflow_type_id", "route_type", "lifecycle_state", "active", "is_default", "step_ids", "backup_approver_ids", "escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids", "create_uid", "write_date"],
             });
 
             const dbSteps = await this.orm.call("cleon.approval.step", "search_read", [], {
-                fields: ["id", "chain_id", "sequence", "name", "approver_type", "approver_group_id", "specific_user_id", "sla_timeout_hours", "sla_action"],
+                fields: ["id", "chain_id", "sequence", "name", "completion_mode", "approver_type", "approver_group_id", "specific_user_id", "approver_job_id", "sla_timeout_hours", "sla_action"],
             });
 
             const dbTypes = await this.orm.call("cleon.approval.workflow.type", "search_read", [], {
-                fields: ["id", "name", "code", "model_id", "model_name", "active"],
+                fields: ["id", "name", "code", "description", "event_trigger", "module_code", "approval_requirement", "default_behavior", "default_chain_id", "rules_enabled", "escalation_enabled", "model_id", "model_name", "active"],
             });
-            const dbTemplates = await this.orm.call("hr.leave.approval.template", "search_read", [], {
-                fields: ["id", "name", "description", "template_type", "level_count", "policy_ids", "chain_id", "active", "write_date"],
+            const dbRules = await this.orm.call("cleon.approval.rule", "search_read", [], {
+                fields: ["id", "name", "workflow_type_id", "chain_id", "priority", "applies_to", "department_ids", "employee_ids", "condition_ids", "active"],
             });
+            const dbEscalations = await this.orm.call("cleon.approval.escalation.rule", "search_read", [], {
+                fields: ["id", "name", "workflow_type_id", "chain_id", "step_id", "response_value", "response_unit", "escalation_action", "target_group_id", "target_user_id", "active"],
+            });
+            const dbDelegations = await this.orm.call("cleon.approval.delegation", "search_read", [], {
+                fields: ["id", "user_id", "delegate_user_id", "date_from", "date_to", "reason", "active"],
+            });
+            const dbHistory = await this.orm.call("cleon.approval.instance", "search_read", [], {
+                fields: ["id", "workflow_type_id", "employee_id", "source_chain_id", "source_rule_id", "state", "decision_source", "create_date"], limit: 50, order: "id desc",
+            });
+            let dbTemplates = [];
+            try {
+                dbTemplates = await this.orm.call("hr.leave.approval.template", "search_read", [], {
+                    fields: ["id", "name", "description", "template_type", "level_count", "policy_ids", "chain_id", "active", "write_date"],
+                });
+            } catch (_error) {
+                // Approval templates are supplied by Leave Management and are optional for the core engine.
+            }
             this.state.approvalTemplates = dbTemplates.map(t => ({
                 id: t.id, name: t.name, description: t.description || "", type: t.template_type,
                 levels: t.level_count, assigned: t.policy_ids.length, flow: t.chain_id?.[1] || "", active: t.active,
@@ -64,12 +83,19 @@ export class WorkflowsApp extends Component {
                         approverDesc = step.approver_group_id ? step.approver_group_id[1] : "User Group";
                     } else if (step.approver_type === "specific_user") {
                         approverDesc = step.specific_user_id ? `Specific User: ${step.specific_user_id[1]}` : "Specific User";
+                    } else if (step.approver_type === "managers_manager") {
+                        approverDesc = "Manager's Manager";
+                    } else if (step.approver_type === "department_head") {
+                        approverDesc = "Department Head";
+                    } else if (step.approver_type === "job") {
+                        approverDesc = step.approver_job_id ? `Position: ${step.approver_job_id[1]}` : "Position / Job";
                     }
                     stepsByChain[chainId].push({
                         id: step.id,
                         sequence: step.sequence,
                         name: step.name || approverDesc,
                         approverTypeLabel: approverDesc,
+                        completionMode: step.completion_mode,
                         slaTimeoutHours: step.sla_timeout_hours,
                         slaAction: step.sla_action,
                     });
@@ -81,10 +107,13 @@ export class WorkflowsApp extends Component {
                 return {
                     id: c.id,
                     name: c.name,
+                    code: c.code || "—",
                     description: c.description || "",
                     module: c.workflow_type_id ? c.workflow_type_id[1] : "General Workflow",
                     levels: chainSteps.length,
                     active: c.active,
+                    routeType: c.route_type,
+                    lifecycleState: c.lifecycle_state,
                     steps: chainSteps,
                     backups: c.backup_approver_ids?.length || 0,
                     escalationDays: c.escalation_days || 0,
@@ -96,37 +125,25 @@ export class WorkflowsApp extends Component {
                 };
             });
 
+            const eventLabels = {leave_request: "Leave Request", leave_extension: "Leave Extension", leave_cancellation: "Leave Cancellation", early_return: "Early Return", normal_return: "Normal Return", late_return: "Late / Unconfirmed Return", balance_amendment: "Leave Balance Amendment", negative_balance: "Negative Balance Exception", blackout_exception: "Blackout Period Exception", coverage_exception: "Coverage / Handover Exception", handover_requirement: "Handover Requirement", approval_override: "Approval Override"};
+            const behaviourLabels = {approval_route: "Approval Route", linked: "Linked Approval", exception: "Exception Review", automatic: "Automatic", override: "Override Workflow"};
+            const approvalLabels = {yes: "Yes", no: "No — Automatic", conditional: "Conditional"};
             this.state.workflowTypes = dbTypes.map(t => ({
                 id: t.id,
                 name: t.name,
                 code: t.code,
-                module: t.model_name || "Odoo Model",
-                description: `Registered workflow type for ${t.name} (${t.code})`,
-                requiresApproval: true,
+                module: t.module_code === "leave" ? "Leave Management" : (t.model_name || "Odoo Model"),
+                description: t.description || `Registered workflow type for ${t.name} (${t.code})`,
+                eventTrigger: eventLabels[t.event_trigger] || t.event_trigger,
+                defaultBehavior: behaviourLabels[t.default_behavior] || t.default_behavior,
+                defaultRoute: t.default_chain_id?.[1] || "—",
+                requiresApproval: approvalLabels[t.approval_requirement] || t.approval_requirement,
                 status: t.active ? "Enabled" : "Disabled",
             }));
-
-            // Derive Escalations from actual chain steps with configured SLA timeouts
-            const derivedEscalations = [];
-            for (const chain of this.state.approvalChains) {
-                for (let idx = 0; idx < chain.steps.length; idx++) {
-                    const step = chain.steps[idx];
-                    if (step.slaTimeoutHours > 0) {
-                        const actionLabel = step.slaAction === "escalate_next" ? "Escalate to Next Step" : step.slaAction === "auto_approve" ? "Auto-Approve" : "Auto-Reject";
-                        derivedEscalations.push({
-                            id: `${chain.id}_${step.id}`,
-                            workflow: chain.name,
-                            level: `Step ${idx + 1}: ${step.name}`,
-                            escalateAfter: `${step.slaTimeoutHours} hours`,
-                            escalateTo: step.approverTypeLabel,
-                            slaAction: actionLabel,
-                            notifyOriginal: true,
-                            status: chain.active ? "Enabled" : "Disabled",
-                        });
-                    }
-                }
-            }
-            this.state.escalations = derivedEscalations;
+            this.state.approvalRules = dbRules.map(rule => ({id: rule.id, name: rule.name, workflow: rule.workflow_type_id?.[1] || "", route: rule.chain_id?.[1] || "", priority: rule.priority, appliesTo: rule.applies_to, conditions: rule.condition_ids.length, active: rule.active}));
+            this.state.escalations = dbEscalations.map(rule => ({id: rule.id, name: rule.name, workflow: rule.workflow_type_id?.[1] || "", route: rule.chain_id?.[1] || "", level: rule.step_id?.[1] || "", escalateAfter: `${rule.response_value} ${rule.response_unit}`, slaAction: rule.escalation_action, target: rule.target_group_id?.[1] || rule.target_user_id?.[1] || "Next level", status: rule.active ? "Enabled" : "Disabled"}));
+            this.state.delegations = dbDelegations.map(item => ({id: item.id, approver: item.user_id?.[1] || "", delegate: item.delegate_user_id?.[1] || "", dateFrom: item.date_from, dateTo: item.date_to, reason: item.reason || "", active: item.active}));
+            this.state.history = dbHistory.map(item => ({id: item.id, workflow: item.workflow_type_id?.[1] || "", employee: item.employee_id?.[1] || "", route: item.source_chain_id?.[1] || "Fallback", rule: item.source_rule_id?.[1] || "Default", state: item.state, source: item.decision_source, started: item.create_date}));
 
         } catch (e) {
             console.warn("Failed to load approval data", e);
@@ -213,20 +230,27 @@ export class WorkflowsApp extends Component {
     }
 
     addApprovalRule() {
-        this.notification.add("Custom conditional approval rules are not yet configured in this release.", { type: "info" });
+        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Rule", res_model: "cleon.approval.rule", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
     }
+
+    editApprovalRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Rule", res_model: "cleon.approval.rule", res_id: ruleId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
 
     addEscalationRule() {
         this.action.doAction({
             type: "ir.actions.act_window",
-            name: "Configure Approval Chain Escalation Steps",
-            res_model: "cleon.approval.chain",
-            views: [[false, "list"], [false, "form"]],
-            target: "current",
+            name: "Add Escalation Rule",
+            res_model: "cleon.approval.escalation.rule",
+            views: [[false, "form"]],
+            target: "new",
         }, {
             onClose: () => this.loadData(),
         });
     }
+
+    editEscalationRule(ruleId) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Escalation Rule", res_model: "cleon.approval.escalation.rule", res_id: ruleId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
+    addDelegation() { this.action.doAction({type: "ir.actions.act_window", name: "Add Approval Delegation", res_model: "cleon.approval.delegation", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
+    editDelegation(id) { this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Delegation", res_model: "cleon.approval.delegation", res_id: id, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()}); }
+    openHistory(id) { this.action.doAction({type: "ir.actions.act_window", name: "Approval History", res_model: "cleon.approval.instance", res_id: id, views: [[false, "form"]], target: "new"}); }
 
     async toggleApprovalChain(chainId) {
         const chain = this.state.approvalChains.find(c => c.id === chainId);

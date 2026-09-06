@@ -37,6 +37,8 @@ class CleonApprovalInstance(models.Model):
     ], default="human")
     decision_comment = fields.Text()
     step_ids = fields.One2many("cleon.approval.instance.step", "instance_id", string="Instance Steps")
+    source_chain_id = fields.Many2one("cleon.approval.chain", readonly=True, ondelete="restrict", index=True)
+    source_rule_id = fields.Many2one("cleon.approval.rule", readonly=True, ondelete="restrict", index=True)
 
     _sql_constraints = [
         ("open_key_unique", "unique(open_key)", "Another active approval instance is already pending for this record."),
@@ -112,6 +114,12 @@ class CleonApprovalInstance(models.Model):
 
         wft = self._resolve_workflow_type(res_record)
 
+        if wft.approval_requirement == "no":
+            return self.record_automatic_decision(
+                res_record, decision="approve", source="policy_bypass",
+                reason=_("Workflow Type '%s' is configured for automatic processing.") % wft.name,
+            )
+
         target_chain = False
         skip_default_chain = False
         if hasattr(res_record, "_approval_resolve_chain"):
@@ -142,7 +150,14 @@ class CleonApprovalInstance(models.Model):
                     raise ValidationError(_("Configuration Integrity Error: Target approval chain '%s' has no configured steps.") % target_route.name)
                 target_chain = target_route
 
-        chain = target_chain
+        matching_rule = self.env["cleon.approval.rule"]
+        if not target_chain and not skip_default_chain and wft.rules_enabled:
+            matching_rule = self.env["cleon.approval.rule"].matching_rule(wft, res_record)
+            target_chain = matching_rule.chain_id if matching_rule else False
+
+        chain = target_chain or wft.default_chain_id
+        if chain and not chain.active:
+            raise UserError(_("Configuration Integrity Error: Default Approval Route '%s' is inactive.") % chain.name)
         if not chain and not skip_default_chain:
             chain = (self.env["cleon.approval.chain"].sudo().search([
                 ("company_id", "=", company.id),
@@ -150,6 +165,12 @@ class CleonApprovalInstance(models.Model):
                 ("active", "=", True),
                 ("is_default", "=", True),
             ], limit=1) if wft else False)
+
+        if not chain and not skip_default_chain and wft.approval_requirement == "conditional":
+            return self.record_automatic_decision(
+                res_record, decision="approve", source="business_rule",
+                reason=_("No conditional approval rule matched Workflow Type '%s'.") % wft.name,
+            )
 
         open_key_str = "%s,%s" % (model_name, res_record.id)
 
@@ -175,6 +196,8 @@ class CleonApprovalInstance(models.Model):
             }
             if "source_chain_id" in self._fields:
                 instance_vals["source_chain_id"] = chain.id
+            if matching_rule:
+                instance_vals["source_rule_id"] = matching_rule.id
 
             try:
                 with self.env.cr.savepoint():
@@ -199,6 +222,15 @@ class CleonApprovalInstance(models.Model):
                         if not manager_user or not manager_user.active:
                             raise UserError(_("Submission blocked: Employee '%s' does not have an active line manager user.") % employee.sudo().name)
                         resolved_users = manager_user
+                    elif step.approver_type == "managers_manager":
+                        resolved_users = employee.sudo().parent_id.sudo().parent_id.sudo().user_id
+                    elif step.approver_type == "department_head":
+                        resolved_users = employee.sudo().department_id.sudo().manager_id.sudo().user_id
+                    elif step.approver_type == "job":
+                        resolved_users = self.env["hr.employee"].sudo().search([
+                            ("company_id", "=", company.id), ("job_id", "=", step.approver_job_id.id),
+                            ("active", "=", True), ("user_id", "!=", False),
+                        ]).mapped("user_id")
                     elif step.approver_type == "group":
                         if not step.approver_group_id:
                             raise ValidationError(_("Step '%s' is missing an approver group.") % step.name)
@@ -214,10 +246,17 @@ class CleonApprovalInstance(models.Model):
                     elif step.approver_type == "target_resolver":
                         raise UserError(_("Submission blocked: No approver could be dynamically resolved for step '%s'.") % step.name)
 
-                # Central company-validation and employee self-filtering for EVERY step
+                # Central company-validation and employee self-filtering for EVERY step.
                 filtered_step_users = resolved_users.sudo().filtered(lambda u: u.active and company.id in u.company_ids.ids)
                 if emp_user:
                     filtered_step_users = filtered_step_users.filtered(lambda u: u.id != emp_user.id)
+                if not filtered_step_users and getattr(chain, "backup_approver_ids", False):
+                    filtered_step_users = chain.backup_approver_ids.filtered(
+                        lambda u: u.active and company.id in u.company_ids.ids and u != emp_user
+                    )
+                filtered_step_users = self.env["cleon.approval.delegation"].apply_to_users(
+                    filtered_step_users, company, excluded_user=emp_user,
+                )
 
                 # Strict cardinality validation based on step.completion_mode
                 if step.completion_mode == "single":
@@ -231,6 +270,14 @@ class CleonApprovalInstance(models.Model):
 
                 resolved_users = filtered_step_users
 
+                escalation = self.env["cleon.approval.escalation.rule"].sudo().search([
+                    ("workflow_type_id", "=", wft.id), ("chain_id", "=", chain.id),
+                    ("step_id", "=", step.id), ("active", "=", True),
+                ], limit=1) if wft.escalation_enabled else self.env["cleon.approval.escalation.rule"]
+                escalation_action = {
+                    "next": "escalate_next", "role": "reassign_role",
+                    "employee": "reassign_user", "notify": "notify_only",
+                }.get(escalation.escalation_action) if escalation else step.sla_action
                 inst_step_vals = {
                     "instance_id": instance.id,
                     "sequence": step.sequence,
@@ -240,8 +287,11 @@ class CleonApprovalInstance(models.Model):
                     "step_code": step.step_code or False,
                     "resolved_user_ids": [(6, 0, resolved_users.ids)],
                     "state": "waiting",
-                    "sla_timeout_hours": step.sla_timeout_hours,
-                    "sla_action": step.sla_action,
+                    "sla_timeout_hours": escalation.timeout_hours() if escalation else (wft.global_sla_hours if wft.use_global_sla else step.sla_timeout_hours),
+                    "sla_action": escalation_action,
+                    "escalation_rule_id": escalation.id,
+                    "escalation_target_group_id": escalation.target_group_id.id,
+                    "escalation_target_user_id": escalation.target_user_id.id,
                 }
                 instance_steps.append(inst_step_vals)
 
@@ -529,6 +579,7 @@ class CleonApprovalInstance(models.Model):
             FROM cleon_approval_instance_step s
             JOIN cleon_approval_instance i ON s.instance_id = i.id
             WHERE s.state = 'pending'
+              AND COALESCE(s.escalated_once, FALSE) = FALSE
               AND s.deadline IS NOT NULL
               AND s.deadline <= (NOW() AT TIME ZONE 'UTC')
               AND i.state = 'pending'
@@ -559,6 +610,29 @@ class CleonApprovalInstance(models.Model):
                             instance.sudo().write({"current_step_sequence": next_step.sequence})
                         else:
                             instance.action_decide("reject", comment=_("Auto-rejected: SLA expired on final step with no further escalation target."), automated=True)
+                    elif step.sla_action in ("reassign_role", "reassign_user"):
+                        users = (step.escalation_target_group_id.users if step.sla_action == "reassign_role"
+                                 else step.escalation_target_user_id)
+                        submitter = instance.employee_id.sudo().user_id
+                        users = users.sudo().filtered(
+                            lambda user: user.active and instance.company_id.id in user.company_ids.ids and user != submitter
+                        )
+                        users = self.env["cleon.approval.delegation"].apply_to_users(
+                            users, instance.company_id, excluded_user=submitter,
+                        )
+                        if not users:
+                            raise UserError(_("Escalation target has no eligible active approver."))
+                        step.decision_ids.filtered(lambda d: d.state == "pending").sudo().write({"state": "skipped"})
+                        step._close_activity()
+                        step.sudo().write({
+                            "resolved_user_ids": [(6, 0, users.ids)], "escalated_once": True,
+                            "sla_timeout_hours": 0, "deadline": False,
+                        })
+                        step.action_activate()
+                        instance.message_post(body=_("Approval level '%s' was escalated to: %s") % (step.name, ", ".join(users.mapped("name"))))
+                    elif step.sla_action == "notify_only":
+                        step.sudo().write({"escalated_once": True, "deadline": False})
+                        instance.message_post(body=_("Approval SLA reminder: level '%s' is still awaiting action; ownership is unchanged.") % step.name)
             except (AccessError, UserError, ValidationError) as exc:
                 _logger.warning("SLA cron escalation for step %s (instance %s) blocked by business policy: %s", step.id, instance.id, exc)
             except Exception as exc:
@@ -593,6 +667,9 @@ class CleonApprovalInstanceStep(models.Model):
     ], default="single", required=True, string="Completion Mode")
     approver_type = fields.Selection([
         ("line_manager", "Direct Manager"),
+        ("managers_manager", "Manager's Manager"),
+        ("department_head", "Department Head"),
+        ("job", "Position / Job"),
         ("group", "User Group / Role"),
         ("specific_user", "Specific User"),
         ("specific_users", "Multiple Specific Users"),
@@ -610,7 +687,7 @@ class CleonApprovalInstanceStep(models.Model):
         ("escalated", "Escalated"),
         ("skipped", "Skipped"),
     ], default="waiting", required=True)
-    sla_timeout_hours = fields.Integer(default=24, string="Snapshotted SLA Timeout (Hours)")
+    sla_timeout_hours = fields.Float(default=24, string="Snapshotted SLA Timeout (Hours)")
     deadline = fields.Datetime()
     decision_user_id = fields.Many2one("res.users")
     decision_at = fields.Datetime()
@@ -619,7 +696,14 @@ class CleonApprovalInstanceStep(models.Model):
         ("escalate_next", "Escalate to Next Step"),
         ("auto_approve", "Auto-Approve"),
         ("auto_reject", "Auto-Reject"),
+        ("reassign_role", "Escalate to Specific Role"),
+        ("reassign_user", "Escalate to Specific Employee"),
+        ("notify_only", "Notify Only"),
     ], default="escalate_next")
+    escalation_rule_id = fields.Many2one("cleon.approval.escalation.rule", readonly=True, ondelete="restrict")
+    escalation_target_group_id = fields.Many2one("res.groups", readonly=True)
+    escalation_target_user_id = fields.Many2one("res.users", readonly=True)
+    escalated_once = fields.Boolean(default=False, readonly=True)
     activity_id = fields.Many2one("mail.activity", ondelete="set null")
 
     def action_activate(self):

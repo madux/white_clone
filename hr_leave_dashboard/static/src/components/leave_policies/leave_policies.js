@@ -18,7 +18,7 @@ const newForm = (mode = "simple") => ({
     state: "active", apply_to: mode === "simple" ? "selected" : "all", condition_match: "all", minimum_tenure_months: 0,
     selected: { employee_ids: [], department_ids: [], unit_ids: [], grade_ids: [], location_ids: [], employee_type_ids: [], job_ids: [] },
     carry: { enabled: false, maximum: 0, expiry_value: 0, expiry_unit: "months", priority: "current" },
-    approval: { required: true, workflow: "default", chain_id: false, template_id: false },
+    approval: { required: true, workflow: "default", workflow_type_id: false, chain_id: false, template_id: false },
     rules: { multiple: true, withdrawal: true, half_day: true },
     lines: [newLine()], conflict_resolution: "review",
 });

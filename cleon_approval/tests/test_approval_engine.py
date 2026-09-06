@@ -453,3 +453,82 @@ class TestApprovalEngine(TransactionCase):
         finally:
             PartnerClass._approval_workflow_code = original_workflow_code
 
+    def test_20_lowest_priority_matching_rule_selects_route(self):
+        """Conditional rules select the lowest-numbered match and snapshot it on the instance."""
+        alternate = self.env["cleon.approval.chain"].create({
+            "name": "Long Request Route", "company_id": self.company.id,
+            "workflow_type_id": self.wft.id, "is_default": False,
+            "step_ids": [(0, 0, {
+                "sequence": 10, "name": "Long Request Approver",
+                "approver_type": "specific_user", "specific_user_id": self.manager_user.id,
+            })],
+        })
+        self.wft.write({"rules_enabled": True})
+        type(self.env["res.partner"])._approval_rule_context = lambda record: {"duration": 20}
+        lower_precedence = self.env["cleon.approval.rule"].create({
+            "name": "Lower precedence match", "company_id": self.company.id,
+            "workflow_type_id": self.wft.id, "chain_id": self.chain.id, "priority": 20,
+            "condition_ids": [(0, 0, {"field_name": "duration", "operator": "gt", "value": "10"})],
+        })
+        winning_rule = self.env["cleon.approval.rule"].create({
+            "name": "Highest precedence match", "company_id": self.company.id,
+            "workflow_type_id": self.wft.id, "chain_id": alternate.id, "priority": 1,
+            "condition_ids": [(0, 0, {"field_name": "duration", "operator": "gt", "value": "10"})],
+        })
+
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Rule-routed target"})
+        )
+        self.assertEqual(instance.source_rule_id, winning_rule)
+        self.assertEqual(instance.source_chain_id, alternate)
+        self.assertNotEqual(instance.source_rule_id, lower_precedence)
+
+    def test_21_automatic_workflow_type_bypasses_routes(self):
+        """Approval Required = No records an automatic decision and creates no approval steps."""
+        self.wft.write({"approval_requirement": "no"})
+        partner = self.env["res.partner"].create({"name": "Automatic target"})
+        instance = self.env["cleon.approval.instance"].action_start(partner)
+        self.assertEqual(instance.state, "approved")
+        self.assertEqual(instance.decision_source, "policy_bypass")
+        self.assertFalse(instance.step_ids)
+
+    def test_22_active_delegation_replaces_resolved_approver(self):
+        """An active dated delegation resolves the delegate into new runtime instances."""
+        delegate = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Temporary Delegate", "login": "temporary_delegate",
+            "email": "delegate@example.com", "company_id": self.company.id,
+            "company_ids": [(6, 0, [self.company.id])],
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        self.env["cleon.approval.delegation"].create({
+            "company_id": self.company.id, "user_id": self.manager_user.id,
+            "delegate_user_id": delegate.id, "date_from": fields.Date.today(),
+            "date_to": fields.Date.today(),
+        })
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Delegated target"})
+        )
+        first_step = instance.step_ids.filtered(lambda step: step.sequence == 10)
+        self.assertIn(delegate, first_step.resolved_user_ids)
+        self.assertNotIn(self.manager_user, first_step.resolved_user_ids)
+
+    def test_23_notify_only_escalation_keeps_ownership(self):
+        """Notify-only escalation fires once without changing the pending approvers."""
+        source_step = self.chain.step_ids.filtered(lambda step: step.sequence == 10)
+        rule = self.env["cleon.approval.escalation.rule"].create({
+            "name": "Level 1 reminder", "company_id": self.company.id,
+            "workflow_type_id": self.wft.id, "chain_id": self.chain.id,
+            "step_id": source_step.id, "response_value": 1,
+            "response_unit": "minutes", "escalation_action": "notify",
+        })
+        instance = self.env["cleon.approval.instance"].action_start(
+            self.env["res.partner"].create({"name": "Escalation target"})
+        )
+        first_step = instance.step_ids.filtered(lambda step: step.sequence == 10)
+        original_approvers = first_step.resolved_user_ids
+        self.assertEqual(first_step.escalation_rule_id, rule)
+        first_step.sudo().write({"deadline": fields.Datetime.now() - timedelta(minutes=1)})
+        self.env["cleon.approval.instance"]._cron_process_approval_escalations()
+        self.assertEqual(first_step.state, "pending")
+        self.assertTrue(first_step.escalated_once)
+        self.assertEqual(first_step.resolved_user_ids, original_approvers)

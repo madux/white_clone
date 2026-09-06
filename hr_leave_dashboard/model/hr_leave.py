@@ -142,6 +142,8 @@ class HrLeave(models.Model):
         policy["approval_chain_id"] = self.env["cleon.approval.chain"].sudo().browse(policy["approval_chain_id"])
         template_id = policy.get("approval_template_id")
         policy["approval_template_id"] = self.env["hr.leave.approval.template"].sudo().browse(template_id) if template_id else self.env["hr.leave.approval.template"]
+        workflow_type_id = policy.get("approval_workflow_type_id")
+        policy["approval_workflow_type_id"] = self.env["cleon.approval.workflow.type"].sudo().browse(workflow_type_id) if workflow_type_id else self.env["cleon.approval.workflow.type"]
         line = dict(snapshot["line"])
         line["blackout_period_ids"] = self.env["hr.leave.blackout.period"].sudo().browse(line["blackout_period_ids"])
         line["policy_id"] = SimpleNamespace(**policy)
@@ -262,7 +264,23 @@ class HrLeave(models.Model):
         return super().unlink()
 
     def _approval_workflow_code(self):
-        return "leave_request"
+        self.ensure_one()
+        line = self._policy_rule_line() if self.holiday_status_id and self.employee_id else False
+        workflow_type = line.policy_id.approval_workflow_type_id if line and getattr(line.policy_id, "approval_workflow_type_id", False) else False
+        return workflow_type.code if workflow_type else "leave_request"
+
+    def _approval_rule_context(self):
+        self.ensure_one()
+        balance = self.env["hr.leave.balance.transaction"].sudo()._current_balance(
+            self.employee_id.id, self.holiday_status_id.id,
+        ) if self.employee_id and self.holiday_status_id else 0
+        return {
+            "duration": self.number_of_days or 0,
+            "leave_type": self.holiday_status_id.id or False,
+            "department": self.employee_id.department_id.id or False,
+            "available_balance": balance,
+            "blackout_exception": bool(self.blackout_exception_requested),
+        }
 
     def _approval_employee(self):
         return self.employee_id
@@ -335,7 +353,9 @@ class HrLeave(models.Model):
                 if not chain:
                     raise UserError(_("Configuration Integrity Error: Policy '%s' has no active custom approval route.") % policy.name)
                 return chain
-            return "single_fallback"
+            # Workflow Type rules and its default Approval Route are resolved
+            # centrally by the shared approval engine.
+            return False
         if leave_type.approval_workflow == "none":
             return "no_approval"
         if leave_type.approval_workflow == "single":

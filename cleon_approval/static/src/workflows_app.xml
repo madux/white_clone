@@ -10,11 +10,13 @@
             </div>
 
             <div class="cleon-wf-tabs">
-                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'templates' ? 'active' : '')" t-on-click="() => this.setTab('templates')">Approval Templates</button>
-                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'chains' ? 'active' : '')" t-on-click="() => this.setTab('chains')">Approval Chains</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'types' ? 'active' : '')" t-on-click="() => this.setTab('types')">Workflow Types</button>
-                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'rules' ? 'active' : '')" t-on-click="() => this.setTab('rules')">Approval Rules</button>
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'chains' ? 'active' : '')" t-on-click="() => this.setTab('chains')">Approval Routes</button>
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'rules' ? 'active' : '')" t-on-click="() => this.setTab('rules')">Rules &amp; Conditions</button>
                 <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'escalations' ? 'active' : '')" t-on-click="() => this.setTab('escalations')">Escalations</button>
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'delegations' ? 'active' : '')" t-on-click="() => this.setTab('delegations')">Delegation</button>
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'history' ? 'active' : '')" t-on-click="() => this.setTab('history')">Audit History</button>
+                <button t-att-class="'cleon-wf-tab ' + (state.activeTab === 'templates' ? 'active' : '')" t-on-click="() => this.setTab('templates')">Approval Templates</button>
             </div>
 
             <div class="cleon-wf-content">
@@ -27,16 +29,16 @@
                 <t t-if="state.activeTab === 'chains'">
                     <div class="cleon-wf-head">
                         <div>
-                            <h2>Approval Chains</h2>
-                            <p>Define multi-level approval workflows for different modules</p>
+                            <h2>Approval Routes</h2>
+                            <p>Define approvers, sequential levels, completion rules, and response SLAs once for reuse.</p>
                         </div>
-                        <button class="cleon-btn pink" t-on-click="() => this.addApprovalChain()"><i class="fa fa-plus"/> Add Approval Chain</button>
+                        <button class="cleon-btn pink" t-on-click="() => this.addApprovalChain()"><i class="fa fa-plus"/> Add Approval Route</button>
                     </div>
 
                     <div t-if="!state.approvalChains.length" class="text-center p-5 text-muted">
                         <i class="fa fa-sitemap fa-3x mb-3" style="color: #D1D5DB;"/>
-                        <h4>No Approval Chains Configured</h4>
-                        <p>Click <strong>+ Add Approval Chain</strong> to create your first multi-level approval workflow.</p>
+                        <h4>No Approval Routes Configured</h4>
+                        <p>Create a single-level, multi-level, or custom approval route.</p>
                     </div>
 
                     <div t-else="" class="cleon-wf-list">
@@ -44,10 +46,10 @@
                             <div class="d-flex justify-content-between align-items-center w-100">
                                 <div class="cleon-wf-info" t-on-click="() => this.toggleExpandChain(chain.id)" style="cursor: pointer;">
                                     <div>
-                                        <strong t-esc="chain.name"/>
+                                        <strong t-esc="chain.name"/> <code class="cleon-code" t-esc="chain.code"/>
                                         <span t-att-class="'cleon-cfg-badge ' + (chain.active ? 'active' : 'inactive')" t-esc="chain.active ? 'active' : 'inactive'"/>
                                     </div>
-                                    <small><t t-esc="chain.module"/> • <t t-esc="chain.levels"/> approval levels • Applies to: <t t-esc="chain.appliesTo"/> (<t t-esc="chain.coverage"/>) • Backups: <t t-esc="chain.backups"/> • Escalate: <t t-esc="chain.escalationDays || '—'"/> day(s) • Auto approve: <t t-esc="chain.autoApproveDays || '—'"/> day(s)</small>
+                                    <small><t t-esc="chain.module"/> • <t t-esc="chain.routeType"/> route • <t t-esc="chain.levels"/> approval level(s) • Applies to: <t t-esc="chain.appliesTo"/> (<t t-esc="chain.coverage"/>) • Backups: <t t-esc="chain.backups"/></small>
                                     <small t-if="chain.description" t-esc="chain.description"/>
                                 </div>
                                 <div class="cleon-wf-actions">
@@ -105,8 +107,10 @@
                                 <tr>
                                     <th>NAME</th>
                                     <th>CODE</th>
-                                    <th>MODULE / MODEL</th>
-                                    <th>DESCRIPTION</th>
+                                    <th>EVENT</th>
+                                    <th>DEFAULT BEHAVIOUR</th>
+                                    <th>APPROVAL REQUIRED</th>
+                                    <th>DEFAULT ROUTE</th>
                                     <th>STATUS</th>
                                     <th class="text-end">ACTIONS</th>
                                 </tr>
@@ -115,8 +119,10 @@
                                 <tr t-foreach="state.workflowTypes" t-as="type" t-key="type.id">
                                     <td><strong t-esc="type.name"/></td>
                                     <td><code class="cleon-code" t-esc="type.code"/></td>
-                                    <td t-esc="type.module"/>
-                                    <td t-esc="type.description"/>
+                                    <td t-esc="type.eventTrigger"/>
+                                    <td t-esc="type.defaultBehavior"/>
+                                    <td t-esc="type.requiresApproval"/>
+                                    <td t-esc="type.defaultRoute"/>
                                     <td><span t-att-class="'cleon-cfg-badge ' + (type.status === 'Enabled' ? 'active' : 'inactive')" t-esc="type.status"/></td>
                                     <td class="text-end">
                                         <button class="btn btn-link btn-sm text-secondary me-2" t-on-click="() => this.editWorkflowType(type.id)" title="Edit Type"><i class="fa fa-pencil"/></button>
@@ -132,17 +138,17 @@
                 <t t-if="state.activeTab === 'rules'">
                     <div class="cleon-wf-head">
                         <div>
-                            <h2>Approval Rules</h2>
-                            <p>Configure conditional routing and auto-approval rules</p>
+                            <h2>Approval Rules &amp; Conditions</h2>
+                            <p>Apply a different Approval Route when conditions match. Lowest priority number is evaluated first.</p>
                         </div>
-                        <button class="cleon-btn secondary" disabled="disabled" title="Planned for a future release"><i class="fa fa-lock"/> Add Rule (Planned)</button>
+                        <button class="cleon-btn pink" t-on-click="() => this.addApprovalRule()"><i class="fa fa-plus"/> Add Rule</button>
                     </div>
-
-                    <div class="text-center p-5 text-muted">
+                    <div t-if="!state.approvalRules.length" class="text-center p-5 text-muted">
                         <i class="fa fa-sliders fa-3x mb-3" style="color: #D1D5DB;"/>
-                        <h4>Conditional Approval Rules — Planned for Future Release</h4>
-                        <p>Custom conditional routing rules (e.g. amount or department thresholds) are planned for a future release. Approval workflows currently execute using configured master approval chains and step SLAs.</p>
+                        <h4>No Approval Rules Configured</h4>
+                        <p>When no rule matches, the Workflow Type's default Approval Route is used.</p>
                     </div>
+                    <div t-else="" class="table-responsive"><table class="table cleon-wf-table"><thead><tr><th>PRIORITY</th><th>RULE</th><th>WORKFLOW TYPE</th><th>CONDITIONS</th><th>APPROVAL ROUTE</th><th>APPLIES TO</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.approvalRules" t-as="rule" t-key="rule.id"><td><span class="cleon-priority-badge" t-esc="rule.priority"/></td><td><strong t-esc="rule.name"/></td><td t-esc="rule.workflow"/><td><t t-esc="rule.conditions"/> condition(s)</td><td t-esc="rule.route"/><td t-esc="rule.appliesTo"/><td><span t-att-class="'cleon-cfg-badge ' + (rule.active ? 'active' : 'inactive')" t-esc="rule.active ? 'Active' : 'Inactive'"/></td><td><button class="btn btn-link btn-sm text-secondary" t-on-click="() => this.editApprovalRule(rule.id)"><i class="fa fa-pencil"/></button></td></tr></tbody></table></div>
                 </t>
 
                 <!-- TAB 4: ESCALATIONS -->
@@ -152,7 +158,7 @@
                             <h2>Escalation Rules</h2>
                             <p>Auto-escalate pending approvals after specified SLA timeframes</p>
                         </div>
-                        <button class="cleon-btn pink" t-on-click="() => this.addEscalationRule()"><i class="fa fa-sliders"/> Configure Step Escalations</button>
+                        <button class="cleon-btn pink" t-on-click="() => this.addEscalationRule()"><i class="fa fa-plus"/> Add Escalation Rule</button>
                     </div>
 
                     <div t-if="!state.escalations.length" class="text-center p-5 text-muted">
@@ -165,26 +171,42 @@
                         <table class="table cleon-wf-table">
                             <thead>
                                 <tr>
-                                    <th>APPROVAL CHAIN</th>
+                                    <th>WORKFLOW TYPE</th>
+                                    <th>APPROVAL ROUTE</th>
                                     <th>STEP / LEVEL</th>
                                     <th>ESCALATE AFTER</th>
-                                    <th>APPROVER ROLE</th>
-                                    <th>SLA ACTION</th>
+                                    <th>ESCALATION ACTION</th>
+                                    <th>ESCALATE TO</th>
                                     <th>STATUS</th>
+                                    <th>ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr t-foreach="state.escalations" t-as="esc" t-key="esc.id">
                                     <td><strong t-esc="esc.workflow"/></td>
+                                    <td t-esc="esc.route"/>
                                     <td t-esc="esc.level"/>
                                     <td t-esc="esc.escalateAfter"/>
-                                    <td t-esc="esc.escalateTo"/>
                                     <td><span class="badge bg-info text-dark" t-esc="esc.slaAction"/></td>
+                                    <td t-esc="esc.target"/>
                                     <td><span t-att-class="'cleon-cfg-badge ' + (esc.status === 'Enabled' ? 'active' : 'inactive')" t-esc="esc.status"/></td>
+                                    <td><button class="btn btn-link btn-sm text-secondary" t-on-click="() => this.editEscalationRule(esc.id)"><i class="fa fa-pencil"/></button></td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+                </t>
+
+                <t t-if="state.activeTab === 'delegations'">
+                    <div class="cleon-wf-head"><div><h2>Approval Delegation</h2><p>Temporarily route an approver's assigned decisions to a delegate for a defined date range.</p></div><button class="cleon-btn pink" t-on-click="() => this.addDelegation()"><i class="fa fa-plus"/> Add Delegation</button></div>
+                    <div t-if="!state.delegations.length" class="text-center p-5 text-muted"><i class="fa fa-user-plus fa-3x mb-3"/><h4>No Delegations Configured</h4></div>
+                    <div t-else="" class="table-responsive"><table class="table cleon-wf-table"><thead><tr><th>APPROVER</th><th>DELEGATE</th><th>FROM</th><th>TO</th><th>REASON</th><th>STATUS</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.delegations" t-as="item" t-key="item.id"><td t-esc="item.approver"/><td t-esc="item.delegate"/><td t-esc="item.dateFrom"/><td t-esc="item.dateTo"/><td t-esc="item.reason"/><td><span t-att-class="'cleon-cfg-badge ' + (item.active ? 'active' : 'inactive')" t-esc="item.active ? 'Active' : 'Inactive'"/></td><td><button class="btn btn-link btn-sm text-secondary" t-on-click="() => this.editDelegation(item.id)"><i class="fa fa-pencil"/></button></td></tr></tbody></table></div>
+                </t>
+
+                <t t-if="state.activeTab === 'history'">
+                    <div class="cleon-wf-head"><div><h2>Approval Audit History</h2><p>Review the route and conditional rule selected for each approval workflow instance.</p></div></div>
+                    <div t-if="!state.history.length" class="text-center p-5 text-muted"><i class="fa fa-history fa-3x mb-3"/><h4>No Approval History Yet</h4></div>
+                    <div t-else="" class="table-responsive"><table class="table cleon-wf-table"><thead><tr><th>STARTED</th><th>WORKFLOW TYPE</th><th>EMPLOYEE</th><th>ROUTE</th><th>MATCHED RULE</th><th>DECISION SOURCE</th><th>STATE</th><th>ACTIONS</th></tr></thead><tbody><tr t-foreach="state.history" t-as="item" t-key="item.id"><td t-esc="item.started"/><td t-esc="item.workflow"/><td t-esc="item.employee"/><td t-esc="item.route"/><td t-esc="item.rule"/><td t-esc="item.source"/><td><span class="cleon-cfg-badge" t-esc="item.state"/></td><td><button class="btn btn-link btn-sm text-secondary" t-on-click="() => this.openHistory(item.id)"><i class="fa fa-eye"/></button></td></tr></tbody></table></div>
                 </t>
             </div>
         </div>

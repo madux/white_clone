@@ -41,6 +41,7 @@ class HrLeavePolicy(models.Model):
     balance_usage_priority = fields.Selection([("current", "Current balance first"), ("carried", "Carried-forward balance first")], default="current", required=True)
     approval_required = fields.Boolean(default=True)
     approval_workflow = fields.Selection([("default", "Default workflow"), ("custom", "Custom workflow")], default="default", required=True)
+    approval_workflow_type_id = fields.Many2one("cleon.approval.workflow.type", ondelete="restrict", string="Workflow Type")
     approval_chain_id = fields.Many2one("cleon.approval.chain", ondelete="restrict", check_company=True)
     approval_template_id = fields.Many2one("hr.leave.approval.template", ondelete="restrict", check_company=True)
     allow_multiple_requests = fields.Boolean(default=True)
@@ -68,6 +69,7 @@ class HrLeavePolicy(models.Model):
                 "allow_withdrawal", "allow_half_day",
             )}, "approval_chain_id": (self.approval_template_id.chain_id or self.approval_chain_id).id,
             "approval_template_id": self.approval_template_id.id,
+            "approval_workflow_type_id": self.approval_workflow_type_id.id,
         }}
 
     @api.model
@@ -199,6 +201,9 @@ class HrLeavePolicy(models.Model):
             "jobs": rows(employees.mapped("job_id").sorted("name")),
             "blackout_periods": rows(self.env["hr.leave.blackout.period"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
             "approval_chains": rows(self.env["cleon.approval.chain"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
+            "approval_workflow_types": rows(self.env["cleon.approval.workflow.type"].sudo().search([
+                ("model_name", "=", "hr.leave"), ("active", "=", True),
+            ], order="name")),
             "approval_templates": rows(self.env["hr.leave.approval.template"].sudo().search([
                 ("company_id", "in", self.env.companies.ids), ("active", "=", True),
             ], order="name")),
@@ -243,7 +248,7 @@ class HrLeavePolicy(models.Model):
             "selected": {"employee_ids": policy.employee_ids.ids, "department_ids": policy.department_ids.ids, "unit_ids": policy.unit_ids.ids, "grade_ids": policy.grade_ids.ids, "location_ids": policy.location_ids.ids, "employee_type_ids": policy.employee_type_ids.ids, "job_ids": policy.job_ids.ids},
             "minimum_tenure_months": policy.minimum_tenure_months,
             "carry": {"enabled": policy.allow_carry_forward, "maximum": policy.maximum_carry_forward, "expiry_value": policy.carry_forward_expiry_value, "expiry_unit": policy.carry_forward_expiry_unit, "priority": policy.balance_usage_priority},
-            "approval": {"required": policy.approval_required, "workflow": policy.approval_workflow, "chain_id": policy.approval_chain_id.id or False, "template_id": policy.approval_template_id.id or False},
+            "approval": {"required": policy.approval_required, "workflow": policy.approval_workflow, "workflow_type_id": policy.approval_workflow_type_id.id or False, "chain_id": policy.approval_chain_id.id or False, "template_id": policy.approval_template_id.id or False},
             "rules": {"multiple": policy.allow_multiple_requests, "withdrawal": policy.allow_withdrawal, "half_day": policy.allow_half_day},
             "lines": [line._payload() for line in policy.line_ids.filtered("active")],
         })
@@ -309,6 +314,7 @@ class HrLeavePolicy(models.Model):
             "approval_required": bool(approval.get("required", True)), "approval_workflow": approval.get("workflow") if approval.get("workflow") in ("default", "custom") else "default",
             "approval_chain_id": int(approval.get("chain_id") or 0) or False,
             "approval_template_id": int(approval.get("template_id") or 0) or False,
+            "approval_workflow_type_id": int(approval.get("workflow_type_id") or 0) or False,
             "allow_multiple_requests": bool(rules.get("multiple", True)), "allow_withdrawal": bool(rules.get("withdrawal", True)), "allow_half_day": bool(rules.get("half_day", True)),
         }
         if not vals["name"]:
@@ -318,6 +324,9 @@ class HrLeavePolicy(models.Model):
             raise ValidationError(_("Select an active Approval Template for this company."))
         if template and template.template_type == "assigned" and policy and policy not in template.policy_ids:
             raise ValidationError(_("This Approval Template is not assigned to this policy."))
+        workflow_type = self.env["cleon.approval.workflow.type"].sudo().browse(vals["approval_workflow_type_id"]).exists()
+        if workflow_type and (not workflow_type.active or workflow_type.model_name != "hr.leave"):
+            raise ValidationError(_("Select an active Leave Workflow Type."))
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             vals[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         before = policy._row() if policy else {}

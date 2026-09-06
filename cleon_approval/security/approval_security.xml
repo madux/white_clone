@@ -52,6 +52,31 @@
             <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
         </record>
 
+        <record id="rule_cleon_approval_rule_company" model="ir.rule">
+            <field name="name">Cleon Approval Rule Multi-Company</field><field name="model_id" ref="model_cleon_approval_rule"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_cleon_approval_escalation_company" model="ir.rule">
+            <field name="name">Cleon Approval Escalation Multi-Company</field><field name="model_id" ref="model_cleon_approval_escalation_rule"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_cleon_approval_delegation_company" model="ir.rule">
+            <field name="name">Cleon Approval Delegation Multi-Company</field><field name="model_id" ref="model_cleon_approval_delegation"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+        <record id="rule_cleon_approval_delegation_owner" model="ir.rule">
+            <field name="name">Users Manage Their Own Approval Delegations</field>
+            <field name="model_id" ref="model_cleon_approval_delegation"/>
+            <field name="groups" eval="[(4, ref('group_cleon_approval_user'))]"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+        </record>
+        <record id="rule_cleon_approval_delegation_manager" model="ir.rule">
+            <field name="name">Approval Administrators Manage All Delegations</field>
+            <field name="model_id" ref="model_cleon_approval_delegation"/>
+            <field name="groups" eval="[(4, ref('group_cleon_approval_manager'))]"/>
+            <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+        </record>
+
         <!-- User Visibility Rules for Instances & Steps -->
         <record id="rule_cleon_approval_instance_user_visibility" model="ir.rule">
             <field name="name">Cleon Approval Instance User Visibility</field>
