@@ -328,6 +328,10 @@ class HrLeaveType(models.Model):
 
     def _annual_entitlement_for_employee(self, employee, effective_date):
         self.ensure_one()
+        policy_line = self._active_policy_line(employee, effective_date)
+        if policy_line:
+            multiplier = {"annually": 1, "monthly": 12, "weekly": 52}[policy_line.accrual_period]
+            return max(policy_line.accrual_amount * multiplier, 0.0)
         amount = self.max_entitlement or 0.0
         hire_date = getattr(employee, "first_contract_date", False) or getattr(employee, "employment_date", False)
         if self.tenure_based_accrual and self.tenure_tier_ids and hire_date:
@@ -365,12 +369,16 @@ class HrLeaveType(models.Model):
     @api.model
     def _cron_process_policy_accruals(self, process_date=None):
         today = fields.Date.from_string(process_date) if process_date else fields.Date.context_today(self)
+        processed = self.env["hr.leave.policy.line"].sudo()._process_policy_accruals(today)
+        governed_type_ids = self.env["hr.leave.policy.line"].sudo().search([
+            ("active", "=", True), ("policy_id.state", "=", "active"),
+        ]).leave_type_id.ids
         types = self.sudo().search([
             ("active", "=", True),
             ("accrual_method", "in", ("year_start", "monthly", "hire_anniversary", "first_year_prorated")),
+            ("id", "not in", governed_type_ids),
         ])
         Run = self.env["hr.leave.accrual.run"].sudo()
-        processed = 0
         for leave_type in types:
             for employee in leave_type._get_eligible_employees():
                 hire_date = getattr(employee, "first_contract_date", False) or getattr(employee, "employment_date", False)
@@ -843,6 +851,9 @@ class HrLeaveType(models.Model):
             "notice_ok": True,
             "max_consecutive_ok": True,
             "document_required": False,
+            "accepted_document_types": [],
+            "blackout_exception_available": False,
+            "blackout_window_id": False,
             "team_overlap": {"percentage": 0.0, "threshold": lt.team_overlap_percent, "exceeded": False, "blocking": False},
             "warnings": [],
             "errors": [],
@@ -917,19 +928,30 @@ class HrLeaveType(models.Model):
                 ("date_from", "<=", end_dt),
                 ("date_to", ">=", start_dt),
                 "|", ("leave_type_ids", "=", False), ("leave_type_ids", "in", lt.id),
-                "|", ("department_ids", "=", False), ("department_ids", "in", emp.department_id.id),
             ]
-            if policy_line:
-                blackout_domain.append(("id", "in", policy_line.blackout_period_ids.ids))
-            blackout = self.env["hr.leave.blackout.period"].sudo().search(blackout_domain, limit=1)
+            blackout = self.env["hr.leave.blackout.period"].sudo().search(blackout_domain).filtered(
+                lambda window: window.applies_to == "all"
+                or (window.applies_to == "departments" and emp.department_id in window.department_ids)
+                or (window.applies_to == "policies" and policy and getattr(policy, "id", False) in window.policy_ids.ids)
+                or (window.applies_to == "groups" and any(emp in group.employee_ids for group in window.group_ids))
+            )[:1]
             if blackout:
-                res["errors"].append(
-                    _("The selected dates overlap the blackout period '%s'.") % blackout.name
-                )
+                res["blackout_window_id"] = blackout.id
+                approved_exception_path = bool(request and request.blackout_exception_requested and request.blackout_exception_window_id == blackout)
+                if blackout.exception_mode == "approval":
+                    res["blackout_exception_available"] = True
+                    res["warnings"].append(_("The selected dates overlap '%s' and require authorised exception approval.") % blackout.name)
+                    if not approved_exception_path and exclude_leave_id:
+                        res["errors"].append(_("A blackout exception must be requested for '%s'.") % blackout.name)
+                else:
+                    res["errors"].append(_("The selected dates are blocked by '%s' (%s).") % (blackout.name, blackout.reason or _("no reason supplied")))
 
         # 4. Supporting Document Policy
         if policy_line:
-            res["document_required"] = bool(policy_line.document_required_after_days and requested_days >= policy_line.document_required_after_days)
+            res["document_required"] = policy_line.document_policy == "required" and (
+                not policy_line.document_required_after_days or requested_days >= policy_line.document_required_after_days
+            )
+            res["accepted_document_types"] = [item.strip() for item in (policy_line.accepted_document_types or "").split(",") if item.strip()]
         elif lt.supporting_document_policy == "always":
             res["document_required"] = True
         elif lt.supporting_document_policy == "conditional" and requested_days > 3:
@@ -953,7 +975,8 @@ class HrLeaveType(models.Model):
             remaining_balance = components.get((emp.id, lt.id), {}).get("available", 0.0)
 
             if requested_days > remaining_balance:
-                if not lt.allow_negative_balance:
+                allow_negative = policy_line.allow_negative_balance if policy_line else lt.allow_negative_balance
+                if not allow_negative:
                     res["balance_ok"] = False
                     res["eligible"] = False
                     res["errors"].append(
@@ -1006,6 +1029,15 @@ class HrLeaveType(models.Model):
                     )
 
         if policy_line:
+            if not policy_line.allow_overlap and start_dt and end_dt:
+                overlap = self.env["hr.leave"].sudo().search_count([
+                    ("employee_id", "=", emp.id), ("id", "!=", int(exclude_leave_id or 0)),
+                    ("state", "in", ["confirm", "validate1", "validate"]),
+                    ("is_cancelled", "=", False), ("request_date_from", "<=", end_dt),
+                    ("request_date_to", ">=", start_dt),
+                ])
+                if overlap:
+                    res["errors"].append(_("This policy does not permit overlapping leave requests."))
             if policy_line.waiting_period_days:
                 hire_date = getattr(emp, "first_contract_date", False)
                 if not hire_date or not start_dt or (start_dt - hire_date).days < policy_line.waiting_period_days:

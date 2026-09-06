@@ -20,6 +20,7 @@ export class LeaveSettingsPage extends Component {
             data: null,
             form: {},
             baseline: "",
+            activeTab: "general",
         });
         onWillStart(() => this.load());
     }
@@ -61,6 +62,8 @@ export class LeaveSettingsPage extends Component {
     toggle(field) {
         this.state.form[field] = !this.state.form[field];
     }
+
+    setTab(tab) { this.state.activeTab = tab; }
 
     async save() {
         if (!this.dirty || this.state.saving) return;

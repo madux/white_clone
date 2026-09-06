@@ -173,6 +173,8 @@ class CleonApprovalInstance(models.Model):
                 "state": "pending",
                 "decision_source": decision_source,
             }
+            if "source_chain_id" in self._fields:
+                instance_vals["source_chain_id"] = chain.id
 
             try:
                 with self.env.cr.savepoint():

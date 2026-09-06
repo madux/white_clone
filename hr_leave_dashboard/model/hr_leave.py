@@ -108,6 +108,8 @@ class HrLeave(models.Model):
     governing_policy_line_id = fields.Many2one("hr.leave.policy.line", readonly=True, copy=False, ondelete="restrict")
     governing_assignment_id = fields.Many2one("hr.leave.policy.assignment", readonly=True, copy=False, ondelete="restrict")
     governing_rule_snapshot = fields.Json(readonly=True, copy=False)
+    blackout_exception_requested = fields.Boolean(readonly=True, copy=False)
+    blackout_exception_window_id = fields.Many2one("hr.leave.blackout.period", readonly=True, copy=False, ondelete="restrict")
 
     def _capture_policy_provenance(self):
         for leave in self:
@@ -138,6 +140,8 @@ class HrLeave(models.Model):
             return False
         policy = dict(snapshot["policy"])
         policy["approval_chain_id"] = self.env["cleon.approval.chain"].sudo().browse(policy["approval_chain_id"])
+        template_id = policy.get("approval_template_id")
+        policy["approval_template_id"] = self.env["hr.leave.approval.template"].sudo().browse(template_id) if template_id else self.env["hr.leave.approval.template"]
         line = dict(snapshot["line"])
         line["blackout_period_ids"] = self.env["hr.leave.blackout.period"].sudo().browse(line["blackout_period_ids"])
         line["policy_id"] = SimpleNamespace(**policy)
@@ -147,6 +151,7 @@ class HrLeave(models.Model):
     def create(self, vals_list):
         if any(not self._leave_can_mutate_requests(values=vals) for vals in vals_list):
             raise AccessError(_("You do not have permission to create leave requests."))
+        requested_draft = [vals.get("state", "draft") == "draft" for vals in vals_list]
         for vals in vals_list:
             if any(key.startswith("governing_") for key in vals):
                 raise AccessError(_("Policy provenance is assigned by the submission workflow."))
@@ -156,6 +161,19 @@ class HrLeave(models.Model):
                 )
             vals.pop("submitted_at", None)
         leaves = super().create(vals_list)
+        # ``hr_holidays`` may immediately promote a newly-created record for
+        # some validation configurations.  Save Draft is an explicit product
+        # action, so preserve the caller's requested lifecycle state.
+        for leave, keep_draft in zip(leaves, requested_draft):
+            if keep_draft and leave.state != "draft":
+                super(HrLeave, leave.sudo()).write({
+                    "state": "draft",
+                    "submitted_at": False,
+                    "governing_policy_id": False,
+                    "governing_policy_line_id": False,
+                    "governing_assignment_id": False,
+                    "governing_rule_snapshot": False,
+                })
         for leave in leaves.filtered(lambda item: item.state != "draft"):
             super(HrLeave, leave.sudo()).write({"submitted_at": fields.Datetime.now()})
             leave._capture_policy_provenance()
@@ -297,6 +315,11 @@ class HrLeave(models.Model):
 
     def _approval_resolve_chain(self, workflow_type=False):
         self.ensure_one()
+        if self.blackout_exception_requested and self.blackout_exception_window_id:
+            chain = self.blackout_exception_window_id.exception_chain_id
+            if not chain or not chain.active:
+                raise UserError(_("Configuration Integrity Error: the blackout exception route is unavailable."))
+            return chain
         leave_type = self.holiday_status_id
         if not leave_type:
             return False
@@ -306,9 +329,12 @@ class HrLeave(models.Model):
             if not policy.approval_required:
                 return "no_approval"
             if policy.approval_workflow == "custom":
-                if not policy.approval_chain_id or not policy.approval_chain_id.active:
+                # Submitted snapshots carry the resolved executable chain so
+                # later template edits/deactivation cannot rewrite history.
+                chain = policy.approval_chain_id or (policy.approval_template_id.chain_id if policy.approval_template_id else False)
+                if not chain:
                     raise UserError(_("Configuration Integrity Error: Policy '%s' has no active custom approval route.") % policy.name)
-                return policy.approval_chain_id
+                return chain
             return "single_fallback"
         if leave_type.approval_workflow == "none":
             return "no_approval"
@@ -1009,6 +1035,9 @@ class HrLeave(models.Model):
         if len(reason) < 5:
             raise ValidationError(_("Please provide a reason of at least 5 characters."))
         preview = self.preview_employee_leave_request(values.get("leave_type_id"), values.get("date_from"), values.get("date_to"), values.get("half_day", False), values.get("period", "am"))
+        request_exception = bool(values.get("blackout_exception_requested"))
+        if preview.get("blackout_exception_available") and not request_exception:
+            raise ValidationError(_("These dates require an authorised blackout exception. Select Request Exception to continue."))
         if not preview.get("eligible") or preview.get("errors"):
             raise ValidationError("\n".join(preview.get("errors") or [_('This request does not comply with the leave policy.')]))
         attachment = values.get("attachment") or {}
@@ -1018,6 +1047,8 @@ class HrLeave(models.Model):
             "image/jpeg", "image/png",
         ):
             raise ValidationError(_("Only PDF, DOC, DOCX, JPG, and PNG attachments are supported."))
+        if attachment.get("data") and preview.get("accepted_document_types") and attachment.get("mimetype") not in preview["accepted_document_types"]:
+            raise ValidationError(_("This policy accepts only: %s") % ", ".join(preview["accepted_document_types"]))
         if attachment.get("data"):
             try:
                 if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:
@@ -1043,6 +1074,8 @@ class HrLeave(models.Model):
             "request_unit_half": bool(values.get("half_day")),
             "request_date_from_period": values.get("period", "am"),
             "notes": reason, "handover_enabled": handover_enabled,
+            "blackout_exception_requested": request_exception,
+            "blackout_exception_window_id": int(preview.get("blackout_window_id") or 0) or False,
             "backup_colleague_ids": [(6, 0, valid_backups.ids)] if handover_enabled else [(5, 0, 0)],
             "emergency_contact": (values.get("emergency_contact") or "").strip(),
             "handover_notes": (values.get("handover_notes") or "").strip(),
@@ -1172,6 +1205,8 @@ class HrLeave(models.Model):
             "image/jpeg", "image/png",
         ):
             return {"ok": False, "message": _("Only PDF, DOC, DOCX, JPG, and PNG attachments are supported.")}
+        if attachment.get("data") and preview.get("accepted_document_types") and attachment.get("mimetype") not in preview["accepted_document_types"]:
+            return {"ok": False, "message": _("This policy accepts only: %s") % ", ".join(preview["accepted_document_types"])}
         if attachment.get("data"):
             try:
                 if len(base64.b64decode(attachment["data"], validate=True)) > 10 * 1024 * 1024:

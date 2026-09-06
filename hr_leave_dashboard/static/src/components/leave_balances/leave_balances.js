@@ -22,16 +22,18 @@ export class LeaveBalancesPage extends Component {
             "sortBy", "toggleSelected", "toggleArray", "toggleEmployee",
             "toggleAllocationGroup", "setSelectionMode", "onKpiClick", "openDetails", "openAdjust", "openHistory",
             "removeSelectedEmployee", "clearAllocationSelection", "toggleAllocationLeaveType",
-            "goToAllocationStep2", "setAllTypeAmount", "refreshAllocationPreview", "addAllocationLeaveType", "allocationRowTotal",
+            "goToAllocationStep2", "goToAllocationReview", "setAllTypeAmount", "refreshAllocationPreview", "addAllocationLeaveType", "allocationRowTotal",
             "toggleLtFilter", "setLtFilter", "clearLtFilter",
             "decrementAdjustment", "incrementAdjustment",
             "setGroupBy", "toggleGroupByDropdown", "toggleGroup", "toggleGroupSelected", "toggleExpandAll",
             "onSearchInput", "previousPage", "nextPage", "setPageSize",
+            "runAccrual", "viewNegativeBalances", "recalculateBalances",
+            "importAllocations",
         ]) {
             this[methodName] = this[methodName].bind(this);
         }
         this.state = useState({
-            loading: true, rows: [], groups: [], employeeOptions: [], kpis: {}, departments: [], locations: [], grades: [], leaveTypes: [],
+            loading: true, rows: [], groups: [], employeeOptions: [], kpis: {}, departments: [], locations: [], grades: [], leaveTypes: [], policies: [],
             search: "", sort: { field: "employee_name", direction: "asc" },
             filters: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "", expiring_only: false },
             filterDraft: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "" },
@@ -61,6 +63,32 @@ export class LeaveBalancesPage extends Component {
 
     today() { return new Date().toISOString().slice(0, 10); }
 
+    async importAllocations(event) {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+        try {
+            const lines = (await file.text()).split(/\r?\n/).filter(line => line.trim());
+            const headers = lines.shift().split(",").map(value => value.trim().toLowerCase());
+            const required = ["employee_id", "leave_type_id", "amount"];
+            if (required.some(name => !headers.includes(name))) throw new Error("CSV must contain employee_id, leave_type_id and amount columns.");
+            const rows = lines.map(line => {
+                const values = line.split(",").map(value => value.trim());
+                return Object.fromEntries(headers.map((header, index) => [header, values[index] || ""]));
+            });
+            if (!rows.length) throw new Error("The import contains no allocation rows.");
+            const first = rows[0];
+            await this.orm.call("hr.leave.balance.transaction", "apply_leave_allocation_matrix", [
+                rows, first.reason || "Imported leave allocation", first.effective_date || this.today(),
+                first.notes || "", first.expiry_date || false, first.status || "active",
+            ]);
+            this.notification.add(`${rows.length} allocation row(s) imported.`, {type: "success"});
+            await this.refreshPage();
+        } catch (error) {
+            this.notification.add(error?.data?.message || error.message || "Allocation import failed.", {type: "danger"});
+        }
+    }
+
     async refreshPage() {
         const loadSequence = ++this.loadSequence;
         this.state.loading = true;
@@ -88,6 +116,7 @@ export class LeaveBalancesPage extends Component {
             this.state.locations = data.locations || [];
             this.state.grades = data.grades || [];
             this.state.leaveTypes = data.leave_types || [];
+            this.state.policies = data.policies || [];
             const pager = data.pagination || {};
             this.state.pagination.page = pager.page || 1;
             this.state.pagination.pageSize = pager.page_size || this.state.pagination.pageSize;
@@ -150,7 +179,7 @@ export class LeaveBalancesPage extends Component {
             { key: "grade", label: "Grade Level", field: "grade_id", options: "grades" },
             { key: "job", label: "Job Role", field: "job_id", options: "jobs" },
             { key: "location", label: "Location", field: "location_id", options: "locations" },
-            { key: "employment_type", label: "Employment Type", field: "employment_type_id", options: "employment_types" },
+            { key: "custom_group", label: "Custom Group", field: "custom_group_ids", options: "custom_groups" },
         ];
     }
     get activeScopeDefinition() { return this.scopeDefinitions.find(item => item.key === this.state.selectionMode); }
@@ -161,7 +190,8 @@ export class LeaveBalancesPage extends Component {
             const scopeIds = this.state.selectedScopeIds[definition.key] || [];
             if (!scopeIds.length) continue;
             for (const employee of this.employees) {
-                if (scopeIds.includes(employee[definition.field])) selected.add(employee.employee_id);
+                const value = employee[definition.field];
+                if (Array.isArray(value) ? value.some(id => scopeIds.includes(id)) : scopeIds.includes(value)) selected.add(employee.employee_id);
             }
         }
         for (const employeeId of this.state.excludedEmployeeIds) selected.delete(employeeId);
@@ -287,7 +317,7 @@ export class LeaveBalancesPage extends Component {
         this.state.individualEmployeeIds = []; this.state.excludedEmployeeIds = []; this.state.selectedLeaveTypeIds = [];
         this.state.leaveTypeToAdd = "";
         this.state.allocationPreviewRows = []; this.state.allocationIncompatible = []; this.state.bulkAmounts = {};
-        this.state.allocation = { reason: "", effective_date: this.today(), expiry_date: "", notes: "" };
+        this.state.allocation = { reason: "", effective_date: this.today(), expiry_date: "", status: "active", notes: "" };
     }
     isEmployeeSelected(id) { return this.selectedEmployeeIds.includes(id); }
     toggleEmployee(id) {
@@ -327,6 +357,10 @@ export class LeaveBalancesPage extends Component {
     async goToAllocationStep2() {
         if (!this.selectedEmployeeIds.length) return;
         this.state.allocationStep = 2;
+    }
+    async goToAllocationReview() {
+        if (!this.allocationValid) return;
+        this.state.allocationStep = 3;
     }
     async toggleAllocationLeaveType(id) {
         const values = this.state.selectedLeaveTypeIds;
@@ -383,7 +417,7 @@ export class LeaveBalancesPage extends Component {
         try {
             const a = this.state.allocation;
             const result = await this.orm.call("hr.leave.balance.transaction", "apply_leave_allocation_matrix", [
-                this.allocationLines, a.reason, a.effective_date, a.notes, a.expiry_date || false,
+                this.allocationLines, a.reason, a.effective_date, a.notes, a.expiry_date || false, a.status,
             ]);
             this.state.allocationOpen = false;
             this.notification.add(`${result.allocation_count} allocations across ${result.employee_count} employee(s) and ${result.leave_type_count} Leave Type(s) were applied.`, { type: "success" });
@@ -467,6 +501,24 @@ export class LeaveBalancesPage extends Component {
     // More Options bulk/page-level actions
 
     toggleMoreOptions() { this.state.moreOptionsOpen = !this.state.moreOptionsOpen; }
+    async runAccrual() {
+        const result = await this.orm.call("hr.leave.balance.transaction", "run_accrual_manually", []);
+        this.notification.add(`${result.count} new accrual(s) processed.`, { type: "success" });
+        await this.refreshPage();
+    }
+    async viewNegativeBalances() {
+        this.state.filters.expiring_only = false;
+        this.state.search = "";
+        this.state.groupBy = "none";
+        await this.refreshPage();
+        this.state.rows = this.state.rows.filter(row => row.available < 0);
+        this.notification.add(`${this.state.rows.length} negative balance record(s).`, { type: "info" });
+    }
+    async recalculateBalances() {
+        const result = await this.orm.call("hr.leave.balance.transaction", "recalculate_balances", []);
+        this.notification.add(`${result.checked} balances checked; ${result.changed} changed.`, { type: "success" });
+        await this.refreshPage();
+    }
     closeMoreOptions() {
         this.state.moreOptionsOpen = false;
         this.state.ltFilterOpen = false;   // also close LT quick-filter

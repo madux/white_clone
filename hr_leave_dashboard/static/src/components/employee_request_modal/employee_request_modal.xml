@@ -24,6 +24,7 @@
             <div t-if="state.preview and state.preview.team_overlap and state.preview.team_overlap.exceeded" class="o_er_notice warning"><i class="fa fa-users"/> Team availability: <t t-esc="state.preview.team_overlap.percentage"/>% of the department would be on leave.</div>
             <div class="o_er_notice warning" t-foreach="state.preview ? state.preview.warnings : []" t-as="warning" t-key="warning" t-esc="warning"/>
             <div class="o_er_notice error" t-foreach="state.preview ? state.preview.errors : []" t-as="error" t-key="error" t-esc="error"/>
+            <label t-if="state.preview?.blackout_exception_available" class="o_er_toggle"><span><b>Request Blackout Exception</b><small>This request will follow the window's authorised HR/Executive approval route and is never auto-approved.</small></span><input type="checkbox" t-model="state.form.blackout_exception_requested"/></label>
             <div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
             <label>Reason <em>*</em><textarea maxlength="500" t-model="state.form.reason" placeholder="Please provide a reason for your leave request"/><small><t t-esc="state.form.reason.length"/> / 500</small></label>
           </t>

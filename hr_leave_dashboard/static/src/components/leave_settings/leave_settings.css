@@ -75,3 +75,6 @@
 .o_ls_save:disabled { border-color: #e4e7ec; background: #eef0f3; color: #a3adba; }
 @media (max-width: 1050px) { .o_ls_grid.three { grid-template-columns: repeat(2, minmax(0, 1fr)); } .o_ls_metrics { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 760px) { .o_ls_main { margin-left: 0; padding: 0 12px 90px; } .o_ls_grid.two, .o_ls_grid.three { grid-template-columns: 1fr; } .o_ls_schedule { align-items: flex-start; flex-direction: column; } .o_ls_day_list { justify-content: flex-start; } .o_ls_footer { left: 0; padding: 10px 14px; } }
+.o_ls_settings_tabs { display:flex; gap:4px; overflow-x:auto; margin:0 0 18px; padding:4px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; }
+.o_ls_settings_tabs button { white-space:nowrap; border:0; background:transparent; color:#6b7280; padding:10px 13px; border-radius:7px; font-weight:600; }
+.o_ls_settings_tabs button.active { background:#fff0f6; color:#d60062; }

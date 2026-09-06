@@ -1,8 +1,140 @@
 # -*- coding: utf-8 -*-
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
+
+
+class ResourceCalendarLeavesOfficialHoliday(models.Model):
+    _inherit = "resource.calendar.leaves"
+
+    cleon_official_holiday_id = fields.Many2one("hr.leave.official.holiday", ondelete="cascade", index=True)
+
+
+class HrLeaveOfficialHoliday(models.Model):
+    _name = "hr.leave.official.holiday"
+    _description = "Official Holiday"
+    _order = "date_from, name"
+
+    name = fields.Char(required=True)
+    company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True)
+    holiday_type = fields.Selection([
+        ("public", "Public Holiday"), ("religious", "Religious Holiday"),
+        ("regional", "Regional Holiday"), ("observance", "Observance"),
+    ], required=True, default="public")
+    date_from = fields.Date(required=True, index=True)
+    date_to = fields.Date(required=True, index=True)
+    applies_to = fields.Selection([("all", "All Employees"), ("locations", "Specific Locations")], default="all", required=True)
+    location_ids = fields.Many2many("hr.work.location", string="Locations")
+    repeats = fields.Selection([("once", "One-off"), ("annually", "Annually")], default="once", required=True)
+    country_region = fields.Char()
+    description = fields.Char(size=255)
+    active = fields.Boolean(default=True)
+    calendar_leave_ids = fields.One2many("resource.calendar.leaves", "cleon_official_holiday_id", readonly=True)
+
+    @api.constrains("date_from", "date_to", "applies_to", "location_ids", "description")
+    def _check_values(self):
+        for record in self:
+            if record.date_to < record.date_from:
+                raise ValidationError(_("Holiday end date cannot precede its start date."))
+            if record.applies_to == "locations" and not record.location_ids:
+                raise ValidationError(_("Select at least one location."))
+            if len(record.description or "") > 255:
+                raise ValidationError(_("Description cannot exceed 255 characters."))
+
+    def _check_configure(self):
+        if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
+            raise AccessError(_("You do not have permission to manage official holidays."))
+
+    def _sync_calendar_leaves(self):
+        for holiday in self:
+            holiday.calendar_leave_ids.sudo().unlink()
+            if not holiday.active:
+                continue
+            calendars = self.env["resource.calendar"].sudo().search([("company_id", "=", holiday.company_id.id)])
+            if holiday.applies_to == "locations":
+                employee_calendars = self.env["hr.employee"].sudo().search([
+                    ("company_id", "=", holiday.company_id.id), ("work_location_id", "in", holiday.location_ids.ids),
+                ]).mapped("resource_calendar_id")
+                calendars &= employee_calendars
+            occurrences = [(holiday.date_from, holiday.date_to)]
+            if holiday.repeats == "annually":
+                current_year = fields.Date.context_today(holiday).year
+                occurrences = []
+                for year in range(current_year - 1, current_year + 6):
+                    try:
+                        start = holiday.date_from.replace(year=year)
+                        end = start + (holiday.date_to - holiday.date_from)
+                    except ValueError:
+                        continue
+                    occurrences.append((start, end))
+            values = []
+            for start, end in occurrences:
+                for calendar in calendars:
+                    values.append({"name": holiday.name, "company_id": holiday.company_id.id,
+                        "calendar_id": calendar.id, "resource_id": False,
+                        "date_from": datetime.combine(start, time.min),
+                        "date_to": datetime.combine(end + timedelta(days=1), time.min),
+                        "cleon_official_holiday_id": holiday.id})
+            if values:
+                self.env["resource.calendar.leaves"].sudo().create(values)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._sync_calendar_leaves()
+        return records
+
+    def write(self, vals):
+        result = super().write(vals)
+        if {"name", "date_from", "date_to", "applies_to", "location_ids", "repeats", "active"}.intersection(vals):
+            self._sync_calendar_leaves()
+        return result
+
+    @api.model
+    def get_holiday_page_data(self):
+        self._check_configure()
+        records = self.with_context(active_test=False).search([("company_id", "in", self.env.companies.ids)])
+        return {"rows": [{"id": r.id, "name": r.name, "type": r.holiday_type, "date_from": fields.Date.to_string(r.date_from),
+            "date_to": fields.Date.to_string(r.date_to), "applies_to": r.applies_to, "location_ids": r.location_ids.ids,
+            "locations": ", ".join(r.location_ids.mapped("name")) or _("All Employees"), "repeats": r.repeats,
+            "country_region": r.country_region or "", "description": r.description or "", "active": r.active,
+            "created_by": r.create_uid.name, "last_updated": fields.Datetime.to_string(r.write_date)} for r in records],
+            "locations": [{"id": item.id, "name": item.name} for item in self.env["hr.work.location"].search([], order="name")]}
+
+    @api.model
+    def save_holiday(self, values):
+        self._check_configure()
+        record = self.with_context(active_test=False).browse(int(values.get("id") or 0)).exists()
+        vals = {"name": (values.get("name") or "").strip(), "holiday_type": values.get("type", "public"),
+            "date_from": values.get("date_from"), "date_to": values.get("date_to"), "applies_to": values.get("applies_to", "all"),
+            "location_ids": [(6, 0, [int(item) for item in values.get("location_ids", [])])],
+            "repeats": values.get("repeats", "once"), "country_region": values.get("country_region") or "",
+            "description": values.get("description") or "", "active": values.get("active", True) in (True, "true", 1, "1"), "company_id": self.env.company.id}
+        if not vals["name"]:
+            raise ValidationError(_("Holiday Name is required."))
+        if record:
+            record.write(vals)
+        else:
+            record = self.create(vals)
+        self.env["hr.leave.audit.log"].sudo().create({"action": "calendar_change", "module_area": "calendar", "entity_type": "holiday", "entity_name": record.name,
+            "actor_id": self.env.user.id, "actor_label": self.env.user.name, "note": _("Saved official holiday %s.") % record.name})
+        return {"id": record.id}
+
+    @api.model
+    def duplicate_holiday(self, record_id):
+        self._check_configure()
+        record = self.browse(int(record_id)).exists()
+        duplicate = record.copy({"name": _("%s (Copy)") % record.name, "active": False})
+        return {"id": duplicate.id}
+
+    @api.model
+    def set_holiday_active(self, record_id, active):
+        self._check_configure(); self.with_context(active_test=False).browse(int(record_id)).write({"active": bool(active)}); return True
+
+    @api.model
+    def delete_holiday(self, record_id):
+        self._check_configure(); self.with_context(active_test=False).browse(int(record_id)).unlink(); return True
 
 
 class HrLeaveTypeApprovalStage(models.Model):
@@ -101,14 +233,102 @@ class HrLeaveBlackoutPeriod(models.Model):
     date_to = fields.Date(required=True, index=True)
     leave_type_ids = fields.Many2many("hr.leave.type", string="Leave Types")
     department_ids = fields.Many2many("hr.department", string="Departments")
+    policy_ids = fields.Many2many("hr.leave.policy", string="Leave Policies")
+    group_ids = fields.Many2many("hr.leave.allocation.group", string="Custom Groups")
+    applies_to = fields.Selection([
+        ("all", "All Employees"), ("departments", "Specific Departments"),
+        ("policies", "Specific Leave Policies"), ("groups", "Specific Groups"),
+    ], default="all", required=True)
+    state = fields.Selection([("draft", "Draft"), ("scheduled", "Scheduled"), ("active", "Active")], default="draft", required=True, index=True)
     active = fields.Boolean(default=True)
     reason = fields.Text()
+    exception_mode = fields.Selection([
+        ("hard_block", "No Exceptions"), ("approval", "Exception Approval Permitted"),
+    ], default="hard_block", required=True)
+    exception_chain_id = fields.Many2one("cleon.approval.chain", ondelete="restrict", check_company=True,
+        string="Exception Approval Flow")
 
     @api.constrains("date_from", "date_to")
     def _check_dates(self):
         for period in self:
             if period.date_to < period.date_from:
                 raise ValidationError(_("A blackout period must end on or after its start date."))
+
+    @api.constrains("applies_to", "department_ids", "policy_ids", "group_ids", "exception_mode", "exception_chain_id")
+    def _check_audience(self):
+        for record in self:
+            if record.applies_to == "departments" and not record.department_ids:
+                raise ValidationError(_("Select at least one department."))
+            if record.applies_to == "policies" and not record.policy_ids:
+                raise ValidationError(_("Select at least one Leave Policy."))
+            if record.applies_to == "groups" and not record.group_ids:
+                raise ValidationError(_("Select at least one custom group."))
+            if record.exception_mode == "approval" and not record.exception_chain_id:
+                raise ValidationError(_("Select an Approval Flow for blackout exceptions."))
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if "state" in vals:
+                vals["active"] = vals["state"] == "active"
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "state" in vals:
+            vals["active"] = vals["state"] == "active"
+        return super().write(vals)
+
+    def _check_configure(self):
+        if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
+            raise AccessError(_("You do not have permission to manage blackout windows."))
+
+    @api.model
+    def get_blackout_page_data(self):
+        self._check_configure()
+        rows = self.with_context(active_test=False).search([("company_id", "in", self.env.companies.ids)], order="date_from, name")
+        return {"rows": [{"id": r.id, "name": r.name, "date_from": fields.Date.to_string(r.date_from), "date_to": fields.Date.to_string(r.date_to),
+            "duration": (r.date_to - r.date_from).days + 1, "applies_to": r.applies_to, "department_ids": r.department_ids.ids,
+            "departments": ", ".join(r.department_ids.mapped("name")) or _("All Employees"), "reason": r.reason or "", "state": r.state,
+            "policy_ids": r.policy_ids.ids, "group_ids": r.group_ids.ids, "exception_mode": r.exception_mode,
+            "exception_chain_id": r.exception_chain_id.id or False,
+            "created_by": r.create_uid.name, "last_updated": fields.Datetime.to_string(r.write_date)} for r in rows],
+            "departments": [{"id": d.id, "name": d.name} for d in self.env["hr.department"].search([("company_id", "in", self.env.companies.ids)], order="name")],
+            "policies": [{"id": p.id, "name": p.name} for p in self.env["hr.leave.policy"].search([("company_id", "in", self.env.companies.ids), ("state", "!=", "archived")], order="name")],
+            "groups": [{"id": g.id, "name": g.name} for g in self.env["hr.leave.allocation.group"].search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")],
+            "chains": [{"id": c.id, "name": c.name} for c in self.env["cleon.approval.chain"].search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")]}
+
+    @api.model
+    def save_blackout(self, values):
+        self._check_configure()
+        record = self.with_context(active_test=False).browse(int(values.get("id") or 0)).exists()
+        vals = {"name": (values.get("name") or "").strip(), "date_from": values.get("date_from"), "date_to": values.get("date_to"),
+            "applies_to": values.get("applies_to", "all"), "department_ids": [(6, 0, [int(item) for item in values.get("department_ids", [])])],
+            "policy_ids": [(6, 0, [int(item) for item in values.get("policy_ids", [])])],
+            "group_ids": [(6, 0, [int(item) for item in values.get("group_ids", [])])],
+            "exception_mode": values.get("exception_mode", "hard_block"),
+            "exception_chain_id": int(values.get("exception_chain_id") or 0) or False,
+            "reason": (values.get("reason") or "")[:255], "state": values.get("state", "draft"), "company_id": self.env.company.id}
+        if not vals["name"]:
+            raise ValidationError(_("Window Name is required."))
+        if record: record.write(vals)
+        else: record = self.create(vals)
+        self.env["hr.leave.audit.log"].sudo().create({"action": "policy_change", "module_area": "policies", "entity_type": "blackout", "entity_name": record.name,
+            "actor_id": self.env.user.id, "actor_label": self.env.user.name, "note": _("Saved blackout window %s with status %s.") % (record.name, record.state)})
+        return {"id": record.id}
+
+    @api.model
+    def duplicate_blackout(self, record_id):
+        self._check_configure(); record = self.browse(int(record_id)).exists(); duplicate = record.copy({"name": _("%s (Copy)") % record.name, "state": "draft", "active": False}); return {"id": duplicate.id}
+
+    @api.model
+    def set_blackout_state(self, record_id, state):
+        self._check_configure()
+        if state not in ("draft", "scheduled", "active"): raise ValidationError(_("Invalid blackout status."))
+        self.with_context(active_test=False).browse(int(record_id)).write({"state": state}); return True
+
+    @api.model
+    def delete_blackout(self, record_id):
+        self._check_configure(); self.with_context(active_test=False).browse(int(record_id)).unlink(); return True
 
 
 class HrLeaveAccrualRun(models.Model):
@@ -129,3 +349,106 @@ class HrLeaveAccrualRun(models.Model):
         "unique(employee_id, leave_type_id, period_key)",
         "This employee's leave accrual has already been processed for the period.",
     )]
+
+
+class HrLeaveApprovalTemplate(models.Model):
+    """Reusable blueprint, deliberately distinct from a runtime workflow.
+
+    The linked chain owns the executable approval levels.  The template owns
+    reuse/availability, so one blueprint can be offered globally or only to a
+    controlled set of policies without conflating it with approval instances.
+    """
+    _name = "hr.leave.approval.template"
+    _description = "Leave Approval Template"
+    _order = "name, id"
+
+    name = fields.Char(required=True, index=True)
+    company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True)
+    description = fields.Text()
+    template_type = fields.Selection([
+        ("global", "Global Template"), ("assigned", "Assigned to Policies"),
+    ], required=True, default="global", index=True)
+    policy_ids = fields.Many2many("hr.leave.policy", string="Assigned Policies")
+    chain_id = fields.Many2one("cleon.approval.chain", required=True, ondelete="restrict", check_company=True,
+        string="Approval Flow")
+    active = fields.Boolean(default=True, index=True)
+    level_count = fields.Integer(compute="_compute_level_count", string="Levels")
+
+    @api.depends("chain_id.step_ids")
+    def _compute_level_count(self):
+        for template in self:
+            template.level_count = len(template.chain_id.step_ids)
+
+    @api.constrains("template_type", "policy_ids", "chain_id", "company_id")
+    def _check_template(self):
+        for template in self:
+            if template.template_type == "assigned" and not template.policy_ids:
+                raise ValidationError(_("Assign at least one Leave Policy to an Assigned template."))
+            if template.chain_id.company_id != template.company_id:
+                raise ValidationError(_("The template and Approval Flow must belong to the same company."))
+
+    def action_duplicate_template(self):
+        self.ensure_one()
+        return self.copy({"name": _("%s (Copy)") % self.name, "active": False}).id
+
+    def unlink(self):
+        if any(template.policy_ids or self.env["hr.leave.policy"].sudo().search_count([
+            ("approval_template_id", "=", template.id),
+        ]) for template in self):
+            raise ValidationError(_("A referenced approval template cannot be deleted; deactivate it instead."))
+        return super().unlink()
+
+
+class CleonApprovalChainLeaveSettings(models.Model):
+    _inherit = "cleon.approval.chain"
+
+    description = fields.Text()
+    applies_to = fields.Selection([
+        ("all", "All Employees"), ("departments", "Department Based"),
+        ("teams", "Project Teams"), ("employees", "Selected Employees"),
+    ], default="all", required=True)
+    department_ids = fields.Many2many("hr.department", string="Covered Departments")
+    employee_ids = fields.Many2many("hr.employee", string="Covered Employees")
+    backup_approver_ids = fields.Many2many("res.users", string="Backup Approvers")
+    escalation_days = fields.Integer(default=0)
+    auto_approve_days = fields.Integer(default=0)
+
+    @api.constrains("escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids")
+    def _check_leave_workflow_settings(self):
+        for chain in self:
+            if min(chain.escalation_days, chain.auto_approve_days) < 0:
+                raise ValidationError(_("Approval timers cannot be negative."))
+            if chain.escalation_days and chain.auto_approve_days and chain.auto_approve_days <= chain.escalation_days:
+                raise ValidationError(_("Auto Approve (Days) must be longer than Escalation Days."))
+            if chain.applies_to == "departments" and not chain.department_ids:
+                raise ValidationError(_("Select at least one covered department."))
+            if chain.applies_to == "employees" and not chain.employee_ids:
+                raise ValidationError(_("Select at least one covered employee."))
+
+    def _covered_employees(self):
+        self.ensure_one()
+        employees = self.env["hr.employee"].sudo().search([("company_id", "=", self.company_id.id), ("active", "=", True)])
+        if self.applies_to == "departments": return employees.filtered(lambda e: e.department_id in self.department_ids)
+        if self.applies_to == "employees": return self.employee_ids.filtered("active")
+        return employees
+
+    def action_duplicate_leave_workflow(self):
+        self.ensure_one()
+        return self.copy({"name": _("%s (Copy)") % self.name, "active": False, "is_default": False}).id
+
+
+class CleonApprovalInstanceLeaveTimers(models.Model):
+    _inherit = "cleon.approval.instance"
+
+    source_chain_id = fields.Many2one("cleon.approval.chain", readonly=True, ondelete="restrict", index=True)
+
+    @api.model
+    def _cron_process_approval_escalations(self):
+        result = super()._cron_process_approval_escalations()
+        now = fields.Datetime.now()
+        instances = self.sudo().search([("state", "=", "pending"), ("source_chain_id.auto_approve_days", ">", 0)])
+        for instance in instances:
+            threshold = instance.create_date + timedelta(days=instance.source_chain_id.auto_approve_days)
+            if threshold <= now:
+                instance.action_decide("approve", comment=_("Auto-approved after the workflow's configured %d-day threshold.") % instance.source_chain_id.auto_approve_days, automated=True)
+        return result

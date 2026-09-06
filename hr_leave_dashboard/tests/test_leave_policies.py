@@ -16,7 +16,7 @@ class TestLeavePolicies(TransactionCase):
         cls.employee_b = cls.env["hr.employee"].create({"name": "Policy Employee B", "company_id": cls.env.company.id})
         cls.annual = cls.env["hr.leave.type"].create({
             "name": "Structured Annual", "leave_code": "SAN", "company_id": cls.env.company.id,
-            "policy_classification": "annual", "requires_allocation": "no",
+            "policy_classification": "annual", "requires_allocation": "no", "leave_validation_type": "manager",
         })
 
     def payload(self, name, employees, leave_type=None, state="active"):
@@ -83,11 +83,18 @@ class TestLeavePolicies(TransactionCase):
 
     def _request(self, employee=None, state="draft"):
         day = fields.Date.today() + timedelta(days=30)
-        return self.env["hr.leave"].create({
+        while day.weekday() >= 5:
+            day += timedelta(days=1)
+        leave = self.env["hr.leave"].create({
             "employee_id": (employee or self.employee_a).id,
-            "holiday_status_id": self.annual.id, "state": state,
+            "holiday_status_id": self.annual.id, "state": "draft",
             "request_date_from": day, "request_date_to": day,
         })
+        if state != "draft":
+            leave.action_confirm()
+            if state == "validate" and leave.state != "validate":
+                leave.action_validate()
+        return leave
 
     def test_draft_is_not_a_submission(self):
         leave = self._request()

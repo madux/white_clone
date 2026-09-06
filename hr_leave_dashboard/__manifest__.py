@@ -17,6 +17,7 @@
         'views/leave_report_views.xml',
         'views/leave_audit_views.xml',
         'views/leave_settings_views.xml',
+        'views/approval_settings_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
@@ -46,6 +47,9 @@
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.js',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.xml',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.css',
+            'hr_leave_dashboard/static/src/components/configuration_resources/configuration_resources.js',
+            'hr_leave_dashboard/static/src/components/configuration_resources/configuration_resources.xml',
+            'hr_leave_dashboard/static/src/components/configuration_resources/configuration_resources.css',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.js',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.xml',
             'hr_leave_dashboard/static/src/components/leave_balances/leave_balances.css',

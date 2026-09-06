@@ -8,6 +8,8 @@ import { CalendarSidebar } from "../calendar_sidebar";
 import { LeavePoliciesPage } from "../leave_policies/leave_policies";
 import { LeaveBalancesPage } from "../leave_balances/leave_balances";
 import { LeaveSettingsPage } from "../leave_settings/leave_settings";
+import { OfficialHolidaysPage, BlackoutWindowsPage } from "../configuration_resources/configuration_resources";
+import { WorkflowsApp } from "@cleon_approval/workflows_app";
 
 export class LeaveConfiguration extends Component {
     static template = "hr_leave_dashboard.LeaveConfiguration";
@@ -16,6 +18,9 @@ export class LeaveConfiguration extends Component {
         LeavePoliciesPage,
         LeaveBalancesPage,
         LeaveSettingsPage,
+        OfficialHolidaysPage,
+        BlackoutWindowsPage,
+        WorkflowsApp,
     };
     static props = { ...standardActionServiceProps };
 
@@ -38,6 +43,9 @@ export class LeaveConfiguration extends Component {
         const tabs = [];
         if (this.state.access.can_configure) {
             tabs.push({ key: "policies", label: "Leave Policies", icon: "fa-file-text-o" });
+            tabs.push({ key: "holidays", label: "Official Holidays", icon: "fa-calendar" });
+            tabs.push({ key: "blackouts", label: "Blackout Windows", icon: "fa-ban" });
+            tabs.push({ key: "approvals", label: "Approval Settings", icon: "fa-shield" });
         }
         if (this.state.access.can_operate) {
             tabs.push({ key: "balances", label: "Leave Balances", icon: "fa-balance-scale" });

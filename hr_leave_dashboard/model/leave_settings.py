@@ -62,15 +62,42 @@ class ResCompany(models.Model):
         string="Block Requests Above Overlap Limit by Default",
         default=False,
     )
+    leave_year_basis = fields.Selection([("calendar", "Calendar Year"), ("financial", "Financial Year"), ("anniversary", "Employee Anniversary")], default="calendar", required=True)
+    leave_default_unit = fields.Selection([("days", "Days"), ("hours", "Hours")], default="days", required=True)
+    leave_default_balance_enforcement = fields.Selection([("strict", "Strict"), ("negative", "Allow Negative")], default="strict", required=True)
+    leave_calendar_privacy = fields.Selection([("full", "Full"), ("limited", "Limited"), ("anonymous", "Anonymous")], default="limited", required=True)
+    leave_default_calendar_view = fields.Selection([("month", "Month"), ("week", "Week"), ("team", "Team"), ("organisation", "Organisation")], default="month", required=True)
+    leave_show_rejected = fields.Boolean(default=False)
+    leave_show_cancelled = fields.Boolean(default=False)
+    leave_ending_soon_days = fields.Integer(default=1)
+    leave_notify_manager_ending = fields.Boolean(default=True)
+    leave_return_reminder = fields.Boolean(default=True)
+    leave_overdue_reminder_days = fields.Integer(default=0)
+    leave_require_return_confirmation = fields.Boolean(default=False)
+    leave_employee_access_during_leave = fields.Selection([("normal", "Normal Access"), ("limited", "Limited Access"), ("self_service", "Leave Self-Service Only"), ("custom", "Custom")], default="normal", required=True)
+    leave_return_handling = fields.Selection([("attendance", "Attendance Clock-In"), ("employee", "Employee Confirmation"), ("manager", "Manager Confirmation"), ("hr", "HR Recorded"), ("hybrid", "Hybrid")], default="attendance", required=True)
+    leave_return_grace_days = fields.Integer(default=0)
+    leave_extensions_allowed = fields.Boolean(default=True)
+    leave_max_extension_days = fields.Integer(default=0)
+    leave_clock_integration = fields.Boolean(default=False)
+    leave_payroll_integration = fields.Boolean(default=False)
+    leave_directory_integration = fields.Boolean(default=False)
+    leave_calendar_integration = fields.Boolean(default=False)
+    leave_ai_enabled = fields.Boolean(default=False)
+    leave_ai_audit_logging = fields.Boolean(default=True)
 
     @api.constrains(
         "leave_default_minimum_notice_days",
         "leave_default_max_balance_cap",
         "leave_default_team_overlap_percent",
+        "leave_ending_soon_days", "leave_overdue_reminder_days",
+        "leave_return_grace_days", "leave_max_extension_days",
     )
     def _check_leave_settings_values(self):
         for company in self:
-            if company.leave_default_minimum_notice_days < 0:
+            if min(company.leave_default_minimum_notice_days, company.leave_ending_soon_days,
+                   company.leave_overdue_reminder_days, company.leave_return_grace_days,
+                   company.leave_max_extension_days) < 0:
                 raise ValidationError(_("Minimum notice cannot be negative."))
             if company.leave_default_max_balance_cap < 0:
                 raise ValidationError(_("Maximum balance cap cannot be negative."))
@@ -165,6 +192,19 @@ class HrLeaveSettings(models.Model):
                 "default_allow_negative_balance": bool(company.leave_default_allow_negative_balance),
                 "default_team_overlap_percent": company.leave_default_team_overlap_percent,
                 "default_block_overlap_threshold": bool(company.leave_default_block_overlap_threshold),
+                "year_basis": company.leave_year_basis, "default_unit": company.leave_default_unit,
+                "default_balance_enforcement": company.leave_default_balance_enforcement,
+                "calendar_privacy": company.leave_calendar_privacy, "default_calendar_view": company.leave_default_calendar_view,
+                "show_rejected": company.leave_show_rejected, "show_cancelled": company.leave_show_cancelled,
+                "ending_soon_days": company.leave_ending_soon_days, "notify_manager_ending": company.leave_notify_manager_ending,
+                "return_reminder": company.leave_return_reminder, "overdue_reminder_days": company.leave_overdue_reminder_days,
+                "require_return_confirmation": company.leave_require_return_confirmation,
+                "employee_access_during_leave": company.leave_employee_access_during_leave,
+                "return_handling": company.leave_return_handling, "return_grace_days": company.leave_return_grace_days,
+                "extensions_allowed": company.leave_extensions_allowed, "max_extension_days": company.leave_max_extension_days,
+                "clock_integration": company.leave_clock_integration, "payroll_integration": company.leave_payroll_integration,
+                "directory_integration": company.leave_directory_integration, "calendar_integration": company.leave_calendar_integration,
+                "ai_enabled": company.leave_ai_enabled, "ai_audit_logging": company.leave_ai_audit_logging,
             },
             "countries": [
                 {"id": country.id, "name": country.name, "code": country.code or ""}
@@ -236,6 +276,19 @@ class HrLeaveSettings(models.Model):
             "leave_default_allow_negative_balance": bool(values.get("default_allow_negative_balance")),
             "leave_default_team_overlap_percent": float(values.get("default_team_overlap_percent") or 0),
             "leave_default_block_overlap_threshold": bool(values.get("default_block_overlap_threshold")),
+            "leave_year_basis": values.get("year_basis") or "calendar", "leave_default_unit": values.get("default_unit") or "days",
+            "leave_default_balance_enforcement": values.get("default_balance_enforcement") or "strict",
+            "leave_calendar_privacy": values.get("calendar_privacy") or "limited", "leave_default_calendar_view": values.get("default_calendar_view") or "month",
+            "leave_show_rejected": bool(values.get("show_rejected")), "leave_show_cancelled": bool(values.get("show_cancelled")),
+            "leave_ending_soon_days": int(values.get("ending_soon_days") or 0), "leave_notify_manager_ending": bool(values.get("notify_manager_ending")),
+            "leave_return_reminder": bool(values.get("return_reminder")), "leave_overdue_reminder_days": int(values.get("overdue_reminder_days") or 0),
+            "leave_require_return_confirmation": bool(values.get("require_return_confirmation")),
+            "leave_employee_access_during_leave": values.get("employee_access_during_leave") or "normal",
+            "leave_return_handling": values.get("return_handling") or "attendance", "leave_return_grace_days": int(values.get("return_grace_days") or 0),
+            "leave_extensions_allowed": bool(values.get("extensions_allowed")), "leave_max_extension_days": int(values.get("max_extension_days") or 0),
+            "leave_clock_integration": bool(values.get("clock_integration")), "leave_payroll_integration": bool(values.get("payroll_integration")),
+            "leave_directory_integration": bool(values.get("directory_integration")), "leave_calendar_integration": bool(values.get("calendar_integration")),
+            "leave_ai_enabled": bool(values.get("ai_enabled")), "leave_ai_audit_logging": bool(values.get("ai_audit_logging")),
         }
         company.sudo().write(vals)
         after = self._leave_settings_payload()["form"]

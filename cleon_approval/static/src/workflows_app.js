@@ -19,6 +19,7 @@ export class WorkflowsApp extends Component {
             activeTab: "chains",
             loading: false,
             approvalChains: [],
+            approvalTemplates: [],
             workflowTypes: [],
             expandedChainIds: [],
             approvalRules: [],
@@ -34,7 +35,7 @@ export class WorkflowsApp extends Component {
         this.state.loading = true;
         try {
             const dbChains = await this.orm.call("cleon.approval.chain", "search_read", [], {
-                fields: ["id", "name", "workflow_type_id", "active", "is_default", "step_ids"],
+                fields: ["id", "name", "description", "workflow_type_id", "active", "is_default", "step_ids", "backup_approver_ids", "escalation_days", "auto_approve_days", "applies_to", "department_ids", "employee_ids", "create_uid", "write_date"],
             });
 
             const dbSteps = await this.orm.call("cleon.approval.step", "search_read", [], {
@@ -44,6 +45,14 @@ export class WorkflowsApp extends Component {
             const dbTypes = await this.orm.call("cleon.approval.workflow.type", "search_read", [], {
                 fields: ["id", "name", "code", "model_id", "model_name", "active"],
             });
+            const dbTemplates = await this.orm.call("hr.leave.approval.template", "search_read", [], {
+                fields: ["id", "name", "description", "template_type", "level_count", "policy_ids", "chain_id", "active", "write_date"],
+            });
+            this.state.approvalTemplates = dbTemplates.map(t => ({
+                id: t.id, name: t.name, description: t.description || "", type: t.template_type,
+                levels: t.level_count, assigned: t.policy_ids.length, flow: t.chain_id?.[1] || "", active: t.active,
+                lastUpdated: t.write_date || "",
+            }));
 
             const stepsByChain = {};
             for (const step of dbSteps) {
@@ -72,10 +81,18 @@ export class WorkflowsApp extends Component {
                 return {
                     id: c.id,
                     name: c.name,
+                    description: c.description || "",
                     module: c.workflow_type_id ? c.workflow_type_id[1] : "General Workflow",
                     levels: chainSteps.length,
                     active: c.active,
                     steps: chainSteps,
+                    backups: c.backup_approver_ids?.length || 0,
+                    escalationDays: c.escalation_days || 0,
+                    autoApproveDays: c.auto_approve_days || 0,
+                    appliesTo: c.applies_to,
+                    coverage: c.applies_to === "departments" ? c.department_ids.length : c.applies_to === "employees" ? c.employee_ids.length : "All",
+                    createdBy: c.create_uid?.[1] || "",
+                    lastUpdated: c.write_date || "",
                 };
             });
 
@@ -140,6 +157,21 @@ export class WorkflowsApp extends Component {
         }, {
             onClose: () => this.loadData(),
         });
+    }
+
+    addApprovalTemplate() {
+        this.action.doAction({type: "ir.actions.act_window", name: "Create Approval Template", res_model: "hr.leave.approval.template", views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
+    }
+
+    editApprovalTemplate(templateId) {
+        this.action.doAction({type: "ir.actions.act_window", name: "Edit Approval Template", res_model: "hr.leave.approval.template", res_id: templateId, views: [[false, "form"]], target: "new"}, {onClose: () => this.loadData()});
+    }
+
+    async duplicateApprovalTemplate(templateId) {
+        const duplicateId = await this.orm.call("hr.leave.approval.template", "action_duplicate_template", [[templateId]]);
+        this.notification.add("Approval template duplicated as inactive.", {type: "success"});
+        await this.loadData();
+        if (duplicateId) this.editApprovalTemplate(duplicateId);
     }
 
     editApprovalChain(chainId) {
@@ -208,6 +240,13 @@ export class WorkflowsApp extends Component {
             }
             await this.loadData();
         }
+    }
+
+    async duplicateApprovalChain(chainId) {
+        const duplicateId = await this.orm.call("cleon.approval.chain", "action_duplicate_leave_workflow", [[chainId]]);
+        this.notification.add("Approval workflow duplicated as inactive.", { type: "success" });
+        await this.loadData();
+        if (duplicateId) this.editApprovalChain(duplicateId);
     }
 
     deleteApprovalChain(chainId) {

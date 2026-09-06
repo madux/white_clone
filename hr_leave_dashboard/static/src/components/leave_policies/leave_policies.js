@@ -10,7 +10,7 @@ const newLine = () => ({
     waiting_period_days: 0, exclude_public_holidays: true, exclude_non_working_days: true,
     minimum_notice_days: 0, minimum_duration: 0, maximum_duration: 0,
     allow_backdated: false, allow_half_day: true, allow_overlap: false,
-    document_required_after_days: 0, accepted_document_types: "", blackout_period_ids: [],
+    document_policy: "not_required", document_required_after_days: 0, accepted_document_types: "", allow_negative_balance: false, blackout_period_ids: [],
 });
 
 const newForm = (mode = "simple") => ({
@@ -18,7 +18,7 @@ const newForm = (mode = "simple") => ({
     state: "active", apply_to: mode === "simple" ? "selected" : "all", condition_match: "all", minimum_tenure_months: 0,
     selected: { employee_ids: [], department_ids: [], unit_ids: [], grade_ids: [], location_ids: [], employee_type_ids: [], job_ids: [] },
     carry: { enabled: false, maximum: 0, expiry_value: 0, expiry_unit: "months", priority: "current" },
-    approval: { required: true, workflow: "default", chain_id: false },
+    approval: { required: true, workflow: "default", chain_id: false, template_id: false },
     rules: { multiple: true, withdrawal: true, half_day: true },
     lines: [newLine()], conflict_resolution: "review",
 });

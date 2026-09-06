@@ -59,6 +59,8 @@ class HrLeaveAuditLog(models.Model):
         ("leave_request", "Leave Request"), ("leave_type", "Leave Type"),
         ("policy", "Policy"), ("balance", "Balance"),
         ("accrual_plan", "Accrual Plan"), ("eligibility_rule", "Eligibility Rule"),
+        ("holiday", "Official Holiday"), ("blackout", "Blackout Window"),
+        ("approval_template", "Approval Template"),
         ("system", "System"), ("absence_risk", "Absence Risk"),
     ], required=True, readonly=True, index=True, default="leave_request")
     entity_name = fields.Char(readonly=True, index=True)

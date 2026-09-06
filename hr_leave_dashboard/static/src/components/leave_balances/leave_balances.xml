@@ -59,6 +59,15 @@
             </button>
             <!-- Export button -->
             <button t-on-click="exportRows"><i class="fa fa-download"/> Export</button>
+            <div class="o_lb_group_wrap" t-on-click.stop="">
+              <button t-on-click="toggleMoreOptions"><i class="fa fa-ellipsis-h"/> More</button>
+              <div t-if="state.moreOptionsOpen" class="o_lb_group_menu">
+                <label class="btn btn-link text-start"><i class="fa fa-upload"/> Import Allocation CSV<input class="d-none" type="file" accept=".csv,text/csv" t-on-change="importAllocations"/></label>
+                <button t-on-click="runAccrual">Run Accrual Manually</button>
+                <button t-on-click="viewNegativeBalances">View Negative Balances</button>
+                <button t-on-click="recalculateBalances">Recalculate Balances</button>
+              </div>
+            </div>
             <!-- Allocate Leave button -->
             <button class="o_lb_primary" t-on-click="openAllocation">+ Allocate Leave</button>
           </div>
@@ -351,7 +360,7 @@
             </label>
 
             <h4>Policy Assigned</h4>
-            <label t-foreach="state.leaveTypes" t-as="policy" t-key="policy.id" class="o_lb_filter_check">
+            <label t-foreach="state.policies" t-as="policy" t-key="policy.id" class="o_lb_filter_check">
               <input type="checkbox" t-att-checked="state.filterDraft.policy_ids.includes(policy.id)" t-on-change="() => toggleArray('policy_ids', policy.id)"/>
               <t t-esc="policy.name"/>
             </label>
@@ -369,7 +378,7 @@
           <header class="o_lb_alloc_header">
             <div>
               <h3>Allocate Leave Balance</h3>
-              <small>Step <t t-esc="state.allocationStep"/> of 2</small>
+              <small>Step <t t-esc="state.allocationStep"/> of 3</small>
             </div>
             <button t-on-click="() => state.allocationOpen = false">&#215;</button>
           </header>
@@ -383,6 +392,10 @@
             <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 2 ? ' active' : '')">
               <span class="o_lb_step_num">2</span>
               <span class="o_lb_step_label">Allocate Leave Types</span>
+            </div>
+            <div class="o_lb_step_connector"/>
+            <div t-att-class="'o_lb_alloc_step' + (state.allocationStep >= 3 ? ' active' : '')">
+              <span class="o_lb_step_num">3</span><span class="o_lb_step_label">Review &amp; Confirm</span>
             </div>
           </div>
 
@@ -434,7 +447,7 @@
               </div>
             </div>
 
-            <div t-else="" class="o_lb_allocation_matrix_step">
+            <div t-elif="state.allocationStep === 2" class="o_lb_allocation_matrix_step">
               <section class="o_lb_type_selector">
                 <header><div><h4>Allocation Lines</h4><p>Add one or more Leave Types. Each line carries its default allocation amount.</p></div><select t-model="state.leaveTypeToAdd" t-on-change="addAllocationLeaveType"><option value="">+ Add Leave Type</option><option t-foreach="state.leaveTypes.filter(type => !state.selectedLeaveTypeIds.includes(type.id))" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/></select></header>
                 <div t-if="selectedLeaveTypes.length" class="o_lb_allocation_lines">
@@ -465,20 +478,28 @@
               <section class="o_lb_allocation_meta">
                 <label>Effective Date <span>*</span><input type="date" t-model="state.allocation.effective_date" t-on-change="refreshAllocationPreview"/></label>
                 <label>Expiry Date <small>(optional)</small><input type="date" t-att-min="state.allocation.effective_date" t-model="state.allocation.expiry_date"/></label>
+                <label>Status<select t-model="state.allocation.status"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
                 <label>Reason <span>*</span><input placeholder="Reason for this allocation" t-model="state.allocation.reason"/></label>
                 <label>Notes <small>(optional)</small><input placeholder="Additional notes" t-model="state.allocation.notes"/></label>
               </section>
               <aside class="o_lb_allocation_summary"><span><b t-esc="selectedEmployeeIds.length"/> Employees</span><span><b t-esc="selectedLeaveTypes.length"/> Leave Types</span><span><b><t t-esc="allocationTotalDays.toFixed(2)"/></b> Total Days</span></aside>
+            </div>
+            <div t-else="" class="o_lb_allocation_matrix_step">
+              <h4>Review &amp; Confirm</h4>
+              <section class="o_lb_allocation_summary"><span><b t-esc="selectedEmployeeIds.length"/> employees</span><span><b t-esc="selectedLeaveTypes.length"/> Leave Types</span><span><b t-esc="allocationLines.length"/> allocation records</span><span><b><t t-esc="allocationTotalDays.toFixed(2)"/></b> total</span></section>
+              <section class="o_lb_allocation_meta"><p><b>Effective:</b> <t t-esc="state.allocation.effective_date"/></p><p><b>Expiry:</b> <t t-esc="state.allocation.expiry_date || 'Policy rules apply'"/></p><p><b>Status:</b> <t t-esc="state.allocation.status"/></p><p><b>Reason:</b> <t t-esc="state.allocation.reason"/></p></section>
+              <button t-on-click="() => state.allocationStep = 1">Edit Employees</button><button t-on-click="() => state.allocationStep = 2">Edit Allocation Details</button>
             </div>
           </div>
 
           <footer class="o_lb_alloc_footer">
             <div>
               <button t-if="state.allocationStep === 1" t-on-click="() => state.allocationOpen = false">Cancel</button>
-              <button t-else="" t-on-click="() => state.allocationStep = 1"><i class="fa fa-arrow-left"/> Back</button>
+              <button t-else="" t-on-click="() => state.allocationStep--"><i class="fa fa-arrow-left"/> Back</button>
             </div>
             <div>
               <button t-if="state.allocationStep === 1" class="o_lb_primary" t-att-disabled="!selectedEmployeeIds.length" t-on-click="goToAllocationStep2">Next: Allocate Leave Types <i class="fa fa-arrow-right"/></button>
+              <button t-elif="state.allocationStep === 2" class="o_lb_primary" t-att-disabled="!allocationValid" t-on-click="goToAllocationReview">Review Allocation <i class="fa fa-arrow-right"/></button>
               <button t-else="" class="o_lb_primary" t-att-disabled="!allocationValid" t-on-click="applyAllocation">
                 <i class="fa fa-check"/> Apply <t t-esc="allocationLines.length"/> Allocations
               </button>

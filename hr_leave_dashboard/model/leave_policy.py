@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
 import re
+from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError, ValidationError
@@ -41,6 +42,7 @@ class HrLeavePolicy(models.Model):
     approval_required = fields.Boolean(default=True)
     approval_workflow = fields.Selection([("default", "Default workflow"), ("custom", "Custom workflow")], default="default", required=True)
     approval_chain_id = fields.Many2one("cleon.approval.chain", ondelete="restrict", check_company=True)
+    approval_template_id = fields.Many2one("hr.leave.approval.template", ondelete="restrict", check_company=True)
     allow_multiple_requests = fields.Boolean(default=True)
     allow_withdrawal = fields.Boolean(default=True)
     allow_half_day = fields.Boolean(default=True)
@@ -64,7 +66,8 @@ class HrLeavePolicy(models.Model):
                 "carry_forward_expiry_value", "carry_forward_expiry_unit", "balance_usage_priority",
                 "approval_required", "approval_workflow", "allow_multiple_requests",
                 "allow_withdrawal", "allow_half_day",
-            )}, "approval_chain_id": self.approval_chain_id.id,
+            )}, "approval_chain_id": (self.approval_template_id.chain_id or self.approval_chain_id).id,
+            "approval_template_id": self.approval_template_id.id,
         }}
 
     @api.model
@@ -135,6 +138,15 @@ class HrLeavePolicy(models.Model):
             if min(policy.maximum_carry_forward, policy.carry_forward_expiry_value, policy.minimum_tenure_months) < 0:
                 raise ValidationError(_("Policy limits cannot be negative."))
 
+    @api.constrains("approval_required", "approval_workflow", "approval_chain_id", "approval_template_id")
+    def _check_custom_approval_route(self):
+        for policy in self:
+            if not policy.approval_required or policy.approval_workflow != "custom":
+                continue
+            chain = policy.approval_template_id.chain_id or policy.approval_chain_id
+            if not chain or not chain.active or (policy.approval_template_id and not policy.approval_template_id.active):
+                raise ValidationError(_("A custom approval policy requires an active Approval Template or direct Approval Flow."))
+
     def _eligible_employees(self):
         self.ensure_one()
         employees = self.env["hr.employee"].sudo().search([
@@ -187,6 +199,9 @@ class HrLeavePolicy(models.Model):
             "jobs": rows(employees.mapped("job_id").sorted("name")),
             "blackout_periods": rows(self.env["hr.leave.blackout.period"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
             "approval_chains": rows(self.env["cleon.approval.chain"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")),
+            "approval_templates": rows(self.env["hr.leave.approval.template"].sudo().search([
+                ("company_id", "in", self.env.companies.ids), ("active", "=", True),
+            ], order="name")),
         }
 
     def _row(self):
@@ -228,7 +243,7 @@ class HrLeavePolicy(models.Model):
             "selected": {"employee_ids": policy.employee_ids.ids, "department_ids": policy.department_ids.ids, "unit_ids": policy.unit_ids.ids, "grade_ids": policy.grade_ids.ids, "location_ids": policy.location_ids.ids, "employee_type_ids": policy.employee_type_ids.ids, "job_ids": policy.job_ids.ids},
             "minimum_tenure_months": policy.minimum_tenure_months,
             "carry": {"enabled": policy.allow_carry_forward, "maximum": policy.maximum_carry_forward, "expiry_value": policy.carry_forward_expiry_value, "expiry_unit": policy.carry_forward_expiry_unit, "priority": policy.balance_usage_priority},
-            "approval": {"required": policy.approval_required, "workflow": policy.approval_workflow, "chain_id": policy.approval_chain_id.id or False},
+            "approval": {"required": policy.approval_required, "workflow": policy.approval_workflow, "chain_id": policy.approval_chain_id.id or False, "template_id": policy.approval_template_id.id or False},
             "rules": {"multiple": policy.allow_multiple_requests, "withdrawal": policy.allow_withdrawal, "half_day": policy.allow_half_day},
             "lines": [line._payload() for line in policy.line_ids.filtered("active")],
         })
@@ -293,10 +308,16 @@ class HrLeavePolicy(models.Model):
             "balance_usage_priority": carry.get("priority") if carry.get("priority") in ("current", "carried") else "current",
             "approval_required": bool(approval.get("required", True)), "approval_workflow": approval.get("workflow") if approval.get("workflow") in ("default", "custom") else "default",
             "approval_chain_id": int(approval.get("chain_id") or 0) or False,
+            "approval_template_id": int(approval.get("template_id") or 0) or False,
             "allow_multiple_requests": bool(rules.get("multiple", True)), "allow_withdrawal": bool(rules.get("withdrawal", True)), "allow_half_day": bool(rules.get("half_day", True)),
         }
         if not vals["name"]:
             raise ValidationError(_("Policy Name is required."))
+        template = self.env["hr.leave.approval.template"].sudo().browse(vals["approval_template_id"]).exists()
+        if template and (template.company_id != self.env.company or not template.active):
+            raise ValidationError(_("Select an active Approval Template for this company."))
+        if template and template.template_type == "assigned" and policy and policy not in template.policy_ids:
+            raise ValidationError(_("This Approval Template is not assigned to this policy."))
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             vals[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         before = policy._row() if policy else {}
@@ -356,7 +377,9 @@ class HrLeavePolicy(models.Model):
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             values[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         candidate = self.new(values)
-        employees = candidate._eligible_employees()
+        employees = (self.env["hr.employee"].sudo().browse([
+            int(value) for value in selected.get("employee_ids", [])
+        ]).exists() if values["apply_to"] == "selected" else candidate._eligible_employees())
         type_ids = set()
         for line in payload.get("lines", []):
             if line.get("leave_type_id"):
@@ -367,11 +390,11 @@ class HrLeavePolicy(models.Model):
                     ("name", "=ilike", line["new_leave_type_name"].strip()),
                 ]).ids)
         assignments = self.env["hr.leave.policy.assignment"].sudo().search([
-            ("company_id", "=", self.env.company.id), ("superseded", "=", False),
-            ("employee_id", "in", employees.ids), ("leave_type_id", "in", list(type_ids)),
-            ("policy_id", "!=", int(payload.get("id") or 0)), ("policy_id.state", "=", "active"),
-            "|", ("date_to", "=", False), ("date_to", ">=", fields.Date.context_today(self)),
-        ])
+            ("superseded", "=", False), ("employee_id", "in", employees.ids),
+            ("leave_type_id", "in", list(type_ids)), ("policy_id.state", "=", "active"),
+            ("date_from", "<=", fields.Date.context_today(self)), "|",
+            ("date_to", "=", False), ("date_to", ">=", fields.Date.context_today(self)),
+        ]).filtered(lambda item: item.company_id == self.env.company and item.policy_id.id != int(payload.get("id") or 0))
         return [{"id": item.id, "employee": item.employee_id.name, "leave_type": item.leave_type_id.name,
                  "existing_policy": item.policy_id.name, "effective_date": fields.Date.to_string(item.date_from),
                  "entitlement": (item.rule_snapshot or {}).get("line", {}).get("accrual_amount", item.policy_line_id.accrual_amount)} for item in assignments]
@@ -496,8 +519,12 @@ class HrLeavePolicyLine(models.Model):
     allow_backdated = fields.Boolean(default=False)
     allow_half_day = fields.Boolean(default=True)
     allow_overlap = fields.Boolean(default=False)
+    document_policy = fields.Selection([
+        ("not_required", "Not Required"), ("optional", "Optional"), ("required", "Required"),
+    ], default="not_required", required=True)
     document_required_after_days = fields.Float(default=0)
     accepted_document_types = fields.Char(help="Comma-separated accepted document types.")
+    allow_negative_balance = fields.Boolean(default=False)
     blackout_period_ids = fields.Many2many("hr.leave.blackout.period", string="Blackout Periods")
     assignment_ids = fields.One2many("hr.leave.policy.assignment", "policy_line_id")
 
@@ -521,13 +548,75 @@ class HrLeavePolicyLine(models.Model):
             "waiting_period_days": int(value.get("waiting_period_days") or 0), "exclude_public_holidays": bool(value.get("exclude_public_holidays", True)), "exclude_non_working_days": bool(value.get("exclude_non_working_days", True)),
             "minimum_notice_days": int(value.get("minimum_notice_days") or 0), "minimum_duration": float(value.get("minimum_duration") or 0), "maximum_duration": float(value.get("maximum_duration") or 0),
             "allow_backdated": bool(value.get("allow_backdated")), "allow_half_day": bool(value.get("allow_half_day", True)), "allow_overlap": bool(value.get("allow_overlap")),
+            "document_policy": selection("document_policy", ("not_required", "optional", "required"), "not_required"),
             "document_required_after_days": float(value.get("document_required_after_days") or 0), "accepted_document_types": value.get("accepted_document_types") or "",
+            "allow_negative_balance": bool(value.get("allow_negative_balance")),
             "blackout_period_ids": [(6, 0, [int(item) for item in value.get("blackout_period_ids", [])])],
         }
 
     def _payload(self):
         self.ensure_one()
-        return {"id": self.id, "leave_type_id": self.leave_type_id.id, "leave_type": self.leave_type_id.name, "classification": self.leave_type_id.policy_classification, "compensation": self.compensation, "unit": self.unit, "entitlement_type": self.entitlement_type, "accrual_period": self.accrual_period, "accrual_basis": self.accrual_basis, "accrual_amount": self.accrual_amount, "waiting_period_days": self.waiting_period_days, "exclude_public_holidays": self.exclude_public_holidays, "exclude_non_working_days": self.exclude_non_working_days, "minimum_notice_days": self.minimum_notice_days, "minimum_duration": self.minimum_duration, "maximum_duration": self.maximum_duration, "allow_backdated": self.allow_backdated, "allow_half_day": self.allow_half_day, "allow_overlap": self.allow_overlap, "document_required_after_days": self.document_required_after_days, "accepted_document_types": self.accepted_document_types or "", "blackout_period_ids": self.blackout_period_ids.ids}
+        return {"id": self.id, "leave_type_id": self.leave_type_id.id, "leave_type": self.leave_type_id.name, "classification": self.leave_type_id.policy_classification, "compensation": self.compensation, "unit": self.unit, "entitlement_type": self.entitlement_type, "accrual_period": self.accrual_period, "accrual_basis": self.accrual_basis, "accrual_amount": self.accrual_amount, "waiting_period_days": self.waiting_period_days, "exclude_public_holidays": self.exclude_public_holidays, "exclude_non_working_days": self.exclude_non_working_days, "minimum_notice_days": self.minimum_notice_days, "minimum_duration": self.minimum_duration, "maximum_duration": self.maximum_duration, "allow_backdated": self.allow_backdated, "allow_half_day": self.allow_half_day, "allow_overlap": self.allow_overlap, "document_policy": self.document_policy, "document_required_after_days": self.document_required_after_days, "accepted_document_types": self.accepted_document_types or "", "allow_negative_balance": self.allow_negative_balance, "blackout_period_ids": self.blackout_period_ids.ids}
+
+    @api.model
+    def _process_policy_accruals(self, process_date):
+        """Apply the configured Policy-Line amount once per configured period."""
+        process_date = fields.Date.to_date(process_date)
+        Run = self.env["hr.leave.accrual.run"].sudo()
+        Balance = self.env["hr.leave.balance.transaction"].sudo()
+        processed = 0
+        assignments = self.env["hr.leave.policy.assignment"].sudo().search([
+            ("superseded", "=", False), ("policy_id.state", "=", "active"),
+            ("policy_line_id.active", "=", True), ("date_from", "<=", process_date),
+            "|", ("date_to", "=", False), ("date_to", ">=", process_date),
+        ])
+        for assignment in assignments:
+            line = assignment.policy_line_id
+            hire_date = assignment.employee_id.first_contract_date
+            if line.waiting_period_days and (not hire_date or (process_date - hire_date).days < line.waiting_period_days):
+                continue
+            if line.accrual_period == "monthly":
+                period_key, effective = "policy:%s:month:%s" % (assignment.id, process_date.strftime("%Y-%m")), process_date.replace(day=1)
+            elif line.accrual_period == "weekly":
+                year, week, _day = process_date.isocalendar()
+                period_key, effective = "policy:%s:week:%s-%02d" % (assignment.id, year, week), process_date - timedelta(days=process_date.weekday())
+            else:
+                if line.accrual_basis in ("join_date", "anniversary"):
+                    if not hire_date or (hire_date.month, hire_date.day) != (process_date.month, process_date.day):
+                        continue
+                    effective = process_date
+                else:
+                    effective = process_date.replace(month=1, day=1)
+                period_key = "policy:%s:year:%s" % (assignment.id, process_date.year)
+            if Run.search_count([("employee_id", "=", assignment.employee_id.id), ("leave_type_id", "=", line.leave_type_id.id), ("period_key", "=", period_key)]):
+                continue
+            amount = round(line.accrual_amount, 2)
+            expiry = effective + relativedelta(years=1, days=-1)
+            allocation = self.env["hr.leave.allocation"].sudo().with_context(
+                tracking_disable=True, mail_create_nosubscribe=True, mail_notify_force_send=False,
+            ).create({
+                "private_name": _("Policy accrual: %s") % assignment.policy_id.name,
+                "holiday_type": "employee", "employee_id": assignment.employee_id.id,
+                "holiday_status_id": line.leave_type_id.id, "number_of_days": amount,
+                "date_from": effective, "date_to": expiry,
+            })
+            if allocation.state != "validate":
+                allocation.action_validate()
+            Run.create({"employee_id": assignment.employee_id.id, "leave_type_id": line.leave_type_id.id,
+                        "period_key": period_key, "effective_date": effective, "amount": amount,
+                        "allocation_id": allocation.id, "reason": _("Policy accrual: %s") % assignment.policy_id.name})
+            Balance._record_transaction({"employee_id": assignment.employee_id.id, "leave_type_id": line.leave_type_id.id,
+                "transaction_type": "accrual", "effective_date": effective, "delta": amount,
+                "balance_after": Balance._current_balance(assignment.employee_id.id, line.leave_type_id.id),
+                "allocation_id": allocation.id, "reason": _("Policy accrual: %s") % assignment.policy_id.name,
+                "expiry_date": expiry})
+            self.env["hr.leave.audit.log"].sudo().create({"action": "accrual_processed", "module_area": "accrual",
+                "entity_type": "policy", "entity_name": assignment.policy_id.name, "employee_id": assignment.employee_id.id,
+                "leave_type_id": line.leave_type_id.id, "actor_id": self.env.user.id,
+                "actor_label": self.env.user.name, "is_system": not bool(self.env.user),
+                "note": _("Applied %.2f from Policy-Line %s for %s.") % (amount, line.id, period_key)})
+            processed += 1
+        return processed
 
 
 class HrLeavePolicyAssignment(models.Model):

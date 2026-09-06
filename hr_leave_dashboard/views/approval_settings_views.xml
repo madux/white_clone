@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_cleon_approval_chain_leave_settings_form" model="ir.ui.view">
+    <field name="name">cleon.approval.chain.leave.settings.form</field>
+    <field name="model">cleon.approval.chain</field>
+    <field name="inherit_id" ref="cleon_approval.view_cleon_approval_chain_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//div[@class='oe_title']" position="after">
+        <group><field name="description" placeholder="Describe when this workflow is used..."/></group>
+      </xpath>
+      <xpath expr="//notebook" position="before">
+        <group string="Leave Approval Settings">
+          <group><field name="applies_to"/><field name="department_ids" widget="many2many_tags" invisible="applies_to != 'departments'"/><field name="employee_ids" widget="many2many_tags" invisible="applies_to != 'employees'"/></group>
+          <group><field name="backup_approver_ids" widget="many2many_tags"/><field name="escalation_days"/><field name="auto_approve_days"/></group>
+        </group>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="view_hr_leave_approval_template_list" model="ir.ui.view">
+    <field name="name">hr.leave.approval.template.list</field>
+    <field name="model">hr.leave.approval.template</field>
+    <field name="arch" type="xml">
+      <tree decoration-muted="not active">
+        <field name="name"/><field name="template_type"/><field name="level_count"/>
+        <field name="policy_ids" widget="many2many_tags"/><field name="chain_id"/><field name="active"/>
+      </tree>
+    </field>
+  </record>
+  <record id="view_hr_leave_approval_template_form" model="ir.ui.view">
+    <field name="name">hr.leave.approval.template.form</field>
+    <field name="model">hr.leave.approval.template</field>
+    <field name="arch" type="xml">
+      <form string="Approval Template">
+        <sheet>
+          <widget name="web_ribbon" title="Inactive" bg_color="text-bg-danger" invisible="active"/>
+          <div class="oe_title"><label for="name"/><h1><field name="name" placeholder="e.g. Standard Annual Leave Approval"/></h1></div>
+          <group>
+            <group string="Template Details"><field name="company_id" invisible="1"/><field name="template_type"/><field name="active"/><field name="description" placeholder="Describe when this blueprint should be used..."/></group>
+            <group string="Approval Flow"><field name="chain_id" domain="[('company_id', '=', company_id), ('active', '=', True)]"/><field name="level_count"/><field name="policy_ids" widget="many2many_tags" invisible="template_type != 'assigned'"/></group>
+          </group>
+          <notebook><page string="Approval Levels"><field name="chain_id" readonly="1"/><div class="text-muted">Approval levels, approvers, backups and timers are edited on the linked Approval Flow.</div></page></notebook>
+        </sheet>
+      </form>
+    </field>
+  </record>
+  <record id="action_hr_leave_approval_templates" model="ir.actions.act_window">
+    <field name="name">Approval Templates</field><field name="res_model">hr.leave.approval.template</field>
+    <field name="view_mode">list,form</field>
+  </record>
+</odoo>

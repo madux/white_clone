@@ -8,7 +8,7 @@ export class EmployeeRequestModal extends Component {
     static props = { close: Function, submitted: { type: Function, optional: true }, initial: { type: Object, optional: true }, existingRequestId: { type: Number, optional: true } };
     setup() {
         this.orm = useService("orm"); this.notification = useService("notification");
-        this.state = useState({ loading: true, submitting: false, step: 1, types: [], balances: [], backupColleagues: [], form: { leave_type_id: "", date_from: "", date_to: "", half_day: false, period: "am", reason: "", handover_enabled: false, backup_colleague_ids: [], emergency_contact: "", handover_notes: "", attachment: null, submission_channel: "form" }, preview: null, error: "" });
+        this.state = useState({ loading: true, submitting: false, step: 1, types: [], balances: [], backupColleagues: [], form: { leave_type_id: "", date_from: "", date_to: "", half_day: false, period: "am", reason: "", blackout_exception_requested: false, handover_enabled: false, backup_colleague_ids: [], emergency_contact: "", handover_notes: "", attachment: null, submission_channel: "form" }, preview: null, error: "" });
         onWillStart(async () => { const data = await this.orm.call("hr.leave", "get_employee_request_options", []); this.state.types = data.leave_types || []; this.state.balances = data.leave_types || []; this.state.backupColleagues = data.backup_colleagues || []; if (this.props.initial) Object.assign(this.state.form, this.props.initial); this.state.loading = false; if (this.props.initial) await this.preview(); });
     }
     get selectedType() { return this.state.types.find(item => item.id === Number(this.state.form.leave_type_id)); }
