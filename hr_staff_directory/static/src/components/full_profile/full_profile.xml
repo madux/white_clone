@@ -162,6 +162,111 @@
                                     </div>
                                 </div>
 
+                                <!-- Skills & Expertise Card -->
+                                <div class="sdir-fp-card">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg></div>
+                                            <h3 class="sdir-fp-card-title">Skills &amp; Expertise</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-skills-container">
+                                        <span class="sdir-fp-badge-pink">Strategy</span>
+                                        <span class="sdir-fp-badge-purple">Leadership</span>
+                                        <span class="sdir-fp-badge-blue">Governance</span>
+                                    </div>
+                                </div>
+
+                                <!-- Languages Card -->
+                                <div class="sdir-fp-card">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon green"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg></div>
+                                            <h3 class="sdir-fp-card-title">Languages</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-lang-container">
+                                        <div class="sdir-fp-lang-item">
+                                            <span class="sdir-fp-lang-name"></span>
+                                            <span class="sdir-fp-lang-level">—</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Certifications Card -->
+                                <div class="sdir-fp-card">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon amber"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg></div>
+                                            <h3 class="sdir-fp-card-title">Certifications</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-list-container">
+                                        <div class="sdir-fp-list-item">
+                                            <div class="sdir-fp-cert-icon-box">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+                                            </div>
+                                            <div class="sdir-fp-list-info">
+                                                <p class="sdir-fp-list-title">Google Cloud Professional</p>
+                                                <p class="sdir-fp-list-subtitle">Google Cloud</p>
+                                            </div>
+                                            <span class="sdir-fp-cert-year">2022</span>
+                                        </div>
+                                        <div class="sdir-fp-list-item">
+                                            <div class="sdir-fp-cert-icon-box">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+                                            </div>
+                                            <div class="sdir-fp-list-info">
+                                                <p class="sdir-fp-list-title">SHRM Certified Professional</p>
+                                                <p class="sdir-fp-list-subtitle">SHRM</p>
+                                            </div>
+                                            <span class="sdir-fp-cert-year">2021</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Current Projects Card -->
+                                <div class="sdir-fp-card">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon blue"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path></svg></div>
+                                            <h3 class="sdir-fp-card-title">Current Projects</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-list-container">
+                                        <div class="sdir-fp-list-item clickable">
+                                            <div class="sdir-fp-project-icon-box">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
+                                            </div>
+                                            <div class="sdir-fp-list-info">
+                                                <p class="sdir-fp-list-title">Platform Migration v3</p>
+                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
+                                            </div>
+                                            <span class="sdir-fp-project-status active">Active</span>
+                                        </div>
+                                        <div class="sdir-fp-list-item clickable">
+                                            <div class="sdir-fp-project-icon-box">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
+                                            </div>
+                                            <div class="sdir-fp-list-info">
+                                                <p class="sdir-fp-list-title">API Gateway Redesign</p>
+                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
+                                            </div>
+                                            <span class="sdir-fp-project-status review">In Review</span>
+                                        </div>
+                                        <div class="sdir-fp-list-item clickable">
+                                            <div class="sdir-fp-project-icon-box">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
+                                            </div>
+                                            <div class="sdir-fp-list-info">
+                                                <p class="sdir-fp-list-title">CI/CD Pipeline Overhaul</p>
+                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
+                                            </div>
+                                            <span class="sdir-fp-project-status active">Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="sdir-fp-card" t-if="props.activeProfile.manager_name">
                                     <div class="sdir-fp-card-header">
                                         <div class="sdir-fp-card-title-group">
