@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
+from unittest.mock import patch
 
 
 class TestCleonAiArchitecture(TransactionCase):
@@ -59,3 +60,24 @@ class TestCleonAiArchitecture(TransactionCase):
         """Attempting to execute tools without an explicit published screen context fails."""
         with self.assertRaises(ValidationError):
             self.gateway.execute_tool("leave.calendar.summarize", screen_context=None)
+
+    def test_09_openai_provider_dispatches_to_compatible_adapter(self):
+        """OpenAI must not fall through to the unsupported-provider response."""
+        params = self.env["ir.config_parameter"].sudo()
+        previous = {
+            key: params.get_param(key, default=False)
+            for key in ("cleon_ai.provider", "cleon_ai.live_calls_enabled", "cleon_ai.openai_api_key")
+        }
+        try:
+            params.set_param("cleon_ai.provider", "openai")
+            params.set_param("cleon_ai.live_calls_enabled", "True")
+            params.set_param("cleon_ai.openai_api_key", "test-key")
+            with patch.object(type(self.gateway), "_call_openai_compatible", return_value="OpenAI response") as adapter:
+                result = self.gateway.ask_assistant("Hello")
+            self.assertTrue(result["answered"])
+            self.assertEqual(result["message"], "OpenAI response")
+            adapter.assert_called_once()
+            self.assertEqual(adapter.call_args.kwargs["provider"], "openai")
+        finally:
+            for key, value in previous.items():
+                params.set_param(key, value or "")

@@ -33,7 +33,7 @@
               </div>
               <div t-if="state.showNlSummary and state.nlSummary" class="o_er_ai_summary">
                 <div class="d-flex align-items-center flex-grow-1">
-                  <i class="fa fa-check-circle text-success me-2"/> <t t-esc="state.nlSummary"/>
+                  <i t-att-class="(state.nlError ? 'fa fa-exclamation-circle text-warning' : 'fa fa-check-circle text-success') + ' me-2'"/> <t t-esc="state.nlSummary"/>
                 </div>
                 <button type="button" class="o_er_ai_clear_btn" t-on-click="clearNl" title="Clear AI Suggestions">
                   <i class="fa fa-times"/>
@@ -48,7 +48,7 @@
                 <i class="fa fa-calendar-check-o me-1"/> Suggest Best Dates
               </button>
             </div>
-            <label>Leave Type <em>*</em> <span t-if="state.aiAssistedFields.includes('leave_type_id')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><select t-model="state.form.leave_type_id" t-on-change="onTypeChange"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id"><t t-esc="item.name"/> — <t t-esc="item.unlimited ? 'Unlimited' : item.available + ' days available'"/></option></select></label>
+            <label>Leave Type <em>*</em> <span t-if="state.aiAssistedFields.includes('leave_type_id')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><select t-model.number="state.form.leave_type_id" t-on-change="onTypeChange"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id"><t t-esc="item.name"/> — <t t-esc="item.unlimited ? 'Unlimited' : item.available + ' days available'"/></option></select></label>
             <div class="o_er_dates"><label>Start Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_from')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_from" t-att-min="today" t-on-change="onStartChange"/></label><label>End Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_to')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_to" t-att-min="state.form.date_from || today" t-on-change="preview"/></label></div>
             <div class="o_er_half"><label><input type="checkbox" t-model="state.form.half_day" t-on-change="preview" t-att-disabled="selectedType and !selectedType.allow_half_day"/> Half-Day Leave</label><div t-if="state.form.half_day"><label><input type="radio" value="am" t-model="state.form.period" t-on-change="preview"/> Morning</label><label><input type="radio" value="pm" t-model="state.form.period" t-on-change="preview"/> Afternoon</label></div></div>
             <div t-if="state.preview" class="o_er_preview"><div><span>Duration</span><b><t t-esc="state.preview.duration"/> working day(s)</b></div><div><span>Current Balance</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.current_balance + ' days'"/></div><div><span>After Request</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.projected_balance + ' days'"/></div><p t-if="state.preview.holiday_count"><i class="fa fa-calendar"/> <t t-esc="state.preview.holiday_count"/> public holiday(s) excluded.</p></div>

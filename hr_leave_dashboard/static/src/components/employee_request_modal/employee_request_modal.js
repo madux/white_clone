@@ -27,7 +27,7 @@ export class EmployeeRequestModal extends Component {
             aiAssistedFields: [],
             showDateRecModal: false,
             form: {
-                leave_type_id: "",
+                leave_type_id: false,
                 date_from: "",
                 date_to: "",
                 half_day: false,
@@ -103,7 +103,16 @@ export class EmployeeRequestModal extends Component {
                 this.state.nlError = res.clarification_needed;
             }
             if (res.leave_type_id) {
-                this.state.form.leave_type_id = String(res.leave_type_id);
+                const suggestedId = Number(res.leave_type_id);
+                const available = this.state.types.find((item) => Number(item.id) === suggestedId);
+                if (available) this.state.form.leave_type_id = Number(available.id);
+            }
+            // Name fallback keeps the form usable if a provider returned a
+            // valid Odoo type name but serialized the ID unexpectedly.
+            if (!this.state.form.leave_type_id && res.leave_type_name) {
+                const normalized = String(res.leave_type_name).trim().toLowerCase();
+                const available = this.state.types.find((item) => String(item.name).trim().toLowerCase() === normalized);
+                if (available) this.state.form.leave_type_id = Number(available.id);
             }
             if (res.date_from) {
                 this.state.form.date_from = res.date_from;
@@ -152,7 +161,7 @@ export class EmployeeRequestModal extends Component {
         this.state.form.date_from = item.date_from;
         this.state.form.date_to = item.date_to;
         if (item.leave_type_id) {
-            this.state.form.leave_type_id = String(item.leave_type_id);
+            this.state.form.leave_type_id = Number(item.leave_type_id);
         }
         this.state.aiAssistedFields = [...new Set([...this.state.aiAssistedFields, "date_from", "date_to"])];
         this.state.form.submission_channel = "ai_assisted";

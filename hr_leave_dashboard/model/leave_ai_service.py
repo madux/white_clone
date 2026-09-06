@@ -542,6 +542,52 @@ class LeaveAiService(models.AbstractModel):
         return {"ok": True}
 
     @api.model
+    def _provider_parse_nl_request(self, text, available_types, today):
+        """Extract structured leave fields with the configured provider.
+
+        Responses are validated against real Odoo leave types and dates. Any
+        provider or parsing failure returns ``None`` for deterministic fallback.
+        """
+        import json
+        import re
+        gateway = self.env["cleon.ai.gateway"]
+        state = gateway._provider_state()
+        if not state.get("configured") or not state.get("live_calls_enabled"):
+            return None
+        catalog = [{"id": item.id, "name": item.name} for item in available_types]
+        prompt = _(
+            "Extract a leave request into JSON only. Today is %(today)s. Choose leave_type_id only from this Odoo catalog: %(catalog)s. "
+            "Understand synonyms such as a checkup or medical appointment suggesting sick leave, but never invent a type. "
+            "Return exactly: leave_type_id (integer or null), date_from (YYYY-MM-DD or null), date_to (YYYY-MM-DD or null), "
+            "duration_days (number or null), half_day (boolean), period (am or pm), reason (string). Leave uncertain values null.\n\nRequest: %(text)s",
+            today=fields.Date.to_string(today), catalog=json.dumps(catalog), text=text,
+        )
+        try:
+            raw = gateway.complete_text(prompt).strip()
+            raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.IGNORECASE)
+            data = json.loads(raw)
+            if not isinstance(data, dict):
+                return None
+            valid_ids = {item.id for item in available_types}
+            leave_type_id = int(data["leave_type_id"]) if data.get("leave_type_id") else False
+            if leave_type_id and leave_type_id not in valid_ids:
+                leave_type_id = False
+            date_from, date_to = data.get("date_from") or False, data.get("date_to") or False
+            for value in (date_from, date_to):
+                if value and (not re.match(r"^\d{4}-\d{2}-\d{2}$", str(value)) or not fields.Date.to_date(value)):
+                    return None
+            if date_from and date_to and fields.Date.to_date(date_to) < fields.Date.to_date(date_from):
+                return None
+            duration = data.get("duration_days")
+            return {"leave_type_id": leave_type_id, "date_from": date_from, "date_to": date_to,
+                    "duration_days": float(duration) if duration not in (None, "") else False,
+                    "half_day": bool(data.get("half_day")),
+                    "period": data.get("period") if data.get("period") in ("am", "pm") else "am",
+                    "reason": str(data.get("reason") or "")[:500]}
+        except (AccessError, ValidationError, TypeError, ValueError, KeyError, json.JSONDecodeError):
+            return None
+
+    @api.model
     def parse_nl_leave_request(self, text):
         """Parse natural-language leave description into structured fields (LM-039)."""
         if not self.env["hr.leave"].is_ai_capability_enabled("nl_request"):
@@ -552,7 +598,7 @@ class LeaveAiService(models.AbstractModel):
             return {"ok": False, "error": _("Please describe the leave you need.")}
 
         import re
-        from datetime import timedelta
+        from datetime import date, timedelta
         today = fields.Date.context_today(self)
 
         result = {
@@ -576,24 +622,35 @@ class LeaveAiService(models.AbstractModel):
 
         # 1. Leave Type matching against hr.leave.type
         employee = self.env["hr.leave"]._employee_for_current_user(required=False)
-        type_domain = [("active", "=", True)]
+        type_domain = [("active", "=", True), ("visible_to_employees", "=", True)]
         if employee:
             type_domain += ["|", ("company_id", "=", False), ("company_id", "=", employee.company_id.id)]
         else:
             type_domain += ["|", ("company_id", "=", False), ("company_id", "=", self.env.company.id)]
         available_types = self.env["hr.leave.type"].sudo().search(type_domain, order="sequence")
+        if employee:
+            available_types = available_types.filtered(lambda leave_type: employee in leave_type._get_eligible_employees())
+        provider_data = self._provider_parse_nl_request(text, available_types, today)
+        if provider_data:
+            result["half_day"] = provider_data.get("half_day", False)
+            result["period"] = provider_data.get("period", "am")
+            if result["half_day"]:
+                result["suggested_fields"].extend(["half_day", "period"])
 
         matched_type = None
+        if provider_data and provider_data.get("leave_type_id"):
+            matched_type = available_types.filtered(lambda item: item.id == provider_data["leave_type_id"])
+            matched_type = matched_type[:1] if matched_type else None
         for lt in available_types:
             lt_name = lt.name.lower()
-            if lt_name in lower:
+            if not provider_data and lt_name in lower:
                 matched_type = lt
                 break
 
-        if not matched_type:
+        if not matched_type and not provider_data:
             synonyms = {
                 ("annual", "vacation", "holiday", "time off", "pto"): "annual",
-                ("sick", "ill", "doctor", "medical", "hospital", "unwell", "flu", "health"): "sick",
+                ("sick", "ill", "doctor", "medical", "hospital", "unwell", "flu", "health", "checkup", "check-up", "medical appointment"): "sick",
                 ("casual", "personal"): "casual",
                 ("unpaid", "without pay", "lwop"): "unpaid",
                 ("maternity", "paternity", "parental"): "maternity",
@@ -618,16 +675,16 @@ class LeaveAiService(models.AbstractModel):
             "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
             "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
         }
-        duration = False
+        duration = provider_data.get("duration_days") if provider_data else False
         m_num_days = re.search(r'(\d+)\s*(?:working\s*)?days?', lower)
         if m_num_days:
             duration = int(m_num_days.group(1))
-        if not duration:
+        if not provider_data and not duration:
             m_word_days = re.search(r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:working\s*)?days?\b', lower)
             if m_word_days:
                 duration = word_numbers.get(m_word_days.group(1))
 
-        if not duration:
+        if not provider_data and not duration:
             m_weeks = re.search(r'(\d+)\s*weeks?', lower)
             if m_weeks:
                 duration = int(m_weeks.group(1)) * 5
@@ -636,7 +693,7 @@ class LeaveAiService(models.AbstractModel):
             elif re.search(r'\btwo\s*weeks\b', lower):
                 duration = 10
 
-        if not duration and ("half day" in lower or "half-day" in lower):
+        if not provider_data and not duration and ("half day" in lower or "half-day" in lower):
             duration = 0.5
             result["half_day"] = True
             result["suggested_fields"].append("half_day")
@@ -653,18 +710,49 @@ class LeaveAiService(models.AbstractModel):
         # 3. Date extraction
         iso_dates = re.findall(r'\b\d{4}-\d{2}-\d{2}\b', text)
         slash_dates = re.findall(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{4}\b', text)
-        month_names = "jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december"
+        month_names = "jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|january|february|march|april|may|june|july|august|september|october|november|december"
         text_dates = re.findall(rf'\b(\d{{1,2}})(?:st|nd|rd|th)?\s+({month_names})(?:\s*(\d{{4}}))?\b', lower)
         text_dates_rev = re.findall(rf'\b({month_names})\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{{4}}))?\b', lower)
 
-        date_from = False
-        date_to = False
+        month_numbers = {
+            "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
+            "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6, "jul": 7,
+            "july": 7, "aug": 8, "august": 8, "sep": 9, "sept": 9,
+            "september": 9, "oct": 10, "october": 10, "nov": 11,
+            "november": 11, "dec": 12, "december": 12,
+        }
 
-        if iso_dates:
+        def parse_named_date(day, month, year=None, fallback_year=None):
+            parsed = date(int(year or fallback_year or today.year), month_numbers[month], int(day))
+            if not year and parsed < today:
+                parsed = parsed.replace(year=today.year + 1)
+            return parsed
+
+        date_from = provider_data.get("date_from") if provider_data else False
+        date_to = provider_data.get("date_to") if provider_data else False
+
+        # Parse an explicit range first, including ranges where the month is
+        # repeated or abbreviated: "between 7th September to 9th Sept".
+        named_range = re.search(
+            rf'\b(?:from|between)\s+(\d{{1,2}})(?:st|nd|rd|th)?\s+({month_names})'
+            rf'(?:\s*(\d{{4}}))?\s+(?:to|through|until)\s+'
+            rf'(\d{{1,2}})(?:st|nd|rd|th)?(?:\s+({month_names}))?(?:\s*(\d{{4}}))?\b',
+            lower,
+        )
+        if named_range:
+            try:
+                start = parse_named_date(named_range.group(1), named_range.group(2), named_range.group(3))
+                end = parse_named_date(named_range.group(4), named_range.group(5) or named_range.group(2), named_range.group(6), start.year)
+                date_from = fields.Date.to_string(start)
+                date_to = fields.Date.to_string(end)
+            except (KeyError, TypeError, ValueError):
+                date_from = date_to = False
+
+        if not date_from and iso_dates:
             date_from = iso_dates[0]
             if len(iso_dates) > 1:
                 date_to = iso_dates[1]
-        elif slash_dates:
+        elif not date_from and slash_dates:
             try:
                 p = re.split(r'[/-]', slash_dates[0])
                 date_from = f"{p[2]}-{p[1].zfill(2)}-{p[0].zfill(2)}"
@@ -673,38 +761,43 @@ class LeaveAiService(models.AbstractModel):
                     date_to = f"{p2[2]}-{p2[1].zfill(2)}-{p2[0].zfill(2)}"
             except Exception:
                 pass
-        elif text_dates:
-            from dateutil import parser as dt_parser
+        elif not date_from and text_dates:
             try:
-                m_str = f"{text_dates[0][0]} {text_dates[0][1]} {text_dates[0][2] or today.year}"
-                dt = dt_parser.parse(m_str).date()
-                if dt < today and not text_dates[0][2]:
-                    dt = dt.replace(year=today.year + 1)
+                dt = parse_named_date(text_dates[0][0], text_dates[0][1], text_dates[0][2])
                 date_from = fields.Date.to_string(dt)
                 if len(text_dates) > 1:
-                    m2_str = f"{text_dates[1][0]} {text_dates[1][1]} {text_dates[1][2] or dt.year}"
-                    dt2 = dt_parser.parse(m2_str).date()
+                    dt2 = parse_named_date(text_dates[1][0], text_dates[1][1], text_dates[1][2], dt.year)
                     date_to = fields.Date.to_string(dt2)
             except Exception:
                 pass
-        elif text_dates_rev:
-            from dateutil import parser as dt_parser
+        elif not date_from and text_dates_rev:
             try:
-                m_str = f"{text_dates_rev[0][1]} {text_dates_rev[0][0]} {text_dates_rev[0][2] or today.year}"
-                dt = dt_parser.parse(m_str).date()
-                if dt < today and not text_dates_rev[0][2]:
-                    dt = dt.replace(year=today.year + 1)
+                dt = parse_named_date(text_dates_rev[0][1], text_dates_rev[0][0], text_dates_rev[0][2])
                 date_from = fields.Date.to_string(dt)
                 if len(text_dates_rev) > 1:
-                    m2_str = f"{text_dates_rev[1][1]} {text_dates_rev[1][0]} {text_dates_rev[1][2] or dt.year}"
-                    dt2 = dt_parser.parse(m2_str).date()
+                    dt2 = parse_named_date(text_dates_rev[1][1], text_dates_rev[1][0], text_dates_rev[1][2], dt.year)
                     date_to = fields.Date.to_string(dt2)
             except Exception:
                 pass
 
+        # Natural date ranges often name the month only once (for example,
+        # "from 7th Sep to 9th"). Infer the second date from the first date's
+        # month instead of leaving the end date blank.
+        if date_from and not date_to and text_dates:
+            range_end = re.search(r'\b(?:to|through|until)\s+(\d{1,2})(?:st|nd|rd|th)?\b', lower)
+            if range_end:
+                try:
+                    start_dt = fields.Date.to_date(date_from)
+                    end_dt = start_dt.replace(day=int(range_end.group(1)))
+                    if end_dt < start_dt:
+                        end_dt = end_dt.replace(year=end_dt.year + 1)
+                    date_to = fields.Date.to_string(end_dt)
+                except (TypeError, ValueError):
+                    pass
+
         # Relative dates
         weekday_map = {"monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6}
-        if not date_from:
+        if not provider_data and not date_from:
             if "day after tomorrow" in lower:
                 date_from = fields.Date.to_string(today + timedelta(days=2))
             elif "tomorrow" in lower:
@@ -757,12 +850,23 @@ class LeaveAiService(models.AbstractModel):
             result["date_to"] = date_to
             result["suggested_fields"].append("date_to")
 
+        if date_from and date_to and not duration:
+            try:
+                duration = (fields.Date.to_date(date_to) - fields.Date.to_date(date_from)).days + 1
+                result["duration_days"] = duration
+                result["suggested_fields"].append("duration_days")
+            except (TypeError, ValueError):
+                pass
+
         # 4. Reason extraction
-        reason = text
-        m_for = re.search(r'\bfor\s+([^,\.]+)', text, re.IGNORECASE)
+        reason = (provider_data.get("reason") if provider_data else "") or text
+        for_matches = list(re.finditer(r'\bfor\s+([^,\.]+)', text, re.IGNORECASE))
+        m_for = for_matches[-1] if for_matches else None
         m_because = re.search(r'\bbecause\s+of\s+([^,\.]+)', text, re.IGNORECASE)
         m_to = re.search(r'\bto\s+attend\s+([^,\.]+)', text, re.IGNORECASE)
-        if m_for:
+        if provider_data and provider_data.get("reason"):
+            pass
+        elif m_for:
             reason = m_for.group(1).strip()
         elif m_because:
             reason = m_because.group(1).strip()
@@ -774,7 +878,10 @@ class LeaveAiService(models.AbstractModel):
             result["suggested_fields"].append("reason")
 
         # 5. Clarification check (AC7)
-        if not date_from and not duration:
+        if not matched_type:
+            result["clarification_needed"] = _("Which leave type should I use (for example, Annual or Sick Leave)?")
+            result["ambiguous"] = True
+        elif not date_from and not duration:
             result["clarification_needed"] = _("Could you specify when you need the leave and for how long?")
             result["ambiguous"] = True
 

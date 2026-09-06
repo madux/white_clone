@@ -162,6 +162,25 @@ class CleonAiGateway(models.AbstractModel):
         return text
 
     @api.model
+    def complete_text(self, prompt):
+        """Return provider text for server-side structured extraction tasks.
+
+        This deliberately does not create a chat interaction: callers must
+        record only the user-facing interaction they actually perform.
+        """
+        provider = self._provider_state()
+        if not provider["configured"] or not provider["live_calls_enabled"]:
+            raise ValidationError(_("No live AI provider is enabled."))
+        name = provider["provider"]
+        if name == "gemini":
+            return self._call_gemini(prompt)
+        if name == "ollama":
+            return self._call_ollama(prompt)
+        if name in ("openai", "local"):
+            return self._call_openai_compatible(prompt, provider=name)
+        raise ValidationError(_("No adapter is available for the selected AI provider."))
+
+    @api.model
     def _get_screen_ai_context(self, screen, screen_context):
         """Extension hook for business modules to provide assistant context.
         Returns dict of assistant state if screen is recognized, or None.
@@ -243,7 +262,7 @@ class CleonAiGateway(models.AbstractModel):
                 result = {"answered": True, "message": self._call_gemini(question, screen_context), "provider": provider}
             elif provider.get("provider") == "ollama":
                 result = {"answered": True, "message": self._call_ollama(question, screen_context), "provider": provider}
-            elif provider.get("provider") == "local":
+            elif provider.get("provider") in ("openai", "local"):
                 result = {"answered": True, "message": self._call_openai_compatible(question, screen_context, provider=provider["provider"]), "provider": provider}
             else:
                 result = {

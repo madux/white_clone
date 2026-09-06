@@ -167,6 +167,14 @@ class TestLeaveAiCapabilities(TransactionCase):
         self.assertTrue(res_ambiguous["ambiguous"])
         self.assertIsNotNone(res_ambiguous["clarification_needed"])
 
+        # A month named once in a date range still supplies both dates, while
+        # an omitted leave type is surfaced as a clarification.
+        res_range = ai_service.parse_nl_leave_request("I need leave from 7th Sep to 9th to go for checkup")
+        self.assertEqual(res_range["date_from"], "%s-09-07" % fields.Date.today().year)
+        self.assertEqual(res_range["date_to"], "%s-09-09" % fields.Date.today().year)
+        self.assertEqual(res_range["leave_type_name"], self.leave_type_sick.name)
+        self.assertFalse(res_range["clarification_needed"])
+
         # 4. Gating check: if nl_request disabled, AccessError raised
         self.company.write({"leave_ai_nl_request_enabled": False})
         with self.assertRaises(AccessError):

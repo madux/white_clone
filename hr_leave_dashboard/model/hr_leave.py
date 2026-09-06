@@ -145,6 +145,17 @@ class HrLeave(models.Model):
         workflow_type_id = policy.get("approval_workflow_type_id")
         policy["approval_workflow_type_id"] = self.env["cleon.approval.workflow.type"].sudo().browse(workflow_type_id) if workflow_type_id else self.env["cleon.approval.workflow.type"]
         line = dict(snapshot["line"])
+        # Older policy snapshots may predate newer line fields. Normalize
+        # them before exposing the immutable snapshot as an attribute object
+        # so request submission remains backward-compatible.
+        line.setdefault("minimum_notice_days", 0)
+        line.setdefault("minimum_duration", 0.0)
+        line.setdefault("maximum_duration", 0.0)
+        line.setdefault("allow_backdated", False)
+        line.setdefault("allow_half_day", True)
+        line.setdefault("document_policy", "not_required")
+        line.setdefault("document_required_after_days", 0.0)
+        line.setdefault("accepted_document_types", "")
         line["blackout_period_ids"] = self.env["hr.leave.blackout.period"].sudo().browse(line["blackout_period_ids"])
         line["policy_id"] = SimpleNamespace(**policy)
         return SimpleNamespace(**line)
