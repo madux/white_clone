@@ -172,7 +172,7 @@
                                             </div>
                                             <div>
                                                 <p class="sdir-fp-reporting-name"><t t-esc="props.activeProfile.manager_name"/></p>
-                                                <p class="sdir-fp-reporting-job">Manager</p>
+                                                <p class="sdir-fp-reporting-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || 'Manager'"/></p>
                                                 <span class="sdir-fp-reporting-badge">Manager</span>
                                             </div>
                                         </div>
