@@ -11,6 +11,7 @@ import { StaffDirectoryBarChart } from "./../components/bar_chart/bar_chart";
 import { StaffDirectoryOrgChart } from "./../components/org_chart/org_chart";
 import { StaffDirectoryGeographicMap } from "./../components/geographic_map/geographic_map";
 import { StaffDirectoryRelationshipGraph } from "./../components/relationship_graph/relationship_graph";
+import { StaffDirectoryFullProfile } from "./../components/full_profile/full_profile";
 import { StaffDirectoryOrgAnalysis } from "./../components/org_analysis/org_analysis";
 
 // ─── Real-Time Sync: Singleton Subscription ───────────────────────────────────
@@ -35,7 +36,7 @@ let activeSdirHandler = null;
 export class StaffDirectoryDashboard extends Component {
     static template = "hr_staff_directory.StaffDirectoryDashboard";
     static props = ["*"];
-    static components = { StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis };
+    static components = { StaffDirectoryFullProfile, StaffDirectoryProfilePanel, StaffDirectoryPeopleList, StaffDirectoryHeatmap, StaffDirectoryBarChart, StaffDirectoryOrgChart, StaffDirectoryGeographicMap, StaffDirectoryRelationshipGraph, StaffDirectoryOrgAnalysis };
 
     setup() {
         this.rpc = useService("rpc");
@@ -183,6 +184,7 @@ export class StaffDirectoryDashboard extends Component {
                 reporting_depth: true
             },
             showProfileModal: false,
+            showFullProfile: false,
             activeProfile: null,
             messageBox: {
                 isVisible: false,
@@ -1037,6 +1039,15 @@ export class StaffDirectoryDashboard extends Component {
             }
             localStorage.setItem('sdir_recent_profiles', JSON.stringify(this.state.recentlyViewedProfiles));
         }
+    }
+
+    openFullProfile(profile) {
+        this.state.activeProfile = profile;
+        this.state.showFullProfile = true;
+    }
+
+    closeFullProfile() {
+        this.state.showFullProfile = false;
     }
 
     closeProfile() {

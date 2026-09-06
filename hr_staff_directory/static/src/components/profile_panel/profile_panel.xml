@@ -105,7 +105,7 @@
                         </div>
                         
                         <div class="sdir-prof-sidebar-footer">
-                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta">
+                            <button type="button" class="sdir-prof-btn-solid sdir-prof-btn-magenta" t-on-click="() => props.openFullProfile(props.activeProfile)">
                                 View Full Profile →
                             </button>
                         </div>

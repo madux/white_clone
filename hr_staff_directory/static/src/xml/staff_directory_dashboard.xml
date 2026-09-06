@@ -279,6 +279,15 @@
             </button>
             -->
 
+                        <!-- ═══ FULL PROFILE MODAL ════════════════════════════════════ -->
+            <t t-if="state.showFullProfile and state.activeProfile">
+                <StaffDirectoryFullProfile 
+                    activeProfile="state.activeProfile" 
+                    activeProfileManager="this.activeProfileManager"
+                    closeFullProfile="this.closeFullProfile.bind(this)"
+                />
+            </t>
+
             <!-- ═══ PROFILE FULL-SCREEN MODAL ════════════════════════════════════ -->
             <t t-if="state.showProfileModal and state.activeProfile">
                 <StaffDirectoryProfilePanel 
@@ -295,6 +304,7 @@
                     activeProfileManager="this.activeProfileManager"
                     activeProfileDirectReports="this.activeProfileDirectReports"
                     activeProfileSimilarColleagues="this.activeProfileSimilarColleagues"
+                    openFullProfile="this.openFullProfile.bind(this)"
                 />
             </t>
 
