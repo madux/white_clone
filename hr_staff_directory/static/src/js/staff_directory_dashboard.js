@@ -1047,6 +1047,14 @@ export class StaffDirectoryDashboard extends Component {
         this.state.showProfileModal = false;
     }
 
+    openFullProfileById(personId) {
+        if (!personId) return;
+        const person = this.state.people.find(p => p.id === personId);
+        if (person) {
+            this.openFullProfile(person);
+        }
+    }
+
     closeFullProfile() {
         this.state.showFullProfile = false;
     }

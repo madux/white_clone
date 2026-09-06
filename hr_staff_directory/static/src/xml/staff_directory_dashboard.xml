@@ -285,6 +285,7 @@
                     activeProfile="state.activeProfile" 
                     activeProfileManager="this.activeProfileManager"
                     closeFullProfile="this.closeFullProfile.bind(this)"
+                    openFullProfileById="this.openFullProfileById.bind(this)"
                 />
             </t>
 

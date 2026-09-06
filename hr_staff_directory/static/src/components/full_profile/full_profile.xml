@@ -59,7 +59,7 @@
 
                         <div class="sdir-fp-manager-section" t-if="props.activeProfile.manager_name">
                             <p class="sdir-fp-manager-label">Manager</p>
-                            <div class="sdir-fp-manager-item">
+                            <div class="sdir-fp-manager-item" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
                                 <div class="sdir-fp-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
                                     <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Avatar"/>
                                     <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
@@ -165,7 +165,7 @@
                                         </div>
                                     </div>
                                     <div class="sdir-fp-reporting">
-                                        <div class="sdir-fp-reporting-manager">
+                                        <div class="sdir-fp-reporting-manager" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
                                             <div class="sdir-fp-reporting-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
                                                 <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Manager Avatar"/>
                                                 <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
