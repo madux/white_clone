@@ -88,7 +88,7 @@
 
           <section t-if="state.activeTab === 'lifecycle'" class="o_ls_card"><header><i class="fa fa-refresh"/><div><h2>Return, Extension &amp; Handover Rules</h2><p>Defaults for employee state before, during and after leave.</p></div></header><div class="o_ls_card_body o_ls_grid two"><label class="o_ls_field"><span>Employee Access During Leave</span><select t-model="state.form.employee_access_during_leave"><option value="normal">Normal Access</option><option value="limited">Limited Access</option><option value="self_service">Leave Self-Service Only</option><option value="custom">Custom</option></select></label><label class="o_ls_field"><span>Return Handling</span><select t-model="state.form.return_handling"><option value="attendance">Attendance Clock-In</option><option value="employee">Employee Confirmation</option><option value="manager">Manager Confirmation</option><option value="hr">HR Recorded</option><option value="hybrid">Hybrid</option></select></label><label class="o_ls_field"><span>Return overdue grace (days)</span><input type="number" min="0" t-model.number="state.form.return_grace_days"/></label><label class="o_ls_field"><span>Maximum extension (days)</span><input type="number" min="0" t-model.number="state.form.max_extension_days"/></label><div class="o_ls_checks"><label><input type="checkbox" t-model="state.form.extensions_allowed"/> Allow leave extensions by default</label></div></div></section>
 
-          <section t-if="state.activeTab === 'integrations'" class="o_ls_card"><header><i class="fa fa-plug"/><div><h2>Integrations</h2><p>Explicit connection toggles; disabled integrations degrade to the manual workflow.</p></div></header><div class="o_ls_toggle_rows"><button t-foreach="[['clock_integration','CleonTime / Attendance'],['payroll_integration','Payroll'],['directory_integration','Employee Directory Sync'],['calendar_integration','Outlook / Google Calendar']]" t-as="setting" t-key="setting[0]" t-att-class="'o_ls_toggle_row ' + (state.form[setting[0]] ? 'on' : '')" t-on-click="() => this.toggle(setting[0])"><div><strong t-esc="setting[1]"/><small t-esc="state.form[setting[0]] ? 'Enabled / Connected' : 'Disabled / Manual fallback'"/></div><span class="o_ls_switch"><i/></span></button></div></section>
+          <section t-if="state.activeTab === 'integrations'" class="o_ls_card"><header><i class="fa fa-plug"/><div><h2>Integrations</h2><p>Explicit connection toggles; disabled integrations degrade to the manual workflow.</p></div></header><div class="o_ls_toggle_rows"><button t-foreach="[['clock_integration','CleonTime / Attendance'],['payroll_integration','Payroll'],['directory_integration','Employee Directory Sync'],['calendar_integration','Outlook / Google Calendar'],['ai_enabled','CleonAI / AI Services']]" t-as="setting" t-key="setting[0]" t-att-class="'o_ls_toggle_row ' + (state.form[setting[0]] ? 'on' : '')" t-on-click="() => this.toggle(setting[0])"><div><strong t-esc="setting[1]"/><small t-esc="state.form[setting[0]] ? 'Enabled / Connected' : (setting[0] === 'ai_enabled' ? 'Disabled / AI capabilities unavailable' : 'Disabled / Manual fallback')"/></div><span class="o_ls_switch"><i/></span></button></div></section>
 
           <!-- LM-046 AI Capabilities Configuration & Governance (Figure 31) -->
           <section t-if="state.activeTab === 'ai'" class="o_ls_card">
@@ -96,7 +96,7 @@
               <i class="fa fa-sliders"/>
               <div>
                 <h2>AI Capabilities Governance</h2>
-                <p>Configure and independently enable or disable the 8 AI advisory capabilities. Disabled capabilities disappear from screens without impacting underlying manual workflows.</p>
+                <p>Configure and independently enable or disable the 8 AI advisory capabilities. The CleonAI connection itself is controlled from Integrations.</p>
               </div>
             </header>
 
@@ -110,7 +110,7 @@
                 ['ai_anomaly_detection_enabled', 'Fraud &amp; Anomaly Detection', 'LM-043: Pattern analysis and HR anomaly alerts; stops new alert generation when off.'],
                 ['ai_calendar_summary_enabled', 'AI Calendar &amp; Availability Summary', 'LM-044: One-click period and availability summaries on Leave Calendar.'],
                 ['ai_executive_brief_enabled', 'Executive Workforce Brief', 'LM-045: High-level analytics, KPI aggregation, and workforce brief reports.']
-              ]" t-as="cap" t-key="cap[0]" t-att-class="'o_ls_toggle_row ' + (state.form[cap[0]] ? 'on' : '')" t-on-click="() => this.toggle(cap[0])">
+              ]" t-as="cap" t-key="cap[0]" t-att-class="'o_ls_toggle_row ' + (state.form[cap[0]] ? 'on' : '')" t-att-disabled="!state.form.ai_enabled" t-on-click="() => this.toggle(cap[0])">
                 <div>
                   <strong t-esc="cap[1]"/>
                   <small t-esc="cap[2]"/>

@@ -87,6 +87,16 @@ class TestConfigurationResources(TransactionCase):
         self.assertTrue(audit)
         self.assertEqual(audit.module_area, "calendar")
 
+    def test_official_holiday_save_defaults_end_to_start(self):
+        today = fields.Date.today()
+        result = self.env["hr.leave.official.holiday"].save_holiday({
+            "name": "Single Day Holiday", "type": "public", "date_from": today,
+            "applies_to": "all", "country_region": "Nigeria",
+        })
+        holiday = self.env["hr.leave.official.holiday"].browse(result["id"])
+        self.assertEqual(holiday.date_to, today)
+        self.assertEqual(holiday.country_region, "Nigeria")
+
     def test_blackout_state_controls_enforcement_flag(self):
         record = self.env["hr.leave.blackout.period"].create({
             "name": "Scheduled Window", "date_from": fields.Date.today(), "date_to": fields.Date.today(),

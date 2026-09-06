@@ -771,8 +771,8 @@ class HrLeave(models.Model):
         1. Per-capability company toggle OFF -> HARD OFF (Policy cannot turn it back on).
         2. Per-capability company toggle ON  -> check applicable Leave Policy / scope.
 
-        Note: there is NO master AI toggle. Each of the eight capabilities is
-        independently controlled per Figure 31 / §8.11.
+        The company-level AI integration switch is the connection gate. The
+        eight capability switches remain independently controlled below it.
         """
         company = self.env.company
         cap_field_map = {
@@ -787,6 +787,11 @@ class HrLeave(models.Model):
         }
         field_name = cap_field_map.get(capability)
         if not field_name:
+            return False
+
+        # AI capabilities cannot be used when the CleonAI integration is
+        # disabled, regardless of an individual capability's setting.
+        if not getattr(company, "leave_ai_enabled", True):
             return False
 
         if not getattr(company, field_name, False):

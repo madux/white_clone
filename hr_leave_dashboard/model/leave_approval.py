@@ -27,6 +27,11 @@ class HrLeaveOfficialHoliday(models.Model):
     applies_to = fields.Selection([("all", "All Employees"), ("locations", "Specific Locations")], default="all", required=True)
     location_ids = fields.Many2many("hr.work.location", string="Locations")
     repeats = fields.Selection([("once", "One-off"), ("annually", "Annually")], default="once", required=True)
+    country_id = fields.Many2one("res.country", string="Country", index=True)
+    state_id = fields.Many2one("res.country.state", string="Region / State", index=True,
+                               domain="[('country_id', '=', country_id)]")
+    # Kept for backwards compatibility with holidays created before the
+    # country/state selectors were introduced.
     country_region = fields.Char()
     description = fields.Char(size=255)
     active = fields.Boolean(default=True)
@@ -95,21 +100,34 @@ class HrLeaveOfficialHoliday(models.Model):
     def get_holiday_page_data(self):
         self._check_configure()
         records = self.with_context(active_test=False).search([("company_id", "in", self.env.companies.ids)])
+        countries = self.env["res.country"].sudo().search([], order="name")
+        states = self.env["res.country.state"].sudo().search([], order="country_id, name")
         return {"rows": [{"id": r.id, "name": r.name, "type": r.holiday_type, "date_from": fields.Date.to_string(r.date_from),
             "date_to": fields.Date.to_string(r.date_to), "applies_to": r.applies_to, "location_ids": r.location_ids.ids,
             "locations": ", ".join(r.location_ids.mapped("name")) or _("All Employees"), "repeats": r.repeats,
-            "country_region": r.country_region or "", "description": r.description or "", "active": r.active,
+            "country_region": r.state_id.name or r.country_id.name or r.country_region or "",
+            "country_id": r.country_id.id or False, "state_id": r.state_id.id or False,
+            "description": r.description or "", "active": r.active,
             "created_by": r.create_uid.name, "last_updated": fields.Datetime.to_string(r.write_date)} for r in records],
-            "locations": [{"id": item.id, "name": item.name} for item in self.env["hr.work.location"].search([], order="name")]}
+            "locations": [{"id": item.id, "name": item.name} for item in self.env["hr.work.location"].search([], order="name")],
+            "countries": [{"id": item.id, "name": item.name} for item in countries],
+            "states": [{"id": item.id, "name": item.name, "country_id": item.country_id.id} for item in states]}
 
     @api.model
     def save_holiday(self, values):
         self._check_configure()
         record = self.with_context(active_test=False).browse(int(values.get("id") or 0)).exists()
+        date_from = values.get("date_from")
+        date_to = values.get("date_to") or date_from
+        country = self.env["res.country"].sudo().browse(int(values.get("country_id") or 0)).exists()
+        state = self.env["res.country.state"].sudo().browse(int(values.get("state_id") or 0)).exists()
+        if state and country and state.country_id != country:
+            raise ValidationError(_("The selected region does not belong to the selected country."))
         vals = {"name": (values.get("name") or "").strip(), "holiday_type": values.get("type", "public"),
-            "date_from": values.get("date_from"), "date_to": values.get("date_to"), "applies_to": values.get("applies_to", "all"),
+            "date_from": date_from, "date_to": date_to, "applies_to": values.get("applies_to", "all"),
             "location_ids": [(6, 0, [int(item) for item in values.get("location_ids", [])])],
-            "repeats": values.get("repeats", "once"), "country_region": values.get("country_region") or "",
+            "repeats": values.get("repeats", "once"), "country_id": country.id or False,
+            "state_id": state.id or False, "country_region": values.get("country_region") or "",
             "description": values.get("description") or "", "active": values.get("active", True) in (True, "true", 1, "1"), "company_id": self.env.company.id}
         if not vals["name"]:
             raise ValidationError(_("Holiday Name is required."))

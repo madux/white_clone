@@ -13,6 +13,7 @@
     ],
     'data': [
         'security/ir.model.access.csv',
+        'data/ai_provider_parameters.xml',
     ],
     'assets': {
         'web.assets_backend': [

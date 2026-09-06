@@ -12,9 +12,9 @@ class TestLeaveAiCapabilities(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        # Enable all 8 independent AI capabilities for testing.
-        # Note: there is no master toggle; each capability is independently controlled.
+        # Enable the AI integration and all 8 independent capabilities for testing.
         cls.company.write({
+            "leave_ai_enabled": True,
             "leave_ai_assistant_enabled": True,
             "leave_ai_nl_request_enabled": True,
             "leave_ai_date_recommendations_enabled": True,
@@ -85,9 +85,16 @@ class TestLeaveAiCapabilities(TransactionCase):
         })
 
     def test_lm046_ai_capability_gating(self):
-        """LM-046: Each capability is independently gated; no master toggle."""
+        """LM-046: The integration gate and each capability are independently gated."""
         # All enabled at setUp — both should be on.
         self.assertTrue(self.env["hr.leave"].is_ai_capability_enabled("nl_request"))
+        self.assertTrue(self.env["hr.leave"].is_ai_capability_enabled("approval_support"))
+
+        # Disconnecting CleonAI disables every capability without changing
+        # the individual capability preferences.
+        self.company.write({"leave_ai_enabled": False})
+        self.assertFalse(self.env["hr.leave"].is_ai_capability_enabled("approval_support"))
+        self.company.write({"leave_ai_enabled": True})
         self.assertTrue(self.env["hr.leave"].is_ai_capability_enabled("approval_support"))
 
         # Disable a single capability — only that one should go off.

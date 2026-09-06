@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+import json
+import logging
+import os
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, ValidationError
 
@@ -7,17 +13,153 @@ class CleonAiGateway(models.AbstractModel):
     _name = "cleon.ai.gateway"
     _description = "Permission-aware Cleon AI Gateway"
 
+    _logger = logging.getLogger(__name__)
+
     @api.model
     def _provider_state(self):
         """Return provider configuration state from system parameters."""
         params = self.env["ir.config_parameter"].sudo()
-        provider = params.get_param("cleon_ai.provider", "none")
+        provider = (params.get_param("cleon_ai.provider", "none") or "none").strip().lower()
+        # Be forgiving of the common transposition used while entering Gemini.
+        if provider == "gemni":
+            provider = "gemini"
+        api_key = params.get_param("cleon_ai.gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
+        openai_key = params.get_param("cleon_ai.openai_api_key", "") or os.environ.get("OPENAI_API_KEY", "")
         return {
             "provider": provider,
             "model": params.get_param("cleon_ai.model", ""),
-            "configured": provider not in ("", "none"),
+            "configured": provider not in ("", "none") and (
+                (provider == "gemini" and bool(api_key))
+                or (provider == "openai" and bool(openai_key))
+                or provider in ("ollama", "local")
+            ),
             "live_calls_enabled": params.get_param("cleon_ai.live_calls_enabled", "False") == "True",
         }
+
+    @api.model
+    def _call_gemini(self, question, screen_context=None):
+        """Call Gemini without storing the secret in application logs or responses."""
+        params = self.env["ir.config_parameter"].sudo()
+        api_key = params.get_param("cleon_ai.gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
+        model = params.get_param("cleon_ai.model", "") or "gemini-2.5-flash"
+        if not api_key:
+            raise ValidationError(_("Gemini is selected, but no Gemini API key is configured."))
+        context = screen_context or {}
+        prompt = question
+        if context.get("screen"):
+            prompt = _(
+                "You are assisting a user inside the CleonHR %(screen)s screen. "
+                "Answer only with helpful, concise guidance and do not claim to perform actions.\n\nUser question: %(question)s",
+                screen=context.get("screen"), question=question,
+            )
+        payload = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
+        request = Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
+            data=payload,
+            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=30) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            # Google returns useful status details (invalid model/key/quota),
+            # but never include the request headers or secret in the message.
+            try:
+                detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
+            except (ValueError, AttributeError):
+                detail = ""
+            self._logger.warning("Gemini request rejected with HTTP %s: %s", error.code, detail)
+            suffix = (": " + detail[:240]) if detail else ""
+            raise ValidationError(_("Gemini rejected the request (HTTP %(code)s)%(suffix)s") % {
+                "code": error.code, "suffix": suffix,
+            })
+        except (URLError, TimeoutError, ValueError) as error:
+            self._logger.warning("Gemini request failed: %s", error)
+            raise ValidationError(_("Gemini could not reach the provider. Check the Odoo server's network access."))
+        text = "".join(
+            part.get("text", "")
+            for candidate in data.get("candidates", [])
+            for part in candidate.get("content", {}).get("parts", [])
+        ).strip()
+        if not text:
+            raise ValidationError(_("Gemini returned no text for this request."))
+        return text
+
+    @api.model
+    def _call_openai_compatible(self, question, screen_context=None, provider="openai"):
+        """Call OpenAI or an OpenAI-compatible local server."""
+        params = self.env["ir.config_parameter"].sudo()
+        if provider == "openai":
+            base_url = params.get_param("cleon_ai.openai_base_url", "https://api.openai.com/v1")
+            api_key = params.get_param("cleon_ai.openai_api_key", "") or os.environ.get("OPENAI_API_KEY", "")
+            model = params.get_param("cleon_ai.model", "") or "gpt-4o-mini"
+        else:
+            base_url = params.get_param("cleon_ai.local_base_url", "http://127.0.0.1:8080/v1")
+            api_key = params.get_param("cleon_ai.local_api_key", "") or os.environ.get("LOCAL_LLM_API_KEY", "")
+            model = params.get_param("cleon_ai.model", "") or "local-model"
+        if provider == "openai" and not api_key:
+            raise ValidationError(_("OpenAI is selected, but no OpenAI API key is configured."))
+        context = screen_context or {}
+        prompt = question
+        if context.get("screen"):
+            prompt = _(
+                "You are assisting a user inside the CleonHR %(screen)s screen. "
+                "Answer with concise guidance and do not claim to perform actions.\n\nUser question: %(question)s",
+                screen=context.get("screen"), question=question,
+            )
+        payload = json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+        }).encode("utf-8")
+        endpoint = base_url.rstrip("/") + "/chat/completions"
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = "Bearer " + api_key
+        try:
+            with urlopen(Request(endpoint, data=payload, headers=headers, method="POST"), timeout=45) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            try:
+                detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
+            except (ValueError, AttributeError):
+                detail = ""
+            self._logger.warning("%s request rejected with HTTP %s: %s", provider, error.code, detail)
+            suffix = (": " + detail[:240]) if detail else ""
+            raise ValidationError(_("%(provider)s rejected the request (HTTP %(code)s)%(suffix)s") % {
+                "provider": provider.title(), "code": error.code, "suffix": suffix,
+            })
+        except (URLError, TimeoutError, ValueError):
+            raise ValidationError(_("Could not reach the %(provider)s server. Check its URL and network access.") % {
+                "provider": provider.title(),
+            })
+        text = ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "").strip()
+        if not text:
+            raise ValidationError(_("The %(provider)s server returned no text.") % {"provider": provider.title()})
+        return text
+
+    @api.model
+    def _call_ollama(self, question, screen_context=None):
+        params = self.env["ir.config_parameter"].sudo()
+        base_url = params.get_param("cleon_ai.ollama_base_url", "http://127.0.0.1:11434")
+        model = params.get_param("cleon_ai.model", "") or "llama3.1"
+        context = screen_context or {}
+        prompt = question
+        if context.get("screen"):
+            prompt = _("You are assisting on the CleonHR %(screen)s screen. Give concise guidance.\n\n%(question)s", screen=context.get("screen"), question=question)
+        payload = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False}).encode("utf-8")
+        try:
+            with urlopen(Request(base_url.rstrip("/") + "/api/chat", data=payload, headers={"Content-Type": "application/json"}, method="POST"), timeout=60) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            raise ValidationError(_("Ollama rejected the request (HTTP %s). Check that the model is installed.") % error.code)
+        except (URLError, TimeoutError, ValueError):
+            raise ValidationError(_("Could not reach Ollama at the configured local URL."))
+        text = ((data.get("message") or {}).get("content") or "").strip()
+        if not text:
+            raise ValidationError(_("Ollama returned no text."))
+        return text
 
     @api.model
     def _get_screen_ai_context(self, screen, screen_context):
@@ -96,11 +238,21 @@ class CleonAiGateway(models.AbstractModel):
             }
             return self._record_interaction(question, result, screen_context)
 
-        result = {
-            "answered": False,
-            "message": _("The selected provider is configured, but its adapter has not been enabled in this build."),
-            "provider": provider,
-        }
+        try:
+            if provider.get("provider") == "gemini":
+                result = {"answered": True, "message": self._call_gemini(question, screen_context), "provider": provider}
+            elif provider.get("provider") == "ollama":
+                result = {"answered": True, "message": self._call_ollama(question, screen_context), "provider": provider}
+            elif provider.get("provider") == "local":
+                result = {"answered": True, "message": self._call_openai_compatible(question, screen_context, provider=provider["provider"]), "provider": provider}
+            else:
+                result = {
+                    "answered": False,
+                    "message": _("The selected provider is configured, but no adapter is available for it."),
+                    "provider": provider,
+                }
+        except ValidationError as error:
+            result = {"answered": False, "message": error.args[0], "provider": provider}
         return self._record_interaction(question, result, screen_context)
 
     @api.model
