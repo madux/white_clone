@@ -57,19 +57,24 @@
                             </div>
                         </div>
 
-                        <div class="sdir-fp-manager-section" t-if="props.activeProfile.manager_name">
+                        <div class="sdir-fp-manager-section">
                             <p class="sdir-fp-manager-label">Manager</p>
-                            <div class="sdir-fp-manager-item" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
-                                <div class="sdir-fp-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
-                                    <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Avatar"/>
-                                    <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
+                            <t t-if="props.activeProfile.manager_name">
+                                <div class="sdir-fp-manager-item" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
+                                    <div class="sdir-fp-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
+                                        <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Avatar"/>
+                                        <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
+                                    </div>
+                                    <div class="sdir-fp-manager-info">
+                                        <p class="sdir-fp-manager-name"><t t-esc="props.activeProfile.manager_name"/></p>
+                                        <p class="sdir-fp-manager-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || ''"/></p>
+                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
                                 </div>
-                                <div class="sdir-fp-manager-info">
-                                    <p class="sdir-fp-manager-name"><t t-esc="props.activeProfile.manager_name"/></p>
-                                    <p class="sdir-fp-manager-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || ''"/></p>
-                                </div>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
-                            </div>
+                            </t>
+                            <t t-else="">
+                                <p class="sdir-fp-no-manager">No manager assigned</p>
+                            </t>
                         </div>
                     </div>
                 </div>
