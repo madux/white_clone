@@ -66,7 +66,7 @@
                                 </div>
                                 <div class="sdir-fp-manager-info">
                                     <p class="sdir-fp-manager-name"><t t-esc="props.activeProfile.manager_name"/></p>
-                                    <p class="sdir-fp-manager-job">Manager</p>
+                                    <p class="sdir-fp-manager-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || 'Manager'"/></p>
                                 </div>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"></path></svg>
                             </div>
