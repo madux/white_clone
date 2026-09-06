@@ -1,12 +1,15 @@
 /** @odoo-module **/
 
 import { Component } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 
 export class StaffDirectoryFullProfile extends Component {
     static template = "hr_staff_directory.StaffDirectoryFullProfile";
     static props = ["*"];
 
     setup() {
+        this.messageService = useService("hr_staff_directory.message");
+        this.mailModalService = useService("hr_staff_directory.mail_modal");
         this.AVATAR_COLORS = [
             '#ec4899', '#8B5CF6', '#22C55E', '#3B82F6', 
             '#F59E0B', '#0EA5E9', '#EF4444', '#14B8A6'
