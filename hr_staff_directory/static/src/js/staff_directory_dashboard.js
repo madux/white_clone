@@ -1044,6 +1044,7 @@ export class StaffDirectoryDashboard extends Component {
     openFullProfile(profile) {
         this.state.activeProfile = profile;
         this.state.showFullProfile = true;
+        this.state.showProfileModal = false;
     }
 
     closeFullProfile() {
