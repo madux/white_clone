@@ -18,7 +18,8 @@ export class StaffDirectoryProfilePanel extends Component {
         initials: { type: Function },
         activeProfileManager: { optional: true },
         activeProfileDirectReports: { optional: true },
-        activeProfileSimilarColleagues: { optional: true }
+        activeProfileSimilarColleagues: { optional: true },
+        openFullProfile: { type: Function }
     };
 
     setup() {

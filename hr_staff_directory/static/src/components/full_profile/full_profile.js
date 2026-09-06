@@ -4,7 +4,7 @@ import { Component } from "@odoo/owl";
 
 export class StaffDirectoryFullProfile extends Component {
     static template = "hr_staff_directory.StaffDirectoryFullProfile";
-    static props = ["activeProfile", "closeFullProfile", "activeProfileManager"];
+    static props = ["*"];
 
     setup() {
         this.AVATAR_COLORS = [
