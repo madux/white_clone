@@ -76,7 +76,8 @@
 .sdir-fp-grid-val { font-size: 13.5px; font-weight: 700; color: rgb(17, 24, 39); margin: 0px; line-height: 1.35; }
 
 .sdir-fp-reporting { display: flex; align-items: center; background-color: rgb(250, 250, 250); border-radius: 14px; border: 1px solid rgb(243, 244, 246); overflow: hidden; }
-.sdir-fp-reporting-manager { display: flex; align-items: center; gap: 14px; padding: 18px 22px; flex: 0 0 auto; min-width: 200px; }
+.sdir-fp-reporting-manager { display: flex; align-items: center; gap: 14px; padding: 18px 22px; flex: 0 0 auto; min-width: 200px; transition: background-color 0.2s ease; border-radius: 8px; }
+.sdir-fp-reporting-manager:hover { background-color: rgb(255, 240, 247); }
 .sdir-fp-reporting-manager-avatar { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; flex-shrink: 0; border: 2.5px solid rgb(229, 231, 235); background-color: #f3f4f6; display: flex; align-items: center; justify-content: center; }
 .sdir-fp-reporting-manager-avatar span { font-size: 20px; font-weight: 700; color: #fff; }
 .sdir-fp-reporting-manager-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
