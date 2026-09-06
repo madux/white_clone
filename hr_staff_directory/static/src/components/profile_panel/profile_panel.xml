@@ -881,6 +881,12 @@
                                 </div>
                             </div>
 
+                                                        <t t-if="state.suspendErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="state.suspendErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeEditModal()">Cancel</button>
                                 <button class="sdir-edit-modal-save" t-on-click="() => this.saveProfile()">Save Profile</button>
@@ -1753,12 +1759,12 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Suspension Category</p>
                                     </div>
-                                    <select class="sdir-edit-modal-select">
-                                        <option>Investigation</option>
-                                        <option>Disciplinary Action</option>
-                                        <option>Security Breach</option>
-                                        <option>Policy Violation</option>
-                                        <option>Pending Review</option>
+                                    <select class="sdir-edit-modal-select" t-model="state.suspendCategory">
+                                        <option value="Investigation">Investigation</option>
+                                        <option value="Disciplinary Action">Disciplinary Action</option>
+                                        <option value="Security Breach">Security Breach</option>
+                                        <option value="Policy Violation">Policy Violation</option>
+                                        <option value="Pending Review">Pending Review</option>
                                     </select>
                                 </div>
                                 
@@ -1767,7 +1773,7 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Duration (Days)</p>
                                         </div>
-                                        <input type="number" min="1" max="365" value="7" class="sdir-edit-modal-input"/>
+                                        <input type="number" min="1" max="365" class="sdir-edit-modal-input" t-model="state.suspendDuration"/>
                                     </div>
                                     <div style="display: flex; flex-direction: column; justify-content: flex-end;">
                                         <p style="margin: 0 0 8px 0; font-size: 11px; color: #9CA3AF;">Resumes automatically after duration</p>
@@ -1778,30 +1784,36 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Suspension Reason *</p>
                                     </div>
-                                    <textarea rows="3" class="sdir-status-textarea" placeholder="Detailed reason for suspension..."></textarea>
+                                    <textarea rows="3" t-attf-class="sdir-status-textarea {{ state.suspendErrors?.field === 'reason' ? 'sdir-input-error' : '' }}" t-att-style="state.suspendErrors?.field === 'reason' ? 'border-color: #EF4444;' : ''" t-model="state.suspendReason" placeholder="Detailed reason for suspension..."></textarea>
                                 </div>
                                 
                                 <div class="sdir-suspend-checkbox-group">
                                     <label class="sdir-suspend-checkbox-label">
-                                        <input type="checkbox" checked="checked" class="sdir-revoke-item-input"/>
+                                        <input type="checkbox" class="sdir-revoke-item-input" t-model="state.notifyEmployee"/>
                                         <span class="sdir-suspend-checkbox-text">Send suspension notice to employee</span>
                                     </label>
                                     <label class="sdir-suspend-checkbox-label">
-                                        <input type="checkbox" checked="checked" class="sdir-revoke-item-input"/>
+                                        <input type="checkbox" class="sdir-revoke-item-input" t-model="state.notifyManager"/>
                                         <span class="sdir-suspend-checkbox-text">Notify direct manager</span>
                                     </label>
                                 </div>
                                 
-                                <label class="sdir-revoke-confirm-banner">
-                                    <input type="checkbox" class="sdir-revoke-item-input" t-model="state.revokeConfirm"/>
+                                <label t-attf-class="sdir-revoke-confirm-banner {{ state.suspendErrors?.field === 'confirm' ? 'sdir-input-error' : '' }}" t-att-style="state.suspendErrors?.field === 'confirm' ? 'border-color: #EF4444; background-color: #FEF2F2;' : ''">
+                                    <input type="checkbox" class="sdir-revoke-item-input" t-model="state.suspendConfirm"/>
                                     <span class="sdir-revoke-confirm-text">I confirm the suspension of <t t-esc="props.activeProfile.name or 'Aaron Park'"/>'s account</span>
                                 </label>
                                 
                             </div>
 
+                            <t t-if="state.suspendErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="state.suspendErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeSuspendModal()">Cancel</button>
-                                <button class="sdir-btn-red" t-on-click="() => this.closeSuspendModal()">Suspend Account</button>
+                                <button class="sdir-btn-red" t-on-click="() => this.submitSuspendAccount()">Suspend Account</button>
                             </div>
                         </div>
                     </div>
@@ -1952,7 +1964,7 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Last Working Day *</p>
                                         </div>
-                                        <input type="date" class="sdir-edit-modal-input" value=""/>
+                                        <input type="date" t-attf-class="sdir-edit-modal-input {{ this.rehireErrors?.field === 'start_date' ? 'sdir-input-error' : '' }}" t-att-style="this.rehireErrors?.field === 'start_date' ? 'border-color: #EF4444;' : ''" t-model="state.rehireForm.start_date"/>
                                     </div>
                                 </div>
                                 
@@ -2047,18 +2059,19 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Performance Rating</p>
                                         </div>
-                                        <select class="sdir-edit-modal-select">
-                                            <option>Exceeds Expectations</option>
-                                            <option>Meets Expectations</option>
-                                            <option>Below Expectations</option>
-                                            <option>Unsatisfactory</option>
+                                        <select t-attf-class="sdir-edit-modal-select {{ this.probationErrors?.field === 'rating' ? 'sdir-input-error' : '' }}" t-att-style="this.probationErrors?.field === 'rating' ? 'border-color: #EF4444;' : ''" t-model="state.probationRating">
+                                            <option value="">-- Select Rating --</option>
+                                            <option value="Exceeds Expectations">Exceeds Expectations</option>
+                                            <option value="Meets Expectations">Meets Expectations</option>
+                                            <option value="Below Expectations">Below Expectations</option>
+                                            <option value="Unsatisfactory">Unsatisfactory</option>
                                         </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Confirmation Date</p>
                                         </div>
-                                        <input type="date" class="sdir-edit-modal-input" value="2026-08-27"/>
+                                        <input type="date" t-attf-class="sdir-edit-modal-input {{ this.probationErrors?.field === 'date' ? 'sdir-input-error' : '' }}" t-att-style="this.probationErrors?.field === 'date' ? 'border-color: #EF4444;' : ''" t-model="state.probationDate"/>
                                     </div>
                                 </div>
                                 
@@ -2066,14 +2079,20 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">Reviewer Notes</p>
                                     </div>
-                                    <textarea rows="4" class="sdir-status-textarea" placeholder="Assessment of performance, attendance, attitude, and overall fit during probation period..."></textarea>
+                                    <textarea rows="4" t-attf-class="sdir-status-textarea {{ this.probationErrors?.field === 'notes' ? 'sdir-input-error' : '' }}" t-att-style="this.probationErrors?.field === 'notes' ? 'border-color: #EF4444;' : ''" t-model="state.probationNotes" placeholder="Assessment of performance, attendance, attitude, and overall fit during probation period..."></textarea>
                                 </div>
                                 
                             </div>
 
+                            <t t-if="this.probationErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.probationErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeProbationModal()">Cancel</button>
-                                <button class="sdir-btn-red" t-on-click="() => this.closeProbationModal()">
+                                <button class="sdir-btn-red" t-on-click="() => this.submitProbationReview()">
                                     <t t-if="!state.probationOutcome">Submit Review</t>
                                     <t t-if="state.probationOutcome === 'pass'">Confirm &amp; Pass</t>
                                     <t t-if="state.probationOutcome === 'fail'">Mark as Failed</t>
@@ -2094,7 +2113,7 @@
                                     </div>
                                     <div>
                                         <p class="sdir-edit-modal-title">Rehire Employee</p>
-                                        <p class="sdir-edit-modal-subtitle">Previously: Relationship Manager · Sales &amp; Business Development</p>
+                                        <p class="sdir-edit-modal-subtitle">Previously: <t t-esc="props.activeProfile.job_title or 'N/A'"/> · <t t-esc="props.activeProfile.department_id ? props.activeProfile.department_id[1] : 'N/A'"/></p>
                                     </div>
                                 </div>
                                 <button class="sdir-edit-modal-close" t-on-click="() => this.closeRehireModal()">
@@ -2109,19 +2128,19 @@
                                     <div class="sdir-rehire-stats-row">
                                         <div>
                                             <p class="sdir-rehire-stat-label">Department</p>
-                                            <p class="sdir-rehire-stat-value">Sales &amp; Business Development</p>
+                                            <p class="sdir-rehire-stat-value"><t t-esc="props.activeProfile.department_id ? props.activeProfile.department_id[1] : 'N/A'"/></p>
                                         </div>
                                         <div>
                                             <p class="sdir-rehire-stat-label">Role</p>
-                                            <p class="sdir-rehire-stat-value">Relationship Manager</p>
+                                            <p class="sdir-rehire-stat-value"><t t-esc="props.activeProfile.job_title or 'N/A'"/></p>
                                         </div>
                                         <div>
                                             <p class="sdir-rehire-stat-label">Tenure</p>
-                                            <p class="sdir-rehire-stat-value">1y 11m</p>
+                                            <p class="sdir-rehire-stat-value">N/A</p>
                                         </div>
                                         <div>
                                             <p class="sdir-rehire-stat-label">Exit Type</p>
-                                            <p class="sdir-rehire-stat-value">Alumni</p>
+                                            <p class="sdir-rehire-stat-value" style="text-transform: capitalize;"><t t-esc="props.activeProfile.sdir_lifecycle_status or 'Alumni'"/></p>
                                         </div>
                                     </div>
                                 </div>
@@ -2130,7 +2149,7 @@
                                     <div class="sdir-edit-modal-label-wrap">
                                         <p class="sdir-edit-modal-label">New Job Title</p>
                                     </div>
-                                    <input type="text" class="sdir-edit-modal-input" value="Relationship Manager"/>
+                                    <input type="text" t-attf-class="sdir-edit-modal-input {{ this.rehireErrors?.field === 'job_title' ? 'sdir-input-error' : '' }}" t-att-style="this.rehireErrors?.field === 'job_title' ? 'border-color: #EF4444;' : ''" t-model="state.rehireForm.job_title"/>
                                 </div>
                                 
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
@@ -2138,38 +2157,59 @@
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Department</p>
                                         </div>
-                                        <input type="text" class="sdir-edit-modal-input" value="Sales &amp; Business Development"/>
+                                        <select t-attf-class="sdir-edit-modal-select {{ this.rehireErrors?.field === 'department_id' ? 'sdir-input-error' : '' }}" t-att-style="this.rehireErrors?.field === 'department_id' ? 'border-color: #EF4444;' : ''" t-model="state.rehireForm.department_id">
+                                            <option value="">-- Select Department --</option>
+                                            <t t-foreach="this.departments" t-as="dept" t-key="dept.id">
+                                                <option t-att-value="dept.id"><t t-esc="dept.name"/></option>
+                                            </t>
+                                        </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">New Start Date *</p>
                                         </div>
-                                        <input type="date" class="sdir-edit-modal-input" value=""/>
+                                        <input type="date" t-attf-class="sdir-edit-modal-input {{ this.rehireErrors?.field === 'start_date' ? 'sdir-input-error' : '' }}" t-att-style="this.rehireErrors?.field === 'start_date' ? 'border-color: #EF4444;' : ''" t-model="state.rehireForm.start_date"/>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Employment Type</p>
                                         </div>
-                                        <select class="sdir-edit-modal-select">
-                                            <option>Permanent Full-Time</option>
-                                            <option>Fixed-Term</option>
-                                            <option>Contract</option>
-                                            <option>Consultant</option>
+                                        <select class="sdir-edit-modal-select" t-model="state.rehireForm.employment_type">
+                                            <option value="Permanent Full-Time">Permanent Full-Time</option>
+                                            <option value="Fixed-Term">Fixed-Term</option>
+                                            <option value="Contract">Contract</option>
+                                            <option value="Consultant">Consultant</option>
                                         </select>
                                     </div>
                                     <div>
                                         <div class="sdir-edit-modal-label-wrap">
                                             <p class="sdir-edit-modal-label">Grade / Band</p>
                                         </div>
-                                        <input type="text" class="sdir-edit-modal-input" placeholder="e.g. L4 · Senior" value="L1 · Individual Contributor"/>
+                                        <select t-attf-class="sdir-edit-modal-select {{ this.rehireErrors?.field === 'grade' ? 'sdir-input-error' : '' }}" t-att-style="this.rehireErrors?.field === 'grade' ? 'border-color: #EF4444;' : ''" t-model="state.rehireForm.grade">
+                                            <option value="">-- Select Grade --</option>
+                                            <option value="L1 · Junior Associate">L1 · Junior Associate</option>
+                                            <option value="L2 · Associate">L2 · Associate</option>
+                                            <option value="L3 · Senior Associate">L3 · Senior Associate</option>
+                                            <option value="L4 · Associate">L4 · Associate</option>
+                                            <option value="L4 · Manager">L4 · Manager</option>
+                                            <option value="L5 · Senior Manager">L5 · Senior Manager</option>
+                                            <option value="L6 · Director">L6 · Director</option>
+                                            <option value="L7 · Executive">L7 · Executive</option>
+                                        </select>
                                     </div>
                                 </div>
                                 
                             </div>
 
+                            <t t-if="this.rehireErrors">
+                                <div style="color: #EF4444; font-size: 13px; margin: 0 24px 12px 24px; display: flex; align-items: center; gap: 6px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-circle"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                    <t t-esc="this.rehireErrors.msg"/>
+                                </div>
+                            </t>
                             <div class="sdir-edit-modal-footer">
                                 <button class="sdir-edit-modal-cancel" t-on-click="() => this.closeRehireModal()">Cancel</button>
-                                <button class="sdir-btn-red" t-on-click="() => this.closeRehireModal()">Initiate Rehire</button>
+                                <button class="sdir-btn-red" t-on-click="() => this.submitRehireEmployee()">Initiate Rehire</button>
                             </div>
                         </div>
                     </div>

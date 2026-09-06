@@ -330,3 +330,10 @@ The "Reset Password" modal is deeply integrated with Odoo's native authenticatio
 * **Temporary Password:** Generates a secure, 12-character alphanumeric password dynamically on the frontend via JavaScript. Administrators can easily copy this password using the native browser clipboard API (`navigator.clipboard.writeText`). Upon submission, the backend forces a direct password update (`user.sudo().write({'password': temp_password})`).
 * **Audit Trail:** Both the Email Link dispatch and the application of a Temporary Password are synchronously logged to the employee's chatter history for complete auditability.
 * **User Account Guard:** Similar to the permissions modals, the backend actively guards against attempting to reset a password for an HR profile that lacks a linked `res.users` account, bubbling up an appropriate Toast error if triggered.
+
+---
+
+## Future Build Notes: Lifecycle Synchronization
+If a user bypasses the custom modals and manually archives an employee via the native Odoo 17 Employee backend form (`active = False`), the "Staff Directory" should dynamically sync this. 
+We need to implement an `override` on the native Odoo archiving process (or an automated watcher) so that when an employee is natively archived, their `sdir_lifecycle_status` automatically changes to either "Suspended" or "Terminated" based on the reason for archiving.
+Currently, archiving/suspending via the custom Staff Directory modals handles this elegantly and keeps them out of the active directory, but natively archiving an employee could cause status desync if not properly caught.

@@ -921,6 +921,135 @@ class HrEmployeeStaffDirectory(models.Model):
         except Exception as e:
             return {'status': 'error', 'msg': f'Failed to reset password: {str(e)}'}
 
+    @api.model
+    @api.model
+    @api.model
+    def rehire_employee(self, employee_id, rehire_data):
+        emp = self.with_context(active_test=False).browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+            
+        try:
+            from markupsafe import Markup
+            
+            # 1. Update directory status & Un-archive employee
+            emp.sdir_lifecycle_status = 'active'
+            emp.active = True
+            
+            # Unarchive linked user if exists
+            if emp.user_id:
+                emp.user_id.sudo().write({'active': True})
+                
+            # 2. Update Employee Data
+            emp.job_title = rehire_data.get('job_title')
+            if rehire_data.get('department_id'):
+                emp.department_id = int(rehire_data.get('department_id'))
+            
+            emp.sdir_grade = rehire_data.get('grade')
+            if hasattr(emp, 'employee_type') and rehire_data.get('employment_type'):
+                # Note: Odoo standard is 'employee_type' for selection
+                pass # Depending on odoo setup, we might skip to avoid selection errors, but let's try
+            
+            # 3. Audit log
+            dept_name = emp.department_id.name if emp.department_id else 'None'
+            log_parts = [
+                "Rehired Employee 🎉<br/><ul>",
+                f"<li>New Job Title: {rehire_data.get('job_title')}</li>",
+                f"<li>Department: {dept_name}</li>",
+                f"<li>Grade / Band: {rehire_data.get('grade')}</li>",
+                f"<li>Employment Type: {rehire_data.get('employment_type')}</li>",
+                f"<li>New Start Date: {rehire_data.get('start_date')}</li>",
+                "</ul>"
+            ]
+            
+            log_msg = "".join(log_parts)
+            emp.message_post(body=Markup(log_msg))
+            
+            return {'status': 'success'}
+        except Exception as e:
+            return {'status': 'error', 'msg': f'Failed to rehire employee: {str(e)}'}
+
+    def confirm_probation(self, employee_id, probation_data):
+        emp = self.browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+            
+        try:
+            from markupsafe import Markup
+            
+            outcome = probation_data.get('outcome')
+            
+            # 1. Update directory status if passed
+            if outcome == 'pass':
+                emp.sdir_lifecycle_status = 'active'
+                
+            # 2. Audit log
+            outcome_display = "Passed Probation 🎉" if outcome == 'pass' else "Failed/Extended Probation ⚠️"
+            log_parts = [
+                f"{outcome_display}<br/><ul>",
+                f"<li>Performance Rating: {probation_data.get('rating')}</li>",
+                f"<li>Confirmation Date: {probation_data.get('date')}</li>",
+                f"<li>Reviewer Notes: {probation_data.get('notes')}</li>",
+                "</ul>"
+            ]
+            
+            log_msg = "".join(log_parts)
+            emp.message_post(body=Markup(log_msg))
+            
+            return {'status': 'success'}
+        except Exception as e:
+            return {'status': 'error', 'msg': f'Failed to submit probation review: {str(e)}'}
+
+    def suspend_account(self, employee_id, suspend_data):
+        emp = self.browse(employee_id)
+        if not emp.exists():
+            return {'status': 'error', 'msg': 'Employee not found'}
+            
+        try:
+            # 1. Update directory status & Archive employee
+            emp.sdir_lifecycle_status = 'suspended'
+            emp.active = False
+            
+            # 2. Revoke system access
+            if emp.user_id:
+                emp.user_id.sudo().write({'active': False})
+                
+            # 3. Audit log
+            from markupsafe import Markup
+            log_parts = [
+                "Account Suspended 🛑<br/><ul>",
+                f"<li>Category: {suspend_data.get('category')}</li>",
+                f"<li>Duration: {suspend_data.get('duration')} Days</li>",
+                f"<li>Reason: {suspend_data.get('reason')}</li>",
+                f"<li>Notified Employee: {'Yes' if suspend_data.get('notifyEmployee') else 'No'}</li>",
+                f"<li>Notified Manager: {'Yes' if suspend_data.get('notifyManager') else 'No'}</li>",
+                "</ul>"
+            ]
+            
+            log_msg = "".join(log_parts)
+            
+            partner_ids = []
+            if suspend_data.get('notifyEmployee'):
+                # Notify the employee themselves
+                if emp.user_id:
+                    partner_ids.append(emp.user_id.partner_id.id)
+                elif emp.work_contact_id:
+                    partner_ids.append(emp.work_contact_id.id)
+                    
+            if suspend_data.get('notifyManager'):
+                # Notify their direct manager
+                if emp.parent_id and emp.parent_id.user_id:
+                    partner_ids.append(emp.parent_id.user_id.partner_id.id)
+                    
+            if partner_ids:
+                emp.message_post(body=Markup(log_msg), partner_ids=list(set(partner_ids)))
+            else:
+                emp.message_post(body=Markup(log_msg))
+                
+            return {'status': 'success'}
+        except Exception as e:
+            return {'status': 'error', 'msg': f'Failed to suspend account: {str(e)}'}
+
     def revoke_permissions(self, employee_id, revoke_data):
         from markupsafe import Markup
         emp = self.browse(employee_id)

@@ -124,11 +124,31 @@ export class StaffDirectoryProfilePanel extends Component {
             tempPasswordVisible: false,
             tempPassword: "",
             showSuspendModal: false,
+            suspendCategory: "Investigation",
+            suspendDuration: 7,
+            suspendReason: "",
+            notifyEmployee: false,
+            notifyManager: false,
+            suspendConfirm: false,
+            suspendErrors: null,
             showOnboardingModal: false,
             showOffboardingModal: false,
             showProbationModal: false,
             probationOutcome: null,
+            probationRating: "",
+            probationDate: "",
+            probationNotes: "",
+            probationHasAttemptedSave: false,
+            probationOutcome: null,
             showRehireModal: false,
+            rehireForm: {
+                job_title: '',
+                department_id: '',
+                start_date: '',
+                employment_type: 'Permanent Full-Time',
+                grade: '',
+                hasAttemptedSave: false
+            },
             activityExpandedYears: {},
             offboardingTasks: {
                 interview: true,
@@ -980,7 +1000,53 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.tempPasswordVisible = !this.state.tempPasswordVisible;
     }
 
+    async submitSuspendAccount() {
+        this.state.suspendErrors = null;
+        
+        if (!this.state.suspendReason || this.state.suspendReason.trim() === '') {
+            this.state.suspendErrors = { field: 'reason', msg: 'Suspension reason is required.' };
+            return;
+        }
+        
+        if (!this.state.suspendConfirm) {
+            this.state.suspendErrors = { field: 'confirm', msg: 'You must confirm this action.' };
+            return;
+        }
+        
+        try {
+            const suspendData = {
+                category: this.state.suspendCategory,
+                duration: this.state.suspendDuration,
+                reason: this.state.suspendReason,
+                notifyEmployee: this.state.notifyEmployee,
+                notifyManager: this.state.notifyManager
+            };
+            
+            const result = await this.orm.call("hr.employee", "suspend_account", [this.props.activeProfile.id, suspendData]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) this.toast.show("success", "Account suspended successfully.");
+            this.env.bus.trigger('sdir_refresh');
+            this.closeSuspendModal();
+            
+        } catch (error) {
+            console.error("Failed to suspend account:", error);
+            if (this.toast) this.toast.show("error", "Failed to suspend account.");
+        }
+    }
+
     openSuspendModal() {
+        this.state.suspendCategory = 'Investigation';
+        this.state.suspendDuration = 7;
+        this.state.suspendReason = '';
+        this.state.notifyEmployee = false;
+        this.state.notifyManager = false;
+        this.state.suspendConfirm = false;
+        this.state.suspendErrors = null;
         this.state.showSuspendModal = true;
     }
 
@@ -1020,9 +1086,60 @@ export class StaffDirectoryProfilePanel extends Component {
         return Object.values(this.state.offboardingTasks).filter(Boolean).length;
     }
 
+    get probationErrors() {
+        if (!this.state.probationHasAttemptedSave) return null;
+        
+        if (!this.state.probationOutcome) {
+            return { field: 'outcome', msg: 'You must select an outcome (Pass or Fail).' };
+        }
+        if (!this.state.probationRating || this.state.probationRating === '') {
+            return { field: 'rating', msg: 'Performance rating is required.' };
+        }
+        if (!this.state.probationDate || this.state.probationDate === '') {
+            return { field: 'date', msg: 'Confirmation date is required.' };
+        }
+        if (!this.state.probationNotes || this.state.probationNotes.trim() === '') {
+            return { field: 'notes', msg: 'Reviewer notes are required.' };
+        }
+        return null;
+    }
+
+    async submitProbationReview() {
+        this.state.probationHasAttemptedSave = true;
+        if (this.probationErrors) return;
+        
+        try {
+            const probationData = {
+                outcome: this.state.probationOutcome,
+                rating: this.state.probationRating,
+                date: this.state.probationDate,
+                notes: this.state.probationNotes
+            };
+            
+            const result = await this.orm.call("hr.employee", "confirm_probation", [this.props.activeProfile.id, probationData]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) this.toast.show("success", "Probation review submitted successfully.");
+            this.env.bus.trigger('sdir_refresh');
+            this.closeProbationModal();
+            
+        } catch (error) {
+            console.error("Failed to submit probation review:", error);
+            if (this.toast) this.toast.show("error", "Failed to submit probation review.");
+        }
+    }
+
     openProbationModal() {
-        this.state.showProbationModal = true;
         this.state.probationOutcome = null;
+        this.state.probationRating = "";
+        this.state.probationDate = "";
+        this.state.probationNotes = "";
+        this.state.probationHasAttemptedSave = false;
+        this.state.showProbationModal = true;
     }
 
     closeProbationModal() {
@@ -1033,7 +1150,56 @@ export class StaffDirectoryProfilePanel extends Component {
         this.state.probationOutcome = outcome;
     }
 
+    get rehireErrors() {
+        const form = this.state.rehireForm;
+        if (!form.hasAttemptedSave) return null;
+        
+        if (!form.job_title || form.job_title.trim() === '') {
+            return { field: 'job_title', msg: 'New job title is required.' };
+        }
+        if (!form.department_id) {
+            return { field: 'department_id', msg: 'Department is required.' };
+        }
+        if (!form.start_date) {
+            return { field: 'start_date', msg: 'Start date is required.' };
+        }
+        if (!form.grade) {
+            return { field: 'grade', msg: 'Grade / Band is required.' };
+        }
+        return null;
+    }
+
+    async submitRehireEmployee() {
+        this.state.rehireForm.hasAttemptedSave = true;
+        if (this.rehireErrors) return;
+        
+        try {
+            const result = await this.orm.call("hr.employee", "rehire_employee", [this.props.activeProfile.id, this.state.rehireForm]);
+            
+            if (result && result.status === 'error') {
+                if (this.toast) this.toast.show("error", result.msg);
+                return;
+            }
+            
+            if (this.toast) this.toast.show("success", "Employee rehired successfully.");
+            this.env.bus.trigger('sdir_refresh');
+            this.closeRehireModal();
+            
+        } catch (error) {
+            console.error("Failed to rehire employee:", error);
+            if (this.toast) this.toast.show("error", "Failed to rehire employee.");
+        }
+    }
+
     openRehireModal() {
+        this.state.rehireForm = {
+            job_title: this.props.activeProfile?.job_title || '',
+            department_id: this.props.activeProfile?.department_id ? this.props.activeProfile.department_id[0] : '',
+            start_date: '',
+            employment_type: 'Permanent Full-Time',
+            grade: this.props.activeProfile?.sdir_grade || '',
+            hasAttemptedSave: false
+        };
         this.state.showRehireModal = true;
     }
 
