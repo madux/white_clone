@@ -10,6 +10,10 @@ class TestLeaveCalendarSecurity(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # Note: leave_ai_enabled is a legacy field no longer used in capability gating
+        # (removed per reviewer requirement — each of the 8 capabilities is independently controlled).
+        # This write is harmless; individual capability flags are what matter.
+        cls.env.company.sudo().write({"leave_ai_enabled": True})
         base_user = cls.env.ref("base.group_user")
         personal = cls.env.ref("hr_leave_dashboard.group_leave_permission_personal")
         team = cls.env.ref("hr_leave_dashboard.group_leave_permission_team")
@@ -282,8 +286,44 @@ class TestLeaveCalendarSecurity(TransactionCase):
         self.assertIn(self.member_employee.name, mgr_roster_names)
         self.assertNotIn(other_employee.name, mgr_roster_names)
 
+    def test_lm046_ai_capability_gating(self):
+        """LM-046: Test centralized is_ai_capability_enabled, global disable precedence, and tool removal."""
+        company = self.env.company
+        # Verify default enabled state
+        self.assertTrue(self.env["hr.leave"].is_ai_capability_enabled("calendar_summary"))
+        self.assertTrue(self.env["hr.leave"].is_ai_capability_enabled("approval_support"))
 
+        # Tools include calendar.summarize when enabled
+        tools = self.env["cleon.ai.gateway"].with_user(self.operator_user).get_tool_catalog({"screen": "leave.calendar"})
+        tool_names = [t["name"] for t in tools]
+        self.assertIn("leave.calendar.summarize", tool_names)
 
+        # Globally disable calendar_summary
+        company.sudo().write({"leave_ai_calendar_summary_enabled": False})
+        self.assertFalse(self.env["hr.leave"].is_ai_capability_enabled("calendar_summary"))
 
+        # Tool catalogue removes disabled tool
+        tools_after = self.env["cleon.ai.gateway"].with_user(self.operator_user).get_tool_catalog({"screen": "leave.calendar"})
+        tool_names_after = [t["name"] for t in tools_after]
+        self.assertNotIn("leave.calendar.summarize", tool_names_after)
 
+        # Direct execution of disabled capability is refused
+        with self.assertRaises(ValidationError):
+            self.env["cleon.ai.gateway"].with_user(self.operator_user).execute_tool(
+                "leave.calendar.summarize",
+                params={},
+                screen_context={"screen": "leave.calendar"},
+            )
 
+        # Globally disable approval_support
+        company.sudo().write({"leave_ai_approval_support_enabled": False})
+        self.assertFalse(self.env["hr.leave"].is_ai_capability_enabled("approval_support"))
+        insight_res = self.env["hr.leave.ai.service"].with_user(self.manager_user).get_approval_insights(self.request.id)
+        self.assertFalse(insight_res["enabled"])
+
+        # Re-enable and verify LM-042 Why this recommendation factors
+        company.sudo().write({"leave_ai_approval_support_enabled": True})
+        insight_enabled = self.env["hr.leave.ai.service"].with_user(self.manager_user).get_approval_insights(self.request.id)
+        self.assertTrue(insight_enabled["enabled"])
+        self.assertIn("factors", insight_enabled)
+        self.assertTrue(len(insight_enabled["factors"]) >= 3)

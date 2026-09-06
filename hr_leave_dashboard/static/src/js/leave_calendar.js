@@ -1,16 +1,17 @@
 /** @odoo-module **/
 
-import { Component, onMounted, onWillStart, useState } from "@odoo/owl";
+import { Component, onMounted, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../components/calendar_sidebar";
 import { LeaveRequestDetailModal } from "../components/leave_request_detail/leave_request_detail";
 import { EmployeeRequestModal } from "../components/employee_request_modal/employee_request_modal";
 import { CalendarDayPanel } from "../components/calendar_day_panel/calendar_day_panel";
+import { SmartDateRecommendationsModal } from "../components/smart_date_modal/smart_date_modal";
 
 export class LeaveCalendarPage extends Component {
     static template = "hr_leave_dashboard.LeaveCalendarPage";
-    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel };
+    static components = { CalendarSidebar, LeaveRequestDetailModal, EmployeeRequestModal, CalendarDayPanel, SmartDateRecommendationsModal };
     static props = {
         embedded: { type: Boolean, optional: true },
         forceEmployee: { type: Boolean, optional: true },
@@ -84,6 +85,9 @@ export class LeaveCalendarPage extends Component {
             employeeRequestInitial: {},
             loadError: "",
             employeeEventFilters: ["all"],
+            aiSummary: { open: false, loading: false, bullets: [], heading: "", error: null },
+            canDateRec: false,
+            showDateRecModal: false,
         });
 
         onWillStart(async () => {
@@ -91,6 +95,8 @@ export class LeaveCalendarPage extends Component {
             this.state.canBook = access.can_operate;
             this.state.canRequest = access.has_personal_scope;
             this.state.canViewCoverage = access.has_team_scope || access.can_operate || access.can_view_audit;
+            this.state.canViewAiSummary = Boolean(access.ai_capabilities?.calendar_summary);
+            this.state.canDateRec = Boolean(access.ai_capabilities?.date_recommendations);
             this.state.canUsePersonal = access.has_personal_scope;
             this.state.canUseTeam = access.has_team_scope;
             this.state.canUseOrganisation = access.can_operate || access.can_view_audit;
@@ -102,9 +108,25 @@ export class LeaveCalendarPage extends Component {
             this.state.employeeView = this.state.calendarScope !== "organisation";
             await this.loadCalendarData();
         });
+        this.onOpenCalendarEvent = (ev) => {
+            if (ev.detail && ev.detail.date) {
+                const parts = ev.detail.date.split("-").map(Number);
+                if (parts.length === 3) {
+                    this.state.currentDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                    this.loadCalendarData();
+                }
+            }
+        };
+
         // The global assistant may mount after the initial RPC completes, so
         // publish the same permission-safe context once the page is present.
-        onMounted(() => this.emitAssistantContext());
+        onMounted(() => {
+            this.emitAssistantContext();
+            window.addEventListener("cleon-open-calendar", this.onOpenCalendarEvent);
+        });
+        onWillUnmount(() => {
+            window.removeEventListener("cleon-open-calendar", this.onOpenCalendarEvent);
+        });
     }
 
     // ---------------------------------------------------------
@@ -760,6 +782,73 @@ export class LeaveCalendarPage extends Component {
 
     closeDetailModal() {
         this.state.detailRequestId = null;
+    }
+
+    async showAiSummary() {
+        if (this.state.aiSummary.loading) return;
+        this.state.aiSummary.open = true;
+        this.state.aiSummary.loading = true;
+        this.state.aiSummary.error = null;
+        this.state.aiSummary.bullets = [];
+        this.state.aiSummary.heading = "";
+        this.emitAssistantContext();
+        try {
+            const year = this.state.currentDate.getFullYear();
+            const range = this.state.viewMode === "year"
+                ? { dateFrom: `${year}-01-01`, dateTo: `${year}-12-31` }
+                : this.getRangeForView();
+            const context = {
+                screen: "leave.calendar",
+                perspective: this.state.calendarScope,
+                date_from: this.state.filters.dateFrom || range.dateFrom,
+                date_to: this.state.filters.dateTo || range.dateTo,
+                filters: {
+                    department_ids: [...this.state.filters.departmentIds],
+                    leave_type_ids: [...this.state.filters.leaveTypeIds],
+                    statuses: [...this.state.filters.statuses],
+                    employee_ids: [...this.state.filters.employeeIds],
+                },
+            };
+            const result = await this.orm.call("cleon.ai.gateway", "get_assistant_state", [context]);
+            this.state.aiSummary.heading = result.heading || "Calendar Summary";
+            this.state.aiSummary.bullets = result.bullets || [];
+        } catch (err) {
+            this.state.aiSummary.error = err?.data?.message || err.message || "Summary unavailable.";
+        } finally {
+            this.state.aiSummary.loading = false;
+        }
+    }
+
+    closeAiSummary() {
+        this.state.aiSummary.open = false;
+    }
+
+    async refreshAiSummary() {
+        await this.showAiSummary();
+    }
+
+    async copyAiSummary() {
+        const text = (this.state.aiSummary.bullets || []).join("\n• ");
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText("• " + text);
+            this.notification.add("Summary copied to clipboard!", { type: "success" });
+        } catch (e) {
+            this.notification.add("Could not copy to clipboard.", { type: "warning" });
+        }
+    }
+
+    onSelectRecommendedDate(item) {
+        this.state.showDateRecModal = false;
+        if (this.state.canRequest) {
+            this.state.employeeRequestInitial = {
+                date_from: item.date_from,
+                date_to: item.date_to,
+                leave_type_id: item.leave_type_id ? String(item.leave_type_id) : "",
+                submission_channel: "ai_assisted",
+            };
+            this.state.employeeRequestOpen = true;
+        }
     }
 
     emitAssistantContext() {

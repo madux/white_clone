@@ -34,3 +34,7 @@ access_hr_leave_policy_assignment_operator,hr.leave.policy.assignment operator,m
 access_hr_leave_allocation_group_operator,hr.leave allocation group operator,model_hr_leave_allocation_group,hr_leave_dashboard.group_leave_permission_operations,1,1,1,1
 access_hr_leave_approval_template_configurator,hr.leave approval template configurator,model_hr_leave_approval_template,hr_leave_dashboard.group_leave_permission_configuration,1,1,1,1
 access_hr_leave_approval_template_system,hr.leave approval template system,model_hr_leave_approval_template,base.group_system,1,1,1,1
+access_hr_leave_anomaly_manager,hr.leave.anomaly manager,model_hr_leave_anomaly,hr_holidays.group_hr_holidays_manager,1,1,1,1
+access_hr_leave_anomaly_system,hr.leave.anomaly system,model_hr_leave_anomaly,base.group_system,1,1,1,1
+access_hr_leave_anomaly_hr_user,hr.leave.anomaly hr user,model_hr_leave_anomaly,hr.group_hr_user,1,1,0,0
+access_hr_leave_anomaly_ai_insights,hr.leave.anomaly ai insights reader,model_hr_leave_anomaly,hr_leave_dashboard.group_leave_permission_ai_insights,1,0,0,0

@@ -47,6 +47,11 @@ class HrLeavePolicy(models.Model):
     allow_multiple_requests = fields.Boolean(default=True)
     allow_withdrawal = fields.Boolean(default=True)
     allow_half_day = fields.Boolean(default=True)
+    ai_enabled = fields.Boolean(
+        default=True,
+        string="AI & Automation Enabled",
+        help="Disable company-enabled advisory AI capabilities for employees governed by this policy.",
+    )
 
     line_ids = fields.One2many("hr.leave.policy.line", "policy_id", copy=True)
     assignment_ids = fields.One2many("hr.leave.policy.assignment", "policy_id")
@@ -66,7 +71,7 @@ class HrLeavePolicy(models.Model):
                 "minimum_tenure_months", "allow_carry_forward", "maximum_carry_forward",
                 "carry_forward_expiry_value", "carry_forward_expiry_unit", "balance_usage_priority",
                 "approval_required", "approval_workflow", "allow_multiple_requests",
-                "allow_withdrawal", "allow_half_day",
+                "allow_withdrawal", "allow_half_day", "ai_enabled",
             )}, "approval_chain_id": (self.approval_template_id.chain_id or self.approval_chain_id).id,
             "approval_template_id": self.approval_template_id.id,
             "approval_workflow_type_id": self.approval_workflow_type_id.id,
@@ -218,7 +223,7 @@ class HrLeavePolicy(models.Model):
         return {
             "id": self.id, "name": self.name, "code": self.code, "description": self.description or "",
             "mode": self.policy_mode, "category": self.category_name or "General", "color": self.color or "#E91E78",
-            "state": self.state, "active": self.active,
+            "state": self.state, "active": self.active, "ai_enabled": self.ai_enabled,
             "leave_types": [{"id": value.leave_type_id.id, "name": value.leave_type_id.name, "entitlement": value.accrual_amount, "unit": value.unit, "compensation": value.compensation} for value in lines],
             "applicability": _("All Employees") if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
             "employee_count": len(assigned or eligible), "employee_ids": (assigned or eligible).ids,
@@ -250,6 +255,7 @@ class HrLeavePolicy(models.Model):
             "carry": {"enabled": policy.allow_carry_forward, "maximum": policy.maximum_carry_forward, "expiry_value": policy.carry_forward_expiry_value, "expiry_unit": policy.carry_forward_expiry_unit, "priority": policy.balance_usage_priority},
             "approval": {"required": policy.approval_required, "workflow": policy.approval_workflow, "workflow_type_id": policy.approval_workflow_type_id.id or False, "chain_id": policy.approval_chain_id.id or False, "template_id": policy.approval_template_id.id or False},
             "rules": {"multiple": policy.allow_multiple_requests, "withdrawal": policy.allow_withdrawal, "half_day": policy.allow_half_day},
+            "ai_enabled": policy.ai_enabled,
             "lines": [line._payload() for line in policy.line_ids.filtered("active")],
         })
         return data
@@ -316,6 +322,7 @@ class HrLeavePolicy(models.Model):
             "approval_template_id": int(approval.get("template_id") or 0) or False,
             "approval_workflow_type_id": int(approval.get("workflow_type_id") or 0) or False,
             "allow_multiple_requests": bool(rules.get("multiple", True)), "allow_withdrawal": bool(rules.get("withdrawal", True)), "allow_half_day": bool(rules.get("half_day", True)),
+            "ai_enabled": bool(payload.get("ai_enabled", True)),
         }
         if not vals["name"]:
             raise ValidationError(_("Policy Name is required."))

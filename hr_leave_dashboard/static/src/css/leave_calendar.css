@@ -417,3 +417,15 @@
 .o_cdp_status_groups button { border: 1px solid #dce2ec; border-radius: 999px; background: #fff; color: #667085; padding: 6px 10px; font-size: 11px; font-weight: 600; }
 .o_cdp_status_groups button span { display: inline-block; margin-left: 4px; background: #eef2f7; border-radius: 999px; padding: 1px 6px; }
 .o_cdp_status_groups button.active { border-color: #ed1970; background: #fff2f7; color: #bd185b; }
+
+/* AI Calendar Summary Panel (LM-044) */
+.o_cal_ai_summary{border:1px solid #ddd6fe;border-radius:10px;background:#faf9ff;margin-bottom:14px;overflow:hidden}
+.o_cal_ai_summary_header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f3f0ff;border-bottom:1px solid #e5e0ff}
+.o_cal_ai_summary_header span{font-size:13px;color:#6d28d9;display:flex;align-items:center;gap:6px}
+.o_cal_ai_close{border:0;background:none;cursor:pointer;color:#8490a5;font-size:13px;line-height:1}
+.o_cal_ai_loading,.o_cal_ai_error{padding:12px 14px;font-size:12px;color:#7c8495}
+.o_cal_ai_error{color:#be123c}
+.o_cal_ai_summary ul{margin:0;padding:10px 14px;list-style:disc inside}
+.o_cal_ai_summary li{font-size:12px;color:#334155;padding:3px 0}
+.o_cal_ai_risk_bullet{color:#b45309 !important;font-weight:600}
+

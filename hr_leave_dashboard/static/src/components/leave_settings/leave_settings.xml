@@ -19,7 +19,7 @@
             <div><h2>Leave Management Settings</h2><p>These preferences apply to <strong t-esc="state.data.company.name"/>. Leave-category rules remain attached to each Leave Type.</p></div>
           </section>
           <nav class="o_ls_settings_tabs">
-            <button t-foreach="[['general','General'],['rules','Rules &amp; Permissions'],['calendar','Calendar &amp; Visibility'],['notifications','Notifications &amp; Alerts'],['lifecycle','Return, Extension &amp; Handover'],['integrations','Integrations &amp; AI'],['workflow','Workflow &amp; Approvals']]" t-as="tab" t-key="tab[0]" t-att-class="state.activeTab === tab[0] ? 'active' : ''" t-on-click="() => this.setTab(tab[0])" t-esc="tab[1]"/>
+            <button t-foreach="[['general','General'],['rules','Rules &amp; Permissions'],['calendar','Calendar &amp; Visibility'],['notifications','Notifications &amp; Alerts'],['lifecycle','Return, Extension &amp; Handover'],['integrations','Integrations'],['ai','AI Settings'],['workflow','Workflow &amp; Approvals']]" t-as="tab" t-key="tab[0]" t-att-class="state.activeTab === tab[0] ? 'active' : ''" t-on-click="() => this.setTab(tab[0])" t-esc="tab[1]"/>
           </nav>
 
           <section t-if="state.activeTab === 'general'" class="o_ls_card">
@@ -88,7 +88,62 @@
 
           <section t-if="state.activeTab === 'lifecycle'" class="o_ls_card"><header><i class="fa fa-refresh"/><div><h2>Return, Extension &amp; Handover Rules</h2><p>Defaults for employee state before, during and after leave.</p></div></header><div class="o_ls_card_body o_ls_grid two"><label class="o_ls_field"><span>Employee Access During Leave</span><select t-model="state.form.employee_access_during_leave"><option value="normal">Normal Access</option><option value="limited">Limited Access</option><option value="self_service">Leave Self-Service Only</option><option value="custom">Custom</option></select></label><label class="o_ls_field"><span>Return Handling</span><select t-model="state.form.return_handling"><option value="attendance">Attendance Clock-In</option><option value="employee">Employee Confirmation</option><option value="manager">Manager Confirmation</option><option value="hr">HR Recorded</option><option value="hybrid">Hybrid</option></select></label><label class="o_ls_field"><span>Return overdue grace (days)</span><input type="number" min="0" t-model.number="state.form.return_grace_days"/></label><label class="o_ls_field"><span>Maximum extension (days)</span><input type="number" min="0" t-model.number="state.form.max_extension_days"/></label><div class="o_ls_checks"><label><input type="checkbox" t-model="state.form.extensions_allowed"/> Allow leave extensions by default</label></div></div></section>
 
-          <section t-if="state.activeTab === 'integrations'" class="o_ls_card"><header><i class="fa fa-plug"/><div><h2>Integrations &amp; AI</h2><p>Explicit connection and governance toggles; disabled capabilities degrade to the manual workflow.</p></div></header><div class="o_ls_toggle_rows"><button t-foreach="[['clock_integration','CleonTime / Attendance'],['payroll_integration','Payroll'],['directory_integration','Employee Directory Sync'],['calendar_integration','Outlook / Google Calendar'],['ai_enabled','AI Capabilities'],['ai_audit_logging','AI Audit Logging']]" t-as="setting" t-key="setting[0]" t-att-class="'o_ls_toggle_row ' + (state.form[setting[0]] ? 'on' : '')" t-on-click="() => this.toggle(setting[0])"><div><strong t-esc="setting[1]"/><small t-esc="state.form[setting[0]] ? 'Enabled / Connected' : 'Disabled / Manual fallback'"/></div><span class="o_ls_switch"><i/></span></button></div></section>
+          <section t-if="state.activeTab === 'integrations'" class="o_ls_card"><header><i class="fa fa-plug"/><div><h2>Integrations</h2><p>Explicit connection toggles; disabled integrations degrade to the manual workflow.</p></div></header><div class="o_ls_toggle_rows"><button t-foreach="[['clock_integration','CleonTime / Attendance'],['payroll_integration','Payroll'],['directory_integration','Employee Directory Sync'],['calendar_integration','Outlook / Google Calendar']]" t-as="setting" t-key="setting[0]" t-att-class="'o_ls_toggle_row ' + (state.form[setting[0]] ? 'on' : '')" t-on-click="() => this.toggle(setting[0])"><div><strong t-esc="setting[1]"/><small t-esc="state.form[setting[0]] ? 'Enabled / Connected' : 'Disabled / Manual fallback'"/></div><span class="o_ls_switch"><i/></span></button></div></section>
+
+          <!-- LM-046 AI Capabilities Configuration & Governance (Figure 31) -->
+          <section t-if="state.activeTab === 'ai'" class="o_ls_card">
+            <header>
+              <i class="fa fa-sliders"/>
+              <div>
+                <h2>AI Capabilities Governance</h2>
+                <p>Configure and independently enable or disable the 8 AI advisory capabilities. Disabled capabilities disappear from screens without impacting underlying manual workflows.</p>
+              </div>
+            </header>
+
+            <div class="o_ls_toggle_rows">
+              <button t-foreach="[
+                ['ai_assistant_enabled', 'AI Leave Assistant', 'LM-038: Interactive chat assistant panel for employee leave guidance.'],
+                ['ai_nl_request_enabled', 'Natural Language Leave Request', 'LM-039: Free-text leave request submission and field suggestion.'],
+                ['ai_date_recommendations_enabled', 'Smart Leave Date Recommendations', 'LM-040: Candidate date suggestions based on holidays and availability.'],
+                ['ai_conflict_coverage_enabled', 'AI Conflict &amp; Coverage Detection', 'LM-041: Team overlap and staffing risk warnings at submission and review.'],
+                ['ai_approval_support_enabled', 'AI Approval Decision Support', 'LM-042: Advisory insight panel and recommendation factors for approvers.'],
+                ['ai_anomaly_detection_enabled', 'Fraud &amp; Anomaly Detection', 'LM-043: Pattern analysis and HR anomaly alerts; stops new alert generation when off.'],
+                ['ai_calendar_summary_enabled', 'AI Calendar &amp; Availability Summary', 'LM-044: One-click period and availability summaries on Leave Calendar.'],
+                ['ai_executive_brief_enabled', 'Executive Workforce Brief', 'LM-045: High-level analytics, KPI aggregation, and workforce brief reports.']
+              ]" t-as="cap" t-key="cap[0]" t-att-class="'o_ls_toggle_row ' + (state.form[cap[0]] ? 'on' : '')" t-on-click="() => this.toggle(cap[0])">
+                <div>
+                  <strong t-esc="cap[1]"/>
+                  <small t-esc="cap[2]"/>
+                </div>
+                <span class="o_ls_switch"><i/></span>
+              </button>
+            </div>
+
+            <!-- Related Settings Links (Figure 31) & Data Privacy Retention -->
+            <div class="o_ls_card_body border-top">
+              <h3 class="fs-6 fw-bold mb-3"><i class="fa fa-link me-1 text-primary"/> Related Governance &amp; Data Settings</h3>
+              <div class="o_ls_grid two">
+                <div class="o_ls_field">
+                  <span>AI Conversation Retention Period</span>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="number" min="1" max="730" t-model.number="state.form.ai_conversation_retention_days" style="max-width: 120px;"/>
+                    <small>Days (conversations purged automatically after retention period)</small>
+                  </div>
+                </div>
+                <div class="d-flex flex-column gap-2 justify-content-center">
+                  <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.setTab('rules')">
+                      <i class="fa fa-users me-1"/> Roles &amp; Permissions
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="() => this.setTab('notifications')">
+                      <i class="fa fa-bell me-1"/> Notifications
+                    </button>
+                  </div>
+                  <small class="text-muted">Configure access to AI Insights and Executive Briefs or delivery channels.</small>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <footer class="o_ls_footer">
             <button class="o_ls_reset" t-on-click="resetDefaults" t-att-disabled="state.saving"><i class="fa fa-undo"/> Reset policy defaults</button>

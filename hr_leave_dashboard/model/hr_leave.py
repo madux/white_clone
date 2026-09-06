@@ -153,7 +153,12 @@ class HrLeave(models.Model):
     def create(self, vals_list):
         if any(not self._leave_can_mutate_requests(values=vals) for vals in vals_list):
             raise AccessError(_("You do not have permission to create leave requests."))
-        requested_draft = [vals.get("state", "draft") == "draft" for vals in vals_list]
+        # Keep draft only if the caller *explicitly* requested state="draft".
+        # If state is absent, Odoo's hr_holidays will inject "confirm" for
+        # manager/both-validation types inside super().create() — we must
+        # respect that auto-confirm rather than undoing it.
+        # Using vals.get("state") (no default) so "absent" ≠ "draft".
+        requested_draft = [vals.get("state") == "draft" for vals in vals_list]
         for vals in vals_list:
             if any(key.startswith("governing_") for key in vals):
                 raise AccessError(_("Policy provenance is assigned by the submission workflow."))
@@ -226,7 +231,11 @@ class HrLeave(models.Model):
             "emergency_contact", "handover_notes",
         }
         is_operator = self.env.su or self._leave_is_officer()
-        if workflow_fields.intersection(values) and not is_operator:
+        # _leave_authorised_state_change is set by action_confirm() and other
+        # sanctioned lifecycle methods to permit workflow-field changes without
+        # requiring the caller to hold officer privileges.
+        is_authorised_lifecycle = bool(self.env.context.get("_leave_authorised_state_change"))
+        if workflow_fields.intersection(values) and not is_operator and not is_authorised_lifecycle:
             raise AccessError(_("Workflow-controlled leave fields can only be changed through an authorised action."))
         if self_service_fields.intersection(values) and not is_operator:
             if not self._leave_can_mutate_requests(records=self, values=values):
@@ -469,7 +478,11 @@ class HrLeave(models.Model):
         }
 
     def action_confirm(self):
-        result = super().action_confirm()
+        # Signal to write() that this is a sanctioned lifecycle transition so the
+        # workflow-field guard does not block a regular employee from submitting
+        # their own leave request.
+        self_with_ctx = self.with_context(_leave_authorised_state_change=True)
+        result = super(HrLeave, self_with_ctx).action_confirm()
         if "cleon.approval.instance" in self.env:
             for leave in self:
                 self.env["cleon.approval.instance"].sudo().action_start(leave)
@@ -751,6 +764,51 @@ class HrLeave(models.Model):
             raise AccessError(_("You can only review leave requests routed to you."))
 
     @api.model
+    def is_ai_capability_enabled(self, capability, employee=None, policy=None):
+        """Central authority for checking if an AI capability is enabled.
+
+        Precedence (LM-046):
+        1. Per-capability company toggle OFF -> HARD OFF (Policy cannot turn it back on).
+        2. Per-capability company toggle ON  -> check applicable Leave Policy / scope.
+
+        Note: there is NO master AI toggle. Each of the eight capabilities is
+        independently controlled per Figure 31 / §8.11.
+        """
+        company = self.env.company
+        cap_field_map = {
+            "assistant": "leave_ai_assistant_enabled",
+            "nl_request": "leave_ai_nl_request_enabled",
+            "date_recommendations": "leave_ai_date_recommendations_enabled",
+            "conflict_coverage": "leave_ai_conflict_coverage_enabled",
+            "approval_support": "leave_ai_approval_support_enabled",
+            "anomaly_detection": "leave_ai_anomaly_detection_enabled",
+            "calendar_summary": "leave_ai_calendar_summary_enabled",
+            "executive_brief": "leave_ai_executive_brief_enabled",
+        }
+        field_name = cap_field_map.get(capability)
+        if not field_name:
+            return False
+
+        if not getattr(company, field_name, False):
+            return False
+
+        # If policy passed or derivable, check policy-level constraints.
+        if not policy and employee:
+            today = fields.Date.context_today(self)
+            assignments = self.env["hr.leave.policy.assignment"].sudo().search([
+                ("employee_id", "=", employee.id), ("company_id", "=", company.id),
+                ("superseded", "=", False), ("policy_id.state", "=", "active"),
+                ("date_from", "<=", today),
+                "|", ("date_to", "=", False), ("date_to", ">=", today),
+            ])
+            if assignments and any(not assignment.policy_id.ai_enabled for assignment in assignments):
+                return False
+        if policy and hasattr(policy, "ai_enabled") and not policy.ai_enabled:
+            return False
+
+        return True
+
+    @api.model
     def get_leave_access_profile(self):
         """Return additive Leave capabilities for the current signed-in user.
 
@@ -776,6 +834,15 @@ class HrLeave(models.Model):
         )
         can_strategic_reports = self._leave_has_group(
             "hr_leave_dashboard.group_leave_permission_strategic_reports", user,
+        )
+        can_ai_config = self._leave_has_group(
+            "hr_leave_dashboard.group_leave_permission_ai_config", user,
+        )
+        can_ai_insights = self._leave_has_group(
+            "hr_leave_dashboard.group_leave_permission_ai_insights", user,
+        )
+        can_executive_analytics = self._leave_has_group(
+            "hr_leave_dashboard.group_leave_permission_executive_analytics", user,
         )
         has_employee = bool(self.env["hr.employee"].sudo().search_count([
             ("user_id", "=", user.id),
@@ -803,12 +870,25 @@ class HrLeave(models.Model):
             "pending_approvals": pending_approvals,
             "can_operate": is_officer,
             "can_configure": is_admin or is_system,
+            "can_configure_ai": can_ai_config or is_admin or is_system,
+            "can_view_ai_insights": can_ai_insights or is_admin or is_system,
+            "can_view_executive_analytics": can_executive_analytics or is_system,
             "can_view_audit": can_audit,
             "can_view_operational_reports": can_operational_reports,
             "can_view_strategic_reports": can_strategic_reports,
             "can_view_reports": can_operational_reports or can_strategic_reports or has_team_scope,
             "show_organisation_dashboard": has_team_scope or is_officer or is_admin,
             "is_system": is_system,
+            "ai_capabilities": {
+                "assistant": self.is_ai_capability_enabled("assistant"),
+                "nl_request": self.is_ai_capability_enabled("nl_request"),
+                "date_recommendations": self.is_ai_capability_enabled("date_recommendations"),
+                "conflict_coverage": self.is_ai_capability_enabled("conflict_coverage"),
+                "approval_support": self.is_ai_capability_enabled("approval_support"),
+                "anomaly_detection": self.is_ai_capability_enabled("anomaly_detection"),
+                "calendar_summary": self.is_ai_capability_enabled("calendar_summary"),
+                "executive_brief": self.is_ai_capability_enabled("executive_brief"),
+            },
         }
 
     @api.model
@@ -1006,7 +1086,11 @@ class HrLeave(models.Model):
             "pending": components.get((employee.id, leave_type.id), {}).get("pending", 0.0),
             "available": components.get((employee.id, leave_type.id), {}).get("available", 0.0),
             "unlimited": bool(leave_type.unlimited_entitlement), "allow_half_day": bool(leave_type.allow_half_day),
-        } for leave_type in types]}
+        } for leave_type in types], "ai_capabilities": {
+            "nl_request": self.is_ai_capability_enabled("nl_request"),
+            "date_recommendations": self.is_ai_capability_enabled("date_recommendations"),
+            "conflict_coverage": self.is_ai_capability_enabled("conflict_coverage"),
+        }}
 
     @api.model
     def preview_employee_leave_request(self, leave_type_id, date_from, date_to, half_day=False, period="am"):
@@ -1888,6 +1972,7 @@ class HrLeave(models.Model):
                 "duration": self.number_of_days,
                 "leaveType": self.holiday_status_id.name,
                 "employee": self.employee_id.name,
+                "submissionChannel": self.submission_channel or "form",
             },
             "occurred_at": fields.Datetime.now(),
             "ip_address": ip_addr,
@@ -1987,11 +2072,32 @@ class HrLeave(models.Model):
         else:
             level = "low"
 
+        conflicts = [
+            {
+                "employee_id": l.employee_id.id,
+                "employee_name": l.employee_id.name,
+                "leave_type": l.holiday_status_id.name,
+                "date_from": fields.Date.to_string(l.request_date_from),
+                "date_to": fields.Date.to_string(l.request_date_to),
+                "status": "approved" if l.state == "validate" else "pending",
+                "status_label": _("Approved") if l.state == "validate" else _("Pending"),
+            }
+            for l in overlapping_leaves
+        ]
+        threshold_pct = float(self.env.company.leave_default_team_overlap_percent or 40.0)
+        overlap_pct = 100 - available_pct
+        threshold_exceeded = bool(other_count > 0 and overlap_pct > threshold_pct)
+
         return {
             "percentage": available_pct,
             "level": level,
             "other_on_leave": other_count,
+            "total_dept": total_dept,
+            "overlap_percentage": overlap_pct,
+            "threshold_percent": int(threshold_pct),
+            "threshold_exceeded": threshold_exceeded,
             "department": dept.name,
+            "conflicts": conflicts,
         }
 
     @api.model
@@ -2253,7 +2359,7 @@ class HrLeave(models.Model):
         return res
 
     @api.model
-    def approve_leave_request(self, leave_id):
+    def approve_leave_request(self, leave_id, override_conflict=False, conflict_acknowledgment=""):
         leave = self.sudo().browse(int(leave_id)).exists()
         if not leave or leave.employee_id.company_id not in self.env.user.company_ids:
             raise ValidationError(_("Invalid leave request."))
@@ -2269,7 +2375,28 @@ class HrLeave(models.Model):
         if not inst:
             raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
 
+        # Verify approver authority before checking business advisory thresholds
+        current_step = inst.sudo().step_ids.filtered(lambda s: s.state == "pending")
+        if current_step and not self.env.su:
+            step_obj = current_step[0]
+            if self.env.user not in step_obj.resolved_user_ids:
+                raise AccessError(_("You are not authorized to decide on approval step '%s'.") % step_obj.name)
+
+        # LM-041: Enforce coverage threshold server-side when capability is enabled
+        if self.is_ai_capability_enabled("conflict_coverage"):
+            coverage = self._get_leave_coverage_impact(leave)
+            if coverage.get("threshold_exceeded") and not override_conflict:
+                raise ValidationError(
+                    _("Team absence threshold exceeded (coverage would drop below %(thresh)d%%). "
+                      "Explicit conflict acknowledgment is required to proceed.",
+                      thresh=100 - coverage.get("threshold_percent", 40))
+                )
+
         inst.with_user(self.env.user).action_decide("approve")
+
+        if override_conflict:
+            note = conflict_acknowledgment or _("I have reviewed the coverage risk and choose to proceed.")
+            leave._create_audit_record("override_conflict", note=note)
 
         leave._create_audit_record("approve")
         leave._post_configured_leave_update(

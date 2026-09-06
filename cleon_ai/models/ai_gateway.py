@@ -86,7 +86,7 @@ class CleonAiGateway(models.AbstractModel):
         provider = state.get("provider") or self._provider_state()
 
         if not provider["configured"] or not provider["live_calls_enabled"]:
-            return {
+            result = {
                 "answered": False,
                 "message": _(
                     "The permission-aware assistant foundation is ready for %(heading)s, but no live AI provider has been enabled.",
@@ -94,12 +94,41 @@ class CleonAiGateway(models.AbstractModel):
                 ),
                 "provider": provider,
             }
+            return self._record_interaction(question, result, screen_context)
 
-        return {
+        result = {
             "answered": False,
             "message": _("The selected provider is configured, but its adapter has not been enabled in this build."),
             "provider": provider,
         }
+        return self._record_interaction(question, result, screen_context)
+
+    @api.model
+    def _record_interaction(self, question, result, screen_context=None):
+        provider = result.get("provider") or {}
+        interaction = self.env["cleon.ai.interaction"].sudo().create({
+            "company_id": self.env.company.id,
+            "user_id": self.env.user.id,
+            "screen": (screen_context or {}).get("screen") or "",
+            "question": question,
+            "answer": result.get("message") or "",
+            "answered": bool(result.get("answered")),
+            "provider": provider.get("provider") or "none",
+            "context_data": screen_context or {},
+        })
+        return {**result, "interaction_id": interaction.id}
+
+    @api.model
+    def record_interaction_feedback(self, interaction_id, helpful):
+        try:
+            interaction_id = int(interaction_id)
+        except (TypeError, ValueError):
+            raise ValidationError(_("Invalid AI interaction."))
+        interaction = self.env["cleon.ai.interaction"].sudo().browse(interaction_id).exists()
+        if not interaction or interaction.user_id != self.env.user or interaction.company_id not in self.env.companies:
+            raise AccessError(_("You can only rate your own AI interactions."))
+        interaction.write({"helpful": bool(helpful), "feedback_at": fields.Datetime.now()})
+        return {"ok": True}
 
     @api.model
     def execute_tool(self, tool_name, params=None, screen_context=None):

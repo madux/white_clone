@@ -16,9 +16,15 @@
 .o_cai_summary li{font-size:12px;margin:5px 0}
 .o_cai_suggestions{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
 .o_cai_suggestions button{border:1px solid #edbed2;border-radius:999px;background:#fff8fb;color:#b7195c;padding:5px 8px;font-size:10px;cursor:pointer}
-.o_cai_messages p{padding:7px 9px;border-radius:8px;font-size:11px}
-.o_cai_messages p.user{background:#f3f5f8;margin-left:25px}
-.o_cai_messages p.assistant{background:#fff2f7;margin-right:25px}
+.o_cai_messages{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.o_cai_msg{border-radius:9px;font-size:11px;padding:8px 10px}
+.o_cai_msg.user{background:#f3f5f8;margin-left:25px}
+.o_cai_msg.assistant{background:#fff2f7;margin-right:25px}
+.o_cai_msg p{margin:0}
+.o_cai_msg_link{display:inline-block;margin-top:4px;font-size:10px;color:#ed1970;text-decoration:none;font-weight:600}
+.o_cai_msg_fb{display:flex;gap:5px;margin-top:5px}
+.o_cai_msg_fb button{border:1px solid #f0c8da;background:#fff;color:#b7195c;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px}
+.o_cai_msg_fb_done{display:block;margin-top:4px;font-size:10px;color:#8490a5}
 .o_cai_empty,.o_cai_loading{text-align:center;color:#8490a5;padding:35px 12px}
 .o_cai_empty i,.o_cai_empty b,.o_cai_empty span{display:block}
 .o_cai_empty i{font-size:24px;margin-bottom:8px}

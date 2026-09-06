@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Cleon AI',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.1.0',
     'category': 'Human Resources/Tools',
     'summary': 'Permission-aware Cleon AI Gateway and Global Assistant Shell',
     'author': 'CleonHR',
@@ -11,7 +11,9 @@
         'base',
         'web',
     ],
-    'data': [],
+    'data': [
+        'security/ir.model.access.csv',
+    ],
     'assets': {
         'web.assets_backend': [
             'cleon_ai/static/src/components/ai_assistant/ai_assistant.css',

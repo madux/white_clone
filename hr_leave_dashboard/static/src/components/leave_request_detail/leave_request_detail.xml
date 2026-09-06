@@ -187,11 +187,26 @@
                         </div>
                     </div>
 
-                    <section t-if="state.insights" class="leave-ai-insights mb-4">
-                        <header><div><strong><i class="fa fa-magic"/> AI Insights</strong><small>Generated <t t-esc="formatDateTime(state.insights.generated_at)"/></small></div><span>Advisory only</span></header>
-                        <div t-if="state.insights.conflict" class="leave-ai-conflict"><i class="fa fa-exclamation-triangle"/> Staffing coverage is projected below 70%. Verify the coverage details before deciding.</div>
+                    <section t-if="state.insights and state.insights.enabled" class="leave-ai-insights mb-4">
+                        <header><div><strong><i class="fa fa-magic"/> AI Insights</strong><small>Generated <t t-esc="formatDateTime(state.insights.generated_at)"/></small></div><span>AI-generated insight, please verify before deciding</span></header>
+                        <div t-if="state.insights.conflict" class="leave-ai-conflict"><i class="fa fa-exclamation-triangle"/> <t t-esc="state.insights.conflict_message || 'Staffing coverage is below threshold. Verify coverage details before deciding.'"/></div>
                         <article t-foreach="state.insights.insights" t-as="insight" t-key="insight.key"><i t-att-class="'fa '+insight.icon"/><div><strong t-esc="insight.title"/><p t-esc="insight.text"/><small>Source: <t t-esc="insight.source"/></small></div></article>
-                        <div class="leave-ai-recommendation"><strong>AI Recommendation (Advisory Only)</strong><p t-esc="state.insights.recommendation"/></div>
+                        
+                        <!-- AI Recommendation (Always Visible) with Collapsible "Why this recommendation?" Factors -->
+                        <div class="leave-ai-recommendation-box">
+                            <div class="leave-ai-rec-header">
+                                <i class="fa fa-lightbulb-o text-warning me-1"/> <strong>AI Recommendation — Advisory Only</strong>
+                            </div>
+                            <p class="leave-ai-rec-text" t-esc="state.insights.recommendation"/>
+                            <button class="leave-ai-rec-toggle" t-on-click="toggleRecommendation">
+                                <span>Why this recommendation?</span>
+                                <i t-att-class="state.recommendationExpanded ? 'fa fa-chevron-up ms-1' : 'fa fa-chevron-down ms-1'"/>
+                            </button>
+                            <ul t-if="state.recommendationExpanded and state.insights.factors" class="leave-ai-factors-list">
+                                <li t-foreach="state.insights.factors" t-as="factor" t-key="factor_index" t-esc="factor"/>
+                            </ul>
+                        </div>
+
                         <footer t-if="state.insightFeedback === null"><span>Was this insight helpful?</span><button t-on-click="()=>rateInsight(true)"><i class="fa fa-thumbs-o-up"/></button><button t-on-click="()=>rateInsight(false)"><i class="fa fa-thumbs-o-down"/></button></footer>
                         <footer t-else=""><span>Thank you. Your feedback was recorded.</span></footer>
                     </section>
@@ -225,10 +240,20 @@
                         </t>
                     </div>
 
-                    <!-- Team Coverage Impact Section -->
+                    <!-- Team Coverage Impact Section (LM-041) -->
                     <div class="leave-detail-section mb-4">
                         <div class="detail-section-title">Team Coverage Impact</div>
                         <div class="coverage-impact-box">
+                            <div t-if="state.detail.coverage_impact.threshold_exceeded" class="alert alert-warning mb-3 d-flex align-items-center justify-content-between p-2">
+                                <div>
+                                    <i class="fa fa-exclamation-triangle text-warning me-2"/>
+                                    <strong>Coverage Risk:</strong> <t t-esc="state.detail.coverage_impact.other_on_leave"/> of <t t-esc="state.detail.coverage_impact.total_dept"/> <t t-esc="state.detail.coverage_impact.department"/> team members are already on leave (<t t-esc="state.detail.coverage_impact.overlap_percentage"/>% away).
+                                </div>
+                                <button type="button" class="btn btn-xs btn-outline-dark" t-on-click="openTeamCalendar">
+                                    <i class="fa fa-calendar me-1"/> View Team Calendar
+                                </button>
+                            </div>
+
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="coverage-label font-weight-bold">Department Coverage</span>
                                 <span t-att-class="'coverage-percent-badge ' + state.detail.coverage_impact.level">
@@ -244,9 +269,36 @@
                                     <t t-esc="state.detail.coverage_impact.other_on_leave"/> other employee(s) from <t t-esc="state.detail.coverage_impact.department"/> will be on leave during this period.
                                 </t>
                                 <t t-else="">
-                                    No other employees from <t t-esc="state.detail.coverage_impact.department"/> are on leave during this period.
+                                    <span class="text-success"><i class="fa fa-check-circle me-1"/> No other employees from <t t-esc="state.detail.coverage_impact.department"/> are on leave during this period. Coverage is optimal.</span>
                                 </t>
                             </p>
+
+                            <!-- Conflicting Leaves List (Expandable) -->
+                            <t t-if="state.detail.coverage_impact.conflicts and state.detail.coverage_impact.conflicts.length">
+                                <div class="conflicts-section mt-3 pt-2 border-top">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="small font-weight-bold text-muted">
+                                            <i class="fa fa-users me-1"/> Conflicting Leaves (<t t-esc="state.detail.coverage_impact.conflicts.length"/>)
+                                        </span>
+                                        <button type="button" class="btn btn-xs btn-link p-0 text-muted" t-on-click="toggleConflicts">
+                                            <i t-att-class="state.conflictsExpanded ? 'fa fa-chevron-up' : 'fa fa-chevron-down'"/>
+                                        </button>
+                                    </div>
+                                    <div t-if="state.conflictsExpanded" class="conflicts-list">
+                                        <div t-foreach="state.detail.coverage_impact.conflicts" t-as="c" t-key="c_index"
+                                             class="d-flex justify-content-between align-items-center py-1 border-bottom small">
+                                            <div>
+                                                <strong><t t-esc="c.employee_name"/></strong>
+                                                <span class="text-muted ms-2">· <t t-esc="c.leave_type"/></span>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted me-2"><t t-esc="formatDate(c.date_from)"/> – <t t-esc="formatDate(c.date_to)"/></span>
+                                                <span t-att-class="'badge ' + (c.status === 'approved' ? 'bg-success' : 'bg-warning text-dark')" t-esc="c.status_label"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
                         </div>
                     </div>
 
@@ -415,6 +467,32 @@
                         <button type="button" class="btn btn-secondary" t-on-click="closeCancel">Dismiss</button>
                         <button type="button" class="btn btn-warning ms-2 text-dark font-weight-bold" t-on-click="confirmCancel" t-att-disabled="state.processing">
                             Confirm Cancellation
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- Coverage Risk Override Confirmation Modal (LM-041 AC6) -->
+            <t t-if="state.showOverrideConfirmModal">
+                <div class="cleon-welcome-backdrop" style="z-index: 2070;" t-on-click="() => this.state.showOverrideConfirmModal = false"/>
+                <div class="cleon-reject-modal" style="z-index: 2080;" role="dialog" aria-modal="true">
+                    <button type="button" class="cleon-welcome-close" t-on-click="() => this.state.showOverrideConfirmModal = false"><i class="fa fa-times"/></button>
+                    <div class="cleon-detail-header">
+                        <h4 class="text-warning"><i class="fa fa-exclamation-triangle me-1"/> Coverage Risk Override</h4>
+                        <span class="text-muted">Staffing absence exceeds policy threshold. Logged acknowledgment required.</span>
+                    </div>
+                    <div class="py-3">
+                        <p class="small text-muted mb-3">
+                            <t t-esc="state.detail.coverage_impact.other_on_leave"/> other team member(s) overlap with this period. Approving this request will lower department availability to <t t-esc="state.detail.coverage_impact.percentage"/>%.
+                        </p>
+                        <label class="form-label font-weight-bold">Approver Acknowledgment *</label>
+                        <input type="text" class="form-control" t-model="state.overrideAcknowledgment"/>
+                        <small class="text-muted">This acknowledgment will be permanently logged in the audit trail.</small>
+                    </div>
+                    <div class="cleon-detail-footer">
+                        <button type="button" class="btn btn-secondary" t-on-click="() => this.state.showOverrideConfirmModal = false">Cancel</button>
+                        <button type="button" class="btn btn-warning ms-2 text-dark font-weight-bold" t-on-click="confirmOverrideApproval" t-att-disabled="state.processing || !state.overrideAcknowledgment.trim()">
+                            <i t-if="state.processing" class="fa fa-spinner fa-spin me-1"/> Approve Anyway
                         </button>
                     </div>
                 </div>

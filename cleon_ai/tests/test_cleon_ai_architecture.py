@@ -36,6 +36,14 @@ class TestCleonAiArchitecture(TransactionCase):
         res = self.gateway.ask_assistant("How many employees are on leave?")
         self.assertFalse(res["answered"])
         self.assertIn("no live AI provider has been enabled", res["message"])
+        self.assertTrue(res["interaction_id"])
+
+    def test_08_assistant_feedback_is_persisted_for_its_owner(self):
+        result = self.gateway.ask_assistant("Explain this screen")
+        self.assertTrue(self.gateway.record_interaction_feedback(result["interaction_id"], True)["ok"])
+        interaction = self.env["cleon.ai.interaction"].sudo().browse(result["interaction_id"])
+        self.assertTrue(interaction.helpful)
+        self.assertTrue(interaction.feedback_at)
 
     def test_05_unregistered_tool_execution_blocked(self):
         """Executing an unregistered tool raises ValidationError."""

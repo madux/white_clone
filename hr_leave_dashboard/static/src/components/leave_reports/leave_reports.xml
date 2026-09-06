@@ -133,11 +133,220 @@
             <section class="o_lra_table_card"><h4>Policy usage and configured limits</h4><p>The current build stores these policy controls on Leave Types pending the versioned Leave Policy migration.</p><div class="o_lra_table_wrap"><table><thead><tr><th>Policy / Leave Type</th><th>Covered Employees</th><th>Requests</th><th>Avg Notice</th><th>Notice Limit</th><th>Longest Request</th><th>Consecutive Limit</th><th>Blackout Rules</th></tr></thead><tbody><tr t-foreach="state.data.reports.policy_usage" t-as="row" t-key="row.id"><td><b t-esc="row.name"/></td><td t-esc="row.employees"/><td t-esc="row.requests"/><td><t t-esc="row.average_notice"/> days</td><td><t t-esc="row.notice_limit"/> days</td><td><t t-esc="row.longest_request"/> days</td><td><t t-esc="row.consecutive_limit || 'No limit'"/></td><td t-esc="row.blackout_periods"/></tr></tbody></table></div></section>
           </t>
 
-          <t t-else="">
+          <t t-elif="state.activeReport === 'absence_risk'">
             <div class="o_lra_privacy"><i class="fa fa-lock"/><div><b>Privacy-controlled workforce signal</b><p t-if="state.data.reports.absence_risk.mode === 'detail'">You can view the formula inputs and numeric score because you hold an HR Administrator or HR Director role.</p><p t-elif="state.data.reports.absence_risk.mode === 'team_flags'">Managers see only Low/Watch flags for their own team; numeric scores, spell dates and day counts remain private.</p><p t-else="">This view is aggregated. Individual employees and scores are not exposed to this reporting role.</p></div></div>
             <div t-if="state.data.reports.absence_risk.mode !== 'team_flags'" class="o_lra_band_cards"><article class="low"><small>Low</small><strong t-esc="state.data.reports.absence_risk.bands.low || 0"/></article><article class="caution"><small>Caution</small><strong t-esc="state.data.reports.absence_risk.bands.caution || 0"/></article><article class="concern"><small>Concern</small><strong t-esc="state.data.reports.absence_risk.bands.concern || 0"/></article><article class="serious"><small>Serious</small><strong t-esc="state.data.reports.absence_risk.bands.serious || 0"/></article><article class="critical"><small>Critical</small><strong t-esc="state.data.reports.absence_risk.bands.critical || 0"/></article></div>
             <section t-if="state.data.reports.absence_risk.mode === 'detail'" class="o_lra_table_card"><h4>Bradford Factor detail</h4><p>S² × D over the configured rolling window. This is advisory only and never triggers an automatic decision.</p><table><thead><tr><th>Employee</th><th>Department</th><th>Location</th><th>Score</th><th>Band</th><th>Spells</th><th>Days</th></tr></thead><tbody><tr t-foreach="state.data.reports.absence_risk.rows" t-as="row" t-key="row.employee_id"><td><b t-esc="row.employee"/></td><td t-esc="row.department"/><td t-esc="row.location"/><td><strong t-esc="row.score"/></td><td><span t-att-class="'o_lra_band ' + row.band" t-esc="formatBand(row.band)"/></td><td t-esc="row.spells"/><td t-esc="row.days"/></tr></tbody></table></section>
             <section t-if="state.data.reports.absence_risk.mode === 'team_flags'" class="o_lra_table_card"><h4>Team attendance pattern flags</h4><table><thead><tr><th>Employee</th><th>Department</th><th>Attendance Pattern</th></tr></thead><tbody><tr t-foreach="state.data.reports.absence_risk.rows" t-as="row" t-key="row.employee_id"><td><b t-esc="row.employee"/></td><td t-esc="row.department"/><td><span t-att-class="'o_lra_flag ' + row.flag" t-esc="row.flag === 'watch' ? 'Attendance pattern under review' : 'Low'"/></td></tr></tbody></table></section>
+          </t>
+
+          <t t-elif="state.activeReport === 'anomalies'">
+            <div class="o_ano_filters_card">
+              <div class="o_ano_filters_grid">
+                <label class="o_ano_filter_field">
+                  <span>Severity</span>
+                  <select t-att-value="state.anomalyFilters.severity" t-on-change="(ev) => this.setAnomalyFilter('severity', ev.target.value)">
+                    <option value="all">All Severities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                </label>
+                <label class="o_ano_filter_field">
+                  <span>Department</span>
+                  <select t-att-value="state.anomalyFilters.department_id" t-on-change="(ev) => this.setAnomalyFilter('department_id', ev.target.value)">
+                    <option value="">All Departments</option>
+                    <option t-foreach="state.data.options.departments || []" t-as="dept" t-key="dept.id" t-att-value="dept.id" t-esc="dept.name"/>
+                  </select>
+                </label>
+                <label class="o_ano_filter_field">
+                  <span>Pattern Type</span>
+                  <select t-att-value="state.anomalyFilters.pattern_type" t-on-change="(ev) => this.setAnomalyFilter('pattern_type', ev.target.value)">
+                    <option value="all">All Pattern Types</option>
+                    <option value="mon_fri_cluster">Frequent Monday/Friday leave</option>
+                    <option value="adjacent_to_holiday">Short-notice sick leave adjacent to holiday</option>
+                    <option value="high_short_absence">High frequency short absences</option>
+                  </select>
+                </label>
+                <label class="o_ano_filter_field">
+                  <span>Status</span>
+                  <select t-att-value="state.anomalyFilters.status" t-on-change="(ev) => this.setAnomalyFilter('status', ev.target.value)">
+                    <option value="all">All Statuses</option>
+                    <option value="open">Open</option>
+                    <option value="reviewed">Reviewed</option>
+                    <option value="escalated">Escalated</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="o_lra_info">
+              <i class="fa fa-shield"/>
+              <span><b>Fraud &amp; Anomaly Detection (Advisory)</b> — All flags are pattern-based indicators for HR investigation. Employees never see anomaly alerts raised about themselves, and no automatic disciplinary action is ever taken.</span>
+            </div>
+
+            <section class="o_lra_table_card">
+              <div class="o_ano_table_header">
+                <div>
+                  <h4>Anomaly Alerts</h4>
+                  <p>Active pattern alerts crossing configured sensitivity thresholds in the rolling 180-day window.</p>
+                </div>
+                <div class="o_ano_counts">
+                  <span>Total alerts: <strong t-esc="state.data.reports.anomalies.total || (state.data.reports.anomalies.rows and state.data.reports.anomalies.rows.length) || 0"/></span>
+                </div>
+              </div>
+              <div class="o_lra_table_wrap">
+                <table class="o_ano_table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Department</th>
+                      <th>Pattern Type</th>
+                      <th>Severity</th>
+                      <th>Last Detected</th>
+                      <th>Occurrences</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr t-foreach="state.data.reports.anomalies.rows || []" t-as="row" t-key="row.id">
+                      <td><b t-esc="row.employee"/></td>
+                      <td t-esc="row.department"/>
+                      <td>
+                        <span t-esc="row.pattern_type_label"/>
+                        <small class="o_ano_supporting_hint" t-if="row.supporting_data" t-esc="row.supporting_data"/>
+                      </td>
+                      <td>
+                        <span t-att-class="'o_ano_badge o_ano_sev_' + row.severity" t-esc="row.severity_label"/>
+                      </td>
+                      <td t-esc="row.last_detected"/>
+                      <td><span class="o_ano_occ" t-esc="row.occurrences"/></td>
+                      <td>
+                        <span t-att-class="'o_ano_badge o_ano_status_' + row.status" t-esc="row.status"/>
+                      </td>
+                      <td>
+                        <div class="o_ano_action_btns">
+                          <button class="o_ano_btn_review" t-on-click="() => this.openAnomalyAction(row, 'review')" title="Mark as Reviewed">
+                            <i class="fa fa-check"/> Review
+                          </button>
+                          <button class="o_ano_btn_escalate" t-on-click="() => this.openAnomalyAction(row, 'escalate')" title="Escalate to HR">
+                            <i class="fa fa-exclamation-circle"/> Escalate
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr t-if="!(state.data.reports.anomalies.rows and state.data.reports.anomalies.rows.length)">
+                      <td colspan="8" class="o_lr_no_data">
+                        <i class="fa fa-check-circle-o" style="font-size: 28px; color: #16a36a; margin-bottom: 8px; display: block;"/>
+                        No anomaly alerts found for the selected filters.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </t>
+
+          <t t-elif="state.activeReport === 'executive_brief'">
+            <div class="o_eb_toolbar">
+              <div class="o_eb_month_nav">
+                <button class="o_eb_nav_btn" t-on-click="prevMonth" title="Previous month"><i class="fa fa-chevron-left"/></button>
+                <span class="o_eb_month_title"><i class="fa fa-calendar"/> <t t-esc="state.data.reports.executive_brief.period_title || state.briefMonth"/></span>
+                <button class="o_eb_nav_btn" t-on-click="nextMonth" title="Next month"><i class="fa fa-chevron-right"/></button>
+                <input type="month" class="o_eb_month_input" t-att-value="state.briefMonth" t-on-change="(ev) => this.setBriefMonth(ev.target.value)"/>
+              </div>
+              <label class="o_lra_picker">
+                <span>Department</span>
+                <select t-att-value="state.briefDepartmentId" t-on-change="(ev) => this.setBriefDepartment(ev.target.value)">
+                  <option value="">All Business Units</option>
+                  <option t-foreach="state.data.options.departments || []" t-as="dept" t-key="dept.id" t-att-value="dept.id" t-esc="dept.name"/>
+                </select>
+              </label>
+              <div class="o_eb_toolbar_actions">
+                <button class="o_eb_btn_generate" t-on-click="refresh">
+                  <i class="fa fa-magic"/> Generate Brief
+                </button>
+              </div>
+            </div>
+
+            <div class="o_eb_brief_container">
+              <header class="o_eb_brief_header">
+                <div>
+                  <span class="o_eb_badge"><i class="fa fa-line-chart"/> AI Executive Brief</span>
+                  <h3 t-esc="(state.data.reports.executive_brief.period_title || state.briefMonth) + ' Workforce Summary'"/>
+                  <p>Consolidated workforce leave health, approval SLAs, department concentration, and proactive staffing recommendations.</p>
+                </div>
+                <div class="o_eb_export_btns">
+                  <button class="o_eb_btn_dl" t-on-click="() => this.exportReport('pdf')">
+                    <i class="fa fa-file-pdf-o"/> Download PDF
+                  </button>
+                </div>
+              </header>
+
+              <div class="o_eb_kpi_grid">
+                <div class="o_eb_kpi_card">
+                  <span class="o_eb_kpi_num" t-esc="state.data.reports.executive_brief.kpis?.requests_approved || 0"/>
+                  <strong class="o_eb_kpi_label">Leave Requests Approved</strong>
+                  <small class="o_eb_kpi_sub good"><i class="fa fa-arrow-up"/> Approved in period</small>
+                </div>
+                <div class="o_eb_kpi_card">
+                  <span class="o_eb_kpi_num warn" t-esc="state.data.reports.executive_brief.kpis?.pending_approvals || 0"/>
+                  <strong class="o_eb_kpi_label">Pending Approvals</strong>
+                  <small class="o_eb_kpi_sub warn">Awaiting approver decision</small>
+                </div>
+                <div class="o_eb_kpi_card">
+                  <span class="o_eb_kpi_num good"><t t-esc="state.data.reports.executive_brief.kpis?.sla_achieved_percent || 0"/>%</span>
+                  <strong class="o_eb_kpi_label">Approval SLA Achieved</strong>
+                  <small class="o_eb_kpi_sub">Target SLA: 95%</small>
+                </div>
+                <div class="o_eb_kpi_card">
+                  <span class="o_eb_kpi_num primary"><t t-esc="state.data.reports.executive_brief.kpis?.avg_days_to_approve || 0"/></span>
+                  <strong class="o_eb_kpi_label">Avg Days to Approve</strong>
+                  <small class="o_eb_kpi_sub">Decision turnaround time</small>
+                </div>
+              </div>
+
+              <div class="o_eb_columns">
+                <section class="o_eb_insights_card">
+                  <header>
+                    <i class="fa fa-lightbulb-o"/>
+                    <div>
+                      <h4>Key Insights</h4>
+                      <p>Patterns detected across requests, approvals, and absences.</p>
+                    </div>
+                  </header>
+                  <ul class="o_eb_bullet_list">
+                    <li t-foreach="state.data.reports.executive_brief.key_insights || []" t-as="insight" t-key="insight">
+                      <i class="fa fa-circle"/>
+                      <span t-esc="insight"/>
+                    </li>
+                  </ul>
+                </section>
+
+                <section class="o_eb_recommendations_card">
+                  <header>
+                    <i class="fa fa-magic"/>
+                    <div>
+                      <div class="o_eb_rec_heading">
+                        <h4>AI Recommendations</h4>
+                        <span class="o_eb_advisory_tag">Advisory</span>
+                      </div>
+                      <p>Suggestions to optimize team coverage, mitigate burnout, and balance approvals.</p>
+                    </div>
+                  </header>
+                  <ul class="o_eb_bullet_list advisory">
+                    <li t-foreach="state.data.reports.executive_brief.ai_recommendations || []" t-as="rec" t-key="rec">
+                      <i class="fa fa-check-circle"/>
+                      <span t-esc="rec"/>
+                    </li>
+                  </ul>
+                  <div class="o_eb_advisory_footer">
+                    <small><i class="fa fa-info-circle"/> Advisory only: Approvers and HR administrators retain final decision authority.</small>
+                  </div>
+                </section>
+              </div>
+            </div>
           </t>
         </t>
       </main>
@@ -150,6 +359,39 @@
       <t t-if="state.riskSettingsOpen">
         <div class="o_lra_backdrop" t-on-click="closeRiskSettings"/>
         <section class="o_lra_modal"><header><div><small>Absence Risk</small><h3>Bradford Factor settings</h3></div><button t-on-click="closeRiskSettings">×</button></header><div class="o_lra_modal_body"><label class="toggle"><input type="checkbox" t-model="state.riskForm.enabled"/><span>Enable Bradford scoring</span></label><div class="o_lra_form_grid"><label><span>Rolling window (weeks)</span><input type="number" min="1" t-model.number="state.riskForm.window_weeks"/></label><label><span>Minimum spell (days)</span><input type="number" min="1" t-model.number="state.riskForm.minimum_spell_days"/></label><label><span>Caution starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.caution"/></label><label><span>Concern starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.concern"/></label><label><span>Serious starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.serious"/></label><label><span>Critical starts</span><input type="number" min="1" t-model.number="state.riskForm.thresholds.critical"/></label></div><h4>Leave Type treatment</h4><div class="o_lra_type_modes"><label t-foreach="state.riskForm.leave_type_modes || []" t-as="item" t-key="item.id"><span t-esc="item.name"/><select t-model="item.mode" t-att-disabled="item.locked"><option value="exclude">Excluded</option><option value="short_notice">Short-notice only</option><option value="all">All approved absences</option></select></label></div><p class="o_lra_notice">Changes take effect on the next calculation and do not create automatic disciplinary or leave decisions.</p></div><footer><button t-on-click="closeRiskSettings">Cancel</button><button class="primary" t-on-click="saveRiskSettings">Save settings</button></footer></section>
+      </t>
+
+      <t t-if="state.anomalyModal">
+        <div class="o_lra_backdrop" t-on-click="closeAnomalyAction"/>
+        <section class="o_lra_modal o_ano_modal">
+          <header>
+            <div>
+              <small>Leave Anomaly Investigation</small>
+              <h3 t-esc="state.anomalyModal.action === 'escalate' ? 'Escalate Anomaly to HR' : 'Mark Anomaly as Reviewed'"/>
+            </div>
+            <button t-on-click="closeAnomalyAction">×</button>
+          </header>
+          <div class="o_lra_modal_body">
+            <div class="o_ano_modal_summary">
+              <div><strong>Employee:</strong> <span t-esc="state.anomalyModal.anomaly.employee"/> (<t t-esc="state.anomalyModal.anomaly.department"/>)</div>
+              <div><strong>Pattern:</strong> <span t-esc="state.anomalyModal.anomaly.pattern_type_label"/></div>
+              <div><strong>Severity:</strong> <span t-att-class="'o_ano_badge o_ano_sev_' + state.anomalyModal.anomaly.severity" t-esc="state.anomalyModal.anomaly.severity_label"/></div>
+              <div><strong>Evidence:</strong> <span t-esc="state.anomalyModal.anomaly.supporting_data"/></div>
+            </div>
+            <label class="o_ano_modal_field">
+              <span>Investigation Note / Comments</span>
+              <textarea rows="3" t-model="state.anomalyModal.note" placeholder="Add optional notes for the audit trail..."/>
+            </label>
+            <p class="o_lra_notice">All reviews and escalations are logged immutably into the Leave Audit Log. No automatic disciplinary action is taken.</p>
+          </div>
+          <footer>
+            <button t-on-click="closeAnomalyAction">Cancel</button>
+            <button class="primary" t-on-click="submitAnomalyAction" t-att-disabled="state.anomalyModal.saving">
+              <i t-att-class="state.anomalyModal.saving ? 'fa fa-spinner fa-spin' : (state.anomalyModal.action === 'escalate' ? 'fa fa-exclamation-circle' : 'fa fa-check')"/>
+              <t t-esc="state.anomalyModal.action === 'escalate' ? 'Escalate to HR' : 'Confirm Reviewed'"/>
+            </button>
+          </footer>
+        </section>
       </t>
     </div>
   </t>

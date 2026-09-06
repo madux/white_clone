@@ -40,13 +40,23 @@
                 <button t-foreach="state.summary.suggestions" t-as="suggestion" t-key="suggestion" t-on-click="() => this.ask(suggestion)" t-esc="suggestion"/>
               </div>
               <div class="o_cai_messages">
-                <p t-foreach="state.messages" t-as="message" t-key="message_index" t-att-class="message.role" t-esc="message.text"/>
+                <div t-foreach="state.messages" t-as="message" t-key="message_index" t-att-class="'o_cai_msg ' + message.role">
+                  <p t-esc="message.text"/>
+                  <a t-if="message.link" t-att-href="message.link" class="o_cai_msg_link" target="_blank">View Details →</a>
+                  <div t-if="message.role === 'assistant' and state.messageFeedback[message_index] === undefined" class="o_cai_msg_fb">
+                    <button t-on-click="() => this.rateMessage(message_index, true)" title="Helpful"><i class="fa fa-thumbs-o-up"/></button>
+                    <button t-on-click="() => this.rateMessage(message_index, false)" title="Not helpful"><i class="fa fa-thumbs-o-down"/></button>
+                  </div>
+                  <span t-elif="message.role === 'assistant'" class="o_cai_msg_fb_done">
+                    <i t-att-class="state.messageFeedback[message_index] ? 'fa fa-thumbs-up' : 'fa fa-thumbs-down'"/> Feedback recorded
+                  </span>
+                </div>
               </div>
             </t>
           </t>
         </div>
         <div class="o_cai_input">
-          <input t-model="state.question" t-on-keydown="onQuestionKeydown" placeholder="Ask about the current screen…"/>
+          <input t-model="state.question" t-on-keydown="onQuestionKeydown" placeholder="Ask me anything about your leave…"/>
           <button t-on-click="() => this.ask()"><i class="fa fa-paper-plane"/></button>
         </div>
         <footer>

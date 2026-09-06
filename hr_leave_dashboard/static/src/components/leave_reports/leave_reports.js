@@ -7,13 +7,15 @@ import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../calendar_sidebar";
 
 const EMPTY_DATA = {
-    meta: { period: {}, scope_label: "", employee_count: 0 },
+    meta: { period: {}, scope_label: "", employee_count: 0, can_view_anomalies: false, can_view_executive_brief: false },
     options: { departments: [], locations: [], units: [], employees: [], leave_types: [] },
     reports: {
         utilisation: { by_type: [], by_employee: [] }, balances: { rows: [], totals: {} },
         request_volume: { counts: {}, monthly: [] }, turnaround: { by_approver: [], by_type: [] },
         trends: { monthly: [] }, frequency: { department: [], location: [], unit: [] },
         policy_usage: [], absence_risk: { mode: "aggregate", rows: [], bands: {}, settings: { thresholds: {} } },
+        anomalies: { rows: [], total: 0 },
+        executive_brief: { kpis: {}, key_insights: [], ai_recommendations: [] },
     },
 };
 
@@ -33,6 +35,10 @@ export class LeaveReportsPage extends Component {
             frequencyDimension: "department", filtersOpen: false, exportOpen: false,
             revision: 0, lastRefreshed: "", drilldown: null, riskSettingsOpen: false,
             riskForm: { enabled: true, window_weeks: 52, minimum_spell_days: 1, thresholds: { caution: 51, concern: 101, serious: 201, critical: 401 } },
+            anomalyFilters: { severity: "all", department_id: "", pattern_type: "all", status: "all" },
+            anomalyModal: null,
+            briefMonth: new Date().toISOString().slice(0, 7),
+            briefDepartmentId: "",
             filters: {
                 date_range: "this_year", start_date: "", end_date: "",
                 department_ids: [], location_ids: [], unit_ids: [], leave_type_ids: [], employee_ids: [],
@@ -44,7 +50,7 @@ export class LeaveReportsPage extends Component {
     }
 
     get reports() {
-        return [
+        const list = [
             { key: "request_volume", label: "Request Volume", icon: "fa-inbox" },
             { key: "utilisation", label: "Leave Utilisation", icon: "fa-pie-chart" },
             { key: "balances", label: "Balance Summary", icon: "fa-balance-scale" },
@@ -54,9 +60,16 @@ export class LeaveReportsPage extends Component {
             { key: "policy_usage", label: "Policy Usage", icon: "fa-sliders" },
             { key: "absence_risk", label: "Absence Risk", icon: "fa-exclamation-triangle" },
         ];
+        if (this.state.data.meta?.can_view_anomalies !== false) {
+            list.push({ key: "anomalies", label: "Leave Anomalies", icon: "fa-search", ai: true });
+        }
+        if (this.state.data.meta?.can_view_executive_brief !== false) {
+            list.push({ key: "executive_brief", label: "Executive Brief", icon: "fa-file-text-o", ai: true });
+        }
+        return list;
     }
     get activeDefinition() { return this.reports.find(item => item.key === this.state.activeReport) || this.reports[0]; }
-    get usesDateRange() { return !["utilisation", "balances", "absence_risk"].includes(this.state.activeReport); }
+    get usesDateRange() { return !["utilisation", "balances", "absence_risk", "anomalies", "executive_brief"].includes(this.state.activeReport); }
     get currentFrequencyRows() { return this.state.data.reports.frequency?.[this.state.frequencyDimension] || []; }
     get activeFilterCount() { return ["department_ids", "location_ids", "unit_ids", "leave_type_ids", "employee_ids"].reduce((total, key) => total + this.state.filters[key].length, 0); }
     get filterGroups() {
@@ -89,7 +102,15 @@ export class LeaveReportsPage extends Component {
         const reportKey = this.state.activeReport;
         this.state.loading = true;
         try {
-            const filters = { ...this.state.filters, frequency_dimension: this.state.frequencyDimension };
+            const filters = {
+                ...this.state.filters,
+                frequency_dimension: this.state.frequencyDimension,
+                severity: this.state.anomalyFilters.severity,
+                pattern_type: this.state.anomalyFilters.pattern_type,
+                status: this.state.anomalyFilters.status,
+                month: this.state.briefMonth,
+                department_id: this.state.activeReport === "anomalies" ? (this.state.anomalyFilters.department_id || undefined) : (this.state.briefDepartmentId || undefined),
+            };
             const response = await this.orm.call("hr.leave.report.service", "get_report_data", [], { filters, report_key: reportKey });
             if (loadSequence !== this.loadSequence) return;
             this.state.data = {
@@ -216,6 +237,54 @@ export class LeaveReportsPage extends Component {
     }
     formatBand(value) { return value ? value.charAt(0).toUpperCase() + value.slice(1) : "Low"; }
     formatDate(value) { return value ? new Date(`${value}T00:00:00`).toLocaleDateString() : "—"; }
+
+    async setAnomalyFilter(key, value) {
+        this.state.anomalyFilters[key] = value;
+        await this.refresh();
+    }
+    openAnomalyAction(anomaly, action = "review") {
+        this.state.anomalyModal = { anomaly, action, note: "", saving: false };
+    }
+    closeAnomalyAction() {
+        this.state.anomalyModal = null;
+    }
+    async submitAnomalyAction() {
+        if (!this.state.anomalyModal) return;
+        this.state.anomalyModal.saving = true;
+        try {
+            const { anomaly, action, note } = this.state.anomalyModal;
+            await this.orm.call("hr.leave.ai.service", "review_leave_anomaly", [anomaly.id, action, note]);
+            this.notification.add(
+                action === "escalate" ? "Anomaly escalated to HR." : "Anomaly marked as reviewed.",
+                { type: "success" }
+            );
+            this.state.anomalyModal = null;
+            await this.refresh();
+        } catch (error) {
+            this.notification.add(error.data?.message || error.message || "Failed to record anomaly action.", { type: "danger" });
+            if (this.state.anomalyModal) this.state.anomalyModal.saving = false;
+        }
+    }
+    async prevMonth() {
+        const [y, m] = this.state.briefMonth.split("-").map(Number);
+        const prev = new Date(y, m - 2, 1);
+        this.state.briefMonth = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        await this.refresh();
+    }
+    async nextMonth() {
+        const [y, m] = this.state.briefMonth.split("-").map(Number);
+        const next = new Date(y, m, 1);
+        this.state.briefMonth = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+        await this.refresh();
+    }
+    async setBriefMonth(value) {
+        this.state.briefMonth = value;
+        await this.refresh();
+    }
+    async setBriefDepartment(value) {
+        this.state.briefDepartmentId = value;
+        await this.refresh();
+    }
 }
 
 registry.category("actions").add("hr_leave_dashboard.LeaveReportsPage", LeaveReportsPage);

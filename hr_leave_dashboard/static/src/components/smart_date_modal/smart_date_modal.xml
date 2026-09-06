@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.SmartDateRecommendationsModal" owl="1">
+    <div class="o_sd_overlay">
+      <section class="o_sd_modal" role="dialog" aria-modal="true">
+        <header class="o_sd_header">
+          <div>
+            <h3><i class="fa fa-calendar-check-o text-primary me-2"/> Suggest Best Dates</h3>
+            <p>Optimal leave windows based on holidays, team coverage, and your balance</p>
+          </div>
+          <button class="o_sd_close" t-on-click="props.close">×</button>
+        </header>
+
+        <div class="o_sd_controls">
+          <div class="o_sd_field">
+            <label>Leave Type</label>
+            <select t-model="state.leave_type_id" t-on-change="fetchSuggestions">
+              <option t-foreach="props.types || []" t-as="item" t-key="item.id" t-att-value="item.id">
+                <t t-esc="item.name"/>
+              </option>
+            </select>
+          </div>
+
+          <div class="o_sd_field">
+            <label>Duration</label>
+            <select t-model="state.duration" t-on-change="fetchSuggestions">
+              <option value="1">1 day</option>
+              <option value="2">2 days</option>
+              <option value="3">3 days</option>
+              <option value="4">4 days</option>
+              <option value="5">5 days (1 week)</option>
+              <option value="10">10 days (2 weeks)</option>
+              <option value="15">15 days (3 weeks)</option>
+            </select>
+          </div>
+
+          <div class="o_sd_toggles">
+            <label class="o_sd_toggle_label">
+              <input type="checkbox" t-model="state.prioritize_holidays" t-on-change="fetchSuggestions"/>
+              <span>Prioritise holidays</span>
+            </label>
+            <label class="o_sd_toggle_label">
+              <input type="checkbox" t-model="state.prioritize_coverage" t-on-change="fetchSuggestions"/>
+              <span>Prioritise team coverage</span>
+            </label>
+          </div>
+
+          <button class="o_sd_fetch_btn" t-on-click="fetchSuggestions" t-att-disabled="state.loading">
+            <i t-att-class="state.loading ? 'fa fa-spinner fa-spin' : 'fa fa-magic'"/> Get Suggestions
+          </button>
+        </div>
+
+        <div class="o_sd_body">
+          <div t-if="state.loading" class="o_sd_loading">
+            <i class="fa fa-spinner fa-spin fa-2x"/>
+            <p>Analyzing team calendars, holidays, and policies across next 90 days...</p>
+          </div>
+
+          <div t-elif="state.error" class="o_sd_alert error">
+            <i class="fa fa-exclamation-circle me-2"/> <t t-esc="state.error"/>
+          </div>
+
+          <t t-elif="state.suggestions.length">
+            <div class="o_sd_table_wrap">
+              <table class="o_sd_table">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Suggested Dates</th>
+                    <th>Rationale</th>
+                    <th>Team Coverage</th>
+                    <th>Long Weekend</th>
+                    <th>Balance Impact</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="state.suggestions" t-as="item" t-key="item.rank">
+                    <td><span class="o_sd_rank" t-esc="item.rank"/></td>
+                    <td><strong><t t-esc="item.label"/></strong></td>
+                    <td class="o_sd_rationale"><t t-esc="item.rationale"/></td>
+                    <td>
+                      <span class="o_sd_badge coverage" t-esc="item.team_coverage"/>
+                    </td>
+                    <td>
+                      <span t-att-class="'o_sd_badge ' + (item.long_weekend.startsWith('Yes') ? 'weekend-yes' : 'weekend-no')">
+                        <t t-esc="item.long_weekend"/>
+                      </span>
+                    </td>
+                    <td class="o_sd_balance"><t t-esc="item.balance_impact"/></td>
+                    <td>
+                      <button class="o_sd_select_btn" t-on-click="() => this.onSelectSuggestion(item)">
+                        Select
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="o_sd_footer_note">
+              <p><i class="fa fa-info-circle text-muted me-1"/> <t t-esc="state.note || 'All recommendations are advisory only. Final requests pass through standard approval.'"/></p>
+            </div>
+          </t>
+
+          <div t-else="" class="o_sd_empty">
+            <i class="fa fa-calendar-times-o fa-2x text-muted mb-2"/>
+            <p>No suitable dates found within the next 90 days. Try adjusting your duration or preferences.</p>
+          </div>
+        </div>
+
+        <footer class="o_sd_footer">
+          <button class="btn btn-secondary" t-on-click="props.close">Close</button>
+        </footer>
+      </section>
+    </div>
+  </t>
+</templates>

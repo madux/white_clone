@@ -14,7 +14,7 @@ const newLine = () => ({
 });
 
 const newForm = (mode = "simple") => ({
-    id: false, mode, name: "", code: "", description: "", category: "General", color: "#E91E78",
+    id: false, mode, name: "", code: "", description: "", category: "General", color: "#E91E78", ai_enabled: true,
     state: "active", apply_to: mode === "simple" ? "selected" : "all", condition_match: "all", minimum_tenure_months: 0,
     selected: { employee_ids: [], department_ids: [], unit_ids: [], grade_ids: [], location_ids: [], employee_type_ids: [], job_ids: [] },
     carry: { enabled: false, maximum: 0, expiry_value: 0, expiry_unit: "months", priority: "current" },

@@ -46,6 +46,7 @@ class HrLeaveAuditLog(models.Model):
         ("accrual_processed", "Accrual Processed"),
         ("calendar_change", "Calendar Updated"),
         ("settings_change", "Settings Updated"),
+        ("anomaly_review", "Leave Anomaly Reviewed"),
         ("failed", "Action Failed"),
     ], string="Action", required=True, readonly=True)
 
@@ -54,6 +55,7 @@ class HrLeaveAuditLog(models.Model):
         ("requests", "Requests"), ("policies", "Policies"), ("balance", "Balance"),
         ("accrual", "Accrual"), ("leave_types", "Leave Types"),
         ("calendar", "Calendar"), ("settings", "Settings"),
+        ("reports", "Reports"),
     ], required=True, readonly=True, index=True, default="requests")
     entity_type = fields.Selection([
         ("leave_request", "Leave Request"), ("leave_type", "Leave Type"),
@@ -62,6 +64,7 @@ class HrLeaveAuditLog(models.Model):
         ("holiday", "Official Holiday"), ("blackout", "Blackout Window"),
         ("approval_template", "Approval Template"),
         ("system", "System"), ("absence_risk", "Absence Risk"),
+        ("leave_anomaly", "Leave Anomaly"),
     ], required=True, readonly=True, index=True, default="leave_request")
     entity_name = fields.Char(readonly=True, index=True)
     entity_reference = fields.Char(readonly=True, index=True)
@@ -112,6 +115,8 @@ class HrLeaveAuditLog(models.Model):
                 vals.setdefault("module_area", "settings"); vals.setdefault("entity_type", "system")
             elif action in ("risk_band_crossing", "risk_configuration_change", "risk_exclusion_change", "risk_export"):
                 vals.setdefault("module_area", "requests"); vals.setdefault("entity_type", "absence_risk")
+            elif action == "anomaly_review":
+                vals.setdefault("module_area", "reports"); vals.setdefault("entity_type", "leave_anomaly")
             else:
                 vals.setdefault("module_area", "requests"); vals.setdefault("entity_type", "leave_request")
             vals.setdefault("entity_name", leave.display_name if leave else (leave_type.name if leave_type else action_labels.get(action, _("System Event"))))
@@ -141,7 +146,7 @@ class HrLeaveAuditLog(models.Model):
     @api.constrains("action", "leave_id", "employee_id", "leave_type_id")
     def _check_audit_references(self):
         for log in self:
-            if log.action in ("policy_change", "balance_adjustment", "balance_allocation", "accrual_processed", "calendar_change", "settings_change", "risk_band_crossing", "risk_configuration_change", "risk_export", "failed"):
+            if log.action in ("policy_change", "balance_adjustment", "balance_allocation", "accrual_processed", "calendar_change", "settings_change", "risk_band_crossing", "risk_configuration_change", "risk_export", "failed", "anomaly_review"):
                 if log.action in ("balance_adjustment", "balance_allocation") and not log.leave_type_id:
                     raise ValidationError(_("Balance audit logs require a valid Leave Type reference."))
                 if log.action in ("balance_adjustment", "balance_allocation") and not log.employee_id:

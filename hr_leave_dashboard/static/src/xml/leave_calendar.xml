@@ -66,6 +66,24 @@
                                 <i class="fa fa-line-chart me-1"/> Coverage Analysis
                             </button>
 
+                            <!-- AI Summary Button (LM-044) -->
+                            <button t-if="state.canViewAiSummary"
+                                    type="button"
+                                    t-att-class="'btn btn-sm ' + (state.aiSummary.open ? 'btn-pink-active' : 'btn-outline-secondary')"
+                                    t-on-click="showAiSummary"
+                                    title="AI Calendar &amp; Availability Summary">
+                                <i class="fa fa-magic me-1"/> AI Summary
+                            </button>
+
+                            <!-- Smart Date Recommendations (LM-040) -->
+                            <button t-if="state.canDateRec"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="() => this.state.showDateRecModal = true"
+                                    title="Smart Leave Date Recommendations">
+                                <i class="fa fa-calendar-check-o me-1 text-purple"/> Suggest Best Dates
+                            </button>
+
                             <!-- Filters Button -->
                             <button type="button" class="btn btn-sm btn-outline-secondary position-relative" t-on-click="openFilters">
                                 <i class="fa fa-filter me-1"/> Filters
@@ -128,6 +146,33 @@
                         </button>
                     </div>
                 </header>
+
+                <!-- AI Calendar Summary Panel (LM-044) -->
+                <div t-if="state.aiSummary.open" class="o_cal_ai_summary">
+                    <div class="o_cal_ai_summary_header">
+                        <span><i class="fa fa-magic text-purple"/> <strong t-esc="state.aiSummary.heading || 'Calendar Summary'"/></span>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="refreshAiSummary" title="Refresh Summary">
+                                <i class="fa fa-refresh"/> Refresh
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary" t-on-click="copyAiSummary" title="Copy to Clipboard">
+                                <i class="fa fa-clipboard"/> Copy
+                            </button>
+                            <button type="button" t-on-click="closeAiSummary" class="o_cal_ai_close" title="Close"><i class="fa fa-times"/></button>
+                        </div>
+                    </div>
+                    <div t-if="state.aiSummary.loading" class="o_cal_ai_loading">
+                        <i class="fa fa-spinner fa-spin"/> Generating summary…
+                    </div>
+                    <div t-elif="state.aiSummary.error" class="o_cal_ai_error">
+                        <i class="fa fa-exclamation-circle"/> <t t-esc="state.aiSummary.error"/>
+                    </div>
+                    <ul t-else="" class="o_cal_ai_bullets_list">
+                        <li t-foreach="state.aiSummary.bullets" t-as="bullet" t-key="bullet_index"
+                            t-att-class="bullet.includes('risk') || bullet.includes('coverage') ? 'o_cal_ai_risk_bullet' : ''"
+                            t-esc="bullet"/>
+                    </ul>
+                </div>
 
                 <!-- Loading Spinner -->
                 <t t-if="state.loading">
@@ -545,6 +590,7 @@
             </t>
             <EmployeeRequestModal t-if="state.employeeRequestOpen" close.bind="closeEmployeeRequest" submitted.bind="loadCalendarData" initial="state.employeeRequestInitial"/>
             <CalendarDayPanel t-if="state.dayPanelOpen" dateFrom="state.dayPanelDateFrom" dateTo="state.dayPanelDateTo" leaves="dayPanelLeaves" holidays="dayPanelHolidays" canBook="state.canBook and state.calendarScope === 'organisation'" startOnBook="state.dayPanelBook" canRequest="state.canRequest" openRequest.bind="openRequestRange" openDetail.bind="openLeaveDetail" close.bind="closeDayPanel" submitted.bind="loadCalendarData"/>
+            <SmartDateRecommendationsModal t-if="state.showDateRecModal" close="() => this.state.showDateRecModal = false" onSelect="(item) => this.onSelectRecommendedDate(item)" types="state.leaveTypes"/>
 
         </div>
     </t>

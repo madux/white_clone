@@ -15,10 +15,41 @@
         <div class="o_er_body">
           <div t-if="state.loading" class="o_er_loading"><i class="fa fa-spinner fa-spin"/> Loading leave policies...</div>
           <t t-elif="state.step === 1">
+            <div t-if="state.nlEnabled" class="o_er_ai_section">
+              <div class="o_er_ai_header">
+                <div>
+                  <i class="fa fa-magic text-purple me-1"/> <strong>Quick Request via AI</strong>
+                  <span class="text-muted small ms-2">Describe the leave you need in plain English</span>
+                </div>
+              </div>
+              <div class="o_er_ai_input_row">
+                <textarea t-model="state.nlText" rows="2" placeholder="Type in plain language... e.g. I need three days off next month for my wedding" class="o_er_ai_textarea"/>
+                <button type="button" class="o_er_ai_gen_btn" t-on-click="parseNlRequest" t-att-disabled="!state.nlText.trim() || state.nlLoading">
+                  <i t-att-class="state.nlLoading ? 'fa fa-spinner fa-spin' : 'fa fa-magic'"/> Generate Request
+                </button>
+              </div>
+              <div t-if="state.nlError" class="o_er_ai_clarify">
+                <i class="fa fa-question-circle text-warning me-1"/> <t t-esc="state.nlError"/>
+              </div>
+              <div t-if="state.showNlSummary and state.nlSummary" class="o_er_ai_summary">
+                <div class="d-flex align-items-center flex-grow-1">
+                  <i class="fa fa-check-circle text-success me-2"/> <t t-esc="state.nlSummary"/>
+                </div>
+                <button type="button" class="o_er_ai_clear_btn" t-on-click="clearNl" title="Clear AI Suggestions">
+                  <i class="fa fa-times"/>
+                </button>
+              </div>
+            </div>
+
             <section class="o_er_balances"><h4>Your Leave Balance</h4><div><span t-foreach="state.balances.slice(0,4)" t-as="item" t-key="item.id"><b t-esc="item.name"/><strong t-esc="item.unlimited ? 'Unlimited' : item.available + ' remaining'"/></span></div></section>
-            <h4>Leave Details</h4>
-            <label>Leave Type <em>*</em><select t-model="state.form.leave_type_id" t-on-change="onTypeChange"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id"><t t-esc="item.name"/> — <t t-esc="item.unlimited ? 'Unlimited' : item.available + ' days available'"/></option></select></label>
-            <div class="o_er_dates"><label>Start Date <em>*</em><input type="date" t-model="state.form.date_from" t-att-min="today" t-on-change="onStartChange"/></label><label>End Date <em>*</em><input type="date" t-model="state.form.date_to" t-att-min="state.form.date_from || today" t-on-change="preview"/></label></div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h4 class="mb-0">Leave Details</h4>
+              <button t-if="state.dateRecEnabled" type="button" class="o_er_date_rec_btn" t-on-click="openDateRecModal">
+                <i class="fa fa-calendar-check-o me-1"/> Suggest Best Dates
+              </button>
+            </div>
+            <label>Leave Type <em>*</em> <span t-if="state.aiAssistedFields.includes('leave_type_id')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><select t-model="state.form.leave_type_id" t-on-change="onTypeChange"><option value="">Select leave type...</option><option t-foreach="state.types" t-as="item" t-key="item.id" t-att-value="item.id"><t t-esc="item.name"/> — <t t-esc="item.unlimited ? 'Unlimited' : item.available + ' days available'"/></option></select></label>
+            <div class="o_er_dates"><label>Start Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_from')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_from" t-att-min="today" t-on-change="onStartChange"/></label><label>End Date <em>*</em> <span t-if="state.aiAssistedFields.includes('date_to')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><input type="date" t-model="state.form.date_to" t-att-min="state.form.date_from || today" t-on-change="preview"/></label></div>
             <div class="o_er_half"><label><input type="checkbox" t-model="state.form.half_day" t-on-change="preview" t-att-disabled="selectedType and !selectedType.allow_half_day"/> Half-Day Leave</label><div t-if="state.form.half_day"><label><input type="radio" value="am" t-model="state.form.period" t-on-change="preview"/> Morning</label><label><input type="radio" value="pm" t-model="state.form.period" t-on-change="preview"/> Afternoon</label></div></div>
             <div t-if="state.preview" class="o_er_preview"><div><span>Duration</span><b><t t-esc="state.preview.duration"/> working day(s)</b></div><div><span>Current Balance</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.current_balance + ' days'"/></div><div><span>After Request</span><b t-esc="state.preview.unlimited ? 'Unlimited' : state.preview.projected_balance + ' days'"/></div><p t-if="state.preview.holiday_count"><i class="fa fa-calendar"/> <t t-esc="state.preview.holiday_count"/> public holiday(s) excluded.</p></div>
             <div t-if="state.preview and state.preview.team_overlap and state.preview.team_overlap.exceeded" class="o_er_notice warning"><i class="fa fa-users"/> Team availability: <t t-esc="state.preview.team_overlap.percentage"/>% of the department would be on leave.</div>
@@ -26,7 +57,7 @@
             <div class="o_er_notice error" t-foreach="state.preview ? state.preview.errors : []" t-as="error" t-key="error" t-esc="error"/>
             <label t-if="state.preview?.blackout_exception_available" class="o_er_toggle"><span><b>Request Blackout Exception</b><small>This request will follow the window's authorised HR/Executive approval route and is never auto-approved.</small></span><input type="checkbox" t-model="state.form.blackout_exception_requested"/></label>
             <div t-if="state.error" class="o_er_notice error" t-esc="state.error"/>
-            <label>Reason <em>*</em><textarea maxlength="500" t-model="state.form.reason" placeholder="Please provide a reason for your leave request"/><small><t t-esc="state.form.reason.length"/> / 500</small></label>
+            <label>Reason <em>*</em> <span t-if="state.aiAssistedFields.includes('reason')" class="o_er_ai_badge"><i class="fa fa-magic"/> AI-suggested</span><textarea maxlength="500" t-model="state.form.reason" placeholder="Please provide a reason for your leave request"/><small><t t-esc="state.form.reason.length"/> / 500</small></label>
           </t>
           <t t-elif="state.step === 2">
             <h4>Handover &amp; Backup Coverage</h4>
@@ -51,12 +82,29 @@
               <p><span>Reason</span><b t-esc="state.form.reason"/></p><p><span>Handover To</span><b t-esc="selectedBackups.map(item => item.name).join(', ') || 'No handover'"/></p>
               <p t-if="state.form.emergency_contact"><span>Reachout</span><b t-esc="state.form.emergency_contact"/></p><p t-if="state.form.handover_notes"><span>Handover Notes</span><b t-esc="state.form.handover_notes"/></p>
               <p><span>Supporting Document</span><b t-esc="state.form.attachment?.name || 'None'"/></p>
+              <p>
+                <span>Submission Channel</span>
+                <b>
+                  <t t-if="state.form.submission_channel === 'ai_assisted'">
+                    <span class="o_er_ai_badge"><i class="fa fa-magic"/> AI Assisted</span>
+                  </t>
+                  <t t-else="">Manual Form</t>
+                </b>
+              </p>
             </div>
             <div class="o_er_notice success"><i class="fa fa-check-circle"/> Policy validation passed. All mandatory requirements have been satisfied.</div>
           </t>
         </div>
         <footer><button t-if="state.step === 1" t-on-click="props.close">Cancel</button><button t-else="" t-on-click="back"><i class="fa fa-arrow-left"/> Back</button><button t-if="state.step &lt; 3" class="primary" t-on-click="next" t-att-disabled="state.step === 1 ? !detailsValid : !handoverValid">Continue <i class="fa fa-arrow-right"/></button><button t-else="" class="primary" t-on-click="submit" t-att-disabled="!canSubmit"><i t-if="state.submitting" class="fa fa-spinner fa-spin"/> Submit Request (<t t-esc="state.preview?.duration || 0"/> Days)</button></footer>
       </section>
+
+      <SmartDateRecommendationsModal
+        t-if="state.showDateRecModal"
+        close="() => this.closeDateRecModal()"
+        onSelect="(item) => this.onSelectRecommendedDate(item)"
+        initialTypeId="state.form.leave_type_id"
+        types="state.types"
+      />
     </div>
   </t>
 </templates>

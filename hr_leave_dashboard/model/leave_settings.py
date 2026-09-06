@@ -83,8 +83,46 @@ class ResCompany(models.Model):
     leave_payroll_integration = fields.Boolean(default=False)
     leave_directory_integration = fields.Boolean(default=False)
     leave_calendar_integration = fields.Boolean(default=False)
-    leave_ai_enabled = fields.Boolean(default=False)
+    leave_ai_enabled = fields.Boolean(default=True)
     leave_ai_audit_logging = fields.Boolean(default=True)
+
+    # LM-046 AI Capabilities Configuration & Governance
+    leave_ai_assistant_enabled = fields.Boolean(
+        string="AI Leave Assistant", default=True,
+        help="LM-038: Persistent interactive chat assistant.",
+    )
+    leave_ai_nl_request_enabled = fields.Boolean(
+        string="Natural Language Leave Request", default=True,
+        help="LM-039: Free-text request submission and auto-fill.",
+    )
+    leave_ai_date_recommendations_enabled = fields.Boolean(
+        string="Smart Leave Date Recommendations", default=True,
+        help="LM-040: Intelligent date window suggestions.",
+    )
+    leave_ai_conflict_coverage_enabled = fields.Boolean(
+        string="AI Conflict & Coverage Detection", default=True,
+        help="LM-041: Automatic staffing overlap detection and risk warnings.",
+    )
+    leave_ai_approval_support_enabled = fields.Boolean(
+        string="AI Approval Decision Support", default=True,
+        help="LM-042: Advisory insight panel for approvers.",
+    )
+    leave_ai_anomaly_detection_enabled = fields.Boolean(
+        string="Fraud & Anomaly Detection", default=True,
+        help="LM-043: Pattern analysis and HR anomaly alerts.",
+    )
+    leave_ai_calendar_summary_enabled = fields.Boolean(
+        string="AI Calendar & Availability Summary", default=True,
+        help="LM-044: On-demand calendar and availability summaries.",
+    )
+    leave_ai_executive_brief_enabled = fields.Boolean(
+        string="Executive Workforce Brief", default=True,
+        help="LM-045: High-level analytics and executive workforce briefs.",
+    )
+    leave_ai_conversation_retention_days = fields.Integer(
+        string="AI Conversation Retention (Days)", default=90,
+        help="Retention period in days for logged AI conversations.",
+    )
 
     @api.constrains(
         "leave_default_minimum_notice_days",
@@ -205,6 +243,15 @@ class HrLeaveSettings(models.Model):
                 "clock_integration": company.leave_clock_integration, "payroll_integration": company.leave_payroll_integration,
                 "directory_integration": company.leave_directory_integration, "calendar_integration": company.leave_calendar_integration,
                 "ai_enabled": company.leave_ai_enabled, "ai_audit_logging": company.leave_ai_audit_logging,
+                "ai_assistant_enabled": company.leave_ai_assistant_enabled,
+                "ai_nl_request_enabled": company.leave_ai_nl_request_enabled,
+                "ai_date_recommendations_enabled": company.leave_ai_date_recommendations_enabled,
+                "ai_conflict_coverage_enabled": company.leave_ai_conflict_coverage_enabled,
+                "ai_approval_support_enabled": company.leave_ai_approval_support_enabled,
+                "ai_anomaly_detection_enabled": company.leave_ai_anomaly_detection_enabled,
+                "ai_calendar_summary_enabled": company.leave_ai_calendar_summary_enabled,
+                "ai_executive_brief_enabled": company.leave_ai_executive_brief_enabled,
+                "ai_conversation_retention_days": company.leave_ai_conversation_retention_days or 90,
             },
             "countries": [
                 {"id": country.id, "name": country.name, "code": country.code or ""}
@@ -258,6 +305,24 @@ class HrLeaveSettings(models.Model):
         self._check_leave_settings_access()
         company = self.env.company
         before = self._leave_settings_payload()["form"]
+
+        # AI & Automation fields require the dedicated AI-Config permission.
+        _ai_fields = {
+            "ai_enabled", "ai_assistant_enabled", "ai_nl_request_enabled",
+            "ai_date_recommendations_enabled", "ai_conflict_coverage_enabled",
+            "ai_approval_support_enabled", "ai_anomaly_detection_enabled",
+            "ai_calendar_summary_enabled", "ai_executive_brief_enabled",
+            "ai_conversation_retention_days",
+        }
+        caller_has_ai_config = self.env.user.has_group(
+            "hr_leave_dashboard.group_leave_permission_ai_config"
+        )
+        ai_values_requested = _ai_fields.intersection(values.keys())
+        if ai_values_requested and not caller_has_ai_config:
+            raise AccessError(
+                _("Only a user with the 'AI Configuration' permission can change AI & Automation settings.")
+            )
+
         country = self.env["res.country"].sudo().browse(int(values.get("country_id") or 0)).exists()
         calendar = self.env["resource.calendar"].sudo().browse(int(values.get("resource_calendar_id") or 0)).exists()
         if not calendar or (calendar.company_id and calendar.company_id != company):
@@ -288,8 +353,22 @@ class HrLeaveSettings(models.Model):
             "leave_extensions_allowed": bool(values.get("extensions_allowed")), "leave_max_extension_days": int(values.get("max_extension_days") or 0),
             "leave_clock_integration": bool(values.get("clock_integration")), "leave_payroll_integration": bool(values.get("payroll_integration")),
             "leave_directory_integration": bool(values.get("directory_integration")), "leave_calendar_integration": bool(values.get("calendar_integration")),
-            "leave_ai_enabled": bool(values.get("ai_enabled")), "leave_ai_audit_logging": bool(values.get("ai_audit_logging")),
         }
+        # Only apply AI fields when the caller has the AI-Config permission.
+        if caller_has_ai_config:
+            vals.update({
+                "leave_ai_enabled": bool(values.get("ai_enabled")),
+                "leave_ai_audit_logging": True,
+                "leave_ai_assistant_enabled": bool(values.get("ai_assistant_enabled", True)),
+                "leave_ai_nl_request_enabled": bool(values.get("ai_nl_request_enabled", True)),
+                "leave_ai_date_recommendations_enabled": bool(values.get("ai_date_recommendations_enabled", True)),
+                "leave_ai_conflict_coverage_enabled": bool(values.get("ai_conflict_coverage_enabled", True)),
+                "leave_ai_approval_support_enabled": bool(values.get("ai_approval_support_enabled", True)),
+                "leave_ai_anomaly_detection_enabled": bool(values.get("ai_anomaly_detection_enabled", True)),
+                "leave_ai_calendar_summary_enabled": bool(values.get("ai_calendar_summary_enabled", True)),
+                "leave_ai_executive_brief_enabled": bool(values.get("ai_executive_brief_enabled", True)),
+                "leave_ai_conversation_retention_days": max(1, int(values.get("ai_conversation_retention_days") or 90)),
+            })
         company.sudo().write(vals)
         after = self._leave_settings_payload()["form"]
         self.env["hr.leave.audit.log"].sudo().create({

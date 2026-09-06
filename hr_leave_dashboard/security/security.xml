@@ -51,6 +51,18 @@
         <field name="name">Leave: Read audit trail</field>
         <field name="category_id" ref="module_category_leave_permissions"/>
     </record>
+    <record id="group_leave_permission_ai_config" model="res.groups">
+        <field name="name">Leave: Configure AI</field>
+        <field name="category_id" ref="module_category_leave_permissions"/>
+    </record>
+    <record id="group_leave_permission_ai_insights" model="res.groups">
+        <field name="name">Leave: View AI Insights</field>
+        <field name="category_id" ref="module_category_leave_permissions"/>
+    </record>
+    <record id="group_leave_permission_executive_analytics" model="res.groups">
+        <field name="name">Leave: Executive Analytics</field>
+        <field name="category_id" ref="module_category_leave_permissions"/>
+    </record>
 
     <!--
         Leave roles are deliberately additive.  A user can be an employee,
@@ -72,7 +84,7 @@
     <record id="group_leave_approver" model="res.groups">
         <field name="name">Approver</field>
         <field name="category_id" ref="module_category_leave_management"/>
-        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_employee')), (4, ref('hr_leave_dashboard.group_leave_permission_approve'))]"/>
+        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_employee')), (4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_insights'))]"/>
     </record>
 
     <record id="group_leave_hr_officer" model="res.groups">
@@ -84,7 +96,7 @@
     <record id="group_leave_administrator" model="res.groups">
         <field name="name">HR / Leave Administrator</field>
         <field name="category_id" ref="module_category_leave_management"/>
-        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_hr_officer')), (4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_audit')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_holidays.group_hr_holidays_manager'))]"/>
+        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_hr_officer')), (4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_audit')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_config')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_insights')), (4, ref('hr_leave_dashboard.group_leave_permission_executive_analytics')), (4, ref('hr_holidays.group_hr_holidays_manager'))]"/>
     </record>
 
     <record id="group_leave_auditor" model="res.groups">
@@ -96,7 +108,7 @@
     <record id="group_leave_executive" model="res.groups">
         <field name="name">Executive / HR Director</field>
         <field name="category_id" ref="module_category_leave_management"/>
-        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports'))]"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_executive_analytics'))]"/>
     </record>
 
     <record id="group_role_ceo" model="res.groups">
@@ -122,11 +134,11 @@
         <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_operations')), (4, ref('hr_leave_dashboard.group_leave_permission_operational_reports'))]"/>
     </record>
     <record id="hr_holidays.group_hr_holidays_manager" model="res.groups">
-        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_audit')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports'))]"/>
+        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_audit')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_config')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_insights')), (4, ref('hr_leave_dashboard.group_leave_permission_executive_analytics'))]"/>
     </record>
     <!-- Development requirement: Settings/System users receive every Leave capability. -->
     <record id="base.group_system" model="res.groups">
-        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_personal')), (4, ref('hr_leave_dashboard.group_leave_permission_team')), (4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_operations')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_operational_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_audit'))]"/>
+        <field name="implied_ids" eval="[(4, ref('hr_leave_dashboard.group_leave_permission_personal')), (4, ref('hr_leave_dashboard.group_leave_permission_team')), (4, ref('hr_leave_dashboard.group_leave_permission_approve')), (4, ref('hr_leave_dashboard.group_leave_permission_operations')), (4, ref('hr_leave_dashboard.group_leave_permission_configuration')), (4, ref('hr_leave_dashboard.group_leave_permission_operational_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_strategic_reports')), (4, ref('hr_leave_dashboard.group_leave_permission_audit')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_config')), (4, ref('hr_leave_dashboard.group_leave_permission_ai_insights')), (4, ref('hr_leave_dashboard.group_leave_permission_executive_analytics'))]"/>
     </record>
 
     <record id="rule_hr_leave_setup_progress_company" model="ir.rule">

@@ -50,6 +50,8 @@ class TestLeaveReports(TransactionCase):
         cls.team_leaves = cls.env["hr.leave"]
         for offset in (98, 77, 56, 35):
             day = today - timedelta(days=offset)
+            while day.weekday() >= 5:
+                day -= timedelta(days=1)
             cls.team_leaves |= cls.env["hr.leave"].sudo().create({
                 "employee_id": cls.team_employee.id,
                 "holiday_status_id": cls.leave_type.id,
@@ -57,6 +59,8 @@ class TestLeaveReports(TransactionCase):
                 "state": "validate", "notes": "Unplanned absence report test.",
             })
         outside_day = today - timedelta(days=28)
+        while outside_day.weekday() >= 5:
+            outside_day -= timedelta(days=1)
         cls.outside_leave = cls.env["hr.leave"].sudo().create({
             "employee_id": cls.outside_employee.id,
             "holiday_status_id": cls.leave_type.id,
@@ -152,7 +156,9 @@ class TestLeaveReports(TransactionCase):
             parental.write({"bradford_count_mode": "all"})
 
     def test_non_working_weekend_does_not_split_a_spell(self):
-        friday = fields.Date.today() - timedelta(days=7)
+        today = fields.Date.today()
+        days_since_friday = (today.weekday() - 4) % 7
+        friday = today - timedelta(days=days_since_friday or 7)
         monday = friday + timedelta(days=3)
         service = self.env["hr.leave.report.service"]
         self.assertTrue(service._same_continuous_spell(self.team_employee, friday, monday))

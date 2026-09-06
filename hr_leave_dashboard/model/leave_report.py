@@ -41,6 +41,13 @@ class HrLeaveTypeAbsenceRisk(models.Model):
             if "bradford_count_mode" not in values:
                 classification = values.get("policy_classification")
                 values["bradford_count_mode"] = "short_notice" if classification == "sick" else "exclude"
+            name = values.get("name") or ""
+            if isinstance(name, dict):
+                name = next(iter(name.values()), "")
+            code = values.get("leave_code") or ""
+            label = ("%s %s" % (name, code)).lower()
+            if any(word in label for word in ("maternity", "paternity", "parental")):
+                values.setdefault("bradford_protected", True)
         return super().create(vals_list)
 
     @api.model
@@ -157,7 +164,7 @@ class HrLeaveReportService(models.AbstractModel):
 
     REPORT_KEYS = {
         "utilisation", "balances", "request_volume", "turnaround", "trends",
-        "frequency", "policy_usage", "absence_risk",
+        "frequency", "policy_usage", "absence_risk", "anomalies", "executive_brief",
     }
 
     @api.model
@@ -288,7 +295,7 @@ class HrLeaveReportService(models.AbstractModel):
     def _base_data(self, filters, report_key=None):
         filters = filters or {}
         access, employees = self._scope(filters)
-        snapshot = report_key in ("utilisation", "balances", "absence_risk")
+        snapshot = report_key in ("utilisation", "balances", "absence_risk", "anomalies", "executive_brief")
         range_key = "this_year" if snapshot else filters.get("date_range", "this_year")
         start, end = self._date_range(range_key, None if snapshot else filters.get("start_date"), None if snapshot else filters.get("end_date"))
         type_ids = self._filter_ids(filters, "leave_type_ids", "leave_type_id")
@@ -727,6 +734,30 @@ class HrLeaveReportService(models.AbstractModel):
         return {"mode": mode, "rows": rows, "bands": dict(band_counts), "settings": settings}
 
     @api.model
+    def _anomalies(self, data):
+        filters = data.get("filters") or {}
+        dept_ids = self._filter_ids(filters, "department_ids", "department_id")
+        dept_id = dept_ids[0] if dept_ids else None
+        res = self.env["hr.leave.ai.service"].get_leave_anomalies(
+            severity=filters.get("severity"),
+            department_id=dept_id,
+            pattern_type=filters.get("pattern_type"),
+            status=filters.get("status"),
+        )
+        return {"rows": res.get("anomalies", []), "total": res.get("total", 0)}
+
+    @api.model
+    def _executive_brief(self, data):
+        filters = data.get("filters") or {}
+        dept_ids = self._filter_ids(filters, "department_ids", "department_id")
+        dept_id = dept_ids[0] if dept_ids else None
+        month = filters.get("month")
+        return self.env["hr.leave.ai.service"].get_executive_workforce_brief(
+            month=month,
+            department_id=dept_id,
+        )
+
+    @api.model
     def get_report_data(self, filters=None, report_key="request_volume"):
         if report_key not in self.REPORT_KEYS:
             raise ValidationError(_("Unsupported leave report."))
@@ -743,22 +774,39 @@ class HrLeaveReportService(models.AbstractModel):
             "frequency": lambda: self._frequency(data),
             "policy_usage": lambda: self._policy_usage(data),
             "absence_risk": lambda: self._absence_risk(data),
+            "anomalies": lambda: self._anomalies(data),
+            "executive_brief": lambda: self._executive_brief(data),
         }
         metric_basis = {
             "utilisation": _("Current entitlement and balance snapshot"),
             "balances": _("Current balances as of today"),
             "absence_risk": _("Current rolling Bradford window ending today"),
+            "anomalies": _("Rolling 180-day leave pattern and anomaly analysis"),
+            "executive_brief": _("Monthly workforce KPI, trend, and recommendation brief"),
         }.get(report_key, "")
         options = self._options(data["access"]["employees"], all_types)
         if not data["access"]["risk_configure"]:
             for leave_type in options["leave_types"]:
                 leave_type.pop("bradford_count_mode", None)
+        can_view_anomalies = self.env["hr.leave"].is_ai_capability_enabled("anomaly_detection") and (
+            self.env.user.has_group("hr.group_hr_user")
+            or self.env.user.has_group("base.group_system")
+            or self.env["hr.leave"]._leave_is_administrator()
+            or self.env.user.has_group("hr_leave_dashboard.group_leave_permission_ai_insights")
+        )
+        can_view_executive_brief = self.env["hr.leave"].is_ai_capability_enabled("executive_brief") and (
+            self.env.user.has_group("base.group_system")
+            or self.env.user.has_group("hr_leave_dashboard.group_leave_permission_executive_analytics")
+            or self.env["hr.leave"]._leave_is_administrator()
+        )
         return {
             "meta": {
                 "scope": data["access"]["scope"],
                 "scope_label": _("My Team") if data["access"]["scope"] == "team" else _("Authorised Organisation"),
                 "can_view_risk_details": data["access"]["risk_detail"],
                 "can_configure_risk": data["access"]["risk_configure"],
+                "can_view_anomalies": can_view_anomalies,
+                "can_view_executive_brief": can_view_executive_brief,
                 "period": {"start": fields.Date.to_string(data["start"]), "end": fields.Date.to_string(data["end"])},
                 "generated_at": fields.Datetime.to_string(fields.Datetime.now()),
                 "employee_count": len(data["employees"]),
@@ -928,14 +976,31 @@ class HrLeaveReportService(models.AbstractModel):
             return [[dimension.title(), "Requests", "Total Days", "Headcount", "Requests per Employee"]] + [[row[key] for key in ("name", "requests", "days", "headcount", "requests_per_employee")] for row in reports["frequency"].get(dimension, [])]
         if report_key == "policy_usage":
             return [["Policy / Leave Type", "Employees", "Requests", "Average Notice", "Notice Limit", "Longest Request", "Consecutive Limit", "Blackout Rules"]] + [[row[key] for key in ("name", "employees", "requests", "average_notice", "notice_limit", "longest_request", "consecutive_limit", "blackout_periods")] for row in reports["policy_usage"]]
-        risk = reports["absence_risk"]
-        if risk["mode"] == "detail":
-            return [["Employee", "Department", "Location", "Score", "Band", "Spells", "Days", "Window Start", "Window End"]] + [[row[key] for key in ("employee", "department", "location", "score", "band", "spells", "days", "window_start", "window_end")] for row in risk["rows"]]
-        if risk["mode"] == "team_flags":
-            return [["Employee", "Department", "Attendance Pattern"]] + [[row["employee"], row["department"], _("Attendance pattern under review") if row["flag"] == "watch" else _("Low")] for row in risk["rows"]]
-        if risk["mode"] == "aggregate":
-            return [["Band", "Employees"]] + [[band.title(), risk["bands"].get(band, 0)] for band in ("low", "caution", "concern", "serious", "critical")]
-        return [["Absence Risk", "Disabled"]]
+        if report_key == "anomalies":
+            return [["Employee", "Department", "Pattern Type", "Severity", "Last Detected", "Occurrences", "Status", "Supporting Data"]] + [
+                [row[key] for key in ("employee", "department", "pattern_type_label", "severity_label", "last_detected", "occurrences", "status", "supporting_data")]
+                for row in reports.get("anomalies", {}).get("rows", [])
+            ]
+        if report_key == "executive_brief":
+            brief = reports.get("executive_brief", {})
+            kpis = brief.get("kpis", {})
+            return [
+                ["Executive Workforce Brief", brief.get("period_title", "")],
+                ["Requests Approved", str(kpis.get("requests_approved", 0))],
+                ["Pending Approvals", str(kpis.get("pending_approvals", 0))],
+                ["Approval SLA Achieved", f"{kpis.get('sla_achieved_percent', 0)}%"],
+                ["Average Days to Approve", str(kpis.get("avg_days_to_approve", 0))],
+                ["Key Insights", " | ".join(brief.get("key_insights", []))],
+                ["AI Recommendations (Advisory)", " | ".join(brief.get("ai_recommendations", []))],
+            ]
+        risk = reports.get("absence_risk", {})
+        if risk.get("mode") == "detail":
+            return [["Employee", "Department", "Location", "Score", "Band", "Spells", "Days", "Window Start", "Window End"]] + [[row[key] for key in ("employee", "department", "location", "score", "band", "spells", "days", "window_start", "window_end")] for row in risk.get("rows", [])]
+        if risk.get("mode") == "team_flags":
+            return [["Employee", "Department", "Attendance Pattern"]] + [[row["employee"], row["department"], _("Attendance pattern under review") if row["flag"] == "watch" else _("Low")] for row in risk.get("rows", [])]
+        if risk.get("mode") == "aggregate":
+            return [["Band", "Employees"]] + [[band.title(), risk.get("bands", {}).get(band, 0)] for band in ("low", "caution", "concern", "serious", "critical")]
+        return [["Report", "No data"]]
 
     @api.model
     def export_report(self, report_key, filters=None, file_format="csv"):

@@ -18,6 +18,7 @@ export class CleonAiAssistant extends Component {
             summary: null,
             question: "",
             messages: [],
+            messageFeedback: {},   // index → true/false
         });
 
         this.setContext = (context) => {
@@ -28,6 +29,7 @@ export class CleonAiAssistant extends Component {
             this.state.context = context || null;
             this.state.summary = null;
             this.state.messages = [];
+            this.state.messageFeedback = {};
             if (this.state.open && context) {
                 this.refreshSummary();
             }
@@ -95,9 +97,16 @@ export class CleonAiAssistant extends Component {
                 "ask_assistant",
                 [question, this.state.context || {}]
             );
+            const text = result.message || "No answer returned.";
+            const hrFallback = !result.answered && result.provider && !result.provider.configured;
             this.state.messages.push({
                 role: "assistant",
-                text: result.message || "No answer returned.",
+                text: hrFallback
+                    ? "I'm not able to answer that right now. For help, please contact HR directly."
+                    : text,
+                hr_fallback: hrFallback,
+                link: result.link || null,
+                interaction_id: result.interaction_id || null,
             });
         } catch (error) {
             this.state.messages.push({
@@ -111,6 +120,22 @@ export class CleonAiAssistant extends Component {
         if (event.key === "Enter") {
             this.ask();
         }
+    }
+
+    async rateMessage(index, helpful) {
+        const message = this.state.messages[index];
+        if (!message?.interaction_id) {
+            this.notification.add("This response has no stored interaction to rate.", { type: "warning" });
+            return;
+        }
+        try {
+            await this.orm.call("cleon.ai.gateway", "record_interaction_feedback", [message.interaction_id, helpful]);
+        } catch (error) {
+            this.notification.add(error?.data?.message || error.message || "Unable to save feedback.", { type: "danger" });
+            return;
+        }
+        this.state.messageFeedback[index] = helpful;
+        this.notification.add(helpful ? "Thank you — marked as helpful." : "Thank you — feedback noted.", { type: "success" });
     }
 
     async copySummary() {
