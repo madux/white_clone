@@ -172,8 +172,8 @@ class DocumentFolder(models.Model):
     approval_flow = fields.Selection(
         [
             ("sequential", "Sequential"),
-            ("random", "Random Order"),
-            ("any", "Any Approver"),
+            ("random", "All Reviewers"),
+            ("any", "Single Approver"),
         ],
         string="Approval Flow",
         default="any",

@@ -633,19 +633,35 @@ function ApprovalPanel({
           <p className="mt-1 text-xs leading-5 text-slate-500">
             Choose how selected reviewers can approve a document.
           </p>
-          <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
+          <div className="mt-4 grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
             {[
-              { value: "any", label: "Any" },
-              { value: "sequential", label: "Sequential" },
-              { value: "random", label: "Any order" },
+              {
+                value: "any",
+                label: "Single approver",
+                description: "One selected reviewer can approve.",
+              },
+              {
+                value: "sequential",
+                label: "Sequential",
+                description: "Reviewers approve in the order you set.",
+              },
+              {
+                value: "random",
+                label: "All reviewers",
+                description: "Everyone must approve; order does not matter.",
+              },
             ].map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => update("default_approval_flow", option.value)}
-                className={`!rounded-lg px-2 py-2 text-xs font-bold transition ${values.default_approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:text-slate-700"}`}
+                aria-pressed={values.default_approval_flow === option.value}
+                className={`!rounded-lg px-3 py-2.5 text-left transition ${values.default_approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
               >
-                {option.label}
+                <span className="block text-xs font-bold">{option.label}</span>
+                <span className={`mt-1 block text-[10px] font-medium leading-4 ${values.default_approval_flow === option.value ? "text-slate-500" : "text-slate-400"}`}>
+                  {option.description}
+                </span>
               </button>
             ))}
           </div>
