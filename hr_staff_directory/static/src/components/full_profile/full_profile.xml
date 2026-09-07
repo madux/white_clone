@@ -316,38 +316,29 @@
                                             <h3 class="sdir-fp-card-title">Current Projects</h3>
                                         </div>
                                     </div>
-                                    <div class="sdir-fp-list-container">
-                                        <div class="sdir-fp-list-item clickable">
-                                            <div class="sdir-fp-project-icon-box">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
-                                            </div>
-                                            <div class="sdir-fp-list-info">
-                                                <p class="sdir-fp-list-title">Platform Migration v3</p>
-                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
-                                            </div>
-                                            <span class="sdir-fp-project-status active">Active</span>
+                                    <t t-if="props.activeProfile.current_projects and props.activeProfile.current_projects.length > 0">
+                                        <div class="sdir-fp-list-container">
+                                            <t t-foreach="props.activeProfile.current_projects" t-as="proj" t-key="proj_index">
+                                                <div class="sdir-fp-list-item clickable">
+                                                    <div class="sdir-fp-project-icon-box">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
+                                                    </div>
+                                                    <div class="sdir-fp-list-info">
+                                                        <p class="sdir-fp-list-title"><t t-esc="proj.title"/></p>
+                                                        <p class="sdir-fp-list-subtitle" t-if="proj.subtitle"><t t-esc="proj.subtitle"/></p>
+                                                    </div>
+                                                    <span t-attf-class="sdir-fp-project-status {{proj.status_class}}" t-if="proj.status"><t t-esc="proj.status"/></span>
+                                                </div>
+                                            </t>
                                         </div>
-                                        <div class="sdir-fp-list-item clickable">
-                                            <div class="sdir-fp-project-icon-box">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
-                                            </div>
-                                            <div class="sdir-fp-list-info">
-                                                <p class="sdir-fp-list-title">API Gateway Redesign</p>
-                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
-                                            </div>
-                                            <span class="sdir-fp-project-status review">In Review</span>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="sdir-fp-reporting-empty">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-fp-reporting-empty-icon"><path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"></path></svg>
+                                            <p class="sdir-fp-reporting-empty-title">No current projects</p>
+                                            <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="props.activeProfile.name.split(' ')[0]"/> isn't assigned to any projects</p>
                                         </div>
-                                        <div class="sdir-fp-list-item clickable">
-                                            <div class="sdir-fp-project-icon-box">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path><rect width="20" height="14" x="2" y="6" rx="2"></rect></svg>
-                                            </div>
-                                            <div class="sdir-fp-list-info">
-                                                <p class="sdir-fp-list-title">CI/CD Pipeline Overhaul</p>
-                                                <p class="sdir-fp-list-subtitle">Executive · Chief</p>
-                                            </div>
-                                            <span class="sdir-fp-project-status active">Active</span>
-                                        </div>
-                                    </div>
+                                    </t>
                                 </div>
 
 

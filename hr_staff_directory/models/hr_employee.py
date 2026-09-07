@@ -1611,6 +1611,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'skills':             getattr(emp, 'skills', '') or self._mock_skills_for_employee(emp),
                 'languages':          getattr(emp, 'languages', ''),
                 'certifications':     self._get_certifications(emp),
+                'current_projects':   self._get_current_projects(emp),
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
@@ -1664,6 +1665,41 @@ class HrEmployeeStaffDirectory(models.Model):
                             'year': ''
                         })
         return certs
+
+    @api.model
+    def _get_current_projects(self, emp):
+        projects = []
+        if 'project.task' in self.env and emp.user_id:
+            try:
+                tasks = self.env['project.task'].search([
+                    ('user_ids', 'in', emp.user_id.id),
+                    ('project_id', '!=', False)
+                ])
+                proj_ids = list(set(tasks.mapped('project_id').ids))
+                projs = self.env['project.project'].browse(proj_ids)
+                for p in projs:
+                    projects.append({
+                        'title': p.name,
+                        'subtitle': getattr(p, 'label_tasks', 'Tasks'),
+                        'status': 'Active' if getattr(p, 'active', True) else 'Archived',
+                        'status_class': 'active' if getattr(p, 'active', True) else 'review'
+                    })
+            except Exception:
+                pass
+                
+        if not projects:
+            proj_str = getattr(emp, 'current_projects', '')
+            if proj_str and isinstance(proj_str, str):
+                for p in proj_str.split(','):
+                    p = p.strip()
+                    if p:
+                        projects.append({
+                            'title': p,
+                            'subtitle': '',
+                            'status': 'Active',
+                            'status_class': 'active'
+                        })
+        return projects
 
     @api.model
     def _mock_skills_for_employee(self, emp):
