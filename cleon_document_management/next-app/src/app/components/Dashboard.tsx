@@ -500,7 +500,7 @@ export default function Dashboard() {
             >
               <span className="flex items-center gap-3">
                 <FolderKanban className="h-4 w-4" />
-                Company records
+                Organizational Files
               </span>
               <ArrowUpRight className="h-4 w-4" />
             </Link>
