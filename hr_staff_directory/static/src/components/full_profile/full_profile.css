@@ -96,8 +96,8 @@
 .sdir-fp-skill-badge:nth-child(3n+2) { background-color: rgba(124, 58, 237, 0.082); color: rgb(124, 58, 237); border: 1px solid rgba(124, 58, 237, 0.19); }
 .sdir-fp-skill-badge:nth-child(3n) { background-color: rgba(37, 99, 235, 0.082); color: rgb(37, 99, 235); border: 1px solid rgba(37, 99, 235, 0.19); }
 
-.sdir-fp-ai-sidebar { position: sticky; top: 20px; }
-.sdir-fp-ai-card { background-color: rgb(255, 255, 255); border-radius: 18px; padding: 0px; box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px; border: 1px solid rgb(245, 245, 247); overflow: hidden; }
+
+.sdir-fp-ai-card { background-color: rgb(255, 255, 255); border-radius: 18px; padding: 0px; box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px; border: 1px solid rgb(245, 245, 247); overflow: hidden;  position: sticky; top: 24px; }
 .sdir-fp-ai-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgb(243, 244, 246); }
 .sdir-fp-ai-title { display: flex; align-items: center; gap: 9px; }
 .sdir-fp-ai-icon { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, rgb(233, 30, 140), rgb(124, 58, 237)); display: flex; align-items: center; justify-content: center; }
@@ -163,3 +163,8 @@
 .sdir-fp-project-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; flex-shrink: 0; }
 .sdir-fp-project-status.active { color: rgb(5, 150, 105); background-color: rgb(236, 253, 245); border: 1px solid rgb(167, 243, 208); }
 .sdir-fp-project-status.review { color: rgb(37, 99, 235); background-color: rgb(239, 246, 255); border: 1px solid rgb(191, 219, 254); }
+
+.sdir-fp-reporting-empty { border-radius: 12px; border: 1.5px dashed rgb(229, 231, 235); padding: 28px; text-align: center; }
+.sdir-fp-reporting-empty-icon { margin-bottom: 10px; }
+.sdir-fp-reporting-empty-title { font-size: 13px; color: rgb(156, 163, 175); margin: 0px 0px 4px; }
+.sdir-fp-reporting-empty-subtitle { font-size: 11px; color: rgb(209, 213, 219); margin: 0px; }
