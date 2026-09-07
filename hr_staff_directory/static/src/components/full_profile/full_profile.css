@@ -380,3 +380,181 @@
     text-align: center;
     margin: 9px 0px 0px;
 }
+
+/* Activity Tab */
+.sdir-fp-activity-tab {
+    animation: sdirFadeIn 0.22s ease-out;
+}
+@keyframes sdirFadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sdir-fp-activity-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sdir-fp-activity-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+}
+
+.sdir-fp-stat-box {
+    border-radius: 16px;
+    padding: 18px 20px;
+}
+
+.sdir-fp-stat-box.pink {
+    background: rgb(255, 240, 247);
+    border: 1px solid rgba(233, 30, 140, 0.133);
+}
+
+.sdir-fp-stat-box.purple {
+    background: rgb(245, 243, 255);
+    border: 1px solid rgba(124, 58, 237, 0.133);
+}
+
+.sdir-fp-stat-box.green {
+    background: rgb(209, 250, 229);
+    border: 1px solid rgba(16, 185, 129, 0.133);
+}
+
+.sdir-fp-stat-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: rgb(156, 163, 175);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin: 0px 0px 6px;
+}
+
+.sdir-fp-stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0px 0px 3px;
+    line-height: 1.1;
+}
+
+.sdir-fp-stat-box.pink .sdir-fp-stat-value { color: rgb(233, 30, 140); }
+.sdir-fp-stat-box.purple .sdir-fp-stat-value { color: rgb(124, 58, 237); }
+.sdir-fp-stat-box.green .sdir-fp-stat-value { color: rgb(16, 185, 129); font-size: 14px; }
+
+.sdir-fp-stat-subtitle {
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    margin: 0px;
+}
+
+/* Performance History Card */
+.sdir-fp-perf-card {
+    background-color: rgb(255, 255, 255);
+    border-radius: 18px;
+    padding: 0px;
+    box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px;
+    border: 1px solid rgb(245, 245, 247);
+    overflow: hidden;
+}
+
+.sdir-fp-perf-header {
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid rgb(243, 244, 246);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-perf-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: rgb(17, 24, 39);
+    margin: 0px;
+    letter-spacing: -0.01em;
+}
+
+.sdir-fp-perf-item-wrap {
+    border-bottom: 1px solid rgb(243, 244, 246);
+}
+.sdir-fp-perf-item-wrap:last-child {
+    border-bottom: none;
+}
+
+.sdir-fp-perf-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 22px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s;
+}
+.sdir-fp-perf-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+.sdir-fp-perf-item:hover .sdir-fp-perf-year-box {
+    background-color: rgb(229, 231, 235);
+}
+
+.sdir-fp-perf-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sdir-fp-perf-year-box {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background-color: rgb(243, 244, 246);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.sdir-fp-perf-year {
+    font-size: 12px;
+    font-weight: 800;
+    color: rgb(107, 114, 128);
+}
+
+.sdir-fp-perf-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-perf-events {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgb(55, 65, 81);
+}
+
+.sdir-fp-perf-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 99px;
+}
+.sdir-fp-perf-badge.green {
+    background-color: rgb(209, 250, 229);
+    color: rgb(6, 95, 70);
+}
+.sdir-fp-perf-badge.purple {
+    background-color: rgb(237, 233, 254);
+    color: rgb(91, 33, 182);
+}
+
+.sdir-fp-perf-chevron {
+    color: rgb(156, 163, 175);
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+.sdir-fp-perf-item:hover .sdir-fp-perf-chevron {
+    transform: translateX(2px);
+}

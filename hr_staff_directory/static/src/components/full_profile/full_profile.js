@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 export class StaffDirectoryFullProfile extends Component {
@@ -8,6 +8,7 @@ export class StaffDirectoryFullProfile extends Component {
     static props = ["*"];
 
     setup() {
+        this.state = useState({ activeTab: 'overview' });
         this.messageService = useService("hr_staff_directory.message");
         this.mailModalService = useService("hr_staff_directory.mail_modal");
         this.AVATAR_COLORS = [
