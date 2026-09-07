@@ -112,6 +112,17 @@ export function useSaveIntelligenceDataset() {
   });
 }
 
+export function useDeleteIntelligenceDatasets() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) => intelligenceDatasetApi.delete(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.reviewQueue });
+    },
+  });
+}
+
 export function useRunIntelligenceDataset() {
   const queryClient = useQueryClient();
   return useMutation({

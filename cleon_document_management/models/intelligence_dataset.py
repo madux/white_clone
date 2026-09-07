@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -244,6 +244,23 @@ class IntelligenceDataset(models.Model):
         )
         job.action_process(limit=25)
         return job
+
+    def _ensure_can_delete(self):
+        user = self.env.user
+        is_admin = user.has_group("base.group_system") or user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        for dataset in self:
+            if not is_admin and dataset.owner_id != user:
+                raise AccessError(_("You can only delete datasets you own."))
+
+    def action_delete(self):
+        self._ensure_can_delete()
+        self.job_ids.filtered(
+            lambda job: job.state in ("queued", "running", "paused")
+        ).write({"state": "cancelled"})
+        self.unlink()
+        return True
 
     def _source_documents(self):
         self.ensure_one()

@@ -62,5 +62,6 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Render markdown (**bold**, lists) in assistant replies
 - [x] Deploy frontend and bump module version for unlink ACL
 - [x] Fix "Cursor already closed" on Ask stream (dedicated DB cursor)
-- [ ] Notifications/webhooks only if real health checks exist
+## Dataset list
+- [x] Checkbox multi-select + delete (single and bulk)
 - [ ] Tests, lint, existing DMS routes still work

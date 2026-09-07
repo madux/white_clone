@@ -157,6 +157,10 @@ export const intelligenceDatasetApi = {
       "/api/document-intelligence/datasets/run",
       payload,
     ),
+  delete: (ids: number[]) =>
+    unwrap<{ ids: number[] }>("/api/document-intelligence/datasets/delete", {
+      ids,
+    }),
   reviewQueue: (datasetId?: number) =>
     unwrap<IntelligenceExtractionRecord[]>(
       "/api/document-intelligence/review-queue",

@@ -66,6 +66,9 @@ class TestIntelligenceConfig(TransactionCase):
         dataset.state = "queued"
         second = dataset.action_run()
         self.assertEqual(job, second)
+        dataset.action_delete()
+        self.assertFalse(dataset.exists())
+        self.assertFalse(job.exists())
 
     def test_vertical_slice_extracts_contract_fields(self):
         folder = self.env["doc.folder"].create(

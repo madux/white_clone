@@ -495,6 +495,29 @@ class DocumentIntelligenceController(http.Controller):
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
 
+    @http.route(
+        "/api/document-intelligence/datasets/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_delete(self, **kwargs):
+        raw_ids = kwargs.get("ids")
+        if raw_ids is None and kwargs.get("id"):
+            raw_ids = [kwargs.get("id")]
+        ids = [int(value) for value in (raw_ids or []) if value]
+        if not ids:
+            return {"success": False, "message": "Select at least one dataset."}
+        datasets = request.env["doc.intelligence.dataset"].browse(ids).exists()
+        if not datasets:
+            return {"success": False, "message": "Dataset not found."}
+        try:
+            datasets.action_delete()
+        except (AccessError, UserError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": {"ids": ids}}
+
     def _record_data(self, record):
         return {
             "id": record.id,
