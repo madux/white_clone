@@ -505,7 +505,7 @@ export default function Dashboard() {
               <ArrowUpRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/pages/document-intelligence"
+              href="/pages/document-intelligence/ask"
               className="flex items-center justify-between rounded-xl border border-pink-100 bg-pink-50/50 p-4 text-sm font-semibold text-brand-text transition hover:bg-pink-100"
             >
               <span className="flex items-center gap-3">
