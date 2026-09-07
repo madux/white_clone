@@ -12,9 +12,8 @@
                 <t t-if="portalModules.leave">
                     <button class="ctm-nav ctm-section-toggle" t-on-click="() => this.toggleSection('leave')"><i class="fa fa-calendar-o"/><strong>Leave Management</strong><i t-att-class="'fa ctm-chevron ' + (state.leaveOpen ? 'fa-chevron-up' : 'fa-chevron-down')"/></button>
                     <div t-if="state.leaveOpen" class="ctm-nav-children">
-                        <button t-att-class="'ctm-nav ' + (state.page === 'leave' ? 'active' : '')" t-on-click="() => this.setPage('leave')"><i class="fa fa-calendar-plus-o"/>Apply for Leave</button>
-                        <button t-att-class="'ctm-nav ' + (state.page === 'leaveRequests' ? 'active' : '')" t-on-click="() => this.setPage('leaveRequests')"><i class="fa fa-file-text-o"/>My Leave Requests</button>
-                        <button t-att-class="'ctm-nav ' + (state.page === 'leave' ? 'active' : '')" t-on-click="() => this.setPage('leave')"><i class="fa fa-pie-chart"/>Leave Balance</button>
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leaveRequests' ? 'active' : '')" t-on-click="() => this.setPage('leaveRequests')"><i class="fa fa-file-text-o"/>Leave Requests</button>
+                        <button t-att-class="'ctm-nav ' + (state.page === 'leaveBalance' ? 'active' : '')" t-on-click="() => this.setPage('leaveBalance')"><i class="fa fa-pie-chart"/>Leave Balance</button>
                         <button t-att-class="'ctm-nav ' + (state.page === 'leaveCalendar' ? 'active' : '')" t-on-click="() => this.setPage('leaveCalendar')"><i class="fa fa-calendar"/>Leave Calendar</button>
                     </div>
                 </t>
@@ -39,8 +38,8 @@
                         <article t-if="featureAccess.overtime" class="overtime"><div class="ctm-widget-title"><i class="fa fa-hourglass-half"/><span>Overtime</span></div><strong><t t-esc="state.employeeData.summary.monthly_overtime_hours"/> hrs</strong><small>This month</small><div class="ctm-widget-actions"><button t-on-click="() => this.setPage('overtime')">Request OT</button></div></article>
                     </div>
                 </t>
-                <t t-elif="state.page === 'leave'"><EmployeeLeaveDashboard embedded="true"/></t>
-                <t t-elif="state.page === 'leaveRequests'"><MyLeaveRequestsPage embedded="true"/></t>
+                <t t-elif="state.page === 'leaveBalance'"><EmployeeLeaveDashboard embedded="true"/></t>
+                <t t-elif="state.page === 'leaveRequests'"><MyLeaveRequestsPage embedded="true" personalOnly="true"/></t>
                 <t t-elif="state.page === 'leaveCalendar'"><LeaveCalendarPage embedded="true" forceEmployee="true"/></t>
                 <t t-else=""><TimeManagementApp t-key="state.page" action="timeAction" portalEmbedded="true"/></t>
             </main>

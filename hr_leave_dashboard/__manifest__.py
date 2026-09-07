@@ -85,6 +85,7 @@
             'hr_leave_dashboard/static/src/components/leave_configuration/leave_configuration.js',
             'hr_leave_dashboard/static/src/components/leave_configuration/leave_configuration.xml',
             'hr_leave_dashboard/static/src/components/leave_configuration/leave_configuration.css',
+            'hr_leave_dashboard/static/src/css/workspace_shell.css',
         ],
     },
     'license': 'LGPL-3',

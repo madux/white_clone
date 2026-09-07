@@ -14,6 +14,7 @@ export class MyLeaveRequestsPage extends Component {
     static props = {
         ...standardActionServiceProps,
         embedded: { type: Boolean, optional: true },
+        personalOnly: { type: Boolean, optional: true },
         "*": true,
     };
     setup() {
@@ -87,14 +88,17 @@ export class MyLeaveRequestsPage extends Component {
             this.state.rows = data.rows || [];
             this.state.counts = data.counts || {};
             this.state.types = data.leave_types || [];
-            this.state.access = access;
-            this.state.approvalRows = access.can_approve
+            const scopedAccess = this.props.personalOnly
+                ? { ...access, can_approve: false, can_operate: false }
+                : access;
+            this.state.access = scopedAccess;
+            this.state.approvalRows = scopedAccess.can_approve
                 ? (await this.orm.call("hr.leave", "get_pending_my_leave_approvals", [])).rows || []
                 : [];
             const availableViews = [
-                access.has_personal_scope && "my",
-                access.can_approve && "approvals",
-                access.can_operate && "records",
+                scopedAccess.has_personal_scope && "my",
+                scopedAccess.can_approve && "approvals",
+                scopedAccess.can_operate && "records",
             ].filter(Boolean);
             if (!availableViews.includes(this.state.activeView)) {
                 this.state.activeView = availableViews[0] || "my";

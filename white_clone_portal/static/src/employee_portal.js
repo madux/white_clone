@@ -22,7 +22,9 @@ export class EmployeePortalApp extends Component {
         this.orm = useService("orm");
         this.notification = useService("notification");
         this.state = useState({
-            page: this.props.action?.params?.initial_page || "dashboard",
+            page: this.props.action?.params?.initial_page === "leave"
+                ? "leaveRequests"
+                : (this.props.action?.params?.initial_page || "dashboard"),
             access: null,
             employeeData: null,
             profileOpen: true,
@@ -69,12 +71,14 @@ export class EmployeePortalApp extends Component {
 
     isPageAllowed(page) {
         if (page === "dashboard") return true;
-        if (["leave", "leaveRequests", "leaveCalendar"].includes(page)) return Boolean(this.portalModules.leave);
+        if (["leaveRequests", "leaveBalance", "leaveCalendar"].includes(page)) return Boolean(this.portalModules.leave);
         const feature = {clock: "attendance", history: "attendance", regularizations: "attendance", overtime: "overtime"}[page];
         return Boolean(feature && this.featureAccess[feature]);
     }
 
     setPage(page) {
+        // Keep older links targeting the former Apply for Leave page working.
+        if (page === "leave") page = "leaveRequests";
         if (!this.isPageAllowed(page)) {
             this.notification.add("This employee application is not included in your company subscription.", {type: "warning"});
             return;
