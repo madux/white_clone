@@ -207,6 +207,28 @@
 
 
 
+                                <div class="sdir-fp-card" t-if="props.activeProfile.skills and props.activeProfile.skills.length > 0">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg></div>
+                                            <h3 class="sdir-fp-card-title">Skills &amp; Expertise</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-skills">
+                                        <t t-if="typeof props.activeProfile.skills === 'string'">
+                                            <t t-foreach="props.activeProfile.skills.split(',')" t-as="skill" t-key="skill">
+                                                <span class="sdir-fp-skill-badge"><t t-esc="skill.trim()"/></span>
+                                            </t>
+                                        </t>
+                                        <t t-else="">
+                                            <t t-foreach="props.activeProfile.skills" t-as="skill" t-key="skill">
+                                                <span class="sdir-fp-skill-badge"><t t-esc="skill"/></span>
+                                            </t>
+                                        </t>
+                                    </div>
+                                </div>
+
+
                                 <!-- Languages Card -->
                                 <div class="sdir-fp-card">
                                     <div class="sdir-fp-card-header">
@@ -297,27 +319,6 @@
                                     </div>
                                 </div>
 
-
-                                <div class="sdir-fp-card" t-if="props.activeProfile.skills and props.activeProfile.skills.length > 0">
-                                    <div class="sdir-fp-card-header">
-                                        <div class="sdir-fp-card-title-group">
-                                            <div class="sdir-fp-card-icon purple"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"></path></svg></div>
-                                            <h3 class="sdir-fp-card-title">Skills &amp; Expertise</h3>
-                                        </div>
-                                    </div>
-                                    <div class="sdir-fp-skills">
-                                        <t t-if="typeof props.activeProfile.skills === 'string'">
-                                            <t t-foreach="props.activeProfile.skills.split(',')" t-as="skill" t-key="skill">
-                                                <span class="sdir-fp-skill-badge"><t t-esc="skill.trim()"/></span>
-                                            </t>
-                                        </t>
-                                        <t t-else="">
-                                            <t t-foreach="props.activeProfile.skills" t-as="skill" t-key="skill">
-                                                <span class="sdir-fp-skill-badge"><t t-esc="skill"/></span>
-                                            </t>
-                                        </t>
-                                    </div>
-                                </div>
 
                             </div>
                             
