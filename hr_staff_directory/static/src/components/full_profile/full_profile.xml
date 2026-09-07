@@ -252,7 +252,7 @@
                                                 <t t-foreach="props.activeProfile.languages.split(',')" t-as="lang" t-key="lang">
                                                     <div class="sdir-fp-lang-item">
                                                         <span class="sdir-fp-lang-name"><t t-esc="lang.trim()"/></span>
-                                                        <span class="sdir-fp-lang-level">—</span>
+                                                        
                                                     </div>
                                                 </t>
                                             </t>
@@ -260,7 +260,7 @@
                                                 <t t-foreach="props.activeProfile.languages" t-as="lang" t-key="lang">
                                                     <div class="sdir-fp-lang-item">
                                                         <span class="sdir-fp-lang-name"><t t-esc="lang"/></span>
-                                                        <span class="sdir-fp-lang-level">—</span>
+                                                        
                                                     </div>
                                                 </t>
                                             </t>
