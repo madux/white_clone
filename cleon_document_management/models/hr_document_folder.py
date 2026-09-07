@@ -488,6 +488,22 @@ class DocumentFolder(models.Model):
         if not employee or not employee.department_id:
             return self.browse()
 
+        # Reuse the employee folder already configured by an administrator.
+        # Only fall back to the department workspace when the employee has not
+        # been assigned to any active employee folder yet.
+        folder = self.sudo().search(
+            [
+                ("folder_type", "=", "employee"),
+                ("employee_ids", "in", [employee.id]),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="write_date desc, id desc",
+            limit=1,
+        )
+        if folder:
+            return folder
+
         folder = self.get_or_create_department_folder(employee.department_id)
         if employee not in folder.employee_ids:
             folder.write({"employee_ids": [fields.Command.link(employee.id)]})

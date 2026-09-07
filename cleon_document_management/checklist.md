@@ -43,6 +43,11 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Query history from audit events
 - [x] Structured field filters for expiry, notice, probation, missing training
 
+## Merge (origin/document-intelligence)
+- [x] Pulled incoming approval-inbox work (Header, mock-data removal)
+- [x] Kept `export async function rpc` in `next-app/lib/api.ts` for Intelligence
+- [x] Rebuilt and synced `static/src/nextapp` so inbox + Intelligence share one export
+
 ## Phase 10 — Notifications and hardening
 - [ ] Notifications/webhooks only if real health checks exist
 - [ ] Tests, lint, existing DMS routes still work

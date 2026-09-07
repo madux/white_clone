@@ -29,10 +29,12 @@ import {
   useReviewDocument,
   useUploadEmployeeDocument,
 } from "../../../hooks/useDocuments";
-import { api, useTestData } from "../../../lib/api";
+import { api } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import BulkDocumentActions from "./BulkDocumentActions";
+import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import SortableTable from "./SortableTable";
+import ThemedSelect from "./ThemedSelect";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
@@ -45,8 +47,10 @@ export default function EmployeeProfilePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState<number[]>([]);
   const [viewing, setViewing] = useState<any>(null);
+  const [rejecting, setRejecting] = useState<any>(null);
   const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [reviewError, setReviewError] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadType, setUploadType] = useState("");
@@ -96,6 +100,37 @@ export default function EmployeeProfilePage() {
     .slice(0, 2)
     .toUpperCase();
 
+  const approvalLabel = (state: string) =>
+    state === "pending"
+      ? "Requires approval"
+      : state.replace("_", " ");
+
+  const handleReview = async (
+    document: any,
+    action: "approve" | "reject",
+    reason = "",
+  ) => {
+    setReviewError("");
+    try {
+      const result = await review.mutateAsync({
+        id: document.id,
+        action,
+        ...(action === "reject" ? { reason } : {}),
+      });
+      if (!result.success) {
+        throw new Error(
+          (result as { message?: string }).message ||
+            "The document review could not be completed.",
+        );
+      }
+      setViewing(null);
+      setRejecting(null);
+      setRejectReason("");
+    } catch (error: any) {
+      setReviewError(error?.message || "The document review could not be completed.");
+    }
+  };
+
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <Link
@@ -105,6 +140,14 @@ export default function EmployeeProfilePage() {
         <ArrowLeft className="h-4 w-4" />
         Back to Employee Files
       </Link>
+      {reviewError && !rejecting && (
+        <p
+          role="alert"
+          className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+        >
+          {reviewError}
+        </p>
+      )}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-4">
@@ -285,9 +328,14 @@ export default function EmployeeProfilePage() {
                       <div className="flex items-center gap-3">
                         <FileText className="h-5 w-5 text-brand-pink" />
                         <div>
-                          <p className="font-semibold text-slate-800">
+                          <button
+                            type="button"
+                            onClick={() => setViewing(document)}
+                            className="text-left font-semibold text-slate-800 transition hover:text-brand-pink focus:text-brand-pink"
+                            aria-label={`Open ${document.name}`}
+                          >
                             {document.name}
-                          </p>
+                          </button>
                           <p className="mt-1 text-xs text-slate-400">
                             {document.description}
                           </p>
@@ -304,7 +352,7 @@ export default function EmployeeProfilePage() {
                         {document.approval_state === "approved" && (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         )}
-                        {document.approval_state.replace("_", " ")}
+                        {approvalLabel(document.approval_state)}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-600">
@@ -315,24 +363,34 @@ export default function EmployeeProfilePage() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setViewing(document)}
-                          className="rounded-full border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 hover:border-brand-pink hover:text-brand-pink"
-                        >
-                          View
-                        </button>
                         {currentUser.data?.is_document_manager &&
                           document.approval_state === "pending" && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setViewing({ ...document, review: true })
-                              }
-                              className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-3 py-2 text-xs font-bold text-white"
-                            >
-                              Review
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => void handleReview(document, "approve")}
+                                disabled={review.isPending}
+                                title="Approve document"
+                                aria-label={`Approve ${document.name}`}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <Check className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setRejecting(document);
+                                  setRejectReason("");
+                                  setReviewError("");
+                                }}
+                                disabled={review.isPending}
+                                title="Reject document"
+                                aria-label={`Reject ${document.name}`}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </>
                           )}
                         <DocumentActions
                           documentId={document.id}
@@ -391,13 +449,23 @@ export default function EmployeeProfilePage() {
                 <input required type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} className="hidden" />
               </span>
             </label>
-            <label className="mt-4 block">
-              <span className="label">Document type</span>
-              <select required value={uploadType} onChange={(event) => setUploadType(event.target.value)} className="field">
-                <option value="">Select document type</option>
-                {(availableDocumentTypes.data ?? []).map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
-              </select>
-            </label>
+            <div className="mt-4 flex items-end gap-2">
+              <label className="min-w-0 flex-1">
+                <span className="label">Document type</span>
+                <ThemedSelect
+                  value={uploadType}
+                  onChange={setUploadType}
+                  placeholder="Select document type"
+                  options={(availableDocumentTypes.data ?? []).map((type) => ({
+                    value: String(type.id),
+                    label: type.name,
+                  }))}
+                />
+              </label>
+              <InlineDocumentTypeCreator
+                onCreated={(type) => setUploadType(String(type.id))}
+              />
+            </div>
             {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
@@ -412,7 +480,9 @@ export default function EmployeeProfilePage() {
             <div className="flex items-center justify-between border-b border-slate-100 p-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-                  {viewing.review ? "Admin review" : "Document viewer"}
+                  {viewing.approval_state === "pending" && currentUser.data?.is_document_manager
+                    ? "Admin review"
+                    : "Document viewer"}
                 </p>
                 <h2 className="mt-1 text-lg font-bold text-slate-900">
                   {viewing.name}
@@ -448,49 +518,26 @@ export default function EmployeeProfilePage() {
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-hidden bg-slate-100 p-5">
-              {useTestData ? (
-                <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8">
-                  <FileText className="h-9 w-9 text-brand-pink" />
-                  <h3 className="mt-4 text-lg font-bold text-slate-900">
-                    {viewing.name}
-                  </h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
-                    {viewing.description || "Test document preview."}
-                  </p>
-                </div>
-              ) : (
-                <iframe
-                  title={viewing.name}
-                  src={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
-                  className="block h-full min-h-[62vh] w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white"
-                />
-              )}
+              <iframe
+                title={viewing.name}
+                src={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
+                className="block h-full min-h-[62vh] w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white"
+              />
             </div>
-            {viewing.review && (
+            {viewing.approval_state === "pending" && currentUser.data?.is_document_manager && (
               <div className="border-t border-slate-100 p-5">
-                <label className="block text-xs font-bold text-slate-600">
-                  Rejection reason{" "}
-                  <span className="font-normal text-slate-400">(optional)</span>
-                  <textarea
-                    value={rejectReason}
-                    onChange={(event) => setRejectReason(event.target.value)}
-                    rows={2}
-                    placeholder="Explain what needs to be corrected..."
-                    className="field mt-2 resize-none"
-                  />
-                </label>
+                <p className="text-sm font-semibold text-slate-700">
+                  This document is awaiting approval.
+                </p>
                 <div className="mt-4 flex justify-end gap-2">
                   <button
                     type="button"
                     disabled={review.isPending}
-                    onClick={async () => {
-                      await review.mutateAsync({
-                        id: viewing.id,
-                        action: "reject",
-                        reason: rejectReason,
-                      });
+                    onClick={() => {
+                      setRejecting(viewing);
                       setViewing(null);
                       setRejectReason("");
+                      setReviewError("");
                     }}
                     className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2.5 text-sm font-bold text-red-600"
                   >
@@ -500,13 +547,7 @@ export default function EmployeeProfilePage() {
                   <button
                     type="button"
                     disabled={review.isPending}
-                    onClick={async () => {
-                      await review.mutateAsync({
-                        id: viewing.id,
-                        action: "approve",
-                      });
-                      setViewing(null);
-                    }}
+                    onClick={() => void handleReview(viewing, "approve")}
                     className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white"
                   >
                     <Check className="h-4 w-4" />
@@ -516,6 +557,83 @@ export default function EmployeeProfilePage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {rejecting && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reject-document-title"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (!rejectReason.trim()) {
+                setReviewError("Add a reason before rejecting this document.");
+                return;
+              }
+              void handleReview(rejecting, "reject", rejectReason.trim());
+            }}
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-500">
+                  Reject document
+                </p>
+                <h2 id="reject-document-title" className="mt-1 text-xl font-bold text-slate-900">
+                  Explain what needs to change
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  The requester will see this reason when they review the rejected document.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRejecting(null)}
+                aria-label="Close rejection dialog"
+                className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <label className="mt-5 block">
+              <span className="label">Reason</span>
+              <textarea
+                autoFocus
+                required
+                value={rejectReason}
+                onChange={(event) => {
+                  setRejectReason(event.target.value);
+                  setReviewError("");
+                }}
+                rows={4}
+                placeholder="Explain what needs to be corrected..."
+                className="field min-h-28 resize-none"
+              />
+            </label>
+            {reviewError && (
+              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {reviewError}
+              </p>
+            )}
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejecting(null)}
+                className="rounded-full px-4 py-2.5 font-semibold text-slate-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={review.isPending}
+                className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <XCircle className="h-4 w-4" />
+                {review.isPending ? "Rejecting..." : "Reject document"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

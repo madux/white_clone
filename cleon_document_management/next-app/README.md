@@ -20,41 +20,7 @@ cd cleon_document_management/next-app
 npm install
 ```
 
-## Development
-
-Start the Next.js development server:
-
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3030/document-management
-```
-
-The development environment is configured in `.env.development`:
-
-```env
-NEXT_PUBLIC_HMR_PORT=3030
-WDS_SOCKET_PORT=3030
-NEXT_PUBLIC_ODOO_URL=http://localhost:8069
-NEXT_PUBLIC_USE_TEST_DATA=true
-```
-
-`NEXT_PUBLIC_USE_TEST_DATA=true` uses realistic local fixtures during
-development. It only applies when `NODE_ENV=development`; production builds
-use Odoo. Restart Next.js after changing environment variables.
-
-To test the frontend against real Odoo data, use:
-
-```env
-NEXT_PUBLIC_USE_TEST_DATA=false
-NEXT_PUBLIC_ODOO_URL=http://localhost:8069
-```
-
-## Deploy Into Odoo
+## Build and deploy into Odoo
 
 Run this from `next-app`:
 
@@ -76,14 +42,13 @@ Never manually edit `static/src/nextapp`; it is generated output and is
 replaced by the next sync.
 
 After deployment, restart Odoo or update the module so Odoo serves the new
-assets. A typical development command from the Odoo project directory is:
+assets. Run Odoo normally from the Odoo project directory:
 
 ```bash
 ../white_clone/.venv/bin/python odoo-bin \
   -c odoo.conf \
   -d white_cleon_17 \
-  -u cleon_document_management \
-  --dev=all
+  -u cleon_document_management
 ```
 
 Then open:
@@ -97,7 +62,6 @@ Use a hard refresh if the browser still shows older assets.
 ## Useful Commands
 
 ```bash
-npm run dev       # Next.js development server on port 3030
 npm run build     # Production static build only
 npm run sync      # Copy an existing out/ export into Odoo static files
 npm run deploy    # Build with Webpack and sync into Odoo
@@ -120,8 +84,9 @@ The Next.js base path is configured as `/document-management` in
 ```
 
 Next.js adds the base path to browser links automatically. Backend API calls
-use `NEXT_PUBLIC_ODOO_URL` in development and the current Odoo origin in the
-deployed static app.
+use the current Odoo origin in the deployed static app. An optional
+`NEXT_PUBLIC_ODOO_URL` can be supplied at build time when Odoo is served from
+a different production host.
 
 ## Troubleshooting
 
@@ -136,27 +101,17 @@ npm run deploy
 Confirm that `cleon_document_management/static/src/nextapp` contains
 `index.html` and the `_next` assets.
 
-### It works on port 3030 but not through Odoo
-
-The development server and Odoo serve different builds. Run `npm run deploy`,
-restart/update Odoo, and open port `8069`.
-
 ### API calls return HTML instead of JSON or a download
 
-In development, backend requests must target `NEXT_PUBLIC_ODOO_URL`, normally
-`http://localhost:8069`. If it is missing, the Next.js dev server can return
-its HTML fallback for an Odoo route.
+Make sure the browser is opened through the Odoo URL and that the Odoo
+session is active. The deployed frontend calls the Odoo API on the same
+origin.
 
 ### `useSearchParams()` build error
 
 Routes using `useSearchParams()` must render their client component inside a
 React `Suspense` boundary in `page.tsx`, otherwise static export fails during
 prerendering.
-
-### Mock data is still visible
-
-Set `NEXT_PUBLIC_USE_TEST_DATA=false` or unset it, restart Next.js, rebuild,
-run `npm run sync`, and restart/update Odoo.
 
 ### New code is not visible
 

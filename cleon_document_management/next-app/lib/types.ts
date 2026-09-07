@@ -73,7 +73,27 @@ export interface MyWorkspace {
 export interface AdminAttention {
   count: number;
   notifications: { id: number; document_id: number; employee_id?: number; document: string; employee: string; message: string; created_at: string }[];
-  mailbox: { id: number; document_id: number; employee_id?: number; document: string; employee: string; message: string; created_at: string }[];
+}
+
+export interface ApprovalInboxItem {
+  id: number;
+  approval_id: number;
+  document_id: number;
+  employee_id?: number;
+  document: string;
+  document_type: string;
+  employee: string;
+  folder_id: number;
+  folder_type: "employee" | "organizational";
+  sequence: number;
+  state: "pending";
+  message: string;
+  created_at: string;
+}
+
+export interface ApprovalInbox {
+  count: number;
+  items: ApprovalInboxItem[];
 }
 
 export interface QuickAccess { folders: DocFolder[]; documents: DocDocument[]; }

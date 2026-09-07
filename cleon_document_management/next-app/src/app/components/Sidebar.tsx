@@ -72,27 +72,14 @@ export default function Sidebar() {
                   key={l.name}
                   href={l.link}
                   aria-current={isActive ? "page" : undefined}
-                  className={`group relative overflow-hidden flex items-center px-4 py-2.5 rounded-md cursor-pointer transition-colors duration-300 ${
+                  className={`group flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? "bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-lg shadow-pink-200"
-                      : "text-slate-500"
+                      : "text-slate-500 hover:translate-x-0.5 hover:bg-pink-50/80 hover:text-brand-text"
                   }`}
                 >
-                  {!isActive && (
-                    <span className="absolute inset-0 m-auto aspect-square w-full scale-0 rounded-full bg-pink-400 opacity-0 transition-all duration-500 ease-out group-hover:scale-150 group-hover:opacity-100 pointer-events-none" />
-                  )}
-                  <div
-                    className={`relative z-10 flex items-center gap-2 transition-colors duration-300 ${
-                      isActive
-                        ? "text-white"
-                        : "text-slate-500 group-hover:text-slate-900"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    <div className="text-sm font-semibold tracking-tight">
-                      {l.name}
-                    </div>
-                  </div>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span>{l.name}</span>
                 </Link>
               );
             })}
@@ -105,7 +92,7 @@ export default function Sidebar() {
             {workspaceLinks.map((l) => {
               const Icon = l.icon;
               const isActive = routePath.startsWith(l.link);
-              return <Link key={l.name} href={l.link} aria-current={isActive ? "page" : undefined} className={`group relative flex items-center gap-2.5 rounded-full px-4 py-2.5 text-sm font-semibold transition ${isActive ? "bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-lg shadow-pink-200" : "text-slate-500 hover:bg-pink-50 hover:text-brand-text"}`}><Icon className="h-4 w-4" />{l.name}</Link>;
+              return <Link key={l.name} href={l.link} aria-current={isActive ? "page" : undefined} className={`group flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${isActive ? "bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-lg shadow-pink-200" : "text-slate-500 hover:translate-x-0.5 hover:bg-pink-50/80 hover:text-brand-text"}`}><Icon className="h-5 w-5 shrink-0" />{l.name}</Link>;
             })}
           </div>
         </div>
@@ -124,27 +111,14 @@ export default function Sidebar() {
                   key={l.name}
                   href={l.link}
                   aria-current={isActive ? "page" : undefined}
-                  className={`group relative overflow-hidden flex items-center px-4 py-2.5 rounded-md cursor-pointer transition-colors duration-300 ${
+                  className={`group flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? "bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-lg shadow-pink-200"
-                      : "text-slate-500"
+                      : "text-slate-500 hover:translate-x-0.5 hover:bg-pink-50/80 hover:text-brand-text"
                   }`}
                 >
-                  {!isActive && (
-                    <span className="absolute inset-0 m-auto aspect-square w-full scale-0 rounded-full bg-pink-400 opacity-0 transition-all duration-500 ease-out group-hover:scale-150 group-hover:opacity-100 pointer-events-none" />
-                  )}
-                  <div
-                    className={`relative z-10 flex items-center gap-2 transition-colors duration-300 ${
-                      isActive
-                        ? "text-white"
-                        : "text-slate-500 group-hover:text-slate-900"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    <div className="text-sm font-semibold tracking-tight">
-                      {l.name}
-                    </div>
-                  </div>
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span>{l.name}</span>
                 </Link>
               );
             })}
