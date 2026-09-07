@@ -162,6 +162,40 @@
                                     </div>
                                 </div>
 
+                                <div class="sdir-fp-card" t-if="props.activeProfile.manager_name">
+                                    <div class="sdir-fp-card-header">
+                                        <div class="sdir-fp-card-title-group">
+                                            <div class="sdir-fp-card-icon pink"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg></div>
+                                            <h3 class="sdir-fp-card-title">Reporting Structure</h3>
+                                        </div>
+                                    </div>
+                                    <div class="sdir-fp-reporting">
+                                        <div class="sdir-fp-reporting-manager" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
+                                            <div class="sdir-fp-reporting-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
+                                                <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Manager Avatar"/>
+                                                <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
+                                            </div>
+                                            <div>
+                                                <p class="sdir-fp-reporting-name"><t t-esc="props.activeProfile.manager_name"/></p>
+                                                <p class="sdir-fp-reporting-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || ''"/></p>
+                                                <span class="sdir-fp-reporting-badge">Manager</span>
+                                            </div>
+                                        </div>
+                                        <div class="sdir-fp-reporting-arrow">
+                                            <div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+                                        </div>
+                                        <div class="sdir-fp-reporting-desc">
+                                            <div class="sdir-fp-reporting-desc-inner">
+                                                <div class="sdir-fp-reporting-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+                                                <p class="sdir-fp-text">
+                                                    <t t-esc="props.activeProfile.name.split(' ')[0]"/> reports to <strong style="color: rgb(17, 24, 39);"><t t-esc="props.activeProfile.manager_name"/></strong> and is part of the <strong style="color: rgb(17, 24, 39);"><t t-esc="props.activeProfile.department"/></strong> department. They lead a team of <t t-esc="props.activeProfile.direct_reports"/> direct reports.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Skills & Expertise Card -->
                                 <div class="sdir-fp-card">
                                     <div class="sdir-fp-card-header">
@@ -267,39 +301,6 @@
                                     </div>
                                 </div>
 
-                                <div class="sdir-fp-card" t-if="props.activeProfile.manager_name">
-                                    <div class="sdir-fp-card-header">
-                                        <div class="sdir-fp-card-title-group">
-                                            <div class="sdir-fp-card-icon pink"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg></div>
-                                            <h3 class="sdir-fp-card-title">Reporting Structure</h3>
-                                        </div>
-                                    </div>
-                                    <div class="sdir-fp-reporting">
-                                        <div class="sdir-fp-reporting-manager" t-on-click="() => props.openFullProfileById(props.activeProfileManager.id)" style="cursor: pointer;">
-                                            <div class="sdir-fp-reporting-manager-avatar" t-att-style="'background-color:' + this.avatarColor(props.activeProfile.manager_name)">
-                                                <img t-if="props.activeProfileManager and props.activeProfileManager.has_image" t-attf-src="/web/image?model=hr.employee&amp;id={{props.activeProfileManager.id}}&amp;field=avatar_128" alt="Manager Avatar"/>
-                                                <span t-else=""><t t-esc="this.initials(props.activeProfile.manager_name)"/></span>
-                                            </div>
-                                            <div>
-                                                <p class="sdir-fp-reporting-name"><t t-esc="props.activeProfile.manager_name"/></p>
-                                                <p class="sdir-fp-reporting-job"><t t-esc="(props.activeProfileManager and props.activeProfileManager.job_title) || ''"/></p>
-                                                <span class="sdir-fp-reporting-badge">Manager</span>
-                                            </div>
-                                        </div>
-                                        <div class="sdir-fp-reporting-arrow">
-                                            <div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div><div class="sdir-fp-reporting-dot"></div>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
-                                        </div>
-                                        <div class="sdir-fp-reporting-desc">
-                                            <div class="sdir-fp-reporting-desc-inner">
-                                                <div class="sdir-fp-reporting-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-                                                <p class="sdir-fp-text">
-                                                    <t t-esc="props.activeProfile.name.split(' ')[0]"/> reports to <strong style="color: rgb(17, 24, 39);"><t t-esc="props.activeProfile.manager_name"/></strong> and is part of the <strong style="color: rgb(17, 24, 39);"><t t-esc="props.activeProfile.department"/></strong> department. They lead a team of <t t-esc="props.activeProfile.direct_reports"/> direct reports.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <div class="sdir-fp-card" t-if="props.activeProfile.skills and props.activeProfile.skills.length > 0">
                                     <div class="sdir-fp-card-header">

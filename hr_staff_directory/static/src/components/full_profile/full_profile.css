@@ -7,7 +7,7 @@
 .sdir-fp-header-btn { display: flex; align-items: center; gap: 6px; height: 36px; padding: 0px 18px; border-radius: 8px; border: none; background-color: rgb(255, 255, 255); color: rgb(233, 30, 140); font-size: 12.5px; font-weight: 700; cursor: pointer; transition: 0.15s; box-shadow: rgba(0, 0, 0, 0.12) 0px 2px 8px; }
 .sdir-fp-header-btn:hover { transform: translateY(-1px); box-shadow: rgba(0, 0, 0, 0.15) 0px 4px 12px; }
 
-.sdir-fp-body { display: flex; align-items: flex-start; height: calc(100vh - 80px); overflow: hidden; }
+.sdir-fp-body { display: flex; align-items: stretch; height: calc(100vh - 80px); overflow: hidden; }
 .sdir-fp-sidebar { width: 252px; flex-shrink: 0; align-self: stretch; background-color: rgb(255, 255, 255); border-right: 1px solid rgb(229, 231, 235); z-index: 5; overflow-y: auto; display: flex; flex-direction: column; }
 .sdir-fp-sidebar-inner { position: sticky; top: 0px; display: flex; flex-direction: column; }
 .sdir-fp-avatar-section { display: flex; flex-direction: column; align-items: center; padding: 0px 22px 22px; border-bottom: 1px solid rgb(229, 231, 235); }
@@ -46,7 +46,7 @@
 .sdir-fp-visibility-btn { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0px 11px; border-radius: 8px; border: 1px solid rgb(229, 231, 235); background-color: rgb(255, 255, 255); color: rgb(107, 114, 128); font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
 
 .sdir-fp-content { padding: 24px 24px 56px; flex: 1 1 0%; min-height: 0px; overflow-y: auto; }
-.sdir-fp-content-inner { opacity: 1; transform: translateY(0px); transition: opacity 0.22s, transform 0.22s; display: grid; grid-template-columns: minmax(0px, 1fr) 340px; gap: 22px; align-items: start; }
+.sdir-fp-content-inner { opacity: 1; transform: translateY(0px); transition: opacity 0.22s, transform 0.22s; display: grid; grid-template-columns: minmax(0px, 1fr) 340px; gap: 22px; }
 .sdir-fp-cards { display: flex; flex-direction: column; gap: 18px; }
 .sdir-fp-card { background-color: rgb(255, 255, 255); border-radius: 18px; padding: 26px; box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px; border: 1px solid rgb(245, 245, 247); }
 .sdir-fp-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; justify-content: space-between; }
