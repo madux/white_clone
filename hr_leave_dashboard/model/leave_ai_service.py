@@ -443,6 +443,13 @@ class LeaveAiService(models.AbstractModel):
         return self.env["cleon.ai.gateway"].ask_assistant(question, screen_context)
 
     @api.model
+    def transcribe_leave_request_audio(self, audio_data, mimetype="audio/webm"):
+        if not self.env["hr.leave"].is_ai_capability_enabled("nl_request"):
+            raise AccessError(_("AI Natural Language Leave Request Submission is disabled by organisation governance."))
+        self.env["hr.leave"]._employee_for_current_user()
+        return self.env["cleon.ai.gateway"].transcribe_audio(audio_data, mimetype)
+
+    @api.model
     def get_calendar_assistant_state(self, screen_context=None):
         context = dict(screen_context or {}, screen="leave.calendar")
         return self.env["cleon.ai.gateway"].get_assistant_state(context)

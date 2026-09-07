@@ -78,7 +78,6 @@ export class LeaveCalendarPage extends Component {
             dayPanelOpen: false,
             dayPanelDateFrom: "",
             dayPanelDateTo: "",
-            dayPanelBook: false,
             selectionStart: "",
             selectionCurrent: "",
             employeeRequestOpen: false,
@@ -273,13 +272,12 @@ export class LeaveCalendarPage extends Component {
         this.state.employeeRequestInitial = { date_from: dateFrom, date_to: dateTo };
         this.state.employeeRequestOpen = true;
     }
-    openDayPanel(dateFrom, dateTo = dateFrom, book = false) {
+    openDayPanel(dateFrom, dateTo = dateFrom) {
         this.state.dayPanelDateFrom = dateFrom;
         this.state.dayPanelDateTo = dateTo;
-        this.state.dayPanelBook = Boolean(book);
         this.state.dayPanelOpen = true;
     }
-    closeDayPanel() { this.state.dayPanelOpen = false; this.state.dayPanelBook = false; }
+    closeDayPanel() { this.state.dayPanelOpen = false; }
     get dayPanelLeaves() {
         const from = this.state.dayPanelDateFrom;
         const to = this.state.dayPanelDateTo || from;
@@ -305,8 +303,8 @@ export class LeaveCalendarPage extends Component {
         this.state.selectionStart = "";
         this.state.selectionCurrent = "";
         if (isRange) {
-            if (this.state.canBook && !this.state.employeeView) this.openDayPanel(values[0], values[1], true);
-            else this.openRequestRange(values[0], values[1]);
+            if (this.state.canRequest) this.openRequestRange(values[0], values[1]);
+            else this.openDayPanel(values[0], values[1]);
             return;
         }
         const hasEntries = this.getDayLeaves(ymd).length || this.getDayHolidays(ymd).length;

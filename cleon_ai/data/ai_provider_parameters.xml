@@ -9,6 +9,10 @@
         <field name="key">cleon_ai.model</field>
         <field name="value"/>
     </record>
+    <record id="param_cleon_ai_transcription_model" model="ir.config_parameter">
+        <field name="key">cleon_ai.transcription_model</field>
+        <field name="value"/>
+    </record>
     <record id="param_cleon_ai_live_calls_enabled" model="ir.config_parameter">
         <field name="key">cleon_ai.live_calls_enabled</field>
         <field name="value">False</field>

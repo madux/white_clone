@@ -80,18 +80,42 @@ class TestLeaveCalendarSecurity(TransactionCase):
 
     def test_team_scope_is_distinct_and_organisation_fails_closed(self):
         Leave = self.env["hr.leave"].with_user(self.manager_user)
+        date_from = fields.Date.to_string(self.request.request_date_from)
+        date_to = fields.Date.to_string(self.request.request_date_to)
         result = Leave.get_leave_calendar_data(
-            "2026-09-01", "2026-09-30", calendar_scope="team",
+            date_from, date_to, calendar_scope="team",
         )
         self.assertEqual(result["calendar_scope"], "team")
-        self.assertEqual(result["employees"], [{
-            "id": self.member_employee.id,
-            "name": self.member_employee.name,
-            "department": "No Department",
-        }])
+        self.assertEqual(
+            {employee["id"] for employee in result["employees"]},
+            {self.manager_employee.id, self.member_employee.id},
+        )
+        self.assertIn(self.request.id, {leave["id"] for leave in result["leaves"]})
         with self.assertRaises(AccessError):
             Leave.get_leave_calendar_data(
-                "2026-09-01", "2026-09-30", calendar_scope="organisation",
+                date_from, date_to, calendar_scope="organisation",
+            )
+
+    def test_personal_calendar_cannot_expose_colleagues_or_organisation(self):
+        Leave = self.env["hr.leave"].with_user(self.member_user)
+        result = Leave.get_leave_calendar_data(
+            "2026-01-01", "2027-12-31", calendar_scope="personal",
+        )
+        self.assertEqual(
+            result["employees"],
+            [{
+                "id": self.member_employee.id,
+                "name": self.member_employee.name,
+                "department": "No Department",
+            }],
+        )
+        self.assertEqual(
+            {leave["employee_id"] for leave in result["leaves"]},
+            {self.member_employee.id},
+        )
+        with self.assertRaises(AccessError):
+            Leave.get_leave_calendar_data(
+                "2026-01-01", "2027-12-31", calendar_scope="organisation",
             )
 
     def test_ai_cannot_promote_manager_to_organisation_scope(self):

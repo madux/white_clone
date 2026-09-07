@@ -2762,12 +2762,13 @@ class HrLeave(models.Model):
             "|", ("leave_manager_id", "=", self.env.user.id),
                  ("parent_id", "=", employee.id),
         ])
-        team_approved = [
-            ("employee_id", "in", direct_reports.ids),
-            ("state", "=", "validate"),
-            ("is_cancelled", "=", False),
+        # A manager's calendar is the union of their own requests and
+        # requests belonging to direct reports.  Build this on the
+        # server so caller-supplied filters can narrow, never widen, access.
+        team_domain = [
+            ("employee_id", "in", [employee.id] + direct_reports.ids),
         ]
-        return team_approved, employee
+        return team_domain, employee
 
     @api.model
     def get_leave_calendar_data(
@@ -2831,14 +2832,19 @@ class HrLeave(models.Model):
                 ("is_cancelled", "=", False),
             ])
 
-        # Employee record rules normally hide colleagues' leave.  The sudo is
-        # safe here because the server-built visibility domain above permits
-        # only the employee's own records and approved records in their team.
-        # The explicit capability check above and company domain make sudo
-        # safe for the organisation calendar while avoiding dependence on
-        # unrelated native Time Off record rules.
-        CalendarLeave = self.sudo()
-        leaves = CalendarLeave.search(domain, order="request_date_from asc")
+        # Personal scope is also evaluated by Odoo's native hr.leave record
+        # rules. Team/organisation scopes use the explicit capability check
+        # and server-built relationship domain above because the custom team
+        # role is intentionally independent of Odoo's mutation-capable Time
+        # Off Officer groups.
+        CalendarLeave = self if scope == "personal" else self.sudo()
+        authorised_leave_ids = CalendarLeave.search(
+            domain, order="request_date_from asc",
+        ).ids
+        # hr.employee contains private fields in this installation. Elevate
+        # only the already-authorised ids while serialising public calendar
+        # labels, otherwise a self-service user cannot read employee_id.name.
+        leaves = self.sudo().browse(authorised_leave_ids)
 
         leave_list = []
         for l in leaves:
@@ -2876,7 +2882,7 @@ class HrLeave(models.Model):
             if scope == "personal":
                 visible_employee_ids = [curr_emp.id] if curr_emp else []
             else:
-                visible_employee_ids = self.env["hr.employee"].sudo().search([
+                visible_employee_ids = [curr_emp.id] + self.env["hr.employee"].sudo().search([
                     ("company_id", "in", self.env.companies.ids),
                     ("active", "=", True),
                     "|", ("leave_manager_id", "=", self.env.user.id),

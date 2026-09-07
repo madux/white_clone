@@ -3,35 +3,22 @@
   <t t-name="hr_leave_dashboard.CalendarDayPanel" owl="1">
     <div class="o_cdp_overlay" t-on-click.self="props.close">
       <section class="o_cdp_modal" role="dialog" aria-modal="true">
-        <header><div><h3>Roster &amp; Book Time Off</h3><p t-esc="periodLabel"/></div><button t-on-click="props.close">&#215;</button></header>
-        <nav t-if="props.canBook"><button t-att-class="state.tab === 'roster' ? 'active' : ''" t-on-click="() => state.tab = 'roster'">Day Roster <span t-esc="props.leaves.length"/></button><button t-att-class="state.tab === 'book' ? 'active' : ''" t-on-click="() => state.tab = 'book'">Book Time Off</button></nav>
+        <header>
+          <div><h3>Day Roster</h3><p t-esc="periodLabel"/></div>
+          <button type="button" aria-label="Close" t-on-click="props.close">&#215;</button>
+        </header>
         <div class="o_cdp_body">
-          <section t-if="state.tab === 'roster'" class="o_cdp_roster">
+          <section class="o_cdp_roster">
             <div t-if="props.holidays.length" class="o_cdp_holiday" t-foreach="props.holidays" t-as="holiday" t-key="holiday.id"><i class="fa fa-star"/><div><b t-esc="holiday.name"/><small>Public holiday</small></div></div>
             <h4>Employees out of office <span t-esc="props.leaves.length"/></h4>
             <div t-if="!props.leaves.length" class="o_cdp_empty"><i class="fa fa-users"/><b>Everyone is available</b><span>No leave is scheduled for this date.</span></div>
             <div t-if="props.leaves.length" class="o_cdp_status_groups">
-              <button t-foreach="rosterGroups" t-as="group" t-key="group.status" t-att-class="state.activeRosterStatus === group.status ? 'active' : ''" t-on-click="() => state.activeRosterStatus = group.status"><t t-esc="group.label"/> <span t-esc="group.leaves.length"/></button>
+              <button type="button" t-foreach="rosterGroups" t-as="group" t-key="group.status" t-att-class="state.activeRosterStatus === group.status ? 'active' : ''" t-on-click="() => state.activeRosterStatus = group.status"><t t-esc="group.label"/> <span t-esc="group.leaves.length"/></button>
             </div>
             <article t-foreach="activeRosterLeaves" t-as="leave" t-key="leave.id" t-att-class="leave.can_open_detail ? 'is-openable' : 'is-private'" t-on-click="() => this.openRosterDetail(leave)">
               <span class="o_cdp_dot" t-att-style="'background:' + leave.color_hex"/><div><b t-esc="leave.employee_name"/><small><t t-esc="leave.department_name"/> · <t t-esc="leave.job_title || 'Employee'"/></small></div><div class="o_cdp_leave"><b t-esc="leave.leave_type_name"/><small t-esc="leave.status_label || leave.status"/></div><i t-if="leave.can_open_detail" class="fa fa-chevron-right"/>
             </article>
-            <footer><button t-if="props.canBook" class="primary" t-on-click="() => state.tab = 'book'"><i class="fa fa-plus"/> Book Time Off</button><button t-if="props.canRequest and !props.canBook" class="primary" t-on-click="() => props.openRequest(props.dateFrom, props.dateTo)"><i class="fa fa-plus"/> Request Leave</button></footer>
-          </section>
-          <section t-else="" class="o_cdp_booking">
-            <div t-if="state.loading" class="o_cdp_loading"><i class="fa fa-spinner fa-spin"/> Loading booking options…</div>
-            <t t-else="">
-              <label>Employee <em>*</em><select t-on-change="(event) => this.selectEmployee(event.target.value)"><option value="">Select employee…</option><option t-foreach="state.employees" t-as="employee" t-key="employee.id" t-att-value="employee.id" t-att-selected="state.form.employee_id === employee.id" t-esc="employee.label"/></select></label>
-              <label>Leave Type <em>*</em><select t-model="state.form.leave_type_id" t-on-change="preview"><option value="">Select Leave Type…</option><option t-foreach="state.leaveTypes" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id"><t t-esc="leaveType.name"/> · <t t-esc="leaveType.balance"/> available</option></select></label>
-              <div class="o_cdp_dates"><label>Start Date <em>*</em><input type="date" t-model="state.form.date_from" t-on-change="preview"/></label><label>End Date <em>*</em><input type="date" t-att-min="state.form.date_from" t-model="state.form.date_to" t-on-change="preview"/></label></div>
-              <label>Reason <em>*</em><textarea maxlength="500" t-model="state.form.reason" placeholder="Why is this time off being booked?"/><small><t t-esc="state.form.reason.length"/> / 500 · minimum 10 characters</small></label>
-              <label>Note (optional)<textarea maxlength="1000" t-model="state.form.note" placeholder="Additional information for the employee or approver"/><small><t t-esc="state.form.note.length"/> / 1000</small></label>
-              <label>Attach Document (optional)<input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" t-on-change="onFileChange"/><small>PDF, DOC, DOCX, JPG or PNG · maximum 10 MB</small><b t-if="state.form.attachment" t-esc="state.form.attachment.name"/></label>
-              <div t-if="state.preview" class="o_cdp_preview"><span><b t-esc="state.preview.duration"/> working day(s)</span><span t-if="state.selectedEmployee" t-esc="state.selectedEmployee.department"/></div>
-              <div t-if="state.preview and state.preview.conflicts.length" class="o_cdp_error"><i class="fa fa-exclamation-triangle"/> This employee has an overlapping leave request.</div>
-              <div t-if="state.error" class="o_cdp_error" t-esc="state.error"/>
-              <footer><button t-on-click="() => state.tab = 'roster'">Back to Roster</button><button class="primary" t-att-disabled="!canSubmit" t-on-click="submit"><i t-if="state.submitting" class="fa fa-spinner fa-spin"/><t t-else="">Submit Booking</t></button></footer>
-            </t>
+            <footer t-if="props.canRequest"><button type="button" class="primary" t-on-click="requestLeave"><i class="fa fa-plus"/> Book Time Off</button></footer>
           </section>
         </div>
       </section>

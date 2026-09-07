@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+import base64
+import binascii
 import json
 import logging
 import os
+import uuid
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -160,6 +163,123 @@ class CleonAiGateway(models.AbstractModel):
         if not text:
             raise ValidationError(_("Ollama returned no text."))
         return text
+
+    @api.model
+    def _call_gemini_audio_transcription(self, audio_data, mimetype):
+        """Transcribe short inline audio without retaining the recording."""
+        params = self.env["ir.config_parameter"].sudo()
+        api_key = params.get_param("cleon_ai.gemini_api_key", "") or os.environ.get("GEMINI_API_KEY", "")
+        model = params.get_param("cleon_ai.transcription_model", "") or params.get_param("cleon_ai.model", "") or "gemini-2.5-flash"
+        if not api_key:
+            raise ValidationError(_("Gemini is selected, but no Gemini API key is configured."))
+        payload = json.dumps({
+            "contents": [{"parts": [
+                {"text": "Transcribe this spoken leave request accurately. Return only the transcript, without commentary or markdown."},
+                {"inline_data": {"mime_type": mimetype, "data": audio_data}},
+            ]}],
+        }).encode("utf-8")
+        request = Request(
+            "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent" % model,
+            data=payload,
+            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
+            method="POST",
+        )
+        try:
+            with urlopen(request, timeout=45) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            try:
+                detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
+            except (ValueError, AttributeError):
+                detail = ""
+            self._logger.warning("Gemini transcription rejected with HTTP %s: %s", error.code, detail)
+            suffix = (": " + detail[:240]) if detail else ""
+            raise ValidationError(_("Gemini rejected the audio transcription (HTTP %(code)s)%(suffix)s") % {
+                "code": error.code, "suffix": suffix,
+            })
+        except (URLError, TimeoutError, ValueError) as error:
+            self._logger.warning("Gemini transcription failed: %s", error)
+            raise ValidationError(_("Gemini could not transcribe the recording. Check the Odoo server's network access."))
+        text = "".join(
+            part.get("text", "")
+            for candidate in data.get("candidates", [])
+            for part in candidate.get("content", {}).get("parts", [])
+        ).strip()
+        if not text:
+            raise ValidationError(_("Gemini returned no transcript for this recording."))
+        return text
+
+    @api.model
+    def _call_openai_audio_transcription(self, audio_bytes, mimetype, provider="openai"):
+        """Use the OpenAI transcription contract for OpenAI or compatible local servers."""
+        params = self.env["ir.config_parameter"].sudo()
+        if provider == "openai":
+            base_url = params.get_param("cleon_ai.openai_base_url", "https://api.openai.com/v1")
+            api_key = params.get_param("cleon_ai.openai_api_key", "") or os.environ.get("OPENAI_API_KEY", "")
+            model = params.get_param("cleon_ai.transcription_model", "") or "gpt-4o-mini-transcribe"
+        else:
+            base_url = params.get_param("cleon_ai.local_base_url", "http://127.0.0.1:8080/v1")
+            api_key = params.get_param("cleon_ai.local_api_key", "") or os.environ.get("LOCAL_LLM_API_KEY", "")
+            model = params.get_param("cleon_ai.transcription_model", "") or "whisper-1"
+        if provider == "openai" and not api_key:
+            raise ValidationError(_("OpenAI is selected, but no OpenAI API key is configured."))
+        extension = {"audio/webm": "webm", "audio/ogg": "ogg", "audio/wav": "wav", "audio/mpeg": "mp3", "audio/mp4": "m4a"}.get(mimetype, "webm")
+        boundary = "----CleonAi%s" % uuid.uuid4().hex
+        parts = [
+            ("--%s\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\n%s\r\n" % (boundary, model)).encode(),
+            ("--%s\r\nContent-Disposition: form-data; name=\"file\"; filename=\"leave-request.%s\"\r\nContent-Type: %s\r\n\r\n" % (boundary, extension, mimetype)).encode(),
+            audio_bytes,
+            ("\r\n--%s--\r\n" % boundary).encode(),
+        ]
+        headers = {"Content-Type": "multipart/form-data; boundary=%s" % boundary}
+        if api_key:
+            headers["Authorization"] = "Bearer " + api_key
+        try:
+            with urlopen(Request(base_url.rstrip("/") + "/audio/transcriptions", data=b"".join(parts), headers=headers, method="POST"), timeout=60) as response:
+                data = json.loads(response.read().decode("utf-8"))
+        except HTTPError as error:
+            try:
+                detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("message", "")
+            except (ValueError, AttributeError):
+                detail = ""
+            self._logger.warning("%s transcription rejected with HTTP %s: %s", provider, error.code, detail)
+            suffix = (": " + detail[:240]) if detail else ""
+            raise ValidationError(_("%(provider)s rejected the audio transcription (HTTP %(code)s)%(suffix)s") % {
+                "provider": provider.title(), "code": error.code, "suffix": suffix,
+            })
+        except (URLError, TimeoutError, ValueError):
+            raise ValidationError(_("Could not reach the %(provider)s transcription service.") % {"provider": provider.title()})
+        text = (data.get("text") or "").strip()
+        if not text:
+            raise ValidationError(_("The %(provider)s service returned no transcript.") % {"provider": provider.title()})
+        return text
+
+    @api.model
+    def transcribe_audio(self, audio_data, mimetype="audio/webm"):
+        """Validate and transiently dispatch a short voice recording."""
+        provider = self._provider_state()
+        if not provider["configured"] or not provider["live_calls_enabled"]:
+            raise ValidationError(_("No live AI provider is enabled for voice transcription."))
+        clean_mimetype = (mimetype or "audio/webm").split(";", 1)[0].strip().lower()
+        allowed = {"audio/webm", "audio/ogg", "audio/wav", "audio/mpeg", "audio/mp4", "audio/aac", "audio/flac"}
+        if clean_mimetype not in allowed:
+            raise ValidationError(_("This browser's audio format is not supported."))
+        try:
+            audio_bytes = base64.b64decode(audio_data or "", validate=True)
+        except (ValueError, binascii.Error):
+            raise ValidationError(_("The voice recording is not valid audio data."))
+        if not audio_bytes:
+            raise ValidationError(_("No speech was recorded."))
+        if len(audio_bytes) > 10 * 1024 * 1024:
+            raise ValidationError(_("Voice recordings must be smaller than 10 MB."))
+        name = provider["provider"]
+        if name == "gemini":
+            text = self._call_gemini_audio_transcription(audio_data, clean_mimetype)
+        elif name in ("openai", "local"):
+            text = self._call_openai_audio_transcription(audio_bytes, clean_mimetype, provider=name)
+        else:
+            raise ValidationError(_("The selected provider does not support voice transcription through this adapter."))
+        return {"ok": True, "text": text}
 
     @api.model
     def complete_text(self, prompt):

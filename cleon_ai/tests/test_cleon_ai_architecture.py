@@ -2,6 +2,7 @@
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase
 from unittest.mock import patch
+import base64
 
 
 class TestCleonAiArchitecture(TransactionCase):
@@ -9,6 +10,11 @@ class TestCleonAiArchitecture(TransactionCase):
     def setUp(self):
         super().setUp()
         self.gateway = self.env["cleon.ai.gateway"]
+        # Tests must not inherit live credentials/configuration from the
+        # developer database they happen to run against.
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_param("cleon_ai.provider", "none")
+        params.set_param("cleon_ai.live_calls_enabled", "False")
 
     def test_01_gateway_standalone_unattached_state(self):
         """Gateway returns a safe unattached default state when no screen context is passed."""
@@ -78,6 +84,27 @@ class TestCleonAiArchitecture(TransactionCase):
             self.assertEqual(result["message"], "OpenAI response")
             adapter.assert_called_once()
             self.assertEqual(adapter.call_args.kwargs["provider"], "openai")
+        finally:
+            for key, value in previous.items():
+                params.set_param(key, value or "")
+
+    def test_10_gemini_audio_dispatch_is_transient_and_validated(self):
+        params = self.env["ir.config_parameter"].sudo()
+        previous = {
+            key: params.get_param(key, default=False)
+            for key in ("cleon_ai.provider", "cleon_ai.live_calls_enabled", "cleon_ai.gemini_api_key")
+        }
+        try:
+            params.set_param("cleon_ai.provider", "gemini")
+            params.set_param("cleon_ai.live_calls_enabled", "True")
+            params.set_param("cleon_ai.gemini_api_key", "test-key")
+            encoded = base64.b64encode(b"short-test-audio").decode()
+            with patch.object(type(self.gateway), "_call_gemini_audio_transcription", return_value="Book sick leave tomorrow") as adapter:
+                result = self.gateway.transcribe_audio(encoded, "audio/webm;codecs=opus")
+            self.assertEqual(result, {"ok": True, "text": "Book sick leave tomorrow"})
+            adapter.assert_called_once_with(encoded, "audio/webm")
+            with self.assertRaises(ValidationError):
+                self.gateway.transcribe_audio("not-base64", "audio/webm")
         finally:
             for key, value in previous.items():
                 params.set_param(key, value or "")

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onWillStart, useState } from "@odoo/owl";
+import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SmartDateRecommendationsModal } from "../smart_date_modal/smart_date_modal";
 
@@ -9,7 +9,7 @@ export class EmployeeRequestModal extends Component {
     static components = { SmartDateRecommendationsModal };
     static props = { close: Function, submitted: { type: Function, optional: true }, initial: { type: Object, optional: true }, existingRequestId: { type: Number, optional: true } };
     setup() {
-        this.orm = useService("orm"); this.notification = useService("notification");
+        this.orm = useService("orm"); this.notification = useService("notification"); this.action = useService("action");
         this.state = useState({
             loading: true,
             submitting: false,
@@ -26,6 +26,12 @@ export class EmployeeRequestModal extends Component {
             showNlSummary: false,
             aiAssistedFields: [],
             showDateRecModal: false,
+            entryMode: "form",
+            voiceSupported: false,
+            listening: false,
+            voiceProcessing: false,
+            aiDetailsAccepted: false,
+            submittedResult: null,
             form: {
                 leave_type_id: false,
                 date_from: "",
@@ -43,6 +49,30 @@ export class EmployeeRequestModal extends Component {
             },
             preview: null,
             error: "",
+        });
+        this.state.voiceSupported = Boolean(
+            (navigator.mediaDevices?.getUserMedia && window.MediaRecorder)
+            || window.SpeechRecognition
+            || window.webkitSpeechRecognition
+        );
+        this.voiceShouldListen = false;
+        this.voiceBaseText = "";
+        this.voiceCommittedText = "";
+        this.voiceInterimText = "";
+        this.voiceRestartTimer = null;
+        this.voiceRecordingTimer = null;
+        this.voiceDiscardRecording = false;
+        onWillUnmount(() => {
+            this.voiceShouldListen = false;
+            if (this.voiceRestartTimer) clearTimeout(this.voiceRestartTimer);
+            if (this.voiceRecordingTimer) clearTimeout(this.voiceRecordingTimer);
+            if (this.voiceRecognition) this.voiceRecognition.abort();
+            if (this.mediaRecorder?.state === "recording") {
+                this.voiceDiscardRecording = true;
+                this.mediaRecorder.onstop = null;
+                this.mediaRecorder.stop();
+            }
+            if (this.voiceMediaStream) this.voiceMediaStream.getTracks().forEach((track) => track.stop());
         });
         onWillStart(async () => {
             const data = await this.orm.call("hr.leave", "get_employee_request_options", []);
@@ -88,7 +118,14 @@ export class EmployeeRequestModal extends Component {
     removeFile() { this.state.form.attachment = null; }
     toggleBackup(id) { const selected = this.state.form.backup_colleague_ids; this.state.form.backup_colleague_ids = selected.includes(id) ? selected.filter(item => item !== id) : [...selected, id]; }
     next() { if (this.state.step === 1 && !this.detailsValid) return; if (this.state.step === 2 && !this.handoverValid) return; this.state.step = Math.min(3, this.state.step + 1); }
-    back() { this.state.step = Math.max(1, this.state.step - 1); }
+    back() {
+        if (this.state.entryMode === "ai" && this.state.step === 3) {
+            this.state.aiDetailsAccepted = false;
+            this.state.step = 1;
+            return;
+        }
+        this.state.step = Math.max(1, this.state.step - 1);
+    }
     async parseNlRequest() {
         if (!this.state.nlText.trim() || this.state.nlLoading) return;
         this.state.nlLoading = true;
@@ -129,8 +166,11 @@ export class EmployeeRequestModal extends Component {
             }
             this.state.aiAssistedFields = res.suggested_fields || [];
             this.state.nlSummary = res.summary || "";
-            this.state.showNlSummary = Boolean(res.summary);
+            this.state.showNlSummary = Boolean(
+                res.summary || res.leave_type_id || res.leave_type_name || res.date_from || res.date_to
+            );
             this.state.form.submission_channel = "ai_assisted";
+            this.state.aiDetailsAccepted = false;
             await this.preview();
         } catch (error) {
             this.state.nlError = this.friendlyError(error, "Could not process request via AI. Please fill in details manually.");
@@ -146,6 +186,226 @@ export class EmployeeRequestModal extends Component {
         this.state.nlError = "";
         this.state.aiAssistedFields = [];
         this.state.form.submission_channel = "form";
+        this.state.aiDetailsAccepted = false;
+    }
+
+    setEntryMode(mode) {
+        this.state.entryMode = mode;
+        if (mode === "form") this.state.aiDetailsAccepted = false;
+        if (mode !== "ai") this.stopVoice();
+    }
+
+    useAiDetails() {
+        this.state.aiDetailsAccepted = true;
+        // The AI path is intentionally compact: suggestion -> review -> success.
+        // Manual requests keep the full handover/documents wizard step.
+        this.state.step = 3;
+        this.stopVoice();
+    }
+
+    async viewMyRequests() {
+        await this.notifySubmitted();
+        this.props.close();
+        await this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests");
+    }
+
+    async closeSuccess() {
+        await this.notifySubmitted();
+        this.props.close();
+    }
+
+    async closeModal() {
+        if (this.state.submittedResult) await this.notifySubmitted();
+        this.props.close();
+    }
+
+    async notifySubmitted() {
+        if (this.submissionNotified || !this.props.submitted) return;
+        this.submissionNotified = true;
+        await this.props.submitted();
+    }
+
+    async toggleVoice() {
+        if (this.voiceShouldListen) return this.stopVoice();
+        if (this.state.voiceProcessing) return;
+        if (!window.isSecureContext && !navigator.mediaDevices?.getUserMedia) {
+            this.state.nlError = "Microphone recording is blocked on this address. Open Odoo through HTTPS, localhost, or 127.0.0.1.";
+            return;
+        }
+        if (navigator.mediaDevices?.getUserMedia && window.MediaRecorder) {
+            await this.startMediaRecording();
+            return;
+        }
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Recognition) {
+            this.state.nlError = window.isSecureContext
+                ? "Voice input is not supported by this browser. You can still type your request."
+                : "Microphone access requires HTTPS, except when Odoo is opened through localhost or 127.0.0.1.";
+            return;
+        }
+        this.voiceShouldListen = true;
+        this.voiceBaseText = this.state.nlText.trim();
+        this.voiceCommittedText = "";
+        this.voiceInterimText = "";
+        this.state.nlError = "";
+        this.startVoiceRecognition();
+    }
+
+    async startMediaRecording() {
+        this.state.nlError = "";
+        this.voiceDiscardRecording = false;
+        try {
+            this.voiceMediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"];
+            const mimeType = candidates.find((item) => window.MediaRecorder.isTypeSupported?.(item));
+            this.voiceChunks = [];
+            this.mediaRecorder = new MediaRecorder(this.voiceMediaStream, mimeType ? { mimeType } : undefined);
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data?.size) this.voiceChunks.push(event.data);
+            };
+            this.mediaRecorder.onerror = () => {
+                this.voiceDiscardRecording = true;
+                this.state.nlError = "The browser could not record from the microphone. Check the selected input device.";
+                this.stopVoice();
+            };
+            this.mediaRecorder.onstop = async () => {
+                if (this.voiceRecordingTimer) clearTimeout(this.voiceRecordingTimer);
+                this.voiceRecordingTimer = null;
+                const recorder = this.mediaRecorder;
+                const chunks = this.voiceChunks || [];
+                const discard = this.voiceDiscardRecording;
+                this.mediaRecorder = null;
+                this.voiceChunks = [];
+                this.state.listening = false;
+                this.voiceShouldListen = false;
+                if (this.voiceMediaStream) this.voiceMediaStream.getTracks().forEach((track) => track.stop());
+                this.voiceMediaStream = null;
+                if (!discard && chunks.length) {
+                    const blob = new Blob(chunks, { type: recorder?.mimeType || "audio/webm" });
+                    await this.transcribeVoiceBlob(blob);
+                }
+            };
+            this.voiceShouldListen = true;
+            this.state.listening = true;
+            this.mediaRecorder.start(500);
+            this.voiceRecordingTimer = setTimeout(() => this.stopVoice(), 60000);
+        } catch (error) {
+            this.voiceShouldListen = false;
+            this.state.listening = false;
+            if (this.voiceMediaStream) this.voiceMediaStream.getTracks().forEach((track) => track.stop());
+            this.voiceMediaStream = null;
+            const denied = error?.name === "NotAllowedError" || error?.name === "SecurityError";
+            this.state.nlError = denied
+                ? "Microphone permission was denied. Allow microphone access for this site and try again."
+                : "The microphone could not be opened. Check the selected input device and browser permissions.";
+        }
+    }
+
+    async transcribeVoiceBlob(blob) {
+        if (!blob.size) return;
+        if (blob.size > 10 * 1024 * 1024) {
+            this.state.nlError = "The voice recording is too large. Please keep it under one minute.";
+            return;
+        }
+        this.state.voiceProcessing = true;
+        this.state.nlError = "";
+        try {
+            const audioData = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            const result = await this.orm.call(
+                "hr.leave.ai.service",
+                "transcribe_leave_request_audio",
+                [audioData, blob.type || "audio/webm"]
+            );
+            if (!result?.ok || !result.text?.trim()) {
+                this.state.nlError = result?.error || "No speech could be transcribed from the recording.";
+                return;
+            }
+            this.state.nlText = [this.state.nlText.trim(), result.text.trim()].filter(Boolean).join(" ");
+        } catch (error) {
+            this.state.nlError = this.friendlyError(error, "The recording could not be transcribed. Please try again or type the request.");
+        } finally {
+            this.state.voiceProcessing = false;
+        }
+    }
+
+    startVoiceRecognition() {
+        if (!this.voiceShouldListen || this.voiceRecognition) return;
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.voiceRecognition = new Recognition();
+        this.voiceRecognition.lang = (document.documentElement.lang || "en-US").replace("_", "-");
+        this.voiceRecognition.interimResults = true;
+        this.voiceRecognition.continuous = true;
+        this.voiceRecognition.onstart = () => { this.state.listening = true; };
+        this.voiceRecognition.onresult = (event) => {
+            let interimText = "";
+            for (let index = event.resultIndex; index < event.results.length; index++) {
+                const text = event.results[index][0]?.transcript || "";
+                if (event.results[index].isFinal) this.voiceCommittedText = `${this.voiceCommittedText} ${text}`.trim();
+                else interimText = `${interimText} ${text}`.trim();
+            }
+            this.voiceInterimText = interimText;
+            this.state.nlText = [this.voiceBaseText, this.voiceCommittedText, this.voiceInterimText].filter(Boolean).join(" ");
+        };
+        this.voiceRecognition.onerror = (event) => {
+            const code = event.error || "unknown";
+            if (code === "no-speech" || code === "aborted") return;
+            this.voiceShouldListen = false;
+            this.state.listening = false;
+            const errors = {
+                "not-allowed": "Microphone permission was denied. Allow microphone access for this site and try again.",
+                "service-not-allowed": "Browser speech recognition is blocked for this site.",
+                "audio-capture": "No working microphone was found. Check the selected input device and try again.",
+                network: "The browser speech-recognition service is unavailable. Check your connection or type the request.",
+            };
+            this.state.nlError = errors[code] || `Voice input stopped (${code}). Please try again or type your request.`;
+        };
+        this.voiceRecognition.onend = () => {
+            this.voiceRecognition = null;
+            if (this.voiceInterimText) {
+                this.voiceCommittedText = `${this.voiceCommittedText} ${this.voiceInterimText}`.trim();
+                this.voiceInterimText = "";
+                this.state.nlText = [this.voiceBaseText, this.voiceCommittedText].filter(Boolean).join(" ");
+            }
+            if (this.voiceShouldListen) {
+                this.voiceRestartTimer = setTimeout(() => {
+                    this.voiceRestartTimer = null;
+                    this.startVoiceRecognition();
+                }, 250);
+            } else {
+                this.state.listening = false;
+            }
+        };
+        try {
+            this.voiceRecognition.start();
+        } catch (error) {
+            this.voiceRecognition = null;
+            this.voiceShouldListen = false;
+            this.state.listening = false;
+            this.state.nlError = "The microphone could not be started. Check browser permission and try again.";
+        }
+    }
+
+    stopVoice() {
+        this.voiceShouldListen = false;
+        if (this.voiceRecordingTimer) {
+            clearTimeout(this.voiceRecordingTimer);
+            this.voiceRecordingTimer = null;
+        }
+        if (this.mediaRecorder?.state === "recording") {
+            this.mediaRecorder.stop();
+            return;
+        }
+        if (this.voiceRestartTimer) {
+            clearTimeout(this.voiceRestartTimer);
+            this.voiceRestartTimer = null;
+        }
+        if (this.voiceRecognition) this.voiceRecognition.stop();
+        this.state.listening = false;
     }
 
     openDateRecModal() {
@@ -181,8 +441,8 @@ export class EmployeeRequestModal extends Component {
             const result = existingRequestId ? await this.orm.call("hr.leave", "resubmit_employee_leave_request", [existingRequestId, values]) : await this.orm.call("hr.leave", "submit_employee_leave_request", [values]);
             if (!result.ok) { this.state.error = result.message || "Please review the request details and try again."; return; }
             this.notification.add(result.message, { title: result.reference, type: "success" });
-            if (this.props.submitted) await this.props.submitted();
-            this.props.close();
+            this.state.submittedResult = result;
+            this.state.step = 4;
         }
         catch (error) { this.state.error = this.friendlyError(error, "We could not submit your request right now. Please try again or contact HR if the problem continues."); }
         finally { this.state.submitting = false; }
