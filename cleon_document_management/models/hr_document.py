@@ -282,12 +282,18 @@ class Document(models.Model):
         if not self._is_document_manager():
             raise AccessError(_("Only document managers can delete documents."))
         now = fields.Datetime.now()
+        try:
+            retention_days = max(int(self.env["ir.config_parameter"].sudo().get_param(
+                "cleon_document_management.recycle_bin_retention_days", "30"
+            )), 1)
+        except (TypeError, ValueError):
+            retention_days = 30
         self.write({
             "active": False,
             "distribution_status": "deactivated",
             "deleted_at": now,
             "deleted_by": self.env.user.id,
-            "recycle_bin_until": now + timedelta(days=30),
+            "recycle_bin_until": now + timedelta(days=retention_days),
         })
 
     @api.model
@@ -304,6 +310,7 @@ class Document(models.Model):
         for vals in vals_list:
             attachment_id = vals.get("attachment_id")
             employee_id = vals.get("employee_id")
+            folder = self.env["doc.folder"].browse(vals.get("folder_id")).exists()
 
             if attachment_id:
                 attachment = self.env["ir.attachment"].browse(attachment_id).exists()
@@ -311,9 +318,12 @@ class Document(models.Model):
                     raise ValidationError(_("The selected attachment does not exist."))
 
             if not self._is_document_manager():
-                folder = self.env["doc.folder"].browse(vals.get("folder_id")).exists()
                 if not folder or not folder._user_can_access():
                     raise AccessError(_("You do not have access to upload into this folder."))
+
+            if folder and folder.folder_type == "organizational" and not folder.require_upload_approval:
+                vals.setdefault("state", "approved")
+                vals.setdefault("approval_state", "not_required")
 
             if employee_id and not vals.get("folder_id"):
                 employee = self.env["hr.employee"].browse(employee_id).exists()
@@ -329,6 +339,16 @@ class Document(models.Model):
                 {"res_model": self._name, "res_id": document.id}
             )
             if document.folder_id.require_upload_approval:
+                approvers = document.folder_id.approver_ids
+                if document.folder_id.approver_order:
+                    order = [
+                        int(value)
+                        for value in document.folder_id.approver_order.split(",")
+                        if value.isdigit()
+                    ]
+                    approvers = self.env["res.users"].browse(order).filtered(
+                        lambda user: user in document.folder_id.approver_ids
+                    )
                 approval_commands = [
                     fields.Command.create(
                         {
@@ -337,9 +357,7 @@ class Document(models.Model):
                             "state": "pending" if sequence == 1 else "waiting",
                         }
                     )
-                    for sequence, approver in enumerate(
-                        document.folder_id.approver_ids, start=1
-                    )
+                    for sequence, approver in enumerate(approvers, start=1)
                 ]
                 document.sudo().write(
                     {

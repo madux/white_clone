@@ -13,8 +13,9 @@ import {
   SlidersHorizontal,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   useCreateFolder,
   useCurrentUser,
@@ -42,10 +43,17 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const folders = useFolders();
   const documents = useDocuments();
   const currentUser = useCurrentUser();
+  const params = useSearchParams();
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<number[]>([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [complianceFilter, setComplianceFilter] = useState<"all" | "attention" | "complete">("all");
+
+  useEffect(() => {
+    if (params.get("create") === "1") setShowCreateFolder(true);
+  }, [params]);
 
   const visibleFolders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -92,7 +100,13 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     [documents.data, visibleFolders],
   );
 
-  const filteredRows = rows;
+  const filteredRows = rows.filter(({ compliance }) =>
+    complianceFilter === "all"
+      ? true
+      : complianceFilter === "complete"
+        ? compliance === 100
+        : compliance < 100,
+  );
   const isLoading = folders.isLoading || documents.isLoading;
   const pageTitle =
     kind === "employee" ? "Employee Files" : "Organizational Files";
@@ -111,7 +125,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     );
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h1 className="mt-2 text-3xl font-medium tracking-tight text-slate-900">
@@ -162,6 +176,9 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
+              aria-expanded={showFilters}
+              aria-controls="folder-filters"
+              onClick={() => setShowFilters((current) => !current)}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -189,6 +206,14 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             </div>
           </div>
         </div>
+        {showFilters && (
+          <div id="folder-filters" className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-4 py-3" role="region" aria-label="Folder filters">
+            <span className="mr-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Show</span>
+            {([["all", "All folders"], ["attention", "Needs attention"], ["complete", "Complete"]] as const).map(([value, label]) => (
+              <button key={value} type="button" onClick={() => setComplianceFilter(value)} aria-pressed={complianceFilter === value} className={`!rounded-lg px-3 py-2 text-xs font-bold transition ${complianceFilter === value ? "bg-white text-brand-text shadow-sm" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}>{label}</button>
+            ))}
+          </div>
+        )}
         <div className="px-4 pt-4">
           <BulkFolderActions
             selected={selected}
@@ -478,6 +503,14 @@ function FolderCreateModal({
   const [scopeSearch, setScopeSearch] = useState("");
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (
+      kind === "organizational" &&
+      (accessScope === "department" || accessScope === "grade" || accessScope === "individual") &&
+      !scopeIds.length
+    ) {
+      window.alert(`Select at least one ${accessScope}.`);
+      return;
+    }
     await create.mutateAsync({
       nameElm: name.trim(),
       descriptionElm: description.trim(),
@@ -486,10 +519,18 @@ function FolderCreateModal({
       retention_period: retention,
       require_upload_approval: approval,
       allowed_document_type_ids: allowedTypes,
-      folder_basis: folderBasis,
-      employee_ids: folderBasis === "individual" ? scopeIds : [],
-      department_ids: folderBasis === "department" ? scopeIds : [],
-      grade_ids: folderBasis === "grade" ? scopeIds : [],
+      department_ids: kind === "organizational"
+        ? accessScope === "department" ? scopeIds : []
+        : folderBasis === "department" ? scopeIds : [],
+      grade_ids: kind === "organizational"
+        ? accessScope === "grade" ? scopeIds : []
+        : folderBasis === "grade" ? scopeIds : [],
+      folder_basis: kind === "employee" ? folderBasis : undefined,
+      employee_ids:
+        (kind === "employee" && folderBasis === "individual") ||
+        (kind === "organizational" && accessScope === "individual")
+          ? scopeIds
+          : [],
     });
     onClose();
   };
@@ -532,8 +573,22 @@ function FolderCreateModal({
             <>
               <label>
                 <span className="label">Access scope</span>
-                <ThemedSelect value={accessScope} onChange={setAccessScope} options={[{ value: "all_staff", label: "All staff" }, { value: "admin_only", label: "Admin only" }]} />
+                <ThemedSelect value={accessScope} onChange={(value) => { setAccessScope(value); setScopeIds([]); setScopeSearch(""); }} options={[{ value: "all_staff", label: "All staff" }, { value: "department", label: "Specific departments" }, { value: "grade", label: "Specific grades" }, { value: "individual", label: "Specific employees" }, { value: "admin_only", label: "Admin only" }]} />
               </label>
+              {(accessScope === "department" || accessScope === "grade" || accessScope === "individual") && (
+                <div className="sm:col-span-2 rounded-2xl border border-pink-100 bg-pink-50/40 p-4">
+                  <span className="label">Select {accessScope === "department" ? "departments" : accessScope === "grade" ? "grades" : "employees"}</span>
+                  <input value={scopeSearch} onChange={(event) => setScopeSearch(event.target.value)} placeholder={`Search ${accessScope === "department" ? "departments" : accessScope === "grade" ? "grades" : "employees"}...`} className="field mt-2" />
+                  <div className="mt-3 grid max-h-36 gap-2 overflow-y-auto sm:grid-cols-2">
+                    {(accessScope === "department" ? targets.data?.departments : accessScope === "grade" ? targets.data?.grades : targets.data?.employees)?.filter((item: any) => item.name.toLowerCase().includes(scopeSearch.toLowerCase())).map((item: any) => (
+                      <label key={item.id} className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm">
+                        <input type="checkbox" checked={scopeIds.includes(item.id)} onChange={() => setScopeIds(scopeIds.includes(item.id) ? scopeIds.filter((id) => id !== item.id) : [...scopeIds, item.id])} className="h-4 w-4 accent-pink-600" />
+                        {item.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <label className="sm:col-span-2">
                 <span className="label">Description</span>
                 <textarea

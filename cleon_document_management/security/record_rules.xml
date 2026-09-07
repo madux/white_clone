@@ -6,16 +6,21 @@
         <field name="model_id" ref="model_doc_folder"/>
         <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
         <field name="domain_force">[
+            '&amp;', ('active', '=', True),
+            '&amp;', ('deleted_at', '=', False),
+            '&amp;', ('distribution_status', '=', 'active'),
             '|', ('owner_id', '=', user.id),
             '|',
             '&amp;', ('folder_type', '=', 'employee'), ('employee_ids.user_id', '=', user.id),
             '&amp;', ('folder_type', '=', 'organizational'),
-            '|', ('access_scope', '=', 'all_staff'),
             '|', ('allowed_user_ids', 'in', [user.id]),
-            '|', ('department_ids', 'in', [user.employee_id.department_id.id]),
-            '|', ('grade_ids', 'in', [user.employee_id.grade_id.id]),
-            '|', ('employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
-            ('role_group_ids', 'in', user.groups_id.ids)
+            '|', ('access_scope', '=', 'all_staff'),
+            '|', '&amp;', ('access_scope', '=', 'department'), ('department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', '&amp;', ('access_scope', '=', 'grade'), ('grade_ids', 'in', [user.employee_id.grade_id.id]),
+            '|', '&amp;', ('access_scope', '=', 'employment_type'), ('employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
+            '|', '&amp;', ('access_scope', '=', 'business_unit'), ('branch_ids', 'in', [user.employee_id.branch_id.id]),
+            '|', '&amp;', ('access_scope', '=', 'role'), ('role_group_ids', 'in', user.groups_id.ids),
+            '&amp;', ('access_scope', '=', 'individual'), ('employee_ids.user_id', '=', user.id)
         ]</field>
     </record>
 
@@ -31,18 +36,25 @@
         <field name="model_id" ref="model_doc_document"/>
         <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
         <field name="domain_force">[
+            '&amp;', ('active', '=', True),
+            '&amp;', ('deleted_at', '=', False),
+            '&amp;', ('folder_id.active', '=', True),
+            '&amp;', ('folder_id.deleted_at', '=', False),
+            '&amp;', ('folder_id.distribution_status', '=', 'active'),
             '|', ('owner_id', '=', user.id),
             '|', ('allowed_user_ids', 'in', [user.id]),
             '|', ('allowed_group_ids', 'in', user.groups_id.ids),
             '|', ('employee_id.user_id', '=', user.id),
             '|', ('folder_id.employee_ids.user_id', '=', user.id),
             '&amp;', ('folder_id.folder_type', '=', 'organizational'),
-            '|', ('folder_id.access_scope', '=', 'all_staff'),
             '|', ('folder_id.allowed_user_ids', 'in', [user.id]),
-            '|', ('folder_id.department_ids', 'in', [user.employee_id.department_id.id]),
-            '|', ('folder_id.grade_ids', 'in', [user.employee_id.grade_id.id]),
-            '|', ('folder_id.employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
-            ('folder_id.role_group_ids', 'in', user.groups_id.ids)
+            '|', ('folder_id.access_scope', '=', 'all_staff'),
+            '|', '&amp;', ('folder_id.access_scope', '=', 'department'), ('folder_id.department_ids', 'in', [user.employee_id.department_id.id]),
+            '|', '&amp;', ('folder_id.access_scope', '=', 'grade'), ('folder_id.grade_ids', 'in', [user.employee_id.grade_id.id]),
+            '|', '&amp;', ('folder_id.access_scope', '=', 'employment_type'), ('folder_id.employment_type_ids', 'in', [user.employee_id.employee_type_id.id]),
+            '|', '&amp;', ('folder_id.access_scope', '=', 'business_unit'), ('folder_id.branch_ids', 'in', [user.employee_id.branch_id.id]),
+            '|', '&amp;', ('folder_id.access_scope', '=', 'role'), ('folder_id.role_group_ids', 'in', user.groups_id.ids),
+            '&amp;', ('folder_id.access_scope', '=', 'individual'), ('folder_id.employee_ids.user_id', '=', user.id)
         ]</field>
     </record>
 

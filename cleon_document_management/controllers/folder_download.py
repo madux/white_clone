@@ -13,6 +13,11 @@ def safe_filename(value):
     return value.strip("._") or "unnamed"
 
 
+def attachment_bytes(attachment):
+    """Decode Odoo's base64 attachment storage before writing binary output."""
+    return base64.b64decode(attachment.datas or b"")
+
+
 class DocumentFolderDownloadController(http.Controller):
 
     @http.route(
@@ -22,6 +27,13 @@ class DocumentFolderDownloadController(http.Controller):
         methods=["GET"],
     )
     def download_employee(self, employee_id):
+        employee = request.env["hr.employee"].browse(employee_id).exists()
+        if not employee:
+            return request.not_found()
+        user = request.env.user
+        is_manager = user.has_group("cleon_document_management.group_document_manager")
+        if not is_manager and employee.user_id != user:
+            return request.not_found()
         documents = request.env["doc.document"].search(
             [("employee_id", "=", employee_id), ("active", "=", True)]
         )
@@ -32,11 +44,10 @@ class DocumentFolderDownloadController(http.Controller):
                 if attachment and attachment.datas:
                     archive.writestr(
                         safe_filename(document.name or attachment.name),
-                        base64.b64decode(attachment.datas),
+                        attachment_bytes(attachment),
                     )
         output.seek(0)
-        employee = request.env["hr.employee"].browse(employee_id).exists()
-        filename = f"{safe_filename(employee.name if employee else 'employee')}.zip"
+        filename = f"{safe_filename(employee.name)}.zip"
         return request.make_response(
             output.getvalue(),
             headers=[
@@ -102,7 +113,7 @@ class DocumentFolderDownloadController(http.Controller):
 
                 archive.writestr(
                     f"{employee_name}/{document_name}",
-                    base64.b64decode(attachment.datas),
+                    attachment_bytes(attachment),
                 )
 
         output.seek(0)

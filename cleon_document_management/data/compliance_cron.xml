@@ -22,7 +22,7 @@
         <field name="name">Empty Document Recycle Bin</field>
         <field name="model_id" ref="model_doc_document"/>
         <field name="state">code</field>
-        <field name="code">model._cron_empty_recycle_bin()</field>
+        <field name="code">model._cron_empty_recycle_bin(); env['doc.folder']._cron_empty_recycle_bin()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">days</field>
         <field name="active">True</field>

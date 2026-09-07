@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Mail, Search, Settings, User as UserIcon } from "lucide-react";
+import { Bell, Mail, Search, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -174,7 +174,7 @@ export default function Header() {
     ? attention.data?.mailbox ?? []
     : attention.data?.notifications ?? [];
   return (
-    <header className="border-b border-slate-100 px-6 py-3.5 rounded-2xl bg-gray-100 max-w-[1650px] mx-auto w-full mt-2">
+    <header className="mx-auto mt-2 w-full max-w-[1650px] rounded-2xl border border-slate-200 bg-white px-6 py-3.5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div className="flex gap-6 items-center">
           <span className="font-bold text-lg flex items-center tracking-tight text-slate-900">
@@ -251,6 +251,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setAttentionOpen(attentionOpen === "mail" ? null : "mail")}
+            aria-label="Open messages"
             className="relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink"
             title="Messages"
           >
@@ -260,6 +261,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setAttentionOpen(attentionOpen === "notifications" ? null : "notifications")}
+            aria-label="Open notifications"
             className="relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink"
             title="Notifications"
           >
@@ -268,15 +270,6 @@ export default function Header() {
           </button>
           {attentionOpen && <div className="absolute right-0 top-12 z-[110] w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3"><strong className="text-sm text-slate-900">{attentionOpen === "mail" ? "Mailbox" : "Notifications"}</strong><span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">{attention.data?.count ?? 0} pending</span></div><div className="max-h-80 overflow-y-auto">{attentionItems.map((item) => <Link key={`${attentionOpen}-${item.id}`} href={item.employee_id ? `/pages/employee/profile?employee=${item.employee_id}` : `/pages/employee`} onClick={() => setAttentionOpen(null)} className="block border-b border-slate-50 px-2 py-3 hover:bg-pink-50/50"><p className="text-xs font-semibold leading-5 text-slate-700">{item.message}</p><p className="mt-1 text-[10px] text-slate-400">{item.document}</p></Link>)}{!attention.data?.count && <p className="px-2 py-8 text-center text-xs text-slate-400">No actions require your attention.</p>}</div></div>}
           </>}
-          <div className="mx-1 hidden h-8 w-px bg-slate-200 sm:block" />
-          <button
-            type="button"
-            className="hidden rounded-xl p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-600 sm:block"
-            title="Settings"
-          >
-            <Settings className="h-5 w-5" />
-          </button>
-
           <div className="h-4 w-[1px] bg-slate-200" />
           <UserWidget />
         </div>

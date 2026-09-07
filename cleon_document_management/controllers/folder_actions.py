@@ -16,6 +16,9 @@ class DocumentFolderActions(http.Controller):
             "pinned": request.env.user in folder.pinned_user_ids,
             "locked": folder.is_locked,
             "active": folder.active,
+            "distribution_status": folder.distribution_status,
+            "deleted_at": folder.deleted_at,
+            "recycle_bin_until": folder.recycle_bin_until,
         }
 
     @http.route("/api/folder-action", type="json", auth="user", methods=["POST"], csrf=False)
@@ -35,8 +38,13 @@ class DocumentFolderActions(http.Controller):
             folder.action_unlock()
         elif action == "archive":
             folder.action_archive()
+        elif action == "delete":
+            folder.action_move_to_recycle_bin()
         elif action == "restore":
             folder.action_restore()
+        elif action == "permanent_delete":
+            folder.document_ids.unlink()
+            folder.unlink()
         elif action == "duplicate":
             folder = folder.action_duplicate()
         elif action == "share":
@@ -55,6 +63,33 @@ class DocumentFolderActions(http.Controller):
             return {"success": False, "message": "Unsupported folder action."}
 
         return {"success": True, "data": self._folder(folder)}
+
+    @http.route("/api/folder-lifecycle", type="json", auth="user", methods=["POST"], csrf=False)
+    def folder_lifecycle(self, lifecycle="archived", **kwargs):
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Document manager access is required."}
+        domain = (
+            [("deleted_at", "!=", False)]
+            if lifecycle == "recycle_bin"
+            else [("distribution_status", "=", "archived"), ("deleted_at", "=", False)]
+        )
+        folders = request.env["doc.folder"].with_context(active_test=False).search(
+            domain, order="write_date desc"
+        )
+        return {"success": True, "data": [{
+            "id": folder.id,
+            "record_type": "folder",
+            "name": folder.folder_name,
+            "folder_name": folder.folder_name,
+            "description": folder.description or "",
+            "folder_type": folder.folder_type,
+            "document_count": folder.document_count,
+            "active": folder.active,
+            "distribution_status": folder.distribution_status,
+            "deleted_at": folder.deleted_at,
+            "recycle_bin_until": folder.recycle_bin_until,
+            "write_date": folder.write_date,
+        } for folder in folders]}
 
     @http.route(
         "/document-management/shared/folder/<string:token>",

@@ -10,7 +10,7 @@ export default function QuickAccessPage() {
   const folders = quickAccess.data?.folders ?? [];
   const documents = quickAccess.data?.documents ?? [];
   const [tab, setTab] = useState<"folders" | "documents">("folders");
-  return <div className="mx-auto min-h-full max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+  return <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
     <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">Personal shortcuts</p><h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">Quick Access</h1><p className="mt-2 text-sm text-slate-500">Your pinned folders and documents, available from one place.</p></div>
     {quickAccess.isLoading ? <div className="h-48 animate-pulse rounded-2xl bg-white" /> : <>
       <div className="flex w-fit gap-1 rounded-full border border-slate-200 bg-white p-1"><button type="button" onClick={() => setTab("folders")} className={`rounded-full px-4 py-2.5 text-sm font-bold ${tab === "folders" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "text-slate-500 hover:bg-pink-50"}`}>Pinned Folders <span className="ml-1 text-xs opacity-80">{folders.length}</span></button><button type="button" onClick={() => setTab("documents")} className={`rounded-full px-4 py-2.5 text-sm font-bold ${tab === "documents" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "text-slate-500 hover:bg-pink-50"}`}>Pinned Documents <span className="ml-1 text-xs opacity-80">{documents.length}</span></button></div>

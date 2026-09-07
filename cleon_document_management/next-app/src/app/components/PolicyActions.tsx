@@ -34,10 +34,10 @@ export default function PolicyActions({ policy, documents, types, targets }: { p
   const deletePolicy = async () => { if (window.confirm(`Delete "${policy.name}"? This cannot be undone.`)) await remove.mutateAsync(policy.id); };
   return <>
     <div className="flex items-center justify-end gap-1">
-      <button type="button" onClick={() => setMode("view")} className="row-action" title="View policy"><Eye /></button>
-      <button type="button" onClick={run} disabled={evaluate.isPending} className="row-action" title="Run policy check"><Play /></button>
-      <button type="button" onClick={() => setMode("edit")} className="row-action" title="Edit policy"><Pencil /></button>
-      <button type="button" onClick={deletePolicy} disabled={remove.isPending} className="row-action danger" title="Delete policy"><Trash2 /></button>
+      <button type="button" onClick={() => setMode("view")} className="row-action" title="View policy" aria-label="View policy"><Eye /></button>
+      <button type="button" onClick={run} disabled={evaluate.isPending} className="row-action" title="Run policy check" aria-label="Run policy check"><Play /></button>
+      <button type="button" onClick={() => setMode("edit")} className="row-action" title="Edit policy" aria-label="Edit policy"><Pencil /></button>
+      <button type="button" onClick={deletePolicy} disabled={remove.isPending} className="row-action danger" title="Delete policy" aria-label="Delete policy"><Trash2 /></button>
     </div>
     {mode && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/30 p-4 backdrop-blur-sm"><div className="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
       <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">Policy</p><h2 className="mt-1 text-xl font-bold text-slate-900">{mode === "view" ? policy.name : "Edit policy"}</h2></div><button type="button" onClick={() => setMode(null)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X /></button></div>

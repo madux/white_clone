@@ -87,6 +87,50 @@ export function useDocumentLifecycle(lifecycle: "archived" | "recycle_bin") {
   });
 }
 
+export function useFolderLifecycle(lifecycle: "archived" | "recycle_bin") {
+  return useQuery({
+    queryKey: ["folders", lifecycle],
+    queryFn: () => api.getFolderLifecycle(lifecycle).then((result) => result.data),
+  });
+}
+
+export function useSettings() {
+  return useQuery({
+    queryKey: ["document-settings"],
+    queryFn: () => api.getSettings().then((result) => result.data),
+  });
+}
+
+export function useSaveSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.saveSettings,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["document-settings"] }),
+  });
+}
+
+export function useSaveSettingsDocumentType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.saveSettingsDocumentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-settings"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
+  });
+}
+
+export function useToggleSettingsDocumentType() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.toggleSettingsDocumentType,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-settings"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.documentTypes });
+    },
+  });
+}
+
 export function useDocumentTypes() {
   return useQuery({
     queryKey: QUERY_KEYS.documentTypes,
@@ -216,7 +260,12 @@ export function useFolderAction() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.folderAction,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: ["quick-access"] });
+    },
   });
 }
 
@@ -251,6 +300,18 @@ export function useUploadMyDocument() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
       queryClient.invalidateQueries({ queryKey: ["admin", "attention"] });
+    },
+  });
+}
+
+export function useUploadEmployeeDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.uploadEmployeeDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["documents", "workspace"] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
     },
   });
 }

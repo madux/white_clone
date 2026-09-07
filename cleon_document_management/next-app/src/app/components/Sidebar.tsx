@@ -7,6 +7,7 @@ import {
   Users,
   Trash2,
   Pin,
+  Settings,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +38,7 @@ export default function Sidebar() {
       link: "/pages/document-intelligence",
       icon: Brain,
     },
+    { name: "Settings", link: "/pages/settings", icon: Settings },
   ];
 
   const workspaceLinks: Links[] = [
@@ -47,9 +49,9 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="flex w-60 shrink-0 border border-slate-200 p-2">
+    <aside className="flex h-full w-60 shrink-0 border-r border-slate-200 bg-white p-2">
       <div className="flex flex-col gap-5 w-full">
-        <div className="flex flex-col sgap-3 p-3">
+        <div className="flex flex-col gap-3 p-3">
           <span className="font-bold text-sm">Document Management</span>
           <span className="text-brand-gray text-sm">Intelligence Engine</span>
         </div>
@@ -114,7 +116,7 @@ export default function Sidebar() {
             Intelligence
           </span>
           <div className="flex flex-col gap-1">
-            {intelligenceLinks.map((l) => {
+            {intelligenceLinks.filter((l) => l.name !== "Settings" || isAdmin).map((l) => {
               const Icon = l.icon;
               const isActive = routePath.startsWith(l.link);
               return (

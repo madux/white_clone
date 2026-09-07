@@ -129,7 +129,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-full mx-auto space-y-8 bg-gray-100 rounded-2xl max-w-[1650px] w-full p-6">
+    <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-8 bg-slate-50 p-6">
       <section className="rounded-2xl shadow-brand-secondary/10">
         <div className="flex justify-between items-center">
           <div className="flex flex-col gap-2">
@@ -141,14 +141,14 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-4">
             <Link
-              href="#"
+              href="/pages/organization?create=1"
               className="inline-flex gap-2 items-center bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 rounded-full text-white font-medium inline-block shadow-lg shadow-pink-200"
             >
               <Plus className="h-4 w-4" />
               Add Folder
             </Link>
             <Link
-              href="#"
+              href="/pages/my-documents?upload=1"
               className="inline-flex gap-2 items-center bg-white px-4 py-3 rounded-full text-brand-pink font-medium inline-block border border-brand-pink"
             >
               Upload Document

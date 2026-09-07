@@ -47,7 +47,7 @@ export default function EmployeeFolderPage() {
   }, [documents.data, folder?.employee_ids, search, targets.data]);
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <Link
         href="/pages/employee"
         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-brand-pink"

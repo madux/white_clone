@@ -10,7 +10,10 @@ import {
   FileText,
   Mail,
   MapPin,
+  Maximize2,
+  Minimize2,
   Phone,
+  Upload,
   X,
   XCircle,
   UserRound,
@@ -21,8 +24,10 @@ import { useMemo, useState } from "react";
 import {
   useComplianceTargets,
   useCurrentUser,
+  useDocumentTypes,
   useDocuments,
   useReviewDocument,
+  useUploadEmployeeDocument,
 } from "../../../hooks/useDocuments";
 import { api, useTestData } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
@@ -35,10 +40,17 @@ export default function EmployeeProfilePage() {
   const targets = useComplianceTargets();
   const currentUser = useCurrentUser();
   const review = useReviewDocument();
+  const availableDocumentTypes = useDocumentTypes();
+  const uploadEmployeeDocument = useUploadEmployeeDocument();
   const [typeFilter, setTypeFilter] = useState("all");
   const [selected, setSelected] = useState<number[]>([]);
   const [viewing, setViewing] = useState<any>(null);
+  const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState("");
+  const [uploadError, setUploadError] = useState("");
   const employeeId = Number(params.get("employee"));
   const employeeDocuments = useMemo(
     () =>
@@ -85,7 +97,7 @@ export default function EmployeeProfilePage() {
     .toUpperCase();
 
   return (
-    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+    <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <Link
         href="/pages/employee"
         className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-brand-pink"
@@ -141,15 +153,15 @@ export default function EmployeeProfilePage() {
             </span>
             <button
               type="button"
-              onClick={() =>
-                document.getElementById("employee-upload")?.click()
-              }
+              onClick={() => {
+                setUploadError("");
+                setShowUpload(true);
+              }}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200"
             >
               <FilePlus2 className="h-4 w-4" />
               Upload document
             </button>
-            <input id="employee-upload" type="file" className="hidden" />
           </div>
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-5">
@@ -339,9 +351,64 @@ export default function EmployeeProfilePage() {
           </p>
         )}
       </section>
+      {showUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!uploadFile || !uploadType || !employeeId) return;
+              setUploadError("");
+              try {
+                const response = await uploadEmployeeDocument.mutateAsync({
+                  file: uploadFile,
+                  employee_id: employeeId,
+                  document_type_id: Number(uploadType),
+                });
+                if (!response.success || !response.data?.id) {
+                  throw new Error(response.message || "The document could not be uploaded.");
+                }
+                setUploadFile(null);
+                setUploadType("");
+                setShowUpload(false);
+              } catch (error: any) {
+                setUploadError(error?.message || "The document could not be uploaded.");
+              }
+            }}
+            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">Employee files</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">Upload document</h2>
+                <p className="mt-1 text-sm text-slate-500">Upload a file directly to this employee’s records.</p>
+              </div>
+              <button type="button" onClick={() => setShowUpload(false)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X className="h-5 w-5" /></button>
+            </div>
+            <label className="mt-5 block">
+              <span className="label">File</span>
+              <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
+                <Upload className="h-5 w-5" />{uploadFile?.name ?? "Choose a file from your computer"}
+                <input required type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} className="hidden" />
+              </span>
+            </label>
+            <label className="mt-4 block">
+              <span className="label">Document type</span>
+              <select required value={uploadType} onChange={(event) => setUploadType(event.target.value)} className="field">
+                <option value="">Select document type</option>
+                {(availableDocumentTypes.data ?? []).map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}
+              </select>
+            </label>
+            {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
+              <button disabled={uploadEmployeeDocument.isPending || !uploadFile || !uploadType} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{uploadEmployeeDocument.isPending ? "Uploading..." : "Upload document"}</button>
+            </div>
+          </form>
+        </div>
+      )}
       {viewing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm ${viewerFullscreen ? "" : "p-4"}`}>
+          <div className={`flex w-full flex-col overflow-hidden bg-white shadow-2xl ${viewerFullscreen ? "h-screen max-w-none rounded-none" : "max-h-[92vh] max-w-4xl rounded-3xl"}`}>
             <div className="flex items-center justify-between border-b border-slate-100 p-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
@@ -365,14 +432,22 @@ export default function EmployeeProfilePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setViewing(null)}
+                  onClick={() => setViewerFullscreen((current) => !current)}
+                  aria-label={viewerFullscreen ? "Exit full screen" : "Open full screen"}
+                  className="rounded-full border border-slate-200 p-2 text-slate-500 hover:border-brand-pink hover:text-brand-pink"
+                >
+                  {viewerFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setViewing(null); setViewerFullscreen(false); }}
                   className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
                 >
                   <X />
                 </button>
               </div>
             </div>
-            <div className="min-h-[360px] flex-1 overflow-y-auto bg-slate-100 p-5">
+            <div className="min-h-0 flex-1 overflow-hidden bg-slate-100 p-5">
               {useTestData ? (
                 <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8">
                   <FileText className="h-9 w-9 text-brand-pink" />
@@ -387,7 +462,7 @@ export default function EmployeeProfilePage() {
                 <iframe
                   title={viewing.name}
                   src={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
-                  className="h-[62vh] w-full rounded-2xl border border-slate-200 bg-white"
+                  className="block h-full min-h-[62vh] w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white"
                 />
               )}
             </div>

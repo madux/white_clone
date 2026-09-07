@@ -127,7 +127,7 @@ export default function CompliancePage() {
   };
 
   return (
-    <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+    <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
