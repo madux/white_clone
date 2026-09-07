@@ -105,6 +105,7 @@ class HrEmployeeStaffDirectory(models.Model):
     sdir_promotion_date = fields.Date(string='Last Promotion Date')
     sdir_promotion_reason = fields.Text(string='Promotion Rationale')
     sdir_salary_adjustment = fields.Integer(string='Salary Adjustment (%)')
+    sdir_event_ids = fields.One2many('sdir.employee.event', 'employee_id', string='Activity Events')
 
     # ─── Entry point ─────────────────────────────────────────────────────────
 
@@ -1548,9 +1549,16 @@ class HrEmployeeStaffDirectory(models.Model):
             except Exception:
                 emp_ref = f'EMP-{emp.id:04d}'
 
-            # ── Progress Score ────────────────────────────────────────
-            # Now using the Single Source of Truth field.
-            prog_score = getattr(emp, 'performance_score', 0)
+            # ── Progress Score & Rating ────────────────────────────────────────
+            latest_review = self.env['sdir.employee.event'].search([
+                ('employee_id', '=', emp.id),
+                ('event_type', '=', 'performance_review')
+            ], order='event_date desc', limit=1)
+            
+            prog_score = latest_review.score if latest_review else 0
+            prog_rating = latest_review.rating_badge if latest_review else False
+            prog_rating_label = dict(self.env['sdir.employee.event'].fields_get(['rating_badge'], 'selection')['rating_badge']['selection']).get(prog_rating, '') if prog_rating else 'No Rating'
+
             
             timeline_data = self._get_activity_timeline(emp)
 
@@ -1602,7 +1610,8 @@ class HrEmployeeStaffDirectory(models.Model):
                 'phone':             emp.work_phone or getattr(emp, 'mobile_phone', '') or getattr(emp, 'phone', '') or '',
                 'grade':             getattr(emp, 'grade_id', False).name if getattr(emp, 'grade_id', False) else (getattr(emp, 'grade', '') or getattr(emp, 'band', '') or ''),
                 'progress_score':    prog_score,
-                'performance_score': f"{prog_score}%" if prog_score else "0%",
+                'performance_score': f"{prog_score}/100" if prog_score else "0/100",
+                'performance_rating': prog_rating_label,
                 'gender':            getattr(emp, 'gender', ''),
                 'employment_type':   dict(self.env['hr.employee'].fields_get(['sdir_employment_type'], 'selection')['sdir_employment_type']['selection']).get(getattr(emp, 'sdir_employment_type', ''), getattr(emp, 'employee_type', '')) if getattr(emp, 'sdir_employment_type', False) else getattr(emp, 'employee_type', ''),
                 'create_date':       str(emp.create_date.date()) if getattr(emp, 'create_date', False) else '',
@@ -1626,7 +1635,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'upcoming_leaves':    self._get_upcoming_leaves(emp),
                 'leave_history':      self._get_leave_history(emp),
                 'activity_timeline':  timeline_data,
-                'promotions_count':   sum(1 for year_events in timeline_data.values() for event in year_events if event.get('title') == 'Promoted'),
+                'promotions_count':   self.env['sdir.employee.event'].search_count([('employee_id', '=', emp.id), ('event_type', '=', 'promotion')]),
                 'anniv_display':      anniv_display,
                 'anniv_days_until':   anniv_days_until,
                 'anniv_years':        anniv_years,
@@ -1813,68 +1822,52 @@ class HrEmployeeStaffDirectory(models.Model):
 
     @api.model
     def _get_activity_timeline(self, emp):
-        """Auto-generate a realistic chronological timeline based on hire date."""
-        import random
+        """Return a chronological timeline based on actual events grouped by year."""
         timeline = {}
-        hire_date = None
-        if getattr(emp, 'create_date', False):
-            hire_date = emp.create_date.date()
-        if not hire_date:
-            return timeline
-
-        today = Date.context_today(self)
-        years_diff = today.year - hire_date.year
         
-        # Seed the random number generator deterministically per employee
-        # so their timeline stays exactly the same on refresh
-        rng = random.Random(emp.id)
-
-        # Generate Hire Event
-        hire_year = str(hire_date.year)
-        timeline.setdefault(hire_year, []).append({
-            'month': hire_date.strftime('%b'),
-            'type': 'promotion',  # using green dot for hired
-            'title': 'Joined the Company',
-            'desc': f'Started as {emp.job_title or "Employee"} in {emp.department_id.name if emp.department_id else "General"}',
-            'dotColor': 'bg-green-500'
-        })
+        events = self.env['sdir.employee.event'].search([('employee_id', '=', emp.id)], order='event_date desc, id desc')
         
-        # Generate Probation Passed
-        prob_date = hire_date + timedelta(days=90)
-        if prob_date <= today:
-            prob_year = str(prob_date.year)
-            timeline.setdefault(prob_year, []).append({
-                'month': prob_date.strftime('%b'),
-                'type': 'transfer',
-                'title': 'Probation Passed',
-                'desc': 'Successfully completed 90-day probationary period.',
-                'dotColor': 'bg-purple-500'
+        for event in events:
+            year = str(event.event_date.year)
+            month = event.event_date.strftime('%b')
+            
+            # Map badge and colors
+            dot_color = 'bg-gray-500' # default
+            if event.event_type == 'hire':
+                dot_color = 'bg-green-500'
+            elif event.event_type == 'promotion':
+                dot_color = 'bg-purple-500'
+            elif event.event_type == 'transfer':
+                dot_color = 'bg-gray-500'
+            elif event.event_type == 'performance_review':
+                if event.rating_badge == 'exceptional':
+                    dot_color = 'bg-purple-500'
+                elif event.rating_badge == 'exceeds':
+                    dot_color = 'bg-green-500'
+                elif event.rating_badge == 'meets':
+                    dot_color = 'bg-blue-500'
+                elif event.rating_badge == 'needs_improvement':
+                    dot_color = 'bg-red-500'
+            elif event.event_type == 'anniversary':
+                dot_color = 'bg-pink-500'
+                
+            timeline.setdefault(year, []).append({
+                'month': month,
+                'type': event.event_type,
+                'title': event.title,
+                'desc': event.description or '',
+                'dotColor': dot_color,
+                'date_str': event.event_date.strftime('%d %b %Y'),
+                'score': event.score if event.event_type == 'performance_review' else None,
+                'rating_badge': event.rating_badge if event.event_type == 'performance_review' else None,
+                'raw_date': str(event.event_date)
             })
-
-        # Generate some random events (pay reviews, role changes) between hire and today
-        if years_diff > 0:
-            for y in range(1, years_diff + 1):
-                event_year = hire_date.year + y
-                if event_year > today.year:
-                    break
-                # 60% chance of an event each year
-                if rng.random() > 0.4:
-                    month_idx = rng.randint(1, 12)
-                    month_str = __import__('datetime').date(event_year, month_idx, 1).strftime('%b')
-                    event_types = [
-                        ('promotion', 'Pay Review & Increment', 'Annual compensation adjustment.', 'bg-green-500'),
-                        ('transfer', 'Department Update', 'Moved to a new internal team.', 'bg-purple-500'),
-                        ('promotion', 'Promoted', f'Promoted to higher responsibilities.', 'bg-green-500'),
-                        ('transfer', 'Training Completed', 'Completed mandatory leadership compliance training.', 'bg-yellow-500')
-                    ]
-                    evt = rng.choice(event_types)
-                    timeline.setdefault(str(event_year), []).append({
-                        'month': month_str,
-                        'type': evt[0],
-                        'title': evt[1],
-                        'desc': evt[2],
-                        'dotColor': evt[3]
-                    })
-        
-        # Sort months if multiple events in same year (simplistic sort)
-        return timeline
+            
+        # Convert to list of objects sorted descending by year
+        timeline_list = []
+        for year in sorted(timeline.keys(), reverse=True):
+            timeline_list.append({
+                'year': year,
+                'events': timeline[year]
+            })
+        return timeline_list

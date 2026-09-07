@@ -558,3 +558,127 @@
 .sdir-fp-perf-item:hover .sdir-fp-perf-chevron {
     transform: translateX(2px);
 }
+
+.sdir-fp-content-inner.full-width { grid-template-columns: minmax(0px, 1fr); }
+
+/* Performance History Expanded Details */
+.sdir-fp-perf-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background-color: rgb(250, 250, 250);
+    border: 1px solid rgb(243, 244, 246);
+    margin: 0 22px 14px 22px;
+    animation: sdirFadeIn 0.2s ease-out;
+}
+
+.sdir-fp-perf-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+.sdir-fp-perf-dot.green { background-color: rgb(16, 185, 129); }
+.sdir-fp-perf-dot.purple { background-color: rgb(124, 58, 237); }
+
+.sdir-fp-perf-detail-body {
+    flex: 1 1 0%;
+}
+
+.sdir-fp-perf-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sdir-fp-perf-detail-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgb(17, 24, 39);
+}
+
+.sdir-fp-perf-detail-date {
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    flex-shrink: 0;
+}
+
+.sdir-fp-perf-score-wrap {
+    margin-top: 8px;
+}
+
+.sdir-fp-perf-score-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.sdir-fp-perf-score-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgb(156, 163, 175);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.sdir-fp-perf-score-value {
+    font-size: 12px;
+    font-weight: 800;
+}
+.sdir-fp-perf-score-value.green { color: rgb(16, 185, 129); }
+.sdir-fp-perf-score-value.purple { color: rgb(124, 58, 237); }
+
+.sdir-fp-perf-progress-bg {
+    height: 5px;
+    border-radius: 99px;
+    background-color: rgb(243, 244, 246);
+    overflow: hidden;
+}
+
+.sdir-fp-perf-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.5s;
+}
+.sdir-fp-perf-progress-fill.green { background-color: rgb(16, 185, 129); }
+.sdir-fp-perf-progress-fill.purple { background-color: rgb(124, 58, 237); }
+
+/* Expanded State Toggles */
+.sdir-fp-perf-item.expanded .sdir-fp-perf-chevron {
+    transform: rotate(180deg);
+}
+.sdir-fp-perf-item.expanded .sdir-fp-perf-year {
+    color: rgb(233, 30, 140);
+}
+
+.sdir-fp-perf-dot.gray { background-color: rgb(156, 163, 175); }
+
+/* Stat Box additional variants */
+.sdir-fp-stat-box.blue { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); }
+.sdir-fp-stat-box.gray { background: rgba(107, 114, 128, 0.1); border-color: rgba(107, 114, 128, 0.2); }
+.sdir-fp-stat-box.blue .sdir-fp-stat-value { color: rgb(59, 130, 246); font-size: 14px; }
+.sdir-fp-stat-box.gray .sdir-fp-stat-value { color: rgb(107, 114, 128); font-size: 14px; }
+
+/* Detail Dot additional variants */
+.sdir-fp-perf-dot.blue { background-color: rgb(59, 130, 246); }
+.sdir-fp-perf-dot.pink { background-color: rgb(233, 30, 140); }
+
+/* Score & Progress Fill additional variants */
+.sdir-fp-perf-score-value.blue { color: rgb(59, 130, 246); }
+.sdir-fp-perf-score-value.pink { color: rgb(233, 30, 140); }
+.sdir-fp-perf-score-value.gray { color: rgb(107, 114, 128); }
+
+.sdir-fp-perf-progress-fill.blue { background-color: rgb(59, 130, 246); }
+.sdir-fp-perf-progress-fill.pink { background-color: rgb(233, 30, 140); }
+.sdir-fp-perf-progress-fill.gray { background-color: rgb(107, 114, 128); }
+
+/* Badge additional variants */
+.sdir-fp-perf-badge.pink { background: rgba(233, 30, 140, 0.1); color: rgb(233, 30, 140); }
+.sdir-fp-perf-badge.blue { background: rgba(59, 130, 246, 0.1); color: rgb(59, 130, 246); }
+.sdir-fp-perf-badge.gray { background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); }

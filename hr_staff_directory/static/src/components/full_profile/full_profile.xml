@@ -93,7 +93,7 @@
                     </div>
 
                     <div class="sdir-fp-content">
-                        <div class="sdir-fp-content-inner">
+                        <div t-attf-class="sdir-fp-content-inner {{ state.activeTab !== 'overview' ? 'full-width' : '' }}">
                             <t t-if="state.activeTab === 'overview'">
                             <div class="sdir-fp-cards">
                                 
@@ -345,7 +345,8 @@
 
                             </div>
                             
-                            <div class="sdir-fp-ai-sidebar">
+                            <t t-if="state.activeTab === 'overview'">
+                                <div class="sdir-fp-ai-sidebar">
                                 <div class="sdir-fp-cleon-card">
                                     <div class="sdir-fp-cleon-header">
                                         <div class="sdir-fp-cleon-title">
@@ -410,6 +411,7 @@
                                     </div>
                                 </div>
                             </div>
+                            </t>
 
                             </t>
                             
@@ -419,18 +421,18 @@
                                         <div class="sdir-fp-activity-stats-grid">
                                             <div class="sdir-fp-stat-box pink">
                                                 <p class="sdir-fp-stat-label">TENURE</p>
-                                                <p class="sdir-fp-stat-value">10y 8m</p>
+                                                <p class="sdir-fp-stat-value" t-esc="props.activeProfile.tenure || '0m'"></p>
                                                 <p class="sdir-fp-stat-subtitle">Time with organisation</p>
                                             </div>
                                             <div class="sdir-fp-stat-box purple">
                                                 <p class="sdir-fp-stat-label">PROMOTIONS</p>
-                                                <p class="sdir-fp-stat-value">2</p>
+                                                <p class="sdir-fp-stat-value" t-esc="props.activeProfile.promotions_count || 0"></p>
                                                 <p class="sdir-fp-stat-subtitle">Since joining</p>
                                             </div>
-                                            <div class="sdir-fp-stat-box green">
+                                            <div t-attf-class="sdir-fp-stat-box {{ props.activeProfile.performance_rating === 'Exceptional' ? 'purple' : props.activeProfile.performance_rating === 'Exceeds Expectations' ? 'green' : props.activeProfile.performance_rating === 'Needs Improvement' ? 'pink' : props.activeProfile.performance_rating === 'Meets Expectations' ? 'blue' : 'gray' }}">
                                                 <p class="sdir-fp-stat-label">LATEST RATING</p>
-                                                <p class="sdir-fp-stat-value">Exceeds Expectations</p>
-                                                <p class="sdir-fp-stat-subtitle">Score: 86/100</p>
+                                                <p class="sdir-fp-stat-value" t-esc="props.activeProfile.performance_rating || 'No Rating'"></p>
+                                                <p class="sdir-fp-stat-subtitle">Score: <t t-esc="props.activeProfile.performance_score || '0/100'"/></p>
                                             </div>
                                         </div>
                                         
@@ -440,160 +442,68 @@
                                                 <h3 class="sdir-fp-perf-title">Performance History</h3>
                                             </div>
                                             <div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2026</span>
+                                            <t t-if="props.activeProfile.activity_timeline and props.activeProfile.activity_timeline.length > 0">
+                                                <t t-foreach="props.activeProfile.activity_timeline" t-as="group" t-key="group.year">
+                                                    <div class="sdir-fp-perf-item-wrap">
+                                                        <button t-attf-class="sdir-fp-perf-item {{ state.expandedYears[group.year] ? 'expanded' : '' }}" t-on-click="() => state.expandedYears[group.year] = !state.expandedYears[group.year]">
+                                                            <div class="sdir-fp-perf-left">
+                                                                <div class="sdir-fp-perf-year-box">
+                                                                    <span class="sdir-fp-perf-year" t-esc="group.year"></span>
+                                                                </div>
+                                                                <div class="sdir-fp-perf-info">
+                                                                    <span class="sdir-fp-perf-events"><t t-esc="group.events.length"/> event<t t-if="group.events.length > 1">s</t></span>
+                                                                    <t t-if="group.events[0].rating_badge">
+                                                                        <span t-attf-class="sdir-fp-perf-badge {{ group.events[0].rating_badge === 'exceptional' ? 'purple' : group.events[0].rating_badge === 'exceeds' ? 'green' : group.events[0].rating_badge === 'needs_improvement' ? 'pink' : 'blue' }}">
+                                                                            <t t-if="group.events[0].rating_badge === 'exceptional'">Exceptional</t>
+                                                                            <t t-elif="group.events[0].rating_badge === 'exceeds'">Exceeds Expectations</t>
+                                                                            <t t-elif="group.events[0].rating_badge === 'meets'">Meets Expectations</t>
+                                                                            <t t-elif="group.events[0].rating_badge === 'needs_improvement'">Needs Improvement</t>
+                                                                        </span>
+                                                                    </t>
+                                                                    <t t-else="">
+                                                                        <span class="sdir-fp-perf-badge" t-esc="group.events[0].title"></span>
+                                                                    </t>
+                                                                </div>
                                                             </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge green">Exceeds Expectations</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
+                                                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                                        </button>
+                                                        <t t-if="state.expandedYears[group.year]">
+                                                            <t t-foreach="group.events" t-as="event" t-key="event_index">
+                                                                <div class="sdir-fp-perf-detail">
+                                                                    <div t-attf-class="sdir-fp-perf-dot {{ event.dotColor ? event.dotColor.split('-')[1] : 'gray' }}"></div>
+                                                                    <div class="sdir-fp-perf-detail-body">
+                                                                        <div class="sdir-fp-perf-detail-header">
+                                                                            <span class="sdir-fp-perf-detail-title" t-esc="event.title"></span>
+                                                                            <span class="sdir-fp-perf-detail-date" t-esc="event.date_str"></span>
+                                                                        </div>
+                                                                        <t t-if="event.type === 'performance_review'">
+                                                                            <div class="sdir-fp-perf-score-wrap">
+                                                                                <div class="sdir-fp-perf-score-header">
+                                                                                    <span class="sdir-fp-perf-score-label">Score</span>
+                                                                                    <span t-attf-class="sdir-fp-perf-score-value {{ event.dotColor ? event.dotColor.split('-')[1] : 'gray' }}"><t t-esc="event.score"/>/100</span>
+                                                                                </div>
+                                                                                <div class="sdir-fp-perf-progress-bg">
+                                                                                    <div t-attf-class="sdir-fp-perf-progress-fill {{ event.dotColor ? event.dotColor.split('-')[1] : 'gray' }}" t-attf-style="width: {{ event.score }}%;"></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </t>
+                                                                        <t t-if="event.desc">
+                                                                             <div style="font-size: 11px; color: #6b7280; margin-top: 6px;" t-esc="event.desc"></div>
+                                                                        </t>
+                                                                    </div>
+                                                                </div>
+                                                            </t>
+                                                        </t>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <div class="sdir-fp-reporting-empty">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-fp-reporting-empty-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+                                                    <p class="sdir-fp-reporting-empty-title">No activity history</p>
+                                                    <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="props.activeProfile.name.split(' ')[0]"/> doesn't have any logged activities yet</p>
                                                 </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2025</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2024</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2023</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge green">Exceeds Expectations</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2022</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2021</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2020</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge green">Exceeds Expectations</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2019</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2018</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge green">Exceeds Expectations</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2017</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">1 event</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
-                                                <div class="sdir-fp-perf-item-wrap">
-                                                    <button class="sdir-fp-perf-item">
-                                                        <div class="sdir-fp-perf-left">
-                                                            <div class="sdir-fp-perf-year-box">
-                                                                <span class="sdir-fp-perf-year">2016</span>
-                                                            </div>
-                                                            <div class="sdir-fp-perf-info">
-                                                                <span class="sdir-fp-perf-events">2 events</span>
-                                                                <span class="sdir-fp-perf-badge purple">Exceptional</span>
-                                                            </div>
-                                                        </div>
-                                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="sdir-fp-perf-chevron"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                                                    </button>
-                                                </div>
+                                            </t>
                                             </div>
                                         </div>
                                     </div>

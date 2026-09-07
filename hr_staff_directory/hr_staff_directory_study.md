@@ -355,3 +355,13 @@ The Staff Directory profile panel displays an upcoming Work Anniversary card dyn
 4. **Card Rendering**:
    - The card only renders if `anniv_display` is present (meaning a valid join date was found).
    - It only calculates for employees who have been at the company for more than 0 years (their first anniversary or beyond).
+
+## 12. Employee Event History (sdir.employee.event)
+
+To support the Activity Tab's Performance History timeline, the module introduces a dedicated custom model `sdir.employee.event` rather than relying on complex native apps like `hr_appraisal`.
+
+### Design Philosophy & SSOT
+* **Lightweight Ledger:** This model acts as a simple historical ledger for employee milestones (Promotions, Transfers, Performance Reviews, Anniversaries).
+* **Automated Generation:** When an HR Administrator uses the module's custom "Promote Employee" or "Transfer Employee" modals, the backend automatically generates a corresponding `sdir.employee.event` record to persist the history, alongside the standard chatter logging.
+* **Performance Scores:** The `sdir.employee.event` model is the **Single Source of Truth** for an employee's performance ratings. The "Latest Rating" and progress scores shown in the directory are dynamically derived from the most recent event of type `performance_review`.
+* **Activity Timeline:** The frontend Accordion UI strictly parses the chronological output of this model, grouping events dynamically by year.

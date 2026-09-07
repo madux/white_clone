@@ -8,7 +8,7 @@ export class StaffDirectoryFullProfile extends Component {
     static props = ["*"];
 
     setup() {
-        this.state = useState({ activeTab: 'overview' });
+        this.state = useState({ activeTab: 'overview', expandedYears: {} });
         this.messageService = useService("hr_staff_directory.message");
         this.mailModalService = useService("hr_staff_directory.mail_modal");
         this.AVATAR_COLORS = [
