@@ -41,13 +41,26 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 ## Phase 9 — Ask & Insights
 - [x] Permission-aware retrieval over approved chunks (pgvector + Groq gpt-oss-120b)
 - [x] Query history from audit events
-- [x] Structured field filters for expiry, notice, probation, missing training
+- [x] Conversational Ask workspace (history, attach, voice)
+- [x] Deploy Next export (`npm run deploy`) so Odoo on :8069 serves the new Ask UI
+- [x] Fix Ask layout: page scroll, mascot image URL, visual polish
+- [x] Redeploy static export after Ask layout fix
+- [x] ChatGPT-style chat titles from first user query (LLM)
+- [x] Chat sidebar layout like ChatGPT
+- [x] Redeploy Ask UI after title/sidebar change
 
 ## Merge (origin/document-intelligence)
 - [x] Pulled incoming approval-inbox work (Header, mock-data removal)
 - [x] Kept `export async function rpc` in `next-app/lib/api.ts` for Intelligence
 - [x] Rebuilt and synced `static/src/nextapp` so inbox + Intelligence share one export
 
-## Phase 10 — Notifications and hardening
+## Ask UI follow-up
+- [x] LLM chat titles that are not the full question (gpt-oss token/content fix)
+- [x] Delete chats from the sidebar
+- [x] Show the user message immediately + Thinking… then stream the reply
+- [x] Hide references/citations under answers
+- [x] Render markdown (**bold**, lists) in assistant replies
+- [x] Deploy frontend and bump module version for unlink ACL
+- [x] Fix "Cursor already closed" on Ask stream (dedicated DB cursor)
 - [ ] Notifications/webhooks only if real health checks exist
 - [ ] Tests, lint, existing DMS routes still work

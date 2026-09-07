@@ -150,10 +150,31 @@
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>
 
-    <record id="rule_intelligence_audit_system_visibility" model="ir.rule">
-        <field name="name">Intelligence audit: system administrators</field>
-        <field name="model_id" ref="model_doc_intelligence_audit_event"/>
-        <field name="groups" eval="[Command.link(ref('base.group_system'))]"/>
+    <record id="rule_intelligence_conversation_user_visibility" model="ir.rule">
+        <field name="name">Intelligence conversations: own records</field>
+        <field name="model_id" ref="model_doc_intelligence_conversation"/>
+        <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="domain_force">[('user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_intelligence_conversation_admin_visibility" model="ir.rule">
+        <field name="name">Intelligence conversations: administrators</field>
+        <field name="model_id" ref="model_doc_intelligence_conversation"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_intelligence_message_user_visibility" model="ir.rule">
+        <field name="name">Intelligence messages: own conversations</field>
+        <field name="model_id" ref="model_doc_intelligence_message"/>
+        <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_intelligence_ask_source_user_visibility" model="ir.rule">
+        <field name="name">Intelligence ask sources: own conversations</field>
+        <field name="model_id" ref="model_doc_intelligence_ask_source"/>
+        <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
     </record>
 </odoo>

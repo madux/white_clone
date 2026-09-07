@@ -9,7 +9,7 @@ export default function DocumentIntelligenceLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6">
+    <div className="mx-auto flex w-full max-w-[1650px] flex-col space-y-6 p-6">
       <IntelligenceNav />
       {children}
     </div>

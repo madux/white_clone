@@ -13,3 +13,4 @@ from . import intelligence_dataset
 from . import intelligence_record
 from . import intelligence_index
 from . import intelligence_audit
+from . import intelligence_conversation

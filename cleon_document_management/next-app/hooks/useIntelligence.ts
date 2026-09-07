@@ -232,6 +232,17 @@ export function useIntelligenceAskHistory() {
   });
 }
 
+export function useIntelligenceConversations(saved?: boolean, search?: string) {
+  return useQuery({
+    queryKey: ["intelligence", "conversations", saved ? "saved" : "recent", search || ""],
+    queryFn: () =>
+      intelligenceDatasetApi.conversations({
+        ...(saved ? { saved: true } : {}),
+        ...(search ? { search } : {}),
+      }),
+  });
+}
+
 export function useIntelligenceOverview() {
   return useQuery({
     queryKey: ["intelligence", "overview"],

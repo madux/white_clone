@@ -545,3 +545,44 @@ class TestIntelligenceConfig(TransactionCase):
         )
         self.assertTrue(salary["insufficient_evidence"])
         self.assertIn("pay-band", salary["answer"])
+
+    def test_conversation_stores_user_and_assistant_turns(self):
+        conversation = self.env["doc.intelligence.conversation"].create(
+            {"name": "New conversation"}
+        )
+        payload = conversation.action_ask(
+            "Which salaries fall outside the configured band?"
+        )
+        self.assertEqual(len(payload["messages"]), 2)
+        self.assertEqual(payload["messages"][0]["role"], "user")
+        self.assertEqual(payload["messages"][1]["role"], "assistant")
+        self.assertTrue(payload["messages"][1]["insufficient_evidence"])
+        self.assertNotEqual(
+            payload["name"],
+            "Which salaries fall outside the configured band?",
+        )
+        self.assertLessEqual(len(payload["name"]), 48)
+        conversation.action_delete()
+        self.assertFalse(conversation.exists())
+
+    def test_conversation_title_helpers_stay_short(self):
+        from odoo.addons.cleon_document_management.models.intelligence_groq import (
+            fallback_conversation_title,
+            sanitize_conversation_title,
+            strip_reference_sections,
+        )
+
+        question = "Which contracts expire in the next 90 days?"
+        self.assertEqual(
+            fallback_conversation_title(question),
+            "Contracts expire days",
+        )
+        self.assertEqual(
+            sanitize_conversation_title('"Contract expiries"', question),
+            "Contract expiries",
+        )
+        self.assertFalse(sanitize_conversation_title(question, question))
+        self.assertEqual(
+            strip_reference_sections("Hello\n\nReferences:\n- Doc A"),
+            "Hello",
+        )

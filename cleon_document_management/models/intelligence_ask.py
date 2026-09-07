@@ -76,7 +76,7 @@ def _parse_date(value):
     return None
 
 
-def _permitted_records(env):
+def _permitted_records(env, dataset_id=None):
     domain = [("review_status", "in", ["approved", "overridden"])]
     user = env.user
     is_admin = user.has_group("base.group_system") or user.has_group(
@@ -85,6 +85,8 @@ def _permitted_records(env):
     if not is_admin:
         employee = user.employee_id
         domain.append(("employee_id", "=", employee.id if employee else 0))
+    if dataset_id:
+        domain.append(("dataset_id", "=", int(dataset_id)))
     return env["doc.intelligence.record"].search(domain)
 
 
@@ -105,21 +107,18 @@ def _fact_answer(title, lines, citations):
     answer = title
     if body:
         answer = "%s\n\n%s" % (title, body)
-    answer += (
-        "\n\nThese lines are facts from approved extracted fields, not inferences."
-    )
     return {
         "answer": answer,
         "insufficient_evidence": not lines,
-        "citations": citations,
+        "citations": [],
         "fact_based": True,
     }
 
 
-def _query_expiring(env, days):
+def _query_expiring(env, days, dataset_id=None):
     today = fields.Date.context_today(env["doc.intelligence.record"])
     horizon = today + timedelta(days=int(days or 60))
-    records = _permitted_records(env)
+    records = _permitted_records(env, dataset_id)
     lines = []
     citations = []
     for record in records:
@@ -151,8 +150,8 @@ def _query_expiring(env, days):
     return _fact_answer(title, lines, citations)
 
 
-def _query_missing_field(env, keys):
-    records = _permitted_records(env)
+def _query_missing_field(env, keys, dataset_id=None):
+    records = _permitted_records(env, dataset_id)
     lines = []
     citations = []
     for record in records:
@@ -174,9 +173,9 @@ def _query_missing_field(env, keys):
     return _fact_answer(title, lines, citations)
 
 
-def _query_probation(env):
+def _query_probation(env, dataset_id=None):
     today = fields.Date.context_today(env["doc.intelligence.record"])
-    records = _permitted_records(env)
+    records = _permitted_records(env, dataset_id)
     lines = []
     citations = []
     for record in records:
@@ -210,8 +209,8 @@ def _query_probation(env):
     return _fact_answer(title, lines, citations)
 
 
-def _query_missing_type(env, needles):
-    records = _permitted_records(env)
+def _query_missing_type(env, needles, dataset_id=None):
+    records = _permitted_records(env, dataset_id)
     employees = records.mapped("employee_id").filtered(lambda employee: employee)
     lines = []
     citations = []
@@ -247,7 +246,7 @@ def _query_missing_type(env, needles):
     return _fact_answer(title, lines, citations)
 
 
-def answer_structured(env, question):
+def answer_structured(env, question, dataset_id=None):
     intent = parse_intent(question)
     if intent["kind"] == "unsupported":
         return {
@@ -258,13 +257,13 @@ def answer_structured(env, question):
             "fact_based": True,
         }
     if intent["kind"] == "expiring":
-        payload = _query_expiring(env, intent["days"])
+        payload = _query_expiring(env, intent["days"], dataset_id)
     elif intent["kind"] == "missing_field":
-        payload = _query_missing_field(env, intent["keys"])
+        payload = _query_missing_field(env, intent["keys"], dataset_id)
     elif intent["kind"] == "probation":
-        payload = _query_probation(env)
+        payload = _query_probation(env, dataset_id)
     elif intent["kind"] == "missing_type":
-        payload = _query_missing_type(env, intent["needles"])
+        payload = _query_missing_type(env, intent["needles"], dataset_id)
     else:
         return {
             "intent": intent,
@@ -272,3 +271,105 @@ def answer_structured(env, question):
         }
     payload["intent"] = intent
     return payload
+
+
+def start_answer(env, question, extra_context="", history=None, dataset_id=None):
+    from .intelligence_groq import LLM_MODEL, groq_configured, _answer_messages
+
+    structured = answer_structured(env, question, dataset_id=dataset_id)
+    if structured.get("fact_based"):
+        intent = structured.get("intent") or {}
+        return {
+            "mode": "ready",
+            "result": {
+                "answer": structured["answer"],
+                "insufficient_evidence": structured.get("insufficient_evidence", True),
+                "citations": [],
+                "fact_based": True,
+                "intent": intent.get("label") or intent.get("kind") or "",
+                "model": "structured-fields",
+            },
+        }
+    chunks = env["doc.intelligence.chunk"].search_similar(
+        question, dataset_id=dataset_id
+    )
+    evidence = []
+    if extra_context:
+        evidence.append(extra_context)
+    for chunk in chunks:
+        document = chunk.document_id
+        evidence.append(
+            "Document: %s | Employee: %s | Page: %s\n%s"
+            % (
+                document.name,
+                chunk.employee_id.name or "n/a",
+                chunk.page,
+                chunk.content,
+            )
+        )
+    if not evidence:
+        return {
+            "mode": "ready",
+            "result": {
+                "answer": (
+                    "There is not enough approved, indexed evidence to answer. "
+                    "Run a dataset, review records, and approve them first."
+                ),
+                "insufficient_evidence": True,
+                "citations": [],
+                "fact_based": False,
+                "intent": "document_search",
+                "model": LLM_MODEL,
+            },
+        }
+    if not groq_configured(env):
+        return {
+            "mode": "ready",
+            "result": {
+                "answer": (
+                    "Matching approved excerpts were found, but GROQ_API_KEY is not "
+                    "set so the language model cannot compose an answer."
+                ),
+                "insufficient_evidence": True,
+                "citations": [],
+                "fact_based": False,
+                "intent": "document_search",
+                "model": LLM_MODEL,
+            },
+        }
+    context = "\n\n".join(evidence[:8])
+    return {
+        "mode": "stream",
+        "messages": _answer_messages(question, context, history),
+        "context": context,
+        "result_meta": {
+            "insufficient_evidence": False,
+            "citations": [],
+            "fact_based": False,
+            "intent": "document_search",
+            "model": LLM_MODEL,
+        },
+    }
+
+
+def answer_question(env, question, extra_context="", history=None, dataset_id=None):
+    from .intelligence_groq import answer_with_context, strip_reference_sections
+
+    started = start_answer(
+        env,
+        question,
+        extra_context=extra_context,
+        history=history,
+        dataset_id=dataset_id,
+    )
+    if started["mode"] == "ready":
+        return started["result"]
+    answer = strip_reference_sections(
+        answer_with_context(
+            question,
+            started["context"],
+            env=env,
+            history=history,
+        )
+    )
+    return {"answer": answer, **started["result_meta"]}

@@ -1,5 +1,5 @@
 import json
-from odoo import http
+from odoo import api, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
@@ -872,99 +872,300 @@ class DocumentIntelligenceController(http.Controller):
         csrf=False,
     )
     def ask(self, **kwargs):
-        from ..models.intelligence_groq import (
-            LLM_MODEL,
-            answer_with_context,
-            groq_configured,
-        )
+        from ..models.intelligence_ask import answer_question
 
         question = (kwargs.get("question") or "").strip()
         if not question:
             return {"success": False, "message": "Enter a question."}
-
-        def _ask_payload(answer, citations, insufficient, extra=None):
-            extra = extra or {}
-            request.env["doc.intelligence.audit.event"].log_event(
-                "query",
-                "asked",
-                detail=question,
-                after=answer[:2000],
-                severity="warning" if insufficient else "info",
-            )
-            data = {
-                "answer": answer,
-                "insufficient_evidence": insufficient,
-                "model": extra.get("model") or LLM_MODEL,
-                "citations": citations,
-                "fact_based": bool(extra.get("fact_based")),
-                "intent": extra.get("intent") or "",
-            }
-            return {"success": True, "data": data}
-
-        from ..models.intelligence_ask import answer_structured
-
-        structured = answer_structured(request.env, question)
-        if structured.get("fact_based"):
-            intent = structured.get("intent") or {}
-            return _ask_payload(
-                structured["answer"],
-                structured.get("citations") or [],
-                structured.get("insufficient_evidence", True),
-                extra={
-                    "model": "structured-fields",
-                    "fact_based": True,
-                    "intent": intent.get("label") or intent.get("kind") or "",
-                },
-            )
-
-        chunks = request.env["doc.intelligence.chunk"].search_similar(question)
-        citations = []
-        evidence = []
-        for chunk in chunks:
-            document = chunk.document_id
-            citations.append(
-                {
-                    "document_id": document.id,
-                    "document": document.name,
-                    "employee": chunk.employee_id.name or "",
-                    "page": chunk.page,
-                    "snippet": (chunk.content or "")[:280],
-                }
-            )
-            evidence.append(
-                "Document: %s | Employee: %s | Page: %s\n%s"
-                % (
-                    document.name,
-                    chunk.employee_id.name or "n/a",
-                    chunk.page,
-                    chunk.content,
-                )
-            )
-        if not evidence:
-            return _ask_payload(
-                "There is not enough approved, indexed evidence to answer. "
-                "Run a dataset, review records, and approve them first.",
-                [],
-                True,
-                extra={"intent": "document_search"},
-            )
-        if not groq_configured(request.env):
-            return _ask_payload(
-                "Matching approved excerpts were found, but GROQ_API_KEY is not "
-                "set so the language model cannot compose an answer. Citations are below.",
-                citations,
-                True,
-                extra={"intent": "document_search"},
-            )
         try:
-            answer = answer_with_context(
-                question, "\n\n".join(evidence[:8]), env=request.env
-            )
+            result = answer_question(request.env, question)
         except Exception as error:
             return {"success": False, "message": str(error)}
-        return _ask_payload(
-            answer,
-            citations,
-            False,
-            extra={"intent": "document_search"},
+        request.env["doc.intelligence.audit.event"].log_event(
+            "query",
+            "asked",
+            detail=question,
+            after=(result.get("answer") or "")[:2000],
+            severity="warning" if result.get("insufficient_evidence") else "info",
         )
+        return {"success": True, "data": result}
+
+    def _conversation(self, kwargs, require=True):
+        record = (
+            request.env["doc.intelligence.conversation"]
+            .browse(int(kwargs.get("id") or kwargs.get("conversation_id") or 0))
+            .exists()
+        )
+        if require and not record:
+            return None
+        return record
+
+    @http.route(
+        "/api/document-intelligence/conversations",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversations(self, **kwargs):
+        domain = []
+        if kwargs.get("saved"):
+            domain.append(("saved", "=", True))
+        if not self._is_admin():
+            domain.append(("user_id", "=", request.env.user.id))
+        term = (kwargs.get("search") or "").strip()
+        if term:
+            domain.append(("name", "ilike", term))
+        records = request.env["doc.intelligence.conversation"].search(domain, limit=50)
+        indexed = request.env["doc.intelligence.chunk"].search_count(
+            [("record_id.review_status", "in", ["approved", "overridden"])]
+        )
+        return {
+            "success": True,
+            "data": {
+                "indexed_count": indexed,
+                "conversations": [item.to_api() for item in records],
+            },
+        }
+
+    @http.route(
+        "/api/document-intelligence/conversations/create",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_create(self, **kwargs):
+        values = {"name": (kwargs.get("name") or "New chat").strip()}
+        if kwargs.get("dataset_id"):
+            values["dataset_id"] = int(kwargs["dataset_id"])
+        conversation = request.env["doc.intelligence.conversation"].create(values)
+        return {"success": True, "data": conversation.to_api(with_messages=True)}
+
+    @http.route(
+        "/api/document-intelligence/conversations/get",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_get(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            conversation._ensure_owner()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": conversation.to_api(with_messages=True)}
+
+    @http.route(
+        "/api/document-intelligence/conversations/save",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_save(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            conversation._ensure_owner()
+            conversation.saved = bool(kwargs.get("saved", True))
+        except (AccessError, UserError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": conversation.to_api()}
+
+    @http.route(
+        "/api/document-intelligence/conversations/update",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_update(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            conversation._ensure_owner()
+            if "dataset_id" in kwargs:
+                conversation.dataset_id = int(kwargs.get("dataset_id") or 0) or False
+            if kwargs.get("name"):
+                conversation.name = kwargs["name"]
+        except (AccessError, UserError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": conversation.to_api(with_messages=True)}
+
+    @http.route(
+        "/api/document-intelligence/conversations/ask",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_ask(self, **kwargs):
+        conversation = self._conversation(kwargs, require=False)
+        if not conversation:
+            conversation = request.env["doc.intelligence.conversation"].create(
+                {"name": "New chat"}
+            )
+        if kwargs.get("dataset_id"):
+            conversation.dataset_id = int(kwargs["dataset_id"])
+        try:
+            payload = conversation.action_ask(kwargs.get("question") or "")
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/conversations/delete",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_delete(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            conversation.action_delete()
+        except (AccessError, UserError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": {"id": int(kwargs.get("id") or 0)}}
+
+    @http.route(
+        "/api/document-intelligence/conversations/ask-stream",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_ask_stream(self, **kwargs):
+        try:
+            body = json.loads(request.httprequest.data or b"{}")
+        except json.JSONDecodeError:
+            body = {}
+        uid = request.env.uid
+        context = dict(request.env.context)
+        registry = request.env.registry
+        conv_id = int(body.get("id") or body.get("conversation_id") or 0)
+        dataset_id = int(body.get("dataset_id") or 0)
+        question = body.get("question") or ""
+
+        def generate():
+            # Odoo closes the request cursor as soon as the controller returns a
+            # generator. Use a dedicated cursor for the whole stream.
+            with registry.cursor() as cr:
+                try:
+                    env = api.Environment(cr, uid, context)
+                    conversation = (
+                        env["doc.intelligence.conversation"].browse(conv_id).exists()
+                    )
+                    if not conversation:
+                        conversation = env["doc.intelligence.conversation"].create(
+                            {"name": "New chat"}
+                        )
+                    if dataset_id:
+                        conversation.dataset_id = dataset_id
+                    for event in conversation.iter_ask_events(question):
+                        yield json.dumps(event) + "\n"
+                    cr.commit()
+                except (AccessError, UserError, ValidationError) as error:
+                    cr.rollback()
+                    yield json.dumps({"event": "error", "message": str(error)}) + "\n"
+                except Exception as error:
+                    cr.rollback()
+                    yield json.dumps({"event": "error", "message": str(error)}) + "\n"
+
+        headers = [
+            ("Content-Type", "application/x-ndjson"),
+            ("Cache-Control", "no-cache"),
+            ("X-Accel-Buffering", "no"),
+        ]
+        return request.make_response(generate(), headers=headers)
+
+    @http.route(
+        "/api/document-intelligence/conversations/attach-library",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_attach_library(self, **kwargs):
+        conversation = self._conversation(kwargs, require=False)
+        if not conversation:
+            conversation = request.env["doc.intelligence.conversation"].create({})
+        try:
+            payload = conversation.action_attach_document(kwargs.get("document_id"))
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/conversations/attach-url",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_attach_url(self, **kwargs):
+        conversation = self._conversation(kwargs, require=False)
+        if not conversation:
+            conversation = request.env["doc.intelligence.conversation"].create({})
+        try:
+            payload = conversation.action_attach_url(kwargs.get("url") or "")
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/conversations/attach-upload",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_attach_upload(self, **kwargs):
+        conversation = self._conversation(kwargs, require=False)
+        if not conversation:
+            conversation = request.env["doc.intelligence.conversation"].create({})
+        try:
+            payload = conversation.action_attach_upload(
+                kwargs.get("name") or "upload",
+                kwargs.get("mimetype") or "application/octet-stream",
+                kwargs.get("data") or "",
+            )
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/library-documents",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def library_documents(self, **kwargs):
+        term = (kwargs.get("search") or "").strip()
+        domain = [("active", "=", True)]
+        if term:
+            domain.append(("name", "ilike", term))
+        documents = request.env["doc.document"].search(domain, limit=40)
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": document.id,
+                    "name": document.name,
+                    "document_type": document.document_type_id.name or "",
+                    "employee": document.employee_id.name or "",
+                }
+                for document in documents
+            ],
+        }

@@ -250,7 +250,149 @@ export const intelligenceDatasetApi = {
         user: string;
       }>
     >("/api/document-intelligence/ask/history"),
+  conversations: (params: Record<string, unknown> = {}) =>
+    unwrap<{
+      indexed_count: number;
+      conversations: IntelligenceConversation[];
+    }>("/api/document-intelligence/conversations", params),
+  conversationGet: (id: number) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/get",
+      { id },
+    ),
+  conversationCreate: (payload: Record<string, unknown> = {}) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/create",
+      payload,
+    ),
+  conversationSave: (id: number, saved: boolean) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/save",
+      { id, saved },
+    ),
+  conversationUpdate: (payload: Record<string, unknown>) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/update",
+      payload,
+    ),
+  conversationAsk: (payload: {
+    id?: number;
+    question: string;
+    dataset_id?: number;
+  }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/ask",
+      payload,
+    ),
+  conversationDelete: (id: number) =>
+    unwrap<{ id: number }>("/api/document-intelligence/conversations/delete", {
+      id,
+    }),
+  conversationAskStream: async (
+    payload: { id?: number; question: string; dataset_id?: number },
+    onEvent: (event: Record<string, unknown>) => void,
+  ) => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_ODOO_URL || ""}/api/document-intelligence/conversations/ask-stream`,
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+    if (!response.ok || !response.body) {
+      throw new Error("The answer could not be streamed.");
+    }
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.trim()) {
+          continue;
+        }
+        onEvent(JSON.parse(line) as Record<string, unknown>);
+      }
+    }
+    if (buffer.trim()) {
+      onEvent(JSON.parse(buffer) as Record<string, unknown>);
+    }
+  },
+  conversationAttachLibrary: (payload: { id?: number; document_id: number }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/attach-library",
+      payload,
+    ),
+  conversationAttachUrl: (payload: { id?: number; url: string }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/attach-url",
+      payload,
+    ),
+  conversationAttachUpload: (payload: {
+    id?: number;
+    name: string;
+    mimetype: string;
+    data: string;
+  }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/attach-upload",
+      payload,
+    ),
+  libraryDocuments: (search = "") =>
+    unwrap<
+      Array<{
+        id: number;
+        name: string;
+        document_type: string;
+        employee: string;
+      }>
+    >("/api/document-intelligence/library-documents", { search }),
 };
+
+export interface IntelligenceChatMessage {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  citations: Array<{
+    document_id: number;
+    document: string;
+    employee: string;
+    page: number;
+    field?: string;
+    snippet: string;
+  }>;
+  intent: string;
+  fact_based: boolean;
+  model: string;
+  insufficient_evidence: boolean;
+  create_date: string;
+}
+
+export interface IntelligenceConversation {
+  id: number;
+  name: string;
+  saved: boolean;
+  dataset_id: number | false;
+  dataset: string;
+  write_date: string;
+  preview: string;
+  sources: Array<{
+    id: number;
+    kind: string;
+    name: string;
+    url: string;
+    document_id: number;
+  }>;
+  messages?: IntelligenceChatMessage[];
+}
 
 export interface IntelligenceAuditEvent {
   id: number;

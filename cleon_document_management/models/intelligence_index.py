@@ -130,10 +130,12 @@ class IntelligenceChunk(models.Model):
         return chunks
 
     @api.model
-    def search_similar(self, question, limit=8):
+    def search_similar(self, question, limit=8, dataset_id=None):
         domain = [
             ("record_id.review_status", "in", ["approved", "overridden"]),
         ]
+        if dataset_id:
+            domain.append(("record_id.dataset_id", "=", int(dataset_id)))
         user = self.env.user
         is_admin = user.has_group("base.group_system") or user.has_group(
             "cleon_document_management.group_document_admin"
