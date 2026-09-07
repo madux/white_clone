@@ -1,5 +1,5 @@
 
-.sdir-fp-wrapper { height: 100vh; overflow: hidden; background-color: rgb(248, 249, 251); font-family: Inter, sans-serif; position: absolute; top: 0; left: 0; right: 0; z-index: 900; }
+.sdir-fp-wrapper { height: 100vh; overflow: hidden; background-color: rgb(248, 249, 251); font-family: Inter, sans-serif; position: fixed; top: 0; left: 0; right: 0; z-index: 900; }
 .sdir-fp-header { height: 80px; background-color: rgb(233, 30, 140); position: relative; display: flex; align-items: center; justify-content: space-between; padding: 0px 20px; }
 .sdir-fp-back-btn { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0px 16px; border-radius: 99px; border: none; background-color: rgba(255, 255, 255, 0.22); color: rgb(255, 255, 255); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
 .sdir-fp-back-btn:hover { background-color: rgba(255, 255, 255, 0.3); }
