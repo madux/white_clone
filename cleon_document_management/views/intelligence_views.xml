@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_doc_intelligence_profile_list" model="ir.ui.view">
+        <field name="name">doc.intelligence.profile.list</field>
+        <field name="model">doc.intelligence.profile</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="document_type_id"/>
+                <field name="current_version_id"/>
+                <field name="is_system"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_doc_intelligence_profile_form" model="ir.ui.view">
+        <field name="name">doc.intelligence.profile.form</field>
+        <field name="model">doc.intelligence.profile</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_new_version" type="object" string="New Version"/>
+                    <button name="action_archive" type="object" string="Archive" invisible="not active"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="document_type_id"/>
+                        <field name="current_version_id"/>
+                        <field name="is_system"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_doc_intelligence_profile" model="ir.actions.act_window">
+        <field name="name">Extraction Profiles</field>
+        <field name="res_model">doc.intelligence.profile</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem
+        id="menu_intelligence_profile"
+        name="Extraction Profiles"
+        parent="menu_document_configuration"
+        action="action_doc_intelligence_profile"
+        sequence="5"
+        groups="base.group_system"/>
+    <record id="action_doc_intelligence_dataset" model="ir.actions.act_window">
+        <field name="name">Intelligence Datasets</field>
+        <field name="res_model">doc.intelligence.dataset</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem
+        id="menu_intelligence_dataset"
+        name="Intelligence Datasets"
+        parent="menu_document_configuration"
+        action="action_doc_intelligence_dataset"
+        sequence="6"
+        groups="base.group_system"/>
+</odoo>

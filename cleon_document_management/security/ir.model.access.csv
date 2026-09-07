@@ -34,3 +34,23 @@ access_doc_compliance_evaluation_admin,doc.compliance.evaluation admin,model_doc
 access_doc_compliance_evaluation_line_user,doc.compliance.evaluation.line user,model_doc_compliance_evaluation_line,cleon_document_management.group_document_user,1,0,0,0
 access_doc_compliance_evaluation_line_admin,doc.compliance.evaluation.line admin,model_doc_compliance_evaluation_line,cleon_document_management.group_document_admin,1,1,1,1
 
+access_doc_intelligence_profile_user,doc.intelligence.profile user,model_doc_intelligence_profile,base.group_user,1,0,0,0
+access_doc_intelligence_profile_admin,doc.intelligence.profile admin,model_doc_intelligence_profile,base.group_system,1,1,1,1
+access_doc_intelligence_profile_docadmin,doc.intelligence.profile docadmin,model_doc_intelligence_profile,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_version_user,doc.intelligence.profile.version user,model_doc_intelligence_profile_version,base.group_user,1,0,0,0
+access_doc_intelligence_version_admin,doc.intelligence.profile.version admin,model_doc_intelligence_profile_version,base.group_system,1,1,1,1
+access_doc_intelligence_version_docadmin,doc.intelligence.profile.version docadmin,model_doc_intelligence_profile_version,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_field_user,doc.intelligence.field user,model_doc_intelligence_field,base.group_user,1,0,0,0
+access_doc_intelligence_field_admin,doc.intelligence.field admin,model_doc_intelligence_field,base.group_system,1,1,1,1
+access_doc_intelligence_field_docadmin,doc.intelligence.field docadmin,model_doc_intelligence_field,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_dataset_user,doc.intelligence.dataset user,model_doc_intelligence_dataset,base.group_user,1,1,1,0
+access_doc_intelligence_dataset_admin,doc.intelligence.dataset admin,model_doc_intelligence_dataset,base.group_system,1,1,1,1
+access_doc_intelligence_job_user,doc.intelligence.job user,model_doc_intelligence_job,base.group_user,1,1,1,0
+access_doc_intelligence_job_admin,doc.intelligence.job admin,model_doc_intelligence_job,base.group_system,1,1,1,1
+access_doc_intelligence_record_user,doc.intelligence.record user,model_doc_intelligence_record,base.group_user,1,1,1,0
+access_doc_intelligence_record_admin,doc.intelligence.record admin,model_doc_intelligence_record,base.group_system,1,1,1,1
+access_doc_intelligence_extracted_user,doc.intelligence.extracted.field user,model_doc_intelligence_extracted_field,base.group_user,1,1,1,0
+access_doc_intelligence_extracted_admin,doc.intelligence.extracted.field admin,model_doc_intelligence_extracted_field,base.group_system,1,1,1,1
+access_doc_intelligence_issue_user,doc.intelligence.validation.issue user,model_doc_intelligence_validation_issue,base.group_user,1,1,1,0
+access_doc_intelligence_issue_admin,doc.intelligence.validation.issue admin,model_doc_intelligence_validation_issue,base.group_system,1,1,1,1
+

@@ -54,3 +54,21 @@ class DocumentType(models.Model):
         "folder_id",
         string="Allowed Folders",
     )
+
+    intelligence_scope = fields.Selection(
+        [
+            ("employee", "Employee"),
+            ("organization", "Organization"),
+        ],
+        string="Intelligence Scope",
+        default="employee",
+    )
+    classification_labels = fields.Text(
+        string="Classification Labels",
+        help="Example phrases used to classify this document type.",
+    )
+    default_profile_id = fields.Many2one(
+        "doc.intelligence.profile",
+        string="Default Extraction Profile",
+        ondelete="set null",
+    )
