@@ -43,8 +43,11 @@ class DocumentFolderActions(http.Controller):
         elif action == "restore":
             folder.action_restore()
         elif action == "permanent_delete":
-            folder.document_ids.unlink()
-            folder.unlink()
+            # A folder is a parent record. Remove its documents first, then
+            # stop immediately so we do not serialize a deleted record.
+            folder.document_ids.sudo().unlink()
+            folder.sudo().unlink()
+            return {"success": True, "message": "Folder permanently deleted."}
         elif action == "duplicate":
             folder = folder.action_duplicate()
         elif action == "share":
@@ -63,6 +66,27 @@ class DocumentFolderActions(http.Controller):
             return {"success": False, "message": "Unsupported folder action."}
 
         return {"success": True, "data": self._folder(folder)}
+
+    @http.route("/api/folder/remove-employees", type="json", auth="user", methods=["POST"], csrf=False)
+    def remove_employees_from_folder(self, id=None, employee_ids=None, **kwargs):
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Document manager access is required."}
+        folder = request.env["doc.folder"].browse(int(id or 0)).exists()
+        if not folder or folder.folder_type != "employee":
+            return {"success": False, "message": "Employee folder not found."}
+        ids = [int(value) for value in (employee_ids or [])]
+        if not ids:
+            return {"success": False, "message": "Select at least one employee."}
+        removed = folder.employee_ids.filtered(lambda employee: employee.id in ids)
+        if removed:
+            # Employee folders are the employee's personal document space;
+            # removing the employee also removes all of their personal files.
+            request.env["doc.document"].sudo().search([
+                ("folder_id.folder_type", "=", "employee"),
+                ("employee_id", "in", removed.ids),
+            ]).unlink()
+            folder.write({"employee_ids": [fields.Command.unlink(employee.id) for employee in removed]})
+        return {"success": True, "employee_ids": folder.employee_ids.ids}
 
     @http.route("/api/folder-lifecycle", type="json", auth="user", methods=["POST"], csrf=False)
     def folder_lifecycle(self, lifecycle="archived", **kwargs):

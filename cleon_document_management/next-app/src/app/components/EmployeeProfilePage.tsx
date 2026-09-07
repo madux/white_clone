@@ -52,8 +52,9 @@ export default function EmployeeProfilePage() {
   const [rejectReason, setRejectReason] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadType, setUploadType] = useState("");
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadTypes, setUploadTypes] = useState<string[]>([]);
+  const [bulkUploadType, setBulkUploadType] = useState("");
   const [uploadError, setUploadError] = useState("");
   const employeeId = Number(params.get("employee"));
   const employeeDocuments = useMemo(
@@ -414,19 +415,20 @@ export default function EmployeeProfilePage() {
           <form
             onSubmit={async (event) => {
               event.preventDefault();
-              if (!uploadFile || !uploadType || !employeeId) return;
+              if (!uploadFiles.length || uploadTypes.some((id) => !id) || !employeeId) return;
               setUploadError("");
               try {
                 const response = await uploadEmployeeDocument.mutateAsync({
-                  file: uploadFile,
+                  files: uploadFiles,
                   employee_id: employeeId,
-                  document_type_id: Number(uploadType),
+                  document_type_ids: uploadTypes.map(Number),
                 });
                 if (!response.success || !response.data?.id) {
                   throw new Error(response.message || "The document could not be uploaded.");
                 }
-                setUploadFile(null);
-                setUploadType("");
+                setUploadFiles([]);
+                setUploadTypes([]);
+                setBulkUploadType("");
                 setShowUpload(false);
               } catch (error: any) {
                 setUploadError(error?.message || "The document could not be uploaded.");
@@ -437,39 +439,34 @@ export default function EmployeeProfilePage() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">Employee files</p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">Upload document</h2>
-                <p className="mt-1 text-sm text-slate-500">Upload a file directly to this employee’s records.</p>
+                <h2 className="mt-1 text-xl font-bold text-slate-900">Upload documents</h2>
+                <p className="mt-1 text-sm text-slate-500">Upload one or more files directly to this employee’s records.</p>
               </div>
               <button type="button" onClick={() => setShowUpload(false)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X className="h-5 w-5" /></button>
             </div>
             <label className="mt-5 block">
-              <span className="label">File</span>
+              <span className="label">Files</span>
               <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
-                <Upload className="h-5 w-5" />{uploadFile?.name ?? "Choose a file from your computer"}
-                <input required type="file" onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)} className="hidden" />
+                <Upload className="h-5 w-5" />{uploadFiles.length ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected` : "Choose files from your computer"}
+                <input required multiple type="file" onChange={(event) => { const next = Array.from(event.target.files ?? []); setUploadFiles(next); setUploadTypes(next.map((_, index) => uploadTypes[index] ?? "")); }} className="hidden" />
               </span>
             </label>
-            <div className="mt-4 flex items-end gap-2">
-              <label className="min-w-0 flex-1">
-                <span className="label">Document type</span>
-                <ThemedSelect
-                  value={uploadType}
-                  onChange={setUploadType}
-                  placeholder="Select document type"
-                  options={(availableDocumentTypes.data ?? []).map((type) => ({
-                    value: String(type.id),
-                    label: type.name,
-                  }))}
-                />
-              </label>
-              <InlineDocumentTypeCreator
-                onCreated={(type) => setUploadType(String(type.id))}
-              />
-            </div>
+            {uploadFiles.length > 0 && <div className="mt-4 space-y-2"><div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400"><span>File name</span><span>Document type</span></div>{uploadFiles.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"><span title={file.name} className="min-w-0 truncate text-sm font-medium text-slate-700">{file.name}</span><ThemedSelect value={uploadTypes[index] ?? ""} onChange={(value) => setUploadTypes((current) => current.map((item, i) => i === index ? value : item))} placeholder="Document type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} /></div>)}<button type="button" className="text-xs font-bold text-brand-pink" onClick={() => { const value = uploadTypes[0] ?? ""; setUploadTypes(uploadFiles.map(() => value)); }}>Apply first type to all</button></div>}
+            <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary>
+              <div className="mt-3 flex items-end gap-2">
+                <label className="min-w-0 flex-1">
+                  <span className="label">Use one document type for all files</span>
+                  <ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />
+                </label>
+                <InlineDocumentTypeCreator onCreated={(type) => setBulkUploadType(String(type.id))} />
+                <button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button>
+              </div>
+            </details>
             {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
-              <button disabled={uploadEmployeeDocument.isPending || !uploadFile || !uploadType} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{uploadEmployeeDocument.isPending ? "Uploading..." : "Upload document"}</button>
+              <button disabled={uploadEmployeeDocument.isPending || !uploadFiles.length || uploadTypes.some((id) => !id)} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{uploadEmployeeDocument.isPending ? "Uploading..." : "Upload documents"}</button>
             </div>
           </form>
         </div>

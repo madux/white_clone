@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_company_documentary_folder" model="ir.actions.act_window">
+        <field name="name">Documentary Folders</field>
+        <field name="res_model">company.documentary.folder</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <record id="action_company_documentary_media" model="ir.actions.act_window">
+        <field name="name">Videos</field>
+        <field name="res_model">company.documentary.media</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <record id="action_company_documentary_tags" model="ir.actions.act_window">
+        <field name="name">Video Tags</field>
+        <field name="res_model">company.documentary.tag</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <record id="action_company_documentary_workspace" model="ir.actions.act_url">
+        <field name="name">Company Documentary Workspace</field>
+        <field name="url">/company-documentary</field>
+        <field name="target">self</field>
+    </record>
+
+    <menuitem id="menu_company_documentary_root" name="Company Documentary" action="action_company_documentary_workspace" sequence="20" groups="cleon_company_documentary.group_company_documentary_user"/>
+    <menuitem id="menu_company_documentary_workspace" name="Workspace" parent="menu_company_documentary_root" action="action_company_documentary_workspace" sequence="1" groups="cleon_company_documentary.group_company_documentary_user"/>
+    <menuitem id="menu_company_documentary_folders" name="Folders" parent="menu_company_documentary_root" action="action_company_documentary_folder" sequence="2" groups="cleon_company_documentary.group_company_documentary_manager"/>
+    <menuitem id="menu_company_documentary_media" name="Videos" parent="menu_company_documentary_root" action="action_company_documentary_media" sequence="3" groups="cleon_company_documentary.group_company_documentary_manager"/>
+    <menuitem id="menu_company_documentary_tags" name="Video Tags" parent="menu_company_documentary_root" action="action_company_documentary_tags" sequence="4" groups="cleon_company_documentary.group_company_documentary_manager"/>
+</odoo>

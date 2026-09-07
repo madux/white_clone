@@ -17,7 +17,8 @@ export default function DocumentActions({ documentId, documentName, active, orga
   useEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    setPosition({ top: rect.bottom + 8, right: Math.max(12, window.innerWidth - rect.right) });
+    const menuHeight = organizational ? 250 : 190;
+    setPosition({ top: Math.max(12, rect.top - menuHeight - 8), right: Math.max(12, window.innerWidth - rect.right) });
   }, [open]);
 
   const run = async (name: "favorite" | "pin" | "delete" | "archive" | "activate" | "deactivate") => {

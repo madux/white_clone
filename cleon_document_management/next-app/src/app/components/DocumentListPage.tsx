@@ -79,11 +79,6 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         const folderDocuments = (documents.data ?? []).filter(
           (document) => document.folder_id === folder.id,
         );
-        const employeeIds = new Set(
-          folderDocuments
-            .map((document) => document.employee_id)
-            .filter(Boolean),
-        );
         const approved = folderDocuments.filter(
           (document) =>
             document.approval_state === "approved" ||
@@ -92,7 +87,9 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         return {
           folder,
           documents: folderDocuments,
-          employees: employeeIds.size,
+          // Employee membership belongs to the folder, not to its current
+          // documents. Deleting the last file must not remove the employee.
+          employees: folder.employee_ids?.length ?? 0,
           compliance: folderDocuments.length
             ? Math.round((approved / folderDocuments.length) * 100)
             : 0,
