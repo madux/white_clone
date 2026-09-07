@@ -44,6 +44,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const documents = useDocuments();
   const currentUser = useCurrentUser();
   const params = useSearchParams();
+  const guideTarget = params.get("guide");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<number[]>([]);
@@ -149,7 +150,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             <button
               type="button"
               onClick={() => setShowCreateFolder(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 transition hover:shadow-pink-300"
+              className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 transition hover:shadow-pink-300 ${guideTarget === "folders" ? "guide-emphasis" : ""}`}
             >
               <FilePlus2 className="h-4 w-4" />
               Create Folder
@@ -298,7 +299,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                             </Link>
                           ) : (
                             <Link
-                              href={`/pages/organization/folder?folder=${folder.id}`}
+                              href={`/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`}
                               className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-pink/20"
                             >
                               <div className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
@@ -362,7 +363,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                               </Link>
                             ) : (
                               <Link
-                                href={`/pages/organization/folder?folder=${folder.id}`}
+                                href={`/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`}
                                 aria-label={`Open ${folder.folder_name}`}
                                 className="rounded-full p-1 text-slate-400 transition hover:bg-pink-50 hover:text-brand-pink"
                               >
@@ -423,7 +424,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
                       href={
                         kind === "employee"
                           ? `/pages/employee/folder?folder=${folder.id}`
-                          : `/pages/organization/folder?folder=${folder.id}`
+                          : `/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`
                       }
                       className="hover:text-brand-pink"
                     >

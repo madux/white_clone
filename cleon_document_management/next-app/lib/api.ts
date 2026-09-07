@@ -9,6 +9,7 @@ import type {
   User,
   AdminAttention,
   ApprovalInbox,
+  OnboardingState,
   QuickAccess,
   DashboardStats,
   DocumentType,
@@ -313,6 +314,18 @@ export const api = {
     rpc<{ success: boolean; data: ApprovalInbox }>(
       "/api/admin-approval-inbox",
       {},
+    ),
+
+  getOnboarding: () =>
+    rpc<{ success: boolean; data: OnboardingState }>("/api/onboarding", {}),
+
+  updateOnboarding: (payload: {
+    action: "complete_step" | "complete" | "dismiss" | "reset";
+    step_id?: string;
+  }) =>
+    rpc<{ success: boolean; data: OnboardingState; message?: string }>(
+      "/api/onboarding/update",
+      payload,
     ),
 
   reviewDocument: (payload: {
