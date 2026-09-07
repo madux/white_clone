@@ -17,6 +17,7 @@ export const QUERY_KEYS = {
   complianceTargets: ["complianceTargets"],
   exceptions: ["compliance", "exceptions"],
   evaluations: ["compliance", "evaluations"],
+  approvalInbox: ["admin", "approval-inbox"],
 };
 
 export function useCurrentUser() {
@@ -74,6 +75,15 @@ export function useMyWorkspace() {
 
 export function useAdminAttention(enabled = true) {
   return useQuery({ queryKey: ["admin", "attention"], queryFn: () => api.getAdminAttention().then((result) => result.data), enabled, refetchInterval: 30000 });
+}
+
+export function useApprovalInbox(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.approvalInbox,
+    queryFn: () => api.getApprovalInbox().then((result) => result.data),
+    enabled,
+    refetchInterval: 30000,
+  });
 }
 
 export function useQuickAccess() {

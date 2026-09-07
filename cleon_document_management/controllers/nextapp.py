@@ -1,8 +1,6 @@
 import json
 import os
 import logging
-import urllib.request
-import urllib.error
 from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
@@ -11,17 +9,14 @@ _logger = logging.getLogger(__name__)
 
 MODULE = "cleon_document_management"
 NEXTAPP_STATIC_DIR = "static/src/nextapp"
-NEXT_DEV_SERVER = "http://localhost:3030"
 
 
 class NextAppController(http.Controller):
     """
     Serves Next.js frontend mounted at /document-management.
 
-    - In Dev Mode (NEXTAPP_DEV environment variable set):
-      Proxies requests live to Next.js dev server at http://localhost:3030 for HMR.
-    - In Production Mode:
-      Serves static exported HTML from static/src/nextapp.
+    Serves the static exported HTML from static/src/nextapp and injects the
+    authenticated Odoo user before the page hydrates.
     """
 
     @staticmethod
@@ -70,39 +65,6 @@ class NextAppController(http.Controller):
     def serve_nextapp(self, subpath="", **kw):
         user = request.env.user
 
-        if os.getenv("NEXTAPP_DEV"):
-            target_url = f"{NEXT_DEV_SERVER}/document-management/{subpath}".rstrip("/")
-            if not subpath:
-                target_url = f"{NEXT_DEV_SERVER}/document-management"
-
-            # Forward cookies to preserve session
-            headers = {"Cookie": request.httprequest.headers.get("Cookie", "")}
-            req = urllib.request.Request(target_url, headers=headers)
-
-            try:
-                with urllib.request.urlopen(req, timeout=5) as resp:
-                    content_type = resp.headers.get("Content-Type", "text/html")
-                    content = resp.read()
-
-                    # Inject __ODOO_USER__ into HTML pages in Dev Mode
-                    if "text/html" in content_type:
-                        html_str = content.decode("utf-8", errors="ignore")
-                        html_str = self._inject_user(html_str, user)
-                        content = html_str.encode("utf-8")
-
-                    return request.make_response(
-                        content,
-                        headers=[("Content-Type", content_type)],
-                    )
-            except Exception as e:
-                _logger.warning("Next.js dev server error: %s", e)
-                return request.make_response(
-                    f"<h2>Next.js Dev Server not reachable at {NEXT_DEV_SERVER}</h2>"
-                    f"<p>Run <code>npm run dev</code> inside <code>next-app</code> folder.</p>",
-                    headers=[("Content-Type", "text/html; charset=utf-8")],
-                    status=502,
-                )
-
         is_next_metadata = subpath.endswith(".txt")
         html_path = subpath if is_next_metadata else (f"{subpath}/index.html" if subpath else "index.html")
         html = self._read_html(html_path)
@@ -133,7 +95,6 @@ class NextAppController(http.Controller):
         auth="user",
         methods=["POST"],
         csrf=False,
-        cors="http://localhost:3030",
     )
     def api_me(self, **kwargs):
         try:
@@ -163,7 +124,7 @@ class NextAppController(http.Controller):
         """In-app attention items for managers; separate from Odoo's chatter UI."""
         user = request.env.user
         if not user.has_group("cleon_document_management.group_document_manager"):
-            return {"success": True, "data": {"count": 0, "notifications": [], "mailbox": []}}
+            return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
             [("state", "in", ["pending", "waiting"]), "|", ("approver_id", "=", user.id), ("document_id.folder_id.require_upload_approval", "=", True)],
             order="create_date desc",
@@ -174,7 +135,54 @@ class NextAppController(http.Controller):
             employee = document.employee_id.name if document.employee_id else "an employee"
             message = f"Hello {user.name}, your attention is required to approve or reject {employee} file they just uploaded."
             items.append({"id": approval.id, "document_id": document.id, "employee_id": document.employee_id.id or 0, "document": document.name, "employee": employee, "message": message, "created_at": approval.create_date})
-        return {"success": True, "data": {"count": len(items), "notifications": items, "mailbox": items}}
+        return {"success": True, "data": {"count": len(items), "notifications": items}}
+
+    @http.route(
+        "/api/admin-approval-inbox",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_admin_approval_inbox(self, **kwargs):
+        """Return approval tasks that are ready for the current manager's decision."""
+        user = request.env.user
+        if not user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": True, "data": {"count": 0, "items": []}}
+
+        approvals = request.env["doc.document.approval"].search(
+            [
+                ("approver_id", "=", user.id),
+                ("state", "=", "pending"),
+                ("document_id.active", "=", True),
+                ("document_id.deleted_at", "=", False),
+            ],
+            order="create_date desc, sequence asc",
+        )
+        items = []
+        for approval in approvals:
+            document = approval.document_id
+            if not document.exists():
+                continue
+            employee = document.employee_id.name if document.employee_id else "Organization"
+            items.append(
+                {
+                    "id": approval.id,
+                    "approval_id": approval.id,
+                    "document_id": document.id,
+                    "employee_id": document.employee_id.id if document.employee_id else 0,
+                    "document": document.name,
+                    "document_type": document.document_type_id.name,
+                    "employee": employee,
+                    "folder_id": document.folder_id.id,
+                    "folder_type": document.folder_id.folder_type,
+                    "sequence": approval.sequence,
+                    "state": approval.state,
+                    "message": f"{employee} submitted {document.name} for your approval.",
+                    "created_at": approval.create_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
 
     @http.route(
         "/api/dashboard-stats", type="json", auth="user", methods=["POST"], csrf=False

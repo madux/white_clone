@@ -30,7 +30,7 @@ import {
   useRequestDocumentApproval,
   useUploadMyDocument,
 } from "../../../hooks/useDocuments";
-import { api, useTestData } from "../../../lib/api";
+import { api } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
@@ -110,13 +110,21 @@ function DocumentTable({
                   {document.document_type}
                 </td>
                 <td className="px-5 py-4">
+                  {(() => {
+                    const requiresApproval = document.approval_state === "pending";
+                    const statusKey = requiresApproval ? "pending" : document.state;
+                    return (
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[document.state] || states.draft}`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft}`}
                   >
                     {shared && document.acknowledged
                       ? "Acknowledged"
-                      : document.state}
+                      : requiresApproval
+                        ? "Requires approval"
+                        : document.state}
                   </span>
+                    );
+                  })()}
                 </td>
                 <td className="px-5 py-4 text-sm text-slate-500">
                   {shared
@@ -730,14 +738,14 @@ export default function MyDocumentsPage() {
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-hidden bg-slate-100 p-5">
-              {useTestData || viewing.id < 0 ? (
+              {viewing.id < 0 ? (
                 <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
                   <FileText className="h-9 w-9 text-brand-pink" />
                   <h3 className="mt-4 text-lg font-bold text-slate-900">
                     {viewing.name}
                   </h3>
                   <p className="mt-2 text-sm leading-7 text-slate-600">
-                    {viewing.description || "Test document preview."}
+                    {viewing.description || "This document has not been uploaded yet."}
                   </p>
                 </div>
               ) : (

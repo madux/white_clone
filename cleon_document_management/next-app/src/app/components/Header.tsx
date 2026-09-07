@@ -7,12 +7,27 @@ import {
   useComplianceTargets,
   useCurrentUser,
   useAdminAttention,
+  useApprovalInbox,
   useDocuments,
   useFolders,
   usePolicies,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
 import { useClickOutside } from "../../../hooks/useClickOutside";
+import type { AdminAttention, ApprovalInboxItem } from "../../../lib/types";
+
+type AttentionItem = AdminAttention["notifications"][number] | ApprovalInboxItem;
+
+function attentionHref(item: AttentionItem) {
+  if ("folder_id" in item) {
+    return item.folder_type === "employee" && item.employee_id
+      ? `/pages/employee/profile?employee=${item.employee_id}`
+      : `/pages/organization/folder?folder=${item.folder_id}`;
+  }
+  return item.employee_id
+    ? `/pages/employee/profile?employee=${item.employee_id}`
+    : "/pages/employee";
+}
 
 function UserWidget() {
   const { data: user, isPending, isError } = useCurrentUser();
@@ -107,8 +122,10 @@ export default function Header() {
   const targets = useComplianceTargets();
   const policies = usePolicies();
   const currentUser = useCurrentUser();
-  const attention = useAdminAttention(Boolean(currentUser.data?.is_document_manager));
-  const [attentionOpen, setAttentionOpen] = useState<"mail" | "notifications" | null>(null);
+  const isDocumentManager = Boolean(currentUser.data?.is_document_manager);
+  const attention = useAdminAttention(isDocumentManager);
+  const approvalInbox = useApprovalInbox(isDocumentManager);
+  const [attentionOpen, setAttentionOpen] = useState<"approval-inbox" | "notifications" | null>(null);
   const attentionRef = useRef<HTMLDivElement>(null);
   useClickOutside(searchRef, () => setSearchOpen(false));
   useClickOutside(attentionRef, () => setAttentionOpen(null));
@@ -170,9 +187,12 @@ export default function Header() {
     ];
     return items.slice(0, 12);
   }, [documents.data, folders.data, policies.data, query, targets.data]);
-  const attentionItems = attentionOpen === "mail"
-    ? attention.data?.mailbox ?? []
+  const attentionItems = attentionOpen === "approval-inbox"
+    ? approvalInbox.data?.items ?? []
     : attention.data?.notifications ?? [];
+  const panelCount = attentionOpen === "approval-inbox"
+    ? approvalInbox.data?.count ?? 0
+    : attention.data?.count ?? 0;
   return (
     <header className="mx-auto mt-2 w-full max-w-[1650px] rounded-2xl border border-slate-200 bg-white px-6 py-3.5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
@@ -247,16 +267,16 @@ export default function Header() {
 
         {/* Actions & Profile */}
         <div ref={attentionRef} className="relative flex items-center gap-2 sm:gap-3">
-          {currentUser.data?.is_document_manager && <>
+          {isDocumentManager && <>
           <button
             type="button"
-            onClick={() => setAttentionOpen(attentionOpen === "mail" ? null : "mail")}
-            aria-label="Open messages"
+            onClick={() => setAttentionOpen(attentionOpen === "approval-inbox" ? null : "approval-inbox")}
+            aria-label="Open approval inbox"
             className="relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink"
-            title="Messages"
+            title="Approval inbox"
           >
             <Mail className="h-5 w-5" />
-            {!!attention.data?.count && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{attention.data.count}</span>}
+            {!!approvalInbox.data?.count && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{approvalInbox.data.count}</span>}
           </button>
           <button
             type="button"
@@ -268,7 +288,7 @@ export default function Header() {
             <Bell className="h-5 w-5" />
             {!!attention.data?.count && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{attention.data.count}</span>}
           </button>
-          {attentionOpen && <div className="absolute right-0 top-12 z-[110] w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3"><strong className="text-sm text-slate-900">{attentionOpen === "mail" ? "Mailbox" : "Notifications"}</strong><span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">{attention.data?.count ?? 0} pending</span></div><div className="max-h-80 overflow-y-auto">{attentionItems.map((item) => <Link key={`${attentionOpen}-${item.id}`} href={item.employee_id ? `/pages/employee/profile?employee=${item.employee_id}` : `/pages/employee`} onClick={() => setAttentionOpen(null)} className="block border-b border-slate-50 px-2 py-3 hover:bg-pink-50/50"><p className="text-xs font-semibold leading-5 text-slate-700">{item.message}</p><p className="mt-1 text-[10px] text-slate-400">{item.document}</p></Link>)}{!attention.data?.count && <p className="px-2 py-8 text-center text-xs text-slate-400">No actions require your attention.</p>}</div></div>}
+          {attentionOpen && <div className="absolute right-0 top-12 z-[110] w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3"><div><strong className="text-sm text-slate-900">{attentionOpen === "approval-inbox" ? "Approval Inbox" : "Notifications"}</strong><p className="mt-0.5 text-[11px] text-slate-400">{attentionOpen === "approval-inbox" ? "Documents ready for your decision" : "Workspace activity requiring attention"}</p></div><span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">{panelCount} {attentionOpen === "approval-inbox" ? "ready" : "pending"}</span></div><div className="max-h-80 overflow-y-auto">{attentionItems.map((item) => <Link key={`${attentionOpen}-${item.id}`} href={attentionHref(item)} onClick={() => setAttentionOpen(null)} className="block border-b border-slate-50 px-2 py-3 hover:bg-pink-50/50"><p className="text-xs font-semibold leading-5 text-slate-700">{item.message}</p><p className="mt-1 text-[10px] text-slate-400">{item.document}{"document_type" in item ? ` · ${item.document_type}` : ""}</p></Link>)}{!panelCount && <p className="px-2 py-8 text-center text-xs text-slate-400">{attentionOpen === "approval-inbox" ? "No approval tasks are assigned to you." : "No actions require your attention."}</p>}</div></div>}
           </>}
           <div className="h-4 w-[1px] bg-slate-200" />
           <UserWidget />

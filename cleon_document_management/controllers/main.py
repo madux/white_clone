@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime, timedelta
 from odoo import _, fields, http
-from odoo.http import request, Response
+from odoo.http import request
 from odoo.modules.module import get_resource_path
 from odoo.osv import expression
 import base64
@@ -273,22 +273,6 @@ class DocumentUICreation(http.Controller):
             ",".join(str(value) for value in approver_ids),
         )
         return {"success": True, "data": self._settings_values()}
-
-    @http.route(
-        [
-            "/document-management/_next/hmr",
-            "/_next/hmr",
-            "/<path:path>/_next/hmr",
-        ],
-        type="http",
-        auth="public",
-        csrf=False,
-        cors="*",
-        save_session=False,
-    )
-    def hmr_noop(self, **kwargs):
-        """Intercept Next.js WebSocket/EventSource HMR pings to keep Werkzeug logs clean."""
-        return Response(status=204)
 
     @http.route(
         "/api/create-folder", type="json", auth="user", methods=["POST"], csrf=False
