@@ -283,28 +283,29 @@
                                             <h3 class="sdir-fp-card-title">Certifications</h3>
                                         </div>
                                     </div>
-                                    <div class="sdir-fp-list-container">
-                                        <div class="sdir-fp-list-item">
-                                            <div class="sdir-fp-cert-icon-box">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
-                                            </div>
-                                            <div class="sdir-fp-list-info">
-                                                <p class="sdir-fp-list-title">Google Cloud Professional</p>
-                                                <p class="sdir-fp-list-subtitle">Google Cloud</p>
-                                            </div>
-                                            <span class="sdir-fp-cert-year">2022</span>
+                                    <t t-if="props.activeProfile.certifications and props.activeProfile.certifications.length > 0">
+                                        <div class="sdir-fp-list-container">
+                                            <t t-foreach="props.activeProfile.certifications" t-as="cert" t-key="cert_index">
+                                                <div class="sdir-fp-list-item">
+                                                    <div class="sdir-fp-cert-icon-box">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+                                                    </div>
+                                                    <div class="sdir-fp-list-info">
+                                                        <p class="sdir-fp-list-title"><t t-esc="cert.title"/></p>
+                                                        <p class="sdir-fp-list-subtitle" t-if="cert.subtitle"><t t-esc="cert.subtitle"/></p>
+                                                    </div>
+                                                    <span class="sdir-fp-cert-year" t-if="cert.year"><t t-esc="cert.year"/></span>
+                                                </div>
+                                            </t>
                                         </div>
-                                        <div class="sdir-fp-list-item">
-                                            <div class="sdir-fp-cert-icon-box">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
-                                            </div>
-                                            <div class="sdir-fp-list-info">
-                                                <p class="sdir-fp-list-title">SHRM Certified Professional</p>
-                                                <p class="sdir-fp-list-subtitle">SHRM</p>
-                                            </div>
-                                            <span class="sdir-fp-cert-year">2021</span>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="sdir-fp-reporting-empty">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-fp-reporting-empty-icon"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"></path><circle cx="12" cy="8" r="6"></circle></svg>
+                                            <p class="sdir-fp-reporting-empty-title">No certifications added yet</p>
+                                            <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="props.activeProfile.name.split(' ')[0]"/> hasn't listed any certifications</p>
                                         </div>
-                                    </div>
+                                    </t>
                                 </div>
 
                                 <!-- Current Projects Card -->

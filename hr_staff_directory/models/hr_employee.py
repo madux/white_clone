@@ -1610,6 +1610,7 @@ class HrEmployeeStaffDirectory(models.Model):
                 'retention_priority': getattr(emp, 'retention_priority', ''),
                 'skills':             getattr(emp, 'skills', '') or self._mock_skills_for_employee(emp),
                 'languages':          getattr(emp, 'languages', ''),
+                'certifications':     self._get_certifications(emp),
                 'availability':       getattr(emp, 'availability', ''),
                 'flight_risk':        getattr(emp, 'flight_risk', ''),
                 'last_active':        getattr(emp, 'last_active', ''),
@@ -1630,6 +1631,39 @@ class HrEmployeeStaffDirectory(models.Model):
                 'anniv_years':        anniv_years,
             })
         return result
+
+    @api.model
+    def _get_certifications(self, emp):
+        certs = []
+        if 'hr.resume.line' in self.env:
+            try:
+                cert_type = self.env['hr.resume.line.type'].search([('name', 'ilike', 'certif')], limit=1)
+                domain = [('employee_id', '=', emp.id)]
+                if cert_type:
+                    domain.append(('line_type_id', '=', cert_type.id))
+                
+                lines = self.env['hr.resume.line'].search(domain)
+                for line in lines:
+                    certs.append({
+                        'title': line.name or '',
+                        'subtitle': line.description or '',
+                        'year': line.date_start.year if line.date_start else ''
+                    })
+            except Exception:
+                pass
+        
+        if not certs:
+            cert_str = getattr(emp, 'certifications', '')
+            if cert_str and isinstance(cert_str, str):
+                for c in cert_str.split(','):
+                    c = c.strip()
+                    if c:
+                        certs.append({
+                            'title': c,
+                            'subtitle': '',
+                            'year': ''
+                        })
+        return certs
 
     @api.model
     def _mock_skills_for_employee(self, emp):
