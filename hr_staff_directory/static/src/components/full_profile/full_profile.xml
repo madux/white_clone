@@ -246,12 +246,33 @@
                                             <h3 class="sdir-fp-card-title">Languages</h3>
                                         </div>
                                     </div>
-                                    <div class="sdir-fp-lang-container">
-                                        <div class="sdir-fp-lang-item">
-                                            <span class="sdir-fp-lang-name"></span>
-                                            <span class="sdir-fp-lang-level">—</span>
+                                    <t t-if="props.activeProfile.languages and props.activeProfile.languages.length > 0">
+                                        <div class="sdir-fp-lang-container">
+                                            <t t-if="typeof props.activeProfile.languages === 'string'">
+                                                <t t-foreach="props.activeProfile.languages.split(',')" t-as="lang" t-key="lang">
+                                                    <div class="sdir-fp-lang-item">
+                                                        <span class="sdir-fp-lang-name"><t t-esc="lang.trim()"/></span>
+                                                        <span class="sdir-fp-lang-level">—</span>
+                                                    </div>
+                                                </t>
+                                            </t>
+                                            <t t-else="">
+                                                <t t-foreach="props.activeProfile.languages" t-as="lang" t-key="lang">
+                                                    <div class="sdir-fp-lang-item">
+                                                        <span class="sdir-fp-lang-name"><t t-esc="lang"/></span>
+                                                        <span class="sdir-fp-lang-level">—</span>
+                                                    </div>
+                                                </t>
+                                            </t>
                                         </div>
-                                    </div>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="sdir-fp-reporting-empty">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sdir-fp-reporting-empty-icon"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                                            <p class="sdir-fp-reporting-empty-title">No languages added yet</p>
+                                            <p class="sdir-fp-reporting-empty-subtitle"><t t-esc="props.activeProfile.name.split(' ')[0]"/> hasn't listed any languages</p>
+                                        </div>
+                                    </t>
                                 </div>
 
                                 <!-- Certifications Card -->
