@@ -5,6 +5,8 @@ export interface User {
   company_id: number;
   company_name: string;
   tz: string;
+  is_admin?: boolean;
+  is_document_manager?: boolean;
 }
 
 export interface DocFolder {
@@ -21,6 +23,7 @@ export interface DocFolder {
   color: number;
   allow_download?: boolean;
   favorite?: boolean;
+  acknowledged?: boolean;
   pinned?: boolean;
   locked?: boolean;
   active?: boolean;
@@ -39,7 +42,7 @@ export interface DocDocument {
   employee_name: string;
   document_type_id: number;
   document_type: string;
-  state: "draft" | "processing" | "approved" | "rejected" | "expired";
+  state: "draft" | "processing" | "approved" | "rejected" | "expired" | "missing";
   approval_state: "not_required" | "pending" | "approved" | "rejected";
   ocr_state: "pending" | "processing" | "completed" | "failed";
   has_expiry: boolean;
@@ -50,7 +53,30 @@ export interface DocDocument {
   created_at: string;
   write_date: string;
   allow_download?: boolean;
+  active?: boolean;
+  deleted_at?: string;
+  recycle_bin_until?: string;
+  favorite?: boolean;
+  acknowledged?: boolean;
+  pinned?: boolean;
+  distribution_status?: "active" | "archived" | "deactivated";
 }
+
+export interface MyWorkspace {
+  my_files: DocDocument[];
+  shared_documents: DocDocument[];
+  outstanding: DocDocument[];
+  activity: { id: number; document_id: number; document: string; folder: string; event: string; occurred_at: string }[];
+  dashboard: { total: number; expiring: number; states: Record<string, number> };
+}
+
+export interface AdminAttention {
+  count: number;
+  notifications: { id: number; document_id: number; employee_id?: number; document: string; employee: string; message: string; created_at: string }[];
+  mailbox: { id: number; document_id: number; employee_id?: number; document: string; employee: string; message: string; created_at: string }[];
+}
+
+export interface QuickAccess { folders: DocFolder[]; documents: DocDocument[]; }
 
 export interface DocumentType {
   id: number;

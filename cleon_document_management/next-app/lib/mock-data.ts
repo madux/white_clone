@@ -15,6 +15,8 @@ export const TEST_USER: User = {
   company_id: 1,
   company_name: "CleonHR Nigeria Ltd.",
   tz: "Africa/Lagos",
+  is_admin: true,
+  is_document_manager: true,
 };
 
 export const TEST_FOLDERS: DocFolder[] = [

@@ -41,6 +41,11 @@ hr_expense_management/APP_CONTRACT.md
 hr_expense_management/FINAL_REVIEW.md
 hr_expense_management/PROGRESS.md
 
-
 cursor-document-intelligence-prompt.md
 document-intelligence-requirements.md
+
+# Local AI/design tooling artifacts
+.impeccable/
+.opencode/
+DESIGN.md
+PRODUCT.md

@@ -1,6 +1,6 @@
 "use client";
 
-import {
+import { 
   ClipboardCheck,
   Ban,
   FileText,
@@ -28,6 +28,9 @@ import {
   usePolicyTypes,
 } from "../../../hooks/useDocuments";
 import PolicyActions from "./PolicyActions";
+import SortableTable from "./SortableTable";
+import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
+import ThemedSelect from "./ThemedSelect";
 
 type Tab = "policies" | "exceptions" | "history";
 const schedules = [
@@ -69,7 +72,7 @@ export default function CompliancePage() {
     effective_date: new Date().toISOString().slice(0, 10),
   });
   const [exceptionForm, setExceptionForm] = useState({
-    employee_id: "",
+    employee_ids: [] as number[],
     policy_id: "",
     reason: "",
     valid_until: "",
@@ -101,15 +104,16 @@ export default function CompliancePage() {
   };
   const submitException = async (event: FormEvent) => {
     event.preventDefault();
+    if (!exceptionForm.employee_ids.length) return;
     await createException.mutateAsync({
-      employee_id: Number(exceptionForm.employee_id),
+      employee_ids: exceptionForm.employee_ids,
       policy_id: Number(exceptionForm.policy_id),
       reason: exceptionForm.reason,
       valid_until: exceptionForm.valid_until,
     });
     setShowForm(false);
     setExceptionForm({
-      employee_id: "",
+      employee_ids: [],
       policy_id: "",
       reason: "",
       valid_until: "",
@@ -123,7 +127,7 @@ export default function CompliancePage() {
   };
 
   return (
-    <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 rounded-2xl bg-gray-100 p-6 pb-10">
+    <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
       <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
@@ -399,7 +403,7 @@ function Table({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] text-left">
+      <SortableTable className="w-full min-w-[760px] text-left">
         <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
           <tr>
             {headers.map((header) => (
@@ -410,7 +414,7 @@ function Table({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">{children}</tbody>
-      </table>
+      </SortableTable>
     </div>
   );
 }
@@ -458,21 +462,7 @@ function PolicyForm({
           />
         </Field>
         <Field label="Policy type">
-          <select
-            required
-            className="field"
-            value={form.policy_type_id}
-            onChange={(e) =>
-              setForm({ ...form, policy_type_id: e.target.value })
-            }
-          >
-            <option value="">Select type</option>
-            {types.map((item: any) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.policy_type_id} onChange={(value) => setForm({ ...form, policy_type_id: value })} placeholder="Select type" options={types.map((item: any) => ({ value: String(item.id), label: item.name }))} />
         </Field>
         <Field label="Description" full>
           <textarea
@@ -482,7 +472,7 @@ function PolicyForm({
           />
         </Field>
         <Field label="Required document types" full>
-          <div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="mb-2 flex items-center justify-between"><span className="text-xs text-slate-500">Select every document this policy requires.</span><InlineDocumentTypeCreator onCreated={(item) => setForm({ ...form, document_type_ids: [...form.document_type_ids, item.id] })} /></div><div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
             {documents.map((item: any) => (
               <label
                 key={item.id}
@@ -511,17 +501,7 @@ function PolicyForm({
           </div>
         </Field>
         <Field label="Applies to">
-          <select
-            className="field"
-            value={form.applies_to}
-            onChange={(e) =>
-              setForm({ ...form, applies_to: e.target.value, scope_ids: [] })
-            }
-          >
-            <option value="department">Departments</option>
-            <option value="grade">Grades</option>
-            <option value="employee">Employees</option>
-          </select>
+          <ThemedSelect value={form.applies_to} onChange={(value) => setForm({ ...form, applies_to: value, scope_ids: [] })} options={[{ value: "department", label: "Departments" }, { value: "grade", label: "Grades" }, { value: "employee", label: "Employees" }]} />
         </Field>
         <Field label={`Select ${form.applies_to}s`} full>
           <div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
@@ -549,17 +529,7 @@ function PolicyForm({
           </div>
         </Field>
         <Field label="Schedule">
-          <select
-            className="field"
-            value={form.schedule}
-            onChange={(e) => setForm({ ...form, schedule: e.target.value })}
-          >
-            {schedules.map((item) => (
-              <option key={item} value={item}>
-                {item.replace("_", " ")}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.schedule} onChange={(value) => setForm({ ...form, schedule: value })} options={schedules.map((item) => ({ value: item, label: item.replace("_", " ") }))} />
         </Field>
         <Field label="Effective date">
           <input
@@ -618,35 +588,9 @@ function ExceptionForm({
   return (
     <Modal title="Create exception" onClose={onClose}>
       <form onSubmit={onSubmit} className="grid gap-4">
-        <Field label="Employee">
-          <select
-            required
-            className="field"
-            value={form.employee_id}
-            onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
-          >
-            <option value="">Select employee</option>
-            {employees.map((item: any) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <EmployeeChecklist employees={employees} form={form} setForm={setForm} />
         <Field label="Policy">
-          <select
-            required
-            className="field"
-            value={form.policy_id}
-            onChange={(e) => setForm({ ...form, policy_id: e.target.value })}
-          >
-            <option value="">Select policy</option>
-            {policies.map((item: any) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+          <ThemedSelect value={form.policy_id} onChange={(value) => setForm({ ...form, policy_id: value })} placeholder="Select policy" options={policies.map((item: any) => ({ value: String(item.id), label: item.name }))} />
         </Field>
         <Field label="Reason">
           <textarea
@@ -669,6 +613,11 @@ function ExceptionForm({
       </form>
     </Modal>
   );
+}
+function EmployeeChecklist({ employees, form, setForm }: any) {
+  const [query, setQuery] = useState("");
+  const visible = employees.filter((item: any) => item.name.toLowerCase().includes(query.toLowerCase()));
+  return <Field label="Employees"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search employees..." className="field" /><div className="mt-2 max-h-40 space-y-1 overflow-y-auto rounded-2xl border border-slate-200 p-2">{visible.map((item: any) => <label key={item.id} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm hover:bg-pink-50"><input type="checkbox" checked={form.employee_ids.includes(item.id)} onChange={() => setForm({ ...form, employee_ids: form.employee_ids.includes(item.id) ? form.employee_ids.filter((id: number) => id !== item.id) : [...form.employee_ids, item.id] })} className="h-4 w-4 accent-pink-600" />{item.name}<span className="ml-auto text-xs text-slate-400">{item.department}</span></label>)}</div>{!form.employee_ids.length && <p className="mt-1 text-xs text-red-500">Select at least one employee.</p>}</Field>;
 }
 function Field({ label, full, children }: any) {
   return (

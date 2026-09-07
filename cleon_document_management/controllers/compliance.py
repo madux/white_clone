@@ -65,11 +65,22 @@ class ComplianceController(http.Controller):
     )
     def compliance_targets(self, **kwargs):
         """Return named records used by policy scope selectors."""
-        employees = request.env["hr.employee"].search(
-            [("active", "=", True)], order="name"
+        is_manager = request.env.user.has_group(
+            "cleon_document_management.group_document_manager"
         )
-        departments = request.env["hr.department"].search([], order="name")
-        grades = request.env["hr.grade"].search([], order="name")
+        employee = request.env.user.employee_id
+        employees = request.env["hr.employee"].search(
+            [("active", "=", True)] if is_manager else [("id", "=", employee.id or 0)],
+            order="name",
+        )
+        departments = request.env["hr.department"].search(
+            [] if is_manager else [("id", "=", employee.department_id.id or 0)],
+            order="name",
+        )
+        grades = request.env["hr.grade"].search(
+            [] if is_manager else [("id", "=", employee.grade_id.id or 0)],
+            order="name",
+        )
         return {
             "success": True,
             "data": {
@@ -84,7 +95,15 @@ class ComplianceController(http.Controller):
                         "grade_id": employee.grade_id.id or False,
                         "work_email": employee.work_email or "",
                         "work_phone": employee.work_phone or "",
-                        "location": employee.work_location or "",
+                        "location": (
+                            getattr(employee, "work_location_id", False).name
+                            if getattr(employee, "work_location_id", False)
+                            else (
+                                getattr(employee, "address_id", False).city
+                                if getattr(employee, "address_id", False)
+                                else ""
+                            )
+                        ) or "",
                     }
                     for employee in employees
                 ],
@@ -328,14 +347,15 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def create_exception(self, **kwargs):
-        employee = request.env["hr.employee"].browse(kwargs.get("employee_id")).exists()
+        employee_ids = kwargs.get("employee_ids") or ([kwargs.get("employee_id")] if kwargs.get("employee_id") else [])
+        employees = request.env["hr.employee"].browse(employee_ids).exists()
         policy = (
             request.env["doc.compliance.policy"]
             .browse(kwargs.get("policy_id"))
             .exists()
         )
         if (
-            not employee
+            not employees
             or not policy
             or not kwargs.get("reason")
             or not kwargs.get("valid_until")
@@ -344,23 +364,18 @@ class ComplianceController(http.Controller):
                 "success": False,
                 "message": "Employee, policy, reason, and valid-until date are required.",
             }
-        exception = request.env["doc.compliance.exception"].create(
+        exceptions = request.env["doc.compliance.exception"].create([
             {
                 "employee_id": employee.id,
                 "policy_id": policy.id,
                 "reason": kwargs["reason"],
                 "valid_until": kwargs["valid_until"],
             }
-        )
+            for employee in employees
+        ])
         return {
             "success": True,
-            "data": {
-                "id": exception.id,
-                "employee_id": exception.employee_id.id,
-                "policy_id": exception.policy_id.id,
-                "status": exception.status,
-                "active": exception.active,
-            },
+            "data": [{"id": exception.id, "employee_id": exception.employee_id.id, "policy_id": exception.policy_id.id, "status": exception.status, "active": exception.active} for exception in exceptions],
         }
 
     def _get_exception(self, exception_id):

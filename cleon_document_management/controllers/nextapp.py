@@ -5,7 +5,7 @@ import urllib.request
 import urllib.error
 from odoo import http, fields
 from odoo.http import request
-from odoo.modules.module import get_resource_path
+from odoo.tools.misc import file_path
 
 _logger = logging.getLogger(__name__)
 
@@ -27,7 +27,10 @@ class NextAppController(http.Controller):
     @staticmethod
     def _read_html(relative_path):
         """Read a pre-built HTML file; return None if missing."""
-        abs_path = get_resource_path(MODULE, NEXTAPP_STATIC_DIR, relative_path)
+        try:
+            abs_path = file_path(f"{MODULE}/{NEXTAPP_STATIC_DIR}/{relative_path}")
+        except FileNotFoundError:
+            return None
         if abs_path and os.path.isfile(abs_path):
             with open(abs_path, "r", encoding="utf-8") as f:
                 return f.read()
@@ -43,6 +46,10 @@ class NextAppController(http.Controller):
                 "company_id": user.company_id.id,
                 "company_name": user.company_id.name,
                 "tz": user.tz or "",
+                "is_admin": user.has_group("base.group_system"),
+                "is_document_manager": user.has_group(
+                    "cleon_document_management.group_document_manager"
+                ),
             }
         )
         return f"<script>window.__ODOO_USER__={user_data}</script>"
@@ -96,11 +103,13 @@ class NextAppController(http.Controller):
                     status=502,
                 )
 
-        html_path = f"{subpath}/index.html" if subpath else "index.html"
+        is_next_metadata = subpath.endswith(".txt")
+        html_path = subpath if is_next_metadata else (f"{subpath}/index.html" if subpath else "index.html")
         html = self._read_html(html_path)
 
         if html is None:
             html = self._read_html("index.html")
+            is_next_metadata = False
             if html is None:
                 return request.make_response(
                     "Next.js build not found. Run "
@@ -109,12 +118,13 @@ class NextAppController(http.Controller):
                     status=404,
                 )
 
-        # Inject __ODOO_USER__ into static HTML
-        injected = self._inject_user(html, user)
+        # Only HTML documents can receive the browser user bootstrap script.
+        injected = html if is_next_metadata else self._inject_user(html, user)
+        content_type = "text/plain; charset=utf-8" if is_next_metadata else "text/html; charset=utf-8"
 
         return request.make_response(
             injected,
-            headers=[("Content-Type", "text/html; charset=utf-8")],
+            headers=[("Content-Type", content_type)],
         )
 
     @http.route(
@@ -138,12 +148,33 @@ class NextAppController(http.Controller):
                     "company_name": user.company_id.name if user.company_id else "",
                     "tz": user.tz or "",
                     "is_admin": user.has_group("base.group_system"),
+                    "is_document_manager": user.has_group(
+                        "cleon_document_management.group_document_manager"
+                    ),
                     "groups": user.groups_id.mapped("name"),
                 },
             }
         except Exception as e:
             _logger.exception("Error in /api/me: %s", e)
             return {"success": False, "message": str(e)}
+
+    @http.route("/api/admin-attention", type="json", auth="user", methods=["POST"], csrf=False)
+    def api_admin_attention(self, **kwargs):
+        """In-app attention items for managers; separate from Odoo's chatter UI."""
+        user = request.env.user
+        if not user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": True, "data": {"count": 0, "notifications": [], "mailbox": []}}
+        approvals = request.env["doc.document.approval"].search(
+            [("state", "in", ["pending", "waiting"]), "|", ("approver_id", "=", user.id), ("document_id.folder_id.require_upload_approval", "=", True)],
+            order="create_date desc",
+        )
+        items = []
+        for approval in approvals:
+            document = approval.document_id
+            employee = document.employee_id.name if document.employee_id else "an employee"
+            message = f"Hello {user.name}, your attention is required to approve or reject {employee} file they just uploaded."
+            items.append({"id": approval.id, "document_id": document.id, "employee_id": document.employee_id.id or 0, "document": document.name, "employee": employee, "message": message, "created_at": approval.create_date})
+        return {"success": True, "data": {"count": len(items), "notifications": items, "mailbox": items}}
 
     @http.route(
         "/api/dashboard-stats", type="json", auth="user", methods=["POST"], csrf=False
@@ -165,7 +196,7 @@ class NextAppController(http.Controller):
                     (
                         "expiry_date",
                         "<=",
-                        fields.Date.add(fields.Date.context_today(env), days=30),
+                        fields.Date.add(fields.Date.context_today(env.user), days=30),
                     ),
                     ("state", "=", "approved"),
                 ]

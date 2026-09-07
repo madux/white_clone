@@ -4,6 +4,7 @@ from . import hr_document
 from . import hr_document_policy_retention
 from . import compliance_registration
 from . import document_approval
+from . import document_acknowledgement
 from . import document_version
 from . import share_link
 from . import hr_employee

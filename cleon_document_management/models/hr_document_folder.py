@@ -1,5 +1,7 @@
+from datetime import timedelta
+
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 
 
 class DocumentFolder(models.Model):
@@ -170,8 +172,8 @@ class DocumentFolder(models.Model):
     approval_flow = fields.Selection(
         [
             ("sequential", "Sequential"),
-            ("random", "Random Order"),
-            ("any", "Any Approver"),
+            ("random", "All Reviewers"),
+            ("any", "Single Approver"),
         ],
         string="Approval Flow",
         default="any",
@@ -183,6 +185,11 @@ class DocumentFolder(models.Model):
         "folder_id",
         "user_id",
         string="Approvers",
+    )
+
+    approver_order = fields.Char(
+        string="Approver Order",
+        help="Comma-separated user IDs preserving the configured approval sequence.",
     )
 
     color = fields.Integer(
@@ -214,6 +221,19 @@ class DocumentFolder(models.Model):
     is_locked = fields.Boolean(
         string="Locked",
         default=False,
+    )
+
+    distribution_status = fields.Selection(
+        [("active", "Active"), ("archived", "Archived"), ("deactivated", "Deactivated")],
+        default="active",
+        required=True,
+        index=True,
+    )
+
+    deleted_at = fields.Datetime(string="Moved to Recycle Bin", readonly=True, index=True)
+    deleted_by = fields.Many2one("res.users", string="Deleted By", readonly=True)
+    recycle_bin_until = fields.Datetime(
+        string="Recycle Bin Retention Until", readonly=True, index=True
     )
 
     locked_by = fields.Many2one(
@@ -249,14 +269,100 @@ class DocumentFolder(models.Model):
                 raise ValidationError(
                     _("Approvers require upload approval to be enabled.")
                 )
+            if folder.approval_flow == "sequential" and not folder.approver_ids:
+                raise ValidationError(
+                    _("Sequential approval requires at least one approver.")
+                )
 
-    @api.constrains("folder_type", "employee_ids")
+    @api.constrains("folder_type", "access_scope", "employee_ids")
     def _check_organization_employees(self):
         for folder in self:
-            if folder.folder_type == "organizational" and folder.employee_ids:
+            if (
+                folder.folder_type == "organizational"
+                and folder.employee_ids
+                and folder.access_scope != "individual"
+            ):
                 raise ValidationError(
-                    _("Organizational folders cannot contain employee assignments.")
+                    _("Select Individual Employees when assigning an organizational folder to employees.")
                 )
+            if (
+                folder.folder_type == "organizational"
+                and folder.access_scope == "individual"
+                and not folder.employee_ids
+            ):
+                raise ValidationError(
+                    _("Select at least one employee for an individual-scoped folder.")
+                )
+
+    @api.constrains("folder_type", "access_scope", "department_ids", "grade_ids")
+    def _check_access_scope_targets(self):
+        for folder in self:
+            if folder.folder_type != "organizational":
+                continue
+            if folder.access_scope == "department" and not folder.department_ids:
+                raise ValidationError(
+                    _("Select at least one department for a department-scoped folder.")
+                )
+            if folder.access_scope == "grade" and not folder.grade_ids:
+                raise ValidationError(
+                    _("Select at least one grade for a grade-scoped folder.")
+                )
+
+    def _is_document_manager(self):
+        return self.env.user.has_group("cleon_document_management.group_document_manager")
+
+    def _user_can_access(self, user=None):
+        """Return whether a document user can access this folder.
+
+        Record rules enforce reads, while this helper also protects controller and
+        model create paths where no record exists yet for Odoo to evaluate.
+        """
+        self.ensure_one()
+        user = user or self.env.user
+        if user.has_group("cleon_document_management.group_document_admin"):
+            return True
+        if self.owner_id == user or user in self.allowed_user_ids:
+            return True
+        employee = user.employee_id
+        if self.folder_type == "employee":
+            return employee in self.employee_ids
+        if self.access_scope == "admin_only":
+            return False
+        if self.access_scope == "all_staff":
+            return True
+        if not employee:
+            return False
+        if self.access_scope == "department":
+            return employee.department_id in self.department_ids
+        if self.access_scope == "grade":
+            return employee.grade_id in self.grade_ids
+        if self.access_scope == "employment_type":
+            return employee.employee_type_id in self.employment_type_ids
+        if self.access_scope == "role":
+            return bool(self.role_group_ids & user.groups_id)
+        if self.access_scope == "business_unit":
+            return employee.branch_id in self.branch_ids
+        if self.access_scope == "individual":
+            return employee in self.employee_ids
+        return False
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can create folders."))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if not self._is_document_manager():
+            allowed = {"favorite_user_ids", "pinned_user_ids"}
+            if set(vals) - allowed:
+                raise AccessError(_("You can only update your folder favorites and pins."))
+        return super().write(vals)
+
+    def unlink(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete folders."))
+        return super().unlink()
 
     def action_toggle_favorite(self):
         for folder in self:
@@ -304,31 +410,75 @@ class DocumentFolder(models.Model):
         )
 
     def action_archive(self):
-        self.write({"active": False})
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can archive folders."))
+        self.write({
+            "active": False,
+            "distribution_status": "archived",
+            "deleted_at": False,
+            "deleted_by": False,
+            "recycle_bin_until": False,
+        })
 
     def action_restore(self):
-        self.write({"active": True})
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can restore folders."))
+        self.write({
+            "active": True,
+            "distribution_status": "active",
+            "deleted_at": False,
+            "deleted_by": False,
+            "recycle_bin_until": False,
+        })
+
+    def action_move_to_recycle_bin(self):
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete folders."))
+        now = fields.Datetime.now()
+        try:
+            retention_days = max(int(self.env["ir.config_parameter"].sudo().get_param(
+                "cleon_document_management.recycle_bin_retention_days", "30"
+            )), 1)
+        except (TypeError, ValueError):
+            retention_days = 30
+        self.write({
+            "active": False,
+            "distribution_status": "deactivated",
+            "deleted_at": now,
+            "deleted_by": self.env.user.id,
+            "recycle_bin_until": now + timedelta(days=retention_days),
+        })
+
+    @api.model
+    def _cron_empty_recycle_bin(self):
+        expired = self.sudo().search([
+            ("deleted_at", "!=", False),
+            ("recycle_bin_until", "<=", fields.Datetime.now()),
+        ])
+        if expired:
+            expired.document_ids.sudo().unlink()
+            expired.unlink()
 
     @api.model
     def get_or_create_department_folder(self, department):
         if not department:
             return self.browse()
 
-        folder = self.search(
+        folder = self.sudo().search(
             [
                 ("folder_type", "=", "employee"),
-                ("department_id", "=", department.id),
+                ("department_ids", "in", [department.id]),
             ],
             limit=1,
         )
         if not folder:
-            folder = self.create(
+            folder = self.sudo().create(
                 {
                     "folder_name": department.name,
                     "description": _("Employee files for %s") % department.name,
                     "folder_type": "employee",
-                    "department_id": department.id,
                     "department_ids": [fields.Command.link(department.id)],
+                    "access_scope": "department",
                 }
             )
         return folder

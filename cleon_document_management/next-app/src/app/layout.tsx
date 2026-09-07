@@ -5,31 +5,25 @@ import Header from "@/app/components/Header";
 import Sidebar from "@/app/components/Sidebar";
 import Providers from "@/app/providers";
 import "@/app/globals.css";
-import { Inter } from "next/font/google";
+import { SortableTableManager } from "@/app/components/SortableTable";
 export const metadata: Metadata = {
   title: "CLEONHR — Document Management",
   description: "Enterprise Document Management System",
   icons: { icon: "/favicon.ico" },
 };
 
-const font = Inter({
-  subsets: ["latin"],
-  // Explicitly request all required font weights
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-sans",
-});
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={font.variable}>
+    <html lang="en">
       <body>
         <Providers>
+          <SortableTableManager />
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
             <div className="flex flex-col flex-1 gap-4 overflow-hidden">
               <Header />
 
-              <main className="flex-1 overflow-y-auto bg-white pb-3">
+              <main className="flex-1 overflow-y-auto bg-slate-50 pb-3">
                 {children}
               </main>
             </div>

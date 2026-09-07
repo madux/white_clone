@@ -10,6 +10,7 @@
     "data": [
         "security/security_groups.xml",
         "security/ir.model.access.csv",
+        "security/record_rules.xml",
         "views/document_view.xml",
         "views/compliance_views.xml",
         "views/menu.xml",
