@@ -571,3 +571,5 @@
     background: #be185d;
     color: #ffffff;
 }
+.o_leave_requests_embedded{display:block;height:auto;min-height:0;background:transparent}
+.o_leave_requests_embedded>.o_leave_dashboard{margin-left:0!important;padding:0;min-height:0;background:transparent}

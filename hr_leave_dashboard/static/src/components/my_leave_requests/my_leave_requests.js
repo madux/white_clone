@@ -6,10 +6,11 @@ import { standardActionServiceProps } from "@web/webclient/actions/action_servic
 import { EmployeeRequestModal } from "../employee_request_modal/employee_request_modal";
 import { LeaveRequestDetailModal } from "../leave_request_detail/leave_request_detail";
 import { CalendarSidebar } from "../calendar_sidebar";
+import { LeaveRequestsPage } from "../../js/leave_requests";
 
 export class MyLeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.MyLeaveRequestsPage";
-    static components = { EmployeeRequestModal, LeaveRequestDetailModal, CalendarSidebar };
+    static components = { EmployeeRequestModal, LeaveRequestDetailModal, CalendarSidebar, LeaveRequestsPage };
     static props = {
         ...standardActionServiceProps,
         embedded: { type: Boolean, optional: true },
@@ -25,7 +26,7 @@ export class MyLeaveRequestsPage extends Component {
             counts: {},
             types: [],
             status: "all",
-            activeView: "my",
+            activeView: this.props.action?.context?.request_workspace_tab || "my",
             search: "",
             typeId: "",
             requestOpen: false,
@@ -39,7 +40,7 @@ export class MyLeaveRequestsPage extends Component {
             escalateId: null,
             escalationNote: "",
             escalationError: "",
-            access: { can_approve: false },
+            access: { has_personal_scope: false, can_approve: false, can_operate: false },
             approvalRows: [],
             approvalRejectId: null,
             approvalRejectCategory: "",
@@ -76,9 +77,46 @@ export class MyLeaveRequestsPage extends Component {
 
         onWillStart(() => this.load());
     }
-    async load(){this.state.loading=true;try{const [data,access]=await Promise.all([this.orm.call("hr.leave","get_my_leave_requests",[this.state.status,this.state.search,this.state.typeId||false]),this.orm.call("hr.leave","get_leave_access_profile",[])]);this.state.rows=data.rows||[];this.state.counts=data.counts||{};this.state.types=data.leave_types||[];this.state.access=access;this.state.approvalRows=access.can_approve?(await this.orm.call("hr.leave","get_pending_my_leave_approvals",[])).rows||[]:[];window.dispatchEvent(new CustomEvent("cleon-ai-context",{detail:{screen:"leave.requests",title:this.state.activeView==="approvals"?"Leave Approvals":"My Leave Requests",view:this.state.activeView,status:this.state.status,search:this.state.search,leave_type_id:this.state.typeId||false}}));}finally{this.state.loading=false;}}
+    async load() {
+        this.state.loading = true;
+        try {
+            const [data, access] = await Promise.all([
+                this.orm.call("hr.leave", "get_my_leave_requests", [this.state.status, this.state.search, this.state.typeId || false]),
+                this.orm.call("hr.leave", "get_leave_access_profile", []),
+            ]);
+            this.state.rows = data.rows || [];
+            this.state.counts = data.counts || {};
+            this.state.types = data.leave_types || [];
+            this.state.access = access;
+            this.state.approvalRows = access.can_approve
+                ? (await this.orm.call("hr.leave", "get_pending_my_leave_approvals", [])).rows || []
+                : [];
+            const availableViews = [
+                access.has_personal_scope && "my",
+                access.can_approve && "approvals",
+                access.can_operate && "records",
+            ].filter(Boolean);
+            if (!availableViews.includes(this.state.activeView)) {
+                this.state.activeView = availableViews[0] || "my";
+            }
+            this.emitRequestContext();
+        } finally {
+            this.state.loading = false;
+        }
+    }
     async setStatus(status){this.state.status=status;await this.load();}
-    setView(view){this.state.activeView=view;window.dispatchEvent(new CustomEvent("cleon-ai-context",{detail:{screen:"leave.requests",title:view==="approvals"?"Leave Approvals":"My Leave Requests",view,status:this.state.status,search:this.state.search,leave_type_id:this.state.typeId||false}}));}
+    setView(view) { this.state.activeView = view; this.emitRequestContext(); }
+    emitRequestContext() {
+        const titles = { my: "My Leave Requests", approvals: "Leave Approvals", records: "Leave Records" };
+        window.dispatchEvent(new CustomEvent("cleon-ai-context", { detail: {
+            screen: this.state.activeView === "records" ? "leave.requests.admin" : "leave.requests",
+            title: titles[this.state.activeView] || "Leave Requests",
+            view: this.state.activeView,
+            status: this.state.status,
+            search: this.state.search,
+            leave_type_id: this.state.typeId || false,
+        }}));
+    }
     onSearchKeydown(ev){if(ev.key==="Enter")this.load();}
     openNew(){this.state.initial=null;this.state.existingRequestId=null;this.state.requestOpen=true;} closeNew(){this.state.requestOpen=false;this.state.existingRequestId=null;}
     view(id){this.state.detailReadOnly=true;this.state.detailId=id;} viewApproval(id){this.state.detailReadOnly=false;this.state.detailId=id;} closeDetail(){this.state.detailId=null;}

@@ -30,8 +30,13 @@ export class LeaveDashboardRouter extends Component {
     requestLeave() { this.state.requestOpen = true; }
     closeRequest() { this.state.requestOpen = false; }
     requestSubmitted() { this.state.requestOpen = false; this.state.revision += 1; }
-    openMyRequests() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
-    openApprovals() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests"); }
+    openMyRequests() { return this.openRequestWorkspace("my"); }
+    openApprovals() { return this.openRequestWorkspace("approvals"); }
+    openRequestWorkspace(tab) {
+        return this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests", {
+            additionalContext: { request_workspace_tab: tab },
+        });
+    }
     openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     openBalances() { return this.openConfiguration("balances"); }
     openLeaveTypes() { return this.openConfiguration("policies"); }

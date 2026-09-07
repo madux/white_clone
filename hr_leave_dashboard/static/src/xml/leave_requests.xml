@@ -1,50 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="hr_leave_dashboard.LeaveRequestsPage">
-        <div class="leaveapp">
+        <div t-att-class="props.embedded ? 'leaveapp o_leave_requests_embedded' : 'leaveapp'">
 
             <!-- Shared Module Sidebar -->
-            <CalendarSidebar activeMenu="'operations_requests'"/>
+            <CalendarSidebar t-if="!props.embedded" activeMenu="'requests'"/>
 
             <!-- ════════════════════════════════════════════════════
                  MAIN CONTENT AREA (Screen 9 — FR-073 to FR-113)
                  ════════════════════════════════════════════════════ -->
             <div class="o_leave_dashboard">
-
-                <!-- FR-073 and FR-074: Header -->
-                <div class="cleon-dash-header">
-                    <div class="cleon-dash-header-left">
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="toggleLeaveSidebar" title="Toggle Leave navigation">
-                            <i class="fa fa-columns"/>
-                        </button>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="cleon-page-title-icon">
-                                <i class="fa fa-file-text-o"/>
-                            </div>
-                            <div>
-                                <h4 class="cleon-dash-title">Leave Requests</h4>
-                                <span class="cleon-dash-subtitle">Review, approve, or reject employee leave requests</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cleon-dash-header-right">
-                        <!-- Create Leave Request Button -->
-                        <button t-if="state.canCreate" type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
-                            <i class="fa fa-plus me-1"/> Create Leave Request
-                        </button>
-
-                        <button type="button" class="cleon-header-plain-btn" title="Take a Tour">
-                            <i class="fa fa-paper-plane-o"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Help / Guide">
-                            <i class="fa fa-question-circle-o"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openSetupExperience" title="Setup Wizard">
-                            <i class="fa fa-magic"/>
-                        </button>
-
-                    </div>
-                </div>
 
                 <!-- STATUS SUMMARY CARDS (FR-075 to FR-077) -->
                 <div class="leave-request-summary">
@@ -107,6 +72,9 @@
 
                     <button type="button" class="request-export-btn" t-on-click="exportRequests">
                         <i class="fa fa-download me-1"/> Export
+                    </button>
+                    <button t-if="state.canCreate" type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
+                        <i class="fa fa-plus me-1"/> Create Leave Request
                     </button>
                 </div>
 

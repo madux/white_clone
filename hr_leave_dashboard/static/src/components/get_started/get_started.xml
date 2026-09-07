@@ -9,31 +9,6 @@
             <!-- Main Page Area -->
             <div class="o_leave_dashboard o_leave_get_started_page">
 
-                <!-- Header Bar -->
-                <div class="cleon-dash-header">
-                    <div class="cleon-dash-header-left">
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openDashboard" title="Go to Dashboard">
-                            <i class="fa fa-columns"/>
-                        </button>
-                        <div>
-                            <h4 class="cleon-dash-title">Get Started</h4>
-                            <span class="cleon-dash-subtitle">Follow these steps to configure and launch Leave Management</span>
-                        </div>
-                    </div>
-                    <div class="cleon-dash-header-right">
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Take a Tour">
-                            <i class="fa fa-paper-plane-o"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openWizard" title="Setup Wizard">
-                            <i class="fa fa-magic"/>
-                        </button>
-                        <button type="button" class="cleon-header-plain-btn" t-on-click="openTour" title="Help / Guide">
-                            <i class="fa fa-question-circle-o"/>
-                        </button>
-
-                    </div>
-                </div>
-
                 <!-- Hero Banner -->
                 <div class="cleon-gs-hero">
                     <div class="cleon-gs-hero-left">

@@ -1,7 +1,31 @@
-.cep-app{display:flex;height:calc(100vh - 46px);background:#f7f8fb;color:#172033;overflow:hidden}
+.cep-app{display:flex;height:calc(100vh - 46px);background:#f7f8fb;color:#172033;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 .cep-sidebar{flex:0 0 280px;height:100%;padding-top:14px}
 .cep-main{flex:1;min-width:0;height:100%;overflow:auto;padding:28px 32px}
 .cep-heading{margin:0 0 38px}.cep-heading h1{margin:0 0 4px;font-size:32px}.cep-heading p{margin:0;color:#74819a}
 .cep-main>.ctm-app{height:100%;margin:-28px -32px;background:transparent}
 .cep-main>.ctm-app .employee-main{padding:28px 32px}
+
+/* Keep attendance actions and status information crisp and easy to scan. */
+.cep-app .ctm-portal-welcome{background:linear-gradient(135deg,#e91e82 0%,#e94870 100%);box-shadow:0 8px 20px rgba(190,18,93,.14)}
+.cep-app .ctm-portal-welcome h2{color:#111827;font-weight:700;letter-spacing:-.01em}
+.cep-app .ctm-portal-welcome p{color:#fff;font-weight:500}
+.cep-app .ctm-portal-welcome button{background:#fff;border:1px solid #fff;color:#be185d;font-weight:700;box-shadow:0 2px 7px rgba(78,8,38,.16)}
+.cep-app .ctm-portal-welcome button:hover{background:#fff5f9;border-color:#fff5f9;color:#9d174d}
+.cep-app .ctm-portal-welcome button:focus-visible{outline:3px solid rgba(255,255,255,.75);outline-offset:3px}
+
+.cep-app .ctm-time-dashboard-grid article.today{background:#fff8fb;border:1.5px solid #e82b83;box-shadow:0 5px 14px rgba(190,24,93,.09)}
+.cep-app .ctm-time-dashboard-grid article.today .ctm-widget-title{color:#111827;font-weight:700}
+.cep-app .ctm-time-dashboard-grid article.today .ctm-widget-title i{background:#df176f;box-shadow:0 2px 6px rgba(190,24,93,.2)}
+.cep-app .ctm-time-dashboard-grid article.today>strong{color:#111827;font-weight:700;letter-spacing:-.01em}
+.cep-app .ctm-time-dashboard-grid article.today>small{color:#475569;font-weight:500}
+.cep-app .ctm-time-dashboard-grid article.today .ctm-widget-actions button{background:#d91570;border-color:#d91570;color:#fff;font-weight:700;box-shadow:0 2px 6px rgba(190,24,93,.16)}
+.cep-app .ctm-time-dashboard-grid article.today .ctm-widget-actions button:hover{background:#be185d;border-color:#be185d}
+
+.cep-app .ctm-clock-card{background:linear-gradient(135deg,#e91e82 0%,#c91367 100%);border:1px solid #b7125e;box-shadow:0 8px 22px rgba(157,23,77,.16)}
+.cep-app .ctm-clock-card h2,.cep-app .ctm-clock-card>strong{font-family:inherit;font-weight:700;letter-spacing:0}
+.cep-app .ctm-clock-card>p,.cep-app .ctm-clock-card>small{color:#fff;font-weight:500}
+.cep-app .ctm-clock-card .clock-in{background:#087f3f;border:1px solid #dcfce7}
+.cep-app .ctm-clock-card .clock-out{background:#b91c1c;border:1px solid #fee2e2}
+.cep-app .ctm-clock-card button:hover{filter:brightness(.94)}
+.cep-app .ctm-clock-card button:focus-visible{outline:3px solid rgba(255,255,255,.78);outline-offset:3px}
 @media(max-width:700px){.cep-sidebar{display:none}.cep-main{padding:20px}.cep-main>.ctm-app{margin:-20px}}

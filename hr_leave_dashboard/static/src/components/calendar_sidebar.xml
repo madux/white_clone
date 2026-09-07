@@ -1,75 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
+  <t t-name="hr_leave_dashboard.CalendarSidebar" owl="1">
+    <div t-att-class="'leavesidebar ' + (state.collapsed ? 'is-collapsed' : '')">
+      <div class="o_cc_sidebar_header">
+        <span class="o_cc_header_dot"/>
+        <span class="o_cc_header_title">Leave Management</span>
+        <button type="button" class="btn btn-sm o_cc_collapse_btn" t-on-click="toggleCollapsed" t-att-title="state.collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+          <i t-att-class="state.collapsed ? 'fa fa-chevron-right' : 'fa fa-chevron-left'"/>
+        </button>
+      </div>
 
-    <t t-name="hr_leave_dashboard.CalendarSidebar" owl="1">
-        <div t-att-class="'leavesidebar ' + (state.collapsed ? 'is-collapsed' : '')">
-            <div class="o_cc_sidebar_header">
-                <span class="o_cc_header_dot"/>
-                <span class="o_cc_header_title">Leave Management</span>
-                <button type="button" class="btn btn-sm o_cc_collapse_btn" t-on-click="toggleCollapsed" t-att-title="state.collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-                    <i t-att-class="state.collapsed ? 'fa fa-chevron-right' : 'fa fa-chevron-left'"/>
-                </button>
-            </div>
+      <nav class="o_cc_nav">
+        <t t-foreach="navigationSections" t-as="section" t-key="section.key">
+          <p t-if="section.label" class="sidebar-section-label" t-esc="section.label"/>
+          <a t-foreach="section.items" t-as="item" t-key="item.key"
+             t-att-class="'o_cc_nav_item ' + (props.activeMenu === item.key || (props.activeMenu === 'operations_requests' and item.key === 'requests') || (props.activeMenu === 'approvals' and item.key === 'requests') ? 'o_cc_nav_active' : '')"
+             t-att-title="item.description" t-att-aria-label="item.label + ': ' + item.description"
+             t-on-click="() => this.navigate(item)">
+            <span class="o_cc_nav_icon"><i t-att-class="'fa ' + item.icon"/></span>
+            <span class="o_cc_nav_label" t-esc="item.label"/>
+            <span t-if="item.pending" class="o_cc_pending_badge" t-esc="item.pending"/>
+          </a>
+        </t>
+      </nav>
 
-            <nav class="o_cc_nav">
-                <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'dashboard' ? 'o_cc_nav_active' : '')" t-on-click="openDashboard">
-                    <span class="o_cc_nav_icon"><i class="fa fa-calendar"/></span>
-                    <span class="o_cc_nav_label">Dashboard</span>
-                </a>
-                <a t-if="state.access.canConfigure" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'get_started' ? 'o_cc_nav_active' : '')" t-on-click="openSetupExperience">
-                    <span class="o_cc_nav_icon"><i class="fa fa-magic"/></span>
-                    <span class="o_cc_nav_label">Get Started</span>
-                    <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                </a>
-                <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'calendar' ? 'o_cc_nav_active' : '')" t-on-click="openCalendar">
-                    <span class="o_cc_nav_icon"><i class="fa fa-calendar-o"/></span>
-                    <span class="o_cc_nav_label">Leave Calendar</span>
-                </a>
-                <a t-if="state.access.hasPersonalScope" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'requests' ? 'o_cc_nav_active' : '')" t-on-click="openRequests">
-                    <span class="o_cc_nav_icon"><i class="fa fa-check-square-o"/></span>
-                    <span class="o_cc_nav_label">My Leave Requests</span>
-                    <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                </a>
-
-                <t t-if="state.access.canApprove">
-                    <p class="sidebar-section-label">Approvals</p>
-                    <a t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'approvals' ? 'o_cc_nav_active' : '')" t-on-click="openApprovals">
-                        <span class="o_cc_nav_icon"><i class="fa fa-user-circle-o"/></span>
-                        <span class="o_cc_nav_label">Pending My Approval</span>
-                        <span class="o_cc_pending_badge" t-esc="state.pending"/>
-                        <i class="fa fa-chevron-right o_cc_nav_arrow"/>
-                    </a>
-                </t>
-
-                <t t-if="state.access.canOperate or state.access.canConfigure">
-                <p class="sidebar-section-label">HR / Admin Operations</p>
-                <a t-if="state.access.canOperate" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'operations_requests' ? 'o_cc_nav_active' : '')" t-on-click="openOperationsRequests">
-                    <span class="o_cc_nav_icon"><i class="fa fa-files-o"/></span>
-                    <span class="o_cc_nav_label">Leave Records</span>
-                </a>
-                <a t-if="state.access.canOperate or state.access.canConfigure" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'configuration' ? 'o_cc_nav_active' : '')" t-on-click="openConfiguration">
-                    <span class="o_cc_nav_icon"><i class="fa fa-cog"/></span>
-                    <span class="o_cc_nav_label">Leave Configuration</span>
-                </a>
-                </t>
-
-                <p t-if="state.access.canViewReports or state.access.canViewAudit" class="sidebar-section-label">Reports</p><ul>
-                    <a t-if="state.access.canViewReports" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'reports' ? 'o_cc_nav_active' : '')" t-on-click="openReports">
-                        <span class="o_cc_nav_icon"><i class="fa fa-line-chart"/></span>
-                        <span class="o_cc_nav_label">Reports</span>
-                    </a>
-                    <a t-if="state.access.canViewAudit" t-att-class="'o_cc_nav_item ' + (props.activeMenu === 'audit' ? 'o_cc_nav_active' : '')" t-on-click="openAuditLog">
-                        <span class="o_cc_nav_icon"><i class="fa fa-shield"/></span>
-                        <span class="o_cc_nav_label">Audit Log</span>
-                    </a>
-                </ul>
-            </nav>
-
-            <div class="o_cc_sidebar_footer">
-                <button t-on-click="openTour"><i class="fa fa-map-o"/><span>Take a Tour</span><em>Guide</em></button>
-                <button t-if="state.access.canConfigure" t-on-click="openSetupExperience"><i class="fa fa-magic"/><span>Setup Wizard</span></button>
-            </div>
-        </div>
-    </t>
-
+      <div class="o_cc_sidebar_footer">
+        <button t-on-click="openTour"><i class="fa fa-map-o"/><span>Take a Tour</span><em>Guide</em></button>
+        <button t-if="state.access.canConfigure" t-on-click="openSetupExperience"><i class="fa fa-magic"/><span>Setup Wizard</span></button>
+      </div>
+    </div>
+  </t>
 </templates>

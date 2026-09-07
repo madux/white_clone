@@ -9,6 +9,10 @@ import { LeaveRequestDetailModal } from "../components/leave_request_detail/leav
 export class LeaveRequestsPage extends Component {
     static template = "hr_leave_dashboard.LeaveRequestsPage";
     static components = { CalendarSidebar, LeaveRequestDetailModal };
+    static props = {
+        embedded: { type: Boolean, optional: true },
+        "*": true,
+    };
 
     setup() {
         this.orm = useService("orm");
@@ -77,7 +81,7 @@ export class LeaveRequestsPage extends Component {
 
         onWillStart(async () => {
             const access = await this.orm.call("hr.leave", "get_leave_access_profile", []);
-            this.state.canCreate = access.can_configure;
+            this.state.canCreate = access.can_operate;
             await this.loadRequests();
         });
     }

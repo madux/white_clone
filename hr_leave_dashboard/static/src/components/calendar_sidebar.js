@@ -46,12 +46,45 @@ export class CalendarSidebar extends Component {
 
     applyCollapsedClass() { document.documentElement.classList.toggle("o_leave_sidebar_collapsed", this.state.collapsed); }
     toggleCollapsed() { this.state.collapsed = !this.state.collapsed; localStorage.setItem("cleonhr_leave_sidebar_collapsed", this.state.collapsed ? "1" : "0"); this.applyCollapsedClass(); }
-    openDashboard() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
+    get navigationSections() {
+        const access = this.state.access;
+        return [
+            {
+                key: "workspace",
+                label: "",
+                items: [
+                    { key: "dashboard", label: "Dashboard", icon: "fa-calendar", description: "Your personal, team, and organisation leave information in one workspace", action: "openDashboard", visible: true },
+                    { key: "get_started", label: "Get Started", icon: "fa-magic", description: "Follow the guided steps to configure and launch Leave Management", action: "openSetupExperience", visible: access.canConfigure },
+                    { key: "calendar", label: "Leave Calendar", icon: "fa-calendar-o", description: "Manage and visualise authorised leave, coverage, and public holidays", action: "openCalendar", visible: true },
+                    { key: "requests", label: "Leave Requests", icon: "fa-file-text-o", description: "Submit, track, approve, and manage leave requests from one workspace", action: "openRequests", visible: access.hasPersonalScope || access.canApprove || access.canOperate, pending: access.canApprove ? this.state.pending : 0 },
+                ],
+            },
+            {
+                key: "administration",
+                label: "HR / Admin Operations",
+                items: [
+                    { key: "configuration", label: "Leave Configuration", icon: "fa-cog", description: "Manage leave policies, balances, and organisation-wide settings", action: "openConfiguration", visible: access.canOperate || access.canConfigure },
+                ],
+            },
+            {
+                key: "reporting",
+                label: "Reports",
+                items: [
+                    { key: "reports", label: "Reports", icon: "fa-line-chart", description: "Analyse permission-scoped leave activity, balances, and absence patterns", action: "openReports", visible: access.canViewReports },
+                    { key: "audit", label: "Audit Log", icon: "fa-shield", description: "Track authorised leave-management actions and configuration changes", action: "openAuditLog", visible: access.canViewAudit },
+                ],
+            },
+        ].map((section) => ({
+            ...section,
+            items: section.items.filter((item) => item.visible),
+        })).filter((section) => section.items.length);
     }
 
-    openOperationsRequests() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_requests_custom");
+    navigate(item) {
+        return this[item.action]();
+    }
+    openDashboard() {
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_dashboard");
     }
 
     openSetupExperience() {
@@ -69,11 +102,15 @@ export class CalendarSidebar extends Component {
     }
 
     async openRequests() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests", {
+            additionalContext: { request_workspace_tab: "my" },
+        });
     }
 
     openApprovals() {
-        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests");
+        this.action.doAction("hr_leave_dashboard.action_hr_leave_my_requests", {
+            additionalContext: { request_workspace_tab: "approvals" },
+        });
     }
 
     openConfiguration() {

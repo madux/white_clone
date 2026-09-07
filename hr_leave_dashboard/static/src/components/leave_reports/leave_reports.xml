@@ -4,19 +4,8 @@
     <div class="leaveapp o_lr_page o_lra_page">
       <CalendarSidebar activeMenu="'reports'"/>
       <main class="o_leave_dashboard o_lr_main o_lra_main">
-        <header class="o_lra_header">
-          <div>
-            <p class="o_lra_eyebrow">Reporting &amp; Analytics</p>
-            <h2>Leave Reports</h2>
-            <p>Live, permission-scoped analysis of leave activity, balances, approval performance and absence patterns.</p>
-          </div>
-          <div class="o_lra_header_meta">
-            <span><i class="fa fa-shield"/> <t t-esc="state.data.meta.scope_label || 'Authorised scope'"/></span>
-            <small><t t-esc="state.data.meta.employee_count || 0"/> employees · refreshed <t t-esc="state.lastRefreshed || '—'"/></small>
-          </div>
-        </header>
-
         <section class="o_lra_toolbar">
+          <div class="o_lra_header_meta" title="Current reporting scope"><span><i class="fa fa-shield"/> <t t-esc="state.data.meta.scope_label || 'Authorised scope'"/></span><small><t t-esc="state.data.meta.employee_count || 0"/> employees</small></div>
           <label class="o_lra_picker">
             <span>Report</span>
             <select t-model="state.activeReport" t-on-change="(ev) => this.setReport(ev.target.value)">
