@@ -1,6 +1,11 @@
 import json
+import logging
+from datetime import datetime, timedelta
+
 from odoo import api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
+
+_logger = logging.getLogger(__name__)
 
 
 CONFIDENCE_PRESETS = {
@@ -191,11 +196,19 @@ class IntelligenceDataset(models.Model):
                     _("Only draft datasets can be edited in the wizard.")
                 )
             dataset.write(payload)
+            created = False
         else:
             payload.setdefault("owner_id", self.env.user.id)
             dataset = self.create(payload)
+            created = True
         dataset._snapshot_thresholds()
         dataset._snapshot_profiles()
+        self.env["doc.intelligence.audit.event"].log_dataset(
+            dataset,
+            "dataset",
+            "created" if created else "updated",
+            detail="Wizard draft saved.",
+        )
         return dataset
 
     def action_run(self):
@@ -221,6 +234,14 @@ class IntelligenceDataset(models.Model):
             }
         )
         self.state = "queued"
+        self.env["doc.intelligence.audit.event"].log_dataset(
+            self,
+            "dataset",
+            "run",
+            target=job,
+            detail="Extraction job queued.",
+            correlation_id="job-%s" % job.id,
+        )
         job.action_process(limit=25)
         return job
 
@@ -312,51 +333,82 @@ class IntelligenceJob(models.Model):
         for job in self:
             if job.state in ("completed", "failed", "cancelled", "paused"):
                 continue
-            dataset = job.dataset_id
-            job.state = "running"
-            dataset.state = "running"
-            documents = dataset._source_documents()
-            job.document_count = len(documents)
-            done_ids = set(job.record_ids.mapped("document_id").ids)
-            pending = documents.filtered(lambda document: document.id not in done_ids)
-            batch = pending[:limit]
-            field_keys = set(dataset._field_keys())
-            for document in batch:
-                job._process_document(
-                    document,
-                    field_keys,
-                    classify_document,
-                    extract_document_text,
-                    extract_field_value,
+            try:
+                dataset = job.dataset_id
+                job.state = "running"
+                dataset.state = "running"
+                documents = dataset._source_documents()
+                job.document_count = len(documents)
+                done_ids = set(job.record_ids.mapped("document_id").ids)
+                pending = documents.filtered(lambda document: document.id not in done_ids)
+                batch = pending[:limit]
+                field_keys = set(dataset._field_keys())
+                for document in batch:
+                    job._process_document(
+                        document,
+                        field_keys,
+                        classify_document,
+                        extract_document_text,
+                        extract_field_value,
+                    )
+                job.processed_count = len(job.record_ids)
+                job.progress = (
+                    100.0
+                    if not job.document_count
+                    else round(100.0 * job.processed_count / job.document_count, 1)
                 )
-            job.processed_count = len(job.record_ids)
-            job.progress = (
-                100.0
-                if not job.document_count
-                else round(100.0 * job.processed_count / job.document_count, 1)
-            )
-            remaining = job.document_count - job.processed_count
-            records = job.record_ids
-            confidences = records.mapped("document_confidence")
-            dataset.record_count = len(records)
-            dataset.average_confidence = (
-                sum(confidences) / len(confidences) if confidences else 0.0
-            )
-            if remaining > 0:
-                job.state = "queued"
-                dataset.state = "queued"
-                continue
-            if not documents:
-                job.state = "completed"
-                job.error_message = _("No source documents matched this dataset.")
-                dataset.state = "completed"
-                continue
-            if records.filtered(lambda record: record.review_status == "needs_review"):
-                job.state = "needs_review"
-                dataset.state = "needs_review"
-            else:
-                job.state = "completed"
-                dataset.state = "completed"
+                remaining = job.document_count - job.processed_count
+                records = job.record_ids
+                confidences = records.mapped("document_confidence")
+                dataset.record_count = len(records)
+                dataset.average_confidence = (
+                    sum(confidences) / len(confidences) if confidences else 0.0
+                )
+                if remaining > 0:
+                    job.state = "queued"
+                    dataset.state = "queued"
+                    continue
+                if not documents:
+                    job.state = "completed"
+                    job.error_message = _("No source documents matched this dataset.")
+                    dataset.state = "completed"
+                    self.env["doc.intelligence.audit.event"].log_dataset(
+                        dataset,
+                        "extraction",
+                        "completed",
+                        target=job,
+                        detail=job.error_message,
+                        severity="warning",
+                        correlation_id="job-%s" % job.id,
+                    )
+                    continue
+                if records.filtered(lambda record: record.review_status == "needs_review"):
+                    job.state = "needs_review"
+                    dataset.state = "needs_review"
+                else:
+                    job.state = "completed"
+                    dataset.state = "completed"
+                self.env["doc.intelligence.audit.event"].log_dataset(
+                    dataset,
+                    "extraction",
+                    "completed",
+                    target=job,
+                    detail="Processed %s document(s)." % job.processed_count,
+                    correlation_id="job-%s" % job.id,
+                )
+            except Exception as error:
+                _logger.exception("Intelligence job %s failed", job.id)
+                job.state = "failed"
+                job.error_message = str(error)
+                job.dataset_id.state = "failed"
+                self.env["doc.intelligence.audit.event"].log_event(
+                    "extraction",
+                    "failed",
+                    target=job,
+                    detail=str(error),
+                    severity="error",
+                    correlation_id="job-%s" % job.id,
+                )
         return True
 
     def _process_document(
@@ -369,9 +421,12 @@ class IntelligenceJob(models.Model):
     ):
         self.ensure_one()
         dataset = self.dataset_id
-        text, used_ocr, pages = extract_document_text(
-            document.attachment_id, ocr_fallback=dataset.ocr_fallback
+        text, text_source, pages = extract_document_text(
+            document.attachment_id,
+            ocr_fallback=dataset.ocr_fallback,
+            env=self.env,
         )
+        used_ocr = text_source in ("groq_vision", "tesseract")
         if text:
             document.action_mark_ocr_completed(text)
         document_type, class_conf, _alts = classify_document(document, dataset)
@@ -395,6 +450,7 @@ class IntelligenceJob(models.Model):
                 "profile_version_id": version.id if version else False,
                 "classification_confidence": class_conf,
                 "extracted_text": text,
+                "text_source": text_source or "empty",
                 "used_ocr": used_ocr,
                 "page_count": pages,
             }
@@ -430,6 +486,20 @@ class IntelligenceJob(models.Model):
                         "message": _("Required field %s is missing.") % definition.name,
                     }
                 )
+        if not text:
+            blocking = True
+            self.env["doc.intelligence.validation.issue"].create(
+                {
+                    "record_id": record.id,
+                    "severity": "blocking",
+                    "message": _(
+                        "No text could be read from this file. "
+                        "Native PDF/Word/Excel is supported. Images and scanned PDFs "
+                        "need GROQ_API_KEY for vision, or Tesseract as a fallback. "
+                        "Legacy .doc files should be saved as .docx."
+                    ),
+                }
+            )
         avg = (
             sum(field_confidences) / len(field_confidences) if field_confidences else 0.0
         )
@@ -442,8 +512,9 @@ class IntelligenceJob(models.Model):
         else:
             status = "approved"
             validation = "ok"
-        if avg < review:
-            status = "needs_review"
+            if avg < review:
+                status = "needs_review"
+                validation = "warning"
         record.write(
             {
                 "document_confidence": avg,
@@ -451,6 +522,55 @@ class IntelligenceJob(models.Model):
                 "validation_status": validation,
             }
         )
+        if status == "approved":
+            self.env["doc.intelligence.chunk"].index_record(record)
+
+    def action_pause(self):
+        for job in self:
+            if job.state not in ("queued", "running"):
+                raise UserError(_("Only queued or running jobs can be paused."))
+            job.state = "paused"
+            job.dataset_id.state = "paused"
+            self.env["doc.intelligence.audit.event"].log_dataset(
+                job.dataset_id,
+                "job",
+                "paused",
+                target=job,
+                correlation_id="job-%s" % job.id,
+            )
+        return True
+
+    def action_resume(self):
+        for job in self:
+            if job.state != "paused":
+                raise UserError(_("Only paused jobs can be resumed."))
+            job.state = "queued"
+            job.dataset_id.state = "queued"
+            self.env["doc.intelligence.audit.event"].log_dataset(
+                job.dataset_id,
+                "job",
+                "resumed",
+                target=job,
+                correlation_id="job-%s" % job.id,
+            )
+        return True
+
+    def action_retry(self):
+        for job in self:
+            if job.state not in ("failed", "cancelled", "completed"):
+                raise UserError(_("Retry is only available after a job finishes or fails."))
+            job.error_message = False
+            job.state = "queued"
+            job.dataset_id.state = "queued"
+            self.env["doc.intelligence.audit.event"].log_dataset(
+                job.dataset_id,
+                "job",
+                "retried",
+                target=job,
+                correlation_id="job-%s" % job.id,
+            )
+            job.action_process(limit=25)
+        return True
 
     @api.model
     def _cron_process_jobs(self):
@@ -459,3 +579,171 @@ class IntelligenceJob(models.Model):
             limit=5,
         )
         jobs.action_process(limit=15)
+
+    @api.model
+    def overview_data(self):
+        Job = self.env["doc.intelligence.job"]
+        Record = self.env["doc.intelligence.record"]
+        Field = self.env["doc.intelligence.extracted.field"]
+        user = self.env.user
+        is_admin = user.has_group("base.group_system") or user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        job_domain = [] if is_admin else [("owner_id", "=", user.id)]
+        record_domain = (
+            []
+            if is_admin
+            else [("dataset_id.owner_id", "=", user.id)]
+        )
+        jobs = Job.search(job_domain, limit=20)
+        reviewed = Record.search(
+            record_domain
+            + [("review_status", "in", ["approved", "rejected", "overridden"])]
+        )
+        accepted = reviewed.filtered(
+            lambda record: record.review_status in ("approved", "overridden")
+        )
+        approved = Record.search(
+            record_domain + [("review_status", "=", "approved")]
+        )
+        queue_count = Record.search_count(
+            record_domain
+            + [("review_status", "in", ["needs_review", "extracted"])]
+        )
+        extraction = None
+        extraction_source = "none"
+        if reviewed:
+            extraction = round(100.0 * len(accepted) / len(reviewed), 1)
+            extraction_source = "reviewed"
+        classification = None
+        classification_source = "none"
+        if approved:
+            scores = approved.mapped("classification_confidence")
+            classification = round(
+                100.0 * (sum(scores) / len(scores) if scores else 0.0), 1
+            )
+            classification_source = "estimated"
+        quality = None
+        quality_source = "none"
+        if approved:
+            ok = len(approved.filtered(lambda record: record.validation_status == "ok"))
+            quality = round(100.0 * ok / len(approved), 1)
+            quality_source = "approved"
+        today = fields.Date.context_today(self)
+        horizon = today + timedelta(days=60)
+        expiring = []
+        date_keys = (
+            "end_date",
+            "expiry_date",
+            "contract_end",
+            "valid_until",
+            "expiration_date",
+        )
+        date_fields = Field.search(
+            [
+                ("key", "in", date_keys),
+                ("record_id.review_status", "in", ["approved", "overridden"]),
+            ]
+            + (
+                []
+                if is_admin
+                else [("record_id.dataset_id.owner_id", "=", user.id)]
+            )
+        )
+        for item in date_fields:
+            parsed = _parse_overview_date(item.normalized_value or item.value)
+            if parsed and today <= parsed <= horizon:
+                expiring.append(
+                    {
+                        "record_id": item.record_id.id,
+                        "document": item.record_id.document_id.name,
+                        "employee": item.record_id.employee_id.name or "",
+                        "date": str(parsed),
+                        "field": item.name,
+                    }
+                )
+        probation_fields = Field.search(
+            [
+                ("key", "ilike", "probation"),
+                ("record_id.review_status", "in", ["approved", "overridden"]),
+            ]
+            + (
+                []
+                if is_admin
+                else [("record_id.dataset_id.owner_id", "=", user.id)]
+            )
+        )
+        probation = []
+        for item in probation_fields:
+            parsed = _parse_overview_date(item.normalized_value or item.value)
+            if parsed and parsed >= today:
+                probation.append(
+                    {
+                        "record_id": item.record_id.id,
+                        "document": item.record_id.document_id.name,
+                        "employee": item.record_id.employee_id.name or "",
+                        "date": str(parsed),
+                    }
+                )
+        failed = jobs.filtered(
+            lambda job: job.state == "failed"
+            or (job.error_message and job.state in ("completed", "failed"))
+        )
+        return {
+            "queue_count": queue_count,
+            "reviewed_count": len(reviewed),
+            "approved_count": len(approved),
+            "metrics": {
+                "extraction_accuracy": extraction,
+                "extraction_source": extraction_source,
+                "classification_accuracy": classification,
+                "classification_source": classification_source,
+                "data_quality": quality,
+                "data_quality_source": quality_source,
+            },
+            "jobs": [
+                {
+                    "id": job.id,
+                    "state": job.state,
+                    "document_count": job.document_count,
+                    "processed_count": job.processed_count,
+                    "progress": job.progress,
+                    "error_message": job.error_message or "",
+                    "create_date": str(job.create_date or ""),
+                    "dataset_id": job.dataset_id.id,
+                    "dataset": job.dataset_id.name,
+                    "source": job.dataset_id.source or "",
+                    "owner_name": job.owner_id.name or "",
+                }
+                for job in jobs
+            ],
+            "attention": {
+                "failed": [
+                    {
+                        "id": job.id,
+                        "dataset": job.dataset_id.name,
+                        "reason": job.error_message or "Job failed.",
+                    }
+                    for job in failed
+                ],
+                "expiring": expiring[:10],
+                "probation": probation[:10],
+            },
+        }
+
+
+def _parse_overview_date(value):
+    text = (value or "").strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d %B %Y", "%d %b %Y"):
+        try:
+            return datetime.strptime(text[:32], fmt).date()
+        except ValueError:
+            continue
+    if len(text) >= 10:
+        try:
+            return datetime.strptime(text[:10], "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None

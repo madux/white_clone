@@ -9,7 +9,7 @@ import {
   useNewIntelligenceProfileVersion,
   useUpdateIntelligenceProfile,
 } from "../../../../hooks/useIntelligence";
-import type { IntelligenceField, IntelligenceProfile } from "../../../lib/intelligence-api";
+import type { IntelligenceField, IntelligenceProfile } from "../../../../lib/intelligence-api";
 import {
   IntelligenceEmpty,
   IntelligenceError,

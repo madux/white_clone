@@ -24,21 +24,24 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 ## Phase 5 — Vertical-slice extraction job
 - [x] Job model + async processing
 - [x] One document type, one profile, one source, one job
+- [x] Native text for PDF/Word/Excel/PPT/txt; Groq vision only for images/scans
 
 ## Phase 6 — Review queue
-- [ ] Split viewer + extracted fields
-- [ ] Approve / reject / correct / override with audit
+- [x] Split viewer + extracted fields
+- [x] Approve / reject / correct / override with audit
 
 ## Phase 7 — Overview and monitoring
-- [ ] Real jobs, progress polling, attention cards
-- [ ] Label estimated/demo metrics honestly
+- [x] Real jobs, progress polling, attention cards
+- [x] Label estimated/demo metrics honestly
 
 ## Phase 8 — Settings and audit logs
-- [ ] Intelligence settings
-- [ ] Audit log UI + events
+- [x] Groq / pgvector health on settings (key stays on the server)
+- [x] Audit log UI + events
 
 ## Phase 9 — Ask & Insights
-- [ ] Permission-aware queries with citations
+- [x] Permission-aware retrieval over approved chunks (pgvector + Groq gpt-oss-120b)
+- [x] Query history from audit events
+- [x] Structured field filters for expiry, notice, probation, missing training
 
 ## Phase 10 — Notifications and hardening
 - [ ] Notifications/webhooks only if real health checks exist

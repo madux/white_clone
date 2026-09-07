@@ -2,7 +2,11 @@
 
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useIntelligenceDatasets } from "../../../../hooks/useIntelligence";
+import {
+  useControlIntelligenceJob,
+  useIntelligenceDatasets,
+} from "../../../../hooks/useIntelligence";
+import type { IntelligenceDataset } from "../../../../lib/intelligence-api";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -80,21 +84,7 @@ export default function DatasetListScreen() {
                   </td>
                   <td className="px-4 py-3">{item.owner_name}</td>
                   <td className="px-4 py-3 text-right">
-                    {item.state === "draft" ? (
-                      <Link
-                        href={`/pages/document-intelligence/datasets/new?id=${item.id}`}
-                        className="text-sm font-semibold text-brand-pink"
-                      >
-                        Continue
-                      </Link>
-                    ) : (
-                      <Link
-                        href="/pages/document-intelligence/validate"
-                        className="text-sm font-semibold text-brand-pink"
-                      >
-                        Review
-                      </Link>
-                    )}
+                    <DatasetRowActions item={item} />
                   </td>
                 </tr>
               ))}
@@ -115,6 +105,64 @@ export default function DatasetListScreen() {
           }
         />
       )}
+    </div>
+  );
+}
+
+function DatasetRowActions({ item }: { item: IntelligenceDataset }) {
+  const control = useControlIntelligenceJob();
+  const job =
+    item.latest_job && typeof item.latest_job === "object"
+      ? item.latest_job
+      : null;
+  if (item.state === "draft") {
+    return (
+      <Link
+        href={`/pages/document-intelligence/datasets/new?id=${item.id}`}
+        className="text-sm font-semibold text-brand-pink"
+      >
+        Continue
+      </Link>
+    );
+  }
+  return (
+    <div className="flex flex-wrap justify-end gap-3">
+      <Link
+        href={`/pages/document-intelligence/validate?dataset_id=${item.id}`}
+        className="text-sm font-semibold text-brand-pink"
+      >
+        Review
+      </Link>
+      {job && ["queued", "running"].includes(job.state) ? (
+        <button
+          type="button"
+          className="text-sm font-semibold text-slate-600"
+          disabled={control.isPending}
+          onClick={() => control.mutate({ action: "pause", id: job.id })}
+        >
+          Pause
+        </button>
+      ) : null}
+      {job && job.state === "paused" ? (
+        <button
+          type="button"
+          className="text-sm font-semibold text-slate-600"
+          disabled={control.isPending}
+          onClick={() => control.mutate({ action: "resume", id: job.id })}
+        >
+          Resume
+        </button>
+      ) : null}
+      {job && ["failed", "cancelled", "completed"].includes(job.state) ? (
+        <button
+          type="button"
+          className="text-sm font-semibold text-slate-600"
+          disabled={control.isPending}
+          onClick={() => control.mutate({ action: "retry", id: job.id })}
+        >
+          Retry
+        </button>
+      ) : null}
     </div>
   );
 }

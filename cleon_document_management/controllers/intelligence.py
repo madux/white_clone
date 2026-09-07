@@ -14,6 +14,12 @@ class DocumentIntelligenceController(http.Controller):
         )
 
     def _deny(self, message="You are not allowed to change Intelligence configuration."):
+        request.env["doc.intelligence.audit.event"].log_event(
+            "permission",
+            "denied",
+            detail=message,
+            severity="warning",
+        )
         return {"success": False, "message": message}
 
     def _type_data(self, document_type):
@@ -129,6 +135,11 @@ class DocumentIntelligenceController(http.Controller):
         if kwargs.get("default_profile_id"):
             values["default_profile_id"] = int(kwargs["default_profile_id"])
         record = request.env["doc.document.type"].create(values)
+        request.env["doc.intelligence.audit.event"].log_event(
+            "rule",
+            "document_type_created",
+            target=record,
+        )
         return {"success": True, "data": self._type_data(record)}
 
     @http.route(
@@ -158,6 +169,11 @@ class DocumentIntelligenceController(http.Controller):
             if key in kwargs:
                 values[key] = kwargs.get(key)
         record.write(values)
+        request.env["doc.intelligence.audit.event"].log_event(
+            "rule",
+            "document_type_updated",
+            target=record,
+        )
         return {"success": True, "data": self._type_data(record)}
 
     @http.route(
@@ -215,6 +231,12 @@ class DocumentIntelligenceController(http.Controller):
             document_type = request.env["doc.document.type"].browse(type_id)
             if not document_type.default_profile_id:
                 document_type.default_profile_id = profile.id
+            request.env["doc.intelligence.audit.event"].log_event(
+                "profile",
+                "created",
+                target=profile,
+                detail="Extraction profile created.",
+            )
             return {"success": True, "data": self._profile_data(profile)}
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
@@ -257,6 +279,12 @@ class DocumentIntelligenceController(http.Controller):
         )
         if "fields" in kwargs:
             self._replace_fields(version, kwargs.get("fields") or [])
+        request.env["doc.intelligence.audit.event"].log_event(
+            "profile",
+            "updated",
+            target=profile,
+            detail="Profile or field rules updated.",
+        )
         return {"success": True, "data": self._profile_data(profile)}
 
     @http.route(
@@ -277,6 +305,11 @@ class DocumentIntelligenceController(http.Controller):
         if not profile:
             return {"success": False, "message": "Profile not found."}
         profile.write({"active": bool(kwargs.get("active", False))})
+        request.env["doc.intelligence.audit.event"].log_event(
+            "profile",
+            "archived" if not profile.active else "restored",
+            target=profile,
+        )
         return {"success": True, "data": self._profile_data(profile)}
 
     @http.route(
@@ -297,6 +330,12 @@ class DocumentIntelligenceController(http.Controller):
         if not profile:
             return {"success": False, "message": "Profile not found."}
         profile.action_new_version()
+        request.env["doc.intelligence.audit.event"].log_event(
+            "profile",
+            "new_version",
+            target=profile,
+            detail="Profile version %s" % profile.current_version_id.version,
+        )
         return {"success": True, "data": self._profile_data(profile)}
 
     def _dataset_vals(self, kwargs):
@@ -340,6 +379,10 @@ class DocumentIntelligenceController(http.Controller):
             "progress": job.progress,
             "error_message": job.error_message or "",
             "create_date": str(job.create_date or ""),
+            "dataset_id": job.dataset_id.id,
+            "dataset": job.dataset_id.name,
+            "source": job.dataset_id.source or "",
+            "owner_name": job.owner_id.name or "",
         }
 
     def _dataset_data(self, dataset):
@@ -467,14 +510,21 @@ class DocumentIntelligenceController(http.Controller):
             "document_confidence": record.document_confidence,
             "classification_confidence": record.classification_confidence,
             "used_ocr": record.used_ocr,
+            "text_source": record.text_source or "empty",
+            "extracted_text": (record.extracted_text or "")[:20000],
             "preview_url": f"/document-management/document/{record.document_id.id}/preview",
+            "reviewer": record.reviewer_id.name or "",
+            "reviewed_at": str(record.reviewed_at or ""),
+            "review_comment": record.review_comment or "",
             "fields": [
                 {
+                    "id": field.id,
                     "key": field.key,
                     "name": field.name,
                     "value": field.value or "",
                     "confidence": field.confidence,
                     "citation": field.citation or "",
+                    "page": field.page or 0,
                     "required": field.required,
                 }
                 for field in record.field_ids
@@ -488,6 +538,20 @@ class DocumentIntelligenceController(http.Controller):
                     "resolved": issue.resolved,
                 }
                 for issue in record.issue_ids
+            ],
+            "review_actions": [
+                {
+                    "id": item.id,
+                    "action": item.action,
+                    "field_key": item.field_key or "",
+                    "before_value": item.before_value or "",
+                    "after_value": item.after_value or "",
+                    "reason": item.reason or "",
+                    "comment": item.comment or "",
+                    "user": item.user_id.name,
+                    "create_date": str(item.create_date or ""),
+                }
+                for item in record.review_action_ids[:20]
             ],
         }
 
@@ -507,3 +571,400 @@ class DocumentIntelligenceController(http.Controller):
             "success": True,
             "data": [self._record_data(record) for record in records],
         }
+
+    def _load_review_record(self, kwargs):
+        return (
+            request.env["doc.intelligence.record"]
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
+
+    def _review_response(self, method_name, kwargs, *args):
+        if not self._is_admin():
+            return self._deny("You are not allowed to review extraction records.")
+        record = self._load_review_record(kwargs)
+        if not record:
+            return {"success": False, "message": "Record not found."}
+        try:
+            getattr(record, method_name)(*args)
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._record_data(record)}
+
+    @http.route(
+        "/api/document-intelligence/records/approve",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_approve(self, **kwargs):
+        return self._review_response(
+            "action_approve", kwargs, kwargs.get("reason") or ""
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/reject",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_reject(self, **kwargs):
+        return self._review_response(
+            "action_reject", kwargs, kwargs.get("reason") or ""
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/override",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_override(self, **kwargs):
+        return self._review_response(
+            "action_override", kwargs, kwargs.get("reason") or ""
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/correct",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_correct(self, **kwargs):
+        return self._review_response(
+            "action_correct_field",
+            kwargs,
+            kwargs.get("field_key") or "",
+            kwargs.get("value") or "",
+            kwargs.get("reason") or "",
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/resolve-issue",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_resolve_issue(self, **kwargs):
+        return self._review_response(
+            "action_resolve_issue",
+            kwargs,
+            kwargs.get("issue_id") or 0,
+            kwargs.get("reason") or "",
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/comment",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_comment(self, **kwargs):
+        return self._review_response(
+            "action_add_comment", kwargs, kwargs.get("comment") or ""
+        )
+
+    @http.route(
+        "/api/document-intelligence/records/bulk-approve",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def record_bulk_approve(self, **kwargs):
+        if not self._is_admin():
+            return self._deny("You are not allowed to review extraction records.")
+        try:
+            approved = request.env["doc.intelligence.record"].action_bulk_approve_safe(
+                kwargs.get("ids")
+            )
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "data": {
+                "approved_count": len(approved),
+                "ids": approved.ids,
+            },
+        }
+
+    @http.route(
+        "/api/document-intelligence/settings/health",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def settings_health(self, **kwargs):
+        from ..models.intelligence_groq import (
+            EMBED_MODEL,
+            LLM_MODEL,
+            VISION_MODEL,
+            groq_configured,
+        )
+
+        env = request.env
+        pgvector = False
+        try:
+            env.cr.execute("SAVEPOINT di_health")
+            env.cr.execute("SELECT 1 FROM pg_extension WHERE extname = 'vector'")
+            pgvector = bool(env.cr.fetchone())
+            env.cr.execute("RELEASE SAVEPOINT di_health")
+        except Exception:
+            env.cr.execute("ROLLBACK TO SAVEPOINT di_health")
+        return {
+            "success": True,
+            "data": {
+                "groq_configured": groq_configured(env),
+                "pgvector": pgvector,
+                "llm_model": LLM_MODEL,
+                "vision_model": VISION_MODEL,
+                "embedding_model": EMBED_MODEL,
+                "extraction": (
+                    "Native text for PDF, Word, Excel, PowerPoint, and plain files. "
+                    "Groq vision only for images and scanned PDFs. Field values use rules, not an LLM."
+                ),
+            },
+        }
+
+    def _load_job(self, kwargs):
+        job = (
+            request.env["doc.intelligence.job"]
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
+        return job
+
+    def _can_control_job(self, job):
+        return self._is_admin() or job.owner_id == request.env.user
+
+    @http.route(
+        "/api/document-intelligence/overview",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def overview(self, **kwargs):
+        return {
+            "success": True,
+            "data": request.env["doc.intelligence.job"].overview_data(),
+        }
+
+    @http.route(
+        "/api/document-intelligence/jobs/pause",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def job_pause(self, **kwargs):
+        job = self._load_job(kwargs)
+        if not job:
+            return {"success": False, "message": "Job not found."}
+        if not self._can_control_job(job):
+            return self._deny("You are not allowed to pause this job.")
+        try:
+            job.action_pause()
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._job_data(job)}
+
+    @http.route(
+        "/api/document-intelligence/jobs/resume",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def job_resume(self, **kwargs):
+        job = self._load_job(kwargs)
+        if not job:
+            return {"success": False, "message": "Job not found."}
+        if not self._can_control_job(job):
+            return self._deny("You are not allowed to resume this job.")
+        try:
+            job.action_resume()
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._job_data(job)}
+
+    @http.route(
+        "/api/document-intelligence/jobs/retry",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def job_retry(self, **kwargs):
+        job = self._load_job(kwargs)
+        if not job:
+            return {"success": False, "message": "Job not found."}
+        if not self._can_control_job(job):
+            return self._deny("You are not allowed to retry this job.")
+        try:
+            job.action_retry()
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._job_data(job)}
+
+    @http.route(
+        "/api/document-intelligence/audit-logs",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def audit_logs(self, **kwargs):
+        if not self._is_admin():
+            return self._deny("You are not allowed to view Intelligence audit logs.")
+        domain = []
+        if kwargs.get("category"):
+            domain.append(("category", "=", kwargs["category"]))
+        limit = min(int(kwargs.get("limit") or 100), 300)
+        events = request.env["doc.intelligence.audit.event"].search(
+            domain, limit=limit
+        )
+        return {
+            "success": True,
+            "data": [event.to_api() for event in events],
+        }
+
+    @http.route(
+        "/api/document-intelligence/ask/history",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def ask_history(self, **kwargs):
+        domain = [("category", "=", "query")]
+        if not self._is_admin():
+            domain.append(("user_id", "=", request.env.user.id))
+        events = request.env["doc.intelligence.audit.event"].search(
+            domain, limit=20
+        )
+        return {
+            "success": True,
+            "data": [
+                {
+                    "id": event.id,
+                    "question": event.detail or "",
+                    "answer": event.after_value or "",
+                    "create_date": str(event.create_date or ""),
+                    "user": event.user_id.name,
+                }
+                for event in events
+            ],
+        }
+
+    @http.route(
+        "/api/document-intelligence/ask",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def ask(self, **kwargs):
+        from ..models.intelligence_groq import (
+            LLM_MODEL,
+            answer_with_context,
+            groq_configured,
+        )
+
+        question = (kwargs.get("question") or "").strip()
+        if not question:
+            return {"success": False, "message": "Enter a question."}
+
+        def _ask_payload(answer, citations, insufficient, extra=None):
+            extra = extra or {}
+            request.env["doc.intelligence.audit.event"].log_event(
+                "query",
+                "asked",
+                detail=question,
+                after=answer[:2000],
+                severity="warning" if insufficient else "info",
+            )
+            data = {
+                "answer": answer,
+                "insufficient_evidence": insufficient,
+                "model": extra.get("model") or LLM_MODEL,
+                "citations": citations,
+                "fact_based": bool(extra.get("fact_based")),
+                "intent": extra.get("intent") or "",
+            }
+            return {"success": True, "data": data}
+
+        from ..models.intelligence_ask import answer_structured
+
+        structured = answer_structured(request.env, question)
+        if structured.get("fact_based"):
+            intent = structured.get("intent") or {}
+            return _ask_payload(
+                structured["answer"],
+                structured.get("citations") or [],
+                structured.get("insufficient_evidence", True),
+                extra={
+                    "model": "structured-fields",
+                    "fact_based": True,
+                    "intent": intent.get("label") or intent.get("kind") or "",
+                },
+            )
+
+        chunks = request.env["doc.intelligence.chunk"].search_similar(question)
+        citations = []
+        evidence = []
+        for chunk in chunks:
+            document = chunk.document_id
+            citations.append(
+                {
+                    "document_id": document.id,
+                    "document": document.name,
+                    "employee": chunk.employee_id.name or "",
+                    "page": chunk.page,
+                    "snippet": (chunk.content or "")[:280],
+                }
+            )
+            evidence.append(
+                "Document: %s | Employee: %s | Page: %s\n%s"
+                % (
+                    document.name,
+                    chunk.employee_id.name or "n/a",
+                    chunk.page,
+                    chunk.content,
+                )
+            )
+        if not evidence:
+            return _ask_payload(
+                "There is not enough approved, indexed evidence to answer. "
+                "Run a dataset, review records, and approve them first.",
+                [],
+                True,
+                extra={"intent": "document_search"},
+            )
+        if not groq_configured(request.env):
+            return _ask_payload(
+                "Matching approved excerpts were found, but GROQ_API_KEY is not "
+                "set so the language model cannot compose an answer. Citations are below.",
+                citations,
+                True,
+                extra={"intent": "document_search"},
+            )
+        try:
+            answer = answer_with_context(
+                question, "\n\n".join(evidence[:8]), env=request.env
+            )
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return _ask_payload(
+            answer,
+            citations,
+            False,
+            extra={"intent": "document_search"},
+        )

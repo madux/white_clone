@@ -11,3 +11,5 @@ from . import hr_employee
 from . import intelligence_profile
 from . import intelligence_dataset
 from . import intelligence_record
+from . import intelligence_index
+from . import intelligence_audit

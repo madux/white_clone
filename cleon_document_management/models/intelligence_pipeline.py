@@ -1,6 +1,7 @@
 import base64
 import logging
 import re
+from io import BytesIO
 
 _logger = logging.getLogger(__name__)
 
@@ -15,6 +16,10 @@ PHONE_RE = re.compile(r"\+?\d[\d\s().-]{7,}\d")
 NOTICE_RE = re.compile(r"notice(?:\s+period)?[:\s]+([^\n.]{2,40})", re.I)
 NAME_RE = re.compile(r"(?:employee(?:\s+name)?|name)[:\s]+([A-Za-z][A-Za-z' -]{1,80})", re.I)
 
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".tif", ".tiff", ".bmp")
+SCAN_CHARS_PER_PAGE = 40
+MAX_VISION_PAGES = 4
+
 
 def attachment_bytes(attachment):
     raw = attachment.raw
@@ -28,59 +33,219 @@ def attachment_bytes(attachment):
     return base64.b64decode(data.encode())
 
 
-def extract_document_text(attachment, ocr_fallback=True):
-    """Return (text, used_ocr, page_count). Never raises."""
-    raw = attachment_bytes(attachment)
-    mime = (attachment.mimetype or "").lower()
+def _suffix(attachment):
     name = (attachment.name or "").lower()
-    if not raw:
-        return "", False, 0
+    if "." in name:
+        return "." + name.rsplit(".", 1)[-1]
+    return ""
 
-    if mime.startswith("text/") or name.endswith(".txt"):
+
+def _is_image(attachment):
+    mime = (attachment.mimetype or "").lower()
+    return mime.startswith("image/") or _suffix(attachment) in IMAGE_EXT
+
+
+def _decode_text(raw):
+    for encoding in ("utf-8", "utf-16", "latin-1"):
         try:
-            return raw.decode("utf-8", errors="replace"), False, 1
+            return raw.decode(encoding)
         except Exception:
-            return "", False, 0
+            continue
+    return raw.decode("utf-8", errors="replace")
 
-    text = ""
-    pages = 0
+
+def _html_text(raw):
+    text = _decode_text(raw)
+    text = re.sub(r"(?is)<script.*?>.*?</script>", " ", text)
+    text = re.sub(r"(?is)<style.*?>.*?</style>", " ", text)
+    text = re.sub(r"(?s)<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _docx_text(raw):
+    from docx import Document
+
+    document = Document(BytesIO(raw))
+    parts = [paragraph.text for paragraph in document.paragraphs if paragraph.text]
+    for table in document.tables:
+        for row in table.rows:
+            parts.append(" | ".join(cell.text.strip() for cell in row.cells))
+    return "\n".join(parts).strip()
+
+
+def _xlsx_text(raw):
+    from openpyxl import load_workbook
+
+    book = load_workbook(BytesIO(raw), data_only=True, read_only=True)
+    lines = []
+    for sheet in book.worksheets:
+        lines.append("Sheet: %s" % sheet.title)
+        for row in sheet.iter_rows(values_only=True):
+            values = [str(cell) for cell in row if cell not in (None, "")]
+            if values:
+                lines.append(" | ".join(values))
+    return "\n".join(lines).strip()
+
+
+def _pptx_text(raw):
+    from pptx import Presentation
+
+    deck = Presentation(BytesIO(raw))
+    lines = []
+    for index, slide in enumerate(deck.slides, start=1):
+        lines.append("Slide %s" % index)
+        for shape in slide.shapes:
+            if getattr(shape, "has_text_frame", False):
+                text = shape.text_frame.text.strip()
+                if text:
+                    lines.append(text)
+    return "\n".join(lines).strip()
+
+
+def _pdf_native(raw):
     try:
         import fitz
 
         pdf = fitz.open(stream=raw, filetype="pdf")
         pages = pdf.page_count
-        text = "\n".join(page.get_text() or "" for page in pdf)
+        text = "\n".join((page.get_text() or "") for page in pdf)
         pdf.close()
-        if text.strip():
-            return text, False, pages
+        return text.strip(), pages
     except Exception as error:
         _logger.debug("pymupdf extract failed: %s", error)
-
     try:
         from pypdf import PdfReader
-        from io import BytesIO
 
         reader = PdfReader(BytesIO(raw))
         pages = len(reader.pages)
         text = "\n".join((page.extract_text() or "") for page in reader.pages)
-        if text.strip():
-            return text, False, pages
+        return text.strip(), pages
     except Exception as error:
         _logger.debug("pypdf extract failed: %s", error)
+        return "", 0
 
-    if ocr_fallback:
+
+def _pdf_page_images(raw, limit=MAX_VISION_PAGES):
+    import fitz
+
+    pdf = fitz.open(stream=raw, filetype="pdf")
+    images = []
+    for page in list(pdf)[:limit]:
+        pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+        images.append(("image/png", pixmap.tobytes("png")))
+    pages = pdf.page_count
+    pdf.close()
+    return images, pages
+
+
+def _image_png(raw, mime="image/png"):
+    try:
+        import fitz
+
+        pixmap = fitz.Pixmap(raw)
+        if pixmap.n > 4:
+            pixmap = fitz.Pixmap(fitz.csRGB, pixmap)
+        return [("image/png", pixmap.tobytes("png"))]
+    except Exception:
+        return [(mime or "image/jpeg", raw)]
+
+
+def _vision_text(images, env):
+    from .intelligence_groq import transcribe_images
+
+    return transcribe_images(images, env=env)
+
+
+def _tesseract_images(images):
+    import pytesseract
+    from PIL import Image
+
+    parts = []
+    for _mime, raw in images:
+        image = Image.open(BytesIO(raw))
+        parts.append(pytesseract.image_to_string(image) or "")
+    return "\n".join(parts).strip()
+
+
+def extract_document_text(attachment, ocr_fallback=True, env=None):
+    """Return (text, source, page_count). source: native|groq_vision|tesseract|empty."""
+    raw = attachment_bytes(attachment)
+    mime = (attachment.mimetype or "").lower()
+    suffix = _suffix(attachment)
+    if not raw:
+        return "", "empty", 0
+
+    if mime.startswith("text/") or suffix in (".txt", ".csv", ".md", ".json", ".log"):
+        return _decode_text(raw).strip(), "native", 1
+    if mime in ("text/html", "application/xhtml+xml") or suffix in (".html", ".htm"):
+        return _html_text(raw), "native", 1
+    if suffix in (".docx",) or "wordprocessingml" in mime:
         try:
-            from pdf2image import convert_from_bytes
-            import pytesseract
-
-            images = convert_from_bytes(raw, first_page=1, last_page=3)
-            ocr_text = "\n".join(pytesseract.image_to_string(image) for image in images)
-            if ocr_text.strip():
-                return ocr_text, True, len(images)
+            return _docx_text(raw), "native", 1
         except Exception as error:
-            _logger.debug("ocr fallback failed: %s", error)
+            _logger.warning("docx extract failed: %s", error)
+    if suffix in (".xlsx", ".xlsm") or "spreadsheetml" in mime:
+        try:
+            return _xlsx_text(raw), "native", 1
+        except Exception as error:
+            _logger.warning("xlsx extract failed: %s", error)
+    if suffix == ".pptx" or "presentationml" in mime:
+        try:
+            return _pptx_text(raw), "native", 1
+        except Exception as error:
+            _logger.warning("pptx extract failed: %s", error)
+    if suffix == ".doc" or mime == "application/msword":
+        return "", "empty", 0
 
-    return text.strip(), False, pages
+    if mime == "application/pdf" or suffix == ".pdf":
+        text, pages = _pdf_native(raw)
+        pages = pages or 1
+        if len(text) >= max(80, pages * SCAN_CHARS_PER_PAGE):
+            return text, "native", pages
+        if ocr_fallback:
+            try:
+                images, pages = _pdf_page_images(raw)
+                try:
+                    vision = _vision_text(images, env)
+                    if vision:
+                        return vision, "groq_vision", pages
+                except Exception as error:
+                    _logger.warning("Groq vision failed: %s", error)
+                ocr = _tesseract_images(images)
+                if ocr:
+                    return ocr, "tesseract", pages
+            except Exception as error:
+                _logger.warning("scanned pdf fallback failed: %s", error)
+        return text, "native" if text else "empty", pages
+
+    if _is_image(attachment):
+        images = _image_png(raw, mime or "image/jpeg")
+        if ocr_fallback:
+            try:
+                vision = _vision_text(images, env)
+                if vision:
+                    return vision, "groq_vision", 1
+            except Exception as error:
+                _logger.warning("Groq vision failed: %s", error)
+            try:
+                ocr = _tesseract_images(images)
+                if ocr:
+                    return ocr, "tesseract", 1
+            except Exception as error:
+                _logger.warning("image ocr failed: %s", error)
+        return "", "empty", 1
+
+    # Unknown binary: try PDF/image openers, then utf-8.
+    text, pages = _pdf_native(raw)
+    if text:
+        return text, "native", pages or 1
+    try:
+        decoded = _decode_text(raw).strip()
+        if decoded and sum(32 <= ord(char) < 127 or char in "\n\r\t" for char in decoded[:400]) > 200:
+            return decoded, "native", 1
+    except Exception:
+        pass
+    return "", "empty", 0
 
 
 def _line_after(label, text):

@@ -2,4 +2,9 @@ pytesseract
 pypdf
 pdf2image
 pymupdf
+pillow
+python-docx
+openpyxl
+python-pptx
+groq
 ollama

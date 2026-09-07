@@ -102,6 +102,10 @@ export interface IntelligenceJob {
   progress: number;
   error_message: string;
   create_date: string;
+  dataset_id?: number;
+  dataset?: string;
+  source?: string;
+  owner_name?: string;
 }
 
 export interface IntelligenceDataset {
@@ -158,7 +162,143 @@ export const intelligenceDatasetApi = {
       "/api/document-intelligence/review-queue",
       datasetId ? { dataset_id: datasetId } : {},
     ),
+  approveRecord: (id: number, reason = "") =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/approve",
+      { id, reason },
+    ),
+  rejectRecord: (id: number, reason: string) =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/reject",
+      { id, reason },
+    ),
+  overrideRecord: (id: number, reason: string) =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/override",
+      { id, reason },
+    ),
+  correctField: (payload: {
+    id: number;
+    field_key: string;
+    value: string;
+    reason: string;
+  }) =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/correct",
+      payload,
+    ),
+  resolveIssue: (payload: { id: number; issue_id: number; reason?: string }) =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/resolve-issue",
+      payload,
+    ),
+  commentRecord: (id: number, comment: string) =>
+    unwrap<IntelligenceExtractionRecord>(
+      "/api/document-intelligence/records/comment",
+      { id, comment },
+    ),
+  bulkApproveSafe: (ids?: number[]) =>
+    unwrap<{ approved_count: number; ids: number[] }>(
+      "/api/document-intelligence/records/bulk-approve",
+      ids ? { ids } : {},
+    ),
+  ask: (question: string) =>
+    unwrap<{
+      answer: string;
+      insufficient_evidence: boolean;
+      model: string;
+      citations: Array<{
+        document_id: number;
+        document: string;
+        employee: string;
+        page: number;
+        field?: string;
+        snippet: string;
+      }>;
+      fact_based?: boolean;
+      intent?: string;
+    }>("/api/document-intelligence/ask", { question }),
+  settingsHealth: () =>
+    unwrap<{
+      groq_configured: boolean;
+      pgvector: boolean;
+      llm_model: string;
+      vision_model: string;
+      embedding_model: string;
+      extraction: string;
+    }>("/api/document-intelligence/settings/health"),
+  overview: () =>
+    unwrap<IntelligenceOverview>("/api/document-intelligence/overview"),
+  pauseJob: (id: number) =>
+    unwrap<IntelligenceJob>("/api/document-intelligence/jobs/pause", { id }),
+  resumeJob: (id: number) =>
+    unwrap<IntelligenceJob>("/api/document-intelligence/jobs/resume", { id }),
+  retryJob: (id: number) =>
+    unwrap<IntelligenceJob>("/api/document-intelligence/jobs/retry", { id }),
+  auditLogs: (params: Record<string, unknown> = {}) =>
+    unwrap<IntelligenceAuditEvent[]>(
+      "/api/document-intelligence/audit-logs",
+      params,
+    ),
+  askHistory: () =>
+    unwrap<
+      Array<{
+        id: number;
+        question: string;
+        answer: string;
+        create_date: string;
+        user: string;
+      }>
+    >("/api/document-intelligence/ask/history"),
 };
+
+export interface IntelligenceAuditEvent {
+  id: number;
+  user: string;
+  company: string;
+  category: string;
+  action: string;
+  target_model: string;
+  target_id: number;
+  target_name: string;
+  detail: string;
+  severity: string;
+  correlation_id: string;
+  before_value: string;
+  after_value: string;
+  create_date: string;
+}
+
+export interface IntelligenceOverview {
+  queue_count: number;
+  reviewed_count: number;
+  approved_count: number;
+  metrics: {
+    extraction_accuracy: number | null;
+    extraction_source: "none" | "reviewed";
+    classification_accuracy: number | null;
+    classification_source: "none" | "estimated";
+    data_quality: number | null;
+    data_quality_source: "none" | "approved";
+  };
+  jobs: IntelligenceJob[];
+  attention: {
+    failed: Array<{ id: number; dataset: string; reason: string }>;
+    expiring: Array<{
+      record_id: number;
+      document: string;
+      employee: string;
+      date: string;
+      field: string;
+    }>;
+    probation: Array<{
+      record_id: number;
+      document: string;
+      employee: string;
+      date: string;
+    }>;
+  };
+}
 
 export interface IntelligenceExtractionRecord {
   id: number;
@@ -174,13 +314,20 @@ export interface IntelligenceExtractionRecord {
   document_confidence: number;
   classification_confidence: number;
   used_ocr: boolean;
+  text_source: string;
+  extracted_text: string;
   preview_url: string;
+  reviewer: string;
+  reviewed_at: string;
+  review_comment: string;
   fields: Array<{
+    id?: number;
     key: string;
     name: string;
     value: string;
     confidence: number;
     citation: string;
+    page?: number;
     required: boolean;
   }>;
   issues: Array<{
@@ -189,5 +336,16 @@ export interface IntelligenceExtractionRecord {
     severity: string;
     message: string;
     resolved: boolean;
+  }>;
+  review_actions: Array<{
+    id: number;
+    action: string;
+    field_key: string;
+    before_value: string;
+    after_value: string;
+    reason: string;
+    comment: string;
+    user: string;
+    create_date: string;
   }>;
 }

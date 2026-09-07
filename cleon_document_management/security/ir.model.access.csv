@@ -55,4 +55,13 @@ access_doc_intelligence_extracted_user,doc.intelligence.extracted.field user,mod
 access_doc_intelligence_extracted_admin,doc.intelligence.extracted.field admin,model_doc_intelligence_extracted_field,base.group_system,1,1,1,1
 access_doc_intelligence_issue_user,doc.intelligence.validation.issue user,model_doc_intelligence_validation_issue,base.group_user,1,1,1,0
 access_doc_intelligence_issue_admin,doc.intelligence.validation.issue admin,model_doc_intelligence_validation_issue,base.group_system,1,1,1,1
+access_doc_intelligence_review_user,doc.intelligence.review.action user,model_doc_intelligence_review_action,base.group_user,1,1,1,0
+access_doc_intelligence_review_admin,doc.intelligence.review.action admin,model_doc_intelligence_review_action,base.group_system,1,1,1,1
+access_doc_intelligence_review_docadmin,doc.intelligence.review.action docadmin,model_doc_intelligence_review_action,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_chunk_user,doc.intelligence.chunk user,model_doc_intelligence_chunk,base.group_user,1,1,1,0
+access_doc_intelligence_chunk_admin,doc.intelligence.chunk admin,model_doc_intelligence_chunk,base.group_system,1,1,1,1
+access_doc_intelligence_chunk_docadmin,doc.intelligence.chunk docadmin,model_doc_intelligence_chunk,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_audit_user,doc.intelligence.audit.event user,model_doc_intelligence_audit_event,base.group_user,1,0,1,0
+access_doc_intelligence_audit_admin,doc.intelligence.audit.event admin,model_doc_intelligence_audit_event,base.group_system,1,1,1,1
+access_doc_intelligence_audit_docadmin,doc.intelligence.audit.event docadmin,model_doc_intelligence_audit_event,cleon_document_management.group_document_admin,1,1,1,1
 

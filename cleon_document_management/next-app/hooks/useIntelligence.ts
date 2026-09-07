@@ -121,13 +121,151 @@ export function useRunIntelligenceDataset() {
   });
 }
 
-export function useIntelligenceReviewQueue() {
+export function useIntelligenceReviewQueue(datasetId?: number) {
   return useQuery({
-    queryKey: INTELLIGENCE_KEYS.reviewQueue,
-    queryFn: () => intelligenceDatasetApi.reviewQueue(),
+    queryKey: [...INTELLIGENCE_KEYS.reviewQueue, datasetId || "all"],
+    queryFn: () => intelligenceDatasetApi.reviewQueue(datasetId),
     refetchInterval: (query) => {
       const rows = query.state.data || [];
       return rows.some((row) => row.review_status === "extracted") ? 4000 : false;
+    },
+  });
+}
+
+function invalidateReview(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.reviewQueue });
+  queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+}
+
+export function useReviewIntelligenceRecord() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      action,
+      id,
+      reason,
+      comment,
+      field_key,
+      value,
+      issue_id,
+    }: {
+      action:
+        | "approve"
+        | "reject"
+        | "override"
+        | "correct"
+        | "resolve"
+        | "comment";
+      id: number;
+      reason?: string;
+      comment?: string;
+      field_key?: string;
+      value?: string;
+      issue_id?: number;
+    }) => {
+      if (action === "approve") {
+        return intelligenceDatasetApi.approveRecord(id, reason);
+      }
+      if (action === "reject") {
+        return intelligenceDatasetApi.rejectRecord(id, reason || "");
+      }
+      if (action === "override") {
+        return intelligenceDatasetApi.overrideRecord(id, reason || "");
+      }
+      if (action === "correct") {
+        return intelligenceDatasetApi.correctField({
+          id,
+          field_key: field_key || "",
+          value: value || "",
+          reason: reason || "",
+        });
+      }
+      if (action === "resolve") {
+        return intelligenceDatasetApi.resolveIssue({
+          id,
+          issue_id: issue_id || 0,
+          reason,
+        });
+      }
+      return intelligenceDatasetApi.commentRecord(id, comment || "");
+    },
+    onSuccess: () => invalidateReview(queryClient),
+  });
+}
+
+export function useBulkApproveSafeRecords() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids?: number[]) => intelligenceDatasetApi.bulkApproveSafe(ids),
+    onSuccess: () => invalidateReview(queryClient),
+  });
+}
+
+export function useIntelligenceAsk() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (question: string) => intelligenceDatasetApi.ask(question),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["intelligence", "ask-history"] }),
+  });
+}
+
+export function useIntelligenceHealth() {
+  return useQuery({
+    queryKey: ["intelligence", "health"],
+    queryFn: intelligenceDatasetApi.settingsHealth,
+  });
+}
+
+export function useIntelligenceAuditLogs(category?: string) {
+  return useQuery({
+    queryKey: ["intelligence", "audit", category || "all"],
+    queryFn: () =>
+      intelligenceDatasetApi.auditLogs(category ? { category } : {}),
+  });
+}
+
+export function useIntelligenceAskHistory() {
+  return useQuery({
+    queryKey: ["intelligence", "ask-history"],
+    queryFn: intelligenceDatasetApi.askHistory,
+  });
+}
+
+export function useIntelligenceOverview() {
+  return useQuery({
+    queryKey: ["intelligence", "overview"],
+    queryFn: intelligenceDatasetApi.overview,
+    refetchInterval: (query) => {
+      const jobs = query.state.data?.jobs || [];
+      return jobs.some((job) => ["queued", "running"].includes(job.state))
+        ? 4000
+        : false;
+    },
+  });
+}
+
+export function useControlIntelligenceJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      action,
+      id,
+    }: {
+      action: "pause" | "resume" | "retry";
+      id: number;
+    }) => {
+      if (action === "pause") {
+        return intelligenceDatasetApi.pauseJob(id);
+      }
+      if (action === "resume") {
+        return intelligenceDatasetApi.resumeJob(id);
+      }
+      return intelligenceDatasetApi.retryJob(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({ queryKey: ["intelligence", "overview"] });
     },
   });
 }
