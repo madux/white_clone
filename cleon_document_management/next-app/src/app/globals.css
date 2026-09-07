@@ -246,6 +246,57 @@ select.field option {
   width: 1rem;
 }
 
+@keyframes guide-emphasis-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(232 62 140 / 0), 0 8px 18px rgb(232 62 140 / 0);
+  }
+  38% {
+    box-shadow: 0 0 0 4px rgb(232 62 140 / 0.16), 0 10px 24px rgb(232 62 140 / 0.14);
+  }
+}
+
+@keyframes guide-status-column-pulse {
+  0%,
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 0 rgb(232 62 140 / 0);
+  }
+  38% {
+    background-color: rgb(253 242 248 / 0.72);
+    box-shadow: inset 2px 0 0 rgb(232 62 140 / 0.55), inset -2px 0 0 rgb(232 62 140 / 0.55);
+  }
+}
+
+@keyframes guide-status-badge-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.06);
+  }
+}
+
+.guide-emphasis {
+  position: relative;
+  z-index: 40;
+  border-color: rgb(232 62 140 / 0.58) !important;
+  animation: guide-emphasis-pulse 1.8s ease-in-out infinite;
+}
+
+.guide-status-emphasis {
+  position: relative;
+  z-index: 2;
+  animation: guide-status-column-pulse 1.8s ease-in-out infinite;
+}
+
+.guide-status-badge {
+  display: inline-flex;
+  box-shadow: 0 0 0 3px rgb(232 62 140 / 0.12);
+  animation: guide-status-badge-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -254,5 +305,14 @@ select.field option {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .guide-emphasis {
+    animation: none;
+  }
+
+  .guide-status-emphasis,
+  .guide-status-badge {
+    animation: none;
   }
 }

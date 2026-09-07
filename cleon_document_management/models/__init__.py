@@ -8,3 +8,4 @@ from . import document_acknowledgement
 from . import document_version
 from . import share_link
 from . import hr_employee
+from . import res_users

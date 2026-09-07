@@ -2,6 +2,7 @@
 
 import { Bell, Mail, Search, User as UserIcon } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useComplianceTargets,
@@ -116,6 +117,8 @@ function UserWidget() {
 export default function Header() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const params = useSearchParams();
+  const guideTarget = params.get("guide");
   const searchRef = useRef<HTMLDivElement>(null);
   const folders = useFolders();
   const documents = useDocuments();
@@ -204,7 +207,7 @@ export default function Header() {
 
           <div
             ref={searchRef}
-            className="relative hidden w-full max-w-[430px] sm:block"
+            className={`relative hidden w-full max-w-[430px] sm:block ${guideTarget === "search" ? "guide-emphasis rounded-2xl" : ""}`}
           >
             <input
               value={query}
@@ -272,7 +275,7 @@ export default function Header() {
             type="button"
             onClick={() => setAttentionOpen(attentionOpen === "approval-inbox" ? null : "approval-inbox")}
             aria-label="Open approval inbox"
-            className="relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink"
+            className={`relative rounded-xl p-2.5 text-slate-400 transition hover:bg-white hover:text-brand-pink ${guideTarget === "approval-inbox" ? "guide-emphasis" : ""}`}
             title="Approval inbox"
           >
             <Mail className="h-5 w-5" />

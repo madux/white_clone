@@ -9,6 +9,19 @@ _logger = logging.getLogger(__name__)
 
 MODULE = "cleon_document_management"
 NEXTAPP_STATIC_DIR = "static/src/nextapp"
+ONBOARDING_STEPS = {
+    "workspace",
+    "upload",
+    "approval",
+    "shared",
+    "search",
+    "document-types",
+    "approval-workflow",
+    "folders",
+    "sharing",
+    "organizational-upload",
+    "approval-inbox",
+}
 
 
 class NextAppController(http.Controller):
@@ -183,6 +196,67 @@ class NextAppController(http.Controller):
                 }
             )
         return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route("/api/onboarding", type="json", auth="user", methods=["POST"], csrf=False)
+    def api_onboarding(self, **kwargs):
+        user = request.env.user.sudo()
+        state = user.document_onboarding_state or {}
+        completed_steps = [
+            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
+        ]
+        return {
+            "success": True,
+            "data": {
+                "show": not state.get("dismissed") and not state.get("completed"),
+                "dismissed": bool(state.get("dismissed")),
+                "completed": bool(state.get("completed")),
+                "completed_steps": completed_steps,
+                "is_admin": user.has_group(
+                    "cleon_document_management.group_document_manager"
+                ),
+            },
+        }
+
+    @http.route(
+        "/api/onboarding/update",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_update_onboarding(self, action=None, step_id=None, **kwargs):
+        user = request.env.user.sudo()
+        state = dict(user.document_onboarding_state or {})
+        completed_steps = [
+            step for step in state.get("completed_steps", []) if step in ONBOARDING_STEPS
+        ]
+
+        if action == "complete_step" and step_id in ONBOARDING_STEPS:
+            if step_id not in completed_steps:
+                completed_steps.append(step_id)
+            state.update({"completed_steps": completed_steps, "dismissed": False})
+        elif action == "complete":
+            state.update({"completed_steps": completed_steps, "completed": True})
+        elif action == "dismiss":
+            state.update({"completed_steps": completed_steps, "dismissed": True})
+        elif action == "reset":
+            state = {"completed_steps": [], "dismissed": False, "completed": False}
+        else:
+            return {"success": False, "message": "Unsupported onboarding action."}
+
+        user.document_onboarding_state = state
+        return {
+            "success": True,
+            "data": {
+                "show": not state.get("dismissed") and not state.get("completed"),
+                "dismissed": bool(state.get("dismissed")),
+                "completed": bool(state.get("completed")),
+                "completed_steps": state.get("completed_steps", []),
+                "is_admin": user.has_group(
+                    "cleon_document_management.group_document_manager"
+                ),
+            },
+        }
 
     @http.route(
         "/api/dashboard-stats", type="json", auth="user", methods=["POST"], csrf=False

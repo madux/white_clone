@@ -55,6 +55,7 @@ function DocumentTable({
   onView,
   onRequestApproval,
   onUploadOutstanding,
+  guideTarget,
 }: {
   documents: any[];
   search: string;
@@ -63,6 +64,7 @@ function DocumentTable({
   onView: (document: any) => void;
   onRequestApproval?: (document: any) => void;
   onUploadOutstanding?: (document: any) => void;
+  guideTarget?: string;
 }) {
   const rows = documents.filter((document) =>
     `${document.name} ${document.document_type} ${document.folder_name}`
@@ -77,7 +79,7 @@ function DocumentTable({
             <tr>
               <th className="px-5 py-4">Document</th>
               <th className="px-5 py-4">Category</th>
-              <th className="px-5 py-4">Status</th>
+              <th className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>Status</th>
               <th className="px-5 py-4">
                 {shared ? "Shared by" : "Last updated"}
               </th>
@@ -109,13 +111,13 @@ function DocumentTable({
                 <td className="px-5 py-4 text-sm text-slate-600">
                   {document.document_type}
                 </td>
-                <td className="px-5 py-4">
+                <td className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>
                   {(() => {
                     const requiresApproval = document.approval_state === "pending";
                     const statusKey = requiresApproval ? "pending" : document.state;
                     return (
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft}`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft} ${guideTarget === "approval" ? "guide-status-badge" : ""}`}
                   >
                     {shared && document.acknowledged
                       ? "Acknowledged"
@@ -186,6 +188,7 @@ function DocumentTable({
 export default function MyDocumentsPage() {
   const workspace = useMyWorkspace();
   const params = useSearchParams();
+  const guideTarget = params.get("guide");
   const user = useCurrentUser();
   const acknowledge = useAcknowledgeDocument();
   const upload = useUploadMyDocument();
@@ -206,7 +209,11 @@ export default function MyDocumentsPage() {
   const typeFilterRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (params.get("upload") === "1") setShowUpload(true);
-  }, [params]);
+    if (["workspace", "upload", "approval"].includes(guideTarget || "")) {
+      setTab("files");
+    }
+    if (guideTarget === "shared") setTab("shared");
+  }, [guideTarget, params]);
   const data = workspace.data;
   const myFiles = data?.my_files ?? [];
   const shared = data?.shared_documents ?? [];
@@ -300,7 +307,7 @@ export default function MyDocumentsPage() {
 
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-5 bg-slate-50 p-6 pb-10">
-      <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <header className={`flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between ${guideTarget === "workspace" ? "guide-emphasis rounded-2xl" : ""}`}>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Welcome, {user.data?.name || "there"}
@@ -317,7 +324,7 @@ export default function MyDocumentsPage() {
             setUploadError("");
             setShowUpload(true);
           }}
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200"
+          className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-3 text-sm font-bold text-white shadow-lg shadow-pink-200 ${guideTarget === "upload" ? "guide-emphasis" : ""}`}
         >
           <Upload className="h-4 w-4" /> Upload document
         </button>
@@ -328,7 +335,7 @@ export default function MyDocumentsPage() {
             key={id}
             type="button"
             onClick={() => setPage(id)}
-            className={`inline-flex items-center gap-2 rounded-t-xl border-b-2 px-4 py-3 text-xs font-bold transition ${tab === id ? "border-brand-pink bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "border-transparent text-slate-500 hover:bg-pink-50 hover:text-brand-text"}`}
+            className={`inline-flex items-center gap-2 rounded-t-xl border-b-2 px-4 py-3 text-xs font-bold transition ${tab === id ? "border-brand-pink bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "border-transparent text-slate-500 hover:bg-pink-50 hover:text-brand-text"} ${id === "shared" && guideTarget === "shared" ? "guide-emphasis" : ""} ${id === "files" && ["workspace", "upload", "approval"].includes(guideTarget || "") ? "guide-emphasis" : ""}`}
           >
             <Icon className="h-4 w-4" />
             {label}
@@ -620,7 +627,7 @@ export default function MyDocumentsPage() {
               )}
             </div>
           )}
-          <label className="relative block max-w-md">
+          <label className={`relative block max-w-md ${guideTarget === "search" ? "guide-emphasis rounded-full" : ""}`}>
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
@@ -640,6 +647,7 @@ export default function MyDocumentsPage() {
             search={search}
             shared={tab === "shared"}
             readOnly={fileView === "outstanding"}
+            guideTarget={guideTarget || undefined}
             onView={setViewing}
             onRequestApproval={async (document) => {
               if (

@@ -18,6 +18,7 @@ export const QUERY_KEYS = {
   exceptions: ["compliance", "exceptions"],
   evaluations: ["compliance", "evaluations"],
   approvalInbox: ["admin", "approval-inbox"],
+  onboarding: ["user", "onboarding"],
 };
 
 export function useCurrentUser() {
@@ -83,6 +84,26 @@ export function useApprovalInbox(enabled = true) {
     queryFn: () => api.getApprovalInbox().then((result) => result.data),
     enabled,
     refetchInterval: 30000,
+  });
+}
+
+export function useOnboarding() {
+  return useQuery({
+    queryKey: QUERY_KEYS.onboarding,
+    queryFn: () => api.getOnboarding().then((result) => result.data),
+  });
+}
+
+export function useUpdateOnboarding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.updateOnboarding,
+    onSuccess: (result) => {
+      if (result.success && result.data) {
+        queryClient.setQueryData(QUERY_KEYS.onboarding, result.data);
+      }
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.onboarding });
+    },
   });
 }
 

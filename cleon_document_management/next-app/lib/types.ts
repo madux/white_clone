@@ -96,6 +96,14 @@ export interface ApprovalInbox {
   items: ApprovalInboxItem[];
 }
 
+export interface OnboardingState {
+  show: boolean;
+  dismissed: boolean;
+  completed: boolean;
+  completed_steps: string[];
+  is_admin: boolean;
+}
+
 export interface QuickAccess { folders: DocFolder[]; documents: DocDocument[]; }
 
 export interface DocumentType {

@@ -5,22 +5,26 @@ import {
   ArrowDown,
   ArrowUp,
   Check,
+  CircleHelp,
   FileText,
   FolderCog,
   History,
   Plus,
   RefreshCw,
+  RotateCcw,
   Save,
   Search,
   ShieldCheck,
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useSaveSettings,
   useSaveSettingsDocumentType,
   useSettings,
   useToggleSettingsDocumentType,
+  useUpdateOnboarding,
 } from "../../../hooks/useDocuments";
 import ThemedSelect from "./ThemedSelect";
 
@@ -63,6 +67,13 @@ const sections = [
     shortLabel: "Lifecycle",
     description: "Control retention and recycle-bin behavior.",
     icon: History,
+  },
+  {
+    id: "onboarding",
+    label: "Help & onboarding",
+    shortLabel: "Help",
+    description: "Restart the guided introduction for your workspace.",
+    icon: CircleHelp,
   },
 ] as const;
 
@@ -107,9 +118,11 @@ type SectionId = (typeof sections)[number]["id"];
 
 export default function SettingsPage() {
   const query = useSettings();
+  const params = useSearchParams();
   const save = useSaveSettings();
   const saveType = useSaveSettingsDocumentType();
   const toggleType = useToggleSettingsDocumentType();
+  const updateOnboarding = useUpdateOnboarding();
   const [section, setSection] = useState<SectionId>("types");
   const [settings, setSettings] = useState<Record<string, any> | null>(null);
   const [typeForm, setTypeForm] = useState<Record<string, any> | null>(null);
@@ -120,9 +133,23 @@ export default function SettingsPage() {
     error?: boolean;
   } | null>(null);
 
+  const guideTarget = params.get("guide");
+  const guideSection: SectionId | null =
+    guideTarget === "document-types"
+      ? "types"
+      : guideTarget === "approval-workflow"
+        ? "approval"
+        : guideTarget === "sharing"
+          ? "access"
+          : null;
+
   useEffect(() => {
     if (query.data?.settings && !settings) setSettings(query.data.settings);
   }, [query.data?.settings, settings]);
+
+  useEffect(() => {
+    if (guideSection) setSection(guideSection);
+  }, [guideSection]);
 
   const values = settings ?? query.data?.settings ?? fallbackSettings;
   const documentTypes = query.data?.document_types ?? [];
@@ -291,7 +318,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setSection(item.id)}
                     aria-current={active ? "page" : undefined}
-                    className={`group flex shrink-0 items-center gap-2.5 !rounded-t-xl !rounded-b-none border-b px-3.5 py-3 text-sm font-bold transition sm:px-4 ${active ? "border-brand-pink text-brand-text" : "border-transparent text-slate-400 hover:border-pink-200 hover:text-slate-700"}`}
+                    className={`group flex shrink-0 items-center gap-2.5 !rounded-t-xl !rounded-b-none border-b px-3.5 py-3 text-sm font-bold transition sm:px-4 ${active ? "border-brand-pink text-brand-text" : "border-transparent text-slate-400 hover:border-pink-200 hover:text-slate-700"} ${guideSection === item.id ? "guide-emphasis" : ""}`}
                   >
                     <Icon
                       className={`h-4 w-4 ${active ? "text-brand-pink" : "text-slate-400 group-hover:text-slate-600"}`}
@@ -316,6 +343,21 @@ export default function SettingsPage() {
                 edit={setTypeForm}
                 toggle={(id: number) => toggleType.mutate(id)}
                 loading={toggleType.isPending}
+              />
+            ) : section === "onboarding" ? (
+              <OnboardingPanel
+                reset={async () => {
+                  try {
+                    await updateOnboarding.mutateAsync({ action: "reset" });
+                    setNotice({ message: "Getting started guide restarted." });
+                  } catch {
+                    setNotice({
+                      message: "The getting started guide could not be restarted.",
+                      error: true,
+                    });
+                  }
+                }}
+                resetting={updateOnboarding.isPending}
               />
             ) : (
               <SettingsPanel
@@ -894,6 +936,43 @@ function LifecyclePanel({ values, update }: any) {
         </div>
       </div>
     </div>
+  );
+}
+
+function OnboardingPanel({ reset, resetting }: { reset: () => void; resetting: boolean }) {
+  return (
+    <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="rounded-2xl border border-pink-100 bg-gradient-to-br from-pink-50/80 to-white p-6">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-brand-pink shadow-sm">
+          <CircleHelp className="h-5 w-5" />
+        </div>
+        <h4 className="mt-5 text-lg font-bold tracking-tight text-slate-900">
+          Getting started guide
+        </h4>
+        <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
+          Reopen the guided introduction to review the everyday user workflow and the administrator setup steps. Restarting it does not change any documents, folders, or workspace settings.
+        </p>
+        <button
+          type="button"
+          onClick={reset}
+          disabled={resetting}
+          className="mt-6 inline-flex items-center gap-2 !rounded-xl bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(232,62,140,0.18)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {resetting ? "Restarting…" : "Restart guide"}
+        </button>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6">
+        <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">
+          How it works
+        </p>
+        <div className="mt-5 space-y-4 text-sm leading-6 text-slate-600">
+          <p><strong className="text-slate-800">Shown once:</strong> New users see it after their first login.</p>
+          <p><strong className="text-slate-800">Role-aware:</strong> Administrators see both user and admin setup steps.</p>
+          <p><strong className="text-slate-800">Per user:</strong> Dismissing it on one device keeps it dismissed everywhere.</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
