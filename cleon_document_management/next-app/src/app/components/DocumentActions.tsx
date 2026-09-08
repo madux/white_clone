@@ -1,12 +1,12 @@
 "use client";
 
-import { Archive, Download, Ellipsis, FileHeart, Pin, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Archive, Download, Ellipsis, FileHeart, FolderInput, Pin, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../../lib/api";
 import { useDocumentAction } from "../../../hooks/useDocuments";
 import { useClickOutside } from "../../../hooks/useClickOutside";
 
-export default function DocumentActions({ documentId, documentName, active, organizational = false }: { documentId: number; documentName: string; active?: boolean; organizational?: boolean }) {
+export default function DocumentActions({ documentId, documentName, active, organizational = false, onMove }: { documentId: number; documentName: string; active?: boolean; organizational?: boolean; onMove?: () => void }) {
   const action = useDocumentAction();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -17,7 +17,7 @@ export default function DocumentActions({ documentId, documentName, active, orga
   useEffect(() => {
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
-    const menuHeight = organizational ? 250 : 190;
+    const menuHeight = organizational ? 290 : 230;
     setPosition({ top: Math.max(12, rect.top - menuHeight - 8), right: Math.max(12, window.innerWidth - rect.right) });
   }, [open]);
 
@@ -35,6 +35,7 @@ export default function DocumentActions({ documentId, documentName, active, orga
     {open && <div className="fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl" style={{ top: position.top, right: position.right }}>
       <button type="button" onClick={() => run("favorite")} className="menu-item"><FileHeart />Favorite</button>
       <button type="button" onClick={() => run("pin")} className="menu-item"><Pin />Pin document</button>
+      {onMove && <button type="button" onClick={() => { onMove(); setOpen(false); }} className="menu-item"><FolderInput />Move to folder</button>}
       {organizational && active !== false && <button type="button" onClick={() => run("archive")} className="menu-item"><Archive />Archive document</button>}
       {organizational && <button type="button" onClick={() => run(active === false ? "activate" : "deactivate")} className="menu-item">{active === false ? <ToggleRight /> : <ToggleLeft />}{active === false ? "Activate document" : "Deactivate document"}</button>}
       <button type="button" onClick={() => { api.downloadDocument(documentId); setOpen(false); }} className="menu-item"><Download />Download</button>

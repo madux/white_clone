@@ -1,6 +1,7 @@
 import json
 from datetime import date, datetime, timedelta
 from odoo import _, fields, http
+from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 from odoo.modules.module import get_resource_path
 from odoo.osv import expression
@@ -23,15 +24,54 @@ def _uploaded_files():
 
 
 def _upload_type_ids():
-    raw = request.httprequest.form.get("document_type_ids")
+    raw_list = request.httprequest.form.getlist("document_type_ids")
+    if raw_list:
+        parsed = []
+        for raw in raw_list:
+            if not raw:
+                continue
+            try:
+                values = json.loads(raw)
+                if isinstance(values, list):
+                    parsed.extend([int(v) for v in values])
+                elif isinstance(values, (int, str)):
+                    parsed.append(int(values))
+            except (TypeError, ValueError, json.JSONDecodeError):
+                for part in str(raw).split(","):
+                    part = part.strip()
+                    if part.isdigit():
+                        parsed.append(int(part))
+        if parsed:
+            return parsed
+
+    raw = request.httprequest.form.get("document_type_id")
     if raw:
         try:
-            values = json.loads(raw)
-            return [int(value) for value in values]
-        except (TypeError, ValueError, json.JSONDecodeError):
+            return [int(raw)]
+        except ValueError:
             pass
-    raw = request.httprequest.form.get("document_type_id")
-    return [int(raw)] if raw else []
+    return []
+
+
+def _upload_expiry_dates():
+    raw = request.httprequest.form.get("expiry_dates")
+    if not raw:
+        return []
+    try:
+        values = json.loads(raw)
+        if isinstance(values, list):
+            return values
+    except (TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return []
+
+
+def _expiry_values_for_upload(document_type, expiry_date):
+    if not document_type.expiry_applicable:
+        return {}
+    if not expiry_date:
+        return None
+    return {"has_expiry": True, "expiry_date": expiry_date}
 
 
 class DocumentUICreation(http.Controller):
@@ -91,6 +131,7 @@ class DocumentUICreation(http.Controller):
                     "description": item.description or "",
                     "is_mandatory_default": item.is_mandatory_default,
                     "default_retention_years": item.default_retention_years,
+                    "expiry_applicable": item.expiry_applicable,
                     "active": item.active,
                 }
                 for item in types
@@ -148,6 +189,7 @@ class DocumentUICreation(http.Controller):
                 "category": category,
                 "description": (kwargs.get("description") or "").strip(),
                 "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
+                "expiry_applicable": bool(kwargs.get("expiry_applicable", False)),
                 "default_retention_years": max(
                     int(kwargs.get("default_retention_years") or 7), 0
                 ),
@@ -163,6 +205,7 @@ class DocumentUICreation(http.Controller):
                 "description": item.description or "",
                 "is_mandatory_default": item.is_mandatory_default,
                 "default_retention_years": item.default_retention_years,
+                "expiry_applicable": item.expiry_applicable,
                 "active": item.active,
             },
         }
@@ -194,6 +237,7 @@ class DocumentUICreation(http.Controller):
                         "description": item.description or "",
                         "is_mandatory_default": item.is_mandatory_default,
                         "default_retention_years": item.default_retention_years,
+                        "expiry_applicable": item.expiry_applicable,
                         "active": item.active,
                     }
                     for item in types
@@ -221,6 +265,7 @@ class DocumentUICreation(http.Controller):
             "category": category,
             "description": (kwargs.get("description") or "").strip(),
             "is_mandatory_default": bool(kwargs.get("is_mandatory_default", False)),
+            "expiry_applicable": bool(kwargs.get("expiry_applicable", False)),
             "default_retention_years": max(int(kwargs.get("default_retention_years") or 7), 0),
             "sequence": int(kwargs.get("sequence") or 10),
         }
@@ -322,47 +367,81 @@ class DocumentUICreation(http.Controller):
                 "folder_type": folder_type,
                 "access_scope": access_scope,
                 "retention_period": kwargs.get("retention_period") or settings["default_retention_period"],
-                "approval_flow": settings["default_approval_flow"],
-                "require_upload_approval": bool(
-                    kwargs.get("require_upload_approval", settings["default_require_upload_approval"])
-                ),
             }
-            if values["require_upload_approval"] and settings["default_approver_ids"]:
-                values["approver_ids"] = [
-                    fields.Command.set(settings["default_approver_ids"])
-                ]
-                values["approver_order"] = ",".join(
-                    str(value) for value in settings["default_approver_ids"]
-                )
+            Folder = request.env["doc.folder"]
+            try:
+                if folder_type == "employee":
+                    values.update(
+                        Folder._prepare_approval_values(
+                            require_upload_approval=kwargs.get(
+                                "require_upload_approval"
+                            ),
+                            approval_flow=kwargs.get("approval_flow"),
+                            approver_ids=kwargs.get("approver_ids"),
+                            settings=settings,
+                        )
+                    )
+                else:
+                    values.update(
+                        Folder._prepare_approval_values(
+                            require_upload_approval=False,
+                            approval_flow="any",
+                            approver_ids=[],
+                        )
+                    )
+            except ValidationError as error:
+                return {"success": False, "message": error.args[0]}
             if folder_type == "employee":
-                basis = kwargs.get("folder_basis") or "individual"
+                departments = (
+                    request.env["hr.department"]
+                    .browse(kwargs.get("department_ids", []))
+                    .exists()
+                )
+                if not departments:
+                    return {
+                        "success": False,
+                        "message": "Select at least one existing department.",
+                    }
+
+                grades = (
+                    request.env["hr.grade"]
+                    .browse(kwargs.get("grade_ids", []))
+                    .exists()
+                )
+
+                existing_folder = request.env["doc.folder"].search(
+                    [
+                        ("folder_type", "=", "employee"),
+                        ("active", "=", True),
+                        ("deleted_at", "=", False),
+                        ("department_ids", "in", departments.ids),
+                    ],
+                    limit=1,
+                )
+                if existing_folder:
+                    dept_names = ", ".join(departments.mapped("name"))
+                    return {
+                        "success": False,
+                        "message": (
+                            f"An employee folder already exists for {dept_names}."
+                        ),
+                    }
+
                 employee_model = request.env["hr.employee"]
-                employees = employee_model.browse(
-                    kwargs.get("employee_ids", [])
-                ).exists()
-                if basis == "department":
-                    departments = (
-                        request.env["hr.department"]
-                        .browse(kwargs.get("department_ids", []))
-                        .exists()
-                    )
-                    employees = employee_model.search(
-                        [
-                            ("active", "=", True),
-                            ("department_id", "in", departments.ids),
-                        ]
-                    )
-                    values["access_scope"] = "department"
-                elif basis == "grade":
-                    grades = (
-                        request.env["hr.grade"]
-                        .browse(kwargs.get("grade_ids", []))
-                        .exists()
-                    )
-                    employees = employee_model.search(
-                        [("active", "=", True), ("grade_id", "in", grades.ids)]
-                    )
-                    values["access_scope"] = "grade"
+                domain = [
+                    ("active", "=", True),
+                    ("department_id", "in", departments.ids),
+                ]
+                if grades:
+                    domain.append(("grade_id", "in", grades.ids))
+                employees = employee_model.search(domain)
+
+                values["access_scope"] = "department"
+                values["department_ids"] = [
+                    fields.Command.set(departments.ids)
+                ]
+                if grades:
+                    values["grade_ids"] = [fields.Command.set(grades.ids)]
                 values["employee_ids"] = [fields.Command.set(employees.ids)]
             if folder_type == "organizational":
                 values["allowed_document_type_ids"] = [
@@ -398,6 +477,11 @@ class DocumentUICreation(http.Controller):
                     )
                 ]
             folder = request.env["doc.folder"].create(values)
+            if folder.folder_type == "employee":
+                folder._assign_pending_approved_documents_for_employees(
+                    folder.employee_ids
+                )
+                request.env["doc.folder"].sync_pending_upload_assignments()
             return {
                 "success": True,
                 "message": "Folder created successfully.",
@@ -452,12 +536,19 @@ class DocumentUICreation(http.Controller):
                             "locked": folder.is_locked,
                             "active": folder.active,
                             "employee_ids": folder.employee_ids.ids,
+                            "department_ids": folder.department_ids.ids,
+                            "grade_ids": folder.grade_ids.ids,
+                            "require_upload_approval": folder.require_upload_approval,
+                            "approval_flow": folder.approval_flow,
+                            "approver_ids": folder.approver_ids.ids,
                         }
                     },
                 }
 
             # Get all folders
-            folders = Folder.search([("active", "=", True)])
+            folders = Folder.search(
+                [("active", "=", True), ("is_pending_uploads", "=", False)]
+            )
 
             return {
                 "success": True,
@@ -475,12 +566,17 @@ class DocumentUICreation(http.Controller):
                             "owner_name": folder.owner_id.name or "N/A",
                             "access_scope": folder.access_scope,
                             "color": folder.color,
-                            "document_count": len(folder.document_ids.ids),
+                            "document_count": folder.document_count,
                             "favorite": request.env.user in folder.favorite_user_ids,
                             "pinned": request.env.user in folder.pinned_user_ids,
                             "locked": folder.is_locked,
                             "active": folder.active,
                             "employee_ids": folder.employee_ids.ids,
+                            "department_ids": folder.department_ids.ids,
+                            "grade_ids": folder.grade_ids.ids,
+                            "require_upload_approval": folder.require_upload_approval,
+                            "approval_flow": folder.approval_flow,
+                            "approver_ids": folder.approver_ids.ids,
                         }
                         for folder in folders
                     ],
@@ -512,7 +608,7 @@ class DocumentUICreation(http.Controller):
                 "folder_name": folder.folder_name,
                 "description": folder.description,
                 "owner": folder.owner_id.name,
-                "document_count": len(folder.document_ids),
+                "document_count": folder.document_count,
                 "last_modified": folder.write_date,
             },
         }
@@ -528,12 +624,46 @@ class DocumentUICreation(http.Controller):
             if not folder.exists():
                 return {"success": False, "message": "Folder not found."}
 
-            folder.write(
-                {
-                    "folder_name": folder_name,
-                    "description": description,
-                }
-            )
+            write_values = {
+                "folder_name": folder_name,
+                "description": description,
+            }
+            if any(
+                key in kwargs
+                for key in (
+                    "require_upload_approval",
+                    "approval_flow",
+                    "approver_ids",
+                )
+            ):
+                if folder.folder_type == "employee":
+                    try:
+                        write_values.update(
+                            folder._prepare_approval_values(
+                                require_upload_approval=kwargs.get(
+                                    "require_upload_approval"
+                                ),
+                                approval_flow=kwargs.get("approval_flow"),
+                                approver_ids=kwargs.get("approver_ids"),
+                            )
+                        )
+                    except ValidationError as error:
+                        return {"success": False, "message": error.args[0]}
+
+            if folder.folder_type == "organizational" and "access_scope" in kwargs:
+                try:
+                    write_values.update(
+                        folder._prepare_organizational_scope_values(
+                            kwargs.get("access_scope"),
+                            department_ids=kwargs.get("department_ids"),
+                            grade_ids=kwargs.get("grade_ids"),
+                            employee_ids=kwargs.get("employee_ids"),
+                        )
+                    )
+                except ValidationError as error:
+                    return {"success": False, "message": error.args[0]}
+
+            folder.write(write_values)
 
             return {"success": True, "message": "Folder updated successfully."}
 
@@ -589,7 +719,14 @@ class DocumentUICreation(http.Controller):
         methods=["POST"],
         csrf=False,
     )
-    def add_employees_to_folder(self, id=None, employee_ids=None, **kwargs):
+    def add_employees_to_folder(
+        self,
+        id=None,
+        employee_ids=None,
+        force_move=False,
+        move_from_folder_ids=None,
+        **kwargs,
+    ):
         folder = request.env["doc.folder"].browse(int(id or 0)).exists()
         if not folder:
             return {"success": False, "message": "Folder not found."}
@@ -598,9 +735,49 @@ class DocumentUICreation(http.Controller):
                 "success": False,
                 "message": "Only employee folders can contain employees.",
             }
-        employees = request.env["hr.employee"].browse(employee_ids or []).exists()
+        force_move = bool(kwargs.get("force_move", force_move))
+        move_from_folder_ids = move_from_folder_ids or kwargs.get("move_from_folder_ids") or {}
+        ids = [int(value) for value in (employee_ids or []) if str(value).isdigit()]
+        employees = request.env["hr.employee"].browse(ids).exists()
         if not employees:
             return {"success": False, "message": "Select at least one employee."}
+
+        conflicting_folders = request.env["doc.folder"].search(
+            [
+                ("folder_type", "=", "employee"),
+                ("id", "!=", folder.id),
+                ("employee_ids", "in", employees.ids),
+            ]
+        )
+        if force_move:
+            for other_folder in conflicting_folders:
+                to_remove = other_folder.employee_ids.filtered(
+                    lambda employee: employee.id in employees.ids
+                )
+                if to_remove:
+                    other_folder.write(
+                        {
+                            "employee_ids": [
+                                fields.Command.unlink(employee.id)
+                                for employee in to_remove
+                            ]
+                        }
+                    )
+        elif move_from_folder_ids:
+            for employee_id_raw, from_folder_id_raw in move_from_folder_ids.items():
+                employee_id = int(employee_id_raw)
+                from_folder = request.env["doc.folder"].browse(
+                    int(from_folder_id_raw or 0)
+                ).exists()
+                if (
+                    from_folder
+                    and from_folder.folder_type == "employee"
+                    and employee_id in from_folder.employee_ids.ids
+                ):
+                    from_folder.write(
+                        {"employee_ids": [fields.Command.unlink(employee_id)]}
+                    )
+
         folder.write(
             {
                 "employee_ids": [
@@ -608,7 +785,94 @@ class DocumentUICreation(http.Controller):
                 ]
             }
         )
+        folder._assign_pending_approved_documents_for_employees(employees)
+        request.env["doc.folder"].sync_pending_upload_assignments()
         return {"success": True, "employee_ids": folder.employee_ids.ids}
+
+    @http.route(
+        "/api/folder/check-employee-conflicts",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def check_employee_conflicts(self, id=None, employee_ids=None, **kwargs):
+        folder = request.env["doc.folder"].browse(int(id or 0)).exists()
+        if not folder:
+            return {"success": False, "message": "Folder not found."}
+        ids = [int(value) for value in (employee_ids or []) if str(value).isdigit()]
+        employees = request.env["hr.employee"].browse(ids).exists()
+        already_in_folder = employees.filtered(
+            lambda employee: employee.id in folder.employee_ids.ids
+        ).ids
+        other_folders = []
+        for employee in employees.filtered(
+            lambda item: item.id not in already_in_folder
+        ):
+            folders = request.env["doc.folder"].search(
+                [
+                    ("folder_type", "=", "employee"),
+                    ("id", "!=", folder.id),
+                    ("employee_ids", "in", employee.id),
+                ]
+            )
+            for other in folders:
+                other_folders.append(
+                    {
+                        "employee_id": employee.id,
+                        "employee_name": employee.name,
+                        "folder_id": other.id,
+                        "folder_name": other.folder_name,
+                    }
+                )
+        return {
+            "success": True,
+            "already_in_folder": already_in_folder,
+            "other_folders": other_folders,
+        }
+
+    @http.route(
+        "/api/check-upload-duplicates",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def check_upload_duplicates(self, employee_id=None, items=None, **kwargs):
+        employee = request.env["hr.employee"].browse(int(employee_id or 0)).exists()
+        if not employee:
+            return {"success": False, "message": "Employee not found."}
+        matches = []
+        for item in items or []:
+            filename = (item.get("filename") or "").strip()
+            try:
+                document_type_id = int(item.get("document_type_id") or 0)
+            except (TypeError, ValueError):
+                continue
+            if not filename or not document_type_id:
+                continue
+            documents = request.env["doc.document"].search(
+                [
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("employee_id", "=", employee.id),
+                    ("document_type_id", "=", document_type_id),
+                    ("name", "=ilike", filename),
+                ]
+            )
+            for document in documents:
+                doc_versions = document.version_ids.mapped("version_number")
+                matches.append(
+                    {
+                        "filename": filename,
+                        "document_type_id": document_type_id,
+                        "id": document.id,
+                        "name": document.name,
+                        "version_count": len(document.version_ids),
+                        "latest_version_number": max(doc_versions or [0]),
+                    }
+                )
+        return {"success": True, "matches": matches}
 
     @http.route(
         "/api/get-document",
@@ -637,37 +901,18 @@ class DocumentUICreation(http.Controller):
             domain.append(("folder_id", "=", int(folder_id)))
 
         documents = request.env["doc.document"].search(domain, order="create_date desc")
+        user = request.env.user
         return {
             "success": True,
             "count": len(documents),
             "data": {
                 "data": [
-                    {
-                        "id": d.id,
-                        "name": d.name,
-                        "description": d.description,
-                        "folder_id": d.folder_id.id,
-                        "folder_name": d.folder_id.folder_name,
-                        "employee_id": d.employee_id.id or False,
-                        "employee_name": d.employee_id.name or "N/A",
-                        "document_type_id": d.document_type_id.id,
-                        "document_type": d.document_type_id.name,
-                        "state": d.state,
-                        "approval_state": d.approval_state,
-                        "ocr_state": d.ocr_state,
-                        "has_expiry": d.has_expiry,
-                        "expiry_date": d.expiry_date,
-                        "mime_type": d.mime_type,
-                        "file_size": d.file_size,
-                        "attachment_id": d.attachment_id.id,
-                        "created_at": d.create_date,
-                        "write_date": d.write_date,
-                        "active": d.active,
-                        "favorite": request.env.user in d.favorite_user_ids,
-                        "pinned": request.env.user in d.pinned_user_ids,
-                        "distribution_status": d.distribution_status,
-                    }
-                    for d in documents
+                    document.serialize_for_api(
+                        user,
+                        favorite=user in document.favorite_user_ids,
+                        pinned=user in document.pinned_user_ids,
+                    )
+                    for document in documents
                 ],
                 "total_count": len(documents.ids),
             },
@@ -679,7 +924,11 @@ class DocumentUICreation(http.Controller):
     def quick_access(self, **kwargs):
         user = request.env.user
         folders = request.env["doc.folder"].search(
-            [("active", "=", True), ("pinned_user_ids", "in", user.id)],
+            [
+                ("active", "=", True),
+                ("is_pending_uploads", "=", False),
+                ("pinned_user_ids", "in", user.id),
+            ],
             order="write_date desc",
         )
         documents = request.env["doc.document"].search(
@@ -704,28 +953,7 @@ class DocumentUICreation(http.Controller):
                     for folder in folders
                 ],
                 "documents": [
-                    {
-                        "id": document.id,
-                        "name": document.name,
-                        "description": document.description or "",
-                        "folder_id": document.folder_id.id,
-                        "folder_name": document.folder_id.folder_name,
-                        "employee_id": document.employee_id.id or False,
-                        "employee_name": document.employee_id.name or "N/A",
-                        "document_type_id": document.document_type_id.id,
-                        "document_type": document.document_type_id.name,
-                        "state": document.state,
-                        "approval_state": document.approval_state,
-                        "ocr_state": document.ocr_state,
-                        "has_expiry": document.has_expiry,
-                        "expiry_date": document.expiry_date,
-                        "mime_type": document.mime_type,
-                        "file_size": document.file_size,
-                        "attachment_id": document.attachment_id.id,
-                        "created_at": document.create_date,
-                        "write_date": document.write_date,
-                        "pinned": True,
-                    }
+                    document.serialize_for_api(user, pinned=True)
                     for document in documents
                 ],
             },
@@ -756,28 +984,8 @@ class DocumentUICreation(http.Controller):
         return {
             "success": True,
             "data": [
-                {
-                    "id": d.id,
-                    "name": d.name,
-                    "description": d.description or "",
-                    "folder_id": d.folder_id.id,
-                    "folder_name": d.folder_id.folder_name,
-                    "employee_id": d.employee_id.id or False,
-                    "employee_name": d.employee_id.name or "N/A",
-                    "document_type_id": d.document_type_id.id,
-                    "document_type": d.document_type_id.name,
-                    "state": d.state,
-                    "approval_state": d.approval_state,
-                    "ocr_state": d.ocr_state,
-                    "has_expiry": d.has_expiry,
-                    "expiry_date": d.expiry_date,
-                    "mime_type": d.mime_type,
-                    "file_size": d.file_size,
-                    "attachment_id": d.attachment_id.id,
-                    "created_at": d.create_date,
-                    "write_date": d.write_date,
-                }
-                for d in documents
+                document.serialize_for_api(request.env.user)
+                for document in documents
             ],
         }
 
@@ -806,14 +1014,13 @@ class DocumentUICreation(http.Controller):
                 {"success": False, "message": "File and document type are required."},
                 status=400,
             )
-        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        document_types = request.env["doc.document.type"].browse(list(set(document_type_ids))).exists()
         if len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {"success": False, "message": "Select a valid document type."},
                 status=400,
             )
-        folder = request.env["doc.folder"].link_employee_to_department_folder(employee)
-        if not folder:
+        if not employee.department_id:
             return request.make_json_response(
                 {
                     "success": False,
@@ -821,9 +1028,30 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
+        folder = request.env["doc.folder"].get_pending_upload_folder()
+        if not folder:
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "Unable to prepare the upload destination.",
+                },
+                status=400,
+            )
         documents = request.env["doc.document"]
+        expiry_dates = _upload_expiry_dates()
         for index, upload in enumerate(uploads):
             type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+            if expiry_values is None:
+                return request.make_json_response(
+                    {
+                        "success": False,
+                        "message": f"An expiry date is required for {document_type.name}.",
+                    },
+                    status=400,
+                )
             attachment = request.env["ir.attachment"].sudo().create({
                 "name": upload.filename or "employee-document",
                 "datas": base64.b64encode(upload.read()),
@@ -831,9 +1059,11 @@ class DocumentUICreation(http.Controller):
             })
             documents |= request.env["doc.document"].create({
                 "name": upload.filename or "Employee document",
-                "folder_id": folder.id, "employee_id": employee.id,
-                "document_type_id": type_id, "attachment_id": attachment.id,
-                "state": "draft", "approval_state": "not_required",
+                "folder_id": folder.id,
+                "employee_id": employee.id,
+                "document_type_id": type_id,
+                "attachment_id": attachment.id,
+                **expiry_values,
             })
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
@@ -867,7 +1097,7 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         employee = request.env["hr.employee"].browse(int(employee_id)).exists()
-        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        document_types = request.env["doc.document.type"].browse(list(set(document_type_ids))).exists()
         if not employee or len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {
@@ -876,18 +1106,32 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
-        folder = request.env["doc.folder"].link_employee_to_department_folder(employee)
+        folder = request.env["doc.folder"].resolve_manager_employee_upload_folder(
+            employee
+        )
         if not folder:
             return request.make_json_response(
                 {
                     "success": False,
-                    "message": "This employee needs a department before uploading a document.",
+                    "message": "Unable to resolve an upload destination for this employee.",
                 },
                 status=400,
             )
         documents = request.env["doc.document"]
+        expiry_dates = _upload_expiry_dates()
         for index, upload in enumerate(uploads):
             type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+            if expiry_values is None:
+                return request.make_json_response(
+                    {
+                        "success": False,
+                        "message": f"An expiry date is required for {document_type.name}.",
+                    },
+                    status=400,
+                )
             attachment = request.env["ir.attachment"].sudo().create({
                 "name": upload.filename or "employee-document",
                 "datas": base64.b64encode(upload.read()),
@@ -897,6 +1141,7 @@ class DocumentUICreation(http.Controller):
                 "name": upload.filename or "Employee document", "folder_id": folder.id,
                 "employee_id": employee.id, "document_type_id": type_id,
                 "attachment_id": attachment.id,
+                **expiry_values,
             })
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
@@ -1037,26 +1282,29 @@ class DocumentUICreation(http.Controller):
             for policy in policies:
                 if not policy._applies_to_employee(employee):
                     continue
-                for document_type in policy.document_type_ids:
-                    matching = combined.filtered(
-                        lambda item, type_id=document_type.id: item.employee_id
-                        == employee
-                        and item.document_type_id.id == type_id
-                        and item.state not in ("rejected", "expired")
-                    )
-                    if not matching:
+                evaluation = request.env["doc.compliance.evaluation"].search(
+                    [("policy_id", "=", policy.id), ("employee_id", "=", employee.id)],
+                    limit=1,
+                )
+                for line in evaluation.line_ids.filtered(lambda item: item.status in ("missing", "grace")):
+                    document_type = line.document_type_id
+                    if document_type:
                         outstanding.append(
                             {
-                                "id": -(policy.id * 10000 + document_type.id),
+                                "id": -(policy.id * 10000 + document_type.id + line.id),
                                 "name": document_type.name,
-                                "description": "Required by %s" % policy.name,
+                                "description": (
+                                    "Required by %s · grace period"
+                                    if line.status == "grace"
+                                    else "Required by %s"
+                                ) % policy.name,
                                 "folder_id": False,
                                 "folder_name": "Outstanding requirements",
                                 "employee_id": employee.id,
                                 "employee_name": employee.name,
                                 "document_type_id": document_type.id,
                                 "document_type": document_type.name,
-                                "state": "missing",
+                                "state": line.status,
                                 "approval_state": "pending",
                                 "ocr_state": "pending",
                                 "has_expiry": False,
@@ -1070,36 +1318,25 @@ class DocumentUICreation(http.Controller):
                         )
 
         def serialize(document):
-            return {
-                "id": document.id,
-                "name": document.name,
-                "description": document.description or "",
-                "folder_id": document.folder_id.id,
-                "folder_name": document.folder_id.folder_name,
-                "shared_by": document.uploaded_by.name or document.owner_id.name or "Document administrator",
-                "shared_by_id": document.uploaded_by.id or document.owner_id.id or False,
-                "employee_id": document.employee_id.id or False,
-                "employee_name": document.employee_id.name or "N/A",
-                "document_type_id": document.document_type_id.id,
-                "document_type": document.document_type_id.name,
-                "state": document.state,
-                "approval_state": document.approval_state,
-                "distribution_status": document.distribution_status,
-                "ocr_state": document.ocr_state,
-                "has_expiry": document.has_expiry,
-                "expiry_date": document.expiry_date,
-                "mime_type": document.mime_type,
-                "file_size": document.file_size,
-                "attachment_id": document.attachment_id.id,
-                "created_at": document.create_date,
-                "write_date": document.write_date,
-                "favorite": user in document.favorite_user_ids,
-                "acknowledged": bool(
-                    document.acknowledgement_ids.filtered(
-                        lambda item: item.user_id == user
-                    )
+            acknowledgement = document.acknowledgement_ids.filtered(
+                lambda item: item.user_id == user
+            )[:1]
+            return document.serialize_for_api(
+                user,
+                shared_by=document.uploaded_by.name
+                or document.owner_id.name
+                or "Document administrator",
+                shared_by_id=document.uploaded_by.id
+                or document.owner_id.id
+                or False,
+                favorite=user in document.favorite_user_ids,
+                acknowledged=bool(acknowledgement),
+                acknowledged_at=(
+                    fields.Datetime.to_string(acknowledgement.acknowledged_at)
+                    if acknowledgement
+                    else False
                 ),
-            }
+            )
 
         activities = [
             {
@@ -1120,6 +1357,13 @@ class DocumentUICreation(http.Controller):
             state: len(combined.filtered(lambda item, value=state: item.state == value))
             for state in ("approved", "processing", "draft", "rejected", "expired")
         }
+        expiry_cutoff = fields.Date.add(fields.Date.context_today(request.env.user), days=30)
+        expiring = combined.filtered(
+            lambda item: item.has_expiry
+            and item.expiry_date
+            and item.expiry_date <= expiry_cutoff
+            and item.state == "approved"
+        )
         return {
             "success": True,
             "data": {
@@ -1131,14 +1375,206 @@ class DocumentUICreation(http.Controller):
                 "activity": activities,
                 "dashboard": {
                     "total": len(combined),
-                    "expiring": len(
-                        combined.filtered(
-                            lambda item: item.has_expiry and item.expiry_date
-                        )
-                    ),
+                    "expiring": len(expiring),
                     "states": states,
                 },
             },
+        }
+
+    @http.route(
+        "/api/my-pending-uploads",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_pending_uploads(self, **kwargs):
+        user = request.env.user
+        employee = user.employee_id
+        if not employee:
+            return {"success": True, "data": {"count": 0, "items": []}}
+        request.env["doc.folder"].sync_pending_upload_assignments()
+        pending_folders = request.env["doc.folder"].sudo().search(
+            [("is_pending_uploads", "=", True)]
+        )
+        if not pending_folders:
+            pending_folders = request.env["doc.folder"].get_pending_upload_folder()
+        documents = request.env["doc.document"].search(
+            [
+                ("employee_id", "=", employee.id),
+                ("folder_id", "in", pending_folders.ids),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        own_documents = request.env["doc.document"].search(
+            [
+                "|",
+                ("owner_id", "=", user.id),
+                ("employee_id", "=", employee.id),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        documents = documents | own_documents.filtered(
+            lambda item: item.approval_state == "pending"
+            or item.state in ("draft", "processing")
+            or item.folder_id in pending_folders
+        )
+        status_labels = {
+            "pending_review": "Pending review",
+            "awaiting_folder": "Awaiting folder assignment",
+            "awaiting_folder_restore": "Awaiting folder restore",
+        }
+        items = []
+        seen = set()
+        for document in documents:
+            if document.id in seen:
+                continue
+            seen.add(document.id)
+            if document.approval_state == "pending" or document.state in (
+                "draft",
+                "processing",
+            ):
+                status = "pending_review"
+            elif document.recycle_origin_folder_id:
+                status = "awaiting_folder_restore"
+            elif document.folder_id in pending_folders:
+                status = "awaiting_folder"
+            else:
+                continue
+            items.append(
+                {
+                    "id": document.id,
+                    "name": document.name,
+                    "document_type": document.document_type_id.name,
+                    "approval_state": document.approval_state,
+                    "state": document.state,
+                    "status": status,
+                    "status_label": status_labels[status],
+                    "origin_folder_name": document.recycle_origin_folder_id.folder_name
+                    or "",
+                    "created_at": document.create_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route(
+        "/api/my-compliance",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def my_compliance(self, **kwargs):
+        user = request.env.user
+        employee = user.employee_id
+        if not employee:
+            return {
+                "success": True,
+                "data": {
+                    "evaluations": [],
+                    "outstanding": [],
+                    "summary": {
+                        "compliant": 0,
+                        "partial": 0,
+                        "non_compliant": 0,
+                        "outstanding_count": 0,
+                    },
+                },
+            }
+        evaluations = request.env["doc.compliance.evaluation"].search(
+            [("employee_id", "=", employee.id)],
+            order="evaluated_at desc",
+        )
+        evaluation_data = []
+        outstanding = []
+        for evaluation in evaluations:
+            lines = []
+            for line in evaluation.line_ids:
+                line_data = {
+                    "id": line.id,
+                    "requirement": line.requirement_id.name,
+                    "document_type": line.document_type_id.name,
+                    "status": line.status,
+                    "required_count": line.required_count,
+                    "matched_count": line.matched_count,
+                }
+                lines.append(line_data)
+                if line.status in ("missing", "grace"):
+                    outstanding.append(
+                        {
+                            "policy": evaluation.policy_id.name,
+                            "document_type": line.document_type_id.name,
+                            "status": line.status,
+                        }
+                    )
+            evaluation_data.append(
+                {
+                    "id": evaluation.id,
+                    "policy": evaluation.policy_id.name,
+                    "policy_active": evaluation.policy_id.active,
+                    "score": evaluation.score,
+                    "status": evaluation.status,
+                    "complete_count": evaluation.complete_count,
+                    "missing_count": evaluation.missing_count,
+                    "grace_count": evaluation.grace_count,
+                    "evaluated_at": str(evaluation.evaluated_at or ""),
+                    "lines": lines,
+                }
+            )
+        summary = {
+            "compliant": len(
+                evaluations.filtered(lambda item: item.status == "compliant")
+            ),
+            "partial": len(
+                evaluations.filtered(lambda item: item.status == "partial")
+            ),
+            "non_compliant": len(
+                evaluations.filtered(lambda item: item.status == "non_compliant")
+            ),
+            "outstanding_count": len(outstanding),
+        }
+        return {
+            "success": True,
+            "data": {
+                "evaluations": evaluation_data,
+                "outstanding": outstanding,
+                "summary": summary,
+            },
+        }
+
+    @http.route(
+        "/api/document-versions",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def get_document_versions(self, document_id=None, id=None, **kwargs):
+        doc_id = int(document_id or id or kwargs.get("document_id") or 0)
+        doc = request.env["doc.document"].browse(doc_id).exists()
+        if not doc:
+            return {"success": False, "message": "Document not found."}
+        doc.check_access_rule("read")
+        versions = doc.version_ids.sorted(key=lambda item: item.version_number, reverse=True)
+        return {
+            "success": True,
+            "count": len(versions),
+            "data": [
+                {
+                    "id": version.id,
+                    "version_number": version.version_number,
+                    "uploaded_by": version.uploaded_by.name,
+                    "upload_date": fields.Datetime.to_string(version.upload_date),
+                    "change_note": version.change_note or "",
+                    "file_size": version.file_attachment.file_size or 0,
+                    "mime_type": version.file_attachment.mimetype or "",
+                }
+                for version in versions
+            ],
         }
 
     @http.route(
@@ -1152,27 +1588,16 @@ class DocumentUICreation(http.Controller):
         doc = request.env["doc.document"].browse(id).exists()
         if not doc:
             return {"success": False, "message": "Document not found."}
+        try:
+            doc.check_access_rule("read")
+        except AccessError:
+            return {"success": False, "message": "You do not have access to this document."}
         return {
             "success": True,
-            "data": {
-                "id": doc.id,
-                "name": doc.name,
-                "description": doc.description,
-                "folder_id": doc.folder_id.id,
-                "folder_name": doc.folder_id.folder_name,
-                "employee_id": doc.employee_id.id,
-                "employee_name": doc.employee_id.name,
-                "document_type_id": doc.document_type_id.id,
-                "document_type": doc.document_type_id.name,
-                "state": doc.state,
-                "approval_state": doc.approval_state,
-                "has_expiry": doc.has_expiry,
-                "expiry_date": doc.expiry_date,
-                "mime_type": doc.mime_type,
-                "file_size": doc.file_size,
-                "attachment_id": doc.attachment_id.id,
-                "extracted_text": doc.extracted_text,
-            },
+            "data": doc.serialize_for_api(
+                request.env.user,
+                extracted_text=doc.extracted_text,
+            ),
         }
 
     @http.route(
@@ -1215,7 +1640,7 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         folder = request.env["doc.folder"].browse(int(folder_id)).exists()
-        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        document_types = request.env["doc.document.type"].browse(list(set(document_type_ids))).exists()
         if not folder or folder.folder_type != "organizational" or len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {
@@ -1226,8 +1651,20 @@ class DocumentUICreation(http.Controller):
             )
         folder.check_access_rule("read")
         documents = request.env["doc.document"]
+        expiry_dates = _upload_expiry_dates()
         for index, upload in enumerate(uploads):
             type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+            if expiry_values is None:
+                return request.make_json_response(
+                    {
+                        "success": False,
+                        "message": f"An expiry date is required for {document_type.name}.",
+                    },
+                    status=400,
+                )
             attachment = request.env["ir.attachment"].create({
                 "name": upload.filename or "document",
                 "datas": base64.b64encode(upload.read()),
@@ -1236,6 +1673,7 @@ class DocumentUICreation(http.Controller):
             documents |= request.env["doc.document"].create({
                 "name": upload.filename or "Document", "folder_id": folder.id,
                 "document_type_id": type_id, "attachment_id": attachment.id,
+                **expiry_values,
             })
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}

@@ -180,14 +180,21 @@ class NextAppController(http.Controller):
         if not user.has_group("cleon_document_management.group_document_manager"):
             return {"success": True, "data": {"count": 0, "notifications": []}}
         approvals = request.env["doc.document.approval"].search(
-            [("state", "in", ["pending", "waiting"]), "|", ("approver_id", "=", user.id), ("document_id.folder_id.require_upload_approval", "=", True)],
-            order="create_date desc",
+            [
+                ("approver_id", "=", user.id),
+                ("state", "=", "pending"),
+                ("document_id.active", "=", True),
+                ("document_id.deleted_at", "=", False),
+            ],
+            order="create_date desc, sequence asc",
         )
         items = []
         for approval in approvals:
             document = approval.document_id
+            if not document.exists():
+                continue
             employee = document.employee_id.name if document.employee_id else "an employee"
-            message = f"Hello {user.name}, your attention is required to approve or reject {employee} file they just uploaded."
+            message = f"{employee} submitted {document.name} for your approval."
             items.append({"id": approval.id, "document_id": document.id, "employee_id": document.employee_id.id or 0, "document": document.name, "employee": employee, "message": message, "created_at": approval.create_date})
         return {"success": True, "data": {"count": len(items), "notifications": items}}
 
@@ -234,6 +241,64 @@ class NextAppController(http.Controller):
                     "state": approval.state,
                     "message": f"{employee} submitted {document.name} for your approval.",
                     "created_at": approval.create_date,
+                }
+            )
+        return {"success": True, "data": {"count": len(items), "items": items}}
+
+    @http.route(
+        "/api/admin/pending-employee-uploads",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_pending_employee_uploads(self, **kwargs):
+        user = request.env.user
+        if not user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": True, "data": {"count": 0, "items": []}}
+
+        request.env["doc.folder"].backfill_recycle_origin_links()
+        request.env["doc.folder"].sync_pending_upload_assignments()
+        pending_folders = request.env["doc.folder"].sudo().search(
+            [("is_pending_uploads", "=", True)]
+        )
+        if not pending_folders:
+            pending_folders = request.env["doc.folder"].get_pending_upload_folder()
+        documents = request.env["doc.document"].search(
+            [
+                ("folder_id", "in", pending_folders.ids),
+                ("employee_id", "!=", False),
+                ("active", "=", True),
+                ("deleted_at", "=", False),
+            ],
+            order="create_date desc",
+        )
+        items = []
+        for document in documents:
+            employee = document.employee_id
+            if document.approval_state == "pending" or document.state in (
+                "draft",
+                "processing",
+            ):
+                status = "pending_review"
+            elif document.recycle_origin_folder_id:
+                status = "awaiting_folder_restore"
+            else:
+                status = "awaiting_folder"
+            items.append(
+                {
+                    "id": document.id,
+                    "name": document.name,
+                    "document_type": document.document_type_id.name,
+                    "employee_id": employee.id,
+                    "employee_name": employee.name,
+                    "department": employee.department_id.name or "",
+                    "approval_state": document.approval_state,
+                    "state": document.state,
+                    "status": status,
+                    "origin_folder_id": document.recycle_origin_folder_id.id or False,
+                    "origin_folder_name": document.recycle_origin_folder_id.folder_name or "",
+                    "created_at": document.create_date,
                 }
             )
         return {"success": True, "data": {"count": len(items), "items": items}}

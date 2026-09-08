@@ -27,6 +27,7 @@ import {
   useUpdateOnboarding,
 } from "../../../hooks/useDocuments";
 import ThemedSelect from "./ThemedSelect";
+import ModalDialog from "./ModalDialog";
 
 const categories = [
   ["hr", "Human Resources"],
@@ -449,6 +450,7 @@ function Types({
                 category: "other",
                 description: "",
                 is_mandatory_default: false,
+                expiry_applicable: false,
                 default_retention_years: 7,
               })
             }
@@ -483,6 +485,7 @@ function Types({
                   category: "other",
                   description: "",
                   is_mandatory_default: false,
+                  expiry_applicable: false,
                   default_retention_years: 7,
                 })
               }
@@ -656,7 +659,9 @@ function ApprovalPanel({
                 Require approval for new uploads
               </p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                New folders inherit this rule unless an admin changes it.
+                New employee folders inherit these defaults until customized per
+                folder. Pending uploads also follow the department folder chain,
+                or these defaults when no folder exists yet.
               </p>
             </div>
             <Switch
@@ -1000,33 +1005,18 @@ function Switch({
 
 function TypeModal({ form, setForm, submit, saving }: any) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/35 p-4 backdrop-blur-[2px]">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-xl rounded-[24px] border border-white/70 bg-white p-6 shadow-2xl sm:p-8"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
-              <FileText className="h-5 w-5" />
-            </div>
-            <h2 className="mt-5 text-2xl font-bold tracking-[-0.03em] text-slate-900">
-              {form.id ? "Edit document type" : "Add document type"}
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Give uploads a clear, consistent classification.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setForm(null)}
-            className="!rounded-lg p-2 text-brand-text/50 hover:bg-pink-50 hover:text-brand-text"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <ModalDialog
+      title={form.id ? "Edit document type" : "Add document type"}
+      description="Give uploads a clear, consistent classification."
+      onClose={() => setForm(null)}
+      size="xl"
+      backdropClassName="bg-slate-950/35"
+    >
+      <form onSubmit={submit}>
+        <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-xl bg-pink-50 text-brand-pink">
+          <FileText className="h-5 w-5" />
         </div>
-        <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <label className="sm:col-span-2">
             <span className="label">Name</span>
             <input
@@ -1094,6 +1084,17 @@ function TypeModal({ form, setForm, submit, saving }: any) {
             />
             Make this mandatory by default
           </label>
+          <label className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 text-sm font-semibold text-slate-700">
+            <input
+              type="checkbox"
+              checked={Boolean(form.expiry_applicable)}
+              onChange={(event) =>
+                setForm({ ...form, expiry_applicable: event.target.checked })
+              }
+              className="h-4 w-4 accent-pink-600"
+            />
+            Expiry applicable
+          </label>
         </div>
         <div className="mt-8 flex justify-end gap-2 border-t border-slate-100 pt-5">
           <button
@@ -1111,6 +1112,6 @@ function TypeModal({ form, setForm, submit, saving }: any) {
           </button>
         </div>
       </form>
-    </div>
+    </ModalDialog>
   );
 }

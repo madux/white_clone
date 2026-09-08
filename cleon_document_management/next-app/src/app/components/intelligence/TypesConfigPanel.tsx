@@ -11,6 +11,7 @@ import {
   IntelligenceError,
   IntelligenceLoading,
 } from "./states";
+import ModalDialog from "../ModalDialog";
 
 export default function TypesConfigPanel() {
   const types = useIntelligenceTypes();
@@ -115,12 +116,14 @@ export default function TypesConfigPanel() {
       )}
 
       {showForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-          <form
-            onSubmit={onCreate}
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
-          >
-            <h2 className="text-xl font-bold">New document type</h2>
+        <ModalDialog
+          title="New document type"
+          onClose={() => setShowForm(false)}
+          size="lg"
+          titleClassName="text-xl"
+          backdropClassName="bg-slate-900/40"
+        >
+          <form onSubmit={onCreate}>
             <label className="mt-4 block">
               <span className="label">Name</span>
               <input
@@ -171,7 +174,7 @@ export default function TypesConfigPanel() {
               </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
       ) : null}
     </div>
   );

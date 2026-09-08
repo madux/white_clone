@@ -2,6 +2,7 @@
 
 import {
   Activity,
+  AlertCircle,
   Bell,
   BookOpen,
   Check,
@@ -10,8 +11,6 @@ import {
   Download,
   FileText,
   LayoutDashboard,
-  Maximize2,
-  Minimize2,
   Search,
   Share2,
   SlidersHorizontal,
@@ -26,18 +25,32 @@ import {
   useAcknowledgeDocument,
   useCurrentUser,
   useDocumentTypes,
+  useMyPendingUploads,
   useMyWorkspace,
   useRequestDocumentApproval,
+  useUpdateOnboarding,
   useUploadMyDocument,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
+import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
 import BulkDocumentActions from "./BulkDocumentActions";
+import DocumentViewerDialog from "./DocumentViewerDialog";
+import ModalDialog from "./ModalDialog";
+import UploadDuplicateDialog from "./UploadDuplicateDialog";
+import { findUploadDuplicates } from "../../../lib/uploadDuplicates";
+import type { UploadDuplicateMatch } from "../../../lib/types";
+import {
+  missingExpiryDates,
+  typeRequiresExpiry,
+} from "./uploadExpiryHelpers";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
+const DEFAULT_TAB_KEY = "cleon-doc-default-tab";
+const VALID_TABS: Tab[] = ["dashboard", "files", "shared", "activity"];
 const states: Record<string, string> = {
   approved: "bg-emerald-50 text-emerald-700",
   pending: "bg-amber-50 text-amber-700",
@@ -57,6 +70,8 @@ function DocumentTable({
   onRequestApproval,
   onUploadOutstanding,
   guideTarget,
+  sharedAckFilter = "all",
+  pendingStatusById = {},
 }: {
   documents: any[];
   search: string;
@@ -66,12 +81,17 @@ function DocumentTable({
   onRequestApproval?: (document: any) => void;
   onUploadOutstanding?: (document: any) => void;
   guideTarget?: string;
+  sharedAckFilter?: "all" | "needs_ack";
+  pendingStatusById?: Record<number, string>;
 }) {
-  const rows = documents.filter((document) =>
-    `${document.name} ${document.document_type} ${document.folder_name}`
+  const rows = documents.filter((document) => {
+    if (shared && sharedAckFilter === "needs_ack" && document.acknowledged) {
+      return false;
+    }
+    return `${document.name} ${document.document_type} ${document.folder_name}`
       .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
+      .includes(search.toLowerCase());
+  });
   const [selected, setSelected] = useState<number[]>([]);
   const selectable = !shared && !readOnly;
   const visibleIds = rows.map((document) => document.id);
@@ -82,7 +102,7 @@ function DocumentTable({
         <SortableTable className="w-full min-w-[850px] text-left">
           <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
             <tr>
-              {selectable && <th className="w-12 px-5 py-4"><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : visibleIds)} aria-label="Select all employee files" className="h-4 w-4 accent-pink-600" /></th>}
+              {selectable && <th className="w-12 px-5 py-4"><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : visibleIds)} aria-label="Select all my files" className="h-4 w-4 accent-pink-600" /></th>}
               <th className="px-5 py-4">Document</th>
               <th className="px-5 py-4">Category</th>
               <th className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>Status</th>
@@ -112,6 +132,16 @@ function DocumentTable({
                       <small className="mt-1 block text-xs text-slate-400">
                         {document.folder_name}
                       </small>
+                      {shared && !document.acknowledged && (
+                        <span className="mt-1 inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                          Needs acknowledgement
+                        </span>
+                      )}
+                      {!shared && pendingStatusById[document.id] && (
+                        <span className="mt-1 inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700">
+                          {pendingStatusById[document.id]}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </td>
@@ -127,7 +157,9 @@ function DocumentTable({
                     className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft} ${guideTarget === "approval" ? "guide-status-badge" : ""}`}
                   >
                     {shared && document.acknowledged
-                      ? "Acknowledged"
+                      ? document.acknowledged_at
+                        ? `Acknowledged ${String(document.acknowledged_at).slice(0, 10)}`
+                        : "Acknowledged"
                       : requiresApproval
                         ? "Requires approval"
                         : document.state}
@@ -195,6 +227,8 @@ function DocumentTable({
 
 export default function MyDocumentsPage() {
   const workspace = useMyWorkspace();
+  const pendingUploads = useMyPendingUploads();
+  const updateOnboarding = useUpdateOnboarding();
   const params = useSearchParams();
   const guideTarget = params.get("guide");
   const user = useCurrentUser();
@@ -203,37 +237,69 @@ export default function MyDocumentsPage() {
   const requestApproval = useRequestDocumentApproval();
   const documentTypes = useDocumentTypes();
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [sharedAckFilter, setSharedAckFilter] = useState<"all" | "needs_ack">("all");
+  const [ackMessage, setAckMessage] = useState("");
+  const [ackError, setAckError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState("");
+  const [isDraggingUpload, setIsDraggingUpload] = useState(false);
+  const [defaultSaved, setDefaultSaved] = useState(false);
   const [fileView, setFileView] = useState<FileView>("files");
   const [search, setSearch] = useState("");
   const [viewing, setViewing] = useState<any>(null);
-  const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    matches: UploadDuplicateMatch[];
+    proceed: () => Promise<void>;
+  } | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTypes, setUploadTypes] = useState<string[]>([]);
+  const [uploadExpiryDates, setUploadExpiryDates] = useState<string[]>([]);
   const [bulkUploadType, setBulkUploadType] = useState("");
   const [uploadRequirement, setUploadRequirement] = useState<any>(null);
   const [uploadError, setUploadError] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [showTypeFilter, setShowTypeFilter] = useState(false);
-  const typeFilterRef = useRef<HTMLDivElement>(null);
+  const [docFilters, setDocFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   useEffect(() => {
     if (params.get("upload") === "1") setShowUpload(true);
+    const requestedTab = params.get("tab");
+    if (requestedTab === "shared") {
+      setTab("shared");
+      return;
+    }
+    if (requestedTab === "files") {
+      setTab("files");
+      return;
+    }
     if (["workspace", "upload", "approval"].includes(guideTarget || "")) {
       setTab("files");
+      return;
     }
-    if (guideTarget === "shared") setTab("shared");
+    if (guideTarget === "shared") {
+      setTab("shared");
+      return;
+    }
+    const saved = localStorage.getItem(DEFAULT_TAB_KEY);
+    if (saved && VALID_TABS.includes(saved as Tab)) {
+      setTab(saved as Tab);
+    }
   }, [guideTarget, params]);
+  useEffect(() => {
+    const docId = Number(params.get("doc") || 0);
+    if (!docId || !workspace.data) return;
+    const match =
+      [...(workspace.data.my_files ?? []), ...(workspace.data.shared_documents ?? [])].find(
+        (document) => document.id === docId,
+      );
+    if (match) setViewing(match);
+  }, [params, workspace.data]);
   const data = workspace.data;
   const myFiles = data?.my_files ?? [];
   const shared = data?.shared_documents ?? [];
   const outstanding = data?.outstanding ?? [];
   const combined = [...myFiles, ...shared];
-  const filteredMyFiles =
-    typeFilter === "all"
-      ? myFiles
-      : myFiles.filter(
-          (document) => String(document.document_type_id) === typeFilter,
-        );
+  const filteredMyFiles = useMemo(
+    () => applyDocumentFilters(myFiles, docFilters),
+    [myFiles, docFilters]
+  );
   const pending = combined.filter(
     (document) =>
       document.approval_state === "pending" ||
@@ -245,7 +311,7 @@ export default function MyDocumentsPage() {
     { id: "dashboard" as const, label: "Home", icon: LayoutDashboard },
     {
       id: "files" as const,
-      label: "Employee Files",
+      label: "My files",
       icon: FileText,
       count: myFiles.length,
     },
@@ -255,42 +321,44 @@ export default function MyDocumentsPage() {
       icon: Share2,
       count: shared.length,
     },
-    { id: "activity" as const, label: "Activity Log", icon: Activity },
+    { id: "activity" as const, label: "My Activity Log", icon: Activity },
   ];
   const setPage = (next: Tab) => {
     setTab(next);
     setSearch("");
   };
+  const saveDefaultTab = () => {
+    localStorage.setItem(DEFAULT_TAB_KEY, tab);
+    setDefaultSaved(true);
+    window.setTimeout(() => setDefaultSaved(false), 2000);
+  };
+  const pendingStatusById = Object.fromEntries(
+    (pendingUploads.data?.items ?? []).map((item) => [item.id, item.status_label]),
+  );
+  const needsAckCount = shared.filter((document) => !document.acknowledged).length;
   const previewUrl =
     viewing?.id > 0
       ? `${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`
       : "";
-  useEffect(() => {
-    const close = (event: MouseEvent) => {
-      if (
-        typeFilterRef.current &&
-        !typeFilterRef.current.contains(event.target as Node)
-      )
-        setShowTypeFilter(false);
-    };
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowTypeFilter(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", escape);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", escape);
-    };
-  }, []);
-  const submitUpload = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!uploadFiles.length || uploadTypes.some((id) => !id)) return;
+
+  const performUpload = async () => {
     setUploadError("");
+    if (
+      missingExpiryDates(
+        uploadTypes,
+        uploadExpiryDates,
+        documentTypes.data ?? [],
+      )
+    ) {
+      setUploadError("Enter an expiry date for each applicable document type.");
+      return;
+    }
     try {
+      setUploadProgress("Uploading files...");
       const result = await upload.mutateAsync({
         files: uploadFiles,
         document_type_ids: uploadTypes.map(Number),
+        expiry_dates: uploadExpiryDates,
       });
       const response = result as {
         success: boolean;
@@ -301,19 +369,58 @@ export default function MyDocumentsPage() {
         throw new Error(
           response.message || "The document could not be uploaded.",
         );
-      const uploaded = (response as any).documents ?? [response.data];
-      for (const document of uploaded) await requestApproval.mutateAsync(document.id);
+      setUploadProgress("Upload complete.");
     } catch (caught: any) {
+      setUploadProgress("");
       setUploadError(
-        caught?.message || "The document could not be submitted for approval.",
+        caught?.message || "The document could not be uploaded.",
       );
       return;
     }
+    setUploadProgress("");
     setUploadFiles([]);
     setUploadTypes([]);
+    setUploadExpiryDates([]);
     setBulkUploadType("");
     setUploadRequirement(null);
     setShowUpload(false);
+    setDuplicateWarning(null);
+  };
+
+  const submitUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (
+      !uploadFiles.length ||
+      uploadTypes.some((id) => !id) ||
+      missingExpiryDates(
+        uploadTypes,
+        uploadExpiryDates,
+        documentTypes.data ?? [],
+      )
+    )
+      return;
+    const employeeId =
+      myFiles.find((document) => document.employee_id)?.employee_id ?? 0;
+    if (employeeId) {
+      try {
+        const matches = await findUploadDuplicates(
+          employeeId,
+          uploadFiles,
+          uploadTypes,
+        );
+        if (matches.length) {
+          setDuplicateWarning({
+            matches,
+            proceed: performUpload,
+          });
+          return;
+        }
+      } catch (caught: any) {
+        setUploadError(caught?.message || "Could not check for duplicate uploads.");
+        return;
+      }
+    }
+    await performUpload();
   };
 
   return (
@@ -324,8 +431,7 @@ export default function MyDocumentsPage() {
             Welcome, {user.data?.name || "there"}
           </h1>
           <p className="mt-1 text-xs font-medium text-slate-500">
-            Employee workspace ·{" "}
-            {user.data?.company_name || "Document Management"}
+            File management · upload, review, and organize your documents
           </p>
         </div>
         <button
@@ -340,7 +446,22 @@ export default function MyDocumentsPage() {
           <Upload className="h-4 w-4" /> Upload document
         </button>
       </header>
-      <nav className="flex flex-wrap gap-1 border-b border-slate-200">
+      {workspace.isLoading && (
+        <div className="space-y-3">
+          <div className="h-24 animate-pulse rounded-2xl bg-white" />
+          <div className="h-48 animate-pulse rounded-2xl bg-white" />
+        </div>
+      )}
+      {workspace.error && (
+        <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <span>Your workspace data could not be loaded. Please try again.</span>
+        </div>
+      )}
+      {!workspace.isLoading && (
+      <>
+      <nav className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200">
+        <div className="flex flex-wrap gap-1">
         {tabs.map(({ id, label, icon: Icon, count }) => (
           <button
             key={id}
@@ -357,6 +478,14 @@ export default function MyDocumentsPage() {
             )}
           </button>
         ))}
+        </div>
+        <button
+          type="button"
+          onClick={saveDefaultTab}
+          className="mb-1 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-500 transition hover:border-brand-pink hover:text-brand-pink"
+        >
+          {defaultSaved ? "Default saved" : "Set as default view"}
+        </button>
       </nav>
       {tab === "dashboard" && (
         <div className="space-y-5">
@@ -545,7 +674,7 @@ export default function MyDocumentsPage() {
         <section className="space-y-4">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-              {tab === "shared" ? "Shared Documents" : "Employee Files"}
+              {tab === "shared" ? "Shared Documents" : "My files"}
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               {tab === "shared"
@@ -573,69 +702,34 @@ export default function MyDocumentsPage() {
                 </button>
               </div>
               {fileView === "files" && (
-                <div ref={typeFilterRef} className="relative">
-                  <button
-                    type="button"
-                    aria-haspopup="menu"
-                    aria-expanded={showTypeFilter}
-                    onClick={() => setShowTypeFilter((current) => !current)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition ${typeFilter !== "all" || showTypeFilter ? "border-brand-pink bg-pink-50 text-brand-text" : "border-slate-200 bg-white text-slate-600 hover:border-brand-pink hover:text-brand-text"}`}
-                  >
-                    <SlidersHorizontal className="h-4 w-4" /> Filter
-                    {typeFilter !== "all" && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-brand-pink" />
-                    )}
-                  </button>
-                  {showTypeFilter && (
-                    <div
-                      role="menu"
-                      className="absolute left-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-2xl border border-pink-100 bg-white p-2 shadow-xl shadow-slate-900/10"
-                    >
-                      <div className="border-b border-slate-100 px-3 py-2">
-                        <p className="text-xs font-bold text-slate-800">
-                          Filter by document type
-                        </p>
-                        <p className="mt-0.5 text-[11px] text-slate-400">
-                          Choose which files to show
-                        </p>
-                      </div>
-                      <div className="mt-1 space-y-0.5">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => {
-                            setTypeFilter("all");
-                            setShowTypeFilter(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${typeFilter === "all" ? "bg-pink-50 font-bold text-brand-text" : "text-slate-600 hover:bg-pink-50/70"}`}
-                        >
-                          All types
-                          {typeFilter === "all" && (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </button>
-                        {documentTypes.data?.map((type) => (
-                          <button
-                            key={type.id}
-                            type="button"
-                            role="menuitem"
-                            onClick={() => {
-                              setTypeFilter(String(type.id));
-                              setShowTypeFilter(false);
-                            }}
-                            className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm ${typeFilter === String(type.id) ? "bg-pink-50 font-bold text-brand-text" : "text-slate-600 hover:bg-pink-50/70"}`}
-                          >
-                            {type.name}
-                            {typeFilter === String(type.id) && (
-                              <Check className="h-4 w-4" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <DocumentFilterBar
+                  filters={docFilters}
+                  onChange={setDocFilters}
+                  availableTypes={documentTypes.data ?? []}
+                  showDepartmentFilter={false}
+                  totalCount={myFiles.length}
+                  filteredCount={filteredMyFiles.length}
+                />
               )}
+            </div>
+          )}
+          {tab === "shared" && (
+            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setSharedAckFilter("all")}
+                className={`rounded-full px-4 py-2 text-xs font-bold ${sharedAckFilter === "all" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
+              >
+                All shared
+              </button>
+              <button
+                type="button"
+                onClick={() => setSharedAckFilter("needs_ack")}
+                className={`rounded-full px-4 py-2 text-xs font-bold ${sharedAckFilter === "needs_ack" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
+              >
+                Needs acknowledgement{" "}
+                <span className="ml-1">{needsAckCount}</span>
+              </button>
             </div>
           )}
           <label className={`relative block max-w-md ${guideTarget === "search" ? "guide-emphasis rounded-full" : ""}`}>
@@ -659,6 +753,8 @@ export default function MyDocumentsPage() {
             shared={tab === "shared"}
             readOnly={fileView === "outstanding"}
             guideTarget={guideTarget || undefined}
+            sharedAckFilter={tab === "shared" ? sharedAckFilter : "all"}
+            pendingStatusById={pendingStatusById}
             onView={setViewing}
             onRequestApproval={async (document) => {
               if (
@@ -680,7 +776,7 @@ export default function MyDocumentsPage() {
       )}
       {tab === "activity" && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Activity Log</h2>
+          <h2 className="text-xl font-bold text-slate-900">My Activity Log</h2>
           <p className="mt-1 text-sm text-slate-500">
             Recent activity across your employee workspace.
           </p>
@@ -694,10 +790,12 @@ export default function MyDocumentsPage() {
                   <Activity className="h-4 w-4 text-brand-pink" />
                   <div>
                     <p className="text-sm font-bold text-slate-700">
-                      {event.event}: {event.document}
+                      {event.event === "Updated"
+                        ? `You updated ${event.document}`
+                        : `You added ${event.document}`}
                     </p>
                     <p className="mt-1 text-xs text-slate-400">
-                      {event.folder}
+                      in {event.folder}
                     </p>
                   </div>
                 </div>
@@ -715,68 +813,28 @@ export default function MyDocumentsPage() {
         </section>
       )}
       {viewing && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm ${viewerFullscreen ? "" : "p-4"}`}>
-          <div className={`flex w-full flex-col overflow-hidden bg-white shadow-2xl ${viewerFullscreen ? "h-screen max-w-none rounded-none" : "max-h-[92vh] max-w-4xl rounded-3xl"}`}>
-            <div className="flex items-center justify-between border-b border-slate-100 p-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-                  Document viewer
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">
+        <DocumentViewerDialog
+          title={viewing.name}
+          description={`${viewing.document_type} · ${viewing.folder_name}`}
+          onClose={() => setViewing(null)}
+          previewUrl={viewing.id > 0 ? previewUrl : undefined}
+          documentId={viewing.id > 0 ? viewing.id : undefined}
+          placeholder={
+            viewing.id < 0 ? (
+              <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
+                <FileText className="h-9 w-9 text-brand-pink" />
+                <h3 className="mt-4 text-lg font-bold text-slate-900">
                   {viewing.name}
-                </h2>
-                <p className="text-xs text-slate-400">
-                  {viewing.document_type} · {viewing.folder_name}
+                </h3>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  {viewing.description || "This document has not been uploaded yet."}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => api.downloadDocument(viewing.id)}
-                  className="inline-flex items-center gap-2 rounded-full bg-brand-pink px-3 py-2 text-xs font-bold text-white"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewerFullscreen((current) => !current)}
-                  aria-label={viewerFullscreen ? "Exit full screen" : "Open full screen"}
-                  className="rounded-full border border-slate-200 p-2 text-slate-500 hover:border-brand-pink hover:text-brand-pink"
-                >
-                  {viewerFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setViewing(null); setViewerFullscreen(false); }}
-                  aria-label="Close document viewer"
-                  className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-                >
-                  <X />
-                </button>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-hidden bg-slate-100 p-5">
-              {viewing.id < 0 ? (
-                <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-sm">
-                  <FileText className="h-9 w-9 text-brand-pink" />
-                  <h3 className="mt-4 text-lg font-bold text-slate-900">
-                    {viewing.name}
-                  </h3>
-                  <p className="mt-2 text-sm leading-7 text-slate-600">
-                    {viewing.description || "This document has not been uploaded yet."}
-                  </p>
-                </div>
-              ) : (
-                <iframe
-                  title={viewing.name}
-                  src={previewUrl}
-                  className="block h-full min-h-[62vh] w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white"
-                />
-              )}
-            </div>
-            {tab === "shared" && !viewing.acknowledged && (
-              <div className="border-t border-amber-200 bg-amber-50 p-5">
+            ) : undefined
+          }
+          footer={
+            tab === "shared" && !viewing.acknowledged ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <div className="flex gap-3">
                   <Bell className="h-5 w-5 shrink-0 text-amber-600" />
                   <div>
@@ -792,8 +850,30 @@ export default function MyDocumentsPage() {
                       type="button"
                       disabled={acknowledge.isPending}
                       onClick={async () => {
-                        await acknowledge.mutateAsync(viewing.id);
-                        setViewing({ ...viewing, acknowledged: true });
+                        setAckError("");
+                        setAckMessage("");
+                        try {
+                          const result = await acknowledge.mutateAsync(viewing.id);
+                          if (result && (result as { success?: boolean }).success === false) {
+                            throw new Error(
+                              (result as { message?: string }).message ||
+                                "Could not record acknowledgement.",
+                            );
+                          }
+                          const acknowledgedAt =
+                            (result as { data?: { acknowledged_at?: string } })?.data
+                              ?.acknowledged_at || "";
+                          setViewing({
+                            ...viewing,
+                            acknowledged: true,
+                            acknowledged_at: acknowledgedAt,
+                          });
+                          setAckMessage("Document acknowledged successfully.");
+                        } catch (caught: any) {
+                          setAckError(
+                            caught?.message || "Could not record acknowledgement.",
+                          );
+                        }
                       }}
                       className="mt-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-4 py-2.5 text-xs font-bold text-white"
                     >
@@ -802,63 +882,215 @@ export default function MyDocumentsPage() {
                         ? "Recording..."
                         : "Acknowledge document"}
                     </button>
+                    {ackError && (
+                      <p className="mt-3 text-xs font-semibold text-red-700">{ackError}</p>
+                    )}
+                    {ackMessage && (
+                      <p className="mt-3 text-xs font-semibold text-emerald-700">{ackMessage}</p>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            ) : viewing.acknowledged && tab === "shared" ? (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                {viewing.acknowledged_at
+                  ? `Acknowledged on ${String(viewing.acknowledged_at).slice(0, 10)}`
+                  : "You have acknowledged this document."}
+              </div>
+            ) : undefined
+          }
+        />
+      )}
+      {duplicateWarning && (
+        <UploadDuplicateDialog
+          matches={duplicateWarning.matches}
+          typeLabels={Object.fromEntries(
+            (documentTypes.data ?? []).map((type) => [type.id, type.name]),
+          )}
+          onCancel={() => setDuplicateWarning(null)}
+          onUploadAnyway={() => void duplicateWarning.proceed()}
+          pending={upload.isPending}
+        />
       )}
       {showUpload && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
-          onMouseDown={(event) => {
-            if (event.currentTarget === event.target) setShowUpload(false);
-          }}
+        <ModalDialog
+          title={uploadRequirement ? "Complete outstanding document" : "Upload a document"}
+          eyebrow="Employee files"
+          description={
+            uploadRequirement
+              ? "This upload will be sent to an administrator for review immediately."
+              : "Your document will be submitted for HR review. If a department folder exists, it will be assigned automatically after approval."
+          }
+          onClose={() => setShowUpload(false)}
+          size="lg"
+          backdropClassName="bg-slate-950/45"
+          titleClassName="text-xl"
         >
-          <form
-            onSubmit={submitUpload}
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-                  Employee files
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">
-                  {uploadRequirement
-                    ? "Complete outstanding document"
-                    : "Upload a document"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  {uploadRequirement
-                    ? "This upload will be sent to an administrator for review immediately."
-                    : "Your document will be saved as a draft and can be submitted for approval."}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowUpload(false)}
-                className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <label className="mt-5 block">
+          <form onSubmit={submitUpload}>
+            <label className="block">
               <span className="label">Files</span>
-              <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
+              <span
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDraggingUpload(true);
+                }}
+                onDragLeave={() => setIsDraggingUpload(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDraggingUpload(false);
+                  const next = Array.from(event.dataTransfer.files ?? []);
+                  if (!next.length) return;
+                  setUploadFiles(next);
+                  setUploadTypes(
+                    next.map((_, index) =>
+                      uploadRequirement
+                        ? String(uploadRequirement.document_type_id)
+                        : uploadTypes[index] ?? "",
+                    ),
+                  );
+                  setUploadExpiryDates(
+                    next.map((_, index) => uploadExpiryDates[index] ?? ""),
+                  );
+                }}
+                className={`flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed px-4 py-6 text-sm font-semibold transition ${
+                  isDraggingUpload
+                    ? "border-brand-pink bg-pink-100/70 text-brand-text"
+                    : "border-brand-pink/40 bg-pink-50/50 text-brand-text"
+                }`}
+              >
                 <Upload className="h-5 w-5" />
-                {uploadFiles.length ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected` : "Choose files from your computer"}
+                {uploadFiles.length
+                  ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected`
+                  : "Choose files or drag and drop them here"}
                 <input
                   required
                   multiple
                   type="file"
-                  onChange={(event) => { const next = Array.from(event.target.files ?? []); setUploadFiles(next); setUploadTypes(next.map((_, index) => uploadRequirement ? String(uploadRequirement.document_type_id) : uploadTypes[index] ?? "")); }}
+                  onChange={(event) => {
+                    const next = Array.from(event.target.files ?? []);
+                    setUploadFiles(next);
+                    setUploadTypes(
+                      next.map((_, index) =>
+                        uploadRequirement
+                          ? String(uploadRequirement.document_type_id)
+                          : uploadTypes[index] ?? "",
+                      ),
+                    );
+                    setUploadExpiryDates(
+                      next.map((_, index) => uploadExpiryDates[index] ?? ""),
+                    );
+                  }}
                   className="hidden"
                 />
               </span>
             </label>
-            {uploadFiles.length > 0 && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Selected files and types</p><div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] gap-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400"><span>File name</span><span>Document type</span></div><div className="space-y-2">{uploadFiles.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] items-center gap-3 rounded-xl bg-white p-2"><span title={file.name} className="min-w-0 truncate text-sm font-medium text-slate-700">{file.name}</span>{uploadRequirement ? <span className="truncate rounded-full bg-pink-50 px-2 py-1 text-xs font-bold text-brand-pink">{uploadRequirement.document_type}</span> : <ThemedSelect value={uploadTypes[index] ?? ""} onChange={(value) => setUploadTypes((current) => current.map((item, i) => i === index ? value : item))} placeholder="Document type" options={(documentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />}</div>)}</div>{!uploadRequirement && <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3"><summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary><div className="mt-3 flex items-end gap-2"><label className="min-w-0 flex-1"><span className="label">Use one document type for all files</span><ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(documentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} /></label><button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button></div></details>}</div>}
+            {uploadFiles.length > 0 && (
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                  Selected files and types
+                </p>
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] gap-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  <span>File name</span>
+                  <span>Document type</span>
+                  <span>Expiry date</span>
+                </div>
+                <div className="space-y-2">
+                  {uploadFiles.map((file, index) => {
+                    const typeId =
+                      uploadTypes[index] ??
+                      (uploadRequirement
+                        ? String(uploadRequirement.document_type_id)
+                        : "");
+                    return (
+                      <div
+                        key={`${file.name}-${index}`}
+                        className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] items-center gap-3 rounded-xl bg-white p-2"
+                      >
+                        <span
+                          title={file.name}
+                          className="min-w-0 truncate text-sm font-medium text-slate-700"
+                        >
+                          {file.name}
+                        </span>
+                        {uploadRequirement ? (
+                          <span className="truncate rounded-full bg-pink-50 px-2 py-1 text-xs font-bold text-brand-pink">
+                            {uploadRequirement.document_type}
+                          </span>
+                        ) : (
+                          <ThemedSelect
+                            value={uploadTypes[index] ?? ""}
+                            onChange={(value) =>
+                              setUploadTypes((current) =>
+                                current.map((item, i) =>
+                                  i === index ? value : item,
+                                ),
+                              )
+                            }
+                            placeholder="Document type"
+                            options={(documentTypes.data ?? []).map((type) => ({
+                              value: String(type.id),
+                              label: type.name,
+                            }))}
+                          />
+                        )}
+                        {typeRequiresExpiry(typeId, documentTypes.data ?? []) ? (
+                          <input
+                            required
+                            type="date"
+                            className="field"
+                            value={uploadExpiryDates[index] ?? ""}
+                            onChange={(event) =>
+                              setUploadExpiryDates((current) =>
+                                current.map((item, i) =>
+                                  i === index ? event.target.value : item,
+                                ),
+                              )
+                            }
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">
+                            Not required
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {!uploadRequirement && (
+                  <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+                    <summary className="cursor-pointer text-xs font-bold text-slate-700">
+                      Advanced configuration
+                    </summary>
+                    <div className="mt-3 flex items-end gap-2">
+                      <label className="min-w-0 flex-1">
+                        <span className="label">
+                          Use one document type for all files
+                        </span>
+                        <ThemedSelect
+                          value={bulkUploadType}
+                          onChange={setBulkUploadType}
+                          placeholder="Select a type"
+                          options={(documentTypes.data ?? []).map((type) => ({
+                            value: String(type.id),
+                            label: type.name,
+                          }))}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        disabled={!bulkUploadType}
+                        onClick={() =>
+                          setUploadTypes(uploadFiles.map(() => bulkUploadType))
+                        }
+                        className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50"
+                      >
+                        Apply to all
+                      </button>
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
             {uploadRequirement ? (
               <div className="mt-4 rounded-2xl border border-pink-100 bg-pink-50/50 p-3">
                 <span className="label">Required document type</span>
@@ -870,6 +1102,11 @@ export default function MyDocumentsPage() {
                 </p>
               </div>
             ) : null}
+            {uploadProgress && (
+              <p className="mt-4 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
+                {uploadProgress}
+              </p>
+            )}
             {uploadError && (
               <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                 {uploadError}
@@ -886,23 +1123,37 @@ export default function MyDocumentsPage() {
               <button
                 disabled={
                   upload.isPending ||
-                  requestApproval.isPending ||
                   !uploadFiles.length ||
-                  uploadTypes.some((id) => !id)
+                  uploadTypes.some((id) => !id) ||
+                  missingExpiryDates(
+                    uploadTypes,
+                    uploadExpiryDates,
+                    documentTypes.data ?? [],
+                  )
                 }
                 className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {upload.isPending
                   ? "Uploading..."
-                  : requestApproval.isPending
-                    ? "Sending for review..."
-                    : uploadRequirement
+                  : uploadRequirement
                       ? "Upload and request review"
                     : "Upload documents"}
               </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
+      )}
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4 text-xs text-slate-400">
+        <span>Need a refresher on how this workspace works?</span>
+        <button
+          type="button"
+          onClick={() => updateOnboarding.mutate({ action: "reset" })}
+          className="rounded-full border border-slate-200 px-3 py-1.5 font-bold text-slate-500 hover:border-brand-pink hover:text-brand-pink"
+        >
+          Restart getting started guide
+        </button>
+      </footer>
+      </>
       )}
     </div>
   );

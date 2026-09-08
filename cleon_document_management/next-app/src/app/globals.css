@@ -222,6 +222,11 @@ select.field option {
   color: #b45309;
 }
 
+.status.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .row-action {
   display: inline-flex;
   align-items: center;

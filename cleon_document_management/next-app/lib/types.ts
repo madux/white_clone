@@ -28,8 +28,21 @@ export interface DocFolder {
   locked?: boolean;
   active?: boolean;
   employee_ids?: number[];
+  department_ids?: number[];
+  grade_ids?: number[];
   retention_period?: string;
   require_upload_approval?: boolean;
+  approval_flow?: "sequential" | "random" | "any";
+  approver_ids?: number[];
+}
+
+export interface UploadDuplicateMatch {
+  filename: string;
+  document_type_id: number;
+  id: number;
+  name: string;
+  version_count?: number;
+  latest_version_number?: number;
 }
 
 export interface DocDocument {
@@ -44,6 +57,12 @@ export interface DocDocument {
   document_type: string;
   state: "draft" | "processing" | "approved" | "rejected" | "expired" | "missing";
   approval_state: "not_required" | "pending" | "approved" | "rejected";
+  approval_flow?: "sequential" | "random" | "any";
+  can_review?: boolean;
+  waiting_for_prior?: boolean;
+  my_approval_state?: "pending" | "waiting" | "approved" | "rejected" | null;
+  current_approver_id?: number | false;
+  current_approver_name?: string | null;
   ocr_state: "pending" | "processing" | "completed" | "failed";
   has_expiry: boolean;
   expiry_date: string | null;
@@ -58,6 +77,7 @@ export interface DocDocument {
   recycle_bin_until?: string;
   favorite?: boolean;
   acknowledged?: boolean;
+  acknowledged_at?: string | false;
   pinned?: boolean;
   distribution_status?: "active" | "archived" | "deactivated";
 }
@@ -96,6 +116,78 @@ export interface ApprovalInbox {
   items: ApprovalInboxItem[];
 }
 
+export interface PendingEmployeeUpload {
+  id: number;
+  name: string;
+  document_type: string;
+  employee_id: number;
+  employee_name: string;
+  department: string;
+  approval_state: DocDocument["approval_state"];
+  state: DocDocument["state"];
+  status: "pending_review" | "awaiting_folder" | "awaiting_folder_restore";
+  origin_folder_id?: number;
+  origin_folder_name?: string;
+  created_at: string;
+}
+
+export interface PendingEmployeeUploads {
+  count: number;
+  items: PendingEmployeeUpload[];
+}
+
+export interface MyPendingUpload {
+  id: number;
+  name: string;
+  document_type: string;
+  approval_state: DocDocument["approval_state"];
+  state: DocDocument["state"];
+  status: "pending_review" | "awaiting_folder" | "awaiting_folder_restore";
+  status_label: string;
+  origin_folder_name?: string;
+  created_at: string;
+}
+
+export interface MyPendingUploads {
+  count: number;
+  items: MyPendingUpload[];
+}
+
+export interface MyComplianceEvaluation {
+  id: number;
+  policy: string;
+  policy_active: boolean;
+  score: number;
+  status: string;
+  complete_count: number;
+  missing_count: number;
+  grace_count: number;
+  evaluated_at: string;
+  lines: Array<{
+    id: number;
+    requirement: string;
+    document_type: string;
+    status: string;
+    required_count: number;
+    matched_count: number;
+  }>;
+}
+
+export interface MyCompliance {
+  evaluations: MyComplianceEvaluation[];
+  outstanding: Array<{
+    policy: string;
+    document_type: string;
+    status: string;
+  }>;
+  summary: {
+    compliant: number;
+    partial: number;
+    non_compliant: number;
+    outstanding_count: number;
+  };
+}
+
 export interface OnboardingState {
   show: boolean;
   dismissed: boolean;
@@ -110,9 +202,21 @@ export interface DocumentType {
   id: number;
   name: string;
   category: string;
+  description?: string;
   is_mandatory_default: boolean;
   default_retention_years: number;
+  expiry_applicable?: boolean;
   active: boolean;
+}
+
+export interface DocumentVersion {
+  id: number;
+  version_number: number;
+  uploaded_by: string;
+  upload_date: string;
+  change_note: string;
+  file_size: number;
+  mime_type: string;
 }
 
 export interface ShareLink {
@@ -131,6 +235,7 @@ export interface CompliancePolicy {
   description: string;
   policy_type_id: number;
   policy_type: string;
+  policy_type_code?: string;
   document_type_ids: number[];
   schedule: string;
   custom_schedule_days: number;
@@ -142,7 +247,24 @@ export interface CompliancePolicy {
   grace_period_days: number;
   effective_date: string;
   active: boolean;
+  last_run_at: string;
+  next_run_at: string;
   evaluation_ids?: any[];
+  // Type-specific fields
+  allow_waiver?: boolean;
+  alert_schedule_days?: string;
+  escalate_manager_days?: number;
+  escalate_hr_days?: number;
+  auto_request_renewal?: boolean;
+  event_trigger?: string;
+  due_days?: number;
+  reminder_frequency_days?: number;
+  assigned_reviewer_id?: number | false;
+  assigned_reviewer?: string;
+  audit_frequency?: string;
+  sample_pct?: number;
+  assigned_auditor_id?: number | false;
+  assigned_auditor?: string;
 }
 
 export interface ComplianceTargets {
@@ -160,6 +282,7 @@ export interface ComplianceTargets {
   }[];
   departments: { id: number; name: string }[];
   grades: { id: number; name: string }[];
+  users?: { id: number; name: string; email: string }[];
 }
 
 export interface ComplianceException {
@@ -171,6 +294,7 @@ export interface ComplianceException {
   reason: string;
   valid_until: string;
   status: string;
+  active: boolean;
 }
 
 export interface ComplianceEvaluation {
@@ -183,7 +307,33 @@ export interface ComplianceEvaluation {
   status: string;
   complete_count: number;
   missing_count: number;
+  grace_count: number;
   evaluated_at: string;
+  policy_active?: boolean;
+  lines?: {
+    id: number;
+    requirement_id: number;
+    requirement: string;
+    document_type_id?: number;
+    document_type?: string;
+    document_ids: number[];
+    required_count: number;
+    matched_count: number;
+    status: string;
+  }[];
+}
+
+export interface ComplianceEvaluationRun {
+  id: number;
+  policy_id: number;
+  policy: string;
+  run_type: "manual" | "automatic";
+  evaluated_at: string;
+  employee_count: number;
+  compliant_count: number;
+  partial_count: number;
+  non_compliant_count: number;
+  excepted_count: number;
 }
 
 export interface DashboardStats {

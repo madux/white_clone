@@ -1,65 +1,735 @@
 "use client";
 
-import { Eye, FileText, Pencil, Play, Trash2, X } from "lucide-react";
+import { Eye, FileText, Pencil, Play, Trash2 } from "lucide-react";
 import { FormEvent, useState } from "react";
-import { useDeletePolicy, useEvaluatePolicy, useUpdatePolicy } from "../../../hooks/useDocuments";
-import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
+import {
+  useDeletePolicy,
+  useEvaluatePolicy,
+  useUpdatePolicy,
+} from "../../../hooks/useDocuments";
+import ModalDialog from "./ModalDialog";
+import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
+import { ScopeChecklist, AlertCadenceSelector } from "./CompliancePage";
 
-const schedules = ["one_time", "daily", "weekly", "monthly", "quarterly", "semi_annually", "annually", "custom"];
+const schedules = [
+  "one_time",
+  "daily",
+  "weekly",
+  "monthly",
+  "quarterly",
+  "semi_annually",
+  "annually",
+  "custom",
+];
 
-export default function PolicyActions({ policy, documents, types, targets }: { policy: any; documents: any[]; types: any[]; targets: any }) {
+export default function PolicyActions({
+  policy,
+  documents,
+  types,
+  targets,
+}: {
+  policy: any;
+  documents: { id: number; name: string }[];
+  types: any[];
+  targets: any;
+}) {
   const [mode, setMode] = useState<"view" | "edit" | null>(null);
   const [form, setForm] = useState({
-    name: policy.name, description: policy.description || "", policy_type_id: String(policy.policy_type_id),
-    document_type_ids: policy.document_type_ids ?? [], applies_to: policy.applies_to,
-    scope_ids: policy[`${policy.applies_to}_ids`] ?? [], schedule: policy.schedule === "manual" ? "" : policy.schedule,
-    custom_schedule_days: String(policy.custom_schedule_days ?? 30), minimum_documents: String(policy.minimum_documents ?? 1),
-    grace_period_days: String(policy.grace_period_days ?? 0), effective_date: policy.effective_date || "", active: policy.active,
+    name: policy.name,
+    description: policy.description || "",
+    policy_type_id: String(policy.policy_type_id || ""),
+    document_type_ids: policy.document_type_ids ?? [],
+    applies_to: policy.applies_to || "all",
+    scope_ids: policy[`${policy.applies_to}_ids`] ?? [],
+    schedule: policy.schedule === "manual" ? "" : policy.schedule,
+    custom_schedule_days: String(policy.custom_schedule_days ?? 30),
+    minimum_documents: String(policy.minimum_documents ?? 1),
+    grace_period_days: String(policy.grace_period_days ?? 0),
+    effective_date: policy.effective_date || "",
+    active: policy.active,
+    // Type-specific parameters
+    allow_waiver: policy.allow_waiver ?? true,
+    alert_schedule_days: policy.alert_schedule_days || "60,30,15,7,0",
+    escalate_manager_days: policy.escalate_manager_days ?? 15,
+    escalate_hr_days: policy.escalate_hr_days ?? 7,
+    auto_request_renewal: policy.auto_request_renewal ?? true,
+    event_trigger: policy.event_trigger || "onboarding",
+    due_days: policy.due_days ?? 14,
+    reminder_frequency_days: policy.reminder_frequency_days ?? 3,
+    assigned_reviewer_id: String(policy.assigned_reviewer_id || ""),
+    audit_frequency: policy.audit_frequency || "quarterly",
+    sample_pct: policy.sample_pct ?? 100,
+    assigned_auditor_id: String(policy.assigned_auditor_id || ""),
   });
   const [error, setError] = useState("");
-  const update = useUpdatePolicy(); const remove = useDeletePolicy(); const evaluate = useEvaluatePolicy();
-  const requiredDocuments = (policy.document_type_ids ?? []).map((id: number) => documents.find((document) => document.id === id)?.name).filter(Boolean);
-  const scopeOptions = form.applies_to === "department" ? targets?.departments ?? [] : form.applies_to === "grade" ? targets?.grades ?? [] : targets?.employees ?? [];
-  const toggle = (field: "document_type_ids" | "scope_ids", id: number) => setForm({ ...form, [field]: form[field].includes(id) ? form[field].filter((item: number) => item !== id) : [...form[field], id] });
+  const update = useUpdatePolicy();
+  const remove = useDeletePolicy();
+  const evaluate = useEvaluatePolicy();
+  const requiredDocuments = (policy.document_type_ids ?? [])
+    .map((id: number) => documents.find((document) => document.id === id)?.name)
+    .filter(Boolean);
+  const scopeOptions =
+    form.applies_to === "department"
+      ? (targets?.departments ?? [])
+      : form.applies_to === "grade"
+        ? (targets?.grades ?? [])
+        : (targets?.employees ?? []);
+
+  const selectedType = (types || []).find(
+    (t: any) => String(t.id) === String(form.policy_type_id),
+  );
+  const typeCode = selectedType?.code || policy.policy_type_code || "";
+
+  const toggle = (field: "document_type_ids" | "scope_ids", id: number) =>
+    setForm({
+      ...form,
+      [field]: form[field].includes(id)
+        ? form[field].filter((item: number) => item !== id)
+        : [...form[field], id],
+    });
   const save = async (event: FormEvent) => {
     event.preventDefault();
-    if (!form.document_type_ids.length) return setError("Select at least one required document type.");
-    if (!form.scope_ids.length) return setError(`Select at least one ${form.applies_to}.`);
+    if (!form.policy_type_id) return setError("Please select a policy type.");
+    if (!form.document_type_ids.length)
+      return setError("Select at least one required document type.");
     setError("");
-    await update.mutateAsync({ id: policy.id, name: form.name.trim(), description: form.description.trim(), policy_type_id: Number(form.policy_type_id), document_type_ids: form.document_type_ids, applies_to: form.applies_to, department_ids: form.applies_to === "department" ? form.scope_ids : [], grade_ids: form.applies_to === "grade" ? form.scope_ids : [], employee_ids: form.applies_to === "employee" ? form.scope_ids : [], schedule: form.schedule || false, custom_schedule_days: Number(form.custom_schedule_days), minimum_documents: Number(form.minimum_documents), grace_period_days: Number(form.grace_period_days), effective_date: form.effective_date, active: form.active });
+    const effectiveAppliesTo =
+      form.applies_to === "all" || form.scope_ids.length === 0
+        ? "all"
+        : form.applies_to;
+    await update.mutateAsync({
+      id: policy.id,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      policy_type_id: Number(form.policy_type_id),
+      document_type_ids: form.document_type_ids,
+      applies_to: effectiveAppliesTo,
+      department_ids: effectiveAppliesTo === "department" ? form.scope_ids : [],
+      grade_ids: effectiveAppliesTo === "grade" ? form.scope_ids : [],
+      employee_ids: effectiveAppliesTo === "employee" ? form.scope_ids : [],
+      schedule: form.schedule || false,
+      custom_schedule_days: Number(form.custom_schedule_days),
+      minimum_documents: Number(form.minimum_documents),
+      grace_period_days: Number(form.grace_period_days),
+      effective_date: form.effective_date,
+      active: form.active,
+      allow_waiver: form.allow_waiver,
+      alert_schedule_days: form.alert_schedule_days,
+      escalate_manager_days: Number(form.escalate_manager_days),
+      escalate_hr_days: Number(form.escalate_hr_days),
+      auto_request_renewal: form.auto_request_renewal,
+      event_trigger: form.event_trigger,
+      due_days: Number(form.due_days),
+      reminder_frequency_days: Number(form.reminder_frequency_days),
+      assigned_reviewer_id: form.assigned_reviewer_id
+        ? Number(form.assigned_reviewer_id)
+        : false,
+      audit_frequency: form.audit_frequency,
+      sample_pct: Number(form.sample_pct),
+      assigned_auditor_id: form.assigned_auditor_id
+        ? Number(form.assigned_auditor_id)
+        : false,
+    });
     setMode(null);
   };
-  const run = async () => { await evaluate.mutateAsync(policy.id); window.alert("Policy check completed."); };
-  const deletePolicy = async () => { if (window.confirm(`Delete "${policy.name}"? This cannot be undone.`)) await remove.mutateAsync(policy.id); };
-  return <>
-    <div className="flex items-center justify-end gap-1">
-      <button type="button" onClick={() => setMode("view")} className="row-action" title="View policy" aria-label="View policy"><Eye /></button>
-      <button type="button" onClick={run} disabled={evaluate.isPending} className="row-action" title="Run policy check" aria-label="Run policy check"><Play /></button>
-      <button type="button" onClick={() => setMode("edit")} className="row-action" title="Edit policy" aria-label="Edit policy"><Pencil /></button>
-      <button type="button" onClick={deletePolicy} disabled={remove.isPending} className="row-action danger" title="Delete policy" aria-label="Delete policy"><Trash2 /></button>
-    </div>
-    {mode && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/30 p-4 backdrop-blur-sm"><div className="my-8 w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-      <div className="flex items-start justify-between"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">Policy</p><h2 className="mt-1 text-xl font-bold text-slate-900">{mode === "view" ? policy.name : "Edit policy"}</h2></div><button type="button" onClick={() => setMode(null)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X /></button></div>
-      {mode === "view" ? <div className="mt-5 space-y-4 text-sm text-slate-600"><p>{policy.description || "No description provided."}</p><div><p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Required documents</p><ol className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">{requiredDocuments.map((name: string, index: number) => <li key={name} className="flex items-center gap-3 bg-white px-3.5 py-3"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink-50 text-xs font-bold text-brand-pink">{index + 1}</span><FileText className="h-4 w-4 shrink-0 text-slate-400" /><span className="font-semibold text-slate-700">{name}</span></li>)}</ol></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-3"><Info label="Type" value={policy.policy_type} /><Info label="Scope" value={policy.applies_to.replace("_", " ")} /><Info label="Schedule" value={policy.schedule.replace("_", " ")} /><Info label="Minimum documents" value={String(policy.minimum_documents)} /><Info label="Grace period" value={`${policy.grace_period_days} days`} /><Info label="Status" value={policy.active ? "Active" : "Inactive"} /></div><button type="button" onClick={() => setMode(null)} className="rounded-xl bg-brand-pink px-4 py-2.5 font-semibold text-white">Close</button></div> : <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label><span className="label">Policy name</span><input required className="field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-        <label><span className="label">Policy type</span><ThemedSelect value={form.policy_type_id} onChange={(value) => setForm({ ...form, policy_type_id: value })} options={types.map((item: any) => ({ value: String(item.id), label: item.name }))} placeholder="Select type" /></label>
-        <label className="sm:col-span-2"><span className="label">Description</span><textarea className="field min-h-20" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></label>
-        <Checklist label="Required document types" items={documents} selected={form.document_type_ids} onToggle={(id: number) => toggle("document_type_ids", id)} action={<InlineDocumentTypeCreator onCreated={(item) => setForm({ ...form, document_type_ids: [...form.document_type_ids, item.id] })} />} />
-        <label><span className="label">Applies to</span><ThemedSelect value={form.applies_to} onChange={(value) => setForm({ ...form, applies_to: value, scope_ids: [] })} options={[{ value: "department", label: "Departments" }, { value: "grade", label: "Grades" }, { value: "employee", label: "Employees" }]} /></label>
-        <Checklist label={`Select ${form.applies_to}s`} items={scopeOptions} selected={form.scope_ids} onToggle={(id: number) => toggle("scope_ids", id)} />
-        <label><span className="label">Schedule</span><ThemedSelect value={form.schedule} onChange={(value) => setForm({ ...form, schedule: value })} options={[{ value: "", label: "Manual" }, ...schedules.map((item) => ({ value: item, label: item.replace("_", " ") }))]} /></label>
-        <label><span className="label">Effective date</span><input required type="date" className="field" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} /></label>
-        <label><span className="label">Minimum documents</span><input required min="1" type="number" className="field" value={form.minimum_documents} onChange={(e) => setForm({ ...form, minimum_documents: e.target.value })} /></label>
-        <label><span className="label">Grace period (days)</span><input required min="0" type="number" className="field" value={form.grace_period_days} onChange={(e) => setForm({ ...form, grace_period_days: e.target.value })} /></label>
-        {form.schedule === "custom" && <label><span className="label">Custom interval (days)</span><input required min="1" type="number" className="field" value={form.custom_schedule_days} onChange={(e) => setForm({ ...form, custom_schedule_days: e.target.value })} /></label>}
-        <label className="flex items-center gap-3 text-sm font-semibold text-slate-700"><input type="checkbox" checked={form.active} onChange={(e) => setForm({ ...form, active: e.target.checked })} className="h-4 w-4 accent-pink-600" /> Active policy</label>
-        {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700 sm:col-span-2">{error}</p>}
-        <div className="flex justify-end gap-2 sm:col-span-2"><button type="button" onClick={() => setMode(null)} className="rounded-xl px-4 py-2.5 font-semibold text-slate-500">Cancel</button><button disabled={update.isPending} className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 font-semibold text-white">{update.isPending ? "Saving..." : "Save changes"}</button></div>
-      </form>}
-    </div></div>}
-  </>;
-}
+  const run = async () => {
+    const result = await evaluate.mutateAsync(policy.id);
+    window.alert(result.message || "Policy check completed.");
+  };
+  const deletePolicy = async () => {
+    if (window.confirm(`Delete "${policy.name}"? This cannot be undone.`))
+      await remove.mutateAsync(policy.id);
+  };
+  return (
+    <>
+      <div className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={() => setMode("view")}
+          className="row-action"
+          title="View policy"
+          aria-label="View policy"
+        >
+          <Eye />
+        </button>
+        <button
+          type="button"
+          onClick={run}
+          disabled={evaluate.isPending}
+          className="row-action"
+          title="Run policy check"
+          aria-label="Run policy check"
+        >
+          <Play />
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("edit")}
+          className="row-action"
+          title="Edit policy"
+          aria-label="Edit policy"
+        >
+          <Pencil />
+        </button>
+        <button
+          type="button"
+          onClick={deletePolicy}
+          disabled={remove.isPending}
+          className="row-action danger"
+          title="Delete policy"
+          aria-label="Delete policy"
+        >
+          <Trash2 />
+        </button>
+      </div>
+      {mode && (
+        <ModalDialog
+          title={mode === "view" ? policy.name : "Edit policy"}
+          eyebrow="Policy"
+          onClose={() => setMode(null)}
+          size="3xl"
+          backdropClassName="bg-slate-900/40"
+          titleClassName="text-xl"
+        >
+            {mode === "view" ? (
+              <div className="mt-5 space-y-4 text-sm text-slate-600">
+                <p>{policy.description || "No description provided."}</p>
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                    Required document types
+                  </p>
+                  <ol className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                    {requiredDocuments.map((name: string, index: number) => (
+                      <li
+                        key={name}
+                        className="flex items-center gap-3 bg-white px-3.5 py-3"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink-50 text-xs font-bold text-brand-pink">
+                          {index + 1}
+                        </span>
+                        <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                        <span className="font-semibold text-slate-700">
+                          {name}
+                        </span>
+                        <span className="ml-auto text-xs text-slate-400">
+                          {policy.minimum_documents} required
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Info label="Type" value={policy.policy_type} />
+                  <Info
+                    label="Scope"
+                    value={policy.applies_to.replace("_", " ")}
+                  />
+                  <Info
+                    label="Schedule"
+                    value={
+                      policy.schedule === "manual"
+                        ? "Manual only"
+                        : policy.schedule.replace("_", " ")
+                    }
+                  />
+                  <Info
+                    label="Grace period"
+                    value={`${policy.grace_period_days} days`}
+                  />
+                  <Info
+                    label="Last run"
+                    value={formatDateTime(policy.last_run_at)}
+                  />
+                  <Info
+                    label="Next run"
+                    value={
+                      policy.schedule === "manual"
+                        ? "Manual only"
+                        : formatDateTime(policy.next_run_at)
+                    }
+                  />
+                  {policy.policy_type_code === "renewable_document" && (
+                    <>
+                      <Info
+                        label="Alert schedule"
+                        value={`${policy.alert_schedule_days} days`}
+                      />
+                      <Info
+                        label="Manager escalation"
+                        value={`${policy.escalate_manager_days} days`}
+                      />
+                      <Info
+                        label="HR escalation"
+                        value={`${policy.escalate_hr_days} days`}
+                      />
+                    </>
+                  )}
+                  {policy.policy_type_code === "compliance_request" && (
+                    <>
+                      <Info
+                        label="Event trigger"
+                        value={policy.event_trigger}
+                      />
+                      <Info
+                        label="Task deadline"
+                        value={`${policy.due_days} days`}
+                      />
+                      <Info
+                        label="Assigned HR Admin"
+                        value={policy.assigned_reviewer || "Unassigned"}
+                      />
+                    </>
+                  )}
+                  {policy.policy_type_code === "retention" && (
+                    <>
+                      <Info
+                        label="Audit frequency"
+                        value={policy.audit_frequency}
+                      />
+                      <Info
+                        label="Audit sampling"
+                        value={`${policy.sample_pct}%`}
+                      />
+                      <Info
+                        label="Assigned HR Auditor"
+                        value={policy.assigned_auditor || "Unassigned"}
+                      />
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode(null)}
+                  className="rounded-xl bg-brand-pink px-4 py-2.5 font-semibold text-white"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={save} className="mt-5 grid gap-4 sm:grid-cols-2">
+                <label>
+                  <span className="label">Policy name</span>
+                  <input
+                    required
+                    className="field"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  />
+                </label>
+                <label>
+                  <span className="label">Policy type</span>
+                  <ThemedSelect
+                    value={form.policy_type_id}
+                    onChange={(value) =>
+                      setForm({ ...form, policy_type_id: value })
+                    }
+                    options={types.map((item: any) => ({
+                      value: String(item.id),
+                      label: item.name,
+                    }))}
+                    placeholder="Select type"
+                  />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="label">Description</span>
+                  <textarea
+                    className="field min-h-20"
+                    value={form.description}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
+                  />
+                </label>
 
-function Checklist({ label, items, selected, onToggle, action }: any) { return <label className="sm:col-span-2"><span className="flex items-center justify-between"><span className="label">{label}</span>{action}</span><div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">{items.map((item: any) => <span key={item.id} className="flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"><input type="checkbox" checked={selected.includes(item.id)} onChange={() => onToggle(item.id)} className="h-4 w-4 accent-pink-600" /><span className="font-medium">{item.name}</span></span>)}</div></label>; }
-function Info({ label, value }: { label: string; value: string }) { return <span className="rounded-xl bg-slate-50 p-3"><span className="text-xs text-slate-400">{label}</span><strong className="mt-1 block capitalize text-slate-900">{value}</strong></span>; }
+                {/* Render Type-specific configuration fields */}
+                {typeCode === "document_requirement" && (
+                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span className="label">Grace Period Window (Days)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        className="field"
+                        value={form.grace_period_days}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            grace_period_days: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 pt-6 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={form.allow_waiver}
+                        onChange={(e) =>
+                          setForm({ ...form, allow_waiver: e.target.checked })
+                        }
+                        className="h-4 w-4 accent-pink-600 rounded"
+                      />
+                      Allow HR Admins to grant waivers
+                    </label>
+                  </div>
+                )}
+
+                {typeCode === "renewable_document" && (
+                  <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
+                      Expiration Alert & Escalation Rules
+                    </p>
+
+                    <AlertCadenceSelector
+                      value={form.alert_schedule_days}
+                      onChange={(val: string) =>
+                        setForm({ ...form, alert_schedule_days: val })
+                      }
+                    />
+
+                    <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
+                      <label>
+                        <span className="label">Notify Line Manager</span>
+                        <ThemedSelect
+                          value={String(form.escalate_manager_days)}
+                          onChange={(val) =>
+                            setForm({
+                              ...form,
+                              escalate_manager_days: Number(val),
+                            })
+                          }
+                          options={[
+                            { value: "30", label: "30 Days before expiry" },
+                            { value: "15", label: "15 Days before expiry" },
+                            { value: "7", label: "7 Days before expiry" },
+                            { value: "3", label: "3 Days before expiry" },
+                            { value: "0", label: "On Expiry Day" },
+                          ]}
+                        />
+                      </label>
+
+                      <label>
+                        <span className="label">Escalate to HR Admin</span>
+                        <ThemedSelect
+                          value={String(form.escalate_hr_days)}
+                          onChange={(val) =>
+                            setForm({ ...form, escalate_hr_days: Number(val) })
+                          }
+                          options={[
+                            { value: "15", label: "15 Days before expiry" },
+                            { value: "7", label: "7 Days before expiry" },
+                            { value: "3", label: "3 Days before expiry" },
+                            { value: "1", label: "1 Day before expiry" },
+                            { value: "0", label: "On Expiry Day" },
+                          ]}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
+                      <label>
+                        <span className="label">
+                          Post-Expiry Buffer Window (Days)
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          className="field"
+                          value={form.grace_period_days}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              grace_period_days: e.target.value,
+                            })
+                          }
+                        />
+                      </label>
+
+                      <div className="flex items-center pt-5">
+                        <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={form.auto_request_renewal}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                auto_request_renewal: e.target.checked,
+                              })
+                            }
+                            className="h-4 w-4 accent-pink-600 rounded"
+                          />
+                          Auto-generate renewal upload task
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {typeCode === "compliance_request" && (
+                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span className="label">Lifecycle Event Trigger</span>
+                      <ThemedSelect
+                        value={form.event_trigger}
+                        onChange={(val) =>
+                          setForm({ ...form, event_trigger: val })
+                        }
+                        options={[
+                          { value: "onboarding", label: "Onboarding" },
+                          { value: "promotion", label: "Promotion" },
+                          {
+                            value: "department_transfer",
+                            label: "Department Transfer",
+                          },
+                          {
+                            value: "location_change",
+                            label: "Location Change",
+                          },
+                          {
+                            value: "marital_status_change",
+                            label: "Marital Status Change",
+                          },
+                        ]}
+                      />
+                    </label>
+                    <label>
+                      <span className="label">Task Deadline (Days)</span>
+                      <input
+                        type="number"
+                        min="1"
+                        className="field"
+                        value={form.due_days}
+                        onChange={(e) =>
+                          setForm({ ...form, due_days: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="label">
+                        Assigned HR Reviewer (Admin)
+                      </span>
+                      <ThemedSelect
+                        value={String(form.assigned_reviewer_id || "")}
+                        onChange={(val) =>
+                          setForm({ ...form, assigned_reviewer_id: val })
+                        }
+                        placeholder="Select HR Admin Reviewer"
+                        options={(targets?.users || []).map((u: any) => ({
+                          value: String(u.id),
+                          label: u.name,
+                        }))}
+                      />
+                    </label>
+                  </div>
+                )}
+
+                {/* {typeCode === "retention" && (
+                  <div className="sm:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span className="label">Audit Frequency</span>
+                      <ThemedSelect
+                        value={form.audit_frequency}
+                        onChange={(val) =>
+                          setForm({ ...form, audit_frequency: val })
+                        }
+                        options={[
+                          { value: "monthly", label: "Monthly" },
+                          { value: "quarterly", label: "Quarterly" },
+                          { value: "semi_annually", label: "Semi-Annually" },
+                          { value: "annually", label: "Annually" },
+                        ]}
+                      />
+                    </label>
+                    <label>
+                      <span className="label">Sampling % (1-100%)</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        className="field"
+                        value={form.sample_pct}
+                        onChange={(e) =>
+                          setForm({ ...form, sample_pct: Number(e.target.value) })
+                        }
+                      />
+                    </label>
+                    <label className="sm:col-span-2">
+                      <span className="label">Assigned HR Auditor (Admin)</span>
+                      <ThemedSelect
+                        value={String(form.assigned_auditor_id || "")}
+                        onChange={(val) =>
+                          setForm({ ...form, assigned_auditor_id: val })
+                        }
+                        placeholder="Select HR Admin Auditor"
+                        options={(targets?.users || []).map((u: any) => ({
+                          value: String(u.id),
+                          label: u.name,
+                        }))}
+                      />
+                    </label>
+                  </div>
+                )} */}
+
+                <label className="sm:col-span-2">
+                  <span className="label">Required document types</span>
+                  <div className="mt-2">
+                    <PolicyTypeMultiSelect
+                      types={documents}
+                      selected={form.document_type_ids}
+                      onChange={(document_type_ids) =>
+                        setForm({ ...form, document_type_ids })
+                      }
+                      error={
+                        error === "Select at least one required document type."
+                          ? error
+                          : undefined
+                      }
+                    />
+                  </div>
+                </label>
+                <label>
+                  <span className="label">Applies to</span>
+                  <ThemedSelect
+                    value={form.applies_to}
+                    onChange={(value) =>
+                      setForm({ ...form, applies_to: value, scope_ids: [] })
+                    }
+                    options={[
+                      { value: "all", label: "All Employees" },
+                      { value: "department", label: "Departments" },
+                      { value: "grade", label: "Groups" },
+                      { value: "employee", label: "Employees" },
+                    ]}
+                  />
+                </label>
+                <ScopeChecklist
+                  appliesTo={form.applies_to}
+                  items={scopeOptions}
+                  selected={form.scope_ids}
+                  onToggle={(id: number) => toggle("scope_ids", id)}
+                />
+                <label>
+                  <span className="label">Schedule</span>
+                  <ThemedSelect
+                    value={form.schedule}
+                    onChange={(value) => setForm({ ...form, schedule: value })}
+                    options={[
+                      { value: "", label: "Manual" },
+                      ...schedules.map((item) => ({
+                        value: item,
+                        label: item.replace("_", " "),
+                      })),
+                    ]}
+                  />
+                </label>
+                <label>
+                  <span className="label">Effective date</span>
+                  <input
+                    required
+                    type="date"
+                    className="field"
+                    value={form.effective_date}
+                    onChange={(e) =>
+                      setForm({ ...form, effective_date: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  <span className="label">Minimum documents</span>
+                  <input
+                    required
+                    min="1"
+                    type="number"
+                    className="field"
+                    value={form.minimum_documents}
+                    onChange={(e) =>
+                      setForm({ ...form, minimum_documents: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  <span className="label">Grace period (days)</span>
+                  <input
+                    required
+                    min="0"
+                    type="number"
+                    className="field"
+                    value={form.grace_period_days}
+                    onChange={(e) =>
+                      setForm({ ...form, grace_period_days: e.target.value })
+                    }
+                  />
+                </label>
+                {form.schedule === "custom" && (
+                  <label>
+                    <span className="label">Custom interval (days)</span>
+                    <input
+                      required
+                      min="1"
+                      type="number"
+                      className="field"
+                      value={form.custom_schedule_days}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          custom_schedule_days: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                )}
+                <label className="flex items-center gap-3 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) =>
+                      setForm({ ...form, active: e.target.checked })
+                    }
+                    className="h-4 w-4 accent-pink-600"
+                  />{" "}
+                  Active policy
+                </label>
+                {error && (
+                  <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700 sm:col-span-2">
+                    {error}
+                  </p>
+                )}
+                <div className="flex justify-end gap-2 sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setMode(null)}
+                    className="rounded-xl px-4 py-2.5 font-semibold text-slate-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={update.isPending}
+                    className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 font-semibold text-white"
+                  >
+                    {update.isPending ? "Saving..." : "Save changes"}
+                  </button>
+                </div>
+              </form>
+            )}
+        </ModalDialog>
+      )}
+    </>
+  );
+}
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="rounded-xl bg-slate-50 p-3">
+      <span className="text-xs text-slate-400">{label}</span>
+      <strong className="mt-1 block capitalize text-slate-900">{value}</strong>
+    </span>
+  );
+}
+function formatDateTime(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(
+    new Date(value.replace(" ", "T") + (value.endsWith("Z") ? "" : "Z")),
+  );
+}

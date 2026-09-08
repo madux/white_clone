@@ -27,4 +27,13 @@
         <field name="interval_type">days</field>
         <field name="active">True</field>
     </record>
+    <record id="ir_cron_send_document_expiry_alerts" model="ir.cron">
+        <field name="name">Send Document Expiry Alerts</field>
+        <field name="model_id" ref="model_doc_document"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_expiry_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

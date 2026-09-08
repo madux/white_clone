@@ -29,6 +29,7 @@ import type {
 } from "../../../../lib/intelligence-api";
 import ChatMarkdown from "./ChatMarkdown";
 import { IntelligenceError } from "./states";
+import ModalDialog from "../ModalDialog";
 
 const MASCOT = "/cleon_document_management/static/src/nextapp/ask_ai.png";
 
@@ -614,110 +615,118 @@ export default function AskScreen() {
       </aside>
 
       {urlOpen ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-5">
-            <h2 className="font-bold text-slate-900">Paste a URL</h2>
-            <input
-              className="field mt-3"
-              value={urlValue}
-              onChange={(event) => setUrlValue(event.target.value)}
-              placeholder="https://"
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" className="px-3 py-2 text-sm" onClick={() => setUrlOpen(false)}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white"
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    const current = await ensureConversation();
-                    const next = await intelligenceDatasetApi.conversationAttachUrl({
-                      id: current.id,
-                      url: urlValue,
-                    });
-                    setConversation(next);
-                    setUrlOpen(false);
-                    setUrlValue("");
-                    await refreshList();
-                  } catch (err) {
-                    setError(err instanceof Error ? err.message : "The URL could not be added.");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Attach
-              </button>
-            </div>
+        <ModalDialog
+          title="Paste a URL"
+          onClose={() => setUrlOpen(false)}
+          size="md"
+          zIndex={30}
+          backdropClassName="bg-slate-900/40"
+          titleClassName="text-base font-bold"
+        >
+          <input
+            className="field"
+            value={urlValue}
+            onChange={(event) => setUrlValue(event.target.value)}
+            placeholder="https://"
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <button type="button" className="px-3 py-2 text-sm" onClick={() => setUrlOpen(false)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white"
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  const current = await ensureConversation();
+                  const next = await intelligenceDatasetApi.conversationAttachUrl({
+                    id: current.id,
+                    url: urlValue,
+                  });
+                  setConversation(next);
+                  setUrlOpen(false);
+                  setUrlValue("");
+                  await refreshList();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "The URL could not be added.");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Attach
+            </button>
           </div>
-        </div>
+        </ModalDialog>
       ) : null}
 
       {libraryOpen ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-5">
-            <h2 className="font-bold text-slate-900">Document library</h2>
-            <input
-              className="field mt-3"
-              value={librarySearch}
-              placeholder="Search files you can access"
-              onChange={async (event) => {
-                setLibrarySearch(event.target.value);
-                const rows = await intelligenceDatasetApi.libraryDocuments(
-                  event.target.value,
-                );
-                setLibraryRows(rows);
-              }}
-            />
-            <ul className="mt-3 max-h-72 overflow-y-auto">
-              {libraryRows.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50"
-                    onClick={async () => {
-                      setBusy(true);
-                      try {
-                        const current = await ensureConversation();
-                        const next = await intelligenceDatasetApi.conversationAttachLibrary({
-                          id: current.id,
-                          document_id: item.id,
-                        });
-                        setConversation(next);
-                        setLibraryOpen(false);
-                        await refreshList();
-                      } catch (err) {
-                        setError(
-                          err instanceof Error
-                            ? err.message
-                            : "The document could not be attached.",
-                        );
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    <span className="font-semibold text-slate-800">{item.name}</span>
-                    <span className="block text-xs text-slate-400">
-                      {item.document_type}
-                      {item.employee ? ` · ${item.employee}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              className="mt-3 text-sm text-slate-500"
-              onClick={() => setLibraryOpen(false)}
-            >
-              Close
-            </button>
-          </div>
-        </div>
+        <ModalDialog
+          title="Document library"
+          onClose={() => setLibraryOpen(false)}
+          size="lg"
+          zIndex={30}
+          backdropClassName="bg-slate-900/40"
+          titleClassName="text-base font-bold"
+        >
+          <input
+            className="field"
+            value={librarySearch}
+            placeholder="Search files you can access"
+            onChange={async (event) => {
+              setLibrarySearch(event.target.value);
+              const rows = await intelligenceDatasetApi.libraryDocuments(
+                event.target.value,
+              );
+              setLibraryRows(rows);
+            }}
+          />
+          <ul className="mt-3 max-h-72 overflow-y-auto">
+            {libraryRows.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      const current = await ensureConversation();
+                      const next = await intelligenceDatasetApi.conversationAttachLibrary({
+                        id: current.id,
+                        document_id: item.id,
+                      });
+                      setConversation(next);
+                      setLibraryOpen(false);
+                      await refreshList();
+                    } catch (err) {
+                      setError(
+                        err instanceof Error
+                          ? err.message
+                          : "The document could not be attached.",
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <span className="font-semibold text-slate-800">{item.name}</span>
+                  <span className="block text-xs text-slate-400">
+                    {item.document_type}
+                    {item.employee ? ` · ${item.employee}` : ""}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="mt-3 text-sm text-slate-500"
+            onClick={() => setLibraryOpen(false)}
+          >
+            Close
+          </button>
+        </ModalDialog>
       ) : null}
     </div>
   );

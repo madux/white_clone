@@ -2,6 +2,7 @@ import uuid
 from markupsafe import escape
 
 from odoo import fields, http
+from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
 
 
@@ -43,14 +44,21 @@ class DocumentFolderActions(http.Controller):
         elif action == "restore":
             folder.action_restore()
         elif action == "permanent_delete":
-            # A folder is a parent record. Remove its documents first, then
-            # stop immediately so we do not serialize a deleted record.
-            folder.document_ids.sudo().unlink()
-            folder.sudo().unlink()
+            try:
+                folder.action_permanent_delete()
+            except ValidationError as error:
+                return {"success": False, "message": error.args[0]}
             return {"success": True, "message": "Folder permanently deleted."}
         elif action == "duplicate":
             folder = folder.action_duplicate()
         elif action == "share":
+            if not request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                return {
+                    "success": False,
+                    "message": "Document manager access is required to share folders.",
+                }
             permission = kwargs.get("permission", "viewer")
             expiry_option = kwargs.get("expiry_option", "7_days")
             share = request.env["doc.folder.share.link"].create({
@@ -66,6 +74,149 @@ class DocumentFolderActions(http.Controller):
             return {"success": False, "message": "Unsupported folder action."}
 
         return {"success": True, "data": self._folder(folder)}
+
+    @http.route(
+        "/api/folder/move-recycle-documents",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def move_recycle_documents(
+        self, folder_id=None, destination_folder_id=None, release_only=False, **kwargs
+    ):
+        if not request.env.user.has_group(
+            "cleon_document_management.group_document_manager"
+        ):
+            return {"success": False, "message": "Document manager access is required."}
+        folder = request.env["doc.folder"].with_context(active_test=False).browse(
+            int(folder_id or 0)
+        ).exists()
+        if not folder or not folder.deleted_at:
+            return {"success": False, "message": "Recycled folder not found."}
+        try:
+            if release_only:
+                moved_count = folder.action_release_recycle_linked_documents()
+                message = (
+                    f"Kept {moved_count} document(s) in pending uploads."
+                    if moved_count
+                    else "No linked documents to release."
+                )
+            else:
+                moved_count = folder.action_move_recycle_linked_documents(
+                    destination_folder_id
+                )
+                if not moved_count:
+                    return {
+                        "success": False,
+                        "message": "This folder has no linked documents to move.",
+                    }
+                message = f"Moved {moved_count} document(s) to the selected folder."
+        except ValidationError as error:
+            return {"success": False, "message": error.args[0]}
+        except AccessError as error:
+            return {"success": False, "message": error.args[0]}
+        return {
+            "success": True,
+            "message": message,
+            "data": {
+                "moved_count": moved_count,
+                "linked_document_count": len(folder._get_recycle_linked_documents()),
+            },
+        }
+
+    @http.route(
+        "/api/folder/check-employee-conflicts",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def check_employee_conflicts(self, folder_id=None, employee_ids=None, **kwargs):
+        folder = request.env["doc.folder"].browse(int(folder_id or 0)).exists()
+        if not folder or folder.folder_type != "employee":
+            return {"success": False, "message": "Employee folder not found."}
+        ids = [int(value) for value in (employee_ids or []) if str(value).isdigit()]
+        if not ids:
+            return {"success": False, "message": "Select at least one employee."}
+
+        employees = request.env["hr.employee"].browse(ids).exists()
+        already_in_folder = []
+        conflicts = []
+        for employee in employees:
+            if employee in folder.employee_ids:
+                already_in_folder.append(
+                    {
+                        "employee_id": employee.id,
+                        "employee_name": employee.name,
+                    }
+                )
+                continue
+            other_folder = request.env["doc.folder"].search(
+                [
+                    ("folder_type", "=", "employee"),
+                    ("employee_ids", "in", employee.id),
+                    ("id", "!=", folder.id),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                ],
+                limit=1,
+            )
+            if other_folder:
+                conflicts.append(
+                    {
+                        "employee_id": employee.id,
+                        "employee_name": employee.name,
+                        "folder_id": other_folder.id,
+                        "folder_name": other_folder.folder_name,
+                    }
+                )
+
+        return {
+            "success": True,
+            "already_in_folder": already_in_folder,
+            "conflicts": conflicts,
+        }
+
+    @http.route(
+        "/api/folder/check-department-folder-conflicts",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def check_department_folder_conflicts(self, department_ids=None, **kwargs):
+        ids = [
+            int(value)
+            for value in (department_ids or kwargs.get("department_ids") or [])
+            if str(value).isdigit()
+        ]
+        if not ids:
+            return {"success": False, "message": "Select at least one department."}
+
+        departments = request.env["hr.department"].browse(ids).exists()
+        conflicts = []
+        for department in departments:
+            folder = request.env["doc.folder"].search(
+                [
+                    ("folder_type", "=", "employee"),
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("department_ids", "in", [department.id]),
+                ],
+                limit=1,
+            )
+            if folder:
+                conflicts.append(
+                    {
+                        "department_id": department.id,
+                        "department_name": department.name,
+                        "folder_id": folder.id,
+                        "folder_name": folder.folder_name,
+                    }
+                )
+
+        return {"success": True, "conflicts": conflicts}
 
     @http.route("/api/folder/remove-employees", type="json", auth="user", methods=["POST"], csrf=False)
     def remove_employees_from_folder(self, id=None, employee_ids=None, **kwargs):
@@ -88,10 +239,46 @@ class DocumentFolderActions(http.Controller):
             folder.write({"employee_ids": [fields.Command.unlink(employee.id) for employee in removed]})
         return {"success": True, "employee_ids": folder.employee_ids.ids}
 
-    @http.route("/api/folder-lifecycle", type="json", auth="user", methods=["POST"], csrf=False)
-    def folder_lifecycle(self, lifecycle="archived", **kwargs):
+    @http.route("/api/folder/move-employees", type="json", auth="user", methods=["POST"], csrf=False)
+    def move_employees_between_folders(self, id=None, employee_ids=None, destination_folder_id=None, **kwargs):
         if not request.env.user.has_group("cleon_document_management.group_document_manager"):
             return {"success": False, "message": "Document manager access is required."}
+        source = request.env["doc.folder"].browse(int(id or 0)).exists()
+        destination = request.env["doc.folder"].browse(int(destination_folder_id or 0)).exists()
+        if not source or source.folder_type != "employee":
+            return {"success": False, "message": "Employee source folder not found."}
+        if not destination or destination.folder_type != "employee" or not destination.active or destination.deleted_at:
+            return {"success": False, "message": "Choose an active employee destination folder."}
+        if source == destination:
+            return {"success": False, "message": "Choose a different destination folder."}
+        ids = [int(value) for value in (employee_ids or []) if str(value).isdigit()]
+        employees = source.employee_ids.filtered(lambda employee: employee.id in ids)
+        if not employees or len(employees) != len(set(ids)):
+            return {"success": False, "message": "Select valid employees from this folder."}
+        documents = request.env["doc.document"].search([
+            ("folder_id", "=", source.id),
+            ("employee_id", "in", employees.ids),
+        ])
+        try:
+            destination.write({"employee_ids": [fields.Command.link(employee.id) for employee in employees]})
+            if documents:
+                documents.write({"folder_id": destination.id})
+            source.write({"employee_ids": [fields.Command.unlink(employee.id) for employee in employees]})
+        except Exception as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "message": f"Moved {len(employees)} employee(s) to {destination.folder_name}.",
+            "employee_ids": employees.ids,
+        }
+
+    @http.route("/api/folder-lifecycle", type="json", auth="user", methods=["POST"], csrf=False)
+    def folder_lifecycle(self, lifecycle="archived", **kwargs):
+        if not request.env.user.has_group(
+            "cleon_document_management.group_document_manager"
+        ):
+            return {"success": True, "data": []}
+        request.env["doc.folder"].backfill_recycle_origin_links()
         domain = (
             [("deleted_at", "!=", False)]
             if lifecycle == "recycle_bin"
@@ -108,6 +295,7 @@ class DocumentFolderActions(http.Controller):
             "description": folder.description or "",
             "folder_type": folder.folder_type,
             "document_count": folder.document_count,
+            "linked_document_count": len(folder._get_recycle_linked_documents()),
             "active": folder.active,
             "distribution_status": folder.distribution_status,
             "deleted_at": folder.deleted_at,

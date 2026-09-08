@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <function model="doc.folder" name="backfill_recycle_origin_links"/>
+    </data>
+</odoo>

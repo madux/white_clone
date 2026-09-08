@@ -96,6 +96,16 @@ export default function Dashboard() {
     },
   ];
   const chartMax = Math.max(...statusMetrics.map((metric) => metric.value), 1);
+  const yTicks =
+    chartMax <= 5
+      ? Array.from({ length: chartMax + 1 }, (_, index) => index)
+      : (() => {
+          const step = Math.ceil(chartMax / 4);
+          const top = step * 4;
+          return [0, step, step * 2, step * 3, top];
+        })();
+  const chartScaleMax = yTicks[yTicks.length - 1] || 1;
+  const totalDocuments = documentRows.length;
   const statCards: Array<{
     label: string;
     value: number | undefined;
@@ -323,26 +333,85 @@ export default function Dashboard() {
               <h2 className="mt-1 text-xl font-bold text-slate-900">
                 Document analytics
               </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                {totalDocuments} document{totalDocuments === 1 ? "" : "s"} by
+                approval status
+              </p>
             </div>
             <BarChart3 className="h-5 w-5 text-brand-pink" />
           </div>
-          <div className="flex h-44 items-end justify-between gap-3 px-2">
-            {statusMetrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="flex h-full flex-1 flex-col items-center justify-end gap-2"
+          <div
+            className="flex gap-3"
+            role="img"
+            aria-label={`Document status chart: ${statusMetrics.map((metric) => `${metric.label} ${metric.value}`).join(", ")}`}
+          >
+            <div className="flex shrink-0 flex-col items-center pt-6 pb-8">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 [writing-mode:vertical-rl] rotate-180"
+                aria-hidden
               >
-                <div
-                  className={`w-full max-w-10 rounded-t-full ${metric.color}`}
-                  style={{
-                    height: `${Math.max(12, (metric.value / chartMax) * 100)}%`,
-                  }}
-                />
-                <span className="text-center text-[10px] font-semibold text-slate-400">
-                  {metric.label}
-                </span>
+                Documents
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex gap-2">
+                <div className="flex h-48 shrink-0 flex-col justify-between py-1 text-right">
+                  {[...yTicks].reverse().map((tick) => (
+                    <span
+                      key={tick}
+                      className="text-[10px] font-medium tabular-nums text-slate-400"
+                    >
+                      {tick}
+                    </span>
+                  ))}
+                </div>
+                <div className="relative min-w-0 flex-1 border-b border-l border-slate-200">
+                  {yTicks.map((tick) => (
+                    <div
+                      key={`grid-${tick}`}
+                      className="pointer-events-none absolute left-0 right-0 border-t border-slate-100"
+                      style={{ bottom: `${(tick / chartScaleMax) * 100}%` }}
+                    />
+                  ))}
+                  <div className="relative flex h-48 items-end justify-between gap-2 px-2">
+                    {statusMetrics.map((metric) => {
+                      const barHeight =
+                        metric.value === 0
+                          ? 0
+                          : Math.max(4, (metric.value / chartScaleMax) * 100);
+                      return (
+                        <div
+                          key={metric.label}
+                          className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                        >
+                          <span className="mb-1 text-xs font-bold tabular-nums text-slate-700">
+                            {metric.value}
+                          </span>
+                          <div
+                            className={`w-full max-w-10 rounded-t-md ${metric.color} transition-all`}
+                            style={{ height: `${barHeight}%` }}
+                            title={`${metric.label}: ${metric.value}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            ))}
+              <div className="ml-10 mt-2 flex justify-between gap-2 px-2">
+                {statusMetrics.map((metric) => (
+                  <span
+                    key={metric.label}
+                    className="min-w-0 flex-1 text-center text-[10px] font-semibold text-slate-500"
+                  >
+                    {metric.label}
+                  </span>
+                ))}
+              </div>
+              <p className="ml-10 mt-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Status
+              </p>
+            </div>
           </div>
         </div>
 

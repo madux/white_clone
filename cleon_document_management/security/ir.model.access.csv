@@ -35,6 +35,8 @@ access_doc_compliance_evaluation_user,doc.compliance.evaluation user,model_doc_c
 access_doc_compliance_evaluation_admin,doc.compliance.evaluation admin,model_doc_compliance_evaluation,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_compliance_evaluation_line_user,doc.compliance.evaluation.line user,model_doc_compliance_evaluation_line,cleon_document_management.group_document_user,1,0,0,0
 access_doc_compliance_evaluation_line_admin,doc.compliance.evaluation.line admin,model_doc_compliance_evaluation_line,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_compliance_evaluation_run_user,doc.compliance.evaluation.run user,model_doc_compliance_evaluation_run,cleon_document_management.group_document_user,1,0,0,0
+access_doc_compliance_evaluation_run_admin,doc.compliance.evaluation.run admin,model_doc_compliance_evaluation_run,cleon_document_management.group_document_admin,1,1,1,1
 
 access_doc_intelligence_profile_user,doc.intelligence.profile user,model_doc_intelligence_profile,base.group_user,1,0,0,0
 access_doc_intelligence_profile_admin,doc.intelligence.profile admin,model_doc_intelligence_profile,base.group_system,1,1,1,1
@@ -73,4 +75,3 @@ access_doc_intelligence_message_docadmin,doc.intelligence.message docadmin,model
 access_doc_intelligence_ask_source_user,doc.intelligence.ask.source user,model_doc_intelligence_ask_source,base.group_user,1,1,1,1
 access_doc_intelligence_ask_source_admin,doc.intelligence.ask.source admin,model_doc_intelligence_ask_source,base.group_system,1,1,1,1
 access_doc_intelligence_ask_source_docadmin,doc.intelligence.ask.source docadmin,model_doc_intelligence_ask_source,cleon_document_management.group_document_admin,1,1,1,1
-

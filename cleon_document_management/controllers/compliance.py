@@ -11,8 +11,9 @@ class ComplianceController(http.Controller):
             "id": policy.id,
             "name": policy.name,
             "description": policy.description or "",
-            "policy_type_id": policy.policy_type_id.id,
-            "policy_type": policy.policy_type_id.name,
+            "policy_type_id": policy.policy_type_id.id if policy.policy_type_id else False,
+            "policy_type": policy.policy_type_id.name if policy.policy_type_id else "Unassigned",
+            "policy_type_code": policy.policy_type_id.code if policy.policy_type_id else "",
             "document_type_ids": policy.document_type_ids.ids,
             "schedule": policy.schedule or "manual",
             "custom_schedule_days": policy.custom_schedule_days,
@@ -26,6 +27,21 @@ class ComplianceController(http.Controller):
             "active": policy.active,
             "last_run_at": str(policy.last_run_at or ""),
             "next_run_at": str(policy.next_run_at or ""),
+            # Type-specific parameters
+            "allow_waiver": policy.allow_waiver,
+            "alert_schedule_days": policy.alert_schedule_days or "60,30,15,7,0",
+            "escalate_manager_days": policy.escalate_manager_days,
+            "escalate_hr_days": policy.escalate_hr_days,
+            "auto_request_renewal": policy.auto_request_renewal,
+            "event_trigger": policy.event_trigger or "",
+            "due_days": policy.due_days,
+            "reminder_frequency_days": policy.reminder_frequency_days,
+            "assigned_reviewer_id": policy.assigned_reviewer_id.id or False,
+            "assigned_reviewer": policy.assigned_reviewer_id.name or "",
+            "audit_frequency": policy.audit_frequency or "quarterly",
+            "sample_pct": policy.sample_pct,
+            "assigned_auditor_id": policy.assigned_auditor_id.id or False,
+            "assigned_auditor": policy.assigned_auditor_id.name or "",
         }
 
     @staticmethod
@@ -34,12 +50,14 @@ class ComplianceController(http.Controller):
             "id": evaluation.id,
             "policy_id": evaluation.policy_id.id,
             "policy": evaluation.policy_id.name,
+            "policy_active": evaluation.policy_id.active,
             "employee_id": evaluation.employee_id.id,
             "employee": evaluation.employee_id.name,
             "score": evaluation.score,
             "status": evaluation.status,
             "complete_count": evaluation.complete_count,
             "missing_count": evaluation.missing_count,
+            "grace_count": evaluation.grace_count,
             "evaluated_at": str(evaluation.evaluated_at or ""),
             "exception_id": evaluation.exception_id.id or False,
             "lines": [
@@ -47,6 +65,8 @@ class ComplianceController(http.Controller):
                     "id": line.id,
                     "requirement_id": line.requirement_id.id,
                     "requirement": line.requirement_id.name,
+                    "document_type_id": line.document_type_id.id,
+                    "document_type": line.document_type_id.name,
                     "document_ids": line.document_ids.ids,
                     "required_count": line.required_count,
                     "matched_count": line.matched_count,
@@ -54,6 +74,21 @@ class ComplianceController(http.Controller):
                 }
                 for line in evaluation.line_ids
             ],
+        }
+
+    @staticmethod
+    def _run_data(run):
+        return {
+            "id": run.id,
+            "policy_id": run.policy_id.id,
+            "policy": run.policy_id.name,
+            "run_type": run.run_type,
+            "evaluated_at": str(run.evaluated_at or ""),
+            "employee_count": run.employee_count,
+            "compliant_count": run.compliant_count,
+            "partial_count": run.partial_count,
+            "non_compliant_count": run.non_compliant_count,
+            "excepted_count": run.excepted_count,
         }
 
     @http.route(
@@ -64,7 +99,7 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def compliance_targets(self, **kwargs):
-        """Return named records used by policy scope selectors."""
+        """Return named records used by policy scope selectors and HR auditor/reviewer fields."""
         is_manager = request.env.user.has_group(
             "cleon_document_management.group_document_manager"
         )
@@ -81,6 +116,16 @@ class ComplianceController(http.Controller):
             [] if is_manager else [("id", "=", employee.grade_id.id or 0)],
             order="name",
         )
+        manager_group = request.env.ref(
+            "cleon_document_management.group_document_manager", raise_if_not_found=False
+        )
+        admin_domain = [("active", "=", True)]
+        if manager_group:
+            admin_domain.append(("groups_id", "in", [manager_group.id]))
+        admins = request.env["res.users"].search(admin_domain, order="name")
+        if not admins:
+            admins = request.env["res.users"].search([("active", "=", True)], order="name")
+
         return {
             "success": True,
             "data": {
@@ -112,6 +157,10 @@ class ComplianceController(http.Controller):
                     for department in departments
                 ],
                 "grades": [{"id": grade.id, "name": grade.name} for grade in grades],
+                "users": [
+                    {"id": user.id, "name": user.name, "email": user.email or ""}
+                    for user in admins
+                ],
             },
         }
 
@@ -123,9 +172,36 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def policy_types(self, **kwargs):
-        records = request.env["doc.compliance.policy.type"].search(
-            [("active", "=", True)], order="name"
-        )
+        TypeModel = request.env["doc.compliance.policy.type"]
+        records = TypeModel.search([("active", "=", True)], order="name")
+        if not records:
+            defaults = [
+                {
+                    "name": "Document Requirement",
+                    "code": "document_requirement",
+                    "description": "Mandatory document submission requirement for staff compliance.",
+                    "active": True,
+                },
+                {
+                    "name": "Renewable Document",
+                    "code": "renewable_document",
+                    "description": "Document requiring periodic renewal prior to expiration.",
+                    "active": True,
+                },
+                {
+                    "name": "Compliance Request",
+                    "code": "compliance_request",
+                    "description": "Specific document or audit request issued to staff members.",
+                    "active": True,
+                },
+                {
+                    "name": "Review Schedule",
+                    "code": "retention",
+                    "description": "Periodic audit schedule and folder verification policy.",
+                    "active": True,
+                },
+            ]
+            records = TypeModel.create(defaults)
         return {
             "success": True,
             "data": [
@@ -173,6 +249,37 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def create_policy(self, **kwargs):
+        applies_to = kwargs.get("applies_to", "all")
+        dept_ids = (
+            request.env["hr.department"]
+            .browse(kwargs.get("department_ids", []) or [])
+            .exists()
+            .ids
+        )
+        grade_ids = (
+            request.env["hr.grade"]
+            .browse(kwargs.get("grade_ids", []) or [])
+            .exists()
+            .ids
+        )
+        emp_ids = (
+            request.env["hr.employee"]
+            .browse(kwargs.get("employee_ids", []) or [])
+            .exists()
+            .ids
+        )
+
+        if (
+            applies_to == "all"
+            or (applies_to == "department" and not dept_ids)
+            or (applies_to == "grade" and not grade_ids)
+            or (applies_to == "employee" and not emp_ids)
+        ):
+            applies_to = "all"
+            dept_ids = []
+            grade_ids = []
+            emp_ids = []
+
         values = {
             "name": kwargs.get("name"),
             "description": kwargs.get("description", ""),
@@ -180,60 +287,91 @@ class ComplianceController(http.Controller):
             "document_type_ids": [
                 fields.Command.set(
                     request.env["doc.document.type"]
-                    .browse(kwargs.get("document_type_ids", []))
+                    .browse(kwargs.get("document_type_ids", []) or [])
                     .exists()
                     .ids
                 )
             ],
             "schedule": kwargs.get("schedule") or False,
             "custom_schedule_days": kwargs.get("custom_schedule_days", 30),
-            "applies_to": kwargs.get("applies_to", "department"),
-            "department_ids": [
-                fields.Command.set(
-                    request.env["hr.department"]
-                    .browse(kwargs.get("department_ids", []))
-                    .exists()
-                    .ids
-                )
-            ],
-            "grade_ids": [
-                fields.Command.set(
-                    request.env["hr.grade"]
-                    .browse(kwargs.get("grade_ids", []))
-                    .exists()
-                    .ids
-                )
-            ],
-            "employee_ids": [
-                fields.Command.set(
-                    request.env["hr.employee"]
-                    .browse(kwargs.get("employee_ids", []))
-                    .exists()
-                    .ids
-                )
-            ],
+            "applies_to": applies_to,
+            "department_ids": [fields.Command.set(dept_ids)],
+            "grade_ids": [fields.Command.set(grade_ids)],
+            "employee_ids": [fields.Command.set(emp_ids)],
             "minimum_documents": kwargs.get("minimum_documents", 1),
             "grace_period_days": kwargs.get("grace_period_days", 0),
             "effective_date": kwargs.get("effective_date") or False,
             "active": kwargs.get("active", True),
+            # Type-specific parameters
+            "allow_waiver": kwargs.get("allow_waiver", True),
+            "alert_schedule_days": kwargs.get("alert_schedule_days", "60,30,15,7,0"),
+            "escalate_manager_days": kwargs.get("escalate_manager_days", 15),
+            "escalate_hr_days": kwargs.get("escalate_hr_days", 7),
+            "auto_request_renewal": kwargs.get("auto_request_renewal", True),
+            "event_trigger": kwargs.get("event_trigger") or False,
+            "due_days": kwargs.get("due_days", 14),
+            "reminder_frequency_days": kwargs.get("reminder_frequency_days", 3),
+            "assigned_reviewer_id": int(kwargs.get("assigned_reviewer_id")) if kwargs.get("assigned_reviewer_id") else False,
+            "audit_frequency": kwargs.get("audit_frequency", "quarterly"),
+            "sample_pct": kwargs.get("sample_pct", 100),
+            "assigned_auditor_id": int(kwargs.get("assigned_auditor_id")) if kwargs.get("assigned_auditor_id") else False,
         }
         if not values["name"] or not values["policy_type_id"]:
             return {"success": False, "message": "Name and policy type are required."}
         policy = request.env["doc.compliance.policy"].create(values)
         return {"success": True, "data": self._policy_data(policy)}
 
-    @http.route("/api/compliance/policies/update", type="json", auth="user", methods=["POST"], csrf=False)
+    @http.route(
+        "/api/compliance/policies/update",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
     def update_policy(self, **kwargs):
         policy = request.env["doc.compliance.policy"].browse(kwargs.get("id")).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
         values = {
             key: kwargs[key]
-            for key in ("name", "description", "effective_date", "active", "schedule", "custom_schedule_days", "applies_to", "minimum_documents", "grace_period_days")
+            for key in (
+                "name",
+                "description",
+                "effective_date",
+                "active",
+                "schedule",
+                "custom_schedule_days",
+                "applies_to",
+                "minimum_documents",
+                "grace_period_days",
+                "allow_waiver",
+                "alert_schedule_days",
+                "escalate_manager_days",
+                "escalate_hr_days",
+                "auto_request_renewal",
+                "event_trigger",
+                "due_days",
+                "reminder_frequency_days",
+                "audit_frequency",
+                "sample_pct",
+            )
             if key in kwargs
         }
+        if "assigned_reviewer_id" in kwargs:
+            values["assigned_reviewer_id"] = (
+                int(kwargs["assigned_reviewer_id"]) if kwargs["assigned_reviewer_id"] else False
+            )
+        if "assigned_auditor_id" in kwargs:
+            values["assigned_auditor_id"] = (
+                int(kwargs["assigned_auditor_id"]) if kwargs["assigned_auditor_id"] else False
+            )
         if "policy_type_id" in kwargs:
-            values["policy_type_id"] = request.env["doc.compliance.policy.type"].browse(int(kwargs["policy_type_id"])).exists().id
+            values["policy_type_id"] = (
+                request.env["doc.compliance.policy.type"]
+                .browse(int(kwargs["policy_type_id"]))
+                .exists()
+                .id
+            )
         for field_name, model_name in (
             ("document_type_ids", "doc.document.type"),
             ("department_ids", "hr.department"),
@@ -249,6 +387,35 @@ class ComplianceController(http.Controller):
                         .ids
                     )
                 ]
+
+        target_applies = values.get("applies_to", policy.applies_to)
+        dept_ids = (
+            values["department_ids"][0][2]
+            if "department_ids" in values
+            else policy.department_ids.ids
+        )
+        grade_ids = (
+            values["grade_ids"][0][2]
+            if "grade_ids" in values
+            else policy.grade_ids.ids
+        )
+        emp_ids = (
+            values["employee_ids"][0][2]
+            if "employee_ids" in values
+            else policy.employee_ids.ids
+        )
+
+        if (
+            target_applies == "all"
+            or (target_applies == "department" and not dept_ids)
+            or (target_applies == "grade" and not grade_ids)
+            or (target_applies == "employee" and not emp_ids)
+        ):
+            values["applies_to"] = "all"
+            values["department_ids"] = [fields.Command.set([])]
+            values["grade_ids"] = [fields.Command.set([])]
+            values["employee_ids"] = [fields.Command.set([])]
+
         if "schedule" in values and values["schedule"] == "manual":
             values["schedule"] = False
         if "custom_schedule_days" in values:
@@ -276,14 +443,18 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def evaluate_policy(self, policy_id, **kwargs):
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Document manager access is required."}
         policy = request.env["doc.compliance.policy"].browse(policy_id).exists()
         if not policy:
             return {"success": False, "message": "Policy not found."}
-        policy.action_evaluate()
-        evaluations = policy.evaluation_ids
+        runs = policy.action_evaluate(run_type="manual")
+        evaluations = policy.evaluation_ids if runs else request.env["doc.compliance.evaluation"]
         return {
             "success": True,
+            "message": "Policy is not active yet; no evaluation was run." if not runs else "Policy check completed.",
             "data": [self._evaluation_data(item) for item in evaluations],
+            "run": self._run_data(runs[-1]) if runs else None,
         }
 
     @http.route(
@@ -304,6 +475,26 @@ class ComplianceController(http.Controller):
             "success": True,
             "count": len(records),
             "data": [self._evaluation_data(item) for item in records],
+        }
+
+    @http.route(
+        "/api/compliance/runs",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_runs(self, policy_id=None, limit=100, **kwargs):
+        domain = []
+        if policy_id:
+            domain.append(("policy_id", "=", int(policy_id)))
+        records = request.env["doc.compliance.evaluation.run"].search(
+            domain, order="evaluated_at desc", limit=min(int(limit or 100), 500)
+        )
+        return {
+            "success": True,
+            "count": len(records),
+            "data": [self._run_data(item) for item in records],
         }
 
     @http.route(
@@ -422,6 +613,8 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def approve_exception(self, exception_id, **kwargs):
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Document manager access is required."}
         exception = (
             request.env["doc.compliance.exception"].browse(exception_id).exists()
         )
@@ -438,6 +631,8 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def reject_exception(self, exception_id, **kwargs):
+        if not request.env.user.has_group("cleon_document_management.group_document_manager"):
+            return {"success": False, "message": "Document manager access is required."}
         exception = (
             request.env["doc.compliance.exception"].browse(exception_id).exists()
         )

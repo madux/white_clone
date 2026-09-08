@@ -9,11 +9,15 @@ import type {
   User,
   AdminAttention,
   ApprovalInbox,
+  PendingEmployeeUploads,
+  MyPendingUploads,
+  MyCompliance,
   OnboardingState,
   QuickAccess,
   DashboardStats,
   DocumentType,
   ShareLink,
+  UploadDuplicateMatch,
 } from "./types";
 
 interface JsonRpcResponse<T> {
@@ -162,9 +166,31 @@ export const api = {
       payload,
     ),
 
+  checkEmployeeConflicts: (payload: { folderId: number; employeeIds: number[] }) =>
+    rpc<{
+      success: boolean;
+      message?: string;
+      already_in_folder: { employee_id: number; employee_name: string }[];
+      conflicts: {
+        employee_id: number;
+        employee_name: string;
+        folder_id: number;
+        folder_name: string;
+      }[];
+    }>("/api/folder/check-employee-conflicts", {
+      folder_id: payload.folderId,
+      employee_ids: payload.employeeIds,
+    }),
+
   removeEmployeesFromFolder: (payload: { id: number; employee_ids: number[] }) =>
     rpc<{ success: boolean; employee_ids: number[] }>(
       "/api/folder/remove-employees",
+      payload,
+    ),
+
+  moveEmployeesBetweenFolders: (payload: { id: number; employee_ids: number[]; destination_folder_id: number }) =>
+    rpc<{ success: boolean; employee_ids: number[]; message?: string }>(
+      "/api/folder/move-employees",
       payload,
     ),
 
@@ -172,11 +198,25 @@ export const api = {
     id: number;
     name: string;
     description?: string;
+    require_upload_approval?: boolean;
+    approval_flow?: string;
+    approver_ids?: number[];
+    access_scope?: string;
+    department_ids?: number[];
+    grade_ids?: number[];
+    employee_ids?: number[];
   }) =>
     rpc<{ success: boolean; message: string }>("/api/update-folder", {
       id: payload.id,
       folder_name: payload.name,
       description: payload.description,
+      require_upload_approval: payload.require_upload_approval,
+      approval_flow: payload.approval_flow,
+      approver_ids: payload.approver_ids,
+      access_scope: payload.access_scope,
+      department_ids: payload.department_ids,
+      grade_ids: payload.grade_ids,
+      employee_ids: payload.employee_ids,
     }),
 
   deleteFolder: (id: number) =>
@@ -193,8 +233,18 @@ export const api = {
     allow_download?: boolean;
     allow_printing?: boolean;
   }) =>
-    rpc<{ success: boolean; data: { token?: string; url?: string } }>(
+    rpc<{ success: boolean; data: { token?: string; url?: string }; message?: string }>(
       "/api/folder-action",
+      payload,
+    ),
+
+  moveRecycledFolderDocuments: (payload: {
+    folder_id: number;
+    destination_folder_id?: number;
+    release_only?: boolean;
+  }) =>
+    rpc<{ success: boolean; message: string; data?: { moved_count: number; linked_document_count: number } }>(
+      "/api/folder/move-recycle-documents",
       payload,
     ),
 
@@ -218,6 +268,15 @@ export const api = {
     );
   },
 
+  getMyPendingUploads: () =>
+    rpc<{ success: boolean; data: MyPendingUploads }>(
+      "/api/my-pending-uploads",
+      {},
+    ),
+
+  getMyCompliance: () =>
+    rpc<{ success: boolean; data: MyCompliance }>("/api/my-compliance", {}),
+
   getDocument: (id: number) =>
     rpc<{ success: boolean; data: DocDocument }>(
       `/api/view-document/${id}`,
@@ -234,11 +293,15 @@ export const api = {
     files: File[];
     folder_id: number;
     document_type_ids: number[];
+    expiry_dates?: string[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("folder_id", String(payload.folder_id));
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
+    if (payload.expiry_dates?.length) {
+      form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
     return multipartClient
       .post<{
         success: boolean;
@@ -247,10 +310,17 @@ export const api = {
       .then((response) => response.data);
   },
 
-  uploadMyDocument: (payload: { files: File[]; document_type_ids: number[] }) => {
+  uploadMyDocument: (payload: {
+    files: File[];
+    document_type_ids: number[];
+    expiry_dates?: string[];
+  }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
+    if (payload.expiry_dates?.length) {
+      form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
     return multipartClient
       .post<{
         success: boolean;
@@ -260,11 +330,19 @@ export const api = {
       .then((response) => response.data);
   },
 
-  uploadEmployeeDocument: (payload: { files: File[]; employee_id: number; document_type_ids: number[] }) => {
+  uploadEmployeeDocument: (payload: {
+    files: File[];
+    employee_id: number;
+    document_type_ids: number[];
+    expiry_dates?: string[];
+  }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("employee_id", String(payload.employee_id));
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
+    if (payload.expiry_dates?.length) {
+      form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
     return multipartClient
       .post<{ success: boolean; data?: { id: number; name: string }; message?: string }>(
         "/api/employee-documents/upload",
@@ -272,6 +350,16 @@ export const api = {
       )
       .then((response) => response.data);
   },
+
+  checkUploadDuplicates: (payload: {
+    employee_id: number;
+    items: { filename: string; document_type_id: number }[];
+  }) =>
+    rpc<{
+      success: boolean;
+      matches?: UploadDuplicateMatch[];
+      message?: string;
+    }>("/api/check-upload-duplicates", payload),
 
   requestDocumentApproval: (id: number) => {
     return rpc<{
@@ -283,6 +371,16 @@ export const api = {
 
   updateDocument: (payload: { id: number; [key: string]: any }) =>
     rpc<{ success: boolean; message: string }>("/api/update-document", payload),
+
+  moveDocuments: (payload: {
+    document_ids: number[];
+    destination_folder_id: number;
+  }) =>
+    rpc<{
+      success: boolean;
+      message: string;
+      data?: { document_ids: number[]; folder_id: number };
+    }>("/api/move-documents", payload),
 
   deleteDocument: (id: number) =>
     rpc<{ success: boolean; message: string }>("/api/delete-document", { id }),
@@ -305,7 +403,7 @@ export const api = {
     ),
 
   acknowledgeDocument: (id: number) =>
-    rpc<{ success: boolean; data: { acknowledged: boolean } }>(
+    rpc<{ success: boolean; data: { acknowledged: boolean; acknowledged_at?: string }; message?: string }>(
       "/api/document/acknowledge",
       { id },
     ),
@@ -319,6 +417,12 @@ export const api = {
   getApprovalInbox: () =>
     rpc<{ success: boolean; data: ApprovalInbox }>(
       "/api/admin-approval-inbox",
+      {},
+    ),
+
+  getPendingEmployeeUploads: () =>
+    rpc<{ success: boolean; data: PendingEmployeeUploads }>(
+      "/api/admin/pending-employee-uploads",
       {},
     ),
 
@@ -416,14 +520,32 @@ export const api = {
       {},
     ),
 
-  getEvaluations: () =>
+  approveException: (id: number) =>
+    rpc<{ success: boolean; status?: string; message?: string }>(
+      `/api/compliance/exceptions/${id}/approve`,
+      {},
+    ),
+
+  rejectException: (id: number) =>
+    rpc<{ success: boolean; status?: string; message?: string }>(
+      `/api/compliance/exceptions/${id}/reject`,
+      {},
+    ),
+
+  getEvaluations: (employeeId?: number) =>
     rpc<{ success: boolean; data: any[] }>(
       "/api/compliance/evaluations",
-      {},
+      employeeId ? { employee_id: employeeId } : {},
+    ).then((r) => r.data),
+
+  getEvaluationRuns: (policyId?: number) =>
+    rpc<{ success: boolean; data: any[] }>(
+      "/api/compliance/runs",
+      policyId ? { policy_id: policyId } : {},
     ).then((r) => r.data),
 
   evaluatePolicy: (policyId: number) =>
-    rpc<{ success: boolean; data: any[] }>(
+    rpc<{ success: boolean; data: any[]; run?: any; message?: string }>(
       `/api/compliance/policies/${policyId}/evaluate`,
       {},
     ),
@@ -463,11 +585,18 @@ export const api = {
     category: string;
     description?: string;
     is_mandatory_default?: boolean;
+    expiry_applicable?: boolean;
     default_retention_years?: number;
   }) =>
     rpc<{ success: boolean; data: DocumentType; message?: string }>(
       "/api/create-document-type",
       payload,
+    ),
+
+  getDocumentVersions: (documentId: number) =>
+    rpc<{ success: boolean; count: number; data: import("./types").DocumentVersion[] }>(
+      "/api/document-versions",
+      { document_id: documentId },
     ),
 
   getShareLinks: () =>

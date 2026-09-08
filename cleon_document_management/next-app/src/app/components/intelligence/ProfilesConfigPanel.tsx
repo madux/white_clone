@@ -15,6 +15,7 @@ import {
   IntelligenceError,
   IntelligenceLoading,
 } from "./states";
+import ModalDialog from "../ModalDialog";
 
 const EMPTY_FIELD: IntelligenceField = {
   name: "",
@@ -157,14 +158,14 @@ export default function ProfilesConfigPanel() {
       )}
 
       {editing ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-          <form
-            onSubmit={save}
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"
-          >
-            <h2 className="text-xl font-bold">
-              {editing.id ? "Edit profile" : "New profile"}
-            </h2>
+        <ModalDialog
+          title={editing.id ? "Edit profile" : "New profile"}
+          onClose={() => setEditing(null)}
+          size="2xl"
+          titleClassName="text-xl"
+          backdropClassName="bg-slate-900/40"
+        >
+          <form onSubmit={save}>
             <label className="mt-4 block">
               <span className="label">Name</span>
               <input
@@ -308,7 +309,7 @@ export default function ProfilesConfigPanel() {
               </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
       ) : null}
     </div>
   );

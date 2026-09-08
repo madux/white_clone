@@ -10,30 +10,35 @@ import {
   ShieldCheck,
   RotateCcw,
   Trash2,
-  X,
 } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   useComplianceTargets,
   useCreateException,
+  useApproveException,
   useDeactivateException,
   useDeleteException,
   useCreatePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
   useEvaluations,
+  useEvaluationRuns,
   useExceptions,
   useReactivateException,
+  useRejectException,
   usePolicies,
   usePolicyTypes,
 } from "../../../hooks/useDocuments";
 import PolicyActions from "./PolicyActions";
+import ModalDialog from "./ModalDialog";
+import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import SortableTable from "./SortableTable";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ThemedSelect from "./ThemedSelect";
 
 type Tab = "policies" | "exceptions" | "history";
 const schedules = [
+  "manual",
   "one_time",
   "daily",
   "weekly",
@@ -52,6 +57,7 @@ export default function CompliancePage() {
   const policies = usePolicies();
   const exceptions = useExceptions();
   const evaluations = useEvaluations();
+  const runs = useEvaluationRuns();
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
   const targets = useComplianceTargets();
@@ -63,14 +69,37 @@ export default function CompliancePage() {
     description: "",
     policy_type_id: "",
     document_type_ids: [] as number[],
-    applies_to: "employee",
+    applies_to: "all",
     scope_ids: [] as number[],
     schedule: "monthly",
     custom_schedule_days: "30",
     minimum_documents: "1",
     grace_period_days: "0",
     effective_date: new Date().toISOString().slice(0, 10),
+    // Type-specific fields
+    allow_waiver: true,
+    alert_schedule_days: "60,30,15,7,0",
+    escalate_manager_days: 15,
+    escalate_hr_days: 7,
+    auto_request_renewal: true,
+    event_trigger: "onboarding",
+    due_days: 14,
+    reminder_frequency_days: 3,
+    assigned_reviewer_id: "",
+    audit_frequency: "quarterly",
+    sample_pct: 100,
+    assigned_auditor_id: "",
   });
+
+  useEffect(() => {
+    if (!policyForm.policy_type_id && types.data && types.data.length > 0) {
+      setPolicyForm((prev) => ({
+        ...prev,
+        policy_type_id: String(types.data[0].id),
+      }));
+    }
+  }, [types.data, policyForm.policy_type_id]);
+
   const [exceptionForm, setExceptionForm] = useState({
     employee_ids: [] as number[],
     policy_id: "",
@@ -87,20 +116,57 @@ export default function CompliancePage() {
   );
   const submitPolicy = async (event: FormEvent) => {
     event.preventDefault();
+    const effectiveAppliesTo =
+      policyForm.applies_to === "all" || policyForm.scope_ids.length === 0
+        ? "all"
+        : policyForm.applies_to;
+
     await createPolicy.mutateAsync({
       ...policyForm,
       policy_type_id: Number(policyForm.policy_type_id),
+      applies_to: effectiveAppliesTo,
       document_type_ids: policyForm.document_type_ids,
       employee_ids:
-        policyForm.applies_to === "employee" ? policyForm.scope_ids : [],
+        effectiveAppliesTo === "employee" ? policyForm.scope_ids : [],
       department_ids:
-        policyForm.applies_to === "department" ? policyForm.scope_ids : [],
-      grade_ids: policyForm.applies_to === "grade" ? policyForm.scope_ids : [],
+        effectiveAppliesTo === "department" ? policyForm.scope_ids : [],
+      grade_ids: effectiveAppliesTo === "grade" ? policyForm.scope_ids : [],
       custom_schedule_days: Number(policyForm.custom_schedule_days),
       minimum_documents: Number(policyForm.minimum_documents),
       grace_period_days: Number(policyForm.grace_period_days),
+      assigned_reviewer_id: policyForm.assigned_reviewer_id
+        ? Number(policyForm.assigned_reviewer_id)
+        : false,
+      assigned_auditor_id: policyForm.assigned_auditor_id
+        ? Number(policyForm.assigned_auditor_id)
+        : false,
     });
     setShowForm(false);
+    setPolicyForm({
+      name: "",
+      description: "",
+      policy_type_id: types.data?.[0]?.id ? String(types.data[0].id) : "",
+      document_type_ids: [],
+      applies_to: "all",
+      scope_ids: [],
+      schedule: "monthly",
+      custom_schedule_days: "30",
+      minimum_documents: "1",
+      grace_period_days: "0",
+      effective_date: new Date().toISOString().slice(0, 10),
+      allow_waiver: true,
+      alert_schedule_days: "60,30,15,7,0",
+      escalate_manager_days: 15,
+      escalate_hr_days: 7,
+      auto_request_renewal: true,
+      event_trigger: "onboarding",
+      due_days: 14,
+      reminder_frequency_days: 3,
+      assigned_reviewer_id: "",
+      audit_frequency: "quarterly",
+      sample_pct: 100,
+      assigned_auditor_id: "",
+    });
   };
   const submitException = async (event: FormEvent) => {
     event.preventDefault();
@@ -121,9 +187,11 @@ export default function CompliancePage() {
   };
   const runCheck = async () => {
     setRunning(true);
-    for (const policy of policies.data ?? [])
-      await evaluate.mutateAsync(policy.id);
-    setRunning(false);
+    try {
+      for (const policy of policies.data ?? []) await evaluate.mutateAsync(policy.id);
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
@@ -172,7 +240,7 @@ export default function CompliancePage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <ClipboardCheck className="h-5 w-5 text-brand-pink" />
           <p className="mt-5 text-3xl font-bold text-slate-900">
-            {exceptions.data?.length ?? 0}
+            {exceptions.data?.filter((item) => item.active !== false && ["draft", "approved"].includes(item.status)).length ?? 0}
           </p>
           <p className="text-sm text-slate-500">Open exceptions</p>
         </div>
@@ -221,7 +289,7 @@ export default function CompliancePage() {
           </label>
         </div>
         {tab === "policies" && (
-          <PolicyTable
+            <PolicyTable
             policies={displayedPolicies}
             documents={documents.data ?? []}
             types={types.data ?? []}
@@ -232,7 +300,7 @@ export default function CompliancePage() {
           <ExceptionTable exceptions={displayedExceptions} />
         )}
         {tab === "history" && (
-          <HistoryTable evaluations={evaluations.data ?? []} />
+            <HistoryTable runs={runs.data ?? []} />
         )}
       </section>
       {showForm &&
@@ -281,6 +349,7 @@ function PolicyTable({
         "Details",
         "Applies to",
         "Schedule",
+        "Next run",
         "Status",
         "Actions",
       ]}
@@ -305,6 +374,10 @@ function PolicyTable({
             </td>
             <td className="cell capitalize">
               {policy.schedule.replace("_", " ")}
+            </td>
+            <td className="cell">
+              <small>{policy.schedule === "manual" ? "Manual only" : policy.next_run_at ? formatDateTime(policy.next_run_at) : "Not scheduled"}</small>
+              {policy.last_run_at && <small className="mt-1">Last: {formatDateTime(policy.last_run_at)}</small>}
             </td>
             <td className="cell">
               <span className="status">
@@ -341,7 +414,7 @@ function ExceptionTable({ exceptions }: { exceptions: any[] }) {
             <td className="cell">{item.reason}</td>
             <td className="cell">{item.valid_until}</td>
             <td className="cell">
-              <span className="status pending">{item.status}</span>
+              <span className={`status ${item.status === "approved" ? "approved" : item.status === "rejected" || item.status === "expired" ? "danger" : "pending"}`}>{item.status}</span>
             </td>
             <td className="cell"><ExceptionActions exception={item} /></td>
           </tr>
@@ -352,6 +425,8 @@ function ExceptionTable({ exceptions }: { exceptions: any[] }) {
 }
 
 function ExceptionActions({ exception }: { exception: any }) {
+  const approve = useApproveException();
+  const reject = useRejectException();
   const deactivate = useDeactivateException();
   const reactivate = useReactivateException();
   const remove = useDeleteException();
@@ -364,33 +439,38 @@ function ExceptionActions({ exception }: { exception: any }) {
     if (window.confirm("Delete this exception? This cannot be undone."))
       await remove.mutateAsync(exception.id);
   };
-  return <div className="flex items-center justify-end gap-1">
+  return <div className="flex flex-wrap items-center justify-end gap-1">
+    {exception.status === "draft" && <><button type="button" onClick={() => approve.mutateAsync(exception.id)} disabled={approve.isPending} className="row-action text-emerald-600" title="Approve exception" aria-label="Approve exception"><ShieldCheck /></button><button type="button" onClick={() => reject.mutateAsync(exception.id)} disabled={reject.isPending} className="row-action danger" title="Reject exception" aria-label="Reject exception"><Ban /></button></>}
     <button type="button" onClick={toggle} disabled={deactivate.isPending || reactivate.isPending} className="row-action" title={active ? "Deactivate exception" : "Reactivate exception"}>{active ? <Ban /> : <RotateCcw />}</button>
     <button type="button" onClick={deleteException} disabled={remove.isPending} className="row-action danger" title="Delete exception"><Trash2 /></button>
   </div>;
 }
-function HistoryTable({ evaluations }: { evaluations: any[] }) {
+function HistoryTable({ runs }: { runs: any[] }) {
   return (
     <Table
-      headers={["Policy", "Complete", "Missing", "Score", "Evaluated at"]}
+      headers={["Policy", "Run type", "Employees", "Results", "Evaluated at"]}
       empty="No run history yet."
     >
       <>
-        {evaluations.map((item) => (
+        {runs.map((item) => (
           <tr key={item.id} className="hover:bg-pink-50/30">
             <td className="cell">
               <b>{item.policy}</b>
-              <small>{item.employee}</small>
             </td>
-            <td className="cell">{item.complete_count} complete</td>
-            <td className="cell">{item.missing_count} missing</td>
-            <td className="cell">{item.score}%</td>
+            <td className="cell capitalize">{item.run_type}</td>
+            <td className="cell">{item.employee_count}</td>
+            <td className="cell"><small>{item.compliant_count} compliant · {item.partial_count} partial · {item.non_compliant_count} missing · {item.excepted_count} excepted</small></td>
             <td className="cell">{item.evaluated_at}</td>
           </tr>
         ))}
       </>
     </Table>
   );
+}
+
+function formatDateTime(value: string) {
+  if (!value) return "—";
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value.replace(" ", "T") + (value.endsWith("Z") ? "" : "Z")));
 }
 function Table({
   children,
@@ -418,6 +498,412 @@ function Table({
     </div>
   );
 }
+export function ScopeChecklist({
+  appliesTo,
+  items,
+  selected,
+  onToggle,
+}: {
+  appliesTo: string;
+  items: any[];
+  selected: number[];
+  onToggle: (id: number) => void;
+}) {
+  const [query, setQuery] = useState("");
+
+  if (appliesTo === "all") {
+    return (
+      <div className="sm:col-span-2 rounded-2xl border border-pink-200/80 bg-gradient-to-r from-pink-50/70 to-slate-50 p-4 text-slate-700 shadow-sm">
+        <p className="font-semibold text-brand-pink flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4" />
+          Applies to All Employees
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          This policy will automatically apply to and evaluate all active employees in the organization.
+        </p>
+      </div>
+    );
+  }
+
+  const labelText =
+    appliesTo === "department"
+      ? "Departments"
+      : appliesTo === "grade"
+        ? "Groups"
+        : "Employees";
+
+  const filtered = (items || []).filter((item: any) => {
+    const q = query.toLowerCase();
+    const nameMatch = (item.name || "").toLowerCase().includes(q);
+    const deptMatch = (item.department || "").toLowerCase().includes(q);
+    const titleMatch = (item.job_title || "").toLowerCase().includes(q);
+    const emailMatch = (item.work_email || "").toLowerCase().includes(q);
+    return nameMatch || deptMatch || titleMatch || emailMatch;
+  });
+
+  return (
+    <div className="sm:col-span-2 space-y-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="label text-slate-700 font-semibold">Select {labelText}</span>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search ${labelText.toLowerCase()}...`}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-brand-pink/40 focus:bg-white focus:ring-2 focus:ring-brand-pink/10"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 flex items-center justify-between">
+        <span>
+          💡 <strong>Note:</strong> If no {labelText.toLowerCase()} are selected, this policy will automatically apply to <strong>all employees</strong>.
+        </span>
+        {selected.length > 0 && (
+          <span className="text-[11px] font-semibold text-brand-pink">
+            {selected.length} selected
+          </span>
+        )}
+      </div>
+
+      <div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+        {filtered.length === 0 ? (
+          <p className="sm:col-span-2 text-center text-xs text-slate-400 py-3">
+            No matching {labelText.toLowerCase()} found.
+          </p>
+        ) : (
+          filtered.map((item: any) => (
+            <label
+              key={item.id}
+              className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2 text-sm text-slate-700 shadow-sm hover:border-pink-200 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(item.id)}
+                onChange={() => onToggle(item.id)}
+                className="h-4 w-4 accent-pink-600 rounded"
+              />
+              <div className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-slate-800">{item.name}</span>
+                {item.department && appliesTo === "employee" && (
+                  <span className="block truncate text-xs text-slate-400">
+                    {item.department} {item.job_title ? `· ${item.job_title}` : ""}
+                  </span>
+                )}
+              </div>
+            </label>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function AlertCadenceSelector({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (newValue: string) => void;
+}) {
+  const PRESETS = [
+    { label: "90 Days Prior", days: 90 },
+    { label: "60 Days Prior", days: 60 },
+    { label: "30 Days Prior", days: 30 },
+    { label: "15 Days Prior", days: 15 },
+    { label: "7 Days Prior", days: 7 },
+    { label: "1 Day Prior", days: 1 },
+    { label: "On Expiry Day (0)", days: 0 },
+  ];
+
+  const currentDays = (value || "60,30,15,7,0")
+    .split(",")
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => !isNaN(n));
+
+  const toggleDay = (day: number) => {
+    let next: number[];
+    if (currentDays.includes(day)) {
+      next = currentDays.filter((d) => d !== day);
+    } else {
+      next = [...currentDays, day].sort((a, b) => b - a);
+    }
+    onChange(next.join(","));
+  };
+
+  return (
+    <div className="space-y-2 sm:col-span-2">
+      <span className="label text-slate-700 font-semibold">
+        Expiration Reminders Schedule
+      </span>
+      <p className="text-xs text-slate-500">
+        Select when automated email reminders will be sent to the employee before document expiration:
+      </p>
+      <div className="flex flex-wrap gap-2 pt-1">
+        {PRESETS.map((preset) => {
+          const isSelected = currentDays.includes(preset.days);
+          return (
+            <button
+              key={preset.days}
+              type="button"
+              onClick={() => toggleDay(preset.days)}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all cursor-pointer ${
+                isSelected
+                  ? "bg-brand-pink text-white shadow-sm shadow-pink-200"
+                  : "bg-white text-slate-600 border border-slate-200 hover:border-pink-300 hover:text-brand-pink"
+              }`}
+            >
+              {isSelected ? "✓ " : "+ "}
+              {preset.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function TypeSpecificFields({
+  typeCode,
+  form,
+  setForm,
+  targets,
+}: {
+  typeCode: string;
+  form: any;
+  setForm: any;
+  targets: any;
+}) {
+  if (typeCode === "document_requirement") {
+    return (
+      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
+          Document Requirement Settings
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Grace Period Window (Days)">
+            <input
+              type="number"
+              min="0"
+              className="field"
+              value={form.grace_period_days}
+              onChange={(e) =>
+                setForm({ ...form, grace_period_days: e.target.value })
+              }
+            />
+          </Field>
+          <div className="flex items-center pt-5">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.allow_waiver}
+                onChange={(e) =>
+                  setForm({ ...form, allow_waiver: e.target.checked })
+                }
+                className="h-4 w-4 accent-pink-600 rounded"
+              />
+              Allow HR Admins to grant waivers / exemptions
+            </label>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (typeCode === "renewable_document") {
+    return (
+      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
+          Expiration Alert & Escalation Rules
+        </p>
+
+        <AlertCadenceSelector
+          value={form.alert_schedule_days}
+          onChange={(val) => setForm({ ...form, alert_schedule_days: val })}
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
+          <Field label="Notify Line Manager">
+            <ThemedSelect
+              value={String(form.escalate_manager_days)}
+              onChange={(val) =>
+                setForm({ ...form, escalate_manager_days: Number(val) })
+              }
+              options={[
+                { value: "30", label: "30 Days before expiry" },
+                { value: "15", label: "15 Days before expiry" },
+                { value: "7", label: "7 Days before expiry" },
+                { value: "3", label: "3 Days before expiry" },
+                { value: "0", label: "On Expiry Day" },
+              ]}
+            />
+          </Field>
+
+          <Field label="Escalate to HR Admin">
+            <ThemedSelect
+              value={String(form.escalate_hr_days)}
+              onChange={(val) =>
+                setForm({ ...form, escalate_hr_days: Number(val) })
+              }
+              options={[
+                { value: "15", label: "15 Days before expiry" },
+                { value: "7", label: "7 Days before expiry" },
+                { value: "3", label: "3 Days before expiry" },
+                { value: "1", label: "1 Day before expiry" },
+                { value: "0", label: "On Expiry Day" },
+              ]}
+            />
+          </Field>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 pt-1 border-t border-slate-200/60">
+          <Field label="Post-Expiry Buffer Window (Days)">
+            <input
+              type="number"
+              min="0"
+              className="field"
+              value={form.grace_period_days}
+              onChange={(e) =>
+                setForm({ ...form, grace_period_days: e.target.value })
+              }
+            />
+          </Field>
+
+          <div className="flex items-center pt-5">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.auto_request_renewal}
+                onChange={(e) =>
+                  setForm({ ...form, auto_request_renewal: e.target.checked })
+                }
+                className="h-4 w-4 accent-pink-600 rounded"
+              />
+              Auto-generate replacement upload task for employee
+            </label>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (typeCode === "compliance_request") {
+    return (
+      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
+          Event-Driven Request Settings
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Lifecycle Event Trigger">
+            <ThemedSelect
+              value={form.event_trigger}
+              onChange={(val) => setForm({ ...form, event_trigger: val })}
+              options={[
+                { value: "onboarding", label: "Onboarding" },
+                { value: "promotion", label: "Promotion" },
+                { value: "department_transfer", label: "Department Transfer" },
+                { value: "location_change", label: "Location Change" },
+                { value: "marital_status_change", label: "Marital Status Change" },
+              ]}
+            />
+          </Field>
+          <Field label="Task Deadline (Days after event)">
+            <input
+              type="number"
+              min="1"
+              className="field"
+              value={form.due_days}
+              onChange={(e) =>
+                setForm({ ...form, due_days: Number(e.target.value) })
+              }
+            />
+          </Field>
+          <Field label="Automated Reminder Frequency (Days)">
+            <input
+              type="number"
+              min="1"
+              className="field"
+              value={form.reminder_frequency_days}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  reminder_frequency_days: Number(e.target.value),
+                })
+              }
+            />
+          </Field>
+          <Field label="Assigned HR Reviewer (Admin)">
+            <ThemedSelect
+              value={String(form.assigned_reviewer_id || "")}
+              onChange={(val) =>
+                setForm({ ...form, assigned_reviewer_id: val })
+              }
+              placeholder="Select HR Admin Reviewer"
+              options={(targets?.users || []).map((u: any) => ({
+                value: String(u.id),
+                label: u.name,
+              }))}
+            />
+          </Field>
+        </div>
+      </div>
+    );
+  }
+
+  if (typeCode === "retention") {
+    return (
+      <div className="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-brand-pink">
+          Review Schedule & Audit Parameters
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Audit Frequency">
+            <ThemedSelect
+              value={form.audit_frequency}
+              onChange={(val) => setForm({ ...form, audit_frequency: val })}
+              options={[
+                { value: "monthly", label: "Monthly" },
+                { value: "quarterly", label: "Quarterly" },
+                { value: "semi_annually", label: "Semi-Annually" },
+                { value: "annually", label: "Annually" },
+              ]}
+            />
+          </Field>
+          <Field label="Folder Audit Sampling % (1-100%)">
+            <input
+              type="number"
+              min="1"
+              max="100"
+              className="field"
+              value={form.sample_pct}
+              onChange={(e) =>
+                setForm({ ...form, sample_pct: Number(e.target.value) })
+              }
+            />
+          </Field>
+          <Field label="Assigned HR Auditor (Admin)" full>
+            <ThemedSelect
+              value={String(form.assigned_auditor_id || "")}
+              onChange={(val) =>
+                setForm({ ...form, assigned_auditor_id: val })
+              }
+              placeholder="Select HR Admin Auditor"
+              options={(targets?.users || []).map((u: any) => ({
+                value: String(u.id),
+                label: u.name,
+              }))}
+            />
+          </Field>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function PolicyForm({
   form,
   setForm,
@@ -428,30 +914,67 @@ function PolicyForm({
   onClose,
   onSubmit,
 }: any) {
+  const [step, setStep] = useState<"configure" | "review">("configure");
   const [formError, setFormError] = useState("");
-  const scopeKey = `${form.applies_to}s`;
   const scopeOptions =
     form.applies_to === "department"
       ? (targets?.departments ?? [])
       : form.applies_to === "grade"
         ? (targets?.grades ?? [])
         : (targets?.employees ?? []);
+
+  const selectedType = (types || []).find(
+    (t: any) => String(t.id) === String(form.policy_type_id)
+  );
+  const typeCode = selectedType?.code || "";
+
+  const toggleScope = (id: number) => {
+    setForm({
+      ...form,
+      scope_ids: form.scope_ids.includes(id)
+        ? form.scope_ids.filter((item: number) => item !== id)
+        : [...form.scope_ids, id],
+    });
+  };
+
   const submit = (event: FormEvent) => {
+    if (!form.policy_type_id) {
+      event.preventDefault();
+      setFormError("Please select a policy type.");
+      return;
+    }
     if (!form.document_type_ids.length) {
       event.preventDefault();
       setFormError("Select at least one required document type.");
       return;
     }
-    if (!form.scope_ids.length) {
+    setFormError("");
+    if (step === "configure") {
       event.preventDefault();
-      setFormError(`Select at least one ${form.applies_to}.`);
+      setStep("review");
       return;
     }
-    setFormError("");
     onSubmit(event);
   };
+
+  const selectedDocumentTypes = documents.filter((item: any) =>
+    form.document_type_ids.includes(item.id),
+  );
+  const scopeLabels =
+    form.applies_to === "all"
+      ? ["All employees"]
+      : scopeOptions
+          .filter((item: any) => form.scope_ids.includes(item.id))
+          .map((item: any) => item.name);
+
   return (
-    <Modal title="Create policy" onClose={onClose}>
+    <ModalDialog
+      title={step === "configure" ? "Create policy" : "Review policy"}
+      eyebrow="Compliance engine"
+      onClose={onClose}
+      size="3xl"
+    >
+      {step === "configure" ? (
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <Field label="Policy name">
           <input
@@ -462,7 +985,15 @@ function PolicyForm({
           />
         </Field>
         <Field label="Policy type">
-          <ThemedSelect value={form.policy_type_id} onChange={(value) => setForm({ ...form, policy_type_id: value })} placeholder="Select type" options={types.map((item: any) => ({ value: String(item.id), label: item.name }))} />
+          <ThemedSelect
+            value={form.policy_type_id}
+            onChange={(value) => setForm({ ...form, policy_type_id: value })}
+            placeholder="Select type"
+            options={types.map((item: any) => ({
+              value: String(item.id),
+              label: item.name,
+            }))}
+          />
         </Field>
         <Field label="Description" full>
           <textarea
@@ -471,65 +1002,59 @@ function PolicyForm({
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
         </Field>
+
+        <TypeSpecificFields
+          typeCode={typeCode}
+          form={form}
+          setForm={setForm}
+          targets={targets}
+        />
+
         <Field label="Required document types" full>
-          <div className="mb-2 flex items-center justify-between"><span className="text-xs text-slate-500">Select every document this policy requires.</span><InlineDocumentTypeCreator onCreated={(item) => setForm({ ...form, document_type_ids: [...form.document_type_ids, item.id] })} /></div><div className="grid gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            {documents.map((item: any) => (
-              <label
-                key={item.id}
-                className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={form.document_type_ids.includes(item.id)}
-                  onChange={() =>
-                    setForm({
-                      ...form,
-                      document_type_ids: form.document_type_ids.includes(
-                        item.id,
-                      )
-                        ? form.document_type_ids.filter(
-                            (id: number) => id !== item.id,
-                          )
-                        : [...form.document_type_ids, item.id],
-                    })
-                  }
-                  className="h-4 w-4 accent-pink-600"
-                />
-                <span className="font-medium">{item.name}</span>
-              </label>
-            ))}
-          </div>
+          <PolicyTypeMultiSelect
+            types={documents}
+            selected={form.document_type_ids}
+            onChange={(document_type_ids) =>
+              setForm({ ...form, document_type_ids })
+            }
+            error={
+              formError === "Select at least one required document type."
+                ? formError
+                : undefined
+            }
+          />
         </Field>
         <Field label="Applies to">
-          <ThemedSelect value={form.applies_to} onChange={(value) => setForm({ ...form, applies_to: value, scope_ids: [] })} options={[{ value: "department", label: "Departments" }, { value: "grade", label: "Grades" }, { value: "employee", label: "Employees" }]} />
+          <ThemedSelect
+            value={form.applies_to}
+            onChange={(value) =>
+              setForm({ ...form, applies_to: value, scope_ids: [] })
+            }
+            options={[
+              { value: "all", label: "All Employees" },
+              { value: "department", label: "Departments" },
+              { value: "grade", label: "Groups" },
+              { value: "employee", label: "Employees" },
+            ]}
+          />
         </Field>
-        <Field label={`Select ${form.applies_to}s`} full>
-          <div className="grid max-h-44 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
-            {scopeOptions.map((item: any) => (
-              <label
-                key={item.id}
-                className="flex cursor-pointer items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-700 shadow-sm"
-              >
-                <input
-                  type="checkbox"
-                  checked={form.scope_ids.includes(item.id)}
-                  onChange={() =>
-                    setForm({
-                      ...form,
-                      scope_ids: form.scope_ids.includes(item.id)
-                        ? form.scope_ids.filter((id: number) => id !== item.id)
-                        : [...form.scope_ids, item.id],
-                    })
-                  }
-                  className="h-4 w-4 accent-pink-600"
-                />
-                <span className="font-medium">{item.name}</span>
-              </label>
-            ))}
-          </div>
-        </Field>
+        <ScopeChecklist
+          appliesTo={form.applies_to}
+          items={scopeOptions}
+          selected={form.scope_ids}
+          onToggle={toggleScope}
+        />
         <Field label="Schedule">
-          <ThemedSelect value={form.schedule} onChange={(value) => setForm({ ...form, schedule: value })} options={schedules.map((item) => ({ value: item, label: item.replace("_", " ") }))} />
+          <ThemedSelect
+            value={form.schedule}
+            onChange={(value) =>
+              setForm({ ...form, schedule: value === "manual" ? "" : value })
+            }
+            options={schedules.map((item) => ({
+              value: item,
+              label: item === "manual" ? "Manual only" : item.replace("_", " "),
+            }))}
+          />
         </Field>
         <Field label="Effective date">
           <input
@@ -571,9 +1096,87 @@ function PolicyForm({
             {formError}
           </p>
         )}
-        <Actions pending={pending} onClose={onClose} />
+        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 sm:col-span-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500"
+          >
+            Cancel
+          </button>
+          <button
+            className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Review
+          </button>
+        </div>
       </form>
-    </Modal>
+      ) : (
+        <div>
+          <dl className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Policy name</dt>
+              <dd className="font-bold text-slate-800">{form.name}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Policy type</dt>
+              <dd className="text-slate-700">{selectedType?.name || "—"}</dd>
+            </div>
+            {form.description && (
+              <div className="flex justify-between gap-4">
+                <dt className="font-semibold text-slate-500">Description</dt>
+                <dd className="text-right text-slate-700">{form.description}</dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Required document types</dt>
+              <dd className="text-right text-slate-700">
+                {selectedDocumentTypes.map((item: any) => item.name).join(", ") || "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Applies to</dt>
+              <dd className="text-right text-slate-700">{scopeLabels.join(", ")}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Schedule</dt>
+              <dd className="capitalize text-slate-700">
+                {(form.schedule || "manual").replace("_", " ")}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Effective date</dt>
+              <dd className="text-slate-700">{form.effective_date}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Minimum documents</dt>
+              <dd className="text-slate-700">{form.minimum_documents}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="font-semibold text-slate-500">Grace period</dt>
+              <dd className="text-slate-700">{form.grace_period_days} days</dd>
+            </div>
+          </dl>
+          <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={() => setStep("configure")}
+              className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={(event) => submit(event as unknown as FormEvent)}
+              className="rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-5 py-2.5 text-sm font-semibold text-white"
+            >
+              {pending ? "Saving..." : "Confirm"}
+            </button>
+          </div>
+        </div>
+      )}
+    </ModalDialog>
   );
 }
 function ExceptionForm({
@@ -586,7 +1189,12 @@ function ExceptionForm({
   onSubmit,
 }: any) {
   return (
-    <Modal title="Create exception" onClose={onClose}>
+    <ModalDialog
+      title="Create exception"
+      eyebrow="Compliance engine"
+      onClose={onClose}
+      size="3xl"
+    >
       <form onSubmit={onSubmit} className="grid gap-4">
         <EmployeeChecklist employees={employees} form={form} setForm={setForm} />
         <Field label="Policy">
@@ -611,7 +1219,7 @@ function ExceptionForm({
         </Field>
         <Actions pending={pending} onClose={onClose} />
       </form>
-    </Modal>
+    </ModalDialog>
   );
 }
 function EmployeeChecklist({ employees, form, setForm }: any) {
@@ -643,30 +1251,6 @@ function Actions({ pending, onClose }: any) {
       >
         {pending ? "Saving..." : "Create"}
       </button>
-    </div>
-  );
-}
-function Modal({ title, onClose, children }: any) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/30 p-4 pt-10 backdrop-blur-sm">
-      <div className="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl">
-        <div className="mb-5 flex items-start justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-              Compliance engine
-            </p>
-            <h2 className="mt-1 text-2xl font-bold text-slate-900">{title}</h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        {children}
-      </div>
     </div>
   );
 }

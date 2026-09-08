@@ -1,17 +1,13 @@
 "use client";
 
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Check,
-  Download,
   FilePlus2,
   FileText,
   Mail,
   MapPin,
-  Maximize2,
-  Minimize2,
   Phone,
   Upload,
   X,
@@ -26,19 +22,36 @@ import {
   useCurrentUser,
   useDocumentTypes,
   useDocuments,
+  useEvaluations,
   useReviewDocument,
   useUploadEmployeeDocument,
 } from "../../../hooks/useDocuments";
-import { api } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import BulkDocumentActions from "./BulkDocumentActions";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
+import ModalDialog from "./ModalDialog";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
+import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
+import DocumentViewerDialog from "./DocumentViewerDialog";
+import UploadDuplicateDialog from "./UploadDuplicateDialog";
+import BackButton from "./BackButton";
+import { findUploadDuplicates } from "../../../lib/uploadDuplicates";
+import type { UploadDuplicateMatch } from "../../../lib/types";
+import {
+  missingExpiryDates,
+  typeRequiresExpiry,
+} from "./uploadExpiryHelpers";
+import {
+  approvalDisplayLabel,
+  canReviewDocument,
+} from "../../../lib/approvalHelpers";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
+  const employeeId = Number(params.get("employee"));
   const documents = useDocuments();
+  const complianceEvaluations = useEvaluations(employeeId || undefined);
   const targets = useComplianceTargets();
   const currentUser = useCurrentUser();
   const review = useReviewDocument();
@@ -48,15 +61,18 @@ export default function EmployeeProfilePage() {
   const [selected, setSelected] = useState<number[]>([]);
   const [viewing, setViewing] = useState<any>(null);
   const [rejecting, setRejecting] = useState<any>(null);
-  const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [reviewError, setReviewError] = useState("");
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    matches: UploadDuplicateMatch[];
+    proceed: () => Promise<void>;
+  } | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTypes, setUploadTypes] = useState<string[]>([]);
+  const [uploadExpiryDates, setUploadExpiryDates] = useState<string[]>([]);
   const [bulkUploadType, setBulkUploadType] = useState("");
   const [uploadError, setUploadError] = useState("");
-  const employeeId = Number(params.get("employee"));
   const employeeDocuments = useMemo(
     () =>
       (documents.data ?? []).filter((document) =>
@@ -71,18 +87,27 @@ export default function EmployeeProfilePage() {
   const approved = employeeDocuments.filter(
     (document) => document.approval_state === "approved",
   ).length;
-  const compliance = employeeDocuments.length
-    ? Math.round((approved / employeeDocuments.length) * 100)
-    : 0;
+  const currentEvaluations = (complianceEvaluations.data ?? []).filter(
+    (evaluation) => evaluation.policy_active !== false,
+  );
+  const complianceScore = currentEvaluations.length
+    ? Math.round(currentEvaluations.reduce((total, evaluation) => total + evaluation.score, 0) / currentEvaluations.length)
+    : null;
+  const complianceState = currentEvaluations.some((item) => item.status === "non_compliant")
+    ? "Needs attention"
+    : currentEvaluations.some((item) => item.status === "grace" || item.status === "partial")
+      ? "In progress"
+      : currentEvaluations.length
+        ? "Complete"
+        : "No evaluations";
+  const [filters, setFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
   const documentTypes = [
     ...new Set(employeeDocuments.map((document) => document.document_type)),
   ];
-  const filteredEmployeeDocuments =
-    typeFilter === "all"
-      ? employeeDocuments
-      : employeeDocuments.filter(
-          (document) => document.document_type === typeFilter,
-        );
+  const filteredEmployeeDocuments = useMemo(
+    () => applyDocumentFilters(employeeDocuments, filters),
+    [employeeDocuments, filters]
+  );
   const visibleIds = filteredEmployeeDocuments.map((document) => document.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
@@ -101,10 +126,8 @@ export default function EmployeeProfilePage() {
     .slice(0, 2)
     .toUpperCase();
 
-  const approvalLabel = (state: string) =>
-    state === "pending"
-      ? "Requires approval"
-      : state.replace("_", " ");
+  const approvalLabel = (document: (typeof employeeDocuments)[number]) =>
+    approvalDisplayLabel(document);
 
   const handleReview = async (
     document: any,
@@ -132,15 +155,73 @@ export default function EmployeeProfilePage() {
     }
   };
 
+  const performUpload = async () => {
+    if (
+      !uploadFiles.length ||
+      uploadTypes.some((id) => !id) ||
+      !employeeId ||
+      missingExpiryDates(
+        uploadTypes,
+        uploadExpiryDates,
+        availableDocumentTypes.data ?? [],
+      )
+    )
+      return;
+    setUploadError("");
+    try {
+      const response = await uploadEmployeeDocument.mutateAsync({
+        files: uploadFiles,
+        employee_id: employeeId,
+        document_type_ids: uploadTypes.map(Number),
+        expiry_dates: uploadExpiryDates,
+      });
+      if (!response.success || !response.data?.id) {
+        throw new Error(response.message || "The document could not be uploaded.");
+      }
+      setUploadFiles([]);
+      setUploadTypes([]);
+      setUploadExpiryDates([]);
+      setBulkUploadType("");
+      setShowUpload(false);
+      setDuplicateWarning(null);
+    } catch (error: any) {
+      setUploadError(error?.message || "The document could not be uploaded.");
+    }
+  };
+
+  const handleUploadSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (
+      !uploadFiles.length ||
+      uploadTypes.some((id) => !id) ||
+      !employeeId ||
+      missingExpiryDates(
+        uploadTypes,
+        uploadExpiryDates,
+        availableDocumentTypes.data ?? [],
+      )
+    )
+      return;
+    try {
+      const matches = await findUploadDuplicates(
+        employeeId,
+        uploadFiles,
+        uploadTypes,
+      );
+      if (matches.length) {
+        setDuplicateWarning({ matches, proceed: performUpload });
+        return;
+      }
+    } catch (error: any) {
+      setUploadError(error?.message || "Could not check for duplicate uploads.");
+      return;
+    }
+    await performUpload();
+  };
+
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <Link
-        href="/pages/employee"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-brand-pink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Employee Files
-      </Link>
+      <BackButton variant="page" />
       {reviewError && !rejecting && (
         <p
           role="alert"
@@ -213,27 +294,15 @@ export default function EmployeeProfilePage() {
             Overview
           </span>
           <span className="text-sm font-semibold text-slate-400">
-            {compliance}% compliant
+            {complianceScore === null ? "Compliance not evaluated" : `${complianceScore}% compliant`}
           </span>
         </div>
       </section>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl bg-gradient-to-br from-brand-text to-brand-pink p-5 text-white shadow-lg shadow-pink-200">
-          <p className="text-sm text-white/80">Compliance score</p>
-          <p className="mt-3 text-3xl font-bold">{compliance}%</p>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/25">
-            <div
-              className="h-full rounded-full bg-white"
-              style={{ width: `${compliance}%` }}
-            />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
-          <p className="text-sm text-slate-500">Total documents</p>
-          <p className="mt-3 text-3xl font-bold text-slate-900">
-            {employeeDocuments.length}
-          </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="text-sm text-white/80">Total documents</p>
+          <p className="mt-3 text-3xl font-bold">{employeeDocuments.length}</p>
+          <p className="mt-1 text-xs text-white/80">
             Across this employee record
           </p>
         </div>
@@ -241,47 +310,31 @@ export default function EmployeeProfilePage() {
           <p className="text-sm text-slate-500">Approved documents</p>
           <p className="mt-3 text-3xl font-bold text-slate-900">{approved}</p>
           <p className="mt-1 text-xs text-slate-400">
-            Ready for compliance review
+            Active and verified records
+          </p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+          <p className="text-sm text-slate-500">Document types</p>
+          <p className="mt-3 text-3xl font-bold text-slate-900">{documentTypes.length}</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Classified categories
           </p>
         </div>
       </div>
+      <DocumentFilterBar
+        filters={filters}
+        onChange={setFilters}
+        availableTypes={availableDocumentTypes.data ?? []}
+        showDepartmentFilter={false}
+        totalCount={employeeDocuments.length}
+        filteredCount={filteredEmployeeDocuments.length}
+      />
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 p-5">
-          <h2 className="text-xl font-bold text-slate-900">
-            All employee documents
-          </h2>
-
-          <div className="mt-5 flex flex-wrap gap-1 border-b border-slate-100">
-            <button
-              type="button"
-              onClick={() => setTypeFilter("all")}
-              className={`border-b-2 px-3 py-2.5 text-xs font-bold transition ${typeFilter === "all" ? "border-brand-pink text-brand-pink" : "border-transparent text-slate-400 hover:text-slate-700"}`}
-            >
-              All documents
-            </button>
-            {documentTypes.map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setTypeFilter(type)}
-                className={`border-b-2 px-3 py-2.5 text-xs font-bold transition ${typeFilter === type ? "border-brand-pink text-brand-pink" : "border-transparent text-slate-400 hover:text-slate-700"}`}
-              >
-                {type}
-                <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px]">
-                  {
-                    employeeDocuments.filter(
-                      (document) => document.document_type === type,
-                    ).length
-                  }
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
         <div className="px-5 pt-4">
           <BulkDocumentActions
             selected={selected}
             onClear={() => setSelected([])}
+            documents={filteredEmployeeDocuments}
           />
         </div>
         {documents.isLoading ? (
@@ -348,12 +401,20 @@ export default function EmployeeProfilePage() {
                     </td>
                     <td className="px-5 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${document.approval_state === "approved" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
+                          document.approval_state === "approved"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : document.waiting_for_prior
+                              ? "bg-slate-100 text-slate-600"
+                              : document.can_review
+                                ? "bg-amber-50 text-amber-700"
+                                : "bg-amber-50/70 text-amber-700"
+                        }`}
                       >
                         {document.approval_state === "approved" && (
                           <CheckCircle2 className="h-3.5 w-3.5" />
                         )}
-                        {approvalLabel(document.approval_state)}
+                        {approvalLabel(document)}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-sm text-slate-600">
@@ -365,7 +426,7 @@ export default function EmployeeProfilePage() {
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {currentUser.data?.is_document_manager &&
-                          document.approval_state === "pending" && (
+                          canReviewDocument(document) && (
                             <>
                               <button
                                 type="button"
@@ -411,47 +472,100 @@ export default function EmployeeProfilePage() {
         )}
       </section>
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (!uploadFiles.length || uploadTypes.some((id) => !id) || !employeeId) return;
-              setUploadError("");
-              try {
-                const response = await uploadEmployeeDocument.mutateAsync({
-                  files: uploadFiles,
-                  employee_id: employeeId,
-                  document_type_ids: uploadTypes.map(Number),
-                });
-                if (!response.success || !response.data?.id) {
-                  throw new Error(response.message || "The document could not be uploaded.");
-                }
-                setUploadFiles([]);
-                setUploadTypes([]);
-                setBulkUploadType("");
-                setShowUpload(false);
-              } catch (error: any) {
-                setUploadError(error?.message || "The document could not be uploaded.");
-              }
-            }}
-            className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">Employee files</p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900">Upload documents</h2>
-                <p className="mt-1 text-sm text-slate-500">Upload one or more files directly to this employee’s records.</p>
-              </div>
-              <button type="button" onClick={() => setShowUpload(false)} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"><X className="h-5 w-5" /></button>
-            </div>
-            <label className="mt-5 block">
+        <ModalDialog
+          title="Upload documents"
+          eyebrow="Employee files"
+          description="Upload one or more files directly to this employee’s records."
+          onClose={() => setShowUpload(false)}
+          size="lg"
+          titleClassName="text-xl"
+        >
+          <form onSubmit={(event) => void handleUploadSubmit(event)}>
+            <label className="block">
               <span className="label">Files</span>
               <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
                 <Upload className="h-5 w-5" />{uploadFiles.length ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected` : "Choose files from your computer"}
-                <input required multiple type="file" onChange={(event) => { const next = Array.from(event.target.files ?? []); setUploadFiles(next); setUploadTypes(next.map((_, index) => uploadTypes[index] ?? "")); }} className="hidden" />
+                <input
+                  required
+                  multiple
+                  type="file"
+                  onChange={(event) => {
+                    const next = Array.from(event.target.files ?? []);
+                    setUploadFiles(next);
+                    setUploadTypes(next.map((_, index) => uploadTypes[index] ?? ""));
+                    setUploadExpiryDates(
+                      next.map((_, index) => uploadExpiryDates[index] ?? ""),
+                    );
+                  }}
+                  className="hidden"
+                />
               </span>
             </label>
-            {uploadFiles.length > 0 && <div className="mt-4 space-y-2"><div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400"><span>File name</span><span>Document type</span></div>{uploadFiles.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"><span title={file.name} className="min-w-0 truncate text-sm font-medium text-slate-700">{file.name}</span><ThemedSelect value={uploadTypes[index] ?? ""} onChange={(value) => setUploadTypes((current) => current.map((item, i) => i === index ? value : item))} placeholder="Document type" options={(availableDocumentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} /></div>)}<button type="button" className="text-xs font-bold text-brand-pink" onClick={() => { const value = uploadTypes[0] ?? ""; setUploadTypes(uploadFiles.map(() => value)); }}>Apply first type to all</button></div>}
+            {uploadFiles.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] gap-3 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                  <span>File name</span>
+                  <span>Document type</span>
+                  <span>Expiry date</span>
+                </div>
+                {uploadFiles.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)_minmax(140px,160px)] items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2"
+                  >
+                    <span
+                      title={file.name}
+                      className="min-w-0 truncate text-sm font-medium text-slate-700"
+                    >
+                      {file.name}
+                    </span>
+                    <ThemedSelect
+                      value={uploadTypes[index] ?? ""}
+                      onChange={(value) =>
+                        setUploadTypes((current) =>
+                          current.map((item, i) => (i === index ? value : item)),
+                        )
+                      }
+                      placeholder="Document type"
+                      options={(availableDocumentTypes.data ?? []).map((type) => ({
+                        value: String(type.id),
+                        label: type.name,
+                      }))}
+                    />
+                    {typeRequiresExpiry(
+                      uploadTypes[index] ?? "",
+                      availableDocumentTypes.data ?? [],
+                    ) ? (
+                      <input
+                        required
+                        type="date"
+                        className="field"
+                        value={uploadExpiryDates[index] ?? ""}
+                        onChange={(event) =>
+                          setUploadExpiryDates((current) =>
+                            current.map((item, i) =>
+                              i === index ? event.target.value : item,
+                            ),
+                          )
+                        }
+                      />
+                    ) : (
+                      <span className="text-xs text-slate-400">Not required</span>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  className="text-xs font-bold text-brand-pink"
+                  onClick={() => {
+                    const value = uploadTypes[0] ?? "";
+                    setUploadTypes(uploadFiles.map(() => value));
+                  }}
+                >
+                  Apply first type to all
+                </button>
+              </div>
+            )}
             <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary>
               <div className="mt-3 flex items-end gap-2">
@@ -466,65 +580,42 @@ export default function EmployeeProfilePage() {
             {uploadError && <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">{uploadError}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setShowUpload(false)} className="rounded-full px-4 py-2.5 font-semibold text-slate-500">Cancel</button>
-              <button disabled={uploadEmployeeDocument.isPending || !uploadFiles.length || uploadTypes.some((id) => !id)} className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">{uploadEmployeeDocument.isPending ? "Uploading..." : "Upload documents"}</button>
+              <button
+                disabled={
+                  uploadEmployeeDocument.isPending ||
+                  !uploadFiles.length ||
+                  uploadTypes.some((id) => !id) ||
+                  missingExpiryDates(
+                    uploadTypes,
+                    uploadExpiryDates,
+                    availableDocumentTypes.data ?? [],
+                  )
+                }
+                className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {uploadEmployeeDocument.isPending ? "Uploading..." : "Upload documents"}
+              </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
       )}
       {viewing && (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm ${viewerFullscreen ? "" : "p-4"}`}>
-          <div className={`flex w-full flex-col overflow-hidden bg-white shadow-2xl ${viewerFullscreen ? "h-screen max-w-none rounded-none" : "max-h-[92vh] max-w-4xl rounded-3xl"}`}>
-            <div className="flex items-center justify-between border-b border-slate-100 p-5">
+        <DocumentViewerDialog
+          title={viewing.name}
+          eyebrow={
+            viewing && canReviewDocument(viewing)
+              ? "Admin review"
+              : "Document viewer"
+          }
+          description={viewing.document_type}
+          onClose={() => setViewing(null)}
+          documentId={viewing.id}
+          previewUrl={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
+          footer={
+            viewing && canReviewDocument(viewing) ? (
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
-                  {viewing.approval_state === "pending" && currentUser.data?.is_document_manager
-                    ? "Admin review"
-                    : "Document viewer"}
-                </p>
-                <h2 className="mt-1 text-lg font-bold text-slate-900">
-                  {viewing.name}
-                </h2>
-                <p className="text-xs text-slate-400">
-                  {viewing.document_type}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => api.downloadDocument(viewing.id)}
-                  className="inline-flex items-center gap-2 rounded-full bg-brand-pink px-3 py-2 text-xs font-bold text-white"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Download
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewerFullscreen((current) => !current)}
-                  aria-label={viewerFullscreen ? "Exit full screen" : "Open full screen"}
-                  className="rounded-full border border-slate-200 p-2 text-slate-500 hover:border-brand-pink hover:text-brand-pink"
-                >
-                  {viewerFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setViewing(null); setViewerFullscreen(false); }}
-                  className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-                >
-                  <X />
-                </button>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1 overflow-hidden bg-slate-100 p-5">
-              <iframe
-                title={viewing.name}
-                src={`${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`}
-                className="block h-full min-h-[62vh] w-full pointer-events-auto rounded-2xl border border-slate-200 bg-white"
-              />
-            </div>
-            {viewing.approval_state === "pending" && currentUser.data?.is_document_manager && (
-              <div className="border-t border-slate-100 p-5">
                 <p className="text-sm font-semibold text-slate-700">
-                  This document is awaiting approval.
+                  This document is awaiting your approval.
                 </p>
                 <div className="mt-4 flex justify-end gap-2">
                   <button
@@ -552,16 +643,32 @@ export default function EmployeeProfilePage() {
                   </button>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            ) : undefined
+          }
+        />
+      )}
+      {duplicateWarning && (
+        <UploadDuplicateDialog
+          matches={duplicateWarning.matches}
+          typeLabels={Object.fromEntries(
+            (availableDocumentTypes.data ?? []).map((type) => [type.id, type.name]),
+          )}
+          onCancel={() => setDuplicateWarning(null)}
+          onUploadAnyway={() => void duplicateWarning.proceed()}
+          pending={uploadEmployeeDocument.isPending}
+        />
       )}
       {rejecting && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm">
+        <ModalDialog
+          title="Explain what needs to change"
+          eyebrow="Reject document"
+          description="The requester will see this reason when they review the rejected document."
+          onClose={() => setRejecting(null)}
+          size="sm"
+          titleClassName="text-xl"
+          backdropClassName="bg-slate-950/45"
+        >
           <form
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reject-document-title"
             onSubmit={(event) => {
               event.preventDefault();
               if (!rejectReason.trim()) {
@@ -570,30 +677,8 @@ export default function EmployeeProfilePage() {
               }
               void handleReview(rejecting, "reject", rejectReason.trim());
             }}
-            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-500">
-                  Reject document
-                </p>
-                <h2 id="reject-document-title" className="mt-1 text-xl font-bold text-slate-900">
-                  Explain what needs to change
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  The requester will see this reason when they review the rejected document.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRejecting(null)}
-                aria-label="Close rejection dialog"
-                className="rounded-xl p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <label className="mt-5 block">
+            <label className="block">
               <span className="label">Reason</span>
               <textarea
                 autoFocus
@@ -631,7 +716,7 @@ export default function EmployeeProfilePage() {
               </button>
             </div>
           </form>
-        </div>
+        </ModalDialog>
       )}
     </div>
   );
