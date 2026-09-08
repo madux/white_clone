@@ -196,7 +196,11 @@ class DocumentIntelligenceController(http.Controller):
             domain.append(("active", "=", True))
         if kwargs.get("document_type_id"):
             domain.append(("document_type_id", "=", int(kwargs["document_type_id"])))
-        profiles = request.env["doc.intelligence.profile"].search(domain, order="name")
+        profiles = (
+            request.env["doc.intelligence.profile"]
+            .with_context(active_test=False)
+            .search(domain, order="active desc, name")
+        )
         return {
             "success": True,
             "data": [self._profile_data(item) for item in profiles],

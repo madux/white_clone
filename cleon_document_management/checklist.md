@@ -122,5 +122,10 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Block attaching a file that is already on the chat
 - [x] Deploy Next export after Ask duplicate-attach guard
 - [x] Most recently messaged Ask chat moves to the top of the list
-- [ ] Restart Odoo so Ask chat recency ordering loads
+- [x] Show archived extraction profiles on Configuration → Profiles with Restore
+- [x] Archiving a profile leaves the document type intact and clears it as the type default
+- [x] Remove New version from extraction profiles
+- [ ] Restart Odoo with `-u cleon_document_management` for profile archive/default unlink
+- [x] Deploy Next export after removing New version
+- [x] Deploy Next export after profile Restore visibility
 - [x] Deploy Next export after Ask chat list recency sort

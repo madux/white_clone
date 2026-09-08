@@ -43,6 +43,25 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertEqual(profile.current_version_id, version)
         self.assertEqual(version.field_ids.mapped("key"), ["expiry_date"])
 
+    def test_archive_profile_does_not_archive_document_type(self):
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Archive Type", "category": "employment"}
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "Archive Type Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        profile.action_archive()
+        self.assertFalse(profile.active)
+        self.assertTrue(document_type.exists())
+        self.assertTrue(document_type.active)
+        self.assertFalse(document_type.default_profile_id)
+        profile.write({"active": True})
+        self.assertEqual(document_type.default_profile_id, profile)
+
     def test_dataset_run_requires_types_and_fields(self):
         document_type = self.env["doc.document.type"].create(
             {"name": "Run Type", "category": "employment"}

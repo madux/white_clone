@@ -19,7 +19,6 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_new_version" type="object" string="New Version"/>
                     <button name="action_archive" type="object" string="Archive" invisible="not active"/>
                 </header>
                 <sheet>

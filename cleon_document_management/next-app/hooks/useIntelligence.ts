@@ -68,8 +68,10 @@ export function useArchiveIntelligenceProfile() {
   return useMutation({
     mutationFn: ({ id, active }: { id: number; active: boolean }) =>
       intelligenceApi.archiveProfile(id, active),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+    },
   });
 }
 

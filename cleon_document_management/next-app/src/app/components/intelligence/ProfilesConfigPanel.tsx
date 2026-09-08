@@ -6,7 +6,6 @@ import {
   useCreateIntelligenceProfile,
   useIntelligenceProfiles,
   useIntelligenceTypes,
-  useNewIntelligenceProfileVersion,
   useUpdateIntelligenceProfile,
 } from "../../../../hooks/useIntelligence";
 import type { IntelligenceField, IntelligenceProfile } from "../../../../lib/intelligence-api";
@@ -31,7 +30,6 @@ export default function ProfilesConfigPanel() {
   const createProfile = useCreateIntelligenceProfile();
   const updateProfile = useUpdateIntelligenceProfile();
   const archiveProfile = useArchiveIntelligenceProfile();
-  const newVersion = useNewIntelligenceProfileVersion();
   const [editing, setEditing] = useState<Partial<IntelligenceProfile> | null>(
     null,
   );
@@ -106,7 +104,9 @@ export default function ProfilesConfigPanel() {
           {profiles.data.map((profile) => (
             <div
               key={profile.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5"
+              className={`rounded-2xl border bg-white p-5 ${
+                profile.active ? "border-slate-200" : "border-slate-200 opacity-80"
+              }`}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -116,22 +116,22 @@ export default function ProfilesConfigPanel() {
                     {profile.fields.length} fields
                     {profile.is_system ? " · system" : ""}
                   </p>
+                  <span
+                    className={`status mt-2 ${profile.active ? "" : "pending"}`}
+                  >
+                    {profile.active ? "Active" : "Archived"}
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-brand-pink"
-                    onClick={() => setEditing(profile)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-slate-500"
-                    onClick={() => newVersion.mutate(profile.id)}
-                  >
-                    New version
-                  </button>
+                  {profile.active ? (
+                    <button
+                      type="button"
+                      className="text-sm font-semibold text-brand-pink"
+                      onClick={() => setEditing(profile)}
+                    >
+                      Edit
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="text-sm font-semibold text-slate-500"

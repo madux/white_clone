@@ -52,6 +52,32 @@ class IntelligenceProfile(models.Model):
     def action_archive(self):
         self.write({"active": False})
 
+    def write(self, vals):
+        result = super().write(vals)
+        if "active" not in vals:
+            return result
+        for profile in self:
+            document_type = profile.document_type_id
+            if not document_type:
+                continue
+            default = document_type.with_context(active_test=False).default_profile_id
+            if not profile.active:
+                if default == profile:
+                    replacement = self.search(
+                        [
+                            ("document_type_id", "=", document_type.id),
+                            ("active", "=", True),
+                            ("id", "!=", profile.id),
+                        ],
+                        limit=1,
+                    )
+                    document_type.default_profile_id = (
+                        replacement.id if replacement else False
+                    )
+            elif not default:
+                document_type.default_profile_id = profile.id
+        return result
+
     def unlink(self):
         raise UserError(
             _(
