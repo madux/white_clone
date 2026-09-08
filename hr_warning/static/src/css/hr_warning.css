@@ -142,6 +142,9 @@
     text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px;
 }
 .o_warning_form .o_warning_emp_row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.o_warning_form .o_warning_emp_row .o_field_widget span { 
+    color: white !important;
+ }
 .o_warning_form .o_warning_emp_name_field { font-size: 14px; font-weight: 600; }
 .o_warning_form .o_warning_emp_id { font-size: 11px; color: #9ca3af; }
 .o_warning_form .o_warning_emp_fields {
@@ -149,10 +152,14 @@
     margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px;
 }
 .o_warning_form .o_warning_emp_field_row { display: flex; justify-content: space-between; }
-.o_warning_form .o_warning_ef_label { font-size: 12px; color: #9ca3af; }
+.o_warning_form .o_warning_ef_label { font-size: 12px; color: #eaeef5; }
 .o_warning_form .o_warning_ef_val {
     font-size: 12px; font-weight: 500; text-align: right; 
-    color:#9ca3af
+    color:white !important;
+}
+
+.o_warning_ef_val span {
+    color: white !important;
 }
 .o_warning_form .o_warning_view_profile_btn {
     width: 100%; border: 0.5px solid #d1d5db; background: linear-gradient(45deg, #e91e8c, #e91e8c);

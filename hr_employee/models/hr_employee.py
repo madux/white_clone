@@ -25,7 +25,7 @@ class HrEmployee(models.Model):
     employee_number = fields.Char(
         string="Staff Number", 
         )
-
+    current_time = fields.Char(default=datetime.now().strftime("%I:%M %p").lstrip("0"))
     employee_status = fields.Selection(
             selection=[
                 ('Definite Suspension', 'Definite Suspension'),
@@ -39,7 +39,6 @@ class HrEmployee(models.Model):
             default='Employeed',
             tracking=True,
         )
-    
 
     @api.model
     def get_employee_profile_dashboard(self):
@@ -121,7 +120,6 @@ class HrEmployee(models.Model):
                 'number_open_announcement': len(employee.announcement_ids.ids),
                 'birthday_count': employee.birthday_count,
                 'hr_warning_ids': employee.hr_warning_ids,
-
             })
             # employee.action_open_emp_leave()
             # employee.action_open_emp_document()

@@ -399,7 +399,7 @@
       window.HomeMenuOverlay.open();
   }
 
-  $("#cpdApps").on("click", openApps);
+  // $("#cpdApps").on("click", openApps);
 
   function initOffcanvas() {
     $("#cpdSidebarOpen").on("click", openSidebar);
