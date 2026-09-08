@@ -56,8 +56,10 @@ export function useUpdateIntelligenceProfile() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceApi.updateProfile,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.profiles });
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.types });
+    },
   });
 }
 
@@ -92,6 +94,27 @@ export function useIntelligenceDatasets() {
         ? 4000
         : false;
     },
+  });
+}
+
+export function useIntelligenceWizardOptions() {
+  return useQuery({
+    queryKey: ["intelligence", "wizard-options"],
+    queryFn: intelligenceDatasetApi.wizardOptions,
+  });
+}
+
+export function useIntelligenceWizardEstimate(payload: {
+  source: string;
+  scope_kind: string;
+  scope_ids: number[];
+  document_type_ids: number[];
+  auto_classify: boolean;
+}) {
+  return useQuery({
+    queryKey: ["intelligence", "wizard-estimate", payload],
+    queryFn: () => intelligenceDatasetApi.wizardEstimate(payload),
+    enabled: Boolean(payload.source && payload.source !== "external"),
   });
 }
 

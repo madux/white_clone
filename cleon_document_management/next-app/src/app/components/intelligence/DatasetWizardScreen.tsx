@@ -6,10 +6,19 @@ import {
   useIntelligenceDataset,
   useIntelligenceProfiles,
   useIntelligenceTypes,
+  useIntelligenceWizardEstimate,
+  useIntelligenceWizardOptions,
   useRunIntelligenceDataset,
   useSaveIntelligenceDataset,
 } from "../../../../hooks/useIntelligence";
 import { useRouter, useSearchParams } from "next/navigation";
+import { api } from "../../../../lib/api";
+import RepositoryStep from "./wizard/RepositoryStep";
+import ScopeStep from "./wizard/ScopeStep";
+import DocumentTypesStep from "./wizard/DocumentTypesStep";
+import BusinessFieldsStep from "./wizard/BusinessFieldsStep";
+import ValidationStep from "./wizard/ValidationStep";
+import PreviewStep from "./wizard/PreviewStep";
 
 const STEPS = [
   "Repository",
@@ -42,6 +51,7 @@ type Draft = {
   autoClassify: boolean;
   documentTypes: number[];
   fields: string[];
+  scopeIds: number[];
   confidencePreset: keyof typeof CONFIDENCE;
   ocrFallback: boolean;
   deduplicate: boolean;
@@ -57,6 +67,7 @@ const INITIAL: Draft = {
   autoClassify: false,
   documentTypes: [],
   fields: ["employee_name", "start_date"],
+  scopeIds: [],
   confidencePreset: "balanced",
   ocrFallback: true,
   deduplicate: true,
@@ -75,11 +86,15 @@ export default function DatasetWizardScreen() {
   const [banner, setBanner] = useState<string | null>(null);
   const types = useIntelligenceTypes();
   const profiles = useIntelligenceProfiles();
+  const wizardOptions = useIntelligenceWizardOptions();
   const existing = useIntelligenceDataset(datasetId);
   const saveDataset = useSaveIntelligenceDataset();
   const runDataset = useRunIntelligenceDataset();
   const busy = saveDataset.isPending || runDataset.isPending;
   const [hydrated, setHydrated] = useState(!datasetId);
+  const isAdmin = Boolean(
+    api.injectedUser()?.is_admin || api.injectedUser()?.is_document_manager,
+  );
 
   useEffect(() => {
     if (!existing.data) return;
@@ -94,6 +109,7 @@ export default function DatasetWizardScreen() {
       autoClassify: item.auto_classify,
       documentTypes: item.document_type_ids,
       fields: item.field_keys,
+      scopeIds: item.scope_ids || [],
       confidencePreset: item.confidence_preset,
       ocrFallback: item.ocr_fallback,
       deduplicate: item.deduplicate,
@@ -138,11 +154,29 @@ export default function DatasetWizardScreen() {
     .map((item) => item.name);
 
   const thresholds = CONFIDENCE[draft.confidencePreset];
+  const estimate = useIntelligenceWizardEstimate({
+    source: draft.source,
+    scope_kind: draft.source === "organizational" ? "company" : draft.scopeKind,
+    scope_ids: draft.source === "employee" ? draft.scopeIds : [],
+    document_type_ids: draft.documentTypes,
+    auto_classify: draft.autoClassify,
+  });
 
   const stepError = useMemo(() => {
     if (step === 0 && !draft.source) return "Choose a repository source.";
     if (step === 0 && draft.source === "external") {
       return "External connectors are not available in this application yet.";
+    }
+    if (step === 0 && draft.source === "upload") {
+      return "Direct upload is not available yet. Choose Employee or Organizational Files.";
+    }
+    if (
+      step === 1 &&
+      draft.source === "employee" &&
+      draft.scopeKind !== "company" &&
+      draft.scopeIds.length === 0
+    ) {
+      return "Select who this dataset covers.";
     }
     if (step === 2 && !draft.autoClassify && draft.documentTypes.length === 0) {
       return "Select at least one document type, or enable automatic classification.";
@@ -166,6 +200,7 @@ export default function DatasetWizardScreen() {
     source: draft.source || false,
     processing_mode: draft.processingMode,
     scope_kind: draft.scopeKind,
+    scope_ids: draft.scopeIds,
     auto_classify: draft.autoClassify,
     document_type_ids: draft.documentTypes,
     field_keys: draft.fields,
@@ -177,11 +212,25 @@ export default function DatasetWizardScreen() {
     wizard_step: forRun ? 5 : step,
   });
 
-  const goNext = () => {
+  const goNext = async () => {
     setAttempted(true);
     if (stepError) return;
     setAttempted(false);
-    setStep((value) => Math.min(value + 1, STEPS.length - 1));
+    const nextStep = Math.min(step + 1, STEPS.length - 1);
+    try {
+      const saved = await saveDataset.mutateAsync({
+        ...toPayload(),
+        wizard_step: nextStep,
+      });
+      setDatasetPk(saved.id);
+      if (!datasetId) {
+        router.replace(`/pages/document-intelligence/datasets/new?id=${saved.id}`);
+      }
+    } catch (error) {
+      setBanner(error instanceof Error ? error.message : "Could not save draft.");
+      return;
+    }
+    setStep(nextStep);
   };
 
   const saveDraft = async () => {
@@ -220,8 +269,8 @@ export default function DatasetWizardScreen() {
         </p>
         <h1 className="text-3xl font-medium text-slate-900">Extraction wizard</h1>
         <p className="max-w-2xl text-sm font-light text-slate-400">
-          Six validated steps. Balanced processing is the default. Run is blocked
-          when types or fields are empty.
+          Six steps. Start by choosing Employee or Organizational Files, then who
+          the job covers. Continue saves a draft so you can leave and come back.
         </p>
       </section>
 
@@ -256,233 +305,136 @@ export default function DatasetWizardScreen() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6">
         {step === 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Repository</h2>
-            {(
-              [
-                ["employee", "Employee Files"],
-                ["organizational", "Organizational Files"],
-                ["upload", "Direct upload"],
-                ["external", "External source (unavailable)"],
-              ] as const
-            ).map(([value, label]) => (
-              <label key={value} className="flex items-center gap-3 text-sm">
-                <input
-                  type="radio"
-                  name="source"
-                  checked={draft.source === value}
-                  onChange={() => setDraft({ ...draft, source: value })}
-                />
-                {label}
-              </label>
-            ))}
-            <div>
-              <p className="label">Processing mode</p>
-              <select
-                className="field"
-                value={draft.processingMode}
-                onChange={(event) =>
-                  setDraft({
-                    ...draft,
-                    processingMode: event.target.value as Draft["processingMode"],
-                  })
-                }
-              >
-                <option value="fast">Fast</option>
-                <option value="balanced">Balanced (recommended)</option>
-                <option value="conservative">Conservative</option>
-              </select>
-            </div>
-          </div>
+          <RepositoryStep
+            source={draft.source}
+            processingMode={draft.processingMode}
+            counts={
+              wizardOptions.data?.sources || {
+                employee: 0,
+                organizational: 0,
+                upload: 0,
+                external: 0,
+              }
+            }
+            onSource={(value) =>
+              setDraft({
+                ...draft,
+                source: value,
+                scopeKind: value === "organizational" ? "company" : draft.scopeKind,
+                scopeIds: value === draft.source ? draft.scopeIds : [],
+              })
+            }
+            onMode={(value) => setDraft({ ...draft, processingMode: value })}
+          />
         )}
 
         {step === 1 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Scope</h2>
-            <p className="text-sm text-slate-500">
-              Scope is stored as structured filters and resolved on the server.
-              The browser will not download every document to filter locally.
-            </p>
-            <select
-              className="field"
-              value={draft.scopeKind}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  scopeKind: event.target.value as Draft["scopeKind"],
-                })
-              }
-            >
-              <option value="one_employee">One employee</option>
-              <option value="multiple_employees">Multiple employees</option>
-              <option value="department">Department</option>
-              <option value="business_unit">Business unit</option>
-              <option value="location">Location</option>
-              <option value="grade">Grade</option>
-              <option value="employment_type">Employment type</option>
-              <option value="company">Entire company</option>
-            </select>
-          </div>
+          <ScopeStep
+            source={draft.source}
+            scopeKind={draft.scopeKind}
+            scopeIds={draft.scopeIds}
+            options={{
+              employees: wizardOptions.data?.employees || [],
+              departments: wizardOptions.data?.departments || [],
+              grades: wizardOptions.data?.grades || [],
+              business_units: wizardOptions.data?.business_units || [],
+              employment_types: wizardOptions.data?.employment_types || [],
+              locations: wizardOptions.data?.locations || [],
+            }}
+            estimate={estimate.data}
+            onKind={(value) => setDraft({ ...draft, scopeKind: value as Draft["scopeKind"], scopeIds: [] })}
+            onIds={(value) => setDraft({ ...draft, scopeIds: value })}
+          />
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Document types</h2>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={draft.autoClassify}
-                onChange={(event) =>
-                  setDraft({ ...draft, autoClassify: event.target.checked })
-                }
-              />
-              Automatic classification on arrival
-            </label>
-            {types.isError ? (
-              <p className="text-sm text-red-600">
-                Document types could not be loaded from Odoo.
-              </p>
-            ) : null}
-            {(types.data || [])
-              .filter((item) => item.active)
-              .map((item) => {
-              const selected = draft.documentTypes.includes(item.id);
-              return (
-                <label key={item.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() =>
-                      setDraft({
-                        ...draft,
-                        documentTypes: selected
-                          ? draft.documentTypes.filter((id) => id !== item.id)
-                          : [...draft.documentTypes, item.id],
-                      })
-                    }
-                  />
-                  {item.name}
-                </label>
-              );
-            })}
-          </div>
+          <DocumentTypesStep
+            types={types.data || []}
+            loading={types.isLoading}
+            error={types.isError}
+            source={draft.source}
+            autoClassify={draft.autoClassify}
+            selectedIds={draft.documentTypes}
+            isAdmin={isAdmin}
+            onAutoClassify={(value) => setDraft({ ...draft, autoClassify: value })}
+            onToggle={(id) =>
+              setDraft({
+                ...draft,
+                documentTypes: draft.documentTypes.includes(id)
+                  ? draft.documentTypes.filter((item) => item !== id)
+                  : [...draft.documentTypes, id],
+              })
+            }
+            onCreated={(type) =>
+              setDraft((current) => ({
+                ...current,
+                documentTypes: current.documentTypes.includes(type.id)
+                  ? current.documentTypes
+                  : [...current.documentTypes, type.id],
+              }))
+            }
+          />
         )}
 
         {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Business fields</h2>
-            {!catalog.length ? (
-              <p className="text-sm text-slate-500">
-                Select document types that have an extraction profile, or create a
-                profile in Configuration.
-              </p>
-            ) : null}
-            {catalog.map((field) => {
-              const selected = draft.fields.includes(field.key);
-              return (
-                <label
-                  key={field.key}
-                  className="flex items-start justify-between gap-4 rounded-xl border border-slate-100 p-3 text-sm"
-                >
-                  <span>
-                    <span className="block font-semibold text-slate-900">
-                      {field.name}
-                    </span>
-                    <span className="text-xs text-slate-400">
-                      {field.field_type}
-                      {field.required ? " · required" : ""} · {field.profile}
-                    </span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    onChange={() =>
-                      setDraft({
-                        ...draft,
-                        fields: selected
-                          ? draft.fields.filter((item) => item !== field.key)
-                          : [...draft.fields, field.key],
-                      })
-                    }
-                  />
-                </label>
+          <BusinessFieldsStep
+            catalog={catalog}
+            selectedKeys={draft.fields}
+            types={(() => {
+              const selected = (types.data || []).filter(
+                (item) =>
+                  draft.documentTypes.includes(item.id) ||
+                  (draft.autoClassify && item.active),
               );
-            })}
-          </div>
+              return selected.length
+                ? selected
+                : (types.data || []).filter((item) => item.active);
+            })()}
+            profiles={profiles.data || []}
+            isAdmin={isAdmin}
+            onChange={(keys) => setDraft({ ...draft, fields: keys })}
+            onAddedField={(typeId, key) =>
+              setDraft((current) => ({
+                ...current,
+                documentTypes: current.documentTypes.includes(typeId)
+                  ? current.documentTypes
+                  : [...current.documentTypes, typeId],
+                fields: current.fields.includes(key)
+                  ? current.fields
+                  : [...current.fields, key],
+              }))
+            }
+          />
         )}
 
         {step === 4 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Validation rules</h2>
-            <p className="text-sm text-slate-500">
-              Auto-approve at {thresholds.autoApprove}% or above. Send to review
-              below {thresholds.reviewBelow}%. Thresholds will be stored on the
-              dataset so later setting changes do not rewrite this job.
-            </p>
-            <select
-              className="field"
-              value={draft.confidencePreset}
-              onChange={(event) =>
-                setDraft({
-                  ...draft,
-                  confidencePreset: event.target.value as Draft["confidencePreset"],
-                })
-              }
-            >
-              <option value="relaxed">Relaxed — 75% / 40%</option>
-              <option value="balanced">Balanced — 85% / 50%</option>
-              <option value="strict">Strict — 92% / 65%</option>
-            </select>
-            {(
-              [
-                ["ocrFallback", "OCR fallback for unreadable PDFs"],
-                ["deduplicate", "Deduplicate source documents"],
-                ["masking", "Mask sensitive values on export"],
-                ["auditLogging", "Audit logging"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={draft[key]}
-                  onChange={(event) =>
-                    setDraft({ ...draft, [key]: event.target.checked })
-                  }
-                />
-                {label}
-              </label>
-            ))}
-          </div>
+          <ValidationStep
+            confidencePreset={draft.confidencePreset}
+            ocrFallback={draft.ocrFallback}
+            deduplicate={draft.deduplicate}
+            masking={draft.masking}
+            auditLogging={draft.auditLogging}
+            onPreset={(value) => setDraft({ ...draft, confidencePreset: value })}
+            onFlag={(key, value) => setDraft({ ...draft, [key]: value })}
+          />
         )}
 
         {step === 5 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-bold">Preview and run</h2>
-            <label className="block">
-              <span className="label">Dataset name</span>
-              <input
-                className="field"
-                value={draft.name}
-                onChange={(event) =>
-                  setDraft({ ...draft, name: event.target.value })
-                }
-                placeholder="Q3 employment contracts"
-              />
-            </label>
-            <dl className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-              <div>Source: {draft.source || "—"}</div>
-              <div>Scope: {draft.scopeKind.replace(/_/g, " ")}</div>
-              <div>Types: {selectedTypeNames.join(", ") || (draft.autoClassify ? "auto" : "none")}</div>
-              <div>Fields: {draft.fields.length}</div>
-              <div>Mode: {draft.processingMode}</div>
-              <div>
-                Thresholds: auto {thresholds.autoApprove}% / review{" "}
-                {thresholds.reviewBelow}%
-              </div>
-              <div>Estimated documents: not available until the job resolver exists</div>
-              <div>Estimated cost: omitted (provider does not expose a reliable estimate)</div>
-            </dl>
-          </div>
+          <PreviewStep
+            name={draft.name}
+            source={draft.source}
+            scopeKind={draft.scopeKind}
+            typeNames={selectedTypeNames}
+            autoClassify={draft.autoClassify}
+            fieldCount={draft.fields.length}
+            processingMode={draft.processingMode}
+            autoApprove={thresholds.autoApprove}
+            reviewBelow={thresholds.reviewBelow}
+            documentCount={estimate.data?.document_count}
+            employeeCount={estimate.data?.employee_count}
+            estimating={estimate.isFetching && !estimate.data}
+            onName={(value) => setDraft({ ...draft, name: value })}
+          />
         )}
       </section>
 
@@ -517,7 +469,8 @@ export default function DatasetWizardScreen() {
             </button>
             <button
               type="button"
-              className="inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white"
+              disabled={busy}
+              className="inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               onClick={goNext}
             >
               Continue
@@ -539,7 +492,7 @@ export default function DatasetWizardScreen() {
               className="inline-flex rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               onClick={runJob}
             >
-              Run extraction
+              Save and run extraction
             </button>
           </>
         )}

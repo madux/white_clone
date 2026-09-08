@@ -62,6 +62,12 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Render markdown (**bold**, lists) in assistant replies
 - [x] Deploy frontend and bump module version for unlink ACL
 - [x] Fix "Cursor already closed" on Ask stream (dedicated DB cursor)
-## Dataset list
-- [x] Checkbox multi-select + delete (single and bulk)
-- [ ] Tests, lint, existing DMS routes still work
+## Dataset wizard — spec alignment
+- [x] Repository cards with live document counts
+- [x] Scope pickers that persist IDs and show match estimates
+- [x] Preview uses live matching document count
+- [x] Upload / External stay honest (not fake employee files)
+- [x] Document types: cards, descriptions, field counts, auto-classify
+- [x] Business fields: counts, select/deselect all, search, descriptions
+- [x] Validation presets explained + preview run summary
+- [x] Deploy Next export so Odoo serves the new wizard steps

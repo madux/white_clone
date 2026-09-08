@@ -12,6 +12,7 @@ export interface IntelligenceDocumentType {
   default_retention_years: number;
   default_profile_id: number | false;
   default_profile: string;
+  field_count?: number;
 }
 
 export interface IntelligenceField {
@@ -143,6 +144,26 @@ export interface IntelligenceDataset {
 export const intelligenceDatasetApi = {
   list: () =>
     unwrap<IntelligenceDataset[]>("/api/document-intelligence/datasets"),
+  wizardOptions: () =>
+    unwrap<{
+      sources: {
+        employee: number;
+        organizational: number;
+        upload: number;
+        external: number;
+      };
+      employees: Array<{ id: number; name: string; department: string }>;
+      departments: Array<{ id: number; name: string }>;
+      grades: Array<{ id: number; name: string }>;
+      business_units: Array<{ id: number; name: string }>;
+      employment_types: Array<{ id: number; name: string }>;
+      locations: Array<{ id: number; name: string }>;
+    }>("/api/document-intelligence/wizard/options"),
+  wizardEstimate: (payload: Record<string, unknown>) =>
+    unwrap<{ document_count: number; employee_count: number }>(
+      "/api/document-intelligence/wizard/estimate",
+      payload,
+    ),
   get: (id: number) =>
     unwrap<IntelligenceDataset>("/api/document-intelligence/datasets/get", {
       id,

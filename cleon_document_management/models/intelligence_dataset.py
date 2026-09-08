@@ -149,6 +149,172 @@ class IntelligenceDataset(models.Model):
             return []
         return [int(value) for value in values if value]
 
+    @api.model
+    def _domain_from_values(
+        self,
+        source,
+        scope_kind="company",
+        scope_ids=None,
+        document_type_ids=None,
+        auto_classify=False,
+    ):
+        source = source or ""
+        if source in ("upload", "external", ""):
+            return [("id", "=", 0)]
+        domain = [
+            ("active", "=", True),
+            (
+                "folder_id.folder_type",
+                "=",
+                "employee" if source == "employee" else "organizational",
+            ),
+        ]
+        type_ids = [int(value) for value in (document_type_ids or []) if value]
+        if not auto_classify and type_ids:
+            domain.append(("document_type_id", "in", type_ids))
+        if source != "employee":
+            return domain
+        ids = [int(value) for value in (scope_ids or []) if value]
+        kind = scope_kind or "company"
+        employee = self.env["hr.employee"]
+        if kind in ("one_employee", "multiple_employees") and ids:
+            domain.append(("employee_id", "in", ids))
+        elif kind == "department" and ids:
+            domain.append(("employee_id.department_id", "in", ids))
+        elif kind == "grade" and ids:
+            if "grade_id" in employee._fields:
+                domain.append(("employee_id.grade_id", "in", ids))
+            else:
+                domain.append(("folder_id.grade_ids", "in", ids))
+        elif kind == "business_unit" and ids:
+            if "branch_id" in employee._fields:
+                domain.append(("employee_id.branch_id", "in", ids))
+            else:
+                domain.append(("folder_id.branch_ids", "in", ids))
+        elif kind == "employment_type" and ids:
+            if "employee_type_id" in employee._fields:
+                domain.append(("employee_id.employee_type_id", "in", ids))
+            else:
+                domain.append(("folder_id.employment_type_ids", "in", ids))
+        elif kind == "location" and ids:
+            if "work_location_id" in employee._fields:
+                domain.append(("employee_id.work_location_id", "in", ids))
+        return domain
+
+    def _source_documents(self):
+        self.ensure_one()
+        domain = self._domain_from_values(
+            self.source,
+            self.scope_kind,
+            self._scope_ids(),
+            self.document_type_ids.ids,
+            self.auto_classify,
+        )
+        documents = self.env["doc.document"].search(domain)
+        if self.deduplicate:
+            seen = set()
+            unique = self.env["doc.document"]
+            for document in documents:
+                stamp = document.checksum or document.attachment_id.id
+                if stamp in seen:
+                    continue
+                seen.add(stamp)
+                unique |= document
+            documents = unique
+        return documents
+
+    @api.model
+    def wizard_options(self):
+        Document = self.env["doc.document"]
+        employee_domain = [
+            ("active", "=", True),
+            ("folder_id.folder_type", "=", "employee"),
+        ]
+        org_domain = [
+            ("active", "=", True),
+            ("folder_id.folder_type", "=", "organizational"),
+        ]
+        user = self.env.user
+        is_manager = user.has_group("base.group_system") or user.has_group(
+            "cleon_document_management.group_document_admin"
+        ) or user.has_group("cleon_document_management.group_document_manager")
+        employee = user.employee_id
+        employees = self.env["hr.employee"].search(
+            [("active", "=", True)] if is_manager else [("id", "=", employee.id or 0)],
+            order="name",
+            limit=500,
+        )
+        departments = self.env["hr.department"].search(
+            [] if is_manager else [("id", "=", employee.department_id.id or 0)],
+            order="name",
+        )
+        grades = []
+        if "hr.grade" in self.env:
+            grades = self.env["hr.grade"].search(
+                [] if is_manager else [("id", "=", employee.grade_id.id or 0)],
+                order="name",
+            )
+        branches = self.env["hr.branch"]
+        if "hr.branch" in self.env:
+            branches = self.env["hr.branch"].search([], order="name")
+        elif "eha.branch" in self.env:
+            branches = self.env["eha.branch"].search([], order="name")
+        employment_types = self.env["hr.core_employment_type"]
+        if "hr.core_employment_type" in self.env:
+            employment_types = self.env["hr.core_employment_type"].search([], order="name")
+        locations = []
+        if "work_location_id" in self.env["hr.employee"]._fields:
+            Location = self.env["hr.employee"]._fields["work_location_id"].comodel_name
+            if Location:
+                locations = [
+                    {"id": item.id, "name": item.display_name}
+                    for item in self.env[Location].search([], order="name")
+                ]
+        return {
+            "sources": {
+                "employee": Document.search_count(employee_domain),
+                "organizational": Document.search_count(org_domain),
+                "upload": 0,
+                "external": 0,
+            },
+            "employees": [
+                {
+                    "id": item.id,
+                    "name": item.name,
+                    "department": item.department_id.name or "",
+                }
+                for item in employees
+            ],
+            "departments": [{"id": item.id, "name": item.name} for item in departments],
+            "grades": [{"id": item.id, "name": item.name} for item in grades],
+            "business_units": [{"id": item.id, "name": item.display_name} for item in branches],
+            "employment_types": [
+                {"id": item.id, "name": item.display_name} for item in employment_types
+            ],
+            "locations": locations,
+        }
+
+    @api.model
+    def wizard_estimate(self, values):
+        values = values or {}
+        domain = self._domain_from_values(
+            values.get("source"),
+            values.get("scope_kind") or "company",
+            values.get("scope_ids") or [],
+            values.get("document_type_ids") or [],
+            bool(values.get("auto_classify")),
+        )
+        document_count = self.env["doc.document"].search_count(domain)
+        groups = self.env["doc.document"].read_group(
+            domain + [("employee_id", "!=", False)],
+            ["employee_id"],
+            ["employee_id"],
+        )
+        return {
+            "document_count": document_count,
+            "employee_count": len(groups),
+        }
+
     def _snapshot_thresholds(self):
         auto, review = CONFIDENCE_PRESETS.get(
             self.confidence_preset or "balanced", (85, 50)
@@ -166,12 +332,18 @@ class IntelligenceDataset(models.Model):
 
     def _validate_run(self):
         self.ensure_one()
+        if not self.source:
+            raise ValidationError(_("Choose a repository source."))
         if self.source == "external":
             raise ValidationError(
                 _("External connectors are not available in this application yet.")
             )
-        if not self.source:
-            raise ValidationError(_("Choose a repository source."))
+        if self.source == "upload":
+            raise ValidationError(
+                _("Direct upload is not available in this wizard yet. Choose Employee or Organizational Files.")
+            )
+        if self.source == "employee" and self.scope_kind != "company" and not self._scope_ids():
+            raise ValidationError(_("Select who this dataset covers."))
         if not self.auto_classify and not self.document_type_ids:
             raise ValidationError(
                 _("A dataset cannot run with zero document types.")

@@ -36,6 +36,11 @@ class DocumentIntelligenceController(http.Controller):
             "default_retention_years": document_type.default_retention_years,
             "default_profile_id": profile.id if profile else False,
             "default_profile": profile.name if profile else "",
+            "field_count": (
+                len(profile.current_version_id.field_ids)
+                if profile and profile.current_version_id
+                else 0
+            ),
         }
 
     def _field_data(self, field):
@@ -432,6 +437,32 @@ class DocumentIntelligenceController(http.Controller):
         return {
             "success": True,
             "data": [self._dataset_data(item) for item in records],
+        }
+
+    @http.route(
+        "/api/document-intelligence/wizard/options",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def wizard_options(self, **kwargs):
+        return {
+            "success": True,
+            "data": request.env["doc.intelligence.dataset"].wizard_options(),
+        }
+
+    @http.route(
+        "/api/document-intelligence/wizard/estimate",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def wizard_estimate(self, **kwargs):
+        return {
+            "success": True,
+            "data": request.env["doc.intelligence.dataset"].wizard_estimate(kwargs),
         }
 
     @http.route(

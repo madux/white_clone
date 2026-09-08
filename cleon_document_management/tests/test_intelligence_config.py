@@ -70,6 +70,21 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertFalse(dataset.exists())
         self.assertFalse(job.exists())
 
+    def test_wizard_domain_and_estimate(self):
+        Dataset = self.env["doc.intelligence.dataset"]
+        employee_domain = Dataset._domain_from_values("employee", "company", [])
+        self.assertIn(("folder_id.folder_type", "=", "employee"), employee_domain)
+        scoped = Dataset._domain_from_values("employee", "one_employee", [99])
+        self.assertIn(("employee_id", "in", [99]), scoped)
+        self.assertEqual(Dataset._domain_from_values("upload"), [("id", "=", 0)])
+        estimate = Dataset.wizard_estimate(
+            {"source": "organizational", "scope_kind": "company"}
+        )
+        self.assertIn("document_count", estimate)
+        options = Dataset.wizard_options()
+        self.assertIn("employee", options["sources"])
+        self.assertIn("organizational", options["sources"])
+
     def test_vertical_slice_extracts_contract_fields(self):
         folder = self.env["doc.folder"].create(
             {
