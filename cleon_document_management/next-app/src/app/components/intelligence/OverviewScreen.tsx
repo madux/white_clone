@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle,
+  ArrowRight,
   ClipboardCheck,
   MessageSquareText,
   Plus,
@@ -47,7 +48,7 @@ export default function OverviewScreen() {
         </div>
         <Link
           href="/pages/document-intelligence/datasets/new"
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 text-sm font-medium text-white shadow-lg shadow-pink-200"
+          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 text-sm font-medium text-white shadow-lg shadow-pink-200 transition hover:brightness-105 hover:shadow-pink-300"
         >
           <Plus className="h-4 w-4" />
           New Extraction
@@ -55,38 +56,46 @@ export default function OverviewScreen() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <Link
-          href="/pages/document-intelligence/ask"
-          className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-pink-200"
-        >
-          <MessageSquareText className="h-5 w-5 text-brand-pink" />
-          <h2 className="mt-3 text-lg font-bold text-slate-900">Ask AI</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            Query approved records with source citations.
-          </p>
-        </Link>
-        <Link
-          href="/pages/document-intelligence/validate"
-          className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-pink-200"
-        >
-          <ClipboardCheck className="h-5 w-5 text-brand-pink" />
-          <h2 className="mt-3 text-lg font-bold text-slate-900">Validate</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            {data?.queue_count
+        {[
+          {
+            href: "/pages/document-intelligence/ask",
+            icon: MessageSquareText,
+            title: "Ask AI",
+            detail: "Query approved records with source citations.",
+          },
+          {
+            href: "/pages/document-intelligence/validate",
+            icon: ClipboardCheck,
+            title: "Validate",
+            detail: data?.queue_count
               ? `${data.queue_count} record(s) waiting for review.`
-              : "Review extracted fields beside the original document."}
-          </p>
-        </Link>
-        <Link
-          href="/pages/document-intelligence/datasets/new"
-          className="rounded-2xl border border-slate-200 bg-gradient-to-br from-brand-text to-brand-pink p-5 text-white shadow-lg shadow-pink-200"
-        >
-          <Plus className="h-5 w-5" />
-          <h2 className="mt-3 text-lg font-bold">New Extraction</h2>
-          <p className="mt-1 text-sm text-white/80">
-            Configure a dataset and run the extraction pipeline.
-          </p>
-        </Link>
+              : "Review extracted fields beside the original document.",
+          },
+          {
+            href: "/pages/document-intelligence/datasets/new",
+            icon: Plus,
+            title: "New Extraction",
+            detail: "Configure a dataset and run the extraction pipeline.",
+          },
+        ].map((card) => {
+          const Icon = card.icon;
+          return (
+            <Link
+              key={card.title}
+              href={card.href}
+              className="group rounded-2xl border border-slate-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-brand-pink hover:bg-pink-50/70 hover:shadow-md hover:shadow-pink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-pink"
+            >
+              <span className="inline-flex rounded-xl bg-pink-50 p-2 text-brand-pink transition group-hover:bg-white group-hover:text-brand-text">
+                <Icon className="h-5 w-5" />
+              </span>
+              <h2 className="mt-3 flex items-center justify-between gap-2 text-lg font-bold text-slate-900">
+                {card.title}
+                <ArrowRight className="h-4 w-4 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-pink" />
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">{card.detail}</p>
+            </Link>
+          );
+        })}
       </section>
 
       {overview.isError ? (
@@ -96,22 +105,22 @@ export default function OverviewScreen() {
       <section className="grid gap-4 sm:grid-cols-3">
         {[
           {
-            label: "Extraction accuracy",
+            label: "Review accept rate",
             value: metricValue(metrics?.extraction_accuracy ?? null),
             real: metrics?.extraction_source === "reviewed",
             note:
               metrics?.extraction_source === "reviewed"
-                ? `Share of ${data?.reviewed_count || 0} reviewed records that were approved or overridden.`
-                : "Not calculated from reviewed records yet.",
+                ? `Of ${data?.reviewed_count || 0} records a person reviewed, this share was approved or overridden. This is not the AI model’s raw accuracy.`
+                : "Appears after someone reviews extracted records.",
           },
           {
-            label: "Classification accuracy",
+            label: "Type-match confidence",
             value: metricValue(metrics?.classification_accuracy ?? null),
             real: false,
             note:
               metrics?.classification_source === "estimated"
-                ? "Average classification confidence on approved records. Estimated until humans confirm types."
-                : "Not calculated from reviewed records yet.",
+                ? "Average confidence the job assigned when matching a file to a document type. Estimated — humans have not scored those matches."
+                : "Appears after records are approved.",
           },
           {
             label: "Data quality",
@@ -119,8 +128,8 @@ export default function OverviewScreen() {
             real: metrics?.data_quality_source === "approved",
             note:
               metrics?.data_quality_source === "approved"
-                ? `Share of ${data?.approved_count || 0} approved records with no remaining validation issues.`
-                : "Not calculated from approved records yet.",
+                ? `Share of ${data?.approved_count || 0} approved records with no open blocking issues.`
+                : "Appears after records are approved.",
           },
         ].map((metric) => (
           <div
@@ -177,8 +186,8 @@ export default function OverviewScreen() {
                               job.state,
                             )
                               ? "pending"
-                              : job.state === "failed"
-                                ? ""
+                              : job.state === "failed" || job.state === "rejected"
+                                ? "rejected"
                                 : ""
                           }`}
                         >
@@ -275,7 +284,7 @@ function JobActions({
           href={`/pages/document-intelligence/validate?dataset_id=${job.dataset_id}`}
           className="text-sm font-semibold text-brand-pink"
         >
-          Review
+          {job.state === "needs_review" ? "Review" : "Results"}
         </Link>
       ) : null}
       {["queued", "running"].includes(job.state) ? (
@@ -298,7 +307,7 @@ function JobActions({
           Resume
         </button>
       ) : null}
-      {["failed", "cancelled", "completed"].includes(job.state) ? (
+      {["failed", "cancelled"].includes(job.state) ? (
         <button
           type="button"
           disabled={busy}

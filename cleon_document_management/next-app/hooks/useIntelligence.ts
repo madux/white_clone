@@ -110,6 +110,7 @@ export function useIntelligenceWizardEstimate(payload: {
   scope_ids: number[];
   document_type_ids: number[];
   auto_classify: boolean;
+  id?: number;
 }) {
   return useQuery({
     queryKey: ["intelligence", "wizard-estimate", payload],
@@ -130,8 +131,48 @@ export function useSaveIntelligenceDataset() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: intelligenceDatasetApi.save,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets }),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      if (saved?.id) {
+        queryClient.invalidateQueries({
+          queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+        });
+      }
+    },
+  });
+}
+
+export function useUploadIntelligenceFiles() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, files }: { id: number; files: File[] }) =>
+      intelligenceDatasetApi.uploadFiles(id, files),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({
+        queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["intelligence", "wizard-estimate"],
+      });
+    },
+  });
+}
+
+export function useRemoveIntelligenceUpload() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, documentId }: { id: number; documentId: number }) =>
+      intelligenceDatasetApi.removeUpload(id, documentId),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: INTELLIGENCE_KEYS.datasets });
+      queryClient.invalidateQueries({
+        queryKey: INTELLIGENCE_KEYS.dataset(saved.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["intelligence", "wizard-estimate"],
+      });
+    },
   });
 }
 
@@ -157,8 +198,12 @@ export function useRunIntelligenceDataset() {
 
 export function useIntelligenceReviewQueue(datasetId?: number) {
   return useQuery({
-    queryKey: [...INTELLIGENCE_KEYS.reviewQueue, datasetId || "all"],
-    queryFn: () => intelligenceDatasetApi.reviewQueue(datasetId),
+    queryKey: [
+      ...INTELLIGENCE_KEYS.reviewQueue,
+      datasetId || "all",
+      datasetId ? "with-results" : "queue",
+    ],
+    queryFn: () => intelligenceDatasetApi.reviewQueue(datasetId, Boolean(datasetId)),
     refetchInterval: (query) => {
       const rows = query.state.data || [];
       return rows.some((row) => row.review_status === "extracted") ? 4000 : false;

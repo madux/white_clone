@@ -13,13 +13,14 @@ import {
   Maximize2,
   Minimize2,
   Phone,
+  Sparkles,
   Upload,
   X,
   XCircle,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   useComplianceTargets,
@@ -38,6 +39,7 @@ import ThemedSelect from "./ThemedSelect";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
+  const router = useRouter();
   const documents = useDocuments();
   const targets = useComplianceTargets();
   const currentUser = useCurrentUser();
@@ -496,6 +498,18 @@ export default function EmployeeProfilePage() {
                 >
                   <Download className="h-3.5 w-3.5" />
                   Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/pages/document-intelligence/ask?document=${viewing.id}`,
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-brand-pink px-3 py-2 text-xs font-bold text-brand-pink hover:bg-pink-50"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Ask AI
                 </button>
                 <button
                   type="button"

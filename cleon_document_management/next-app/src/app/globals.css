@@ -37,6 +37,12 @@ main > * {
   min-height: 100%;
 }
 
+main > .di-shell {
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+}
+
 button,
 a,
 input,
@@ -220,6 +226,11 @@ select.field option {
 .status.pending {
   background: #fef3c7;
   color: #b45309;
+}
+
+.status.rejected {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .row-action {

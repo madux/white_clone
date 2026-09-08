@@ -13,6 +13,7 @@ GROQ_EMBED_URL = "https://api.groq.com/openai/v1/embeddings"
 LLM_MODEL = "openai/gpt-oss-120b"
 VISION_MODEL = "qwen/qwen3.6-27b"
 EMBED_MODEL = "nomic-embed-text-v1_5"
+EMBED_MODELS = ("nomic-embed-text-v1_5", "nomic-embed-text-v1.5")
 EMBED_DIM = 768
 PARAM_KEY = "cleon_document_management.groq_api_key"
 
@@ -110,39 +111,47 @@ def transcribe_images(images, env=None):
     api_key = groq_api_key(env)
     if not api_key:
         raise RuntimeError("GROQ_API_KEY is not set.")
-    if not images:
+    usable = [(mime, raw) for mime, raw in images or [] if raw]
+    if not usable:
         return ""
-    content = [
-        {
-            "type": "text",
-            "text": (
-                "Extract all readable text from these document pages exactly as written. "
-                "Preserve labels, names, dates, and numbers. Do not summarize. "
-                "Do not describe the layout. Return only the text."
-            ),
-        }
-    ]
-    for mime, raw in images[:4]:
-        if not raw:
-            continue
-        encoded = base64.b64encode(raw).decode()
-        content.append(
+    parts = []
+    for start in range(0, len(usable), 4):
+        batch = usable[start : start + 4]
+        content = [
             {
-                "type": "image_url",
-                "image_url": {"url": "data:%s;base64,%s" % (mime or "image/png", encoded)},
+                "type": "text",
+                "text": (
+                    "Extract all readable text from these document pages exactly as written. "
+                    "Preserve labels, names, dates, and numbers. Do not summarize. "
+                    "Do not describe the layout. Return only the text."
+                ),
             }
+        ]
+        for mime, raw in batch:
+            encoded = base64.b64encode(raw).decode()
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:%s;base64,%s" % (mime or "image/png", encoded)
+                    },
+                }
+            )
+        data = _request(
+            GROQ_CHAT_URL,
+            {
+                "model": VISION_MODEL,
+                "temperature": 0,
+                "max_completion_tokens": 4096,
+                "messages": [{"role": "user", "content": content}],
+            },
+            api_key,
+            timeout=120,
         )
-    data = _request(
-        GROQ_CHAT_URL,
-        {
-            "model": VISION_MODEL,
-            "temperature": 0,
-            "max_completion_tokens": 4096,
-            "messages": [{"role": "user", "content": content}],
-        },
-        api_key,
-    )
-    return _choice_text(data)
+        text = _choice_text(data)
+        if text:
+            parts.append(text)
+    return "\n".join(parts).strip()
 
 
 def embed_texts(texts, env=None):
@@ -152,21 +161,47 @@ def embed_texts(texts, env=None):
     clean = [text.strip() for text in texts if (text or "").strip()]
     if not clean:
         return []
-    data = _request(
-        GROQ_EMBED_URL,
-        {"model": EMBED_MODEL, "input": clean, "encoding_format": "float"},
-        api_key,
-        timeout=60,
-    )
-    rows = sorted(data.get("data") or [], key=lambda item: item.get("index", 0))
-    return [row.get("embedding") or [] for row in rows]
+    last_error = None
+    for model in EMBED_MODELS:
+        try:
+            vectors = []
+            for start in range(0, len(clean), 32):
+                batch = clean[start : start + 32]
+                data = _request(
+                    GROQ_EMBED_URL,
+                    {
+                        "model": model,
+                        "input": batch,
+                        "encoding_format": "float",
+                    },
+                    api_key,
+                    timeout=60,
+                )
+                rows = sorted(
+                    data.get("data") or [], key=lambda item: item.get("index", 0)
+                )
+                vectors.extend(row.get("embedding") or [] for row in rows)
+            return vectors
+        except Exception as error:
+            last_error = error
+            _logger.warning("Embedding model %s failed: %s", model, error)
+    raise last_error or RuntimeError("Embedding failed.")
 
 
 def _answer_messages(question, context, history=None):
     system = (
-        "You answer HR document questions using only the supplied evidence "
-        "and the conversation so far. Write a clear answer for the employee. "
-        "Use markdown for emphasis (**bold**) and lists when helpful. "
+        "You are Cleon AI, the brain and AI agent of the Cleon HR app. "
+        "You are not ChatGPT, Claude, Gemini, or any other third-party assistant. "
+        "Speak as Cleon AI: helpful, clear, and professional for HR and people operations. "
+        "Answer using the supplied evidence and the conversation so far. "
+        "If PRIMARY ATTACHED DOCUMENT excerpts are present, treat them as the "
+        "main source and use DATASET EXCERPT items only as extra context. "
+        "Use markdown when it helps: headings (##), tables, **bold**, lists, "
+        "and `code`. Keep tables compact: one markdown row per table row, every "
+        "cell on that same line. If a table has a heading column and a details "
+        "column, put every bullet only in the details column — never start a new "
+        "row with a bullet in the first column. Never use HTML tags such as <br> "
+        "or <p>; use markdown line breaks and lists instead. "
         "Do not add a references, sources, or citations section. "
         "If the evidence is missing, say so. Do not invent employees, dates, or amounts."
     )
@@ -239,6 +274,40 @@ def iter_chat_deltas(messages, env=None, max_completion_tokens=1200):
     except urllib.error.HTTPError as error:
         detail = error.read().decode(errors="replace")[:800]
         raise RuntimeError("Groq HTTP %s: %s" % (error.code, detail)) from error
+
+
+def parse_json_object(text):
+    cleaned = _strip_think(text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.I)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start < 0 or end <= start:
+        return {}
+    try:
+        payload = json.loads(cleaned[start : end + 1])
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def complete_chat(messages, env=None, max_completion_tokens=1200, timeout=90):
+    api_key = groq_api_key(env)
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not set.")
+    data = _request(
+        GROQ_CHAT_URL,
+        {
+            "model": LLM_MODEL,
+            "temperature": 0,
+            "max_completion_tokens": max_completion_tokens,
+            "messages": messages,
+        },
+        api_key,
+        timeout=timeout,
+    )
+    return _choice_text(data)
 
 
 def answer_with_context(question, context, env=None, history=None):
@@ -322,7 +391,7 @@ def sanitize_conversation_title(raw, question):
 
 
 def suggest_conversation_title(question, env=None):
-    """ChatGPT-style sidebar name from the first user message."""
+    """Short sidebar name from the first user message."""
     fallback = fallback_conversation_title(question)
     api_key = groq_api_key(env)
     if not api_key:
@@ -338,9 +407,10 @@ def suggest_conversation_title(question, env=None):
                     {
                         "role": "system",
                         "content": (
-                            "Create a short chat title, like ChatGPT sidebar names. "
-                            "Output only the title. 2 to 5 words. No quotes. "
-                            "No question. Do not repeat the user message."
+                            "You are Cleon AI naming a chat in the Cleon HR app. "
+                            "Create a short sidebar title. Output only the title. "
+                            "2 to 5 words. No quotes. No question. "
+                            "Do not repeat the user message."
                         ),
                     },
                     {

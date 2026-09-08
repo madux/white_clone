@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import re
@@ -19,10 +20,32 @@ from .intelligence_pipeline import extract_document_text
 _logger = logging.getLogger(__name__)
 
 
+def coerce_int_ids(values):
+    if values in (None, False, ""):
+        return []
+    if isinstance(values, dict):
+        values = list(values.values())
+    if isinstance(values, (int, float, str)):
+        values = [values]
+    ids = []
+    for value in values:
+        if value in (None, False, ""):
+            continue
+        if isinstance(value, dict):
+            value = value.get("id") or value.get("document_id")
+        try:
+            doc_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if doc_id and doc_id not in ids:
+            ids.append(doc_id)
+    return ids
+
+
 class IntelligenceConversation(models.Model):
     _name = "doc.intelligence.conversation"
     _description = "Ask Cleon AI Conversation"
-    _order = "write_date desc"
+    _order = "write_date desc, id desc"
 
     name = fields.Char(default="New chat")
     user_id = fields.Many2one(
@@ -75,6 +98,7 @@ class IntelligenceConversation(models.Model):
                     "name": source.name,
                     "url": source.url or "",
                     "document_id": source.document_id.id or 0,
+                    "preview_url": source.preview_path(),
                 }
                 for source in self.source_ids
             ],
@@ -83,14 +107,38 @@ class IntelligenceConversation(models.Model):
             payload["messages"] = [message.to_api() for message in self.message_ids]
         return payload
 
-    def _source_context(self):
-        parts = []
+    def _index_source(self, source):
+        self.env["doc.intelligence.ask.chunk"].index_source(source)
+
+    def _ensure_sources_indexed(self):
+        self.ensure_one()
         for source in self.source_ids:
-            text = (source.extracted_text or "").strip()
-            if not text:
+            if source.chunk_ids:
                 continue
-            parts.append("Attached %s (%s):\n%s" % (source.kind, source.name, text[:4000]))
-        return "\n\n".join(parts)
+            self._index_source(source)
+
+    def _source_context(self, question):
+        self.ensure_one()
+        if not self.source_ids:
+            return ""
+        self._ensure_sources_indexed()
+        chunks = self.env["doc.intelligence.ask.chunk"].search_similar(
+            question, self.id, limit=8
+        )
+        parts = []
+        for chunk in chunks:
+            parts.append(
+                "PRIMARY ATTACHED DOCUMENT (%s).\n%s"
+                % (chunk.source_id.name, chunk.content)
+            )
+        if parts:
+            return "\n\n".join(parts)
+        names = ", ".join(self.source_ids.mapped("name"))
+        return (
+            "PRIMARY ATTACHED DOCUMENT(S): %s. No matching excerpts were retrieved "
+            "for this question."
+            % names
+        )
 
     def _untitled(self):
         name = (self.name or "").strip()
@@ -140,9 +188,10 @@ class IntelligenceConversation(models.Model):
         result = answer_question(
             self.env,
             question,
-            extra_context=self._source_context(),
+            extra_context=self._source_context(question),
             history=history,
             dataset_id=self.dataset_id.id or None,
+            has_attachments=bool(self.source_ids),
         )
         self._store_assistant(result)
         return self.to_api(with_messages=True)
@@ -181,9 +230,10 @@ class IntelligenceConversation(models.Model):
         started = start_answer(
             self.env,
             question,
-            extra_context=self._source_context(),
+            extra_context=self._source_context(question),
             history=history,
             dataset_id=self.dataset_id.id or None,
+            has_attachments=bool(self.source_ids),
         )
         if started["mode"] == "ready":
             result = started["result"]
@@ -224,68 +274,212 @@ class IntelligenceConversation(models.Model):
         self.unlink()
         return True
 
-    def action_attach_document(self, document_id):
+    def _already_attached_message(self, names):
+        names = [name for name in names if name]
+        if len(names) == 1:
+            return "%s is already attached to this chat." % names[0]
+        return "These files are already attached to this chat: %s." % ", ".join(names)
+
+    def _source_fingerprints(self):
+        self.ensure_one()
+        names = set()
+        checksums = set()
+        document_ids = set()
+        urls = set()
+        for source in self.source_ids:
+            names.add((source.name or "").strip().lower())
+            if source.document_id:
+                document_ids.add(source.document_id.id)
+            if source.url:
+                urls.add((source.url or "").strip().rstrip("/").lower())
+            attachment = source.attachment_id
+            if not attachment and source.document_id:
+                attachment = source.document_id.attachment_id
+            if attachment and attachment.checksum:
+                checksums.add(attachment.checksum)
+        return names, checksums, document_ids, urls
+
+    def action_attach_document(self, document_id=None, document_ids=None):
+        ids = coerce_int_ids(document_ids) or coerce_int_ids(document_id)
+        return self.action_attach_documents(ids)
+
+    def action_attach_documents(self, document_ids):
         self.ensure_one()
         self._ensure_owner()
-        document = self.env["doc.document"].browse(int(document_id)).exists()
-        if not document:
+        ids = coerce_int_ids(document_ids)
+        if not ids:
+            raise UserError("Select at least one document.")
+        documents = self.env["doc.document"].browse(ids).exists()
+        if not documents:
             raise UserError("Document not found or you do not have access.")
-        text, _source, _pages = extract_document_text(
-            document.attachment_id, ocr_fallback=True, env=self.env
-        )
-        self.env["doc.intelligence.ask.source"].create(
-            {
-                "conversation_id": self.id,
-                "kind": "library",
-                "name": document.name,
-                "document_id": document.id,
-                "extracted_text": text or "",
-            }
-        )
+        attached = 0
+        skipped = []
+        names, checksums, document_ids, _urls = self._source_fingerprints()
+        for document in documents:
+            digest = document.checksum or (
+                document.attachment_id.checksum if document.attachment_id else ""
+            )
+            name_key = (document.name or "").strip().lower()
+            if (
+                document.id in document_ids
+                or (name_key and name_key in names)
+                or (digest and digest in checksums)
+            ):
+                skipped.append(document.name)
+                continue
+            if not document.attachment_id:
+                raise UserError("%s has no file to ask about." % document.name)
+            text, _source, _pages = extract_document_text(
+                document.attachment_id, ocr_fallback=True, env=self.env
+            )
+            if not (text or "").strip():
+                _logger.warning(
+                    "Ask attach extracted no text from library document %s (%s)",
+                    document.id,
+                    document.name,
+                )
+            source = self.env["doc.intelligence.ask.source"].create(
+                {
+                    "conversation_id": self.id,
+                    "kind": "library",
+                    "name": document.name,
+                    "document_id": document.id,
+                    "extracted_text": text or "",
+                }
+            )
+            self._index_source(source)
+            attached += 1
+            document_ids.add(document.id)
+            if name_key:
+                names.add(name_key)
+            if digest:
+                checksums.add(digest)
+        if self._untitled() and documents:
+            if len(documents) == 1:
+                self.name = "Ask · %s" % ((documents[0].name or "document")[:72])
+            else:
+                self.name = "Ask · %s documents" % len(documents)
+        if not attached:
+            if skipped:
+                raise UserError(self._already_attached_message(skipped))
+            raise UserError("Those documents could not be attached.")
         return self.to_api(with_messages=True)
 
     def action_attach_url(self, url):
         self.ensure_one()
         self._ensure_owner()
-        text = _fetch_url_text(url)
-        self.env["doc.intelligence.ask.source"].create(
+        cleaned = (url or "").strip()
+        key = cleaned.rstrip("/").lower()
+        _names, _checksums, _document_ids, urls = self._source_fingerprints()
+        if key and key in urls:
+            raise UserError("That URL is already attached to this chat.")
+        text = _fetch_url_text(cleaned)
+        source = self.env["doc.intelligence.ask.source"].create(
             {
                 "conversation_id": self.id,
                 "kind": "url",
-                "name": url[:120],
-                "url": url,
+                "name": cleaned[:120],
+                "url": cleaned,
                 "extracted_text": text,
             }
         )
+        self._index_source(source)
         return self.to_api(with_messages=True)
 
     def action_attach_upload(self, name, mimetype, data):
+        return self.action_attach_uploads(
+            [{"name": name, "mimetype": mimetype, "data": data}]
+        )
+
+    def action_attach_uploads(self, files):
         self.ensure_one()
         self._ensure_owner()
         import base64
 
-        raw = base64.b64decode(data or "")
-        if len(raw) > 5 * 1024 * 1024:
-            raise UserError("Attached files must be 5 MB or smaller.")
-        attachment = self.env["ir.attachment"].create(
-            {
-                "name": name or "upload",
-                "type": "binary",
-                "mimetype": mimetype or "application/octet-stream",
-                "raw": raw,
-            }
+        rows = files or []
+        if not rows:
+            raise UserError("Select at least one file.")
+        if len(rows) > 10:
+            raise UserError("You can attach up to 10 files at once.")
+        attached = 0
+        skipped = []
+        first_name = ""
+        names, checksums, _document_ids, _urls = self._source_fingerprints()
+        for item in rows:
+            name = (item.get("name") if isinstance(item, dict) else "") or "upload"
+            mimetype = (
+                item.get("mimetype") if isinstance(item, dict) else ""
+            ) or "application/octet-stream"
+            data = item.get("data") if isinstance(item, dict) else ""
+            raw = base64.b64decode(data or "")
+            if len(raw) > 5 * 1024 * 1024:
+                raise UserError("%s must be 5 MB or smaller." % name)
+            name_key = name.strip().lower()
+            digest = hashlib.sha1(raw).hexdigest() if raw else ""
+            if (name_key and name_key in names) or (digest and digest in checksums):
+                skipped.append(name)
+                continue
+            attachment = self.env["ir.attachment"].create(
+                {
+                    "name": name,
+                    "type": "binary",
+                    "mimetype": mimetype,
+                    "raw": raw,
+                }
+            )
+            text, _source, _pages = extract_document_text(
+                attachment, ocr_fallback=True, env=self.env
+            )
+            if not (text or "").strip():
+                _logger.warning(
+                    "Ask attach extracted no text from upload %s (%s)",
+                    name,
+                    _source,
+                )
+            source = self.env["doc.intelligence.ask.source"].create(
+                {
+                    "conversation_id": self.id,
+                    "kind": "upload",
+                    "name": name,
+                    "attachment_id": attachment.id,
+                    "extracted_text": text or "",
+                }
+            )
+            self._index_source(source)
+            attached += 1
+            if name_key:
+                names.add(name_key)
+            if digest:
+                checksums.add(digest)
+            if not first_name:
+                first_name = name
+        if not attached:
+            raise UserError(
+                self._already_attached_message(skipped)
+                if skipped
+                else "The files could not be attached."
+            )
+        if self._untitled() and attached:
+            if attached == 1:
+                self.name = "Ask · %s" % (first_name[:72] or "upload")
+            else:
+                self.name = "Ask · %s files" % attached
+        return self.to_api(with_messages=True)
+
+    def action_remove_sources(self, source_ids=None):
+        self.ensure_one()
+        self._ensure_owner()
+        ids = coerce_int_ids(source_ids)
+        if not ids:
+            raise UserError("Select at least one attached file.")
+        sources = self.source_ids.filtered(lambda source: source.id in ids)
+        if not sources:
+            raise UserError("Those files are not attached to this chat.")
+        uploads = sources.filtered(lambda source: source.kind == "upload").mapped(
+            "attachment_id"
         )
-        text, _source, _pages = extract_document_text(
-            attachment, ocr_fallback=True, env=self.env
-        )
-        self.env["doc.intelligence.ask.source"].create(
-            {
-                "conversation_id": self.id,
-                "kind": "upload",
-                "name": name or "Uploaded file",
-                "extracted_text": text or "",
-            }
-        )
+        sources.unlink()
+        uploads.unlink()
         return self.to_api(with_messages=True)
 
 
@@ -310,6 +504,22 @@ class IntelligenceMessage(models.Model):
     fact_based = fields.Boolean()
     model = fields.Char()
     insufficient_evidence = fields.Boolean()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        conversations = records.mapped("conversation_id")
+        if conversations:
+            self.env.cr.execute(
+                """
+                UPDATE doc_intelligence_conversation
+                   SET write_date = (now() AT TIME ZONE 'UTC')
+                 WHERE id IN %s
+                """,
+                [tuple(conversations.ids)],
+            )
+            conversations.invalidate_recordset(["write_date"])
+        return records
 
     def to_api(self):
         self.ensure_one()
@@ -347,7 +557,21 @@ class IntelligenceAskSource(models.Model):
     name = fields.Char(required=True)
     url = fields.Char()
     document_id = fields.Many2one("doc.document", ondelete="set null")
+    attachment_id = fields.Many2one("ir.attachment", ondelete="set null")
     extracted_text = fields.Text()
+    chunk_ids = fields.One2many(
+        "doc.intelligence.ask.chunk",
+        "source_id",
+        string="Index chunks",
+    )
+
+    def preview_path(self):
+        self.ensure_one()
+        if self.document_id:
+            return "/document-management/document/%s/preview" % self.document_id.id
+        if self.attachment_id:
+            return "/document-management/intelligence/ask-source/%s/preview" % self.id
+        return self.url or ""
 
 
 def _fetch_url_text(url):

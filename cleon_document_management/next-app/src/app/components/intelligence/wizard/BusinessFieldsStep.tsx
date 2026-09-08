@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   useCreateIntelligenceProfile,
   useUpdateIntelligenceProfile,
@@ -25,7 +26,10 @@ const FIELD_TYPES = [
   ["enum", "List"],
 ] as const;
 
-type CatalogField = IntelligenceField & { profile: string };
+type CatalogField = IntelligenceField & {
+  profile: string;
+  typeName?: string;
+};
 
 function slugKey(name: string) {
   return name
@@ -41,6 +45,7 @@ export default function BusinessFieldsStep({
   types,
   profiles,
   isAdmin,
+  autoClassify = false,
   onChange,
   onAddedField,
 }: {
@@ -49,6 +54,7 @@ export default function BusinessFieldsStep({
   types: IntelligenceDocumentType[];
   profiles: IntelligenceProfile[];
   isAdmin: boolean;
+  autoClassify?: boolean;
   onChange: (keys: string[]) => void;
   onAddedField: (typeId: number, key: string) => void;
 }) {
@@ -76,9 +82,21 @@ export default function BusinessFieldsStep({
         field.name.toLowerCase().includes(needle) ||
         field.key.toLowerCase().includes(needle) ||
         field.profile.toLowerCase().includes(needle) ||
+        (field.typeName || "").toLowerCase().includes(needle) ||
         (field.description || "").toLowerCase().includes(needle),
     );
   }, [catalog, query]);
+
+  const typeGroups = useMemo(() => {
+    const map = new Map<string, CatalogField[]>();
+    for (const field of filtered) {
+      const label = field.typeName || field.profile;
+      const list = map.get(label) || [];
+      list.push(field);
+      map.set(label, list);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, CatalogField[]>();
@@ -184,25 +202,50 @@ export default function BusinessFieldsStep({
     }
   };
 
+  const matched = selectedKeys.filter((key) =>
+    catalog.some((field) => field.key === key),
+  ).length;
+  const typesWithoutFields = types.filter((item) => !(item.field_count || 0));
+
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">Which fields to extract?</h2>
+        <h2 className="text-lg font-bold text-slate-900">
+          {autoClassify ? "Fields after classification" : "Which fields to extract?"}
+        </h2>
         <p className="mt-1 text-sm text-slate-500">
-          {selectedKeys.length} of {catalog.length} fields selected. Required
-          fields from the type’s profile are selected by default. Changing a
-          field’s type after a job has run belongs in Configuration so older
-          results stay intact.
+          {autoClassify
+            ? "The job labels each file first, then extracts only that type’s fields. A non-CV will not use CV fields."
+            : catalog.length
+              ? `Choose what to pull out of each file. ${matched} of ${catalog.length} fields selected.`
+              : "This step lists the data points on the document types you picked — for example employee name or start date."}
         </p>
       </div>
 
       {!catalog.length ? (
-        <p className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
-          No extraction fields yet. Select types that have a profile, or add
-          fields in Configuration.
-        </p>
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-semibold">These types have no extraction fields yet.</p>
+          <p className="mt-2">
+            A document type only tells us what the file is. Fields tell the job
+            what to copy out of it. Add fields here, or open{" "}
+            <Link
+              href="/pages/document-intelligence/configuration/profiles"
+              className="font-semibold underline"
+            >
+              Configuration → Profiles
+            </Link>{" "}
+            and attach a profile to the type.
+          </p>
+          {typesWithoutFields.length ? (
+            <p className="mt-2">
+              Missing fields:{" "}
+              {typesWithoutFields.map((item) => item.name).join(", ")}.
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
+      {!autoClassify ? (
       <div className="flex flex-wrap items-center gap-2">
         <input
           className="field max-w-md"
@@ -220,7 +263,7 @@ export default function BusinessFieldsStep({
         >
           Select all
         </button>
-        <button
+        {/* <button
           type="button"
           className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
           onClick={() =>
@@ -232,7 +275,7 @@ export default function BusinessFieldsStep({
           }
         >
           Required only
-        </button>
+        </button> */}
         <button
           type="button"
           className="rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
@@ -254,7 +297,63 @@ export default function BusinessFieldsStep({
           </p>
         )}
       </div>
+      ) : (
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          className="field max-w-md"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setPage(0);
+          }}
+          placeholder="Search types or fields"
+        />
+        {isAdmin ? (
+          <button
+            type="button"
+            className="rounded-full border border-brand-pink px-3 py-2 text-xs font-semibold text-brand-pink"
+            onClick={() => setShowForm(true)}
+          >
+            Add field
+          </button>
+        ) : null}
+      </div>
+      )}
 
+      {autoClassify ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {typeGroups.map(([typeName, fields]) => (
+            <article
+              key={typeName}
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-pink">
+                If classified as
+              </p>
+              <h3 className="mt-1 text-base font-semibold text-slate-900">
+                {typeName}
+              </h3>
+              <ul className="mt-3 space-y-2">
+                {fields.map((field) => (
+                  <li
+                    key={`${typeName}-${field.key}`}
+                    className="rounded-xl bg-slate-50 px-3 py-2"
+                  >
+                    <p className="text-sm font-semibold text-slate-900">
+                      {field.name}
+                      {field.required ? " *" : ""}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {field.field_type}
+                      {field.description ? ` · ${field.description}` : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      ) : (
       <div className="space-y-4">
         {visibleGroups.map(([profile, fields]) => (
           <div key={profile}>
@@ -305,8 +404,9 @@ export default function BusinessFieldsStep({
           </div>
         ))}
       </div>
+      )}
 
-      {pages > 1 ? (
+      {!autoClassify && pages > 1 ? (
         <div className="flex items-center justify-between text-sm text-slate-500">
           <button
             type="button"

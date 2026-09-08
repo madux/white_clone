@@ -84,6 +84,64 @@ class TestIntelligenceConfig(TransactionCase):
         options = Dataset.wizard_options()
         self.assertIn("employee", options["sources"])
         self.assertIn("organizational", options["sources"])
+        self.assertIn("employees", options)
+        self.assertIn("departments", options)
+        self.assertIn("business_units", options)
+
+    def test_upload_files_are_source_documents(self):
+        document_type = self.env["doc.document.type"].create(
+            {"name": "Upload Contract", "category": "employment"}
+        )
+        profile = self.env["doc.intelligence.profile"].create(
+            {
+                "name": "Upload Contract Profile",
+                "document_type_id": document_type.id,
+            }
+        )
+        self.env["doc.intelligence.field"].create(
+            {
+                "version_id": profile.current_version_id.id,
+                "name": "Employee name",
+                "key": "employee_name",
+                "field_type": "text",
+                "required": True,
+            }
+        )
+        document_type.default_profile_id = profile.id
+        dataset = self.env["doc.intelligence.dataset"].create(
+            {
+                "name": "Upload run",
+                "source": "upload",
+                "document_type_ids": [(6, 0, [document_type.id])],
+                "field_keys_json": '["employee_name"]',
+            }
+        )
+
+        class Upload:
+            filename = "jane.txt"
+            mimetype = "text/plain"
+
+            def read(self):
+                return b"Employment Contract\nEmployee name: Jane Doe\n"
+
+        dataset.action_add_uploads([Upload()])
+        document = dataset.upload_document_ids
+        self.assertEqual(len(document), 1)
+        self.assertEqual(document.folder_id.folder_type, "intelligence")
+        self.assertNotEqual(document.folder_id.folder_type, "employee")
+        self.assertNotEqual(document.folder_id.folder_type, "organizational")
+        estimate = self.env["doc.intelligence.dataset"].wizard_estimate(
+            {"source": "upload", "id": dataset.id}
+        )
+        self.assertEqual(estimate["document_count"], 1)
+        job = dataset.action_run()
+        self.assertTrue(job.record_ids)
+        self.assertEqual(job.record_ids.document_id, document)
+        extracted = job.record_ids.field_ids.filtered(
+            lambda field: field.key == "employee_name"
+        )
+        self.assertTrue(extracted)
+        self.assertIn("Jane", extracted.value or "")
 
     def test_vertical_slice_extracts_contract_fields(self):
         folder = self.env["doc.folder"].create(
@@ -242,12 +300,13 @@ class TestIntelligenceConfig(TransactionCase):
         job = self.env["doc.intelligence.job"].create(
             {
                 "dataset_id": dataset.id,
-                "state": "done",
+                "state": "needs_review",
                 "document_count": 1,
                 "processed_count": 1,
                 "progress": 100,
             }
         )
+        dataset.state = "needs_review"
         record = self.env["doc.intelligence.record"].create(
             {
                 "job_id": job.id,
@@ -286,6 +345,9 @@ class TestIntelligenceConfig(TransactionCase):
         self.assertTrue(issue.resolved)
         record.action_approve("Looks correct")
         self.assertEqual(record.review_status, "approved")
+        self.assertEqual(record.validation_status, "ok")
+        self.assertEqual(dataset.state, "completed")
+        self.assertEqual(job.state, "completed")
         self.assertTrue(
             record.review_action_ids.filtered(lambda item: item.action == "correct")
         )
@@ -406,6 +468,7 @@ class TestIntelligenceConfig(TransactionCase):
         overview = self.env["doc.intelligence.job"].overview_data()
         self.assertEqual(overview["metrics"]["extraction_source"], "reviewed")
         self.assertEqual(overview["metrics"]["extraction_accuracy"], 100.0)
+        self.assertEqual(overview["metrics"]["data_quality"], 100.0)
         self.assertEqual(overview["metrics"]["classification_source"], "estimated")
         self.assertTrue(overview["attention"]["failed"])
         self.assertFalse(overview["attention"]["expiring"])
@@ -457,6 +520,7 @@ class TestIntelligenceConfig(TransactionCase):
         job = self.env["doc.intelligence.job"].create(
             {"dataset_id": dataset.id, "state": "needs_review"}
         )
+        dataset.state = "needs_review"
         record = self.env["doc.intelligence.record"].create(
             {
                 "job_id": job.id,
@@ -465,6 +529,9 @@ class TestIntelligenceConfig(TransactionCase):
             }
         )
         record.action_reject("Incorrect document")
+        self.assertEqual(record.review_status, "rejected")
+        self.assertEqual(dataset.state, "rejected")
+        self.assertEqual(job.state, "rejected")
         reviews = self.env["doc.intelligence.audit.event"].search(
             [("category", "=", "review"), ("action", "=", "reject")]
         )

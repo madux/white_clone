@@ -27,6 +27,7 @@ class DocumentFolder(models.Model):
         [
             ("employee", "Employee Files"),
             ("organizational", "Organizational Files"),
+            ("intelligence", "Intelligence uploads"),
         ],
         string="Folder Type",
         required=True,
@@ -348,7 +349,7 @@ class DocumentFolder(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        if not self._is_document_manager():
+        if not self.env.context.get("intelligence_upload_folder") and not self._is_document_manager():
             raise AccessError(_("Only document managers can create folders."))
         return super().create(vals_list)
 

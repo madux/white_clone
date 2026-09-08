@@ -177,4 +177,11 @@
         <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
         <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
     </record>
+
+    <record id="rule_intelligence_ask_chunk_user_visibility" model="ir.rule">
+        <field name="name">Intelligence ask chunks: own conversations</field>
+        <field name="model_id" ref="model_doc_intelligence_ask_chunk"/>
+        <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+        <field name="domain_force">[('conversation_id.user_id', '=', user.id)]</field>
+    </record>
 </odoo>

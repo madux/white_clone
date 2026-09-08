@@ -34,7 +34,9 @@ export default function PreviewStep({
       ? "Organizational Files"
       : source === "employee"
         ? "Employee Files"
-        : source || "—";
+        : source === "upload"
+          ? "Upload documents"
+          : source || "—";
 
   return (
     <div className="space-y-5">
@@ -66,7 +68,9 @@ export default function PreviewStep({
             Scope
           </dt>
           <dd className="mt-1 font-medium capitalize text-slate-800">
-            {scopeKind.replace(/_/g, " ")}
+            {source === "upload"
+              ? "Files you uploaded"
+              : scopeKind.replace(/_/g, " ")}
           </dd>
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
@@ -74,7 +78,11 @@ export default function PreviewStep({
             Document types
           </dt>
           <dd className="mt-1 font-medium text-slate-800">
-            {typeNames.join(", ") || (autoClassify ? "Automatic classification" : "None")}
+            {autoClassify
+              ? typeNames.length
+                ? `Automatic classification · preferred: ${typeNames.join(", ")}`
+                : "Automatic classification (all registered types)"
+              : typeNames.join(", ") || "None"}
           </dd>
         </div>
         <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">

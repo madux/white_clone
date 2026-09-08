@@ -1,4 +1,4 @@
-import { rpc } from "./api";
+import { multipartClient, rpc } from "./api";
 
 export interface IntelligenceDocumentType {
   id: number;
@@ -139,6 +139,12 @@ export interface IntelligenceDataset {
   latest_job?: IntelligenceJob | false;
   run_queued?: boolean;
   message?: string;
+  uploads?: Array<{
+    id: number;
+    name: string;
+    mimetype: string;
+    file_size: number;
+  }>;
 }
 
 export const intelligenceDatasetApi = {
@@ -164,6 +170,25 @@ export const intelligenceDatasetApi = {
       "/api/document-intelligence/wizard/estimate",
       payload,
     ),
+  uploadFiles: async (datasetId: number, files: File[]) => {
+    const form = new FormData();
+    form.append("dataset_id", String(datasetId));
+    files.forEach((file) => form.append("files", file, file.name));
+    const { data } = await multipartClient.post<{
+      success: boolean;
+      message?: string;
+      data?: IntelligenceDataset;
+    }>("/api/document-intelligence/datasets/upload", form);
+    if (!data?.success || !data.data) {
+      throw new Error(data?.message || "Upload failed.");
+    }
+    return data.data;
+  },
+  removeUpload: (id: number, documentId: number) =>
+    unwrap<IntelligenceDataset>(
+      "/api/document-intelligence/datasets/upload/remove",
+      { id, document_id: documentId },
+    ),
   get: (id: number) =>
     unwrap<IntelligenceDataset>("/api/document-intelligence/datasets/get", {
       id,
@@ -182,10 +207,13 @@ export const intelligenceDatasetApi = {
     unwrap<{ ids: number[] }>("/api/document-intelligence/datasets/delete", {
       ids,
     }),
-  reviewQueue: (datasetId?: number) =>
+  reviewQueue: (datasetId?: number, includeReviewed = false) =>
     unwrap<IntelligenceExtractionRecord[]>(
       "/api/document-intelligence/review-queue",
-      datasetId ? { dataset_id: datasetId } : {},
+      {
+        ...(datasetId ? { dataset_id: datasetId } : {}),
+        include_reviewed: includeReviewed,
+      },
     ),
   approveRecord: (id: number, reason = "") =>
     unwrap<IntelligenceExtractionRecord>(
@@ -351,7 +379,11 @@ export const intelligenceDatasetApi = {
       onEvent(JSON.parse(buffer) as Record<string, unknown>);
     }
   },
-  conversationAttachLibrary: (payload: { id?: number; document_id: number }) =>
+  conversationAttachLibrary: (payload: {
+    id?: number;
+    document_id?: number;
+    document_ids?: number[];
+  }) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/attach-library",
       payload,
@@ -363,12 +395,18 @@ export const intelligenceDatasetApi = {
     ),
   conversationAttachUpload: (payload: {
     id?: number;
-    name: string;
-    mimetype: string;
-    data: string;
+    name?: string;
+    mimetype?: string;
+    data?: string;
+    files?: Array<{ name: string; mimetype: string; data: string }>;
   }) =>
     unwrap<IntelligenceConversation>(
       "/api/document-intelligence/conversations/attach-upload",
+      payload,
+    ),
+  conversationRemoveSources: (payload: { id: number; source_ids: number[] }) =>
+    unwrap<IntelligenceConversation>(
+      "/api/document-intelligence/conversations/remove-sources",
       payload,
     ),
   libraryDocuments: (search = "") =>
@@ -415,6 +453,7 @@ export interface IntelligenceConversation {
     name: string;
     url: string;
     document_id: number;
+    preview_url: string;
   }>;
   messages?: IntelligenceChatMessage[];
 }

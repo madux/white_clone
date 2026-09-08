@@ -24,7 +24,7 @@ export default function IntelligenceNav() {
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
 
   return (
-    <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-4">
+    <nav className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
       {LINKS.map(({ name, href, icon: Icon }) => {
         const isOverview = href === "/pages/document-intelligence";
         const isActive = isOverview

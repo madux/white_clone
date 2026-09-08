@@ -214,8 +214,10 @@ class IntelligenceRecord(models.Model):
                 _("Resolve blocking issues before approval, or use override with a reason.")
             )
         self._mark_reviewed("approved", comment=reason)
+        self.validation_status = "ok"
         self._log_review("approve", reason=reason or "Approved")
         self.env["doc.intelligence.chunk"].index_record(self)
+        self.dataset_id.action_sync_review_state()
         return True
 
     def action_reject(self, reason):
@@ -227,6 +229,7 @@ class IntelligenceRecord(models.Model):
         self._mark_reviewed("rejected", comment=reason)
         self._log_review("reject", reason=reason)
         self.chunk_ids.unlink()
+        self.dataset_id.action_sync_review_state()
         return True
 
     def action_override(self, reason):
@@ -238,8 +241,10 @@ class IntelligenceRecord(models.Model):
         self._unresolved_blocking().write({"resolved": True})
         self._recompute_validation()
         self._mark_reviewed("overridden", comment=reason)
+        self.validation_status = "ok"
         self._log_review("override", reason=reason)
         self.env["doc.intelligence.chunk"].index_record(self)
+        self.dataset_id.action_sync_review_state()
         return True
 
     @api.model
@@ -256,6 +261,7 @@ class IntelligenceRecord(models.Model):
                 continue
             record.action_approve(reason="Bulk approve of high-confidence records")
             approved |= record
+        approved.mapped("dataset_id").action_sync_review_state()
         return approved
 
 

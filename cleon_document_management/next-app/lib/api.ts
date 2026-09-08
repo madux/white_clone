@@ -49,7 +49,7 @@ const client = axios.create({
 // Keep multipart requests on a client without a JSON default header. Axios must
 // be allowed to set the browser-generated multipart boundary, otherwise the
 // FormData object can be serialized as `{}` and Odoo receives no file.
-const multipartClient = axios.create({
+export const multipartClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_ODOO_URL || "",
   withCredentials: true,
 });

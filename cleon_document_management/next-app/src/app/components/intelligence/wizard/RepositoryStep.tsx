@@ -20,9 +20,9 @@ const SOURCES = [
   {
     value: "upload" as const,
     title: "Upload documents",
-    description: "Drag-and-drop extraction is not wired yet. Use Employee or Organizational Files.",
+    description: "Extract files from your computer. They stay in this dataset, not in Employee or Organizational Files.",
     icon: Upload,
-    available: false,
+    available: true,
   },
   {
     value: "external" as const,
@@ -58,6 +58,8 @@ export default function RepositoryStep({
   source,
   processingMode,
   counts,
+  loading,
+  error,
   onSource,
   onMode,
 }: {
@@ -69,6 +71,8 @@ export default function RepositoryStep({
     upload: number;
     external: number;
   };
+  loading?: boolean;
+  error?: boolean;
   onSource: (value: "employee" | "organizational" | "upload" | "external") => void;
   onMode: (value: "fast" | "balanced" | "conservative") => void;
 }) {
@@ -77,9 +81,19 @@ export default function RepositoryStep({
       <div>
         <h2 className="text-lg font-bold text-slate-900">Where should we look?</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Pick a repository. Counts are live files you can already access.
+          Pick a repository. Counts are live files in Employee or Organizational
+          Files — not recycle bin or archived items.
         </p>
       </div>
+      {error ? (
+        <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+          Live counts could not be loaded from Odoo. Restart the server if this
+          screen was opened before the latest backend fix.
+        </p>
+      ) : null}
+      {loading && !error ? (
+        <p className="text-sm text-slate-500">Counting documents…</p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         {SOURCES.map((item) => {
           const selected = source === item.value;
@@ -107,9 +121,9 @@ export default function RepositoryStep({
                   <span className="block font-semibold text-slate-900">{item.title}</span>
                   <span className="mt-1 block text-sm text-slate-500">{item.description}</span>
                   <span className="mt-2 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {item.available
-                      ? `${count.toLocaleString()} documents`
-                      : "Not available yet"}
+                    {item.value === "upload"
+                      ? "From your computer"
+                      : `${count.toLocaleString()} documents`}
                   </span>
                 </span>
               </span>
@@ -140,6 +154,13 @@ export default function RepositoryStep({
                   {item.value === "balanced" ? " · recommended" : ""}
                 </span>
                 <span className="mt-1 block text-xs text-slate-500">{item.description}</span>
+                <span className="mt-2 block text-[11px] font-medium text-slate-400">
+                  {item.value === "fast"
+                    ? "Uses the same extractor. Review is lighter only after you pick Validation rules."
+                    : item.value === "conservative"
+                      ? "Same extractor. Prefer this when files are scans; turn OCR on in Validation."
+                      : "Same extractor for every mode: read the file text, then pull fields from that text."}
+                </span>
               </button>
             );
           })}

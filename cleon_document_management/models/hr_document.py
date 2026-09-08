@@ -252,14 +252,14 @@ class Document(models.Model):
         return self.env.user.has_group("cleon_document_management.group_document_manager")
 
     def write(self, vals):
-        if not self._is_document_manager():
+        if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
             allowed = {"favorite_user_ids", "pinned_user_ids"}
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your document favorites and pins."))
         return super().write(vals)
 
     def unlink(self):
-        if not self._is_document_manager():
+        if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
             raise AccessError(_("Only document managers can delete documents."))
         return super().unlink()
 
@@ -317,7 +317,7 @@ class Document(models.Model):
                 if not attachment:
                     raise ValidationError(_("The selected attachment does not exist."))
 
-            if not self._is_document_manager():
+            if not self.env.context.get("intelligence_upload") and not self._is_document_manager():
                 if not folder or not folder._user_can_access():
                     raise AccessError(_("You do not have access to upload into this folder."))
 

@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import re
 from io import BytesIO
@@ -18,7 +19,7 @@ NAME_RE = re.compile(r"(?:employee(?:\s+name)?|name)[:\s]+([A-Za-z][A-Za-z' -]{1
 
 IMAGE_EXT = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".tif", ".tiff", ".bmp")
 SCAN_CHARS_PER_PAGE = 40
-MAX_VISION_PAGES = 4
+MAX_VISION_PAGES = 8
 
 
 def attachment_bytes(attachment):
@@ -291,12 +292,7 @@ def extract_field_value(field, text, document):
     else:
         value = _line_after(field.name, text) or _line_after(key.replace("_", " "), text)
 
-    if not value and document.name and key in ("employee_name", "name"):
-        value = document.name
-        source = "filename"
     confidence = 0.9 if value and source == "document_text" else 0.8 if value else 0.25
-    if source == "filename":
-        confidence = 0.55
     citation = f"page {page}" if value else ""
     return {
         "value": value,
@@ -308,31 +304,248 @@ def extract_field_value(field, text, document):
     }
 
 
-def classify_document(document, dataset):
-    if not dataset.auto_classify:
-        if document.document_type_id in dataset.document_type_ids:
-            return document.document_type_id, 0.95, []
-        return document.document_type_id, 0.4, []
+def value_supported_by_text(value, text):
+    needle = re.sub(r"\s+", " ", (value or "")).strip().lower()
+    if not needle:
+        return True
+    hay = re.sub(r"\s+", " ", text or "").lower()
+    if needle in hay:
+        return True
+    digits = re.sub(r"\D", "", needle)
+    if len(digits) >= 6 and digits in re.sub(r"\D", "", text or ""):
+        return True
+    compact = re.sub(r"[\s().-]", "", needle)
+    hay_compact = re.sub(r"[\s().-]", "", hay)
+    if len(compact) >= 7 and compact in hay_compact:
+        return True
+    parts = [part for part in needle.split() if len(part) > 2]
+    return len(parts) >= 2 and all(part in hay for part in parts)
+
+
+def _candidate_types(dataset):
+    Type = dataset.env["doc.document.type"]
+    if dataset.auto_classify:
+        types = Type.search([("active", "=", True)])
+        if dataset.source == "upload":
+            return types
+        scope = (
+            "organization"
+            if dataset.source == "organizational"
+            else "employee"
+        )
+        scoped = types.filtered(
+            lambda item: (item.intelligence_scope or "employee") == scope
+        )
+        return scoped or types
+    return dataset.document_type_ids
+
+
+def _keyword_classify(document, types, text):
     haystack = " ".join(
-        [
-            document.name or "",
-            document.document_type_id.name or "",
-            (document.extracted_text or "")[:500],
-        ]
+        [document.name or "", (text or "")[:4000]]
     ).lower()
     scored = []
-    for document_type in dataset.document_type_ids or document.env["doc.document.type"].search(
-        [("active", "=", True)]
-    ):
-        labels = (document_type.classification_labels or document_type.name or "").lower()
-        hits = sum(1 for token in labels.split(",") if token.strip() and token.strip() in haystack)
-        score = 0.5 + min(hits, 3) * 0.15
-        if document.document_type_id == document_type:
-            score = max(score, 0.7)
-        scored.append((score, document_type))
+    for document_type in types:
+        labels = "%s %s" % (
+            document_type.name or "",
+            document_type.classification_labels or "",
+        )
+        tokens = [
+            token.strip().lower()
+            for token in re.split(r"[,;/]", labels)
+            if token.strip()
+        ]
+        if document_type.name:
+            tokens.append(document_type.name.lower())
+        hits = sum(1 for token in set(tokens) if token and token in haystack)
+        if hits:
+            scored.append((0.4 + min(hits, 4) * 0.12, document_type))
     scored.sort(key=lambda item: item[0], reverse=True)
     if not scored:
-        return document.document_type_id, 0.4, []
+        return types.browse(), 0.2, []
     best = scored[0]
-    alternatives = [item[1].id for item in scored[1:4]]
-    return best[1], best[0], alternatives
+    return best[1], min(best[0], 0.82), [item[1].id for item in scored[1:4]]
+
+
+def classify_document(document, dataset, text=""):
+    types = _candidate_types(dataset)
+    if not dataset.auto_classify:
+        if document.document_type_id in types:
+            return document.document_type_id, 0.95, []
+        if len(types) == 1:
+            return types[0], 0.55, []
+        return document.document_type_id, 0.4, []
+
+    fallback_type, fallback_conf, alternatives = _keyword_classify(
+        document, types, text
+    )
+    from .intelligence_groq import complete_chat, groq_configured, parse_json_object
+
+    if not types or not groq_configured(document.env):
+        return fallback_type, fallback_conf, alternatives
+
+    catalog = [
+        {
+            "id": document_type.id,
+            "name": document_type.name,
+            "description": (document_type.description or "")[:240],
+            "labels": document_type.classification_labels or "",
+        }
+        for document_type in types
+    ]
+    try:
+        raw = complete_chat(
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "You classify HR documents for Cleon AI. "
+                        "Pick the single best matching document_type_id from the catalog. "
+                        "If none fit, return document_type_id null. "
+                        "Do not force a type because it was selected in a wizard or "
+                        "because of the file name. Use the document content. "
+                        "Reply with JSON only: "
+                        '{"document_type_id": number|null, "confidence": 0-1, "reason": string}.'
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "file_name": document.name or "",
+                            "current_type": document.document_type_id.name or "",
+                            "types": catalog,
+                            "text": (text or "")[:8000],
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+            ],
+            env=document.env,
+            max_completion_tokens=800,
+        )
+        payload = parse_json_object(raw)
+        type_id = payload.get("document_type_id")
+        try:
+            type_id = int(type_id) if type_id not in (None, "", False) else 0
+        except (TypeError, ValueError):
+            type_id = 0
+        chosen = types.filtered(lambda item: item.id == type_id)[:1]
+        confidence = float(payload.get("confidence") or 0)
+        confidence = max(0.0, min(confidence, 1.0))
+        if chosen:
+            return chosen[0], confidence or 0.7, alternatives
+        return types.browse(), min(confidence or 0.25, 0.4), alternatives
+    except Exception as error:
+        _logger.warning("LLM classification failed: %s", error)
+        return fallback_type, fallback_conf, alternatives
+
+
+def extract_fields_with_llm(definitions, text, document):
+    results = {}
+    for field in definitions:
+        results[field.key] = extract_field_value(field, text, document)
+
+    from .intelligence_groq import complete_chat, groq_configured, parse_json_object
+
+    if not groq_configured(document.env) or not definitions or not (text or "").strip():
+        for field in definitions:
+            extracted = results[field.key]
+            if extracted.get("source") == "filename" or (
+                extracted.get("value")
+                and extracted.get("source") == "document_text"
+                and not value_supported_by_text(extracted["value"], text)
+            ):
+                extracted["value"] = ""
+                extracted["normalized_value"] = ""
+                extracted["confidence"] = 0.2
+                extracted["source"] = "document_text"
+        return results
+
+    spec = [
+        {
+            "key": field.key,
+            "name": field.name,
+            "type": field.field_type,
+            "required": bool(field.required),
+            "description": field.description or "",
+        }
+        for field in definitions
+    ]
+    try:
+        raw = complete_chat(
+            [
+                {
+                    "role": "system",
+                    "content": (
+                        "You extract fields from one HR document for Cleon AI. "
+                        "Use only evidence in the document text. "
+                        "If a field is not clearly present, return an empty value. "
+                        "Never use the file name as a person's name. "
+                        "Never invent dates, emails, or IDs. "
+                        "Reply with JSON only: "
+                        '{"fields": {"key": {"value": string, "confidence": 0-1, "citation": string}}}.'
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {
+                            "file_name": document.name or "",
+                            "fields": spec,
+                            "text": (text or "")[:12000],
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+            ],
+            env=document.env,
+            max_completion_tokens=1200,
+        )
+        payload = parse_json_object(raw)
+        by_key = payload.get("fields")
+        if not isinstance(by_key, dict):
+            by_key = payload if isinstance(payload, dict) else {}
+        for field in definitions:
+            item = by_key.get(field.key)
+            if item is None:
+                continue
+            if not isinstance(item, dict):
+                item = {"value": item}
+            value = str(item.get("value") or "").strip()
+            if value.lower() in ("null", "none", "n/a", "unknown"):
+                value = ""
+            if value and not value_supported_by_text(value, text):
+                value = ""
+            confidence = float(item.get("confidence") or 0)
+            if not value:
+                fallback = results[field.key]
+                if (
+                    fallback.get("value")
+                    and fallback.get("source") != "filename"
+                    and (
+                        fallback.get("source") == "employee_record"
+                        or value_supported_by_text(fallback.get("value"), text)
+                    )
+                ):
+                    continue
+                results[field.key] = {
+                    "value": "",
+                    "normalized_value": "",
+                    "confidence": 0.2,
+                    "source": "llm",
+                    "page": 1,
+                    "citation": "",
+                }
+                continue
+            results[field.key] = {
+                "value": value,
+                "normalized_value": value,
+                "confidence": max(0.2, min(confidence or 0.75, 0.98)),
+                "source": "llm",
+                "page": 1,
+                "citation": str(item.get("citation") or "")[:120],
+            }
+    except Exception as error:
+        _logger.warning("LLM field extraction failed: %s", error)
+    return results

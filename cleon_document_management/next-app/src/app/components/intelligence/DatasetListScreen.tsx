@@ -153,7 +153,13 @@ export default function DatasetListScreen() {
                   <td className="px-4 py-3">{item.field_count}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`status ${item.state === "draft" ? "pending" : ""}`}
+                      className={`status ${
+                        item.state === "draft" || item.state === "needs_review"
+                          ? "pending"
+                          : item.state === "rejected" || item.state === "failed"
+                            ? "rejected"
+                            : ""
+                      }`}
                     >
                       {item.state.replace(/_/g, " ")}
                     </span>
@@ -222,7 +228,7 @@ function DatasetRowActions({
           href={`/pages/document-intelligence/validate?dataset_id=${item.id}`}
           className="text-sm font-semibold text-brand-pink"
         >
-          Review
+          {item.state === "needs_review" ? "Review" : "Results"}
         </Link>
       )}
       {job && ["queued", "running"].includes(job.state) ? (
@@ -245,7 +251,7 @@ function DatasetRowActions({
           Resume
         </button>
       ) : null}
-      {job && ["failed", "cancelled", "completed"].includes(job.state) ? (
+      {job && ["failed", "cancelled"].includes(job.state) ? (
         <button
           type="button"
           className="text-sm font-semibold text-slate-600"

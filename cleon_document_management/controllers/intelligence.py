@@ -3,6 +3,8 @@ from odoo import api, http
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.http import request
 
+from ..models.intelligence_conversation import coerce_int_ids
+
 
 class DocumentIntelligenceController(http.Controller):
     """JSON-RPC APIs for Document Intelligence configuration."""
@@ -420,6 +422,7 @@ class DocumentIntelligenceController(http.Controller):
             "write_date": str(dataset.write_date or ""),
             "create_date": str(dataset.create_date or ""),
             "latest_job": self._job_data(latest),
+            "uploads": dataset._upload_payload(),
         }
 
     @http.route(
@@ -434,6 +437,9 @@ class DocumentIntelligenceController(http.Controller):
         if not self._is_admin():
             domain.append(("owner_id", "=", request.env.user.id))
         records = request.env["doc.intelligence.dataset"].search(domain)
+        records.filtered(
+            lambda item: item.state in ("completed", "needs_review")
+        ).action_sync_review_state()
         return {
             "success": True,
             "data": [self._dataset_data(item) for item in records],
@@ -500,6 +506,61 @@ class DocumentIntelligenceController(http.Controller):
             return {"success": True, "data": self._dataset_data(dataset)}
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
+
+    @http.route(
+        "/api/document-intelligence/datasets/upload",
+        type="http",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_upload(self, **kwargs):
+        Dataset = request.env["doc.intelligence.dataset"]
+        dataset_id = int(request.httprequest.form.get("dataset_id") or 0)
+        files = request.httprequest.files.getlist("files") or request.httprequest.files.getlist("file")
+        try:
+            if dataset_id:
+                dataset = Dataset.browse(dataset_id).exists()
+                if not dataset:
+                    raise ValidationError("Dataset not found.")
+                if not self._is_admin() and dataset.owner_id != request.env.user:
+                    return request.make_json_response(self._deny(), status=403)
+            else:
+                dataset = Dataset.save_draft({"source": "upload", "wizard_step": 1})
+            if not files:
+                raise ValidationError("Choose at least one file.")
+            dataset.action_add_uploads(files)
+            return request.make_json_response(
+                {"success": True, "data": self._dataset_data(dataset)}
+            )
+        except (AccessError, UserError, ValidationError) as error:
+            return request.make_json_response(
+                {"success": False, "message": str(error)},
+                status=400,
+            )
+
+    @http.route(
+        "/api/document-intelligence/datasets/upload/remove",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def dataset_upload_remove(self, **kwargs):
+        dataset = (
+            request.env["doc.intelligence.dataset"]
+            .browse(int(kwargs.get("id") or 0))
+            .exists()
+        )
+        if not dataset:
+            return {"success": False, "message": "Dataset not found."}
+        if not self._is_admin() and dataset.owner_id != request.env.user:
+            return self._deny("You cannot change this dataset.")
+        try:
+            dataset.action_remove_upload(kwargs.get("document_id"))
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": self._dataset_data(dataset)}
 
     @http.route(
         "/api/document-intelligence/datasets/run",
@@ -617,13 +678,34 @@ class DocumentIntelligenceController(http.Controller):
         csrf=False,
     )
     def review_queue(self, **kwargs):
-        domain = [("review_status", "in", ["needs_review", "extracted"])]
+        Record = request.env["doc.intelligence.record"]
+        Dataset = request.env["doc.intelligence.dataset"]
+        include_reviewed = bool(kwargs.get("include_reviewed"))
+        domain = []
         if kwargs.get("dataset_id"):
-            domain.append(("dataset_id", "=", int(kwargs["dataset_id"])))
-        records = request.env["doc.intelligence.record"].search(domain, limit=100)
+            dataset = Dataset.browse(int(kwargs["dataset_id"])).exists()
+            if not dataset:
+                return {"success": True, "data": []}
+            dataset.action_close_stale_and_sync()
+            domain.append(("dataset_id", "=", dataset.id))
+            if not include_reviewed:
+                domain.append(("review_status", "in", ["needs_review", "extracted"]))
+        else:
+            domain = [("review_status", "in", ["needs_review", "extracted"])]
+        records = Record.search(domain, limit=200)
+        pending_states = {"needs_review", "extracted"}
+        visible = Record.browse()
+        for record in records:
+            if record.review_status in pending_states:
+                if Dataset._document_is_extractable(
+                    record.document_id.with_context(active_test=False)
+                ):
+                    visible |= record
+            else:
+                visible |= record
         return {
             "success": True,
-            "data": [self._record_data(record) for record in records],
+            "data": [self._record_data(record) for record in visible],
         }
 
     def _load_review_record(self, kwargs):
@@ -970,7 +1052,9 @@ class DocumentIntelligenceController(http.Controller):
         term = (kwargs.get("search") or "").strip()
         if term:
             domain.append(("name", "ilike", term))
-        records = request.env["doc.intelligence.conversation"].search(domain, limit=50)
+        records = request.env["doc.intelligence.conversation"].search(
+            domain, limit=50, order="write_date desc, id desc"
+        )
         indexed = request.env["doc.intelligence.chunk"].search_count(
             [("record_id.review_status", "in", ["approved", "overridden"])]
         )
@@ -1155,8 +1239,11 @@ class DocumentIntelligenceController(http.Controller):
         if not conversation:
             conversation = request.env["doc.intelligence.conversation"].create({})
         try:
-            payload = conversation.action_attach_document(kwargs.get("document_id"))
-        except (AccessError, UserError, ValidationError) as error:
+            document_ids = coerce_int_ids(kwargs.get("document_ids"))
+            if not document_ids:
+                document_ids = coerce_int_ids(kwargs.get("document_id"))
+            payload = conversation.action_attach_documents(document_ids)
+        except (AccessError, UserError, ValidationError, TypeError, ValueError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": payload}
 
@@ -1189,14 +1276,78 @@ class DocumentIntelligenceController(http.Controller):
         if not conversation:
             conversation = request.env["doc.intelligence.conversation"].create({})
         try:
-            payload = conversation.action_attach_upload(
-                kwargs.get("name") or "upload",
-                kwargs.get("mimetype") or "application/octet-stream",
-                kwargs.get("data") or "",
+            files = kwargs.get("files") or []
+            if isinstance(files, dict):
+                files = [files]
+            if not files:
+                files = [
+                    {
+                        "name": kwargs.get("name") or "upload",
+                        "mimetype": kwargs.get("mimetype")
+                        or "application/octet-stream",
+                        "data": kwargs.get("data") or "",
+                    }
+                ]
+            payload = conversation.action_attach_uploads(files)
+        except (AccessError, UserError, ValidationError) as error:
+            return {"success": False, "message": str(error)}
+        return {"success": True, "data": payload}
+
+    @http.route(
+        "/api/document-intelligence/conversations/remove-sources",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def conversation_remove_sources(self, **kwargs):
+        conversation = self._conversation(kwargs)
+        if not conversation:
+            return {"success": False, "message": "Conversation not found."}
+        try:
+            payload = conversation.action_remove_sources(
+                kwargs.get("source_ids") or kwargs.get("source_id")
             )
         except (AccessError, UserError, ValidationError) as error:
             return {"success": False, "message": str(error)}
         return {"success": True, "data": payload}
+
+    @http.route(
+        "/document-management/intelligence/ask-source/<int:source_id>/preview",
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def ask_source_preview(self, source_id, **kwargs):
+        source = request.env["doc.intelligence.ask.source"].browse(source_id).exists()
+        if not source:
+            return request.not_found()
+        conversation = source.conversation_id
+        is_admin = request.env.user.has_group("base.group_system") or request.env.user.has_group(
+            "cleon_document_management.group_document_admin"
+        )
+        if not conversation or (conversation.user_id != request.env.user and not is_admin):
+            return request.not_found()
+        if source.document_id and source.document_id.attachment_id:
+            attachment = source.document_id.attachment_id
+        else:
+            attachment = source.attachment_id
+        if not attachment:
+            return request.not_found()
+        from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+            attachment_bytes,
+        )
+
+        return request.make_response(
+            attachment_bytes(attachment),
+            headers=[
+                ("Content-Type", attachment.mimetype or "application/octet-stream"),
+                (
+                    "Content-Disposition",
+                    'inline; filename="%s"' % (attachment.name or source.name or "file"),
+                ),
+            ],
+        )
 
     @http.route(
         "/api/document-intelligence/library-documents",
@@ -1207,10 +1358,20 @@ class DocumentIntelligenceController(http.Controller):
     )
     def library_documents(self, **kwargs):
         term = (kwargs.get("search") or "").strip()
-        domain = [("active", "=", True)]
+        domain = [
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("distribution_status", "=", "active"),
+            ("folder_id.active", "=", True),
+            ("folder_id.deleted_at", "=", False),
+            ("folder_id.distribution_status", "=", "active"),
+            ("folder_id.folder_type", "in", ["employee", "organizational"]),
+        ]
         if term:
             domain.append(("name", "ilike", term))
-        documents = request.env["doc.document"].search(domain, limit=40)
+        documents = request.env["doc.document"].search(
+            domain, limit=80, order="write_date desc"
+        )
         return {
             "success": True,
             "data": [

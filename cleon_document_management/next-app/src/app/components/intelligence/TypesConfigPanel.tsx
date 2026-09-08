@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import type { IntelligenceDocumentType } from "../../../../lib/intelligence-api";
 import {
   useCreateIntelligenceType,
   useIntelligenceTypes,
@@ -12,33 +13,60 @@ import {
   IntelligenceLoading,
 } from "./states";
 
+const EMPTY_FORM = {
+  name: "",
+  description: "",
+  intelligence_scope: "employee",
+  classification_labels: "",
+  category: "other",
+};
+
 export default function TypesConfigPanel() {
   const types = useIntelligenceTypes();
   const createType = useCreateIntelligenceType();
   const updateType = useUpdateIntelligenceType();
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    intelligence_scope: "employee",
-    classification_labels: "",
-    category: "other",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const busy = createType.isPending || updateType.isPending;
 
-  const onCreate = async (event: FormEvent) => {
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const openCreate = () => {
+    setError("");
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (item: IntelligenceDocumentType) => {
+    setError("");
+    setEditingId(item.id);
+    setForm({
+      name: item.name,
+      description: item.description || "",
+      intelligence_scope: item.intelligence_scope || "employee",
+      classification_labels: item.classification_labels || "",
+      category: item.category || "other",
+    });
+    setShowForm(true);
+  };
+
+  const onSave = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
     try {
-      await createType.mutateAsync(form);
-      setShowForm(false);
-      setForm({
-        name: "",
-        description: "",
-        intelligence_scope: "employee",
-        classification_labels: "",
-        category: "other",
-      });
+      if (editingId) {
+        await updateType.mutateAsync({ id: editingId, ...form });
+      } else {
+        await createType.mutateAsync(form);
+      }
+      closeForm();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save type.");
     }
@@ -50,12 +78,12 @@ export default function TypesConfigPanel() {
         <button
           type="button"
           className="rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white"
-          onClick={() => setShowForm(true)}
+          onClick={openCreate}
         >
           Add document type
         </button>
       </div>
-      {error ? <IntelligenceError message={error} /> : null}
+      {error && !showForm ? <IntelligenceError message={error} /> : null}
       {types.isError ? (
         <IntelligenceError message="Document types could not be loaded. Confirm you are logged into Odoo." />
       ) : null}
@@ -70,7 +98,7 @@ export default function TypesConfigPanel() {
                 <th className="px-4 py-3">Scope</th>
                 <th className="px-4 py-3">Profile</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3" />
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -92,15 +120,24 @@ export default function TypesConfigPanel() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      className="text-sm font-semibold text-brand-pink"
-                      onClick={() =>
-                        updateType.mutate({ id: item.id, active: !item.active })
-                      }
-                    >
-                      {item.active ? "Deactivate" : "Activate"}
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        className="text-sm font-semibold text-slate-600 hover:text-brand-text"
+                        onClick={() => openEdit(item)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="text-sm font-semibold text-brand-pink"
+                        onClick={() =>
+                          updateType.mutate({ id: item.id, active: !item.active })
+                        }
+                      >
+                        {item.active ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -117,10 +154,17 @@ export default function TypesConfigPanel() {
       {showForm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <form
-            onSubmit={onCreate}
+            onSubmit={onSave}
             className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
           >
-            <h2 className="text-xl font-bold">New document type</h2>
+            <h2 className="text-xl font-bold">
+              {editingId ? "Edit document type" : "New document type"}
+            </h2>
+            {error ? (
+              <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
             <label className="mt-4 block">
               <span className="label">Name</span>
               <input
@@ -129,6 +173,16 @@ export default function TypesConfigPanel() {
                 value={form.name}
                 onChange={(event) =>
                   setForm({ ...form, name: event.target.value })
+                }
+              />
+            </label>
+            <label className="mt-3 block">
+              <span className="label">Description</span>
+              <textarea
+                className="field min-h-16"
+                value={form.description}
+                onChange={(event) =>
+                  setForm({ ...form, description: event.target.value })
                 }
               />
             </label>
@@ -159,15 +213,16 @@ export default function TypesConfigPanel() {
               <button
                 type="button"
                 className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold"
-                onClick={() => setShowForm(false)}
+                onClick={closeForm}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white"
+                disabled={busy}
+                className="rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                Save
+                {busy ? "Saving…" : "Save"}
               </button>
             </div>
           </form>

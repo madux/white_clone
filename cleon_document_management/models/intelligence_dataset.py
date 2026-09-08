@@ -84,6 +84,7 @@ class IntelligenceDataset(models.Model):
             ("running", "Running"),
             ("paused", "Paused"),
             ("completed", "Completed"),
+            ("rejected", "Rejected"),
             ("failed", "Failed"),
             ("needs_review", "Needs review"),
             ("cancelled", "Cancelled"),
@@ -122,6 +123,13 @@ class IntelligenceDataset(models.Model):
     field_count = fields.Integer(compute="_compute_field_count")
     average_confidence = fields.Float(default=0.0)
     archived = fields.Boolean(default=False)
+    upload_document_ids = fields.Many2many(
+        "doc.document",
+        "doc_intelligence_dataset_upload_rel",
+        "dataset_id",
+        "document_id",
+        string="Uploaded files",
+    )
 
     @api.depends("field_keys_json")
     def _compute_field_count(self):
@@ -149,6 +157,149 @@ class IntelligenceDataset(models.Model):
             return []
         return [int(value) for value in values if value]
 
+    UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+    UPLOAD_SUFFIXES = {
+        ".pdf",
+        ".txt",
+        ".doc",
+        ".docx",
+        ".xls",
+        ".xlsx",
+        ".ppt",
+        ".pptx",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".tif",
+        ".tiff",
+        ".bmp",
+    }
+
+    def _upload_payload(self):
+        self.ensure_one()
+        rows = []
+        for document in self.upload_document_ids:
+            attachment = document.attachment_id
+            rows.append(
+                {
+                    "id": document.id,
+                    "name": document.name,
+                    "mimetype": attachment.mimetype or "",
+                    "file_size": attachment.file_size or 0,
+                }
+            )
+        return rows
+
+    def _ensure_upload_folder(self):
+        Folder = self.env["doc.folder"].sudo().with_context(intelligence_upload_folder=True)
+        folder = Folder.search(
+            [
+                ("folder_type", "=", "intelligence"),
+                ("company_id", "=", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if folder:
+            return folder
+        return Folder.create(
+            {
+                "folder_name": _("Document Intelligence uploads"),
+                "folder_type": "intelligence",
+                "access_scope": "admin_only",
+                "description": _("Private staging folder for dataset wizard uploads."),
+            }
+        )
+
+    def _placeholder_document_type(self):
+        Type = self.env["doc.document.type"]
+        if self.document_type_ids:
+            return self.document_type_ids[0]
+        existing = Type.search([("active", "=", True)], limit=1)
+        if existing:
+            return existing
+        return Type.sudo().create(
+            {
+                "name": _("Uploaded file"),
+                "category": "other",
+                "intelligence_scope": "employee",
+            }
+        )
+
+    def action_add_uploads(self, uploads):
+        self.ensure_one()
+        if self.state not in ("draft", "failed", "cancelled"):
+            raise ValidationError(_("Files can only be added to a draft dataset."))
+        folder = self._ensure_upload_folder()
+        document_type = self._placeholder_document_type()
+        created = self.env["doc.document"]
+        seen = set(self.upload_document_ids.mapped("checksum"))
+        for upload in uploads or []:
+            name = (getattr(upload, "filename", None) or "upload").strip() or "upload"
+            suffix = (".%s" % name.rsplit(".", 1)[-1].lower()) if "." in name else ""
+            if suffix and suffix not in self.UPLOAD_SUFFIXES:
+                raise ValidationError(
+                    _("“%s” is not a supported file type.") % name
+                )
+            raw = upload.read() if hasattr(upload, "read") else b""
+            if not raw:
+                raise ValidationError(_("“%s” is empty.") % name)
+            if len(raw) > self.UPLOAD_MAX_BYTES:
+                raise ValidationError(
+                    _("“%s” is larger than 25 MB.") % name
+                )
+            attachment = self.env["ir.attachment"].create(
+                {
+                    "name": name,
+                    "type": "binary",
+                    "mimetype": getattr(upload, "mimetype", None)
+                    or "application/octet-stream",
+                    "raw": raw,
+                }
+            )
+            if self.deduplicate and attachment.checksum in seen:
+                attachment.unlink()
+                continue
+            seen.add(attachment.checksum)
+            document = (
+                self.env["doc.document"]
+                .sudo()
+                .with_context(intelligence_upload=True)
+                .create(
+                    {
+                        "name": name,
+                        "folder_id": folder.id,
+                        "document_type_id": document_type.id,
+                        "attachment_id": attachment.id,
+                        "owner_id": self.env.user.id,
+                        "uploaded_by": self.env.user.id,
+                    }
+                )
+            )
+            created |= document
+        if created:
+            self.upload_document_ids = [(4, document.id) for document in created]
+            self.source = "upload"
+        return created
+
+    def action_remove_upload(self, document_id):
+        self.ensure_one()
+        document = self.upload_document_ids.filtered(
+            lambda item: item.id == int(document_id or 0)
+        )
+        if not document:
+            raise ValidationError(_("That file is not on this dataset."))
+        self.upload_document_ids = [(3, document.id)]
+        if not document.sudo().env["doc.intelligence.record"].search_count(
+            [("document_id", "=", document.id)]
+        ):
+            attachment = document.attachment_id
+            document.sudo().with_context(intelligence_upload=True).unlink()
+            if attachment:
+                attachment.sudo().unlink()
+        return True
+
     @api.model
     def _domain_from_values(
         self,
@@ -163,6 +314,9 @@ class IntelligenceDataset(models.Model):
             return [("id", "=", 0)]
         domain = [
             ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("distribution_status", "=", "active"),
+            ("folder_id.active", "=", True),
             (
                 "folder_id.folder_type",
                 "=",
@@ -201,16 +355,43 @@ class IntelligenceDataset(models.Model):
                 domain.append(("employee_id.work_location_id", "in", ids))
         return domain
 
+    @api.model
+    def _document_is_extractable(self, document):
+        document = document.with_context(active_test=False)
+        if not document or not document.exists():
+            return False
+        if not document.active or document.deleted_at:
+            return False
+        if document.distribution_status and document.distribution_status != "active":
+            return False
+        if document.folder_id and not document.folder_id.active:
+            return False
+        attachment = document.attachment_id
+        if not attachment:
+            return False
+        try:
+            from odoo.addons.cleon_document_management.models.intelligence_pipeline import (
+                attachment_bytes,
+            )
+
+            return bool(attachment_bytes(attachment))
+        except Exception:
+            return bool(attachment.datas or getattr(attachment, "raw", False))
+
     def _source_documents(self):
         self.ensure_one()
-        domain = self._domain_from_values(
-            self.source,
-            self.scope_kind,
-            self._scope_ids(),
-            self.document_type_ids.ids,
-            self.auto_classify,
-        )
-        documents = self.env["doc.document"].search(domain)
+        if self.source == "upload":
+            documents = self.sudo().upload_document_ids
+        else:
+            domain = self._domain_from_values(
+                self.source,
+                self.scope_kind,
+                self._scope_ids(),
+                self.document_type_ids.ids,
+                self.auto_classify,
+            )
+            documents = self.env["doc.document"].search(domain)
+        documents = documents.filtered(self._document_is_extractable)
         if self.deduplicate:
             seen = set()
             unique = self.env["doc.document"]
@@ -224,16 +405,30 @@ class IntelligenceDataset(models.Model):
         return documents
 
     @api.model
+    def _wizard_model_rows(self, model_names, domain=None):
+        domain = domain or []
+        for name in model_names:
+            if name not in self.env:
+                continue
+            try:
+                records = self.env[name].search(domain, order="name", limit=500)
+            except Exception:
+                _logger.exception("wizard_options could not search %s", name)
+                continue
+            return [{"id": item.id, "name": item.display_name} for item in records]
+        return []
+
+    @api.model
     def wizard_options(self):
         Document = self.env["doc.document"]
-        employee_domain = [
+        live = [
             ("active", "=", True),
-            ("folder_id.folder_type", "=", "employee"),
+            ("deleted_at", "=", False),
+            ("distribution_status", "=", "active"),
+            ("folder_id.active", "=", True),
         ]
-        org_domain = [
-            ("active", "=", True),
-            ("folder_id.folder_type", "=", "organizational"),
-        ]
+        employee_domain = live + [("folder_id.folder_type", "=", "employee")]
+        org_domain = live + [("folder_id.folder_type", "=", "organizational")]
         user = self.env.user
         is_manager = user.has_group("base.group_system") or user.has_group(
             "cleon_document_management.group_document_admin"
@@ -248,28 +443,15 @@ class IntelligenceDataset(models.Model):
             [] if is_manager else [("id", "=", employee.department_id.id or 0)],
             order="name",
         )
-        grades = []
-        if "hr.grade" in self.env:
-            grades = self.env["hr.grade"].search(
-                [] if is_manager else [("id", "=", employee.grade_id.id or 0)],
-                order="name",
-            )
-        branches = self.env["hr.branch"]
-        if "hr.branch" in self.env:
-            branches = self.env["hr.branch"].search([], order="name")
-        elif "eha.branch" in self.env:
-            branches = self.env["eha.branch"].search([], order="name")
-        employment_types = self.env["hr.core_employment_type"]
-        if "hr.core_employment_type" in self.env:
-            employment_types = self.env["hr.core_employment_type"].search([], order="name")
+        grade_domain = []
+        if not is_manager:
+            grade_id = employee.grade_id.id if "grade_id" in employee._fields else 0
+            grade_domain = [("id", "=", grade_id or 0)]
         locations = []
         if "work_location_id" in self.env["hr.employee"]._fields:
-            Location = self.env["hr.employee"]._fields["work_location_id"].comodel_name
-            if Location:
-                locations = [
-                    {"id": item.id, "name": item.display_name}
-                    for item in self.env[Location].search([], order="name")
-                ]
+            location_model = self.env["hr.employee"]._fields["work_location_id"].comodel_name
+            if location_model:
+                locations = self._wizard_model_rows([location_model])
         return {
             "sources": {
                 "employee": Document.search_count(employee_domain),
@@ -286,17 +468,96 @@ class IntelligenceDataset(models.Model):
                 for item in employees
             ],
             "departments": [{"id": item.id, "name": item.name} for item in departments],
-            "grades": [{"id": item.id, "name": item.name} for item in grades],
-            "business_units": [{"id": item.id, "name": item.display_name} for item in branches],
-            "employment_types": [
-                {"id": item.id, "name": item.display_name} for item in employment_types
-            ],
+            "grades": self._wizard_model_rows(["hr.grade"], grade_domain),
+            "business_units": self._wizard_model_rows(
+                ["multi.branch", "eha.branch", "hr.branch"]
+            ),
+            "employment_types": self._wizard_model_rows(["hr.core_employment_type"]),
             "locations": locations,
         }
+
+    def action_sync_review_state(self):
+        Record = self.env["doc.intelligence.record"]
+        for dataset in self:
+            if dataset.state in (
+                "draft",
+                "queued",
+                "running",
+                "paused",
+                "failed",
+                "cancelled",
+            ):
+                continue
+            pending = Record.search_count(
+                [
+                    ("dataset_id", "=", dataset.id),
+                    ("review_status", "in", ["needs_review", "extracted"]),
+                ]
+            )
+            jobs = dataset.job_ids.filtered(
+                lambda job: job.state in ("needs_review", "completed", "rejected")
+            )
+            if pending:
+                next_state = "needs_review"
+            else:
+                next_state = dataset._closed_review_state()
+            dataset.state = next_state
+            jobs.write({"state": next_state})
+        return True
+
+    def _closed_review_state(self):
+        self.ensure_one()
+        Record = self.env["doc.intelligence.record"]
+        accepted = Record.search_count(
+            [
+                ("dataset_id", "=", self.id),
+                ("review_status", "in", ["approved", "overridden"]),
+            ]
+        )
+        if accepted:
+            return "completed"
+        rejected = Record.search_count(
+            [
+                ("dataset_id", "=", self.id),
+                ("review_status", "=", "rejected"),
+            ]
+        )
+        if rejected:
+            return "rejected"
+        return "completed"
+
+    def action_close_stale_and_sync(self):
+        Record = self.env["doc.intelligence.record"]
+        for dataset in self:
+            pending = Record.search(
+                [
+                    ("dataset_id", "=", dataset.id),
+                    ("review_status", "in", ["needs_review", "extracted"]),
+                ]
+            )
+            for record in pending:
+                document = record.document_id.with_context(active_test=False)
+                if dataset._document_is_extractable(document):
+                    continue
+                record.write(
+                    {
+                        "review_status": "superseded",
+                        "reviewer_id": self.env.user.id,
+                        "reviewed_at": fields.Datetime.now(),
+                        "review_comment": record.review_comment
+                        or "Source file is missing, archived, or in the recycle bin.",
+                    }
+                )
+            dataset.action_sync_review_state()
+        return True
 
     @api.model
     def wizard_estimate(self, values):
         values = values or {}
+        if (values.get("source") or "") == "upload":
+            dataset = self.browse(int(values.get("id") or values.get("dataset_id") or 0)).exists()
+            count = len(dataset.upload_document_ids) if dataset else 0
+            return {"document_count": count, "employee_count": 0}
         domain = self._domain_from_values(
             values.get("source"),
             values.get("scope_kind") or "company",
@@ -339,19 +600,29 @@ class IntelligenceDataset(models.Model):
                 _("External connectors are not available in this application yet.")
             )
         if self.source == "upload":
-            raise ValidationError(
-                _("Direct upload is not available in this wizard yet. Choose Employee or Organizational Files.")
-            )
+            if not self.upload_document_ids:
+                raise ValidationError(_("Upload at least one file before running extraction."))
         if self.source == "employee" and self.scope_kind != "company" and not self._scope_ids():
             raise ValidationError(_("Select who this dataset covers."))
         if not self.auto_classify and not self.document_type_ids:
             raise ValidationError(
                 _("A dataset cannot run with zero document types.")
             )
-        if not self._field_keys():
+        if not self.auto_classify and not self._field_keys():
             raise ValidationError(_("A dataset cannot run with zero fields."))
         if not (self.name or "").strip():
             raise ValidationError(_("Give the dataset a name."))
+
+    def _assign_upload_types(self):
+        self.ensure_one()
+        if self.source != "upload" or not self.document_type_ids:
+            return
+        default = self.document_type_ids[0]
+        if self.auto_classify:
+            return
+        self.upload_document_ids.sudo().with_context(intelligence_upload=True).write(
+            {"document_type_id": default.id}
+        )
 
     @api.model
     def save_draft(self, values, dataset_id=False):
@@ -386,6 +657,7 @@ class IntelligenceDataset(models.Model):
     def action_run(self):
         self.ensure_one()
         self._validate_run()
+        self._assign_upload_types()
         self._snapshot_thresholds()
         self._snapshot_profiles()
         self.env.cr.execute(
@@ -434,40 +706,6 @@ class IntelligenceDataset(models.Model):
         self.unlink()
         return True
 
-    def _source_documents(self):
-        self.ensure_one()
-        domain = [("active", "=", True)]
-        folder_type = "organizational"
-        if self.source == "employee":
-            folder_type = "employee"
-        if self.source in ("employee", "organizational", "upload"):
-            domain.append(("folder_id.folder_type", "=", folder_type))
-        if not self.auto_classify and self.document_type_ids:
-            domain.append(("document_type_id", "in", self.document_type_ids.ids))
-        scope_ids = self._scope_ids()
-        if self.scope_kind in ("one_employee", "multiple_employees") and scope_ids:
-            domain.append(("employee_id", "in", scope_ids))
-        elif self.scope_kind == "department" and scope_ids:
-            domain.append(("employee_id.department_id", "in", scope_ids))
-        elif self.scope_kind == "grade" and scope_ids:
-            domain.append(("folder_id.grade_ids", "in", scope_ids))
-        elif self.scope_kind == "business_unit" and scope_ids:
-            domain.append(("folder_id.branch_ids", "in", scope_ids))
-        elif self.scope_kind == "employment_type" and scope_ids:
-            domain.append(("folder_id.employment_type_ids", "in", scope_ids))
-        documents = self.env["doc.document"].search(domain, limit=200)
-        if self.deduplicate:
-            seen = set()
-            unique = self.env["doc.document"]
-            for document in documents:
-                stamp = document.checksum or document.attachment_id.id
-                if stamp in seen:
-                    continue
-                seen.add(stamp)
-                unique |= document
-            documents = unique
-        return documents
-
 
 class IntelligenceJob(models.Model):
     _name = "doc.intelligence.job"
@@ -486,6 +724,7 @@ class IntelligenceJob(models.Model):
             ("running", "Running"),
             ("paused", "Paused"),
             ("completed", "Completed"),
+            ("rejected", "Rejected"),
             ("failed", "Failed"),
             ("needs_review", "Needs review"),
             ("cancelled", "Cancelled"),
@@ -516,11 +755,11 @@ class IntelligenceJob(models.Model):
         from .intelligence_pipeline import (
             classify_document,
             extract_document_text,
-            extract_field_value,
+            extract_fields_with_llm,
         )
 
         for job in self:
-            if job.state in ("completed", "failed", "cancelled", "paused"):
+            if job.state in ("completed", "rejected", "failed", "cancelled", "paused"):
                 continue
             try:
                 dataset = job.dataset_id
@@ -538,7 +777,7 @@ class IntelligenceJob(models.Model):
                         field_keys,
                         classify_document,
                         extract_document_text,
-                        extract_field_value,
+                        extract_fields_with_llm,
                     )
                 job.processed_count = len(job.record_ids)
                 job.progress = (
@@ -575,8 +814,9 @@ class IntelligenceJob(models.Model):
                     job.state = "needs_review"
                     dataset.state = "needs_review"
                 else:
-                    job.state = "completed"
-                    dataset.state = "completed"
+                    closed = dataset._closed_review_state()
+                    job.state = closed
+                    dataset.state = closed
                 self.env["doc.intelligence.audit.event"].log_dataset(
                     dataset,
                     "extraction",
@@ -606,7 +846,7 @@ class IntelligenceJob(models.Model):
         field_keys,
         classify_document,
         extract_document_text,
-        extract_field_value,
+        extract_fields_with_llm,
     ):
         self.ensure_one()
         dataset = self.dataset_id
@@ -618,7 +858,9 @@ class IntelligenceJob(models.Model):
         used_ocr = text_source in ("groq_vision", "tesseract")
         if text:
             document.action_mark_ocr_completed(text)
-        document_type, class_conf, _alts = classify_document(document, dataset)
+        document_type, class_conf, _alts = classify_document(
+            document, dataset, text
+        )
         profile = document_type.default_profile_id if document_type else False
         version = False
         if profile:
@@ -629,7 +871,7 @@ class IntelligenceJob(models.Model):
                 or profile.current_version_id
             )
         definitions = version.field_ids if version else self.env["doc.intelligence.field"]
-        if field_keys:
+        if field_keys and not dataset.auto_classify:
             definitions = definitions.filtered(lambda item: item.key in field_keys)
         record = self.env["doc.intelligence.record"].create(
             {
@@ -646,8 +888,39 @@ class IntelligenceJob(models.Model):
         )
         field_confidences = []
         blocking = False
+        if dataset.auto_classify and not document_type:
+            blocking = True
+            self.env["doc.intelligence.validation.issue"].create(
+                {
+                    "record_id": record.id,
+                    "severity": "blocking",
+                    "message": _(
+                        "This file could not be classified as a known document type. "
+                        "It was not treated as one of the selected types."
+                    ),
+                }
+            )
+        if dataset.auto_classify and document_type and class_conf < 0.55:
+            self.env["doc.intelligence.validation.issue"].create(
+                {
+                    "record_id": record.id,
+                    "severity": "warning",
+                    "message": _(
+                        "Classification is uncertain (%s). Review the document type before approving."
+                    )
+                    % document_type.name,
+                }
+            )
+        extracted_map = extract_fields_with_llm(definitions, text, document)
         for definition in definitions:
-            extracted = extract_field_value(definition, text, document)
+            extracted = extracted_map.get(definition.key) or {
+                "value": "",
+                "normalized_value": "",
+                "confidence": 0.2,
+                "source": "llm",
+                "page": 1,
+                "citation": "",
+            }
             self.env["doc.intelligence.extracted.field"].create(
                 {
                     "record_id": record.id,
@@ -785,6 +1058,9 @@ class IntelligenceJob(models.Model):
             else [("dataset_id.owner_id", "=", user.id)]
         )
         jobs = Job.search(job_domain, limit=20)
+        jobs.mapped("dataset_id").filtered(
+            lambda item: item.state in ("completed", "needs_review")
+        ).action_sync_review_state()
         reviewed = Record.search(
             record_domain
             + [("review_status", "in", ["approved", "rejected", "overridden"])]
@@ -815,7 +1091,11 @@ class IntelligenceJob(models.Model):
         quality = None
         quality_source = "none"
         if approved:
-            ok = len(approved.filtered(lambda record: record.validation_status == "ok"))
+            ok = len(
+                approved.filtered(
+                    lambda record: not record._unresolved_blocking()
+                )
+            )
             quality = round(100.0 * ok / len(approved), 1)
             quality_source = "approved"
         today = fields.Date.context_today(self)

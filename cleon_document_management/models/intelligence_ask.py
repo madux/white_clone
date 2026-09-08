@@ -273,33 +273,37 @@ def answer_structured(env, question, dataset_id=None):
     return payload
 
 
-def start_answer(env, question, extra_context="", history=None, dataset_id=None):
+def start_answer(
+    env, question, extra_context="", history=None, dataset_id=None, has_attachments=False
+):
     from .intelligence_groq import LLM_MODEL, groq_configured, _answer_messages
 
-    structured = answer_structured(env, question, dataset_id=dataset_id)
-    if structured.get("fact_based"):
-        intent = structured.get("intent") or {}
-        return {
-            "mode": "ready",
-            "result": {
-                "answer": structured["answer"],
-                "insufficient_evidence": structured.get("insufficient_evidence", True),
-                "citations": [],
-                "fact_based": True,
-                "intent": intent.get("label") or intent.get("kind") or "",
-                "model": "structured-fields",
-            },
-        }
+    extra_context = (extra_context or "").strip()
+    if not extra_context and not has_attachments:
+        structured = answer_structured(env, question, dataset_id=dataset_id)
+        if structured.get("fact_based"):
+            intent = structured.get("intent") or {}
+            return {
+                "mode": "ready",
+                "result": {
+                    "answer": structured["answer"],
+                    "insufficient_evidence": structured.get("insufficient_evidence", True),
+                    "citations": [],
+                    "fact_based": True,
+                    "intent": intent.get("label") or intent.get("kind") or "",
+                    "model": "structured-fields",
+                },
+            }
     chunks = env["doc.intelligence.chunk"].search_similar(
         question, dataset_id=dataset_id
     )
     evidence = []
     if extra_context:
         evidence.append(extra_context)
-    for chunk in chunks:
+    for chunk in chunks[:6]:
         document = chunk.document_id
         evidence.append(
-            "Document: %s | Employee: %s | Page: %s\n%s"
+            "DATASET EXCERPT — Document: %s | Employee: %s | Page: %s\n%s"
             % (
                 document.name,
                 chunk.employee_id.name or "n/a",
@@ -312,8 +316,14 @@ def start_answer(env, question, extra_context="", history=None, dataset_id=None)
             "mode": "ready",
             "result": {
                 "answer": (
-                    "There is not enough approved, indexed evidence to answer. "
-                    "Run a dataset, review records, and approve them first."
+                    "There is not enough indexed evidence to answer. "
+                    "Attach a file to this chat, or run a dataset, review records, "
+                    "and approve them first."
+                    if has_attachments
+                    else (
+                        "There is not enough approved, indexed evidence to answer. "
+                        "Run a dataset, review records, and approve them first or attach a file."
+                    )
                 ),
                 "insufficient_evidence": True,
                 "citations": [],
@@ -352,7 +362,9 @@ def start_answer(env, question, extra_context="", history=None, dataset_id=None)
     }
 
 
-def answer_question(env, question, extra_context="", history=None, dataset_id=None):
+def answer_question(
+    env, question, extra_context="", history=None, dataset_id=None, has_attachments=False
+):
     from .intelligence_groq import answer_with_context, strip_reference_sections
 
     started = start_answer(
@@ -361,6 +373,7 @@ def answer_question(env, question, extra_context="", history=None, dataset_id=No
         extra_context=extra_context,
         history=history,
         dataset_id=dataset_id,
+        has_attachments=has_attachments,
     )
     if started["mode"] == "ready":
         return started["result"]

@@ -147,8 +147,9 @@ export default function DocumentTypesStep({
       <div>
         <h2 className="text-lg font-bold text-slate-900">Which document types?</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Pick types to extract, or let the job classify files when they arrive.
-          Types with no extraction fields can still be used for classification.
+          {autoClassify
+            ? "Optional: highlight types you care about. The job still classifies against every registered type in this repository."
+            : "Pick types to extract, or let the job classify files when they arrive. Types with no extraction fields can still be used for classification."}
         </p>
       </div>
 
@@ -164,8 +165,10 @@ export default function DocumentTypesStep({
             Automatic classification
           </span>
           <span className="mt-1 block text-sm text-slate-500">
-            Each file is matched to a registered type, then that type’s default
-            profile is used. Low-confidence matches go to review.
+            Cleon AI reads each file and picks the matching registered type.
+            Selecting a type here does not force every file into that type. A
+            contract will not be treated as a CV just because CV is selected.
+            Low-confidence matches go to review.
           </span>
         </span>
       </label>

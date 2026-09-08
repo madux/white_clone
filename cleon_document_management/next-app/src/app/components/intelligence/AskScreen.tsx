@@ -1,16 +1,20 @@
 "use client";
 
 import {
+  ArrowUp,
   Bookmark,
+  Eye,
   FileText,
   Link2,
+  Loader2,
   Mic,
   Plus,
   Search,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormEvent,
   useEffect,
@@ -43,6 +47,21 @@ const SUGGESTIONS = [
 
 const CATEGORIES = ["All Suggestions", "HR", "Compliance", "Contracts", "Onboarding", "Conduct"];
 
+function sourceHref(source: IntelligenceConversation["sources"][number]) {
+  if (source.kind === "url" && source.url) {
+    return source.url;
+  }
+  const origin = (process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "");
+  return `${origin}${source.preview_url || ""}`;
+}
+
+function formatFileSize(bytes: number) {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function fileToBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -57,6 +76,9 @@ function fileToBase64(file: File) {
 
 export default function AskScreen() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sourceDocumentId = Number(searchParams.get("document") || 0) || 0;
   const [tab, setTab] = useState<"recent" | "saved">("recent");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Suggestions");
@@ -70,12 +92,28 @@ export default function AskScreen() {
   const [libraryRows, setLibraryRows] = useState<
     Array<{ id: number; name: string; document_type: string; employee: string }>
   >([]);
+  const [librarySelected, setLibrarySelected] = useState<number[]>([]);
+  const [sourceSelected, setSourceSelected] = useState<number[]>([]);
+  const [viewingSource, setViewingSource] = useState<{
+    name: string;
+    href: string;
+    external: boolean;
+  } | null>(null);
   const [listening, setListening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingFiles, setUploadingFiles] = useState<
+    Array<{ name: string; size: number }>
+  >([]);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const attachRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const datasets = useIntelligenceDatasets();
   const list = useIntelligenceConversations(tab === "saved", search);
   const messages = conversation?.messages || [];
@@ -84,12 +122,81 @@ export default function AskScreen() {
   );
 
   useEffect(() => {
+    const thread = threadRef.current;
+    if (thread) {
+      thread.scrollTop = thread.scrollHeight;
+      return;
+    }
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length, busy, thinking, messages[messages.length - 1]?.content]);
+
+  useEffect(() => {
+    if (!attachOpen) {
+      return;
+    }
+    const onPointer = (event: MouseEvent) => {
+      if (!attachRef.current?.contains(event.target as Node)) {
+        setAttachOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setAttachOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [attachOpen]);
+
+  useEffect(() => {
+    const ids = new Set((conversation?.sources || []).map((source) => source.id));
+    setSourceSelected((current) => current.filter((id) => ids.has(id)));
+  }, [conversation?.sources]);
 
   async function refreshList() {
     await queryClient.invalidateQueries({ queryKey: ["intelligence", "conversations"] });
   }
+
+  useEffect(() => {
+    if (!sourceDocumentId) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setBusy(true);
+      setError("");
+      try {
+        const next = await intelligenceDatasetApi.conversationAttachLibrary({
+          document_id: sourceDocumentId,
+        });
+        if (cancelled) {
+          return;
+        }
+        setConversation(next);
+        await refreshList();
+        router.replace("/pages/document-intelligence/ask");
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "That document could not be opened in Ask AI.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setBusy(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sourceDocumentId, queryClient, router]);
 
   async function send(text = question) {
     const trimmed = text.trim();
@@ -202,11 +309,20 @@ export default function AskScreen() {
   }
 
   async function deleteChat(id: number) {
-    await intelligenceDatasetApi.conversationDelete(id);
-    if (conversation?.id === id) {
-      setConversation(null);
+    setBusy(true);
+    setError("");
+    try {
+      await intelligenceDatasetApi.conversationDelete(id);
+      if (conversation?.id === id) {
+        setConversation(null);
+      }
+      setPendingDelete(null);
+      await refreshList();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "The chat could not be deleted.");
+    } finally {
+      setBusy(false);
     }
-    await refreshList();
   }
 
   async function ensureConversation() {
@@ -218,26 +334,105 @@ export default function AskScreen() {
     return created;
   }
 
-  async function attachUpload(file: File) {
-    setBusy(true);
-    setError("");
+  async function attachUploads(fileList: File[]) {
+    const files = fileList.filter(Boolean);
+    if (!files.length) {
+      return;
+    }
+    const attachedNames = new Set(
+      (conversation?.sources || []).map((source) => source.name.trim().toLowerCase()),
+    );
+    const unique: File[] = [];
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+    files.forEach((file) => {
+      const key = file.name.trim().toLowerCase();
+      if (attachedNames.has(key) || seen.has(key)) {
+        duplicates.push(file.name);
+        return;
+      }
+      seen.add(key);
+      unique.push(file);
+    });
+    if (!unique.length) {
+      setAttachOpen(false);
+      setError(
+        duplicates.length === 1
+          ? `${duplicates[0]} is already attached to this chat.`
+          : "Those files are already attached to this chat.",
+      );
+      return;
+    }
+    if (duplicates.length) {
+      setError(
+        `${duplicates.join(", ")} already attached. Uploading the other file${
+          unique.length === 1 ? "" : "s"
+        }.`,
+      );
+    } else {
+      setError("");
+    }
+    setUploadingFiles(unique.map((file) => ({ name: file.name, size: file.size })));
+    setAttachOpen(false);
     try {
       const current = await ensureConversation();
-      const data = await fileToBase64(file);
+      const payload = await Promise.all(
+        unique.map(async (file) => ({
+          name: file.name,
+          mimetype: file.type || "application/octet-stream",
+          data: await fileToBase64(file),
+        })),
+      );
       const next = await intelligenceDatasetApi.conversationAttachUpload({
         id: current.id,
-        name: file.name,
-        mimetype: file.type || "application/octet-stream",
-        data,
+        files: payload,
+        name: payload[0]?.name,
+        mimetype: payload[0]?.mimetype,
+        data: payload[0]?.data,
       });
       setConversation(next);
       await refreshList();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The file could not be attached.");
+      setError(err instanceof Error ? err.message : "The files could not be attached.");
+    } finally {
+      setUploadingFiles([]);
+    }
+  }
+
+  async function removeSources(sourceIds: number[]) {
+    if (!conversation?.id || !sourceIds.length) {
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const next = await intelligenceDatasetApi.conversationRemoveSources({
+        id: conversation.id,
+        source_ids: sourceIds,
+      });
+      setConversation(next);
+      setSourceSelected([]);
+      await refreshList();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Those files could not be removed.",
+      );
     } finally {
       setBusy(false);
-      setAttachOpen(false);
     }
+  }
+
+  function openSource(source: IntelligenceConversation["sources"][number]) {
+    const href = sourceHref(source);
+    if (!href) {
+      setError("This file cannot be previewed.");
+      return;
+    }
+    if (source.kind === "url") {
+      window.open(href, "_blank", "noreferrer");
+      return;
+    }
+    setViewingSource({ name: source.name, href, external: false });
   }
 
   function startVoice() {
@@ -271,15 +466,18 @@ export default function AskScreen() {
   }
 
   const indexed = list.data?.indexed_count ?? 0;
-  const rows = list.data?.conversations || [];
+  const rows = [...(list.data?.conversations || [])].sort((left, right) =>
+    String(right.write_date || "").localeCompare(String(left.write_date || "")),
+  );
+  const hasThread = messages.length > 0 || thinking;
 
   return (
-    <div className="grid rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[17.5rem_minmax(0,1fr)_15.5rem]">
-      <aside className="flex flex-col border-b border-slate-100 bg-[#f7f7f8] lg:border-b-0 lg:border-r">
-        <div className="p-3">
+    <div className="grid h-full min-h-0 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[16.5rem_minmax(0,1fr)_15rem]">
+      <aside className="flex min-h-0 flex-col border-b border-slate-100 bg-slate-50 lg:border-b-0 lg:border-r">
+        <div className="shrink-0 p-3">
           <button
             type="button"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-semibold text-slate-800 shadow-sm hover:border-pink-200 hover:text-brand-text"
             onClick={async () => {
               const created = await intelligenceDatasetApi.conversationCreate();
               setConversation(created);
@@ -323,7 +521,7 @@ export default function AskScreen() {
             />
           </label>
         </div>
-        <div className="flex-1 px-2 pb-3">
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
           {rows.length ? (
             <ul className="space-y-0.5">
               {rows.map((item) => (
@@ -347,9 +545,9 @@ export default function AskScreen() {
                     type="button"
                     className="absolute right-1 top-1/2 hidden -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700 group-hover:block"
                     aria-label={`Delete ${item.name}`}
-                    onClick={async (event) => {
+                    onClick={(event) => {
                       event.stopPropagation();
-                      await deleteChat(item.id);
+                      setPendingDelete({ id: item.id, name: item.name });
                     }}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -365,22 +563,32 @@ export default function AskScreen() {
         </div>
       </aside>
 
-      <section className="flex min-w-0 flex-col">
+      <section className="flex min-h-0 min-w-0 flex-col">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-5 py-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-pink">
+              Cleon AI
+            </p>
+            <h1 className="truncate text-sm font-semibold text-slate-900">
+              {conversation?.name || "Ask about your HR documents"}
+            </h1>
+          </div>
+        </div>
         {error ? (
-          <div className="px-6 pt-4">
+          <div className="shrink-0 px-5 pt-3">
             <IntelligenceError message={error} />
           </div>
         ) : null}
-        <div className="px-6 py-8">
-          {messages.length || thinking ? (
-            <div className="mx-auto max-h-[min(32rem,55vh)] max-w-3xl space-y-4 overflow-y-auto pr-1">
+        <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-5 py-6">
+          {hasThread ? (
+            <div className="mx-auto max-w-3xl space-y-4">
               {messages.map((message) => (
                 <article
                   key={message.id}
-                  className={`rounded-3xl px-4 py-3 text-sm leading-6 ${
+                  className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 ${
                     message.role === "user"
-                      ? "ml-12 bg-pink-50 text-slate-800"
-                      : "mr-8 bg-slate-50 text-slate-800"
+                      ? "ml-auto bg-pink-50 text-slate-800"
+                      : "mr-auto bg-slate-50 text-slate-800"
                   }`}
                 >
                   {message.role === "assistant" ? (
@@ -391,23 +599,24 @@ export default function AskScreen() {
                 </article>
               ))}
               {thinking ? (
-                <p className="mr-8 animate-pulse text-sm text-slate-400">Thinking…</p>
+                <p className="animate-pulse text-sm text-slate-400">Thinking…</p>
               ) : null}
               <div ref={endRef} />
             </div>
           ) : (
-            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
-              <div className="h-28 w-28 overflow-hidden rounded-full bg-black shadow-lg ring-4 ring-slate-100">
+            <div className="mx-auto flex min-h-full max-w-3xl flex-col items-center justify-center py-6 text-center">
+              <div className="h-24 w-28 overflow-hidden rounded-full bg-black shadow-lg ring-4 ring-slate-100">
                 <img src={MASCOT} alt="Ask Cleon AI" className="h-full w-full object-cover" />
               </div>
-              <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
+              <h2 className="mt-5 text-3xl font-semibold tracking-tight text-slate-900">
                 Welcome to Ask Cleon AI
-              </h1>
+              </h2>
               <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
-                Ask anything about your HR documents — contracts, employee files,
-                certifications, and compliance records.
+                {conversation?.sources?.length
+                  ? `This chat is focused on ${conversation.sources[0].name}. Approved datasets can still fill in extra context.`
+                  : "Ask anything about your HR documents — contracts, employee files, certifications, and compliance records."}
               </p>
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
                 {CATEGORIES.map((item) => (
                   <button
                     key={item}
@@ -423,12 +632,12 @@ export default function AskScreen() {
                   </button>
                 ))}
               </div>
-              <div className="mt-6 grid w-full gap-3 sm:grid-cols-2">
+              <div className="mt-5 grid w-full gap-3 sm:grid-cols-2">
                 {suggestions.map((item) => (
                   <button
                     key={item.text}
                     type="button"
-                    className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-left text-sm font-semibold leading-6 text-slate-700 transition hover:border-brand-pink hover:bg-white hover:shadow-sm"
+                    className="rounded-2xl border border-slate-200 bg-white p-4 text-left text-sm font-semibold leading-6 text-slate-700 transition hover:border-brand-pink hover:shadow-sm"
                     onClick={() => send(item.text)}
                   >
                     <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-slate-400">
@@ -443,128 +652,312 @@ export default function AskScreen() {
         </div>
 
         <form
-          className="border-t border-slate-100 px-6 py-5"
+          className="shrink-0 border-t border-slate-100 bg-white px-5 py-4"
           onSubmit={(event: FormEvent) => {
             event.preventDefault();
             send();
           }}
         >
-          {conversation?.sources?.length ? (
-            <div className="mb-3 flex flex-wrap gap-2">
-              {conversation.sources.map((source) => (
-                <span
-                  key={source.id}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600"
+          {(conversation?.sources || []).length || uploadingFiles.length ? (
+            <div className="mx-auto mb-3 max-w-3xl lg:hidden">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+                Attached files
+              </p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {uploadingFiles.map((file) => (
+                  <div
+                    key={`uploading-mobile-${file.name}`}
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5"
+                  >
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-pink" />
+                    <span className="max-w-[10rem] truncate text-xs font-semibold text-brand-text">
+                      {file.name}
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase text-brand-pink">
+                      Uploading
+                    </span>
+                  </div>
+                ))}
+                {conversation?.sources.map((source) => (
+                  <div
+                    key={source.id}
+                    className="flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5"
+                  >
+                    <button
+                      type="button"
+                      className="max-w-[10rem] truncate text-xs font-semibold text-slate-700"
+                      onClick={() => openSource(source)}
+                    >
+                      {source.name}
+                    </button>
+                    <button
+                      type="button"
+                      className="text-slate-400 hover:text-red-600"
+                      onClick={() => void removeSources([source.id])}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {uploadingFiles.length ? (
+            <div className="mx-auto mb-3 hidden max-w-3xl gap-2 lg:flex">
+              {uploadingFiles.map((file) => (
+                <div
+                  key={`uploading-desktop-${file.name}`}
+                  className="flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1.5"
                 >
-                  {source.name}
-                </span>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-pink" />
+                  <span className="max-w-[14rem] truncate text-xs font-semibold text-brand-text">
+                    {file.name}
+                  </span>
+                  <span className="text-[10px] font-semibold uppercase text-brand-pink">
+                    Uploading{formatFileSize(file.size) ? ` · ${formatFileSize(file.size)}` : ""}
+                  </span>
+                </div>
               ))}
             </div>
           ) : null}
-          <div className="relative flex items-end gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-sm">
-            <div className="relative">
+          <div className="mx-auto max-w-3xl">
+            <div className="relative flex items-end gap-2 rounded-[1.6rem] border border-slate-200 bg-slate-50 px-2 py-2 shadow-sm focus-within:border-brand-pink/40 focus-within:bg-white focus-within:ring-4 focus-within:ring-brand-pink/10">
+              <div className="relative" ref={attachRef}>
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-white disabled:opacity-50"
+                  aria-label={uploadingFiles.length ? "Uploading files" : "Attach a source"}
+                  disabled={Boolean(uploadingFiles.length)}
+                  onClick={() => setAttachOpen((open) => !open)}
+                >
+                  {uploadingFiles.length ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-brand-pink" />
+                  ) : (
+                    <Plus className="h-5 w-5" />
+                  )}
+                </button>
+                {attachOpen ? (
+                  <div className="absolute bottom-12 left-0 z-20 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload files from computer
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      onClick={() => {
+                        setAttachOpen(false);
+                        setUrlOpen(true);
+                      }}
+                    >
+                      <Link2 className="h-4 w-4" />
+                      Paste a URL
+                    </button>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      onClick={async () => {
+                        setAttachOpen(false);
+                        setLibraryOpen(true);
+                        setLibrarySelected([]);
+                        setLibrarySearch("");
+                        const rows = await intelligenceDatasetApi.libraryDocuments();
+                        setLibraryRows(rows);
+                      }}
+                    >
+                      <FileText className="h-4 w-4" />
+                      From document library
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              <textarea
+                className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-slate-800 outline-none"
+                value={question}
+                maxLength={4000}
+                placeholder="Ask Cleon AI anything about your documents"
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    send();
+                  }
+                }}
+              />
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-slate-50"
-                aria-label="Attach a source"
-                onClick={() => setAttachOpen((open) => !open)}
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                  listening ? "bg-brand-pink text-white" : "text-slate-500 hover:bg-white"
+                }`}
+                aria-label="Speak your question"
+                onClick={startVoice}
               >
-                <Plus className="h-5 w-5" />
+                <Mic className="h-5 w-5" />
               </button>
-              {attachOpen ? (
-                <div className="absolute bottom-12 left-0 z-20 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload from computer
-                  </button>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    onClick={() => {
-                      setAttachOpen(false);
-                      setUrlOpen(true);
-                    }}
-                  >
-                    <Link2 className="h-4 w-4" />
-                    Paste a URL
-                  </button>
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    onClick={async () => {
-                      setAttachOpen(false);
-                      setLibraryOpen(true);
-                      const rows = await intelligenceDatasetApi.libraryDocuments();
-                      setLibraryRows(rows);
-                    }}
-                  >
-                    <FileText className="h-4 w-4" />
-                    From document library
-                  </button>
-                </div>
-              ) : null}
+              <button
+                type="submit"
+                disabled={busy || Boolean(uploadingFiles.length) || !question.trim()}
+                aria-label="Send message"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-brand-text to-brand-pink text-white shadow-sm disabled:opacity-40"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  const files = Array.from(event.target.files || []);
+                  if (files.length > 10) {
+                    setError("You can attach up to 10 files at once.");
+                  } else if (files.length) {
+                    void attachUploads(files);
+                  }
+                  event.target.value = "";
+                }}
+              />
             </div>
-            <textarea
-              className="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-sm text-slate-800 outline-none"
-              value={question}
-              maxLength={4000}
-              placeholder="Which contracts expire in the next 90 days?"
-              onChange={(event) => setQuestion(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  send();
-                }
-              }}
-            />
-            <button
-              type="button"
-              className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                listening ? "bg-brand-pink text-white" : "text-slate-500 hover:bg-slate-50"
-              }`}
-              aria-label="Speak your question"
-              onClick={startVoice}
-            >
-              <Mic className="h-5 w-5" />
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  attachUpload(file);
-                }
-                event.target.value = "";
-              }}
-            />
-          </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
-            <span>{question.length}/4000</span>
-            <span>Direct Answer mode</span>
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+              <span>{question.length}/4000</span>
+              <span>AI can make mistakes. Double-check important info.</span>
+         
+            </div>
           </div>
         </form>
       </section>
 
-      <aside className="hidden flex-col border-l border-slate-100 bg-slate-50/70 p-5 lg:flex">
-        <p className="text-sm font-bold text-slate-900">Quick Actions</p>
-        <div className="mt-3 space-y-2">
-          <Link
-            href="/pages/document-intelligence/datasets"
-            className="block rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
-          >
-            Working Set
-            <span className="mt-1 block text-xs font-normal text-slate-400">
-              {conversation?.dataset || "No active dataset. Select one to focus queries."}
-            </span>
-          </Link>
+      <aside className="hidden min-h-0 flex-col overflow-hidden border-l border-slate-100 bg-slate-50/80 lg:flex">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-bold text-slate-900">Attached files</p>
+            {(conversation?.sources || []).length || uploadingFiles.length ? (
+              <span className="text-xs font-semibold text-slate-400">
+                {(conversation?.sources.length || 0) + uploadingFiles.length}
+              </span>
+            ) : null}
+          </div>
+          {(conversation?.sources || []).length || uploadingFiles.length ? (
+            <>
+              {uploadingFiles.length ? (
+                <ul className="mt-3 space-y-2">
+                  {uploadingFiles.map((file) => (
+                    <li
+                      key={`aside-uploading-${file.name}`}
+                      className="rounded-2xl border border-pink-200 bg-pink-50 p-3"
+                    >
+                      <div className="flex items-start gap-2">
+                        <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-brand-pink" />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-brand-text">
+                            {file.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] uppercase tracking-wide text-brand-pink">
+                            Uploading
+                            {formatFileSize(file.size) ? ` · ${formatFileSize(file.size)}` : ""}
+                          </span>
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {(conversation?.sources || []).length ? (
+              <>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-brand-pink"
+                  onClick={() => {
+                    const ids = (conversation?.sources || []).map((item) => item.id);
+                    const allOn = ids.every((id) => sourceSelected.includes(id));
+                    setSourceSelected(allOn ? [] : ids);
+                  }}
+                >
+                  {conversation?.sources.length &&
+                  conversation.sources.every((item) => sourceSelected.includes(item.id))
+                    ? "Clear"
+                    : "Select all"}
+                </button>
+                <button
+                  type="button"
+                  className="text-xs font-semibold text-red-600 disabled:opacity-40"
+                  disabled={busy || !sourceSelected.length}
+                  onClick={() => void removeSources(sourceSelected)}
+                >
+                  Delete selected
+                </button>
+              </div>
+              <ul className="mt-3 space-y-2">
+                {(conversation?.sources || []).map((source) => {
+                  const checked = sourceSelected.includes(source.id);
+                  return (
+                    <li
+                      key={source.id}
+                      className={`rounded-2xl border bg-white p-3 ${
+                        checked ? "border-brand-pink" : "border-slate-200"
+                      }`}
+                    >
+                      <label className="flex cursor-pointer items-start gap-2">
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 accent-pink-600"
+                          checked={checked}
+                          onChange={() =>
+                            setSourceSelected((current) =>
+                              checked
+                                ? current.filter((id) => id !== source.id)
+                                : [...current, source.id],
+                            )
+                          }
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-slate-800">
+                            {source.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] uppercase tracking-wide text-slate-400">
+                            {source.kind}
+                          </span>
+                        </span>
+                      </label>
+                      <div className="mt-2 flex gap-2 pl-6">
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-pink"
+                          onClick={() => openSource(source)}
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-red-600"
+                          onClick={() => void removeSources([source.id])}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+              </>
+              ) : null}
+            </>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">
+              Files from your computer, Employee Files, or Organizational Files
+              appear here. You can view or remove them at any time.
+            </p>
+          )}
+          <p className="mt-6 text-sm font-bold text-slate-900">Working set</p>
           <select
-            className="field"
+            className="field mt-2"
             value={conversation?.dataset_id || ""}
             onChange={async (event) => {
               const current = await ensureConversation();
@@ -588,7 +981,7 @@ export default function AskScreen() {
           {conversation?.id ? (
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
+              className="mt-2 flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-700"
               onClick={async () => {
                 const next = await intelligenceDatasetApi.conversationSave(
                   conversation.id,
@@ -599,22 +992,19 @@ export default function AskScreen() {
               }}
             >
               <Bookmark className="h-4 w-4" />
-              {conversation.saved ? "Saved query" : "Save this query"}
+              {conversation.saved ? "Saved chat" : "Save this chat"}
             </button>
           ) : null}
-        </div>
-        <div className="mt-6 overflow-hidden rounded-3xl bg-slate-900 p-5 text-white">
-          <div className="mx-auto h-24 w-24 overflow-hidden rounded-full bg-black">
-            <img src={MASCOT} alt="" className="h-full w-full object-cover" />
-          </div>
-          <p className="mt-4 text-center text-sm font-semibold leading-5">
-            Smarter People. Stronger Organizations.
-          </p>
         </div>
       </aside>
 
       {urlOpen ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setUrlOpen(false);
+          }}
+        >
           <div className="w-full max-w-md rounded-3xl bg-white p-5">
             <h2 className="font-bold text-slate-900">Paste a URL</h2>
             <input
@@ -657,9 +1047,22 @@ export default function AskScreen() {
       ) : null}
 
       {libraryOpen ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4">
+        <div
+          className="fixed inset-0 z-30 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) {
+              setLibraryOpen(false);
+              setLibrarySelected([]);
+            }
+          }}
+        >
           <div className="w-full max-w-lg rounded-3xl bg-white p-5">
             <h2 className="font-bold text-slate-900">Document library</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Select live files from Employee Files or Organizational Files.
+              Recycle bin, archived, and Document Intelligence staging files
+              are not listed.
+            </p>
             <input
               className="field mt-3"
               value={librarySearch}
@@ -672,50 +1075,202 @@ export default function AskScreen() {
                 setLibraryRows(rows);
               }}
             />
-            <ul className="mt-3 max-h-72 overflow-y-auto">
-              {libraryRows.map((item) => (
-                <li key={item.id}>
-                  <button
-                    type="button"
-                    className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-slate-50"
-                    onClick={async () => {
-                      setBusy(true);
-                      try {
-                        const current = await ensureConversation();
-                        const next = await intelligenceDatasetApi.conversationAttachLibrary({
-                          id: current.id,
-                          document_id: item.id,
-                        });
-                        setConversation(next);
-                        setLibraryOpen(false);
-                        await refreshList();
-                      } catch (err) {
-                        setError(
-                          err instanceof Error
-                            ? err.message
-                            : "The document could not be attached.",
-                        );
-                      } finally {
-                        setBusy(false);
-                      }
-                    }}
-                  >
-                    <span className="font-semibold text-slate-800">{item.name}</span>
-                    <span className="block text-xs text-slate-400">
-                      {item.document_type}
-                      {item.employee ? ` · ${item.employee}` : ""}
-                    </span>
-                  </button>
-                </li>
-              ))}
+            <div className="mt-3 flex items-center justify-between text-xs font-semibold text-slate-500">
+              <span>{librarySelected.length} selected</span>
+              <button
+                type="button"
+                className="text-brand-pink"
+                onClick={() => {
+                  const visible = libraryRows.map((item) => item.id);
+                  const allOn = visible.every((id) => librarySelected.includes(id));
+                  setLibrarySelected(
+                    allOn
+                      ? librarySelected.filter((id) => !visible.includes(id))
+                      : Array.from(new Set([...librarySelected, ...visible])),
+                  );
+                }}
+              >
+                {libraryRows.length &&
+                libraryRows.every((item) => librarySelected.includes(item.id))
+                  ? "Clear visible"
+                  : "Select visible"}
+              </button>
+            </div>
+            <ul className="mt-2 max-h-72 overflow-y-auto">
+              {libraryRows.map((item) => {
+                const alreadyAttached =
+                  Boolean(item.id) &&
+                  (conversation?.sources || []).some(
+                    (source) =>
+                      source.document_id === item.id ||
+                      source.name.trim().toLowerCase() === item.name.trim().toLowerCase(),
+                  );
+                const checked = librarySelected.includes(item.id);
+                return (
+                  <li key={item.id}>
+                    <label
+                      className={`flex items-start gap-3 rounded-xl px-3 py-2 text-sm ${
+                        alreadyAttached
+                          ? "cursor-not-allowed opacity-50"
+                          : `cursor-pointer hover:bg-slate-50 ${checked ? "bg-pink-50" : ""}`
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        className="mt-1 h-4 w-4 accent-pink-600"
+                        disabled={alreadyAttached}
+                        checked={checked}
+                        onChange={() =>
+                          setLibrarySelected((current) =>
+                            checked
+                              ? current.filter((id) => id !== item.id)
+                              : [...current, item.id],
+                          )
+                        }
+                      />
+                      <span>
+                        <span className="block font-semibold text-slate-800">
+                          {item.name}
+                        </span>
+                        <span className="block text-xs text-slate-400">
+                          {alreadyAttached
+                            ? "Already attached to this chat"
+                            : `${item.document_type}${
+                                item.employee ? ` · ${item.employee}` : ""
+                              }`}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
             </ul>
-            <button
-              type="button"
-              className="mt-3 text-sm text-slate-500"
-              onClick={() => setLibraryOpen(false)}
-            >
-              Close
-            </button>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full px-4 py-2 text-sm font-semibold text-slate-500"
+                onClick={() => {
+                  setLibraryOpen(false);
+                  setLibrarySelected([]);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={busy || librarySelected.length === 0}
+                className="rounded-full bg-brand-pink px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const current = await ensureConversation();
+                    const next = await intelligenceDatasetApi.conversationAttachLibrary({
+                      id: current.id,
+                      document_ids: librarySelected,
+                      document_id: librarySelected[0],
+                    });
+                    setConversation(next);
+                    setLibraryOpen(false);
+                    setLibrarySelected([]);
+                    await refreshList();
+                  } catch (err) {
+                    setError(
+                      err instanceof Error
+                        ? err.message
+                        : "The documents could not be attached.",
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy
+                  ? "Attaching…"
+                  : `Attach ${librarySelected.length} file${
+                      librarySelected.length === 1 ? "" : "s"
+                    }`}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {viewingSource ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setViewingSource(null);
+          }}
+        >
+          <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <h2 className="truncate font-bold text-slate-900">{viewingSource.name}</h2>
+              <button
+                type="button"
+                className="rounded-full p-2 text-slate-400 hover:bg-slate-100"
+                onClick={() => setViewingSource(null)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <iframe
+              title={viewingSource.name}
+              src={viewingSource.href}
+              className="min-h-0 flex-1 bg-slate-50"
+            />
+          </div>
+        </div>
+      ) : null}
+      {pendingDelete ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setPendingDelete(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-chat-title"
+            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
+                  Ask Cleon AI
+                </p>
+                <h2 id="delete-chat-title" className="mt-1 text-xl font-bold text-slate-900">
+                  Delete this chat?
+                </h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  “{pendingDelete.name}” will be removed. This cannot be undone.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
+                onClick={() => setPendingDelete(null)}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-full px-4 py-2.5 font-semibold text-slate-500"
+                onClick={() => setPendingDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded-full bg-red-600 px-5 py-2.5 font-semibold text-white disabled:opacity-50"
+                onClick={() => void deleteChat(pendingDelete.id)}
+              >
+                {busy ? "Deleting…" : "Delete chat"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

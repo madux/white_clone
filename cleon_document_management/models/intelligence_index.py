@@ -180,6 +180,150 @@ class IntelligenceChunk(models.Model):
             return self.browse([chunk.id for _score, chunk in scored[:limit]])
         return allowed[:limit]
 
+
+class IntelligenceAskChunk(models.Model):
+    _name = "doc.intelligence.ask.chunk"
+    _description = "Ask chat source chunk"
+    _order = "id"
+
+    conversation_id = fields.Many2one(
+        "doc.intelligence.conversation",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    source_id = fields.Many2one(
+        "doc.intelligence.ask.source",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    page = fields.Integer(default=1)
+    content = fields.Text(required=True)
+    embedding_json = fields.Text()
+    embedding_model = fields.Char()
+
+    def init(self):
+        cr = self.env.cr
+        cr.execute("SAVEPOINT di_ask_pgvector")
+        try:
+            cr.execute("CREATE EXTENSION IF NOT EXISTS vector")
+            cr.execute(
+                """
+                ALTER TABLE doc_intelligence_ask_chunk
+                ADD COLUMN IF NOT EXISTS embedding vector(%s)
+                """
+                % EMBED_DIM
+            )
+            cr.execute(
+                """
+                CREATE INDEX IF NOT EXISTS doc_intelligence_ask_chunk_embedding_hnsw
+                ON doc_intelligence_ask_chunk
+                USING hnsw (embedding vector_cosine_ops)
+                """
+            )
+            cr.execute("RELEASE SAVEPOINT di_ask_pgvector")
+        except Exception as error:
+            cr.execute("ROLLBACK TO SAVEPOINT di_ask_pgvector")
+            _logger.warning("Ask pgvector is not available yet: %s", error)
+
+    def _write_vector(self, vector):
+        self.ensure_one()
+        payload = json.dumps(vector)
+        self.embedding_json = payload
+        if not vector:
+            return
+        literal = "[" + ",".join("%.8f" % float(value) for value in vector) + "]"
+        try:
+            self.env.cr.execute(
+                """
+                UPDATE doc_intelligence_ask_chunk
+                SET embedding = %s::vector
+                WHERE id = %s
+                """,
+                (literal, self.id),
+            )
+        except Exception as error:
+            _logger.debug("Could not store ask pgvector column: %s", error)
+
+    @api.model
+    def index_source(self, source):
+        source.ensure_one()
+        source.chunk_ids.unlink()
+        texts = _chunks_from_text(source.extracted_text or "")
+        if not texts:
+            texts = [
+                "Attached file %s. No readable text was extracted from this file."
+                % (source.name or "document")
+            ]
+        try:
+            vectors = embed_texts(texts, env=self.env)
+        except Exception as error:
+            _logger.warning("Ask source embedding failed: %s", error)
+            vectors = [[] for _ in texts]
+        chunks = self.browse()
+        for index, text in enumerate(texts):
+            chunk = self.create(
+                {
+                    "conversation_id": source.conversation_id.id,
+                    "source_id": source.id,
+                    "page": index + 1,
+                    "content": text,
+                    "embedding_model": "nomic-embed-text-v1_5",
+                }
+            )
+            if index < len(vectors):
+                chunk._write_vector(vectors[index])
+            chunks |= chunk
+        return chunks
+
+    @api.model
+    def search_similar(self, question, conversation_id, limit=8):
+        allowed = self.search([("conversation_id", "=", int(conversation_id or 0))])
+        if not allowed:
+            return self.browse()
+        try:
+            query_vector = (embed_texts([question], env=self.env) or [[]])[0]
+        except Exception as error:
+            _logger.warning("Ask query embedding failed: %s", error)
+            query_vector = []
+        if query_vector:
+            literal = "[" + ",".join("%.8f" % float(v) for v in query_vector) + "]"
+            try:
+                self.env.cr.execute(
+                    """
+                    SELECT id
+                    FROM doc_intelligence_ask_chunk
+                    WHERE id = ANY(%s)
+                      AND embedding IS NOT NULL
+                    ORDER BY embedding <=> %s::vector
+                    LIMIT %s
+                    """,
+                    (allowed.ids, literal, limit),
+                )
+                ids = [row[0] for row in self.env.cr.fetchall()]
+                if ids:
+                    return self.browse(ids)
+            except Exception as error:
+                _logger.debug("Ask pgvector search failed: %s", error)
+            scored = []
+            for chunk in allowed:
+                vector = json.loads(chunk.embedding_json or "[]")
+                if not vector:
+                    continue
+                scored.append((IntelligenceChunk._cosine(query_vector, vector), chunk))
+            scored.sort(key=lambda item: item[0], reverse=True)
+            if scored:
+                return self.browse([chunk.id for _score, chunk in scored[:limit]])
+        ranked = []
+        words = set(re.findall(r"[a-z0-9]{3,}", (question or "").lower()))
+        for chunk in allowed:
+            hay = set(re.findall(r"[a-z0-9]{3,}", (chunk.content or "").lower()))
+            score = (len(words & hay) / len(words)) if words else 0.0
+            ranked.append((score, chunk))
+        ranked.sort(key=lambda item: item[0], reverse=True)
+        return self.browse([chunk.id for _score, chunk in ranked[:limit]])
+
     @staticmethod
     def _cosine(left, right):
         if not left or not right or len(left) != len(right):

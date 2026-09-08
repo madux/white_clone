@@ -15,12 +15,13 @@ import {
   Search,
   Share2,
   SlidersHorizontal,
+  Sparkles,
   Star,
   Upload,
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useAcknowledgeDocument,
@@ -196,6 +197,7 @@ function DocumentTable({
 export default function MyDocumentsPage() {
   const workspace = useMyWorkspace();
   const params = useSearchParams();
+  const router = useRouter();
   const guideTarget = params.get("guide");
   const user = useCurrentUser();
   const acknowledge = useAcknowledgeDocument();
@@ -737,6 +739,18 @@ export default function MyDocumentsPage() {
                 >
                   <Download className="h-3.5 w-3.5" />
                   Download
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/pages/document-intelligence/ask?document=${viewing.id}`,
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-brand-pink px-3 py-2 text-xs font-bold text-brand-pink hover:bg-pink-50"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Ask AI
                 </button>
                 <button
                   type="button"

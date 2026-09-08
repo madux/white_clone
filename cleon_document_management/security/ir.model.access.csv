@@ -75,6 +75,9 @@ access_doc_intelligence_conversation_docadmin,doc.intelligence.conversation doca
 access_doc_intelligence_message_user,doc.intelligence.message user,model_doc_intelligence_message,base.group_user,1,1,1,1
 access_doc_intelligence_message_admin,doc.intelligence.message admin,model_doc_intelligence_message,base.group_system,1,1,1,1
 access_doc_intelligence_message_docadmin,doc.intelligence.message docadmin,model_doc_intelligence_message,cleon_document_management.group_document_admin,1,1,1,1
+access_doc_intelligence_ask_chunk_user,doc.intelligence.ask.chunk user,model_doc_intelligence_ask_chunk,base.group_user,1,1,1,1
+access_doc_intelligence_ask_chunk_admin,doc.intelligence.ask.chunk admin,model_doc_intelligence_ask_chunk,base.group_system,1,1,1,1
+access_doc_intelligence_ask_chunk_docadmin,doc.intelligence.ask.chunk docadmin,model_doc_intelligence_ask_chunk,cleon_document_management.group_document_admin,1,1,1,1
 access_doc_intelligence_ask_source_user,doc.intelligence.ask.source user,model_doc_intelligence_ask_source,base.group_user,1,1,1,1
 access_doc_intelligence_ask_source_admin,doc.intelligence.ask.source admin,model_doc_intelligence_ask_source,base.group_system,1,1,1,1
 access_doc_intelligence_ask_source_docadmin,doc.intelligence.ask.source docadmin,model_doc_intelligence_ask_source,cleon_document_management.group_document_admin,1,1,1,1

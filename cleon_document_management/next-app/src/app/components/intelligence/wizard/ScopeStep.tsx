@@ -143,7 +143,11 @@ export default function ScopeStep({
                 </label>
               ))
             ) : (
-              <p className="px-3 py-6 text-sm text-slate-400">No matches.</p>
+              <p className="px-3 py-6 text-sm text-slate-400">
+                {query.trim()
+                  ? "No matches."
+                  : "Nothing is configured for this scope yet."}
+              </p>
             )}
           </div>
           <p className="text-xs text-slate-400">{scopeIds.length} selected</p>
