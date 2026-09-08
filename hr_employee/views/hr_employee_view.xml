@@ -391,7 +391,7 @@
      <menuitem id="menu_hr_core_employee_menu"
                 name="Employee Core"
                 sequence="6"
-                action="hr_employee.action_core_multi_branch"
+                action="hr_employee.action_profile_dashboard_server"
                 />
    
     <record id="hr_employee.menu_hr_core_employee_menu" model="ir.ui.menu">

@@ -28,9 +28,9 @@ class CrmPortalController(http.Controller):
 
         user = request.env.user
         data = {
-            'user_id': user.id,
-            'user_name': user.name,
-            'user_email': user.email or '',
+            'user_id': user.id if user else False,
+            'user_name': user.name if user else False,
+            'user_email': user.email if user else False or '',
         }
         return request.make_response(
             html,

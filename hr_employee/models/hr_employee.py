@@ -168,12 +168,29 @@ class HrEmployee(models.Model):
         compute="_compute_formatted_date"
     )
 
-    work_start_datetime = fields.Datetime(default=fields.Datetime.now(), 
-    help="Linked with the user attendance app to determine working hours")
-
-    total_work_duration = fields.Char(
-        compute="_compute_total_duration"
+    work_start_datetime = fields.Datetime(
+        default=fields.Datetime.now(),
+        help="Linked with the user attendance app to determine working hours",
     )
+
+    work_end_datetime = fields.Datetime(
+            default=fields.Datetime.now(),
+            help="if user check out on attendance, Linked with the user attendance app to determine working hours",
+        ) 
+    total_work_duration = fields.Float(
+        compute="_compute_total_durations",
+        store=True,
+    )
+
+    def _compute_total_durations(self):
+        for rec in self:
+            if rec.work_start_datetime and rec.is_present:
+                now = fields.Datetime.now()
+                delta = now - rec.work_start_datetime
+                rec.total_work_duration = delta.total_seconds() / 3600.0
+            else:
+                rec.total_work_duration = 0.0
+    
     number_of_incidents = fields.Integer(
         compute="_compute_number_of_incidents",
         string="Number of Incidents"
@@ -382,9 +399,10 @@ class HrEmployee(models.Model):
     def _compute_checkins(self):
         if self.active:
             self.is_present_text = "Checked in"
+            self.is_present = True
         else:
             self.is_present_text = "Yet to Checkin"
-
+            self.is_present = False
 
         # today = fields.Date.today()
         # month_day = today.strftime('%m-%d')
