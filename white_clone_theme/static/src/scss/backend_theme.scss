@@ -17,6 +17,8 @@ $o-brand-odoo: #e83e8c;
     box-shadow: 0 8px 25px rgba(232, 62, 140, 0.08);
 }
 
+
+
 .o_field_widget .o_input_dropdown .o_input, .o_field_widget .o_input_dropdown > input, .o_field_widget .o_datepicker .o_input, .o_field_widget .o_datepicker > input
  {
     padding-right: 14px !important;
@@ -377,7 +379,7 @@ $o-brand-odoo: #e83e8c;
 
 // Modal header
 .modal-header {
-    background: linear-gradient(90deg, #e83e8c, #ff6fa5);
+    background: linear-gradient(90deg, #e83e8c, #f43c7f);
     color: white;
     border-top-left-radius: 18px;
     border-top-right-radius: 18px;
@@ -391,7 +393,7 @@ $o-brand-odoo: #e83e8c;
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, #e83e8c, #ff6fa5);
+    background: linear-gradient(45deg, #e83e8c, #ff2474);
     border: none;
     border-radius: 10px;
     font-weight: 600;

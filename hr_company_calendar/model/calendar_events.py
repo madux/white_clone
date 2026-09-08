@@ -5,12 +5,14 @@ class CalendarEvents(models.Model):
     _inherit = 'calendar.event'
 
     filter_category  = fields.Selection(
-        [("all", "All Categories"), ("holiday", "Holiday"), ("meeting", "Meeting"), ("training", "Training")],
+        [("all", "All Categories"), ("holiday", "Holiday"), ("meeting", "Meeting"), ("training", "Training"), 
+         ("campaign", "Campaign")],
         default="all", string="Category",
     )
     check_in_attendee_ids = fields.Many2many("res.users",string="Checkin Attendes",
                                               help="This determines the attendees that attended")
     department_id = fields.Many2one("hr.department", string="Department")
+    is_public_event = fields.Boolean(string="Is public")
     to_approved_by = fields.Many2one("hr.employee", string="To be Approved by")
     calendar_status = fields.Selection(
         [("Opened", "Opened"), 

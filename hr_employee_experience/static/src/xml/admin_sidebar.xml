@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_exployee_experience.AdminSidebar">
+        <div class="o_cc_admin_sidebar" t-att-class="{ o_cc_collapsed: state.collapsed }">
+            <div class="o_cc_sidebar_header">
+                <span class="o_cc_header_dot"/>
+                <span class="o_cc_header_title">Employee Experience</span>
+                <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar" t-on-click="toggleCollapse">
+                    <i class="fa fa-th-large"/>
+                </button>
+            </div>
+
+            <nav class="o_cc_nav">
+                <t t-foreach="menuItems" t-as="item" t-key="item.id">
+                    <a t-att-class="'o_cc_nav_item' + (state.active === item.id ? ' o_cc_nav_active' : '')"
+                       t-att-href="item.href or undefined"
+                       t-on-click="() => this.onItemClick(item)">
+                        <span class="o_cc_nav_icon"><i t-attf-class="fa {{item.icon}} {{item.iconClass or ''}}"/></span>
+                        <span class="o_cc_nav_label" t-esc="item.label"/>
+                        <span t-if="item.badge" class="o_cc_nav_badge" t-esc="item.badge"/>
+                        <i t-attf-class="fa {{item.icon}} o_cc_nav_arrow"/>
+                    </a>
+                </t>
+            </nav>
+
+            <div class="o_cc_sidebar_footer">
+                <span class="o_cc_footer_label">Solution By MaachSoftware</span>
+                <div class="o_cc_footer_status">
+                    <span class="o_cc_status_dot o_cc_status_green"/>
+                    All integrations active
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Wraps the stock FormRenderer output with the sidebar alongside it -->
+    <!-- <t t-name="cc_admin.FormRendererWithSidebar">
+        <div class="o_cc_form_with_sidebar d-flex h-100">
+            <AdminSidebar onNavigate.bind="onSidebarNavigate"/>
+            <div class="o_cc_form_content flex-grow-1 overflow-auto">
+                <t t-call="web.FormRenderer"/>
+            </div>
+        </div>
+    </t> -->
+</templates>

@@ -1,0 +1,248 @@
+:root {
+  --bg-color: #fceced;
+  --card-bg: #ffffff;
+  --primary-pink: #d6006f;
+  --light-pink: #fdf0f3;
+  --text-dark: #333333;
+  --text-muted: #888888;
+  --border-color: #eaeaea;
+  --border-radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.genbody {
+  background-color: #f5f6f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.genapp-container {
+  display: flex;
+  width: 900px;
+  background-color: var(--bg-color);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.gensidebar {
+  width: 220px;
+  background-color: #ffffff;
+  padding: 20px;
+  border-right: 1px solid var(--light-pink);
+}
+
+.genlogo {
+  font-size: 1.2rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+
+.genlogo-icon {
+  background-color: var(--primary-pink);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.genside-nav a {
+  display: block;
+  padding: 10px 15px;
+  text-decoration: none;
+  color: var(--text-muted);
+  border-radius: 8px;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+.genside-nav a.active {
+  background-color: var(--light-pink);
+  color: var(--primary-pink);
+  font-weight: 500;
+}
+
+/* Main Content */
+.genmain-content {
+  flex: 1;
+  padding: 30px;
+}
+
+.gentop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.gentop-nav a {
+  text-decoration: none;
+  color: var(--text-muted);
+  margin-right: 20px;
+  font-size: 0.9rem;
+}
+
+.gentop-nav a.active {
+  color: var(--text-dark);
+  font-weight: bold;
+  border-bottom: 2px solid var(--primary-pink);
+  padding-bottom: 4px;
+}
+
+.genuser-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+
+.genuser-profile img {
+  border-radius: 50%;
+}
+
+.genpage-title {
+  font-size: 1.4rem;
+  margin-bottom: 20px;
+}
+
+/* Form Card */
+.genform-card {
+  background-color: var(--card-bg);
+  padding: 30px;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.genform-card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.genform-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.genform-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+/* .genlabel {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+} */
+
+.fieldBlack input[type="text"], input[type="date"], select, textarea {
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: #fafafa;
+  color: var(--text-dark);
+  outline: none;
+}
+
+.fieldBlack input[type="text"], input[type="date"], select, textarea {
+  padding: 10px;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 6px;
+  /* background-color: #fafafa; */
+  color: #fafafa;
+  outline: none;
+}
+
+.genradio-group {
+  display: flex;
+  gap: 15px;
+}
+
+.genradio-group label {
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Stepper */
+.genstepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 30px 0;
+}
+
+.genstep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.genstep .circle {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.genstep.completed .circle, .step.current .circle {
+  background-color: var(--primary-pink);
+}
+
+.genstep.current span {
+  color: var(--primary-pink);
+  font-weight: bold;
+}
+
+.genline {
+  flex: 1;
+  height: 2px;
+  background-color: var(--border-color);
+  margin: 0 10px;
+  margin-top: -15px;
+}
+
+.genline.active-line {
+  background-color: var(--primary-pink);
+}
+
+/* Submit Button */
+.gensubmit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary-pink);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.gensubmit-btn:hover {
+  opacity: 0.9;
+}

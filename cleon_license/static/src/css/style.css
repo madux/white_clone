@@ -27,7 +27,7 @@
    HERO HEADER BANNER
 ══════════════════════════════════════════ */
 .qms-header-hero {
-    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 50%, #0F3460 100%);
+    background: linear-gradient(135deg, #e62f83 0%, #e62c81 50%, #c20b3d 100%);
     border-radius: var(--qms-radius);
     padding: 28px 32px 20px;
     margin-bottom: 20px;

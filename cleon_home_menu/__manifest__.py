@@ -25,11 +25,15 @@ Features
     'license': 'LGPL-3',
     'depends': ['web','base_addons'],
     'data': [
+            'static/src/xml/application_page.xml'
     ],
     'assets': {
         'web.assets_backend': [
             'cleon_home_menu/static/src/css/home_menu_overlay.css',
             'cleon_home_menu/static/src/js/home_menu_overlay.js',
+            'cleon_home_menu/static/src/css/general_qms_css.css',
+            'cleon_home_menu/static/src/js/application_page.js',
+            # 'cleon_home_menu/static/src/xml/application_page.xml',
         ],
     },
     'installable': True,

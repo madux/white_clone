@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <template id="report_cleon_payslip_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Payslip - <span t-field="o.name"/></h2>
+                        <div class="row mt32 mb32">
+                            <div class="col-6">
+                                <strong>Employee:</strong> <span t-field="o.employee_id.name"/><br/>
+                                <strong>Job Position:</strong> <span t-field="o.employee_id.job_title"/>
+                            </div>
+                            <div class="col-6 text-end">
+                                <strong>Period:</strong>
+                                <span t-field="o.date_from"/> - <span t-field="o.date_to"/><br/>
+                                <strong>Structure:</strong> <span t-field="o.structure_id.name"/>
+                            </div>
+                        </div>
+
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Description</th>
+                                    <th class="text-end">Quantity</th>
+                                    <th class="text-end">Rate (%)</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="o.line_ids.filtered(lambda l: l.appears_on_payslip)" t-as="line">
+                                    <tr>
+                                        <td><span t-field="line.code"/></td>
+                                        <td><span t-field="line.name"/></td>
+                                        <td class="text-end"><span t-field="line.quantity"/></td>
+                                        <td class="text-end"><span t-field="line.rate"/></td>
+                                        <td class="text-end"><span t-field="line.total"/></td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="row mt32">
+                            <div class="col-6 offset-6">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Gross</td>
+                                        <td class="text-end"><span t-field="o.gross_wage"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Total Deductions</td>
+                                        <td class="text-end"><span t-field="o.total_deduction"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Net Pay</strong></td>
+                                        <td class="text-end"><strong><span t-field="o.net_wage"/></strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
