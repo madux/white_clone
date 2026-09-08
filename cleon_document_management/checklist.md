@@ -53,6 +53,7 @@ Follow `cursor-document-intelligence-prompt.md` and `document-intelligence-requi
 - [x] Pulled incoming approval-inbox work (Header, mock-data removal)
 - [x] Kept `export async function rpc` in `next-app/lib/api.ts` for Intelligence
 - [x] Rebuilt and synced `static/src/nextapp` so inbox + Intelligence share one export
+- [x] Merged latest origin/document-intelligence into `michael` (company documentary + onboarding). Source had no conflicts; rebuilt DMS static export.
 
 ## Ask UI follow-up
 - [x] LLM chat titles that are not the full question (gpt-oss token/content fix)

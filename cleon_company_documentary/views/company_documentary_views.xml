@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_company_documentary_folder_tree" model="ir.ui.view">
+        <field name="name">company.documentary.folder.tree</field>
+        <field name="model">company.documentary.folder</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="parent_id"/>
+                <field name="access_scope"/>
+                <field name="media_count"/>
+                <field name="allow_download"/>
+                <field name="archived"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_company_documentary_folder_form" model="ir.ui.view">
+        <field name="name">company.documentary.folder.form</field>
+        <field name="model">company.documentary.folder</field>
+        <field name="arch" type="xml">
+            <form string="Company Documentary Folder">
+                <field name="deleted_at" invisible="1"/>
+                <header>
+                    <button name="action_archive" type="object" string="Archive" invisible="archived"/>
+                    <button name="action_restore" type="object" string="Restore" invisible="not archived"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="description"/>
+                            <field name="parent_id"/>
+                            <field name="owner_id"/>
+                            <field name="company_id"/>
+                        </group>
+                        <group>
+                            <field name="access_scope"/>
+                            <field name="allow_download"/>
+                            <field name="archived"/>
+                            <field name="media_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Audience">
+                            <field name="department_ids" widget="many2many_tags" invisible="access_scope != 'department'"/>
+                            <field name="grade_ids" widget="many2many_tags" invisible="access_scope != 'grade'"/>
+                            <field name="employee_ids" widget="many2many_tags" invisible="access_scope != 'employee'"/>
+                            <field name="editor_ids" widget="many2many_tags"/>
+                        </page>
+                        <page string="Videos">
+                            <field name="media_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="processing_state"/>
+                                    <field name="mandatory"/>
+                                    <field name="active"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_company_documentary_media_tree" model="ir.ui.view">
+        <field name="name">company.documentary.media.tree</field>
+        <field name="model">company.documentary.media</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="folder_id"/>
+                <field name="processing_state"/>
+                <field name="mandatory"/>
+                <field name="file_size"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_company_documentary_media_form" model="ir.ui.view">
+        <field name="name">company.documentary.media.form</field>
+        <field name="model">company.documentary.media</field>
+        <field name="arch" type="xml">
+            <form string="Company Documentary Video">
+                <field name="active" invisible="1"/>
+                <header>
+                    <button name="action_archive" type="object" string="Archive" invisible="not active"/>
+                    <button name="action_restore" type="object" string="Restore" invisible="active"/>
+                    <field name="processing_state" widget="statusbar" statusbar_visible="uploading,processing,ready,failed"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="folder_id"/>
+                            <field name="description"/>
+                            <field name="tag_ids" widget="many2many_tags"/>
+                            <field name="original_filename"/>
+                            <field name="mime_type"/>
+                            <field name="file_size"/>
+                        </group>
+                        <group>
+                            <field name="mandatory"/>
+                            <field name="completion_threshold"/>
+                            <field name="download_policy"/>
+                            <field name="comments_enabled"/>
+                            <field name="duration_seconds"/>
+                            <field name="view_count"/>
+                            <field name="unique_viewer_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Access">
+                            <field name="scope_mode"/>
+                            <field name="access_scope" invisible="scope_mode != 'override'"/>
+                            <field name="department_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'department'"/>
+                            <field name="grade_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'grade'"/>
+                            <field name="employee_ids" widget="many2many_tags" invisible="scope_mode != 'override' or access_scope != 'employee'"/>
+                        </page>
+                        <page string="Storage">
+                            <field name="storage_key"/>
+                            <field name="checksum"/>
+                            <field name="thumbnail_key"/>
+                            <field name="variants"/>
+                            <field name="processing_error" invisible="not processing_error"/>
+                        </page>
+                        <page string="Subtitles">
+                            <field name="subtitle_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="language"/>
+                                    <field name="format"/>
+                                    <field name="is_default"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

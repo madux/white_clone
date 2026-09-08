@@ -34,6 +34,7 @@ import { api } from "../../../lib/api";
 import DocumentActions from "./DocumentActions";
 import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
+import BulkDocumentActions from "./BulkDocumentActions";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
@@ -71,12 +72,17 @@ function DocumentTable({
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
+  const [selected, setSelected] = useState<number[]>([]);
+  const selectable = !shared && !readOnly;
+  const visibleIds = rows.map((document) => document.id);
+  const allSelected = selectable && visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <SortableTable className="w-full min-w-[850px] text-left">
           <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
             <tr>
+              {selectable && <th className="w-12 px-5 py-4"><input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? [] : visibleIds)} aria-label="Select all employee files" className="h-4 w-4 accent-pink-600" /></th>}
               <th className="px-5 py-4">Document</th>
               <th className="px-5 py-4">Category</th>
               <th className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>Status</th>
@@ -87,8 +93,9 @@ function DocumentTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((document) => (
+              {rows.map((document) => (
               <tr key={document.id} className="transition hover:bg-pink-50/30">
+                {selectable && <td className="w-12 px-5 py-4"><input type="checkbox" checked={selected.includes(document.id)} onChange={() => setSelected((current) => current.includes(document.id) ? current.filter((id) => id !== document.id) : [...current, document.id])} aria-label={`Select ${document.name}`} className="h-4 w-4 accent-pink-600" /></td>}
                 <td className="px-5 py-4">
                   <button
                     type="button"
@@ -176,6 +183,7 @@ function DocumentTable({
           </tbody>
         </SortableTable>
       </div>
+      {selectable && <BulkDocumentActions selected={selected} onClear={() => setSelected([])} documents={rows} />}
       {!rows.length && (
         <p className="p-12 text-center text-sm text-slate-500">
           No documents found.
@@ -200,8 +208,9 @@ export default function MyDocumentsPage() {
   const [viewing, setViewing] = useState<any>(null);
   const [viewerFullscreen, setViewerFullscreen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [uploadType, setUploadType] = useState("");
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadTypes, setUploadTypes] = useState<string[]>([]);
+  const [bulkUploadType, setBulkUploadType] = useState("");
   const [uploadRequirement, setUploadRequirement] = useState<any>(null);
   const [uploadError, setUploadError] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -276,12 +285,12 @@ export default function MyDocumentsPage() {
   }, []);
   const submitUpload = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!uploadFile || !uploadType) return;
+    if (!uploadFiles.length || uploadTypes.some((id) => !id)) return;
     setUploadError("");
     try {
       const result = await upload.mutateAsync({
-        file: uploadFile,
-        document_type_id: Number(uploadType),
+        files: uploadFiles,
+        document_type_ids: uploadTypes.map(Number),
       });
       const response = result as {
         success: boolean;
@@ -292,15 +301,17 @@ export default function MyDocumentsPage() {
         throw new Error(
           response.message || "The document could not be uploaded.",
         );
-      await requestApproval.mutateAsync(response.data.id);
+      const uploaded = (response as any).documents ?? [response.data];
+      for (const document of uploaded) await requestApproval.mutateAsync(document.id);
     } catch (caught: any) {
       setUploadError(
         caught?.message || "The document could not be submitted for approval.",
       );
       return;
     }
-    setUploadFile(null);
-    setUploadType("");
+    setUploadFiles([]);
+    setUploadTypes([]);
+    setBulkUploadType("");
     setUploadRequirement(null);
     setShowUpload(false);
   };
@@ -659,8 +670,8 @@ export default function MyDocumentsPage() {
             }}
             onUploadOutstanding={(document) => {
               setUploadRequirement(document);
-              setUploadType(String(document.document_type_id));
-              setUploadFile(null);
+              setUploadTypes([String(document.document_type_id)]);
+              setUploadFiles([]);
               setUploadError("");
               setShowUpload(true);
             }}
@@ -834,20 +845,20 @@ export default function MyDocumentsPage() {
               </button>
             </div>
             <label className="mt-5 block">
-              <span className="label">File</span>
+              <span className="label">Files</span>
               <span className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-brand-pink/40 bg-pink-50/50 px-4 py-6 text-sm font-semibold text-brand-text">
                 <Upload className="h-5 w-5" />
-                {uploadFile?.name ?? "Choose a file from your computer"}
+                {uploadFiles.length ? `${uploadFiles.length} file${uploadFiles.length === 1 ? "" : "s"} selected` : "Choose files from your computer"}
                 <input
                   required
+                  multiple
                   type="file"
-                  onChange={(event) =>
-                    setUploadFile(event.target.files?.[0] ?? null)
-                  }
+                  onChange={(event) => { const next = Array.from(event.target.files ?? []); setUploadFiles(next); setUploadTypes(next.map((_, index) => uploadRequirement ? String(uploadRequirement.document_type_id) : uploadTypes[index] ?? "")); }}
                   className="hidden"
                 />
               </span>
             </label>
+            {uploadFiles.length > 0 && <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3"><p className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Selected files and types</p><div className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] gap-3 px-2 pb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400"><span>File name</span><span>Document type</span></div><div className="space-y-2">{uploadFiles.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-[minmax(0,1fr)_minmax(180px,220px)] items-center gap-3 rounded-xl bg-white p-2"><span title={file.name} className="min-w-0 truncate text-sm font-medium text-slate-700">{file.name}</span>{uploadRequirement ? <span className="truncate rounded-full bg-pink-50 px-2 py-1 text-xs font-bold text-brand-pink">{uploadRequirement.document_type}</span> : <ThemedSelect value={uploadTypes[index] ?? ""} onChange={(value) => setUploadTypes((current) => current.map((item, i) => i === index ? value : item))} placeholder="Document type" options={(documentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} />}</div>)}</div>{!uploadRequirement && <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3"><summary className="cursor-pointer text-xs font-bold text-slate-700">Advanced configuration</summary><div className="mt-3 flex items-end gap-2"><label className="min-w-0 flex-1"><span className="label">Use one document type for all files</span><ThemedSelect value={bulkUploadType} onChange={setBulkUploadType} placeholder="Select a type" options={(documentTypes.data ?? []).map((type) => ({ value: String(type.id), label: type.name }))} /></label><button type="button" disabled={!bulkUploadType} onClick={() => setUploadTypes(uploadFiles.map(() => bulkUploadType))} className="rounded-xl bg-pink-50 px-3 py-2.5 text-xs font-bold text-brand-pink disabled:opacity-50">Apply to all</button></div></details>}</div>}
             {uploadRequirement ? (
               <div className="mt-4 rounded-2xl border border-pink-100 bg-pink-50/50 p-3">
                 <span className="label">Required document type</span>
@@ -858,20 +869,7 @@ export default function MyDocumentsPage() {
                   Automatically assigned from the outstanding requirement.
                 </p>
               </div>
-            ) : (
-              <label className="mt-4 block">
-                <span className="label">Document type</span>
-                <ThemedSelect
-                  value={uploadType}
-                  onChange={setUploadType}
-                  placeholder="Select document type"
-                  options={(documentTypes.data ?? []).map((type) => ({
-                    value: String(type.id),
-                    label: type.name,
-                  }))}
-                />
-              </label>
-            )}
+            ) : null}
             {uploadError && (
               <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
                 {uploadError}
@@ -889,8 +887,8 @@ export default function MyDocumentsPage() {
                 disabled={
                   upload.isPending ||
                   requestApproval.isPending ||
-                  !uploadFile ||
-                  !uploadType
+                  !uploadFiles.length ||
+                  uploadTypes.some((id) => !id)
                 }
                 className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -900,7 +898,7 @@ export default function MyDocumentsPage() {
                     ? "Sending for review..."
                     : uploadRequirement
                       ? "Upload and request review"
-                      : "Upload draft"}
+                    : "Upload documents"}
               </button>
             </div>
           </form>

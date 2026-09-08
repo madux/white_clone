@@ -162,6 +162,12 @@ export const api = {
       payload,
     ),
 
+  removeEmployeesFromFolder: (payload: { id: number; employee_ids: number[] }) =>
+    rpc<{ success: boolean; employee_ids: number[] }>(
+      "/api/folder/remove-employees",
+      payload,
+    ),
+
   updateFolder: (payload: {
     id: number;
     name: string;
@@ -225,14 +231,14 @@ export const api = {
     ),
 
   uploadDocument: (payload: {
-    file: File;
+    files: File[];
     folder_id: number;
-    document_type_id: number;
+    document_type_ids: number[];
   }) => {
     const form = new FormData();
-    form.append("file", payload.file, payload.file.name);
+    payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("folder_id", String(payload.folder_id));
-    form.append("document_type_id", String(payload.document_type_id));
+    form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     return multipartClient
       .post<{
         success: boolean;
@@ -241,10 +247,10 @@ export const api = {
       .then((response) => response.data);
   },
 
-  uploadMyDocument: (payload: { file: File; document_type_id: number }) => {
+  uploadMyDocument: (payload: { files: File[]; document_type_ids: number[] }) => {
     const form = new FormData();
-    form.append("file", payload.file, payload.file.name);
-    form.append("document_type_id", String(payload.document_type_id));
+    payload.files.forEach((file) => form.append("file", file, file.name));
+    form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     return multipartClient
       .post<{
         success: boolean;
@@ -254,11 +260,11 @@ export const api = {
       .then((response) => response.data);
   },
 
-  uploadEmployeeDocument: (payload: { file: File; employee_id: number; document_type_id: number }) => {
+  uploadEmployeeDocument: (payload: { files: File[]; employee_id: number; document_type_ids: number[] }) => {
     const form = new FormData();
-    form.append("file", payload.file, payload.file.name);
+    payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("employee_id", String(payload.employee_id));
-    form.append("document_type_id", String(payload.document_type_id));
+    form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     return multipartClient
       .post<{ success: boolean; data?: { id: number; name: string }; message?: string }>(
         "/api/employee-documents/upload",

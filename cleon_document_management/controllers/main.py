@@ -16,6 +16,24 @@ def _attachment_bytes(attachment):
     return base64.b64decode(data)
 
 
+def _uploaded_files():
+    """Read both the new batch field and the legacy single-file field."""
+    files = request.httprequest.files.getlist("files")
+    return files or request.httprequest.files.getlist("file")
+
+
+def _upload_type_ids():
+    raw = request.httprequest.form.get("document_type_ids")
+    if raw:
+        try:
+            values = json.loads(raw)
+            return [int(value) for value in values]
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    raw = request.httprequest.form.get("document_type_id")
+    return [int(raw)] if raw else []
+
+
 class DocumentUICreation(http.Controller):
 
     @staticmethod
@@ -773,8 +791,8 @@ class DocumentUICreation(http.Controller):
     def upload_my_document(self, **kwargs):
         """Upload a personal employee document as a draft."""
         employee = request.env.user.employee_id
-        upload = request.httprequest.files.get("file")
-        document_type_id = request.httprequest.form.get("document_type_id")
+        uploads = _uploaded_files()
+        document_type_ids = _upload_type_ids()
         if not employee:
             return request.make_json_response(
                 {
@@ -783,15 +801,13 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
-        if not upload or not document_type_id:
+        if not uploads or not document_type_ids or len(document_type_ids) not in (1, len(uploads)):
             return request.make_json_response(
                 {"success": False, "message": "File and document type are required."},
                 status=400,
             )
-        document_type = (
-            request.env["doc.document.type"].browse(int(document_type_id)).exists()
-        )
-        if not document_type:
+        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        if len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {"success": False, "message": "Select a valid document type."},
                 status=400,
@@ -805,31 +821,22 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
-        content = upload.read()
-        attachment = (
-            request.env["ir.attachment"]
-            .sudo()
-            .create(
-                {
-                    "name": upload.filename or "employee-document",
-                    "datas": base64.b64encode(content),
-                    "mimetype": upload.mimetype or "application/octet-stream",
-                }
-            )
-        )
-        document = request.env["doc.document"].create(
-            {
+        documents = request.env["doc.document"]
+        for index, upload in enumerate(uploads):
+            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            attachment = request.env["ir.attachment"].sudo().create({
+                "name": upload.filename or "employee-document",
+                "datas": base64.b64encode(upload.read()),
+                "mimetype": upload.mimetype or "application/octet-stream",
+            })
+            documents |= request.env["doc.document"].create({
                 "name": upload.filename or "Employee document",
-                "folder_id": folder.id,
-                "employee_id": employee.id,
-                "document_type_id": document_type.id,
-                "attachment_id": attachment.id,
-                "state": "draft",
-                "approval_state": "not_required",
-            }
-        )
+                "folder_id": folder.id, "employee_id": employee.id,
+                "document_type_id": type_id, "attachment_id": attachment.id,
+                "state": "draft", "approval_state": "not_required",
+            })
         return request.make_json_response(
-            {"success": True, "data": {"id": document.id, "name": document.name}}
+            {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
 
     @http.route(
@@ -848,10 +855,10 @@ class DocumentUICreation(http.Controller):
                 {"success": False, "message": "Document manager access is required."},
                 status=403,
             )
-        upload = request.httprequest.files.get("file")
+        uploads = _uploaded_files()
         employee_id = request.httprequest.form.get("employee_id")
-        document_type_id = request.httprequest.form.get("document_type_id")
-        if not upload or not employee_id or not document_type_id:
+        document_type_ids = _upload_type_ids()
+        if not uploads or not employee_id or not document_type_ids or len(document_type_ids) not in (1, len(uploads)):
             return request.make_json_response(
                 {
                     "success": False,
@@ -860,10 +867,8 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         employee = request.env["hr.employee"].browse(int(employee_id)).exists()
-        document_type = (
-            request.env["doc.document.type"].browse(int(document_type_id)).exists()
-        )
-        if not employee or not document_type:
+        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        if not employee or len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {
                     "success": False,
@@ -880,28 +885,21 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
-        attachment = (
-            request.env["ir.attachment"]
-            .sudo()
-            .create(
-                {
-                    "name": upload.filename or "employee-document",
-                    "datas": base64.b64encode(upload.read()),
-                    "mimetype": upload.mimetype or "application/octet-stream",
-                }
-            )
-        )
-        document = request.env["doc.document"].create(
-            {
-                "name": upload.filename or "Employee document",
-                "folder_id": folder.id,
-                "employee_id": employee.id,
-                "document_type_id": document_type.id,
+        documents = request.env["doc.document"]
+        for index, upload in enumerate(uploads):
+            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            attachment = request.env["ir.attachment"].sudo().create({
+                "name": upload.filename or "employee-document",
+                "datas": base64.b64encode(upload.read()),
+                "mimetype": upload.mimetype or "application/octet-stream",
+            })
+            documents |= request.env["doc.document"].create({
+                "name": upload.filename or "Employee document", "folder_id": folder.id,
+                "employee_id": employee.id, "document_type_id": type_id,
                 "attachment_id": attachment.id,
-            }
-        )
+            })
         return request.make_json_response(
-            {"success": True, "data": {"id": document.id, "name": document.name}}
+            {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
 
     @http.route(
@@ -1205,10 +1203,10 @@ class DocumentUICreation(http.Controller):
         csrf=False,
     )
     def upload_document(self, **kwargs):
-        upload = request.httprequest.files.get("file")
+        uploads = _uploaded_files()
         folder_id = request.httprequest.form.get("folder_id")
-        document_type_id = request.httprequest.form.get("document_type_id")
-        if not upload or not folder_id or not document_type_id:
+        document_type_ids = _upload_type_ids()
+        if not uploads or not folder_id or not document_type_ids or len(document_type_ids) not in (1, len(uploads)):
             return request.make_json_response(
                 {
                     "success": False,
@@ -1217,10 +1215,8 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         folder = request.env["doc.folder"].browse(int(folder_id)).exists()
-        document_type = (
-            request.env["doc.document.type"].browse(int(document_type_id)).exists()
-        )
-        if not folder or folder.folder_type != "organizational" or not document_type:
+        document_types = request.env["doc.document.type"].browse(document_type_ids).exists()
+        if not folder or folder.folder_type != "organizational" or len(document_types) != len(set(document_type_ids)):
             return request.make_json_response(
                 {
                     "success": False,
@@ -1229,24 +1225,20 @@ class DocumentUICreation(http.Controller):
                 status=400,
             )
         folder.check_access_rule("read")
-        content = upload.read()
-        attachment = request.env["ir.attachment"].create(
-            {
+        documents = request.env["doc.document"]
+        for index, upload in enumerate(uploads):
+            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+            attachment = request.env["ir.attachment"].create({
                 "name": upload.filename or "document",
-                "datas": base64.b64encode(content),
+                "datas": base64.b64encode(upload.read()),
                 "mimetype": upload.mimetype or "application/octet-stream",
-            }
-        )
-        document = request.env["doc.document"].create(
-            {
-                "name": upload.filename or "Document",
-                "folder_id": folder.id,
-                "document_type_id": document_type.id,
-                "attachment_id": attachment.id,
-            }
-        )
+            })
+            documents |= request.env["doc.document"].create({
+                "name": upload.filename or "Document", "folder_id": folder.id,
+                "document_type_id": type_id, "attachment_id": attachment.id,
+            })
         return request.make_json_response(
-            {"success": True, "data": {"id": document.id, "name": document.name}}
+            {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
 
     @http.route(

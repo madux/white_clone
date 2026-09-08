@@ -278,6 +278,22 @@ select.field option {
   }
 }
 
+.guide-positioned {
+  top: 5rem;
+}
+
+@media (max-height: 720px) {
+  .guide-positioned {
+    top: 0.75rem;
+  }
+}
+
+@media (max-width: 1100px) and (max-height: 800px) {
+  .guide-positioned {
+    width: min(340px, calc(100vw - 1.5rem));
+  }
+}
+
 .guide-emphasis {
   position: relative;
   z-index: 40;

@@ -113,6 +113,24 @@ export default function OnboardingGuide() {
   } | null>(null);
 
   useEffect(() => {
+    const keepInViewport = () => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      const rect = panel.getBoundingClientRect();
+      setPosition((current) => {
+        if (!current) return current;
+        return {
+          x: Math.max(8, Math.min(window.innerWidth - rect.width - 8, current.x)),
+          y: Math.max(8, Math.min(window.innerHeight - rect.height - 8, current.y)),
+        };
+      });
+    };
+
+    window.addEventListener("resize", keepInViewport);
+    return () => window.removeEventListener("resize", keepInViewport);
+  }, []);
+
+  useEffect(() => {
     setOpen(Boolean(query.data?.show));
   }, [query.data?.show]);
 
@@ -212,7 +230,7 @@ export default function OnboardingGuide() {
 
   return (
     <div
-      className="pointer-events-none fixed right-4 top-20 z-[200] w-[min(390px,calc(100vw-2rem))] sm:right-6"
+      className="guide-positioned pointer-events-none fixed right-4 z-[200] w-[min(390px,calc(100vw-1.5rem))] sm:right-6"
       style={position ? { left: position.x, top: position.y, right: "auto" } : undefined}
     >
       <section
@@ -220,7 +238,7 @@ export default function OnboardingGuide() {
         role="dialog"
         aria-modal="false"
         aria-labelledby="getting-started-title"
-        className="pointer-events-auto overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_20px_55px_rgba(15,23,42,0.18)]"
+        className="pointer-events-auto flex max-h-[calc(100dvh-1.5rem)] flex-col overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_20px_55px_rgba(15,23,42,0.18)]"
       >
         <div
           onPointerDown={startDragging}
@@ -256,66 +274,67 @@ export default function OnboardingGuide() {
           </div>
         </div>
 
-        <div className="border-b border-slate-100 bg-white px-4 py-3">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1" aria-label="Onboarding steps">
-            {steps.map((step, index) => {
-              const done = completed.has(step.id);
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => setActiveIndex(index)}
-                  title={`${index + 1}. ${step.title}`}
-                  aria-label={`Step ${index + 1}: ${step.title}`}
-                  aria-current={activeIndex === index ? "step" : undefined}
-                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold transition ${done ? "bg-emerald-500 text-white" : activeIndex === index ? "bg-brand-pink text-white shadow-sm" : "bg-slate-100 text-slate-400 hover:bg-pink-50 hover:text-brand-text"}`}
-                >
-                  {done ? <Check className="h-3.5 w-3.5" /> : index + 1}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="p-4">
-          {query.data?.is_admin && activeIndex === 0 && (
-            <p className="mb-3 rounded-xl border border-pink-100 bg-pink-50/60 px-3 py-2 text-[11px] leading-4 text-brand-text">
-              This guide includes your everyday user steps and your administrator setup steps.
-            </p>
-          )}
-          <div className="flex items-start gap-3">
-            <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${activeStepComplete ? "bg-emerald-50 text-emerald-600" : "bg-pink-50 text-brand-pink"}`}>
-              {activeStepComplete ? <Check className="h-4 w-4" /> : <span className="text-sm font-bold">{activeIndex + 1}</span>}
-            </div>
-            <div className="min-w-0">
-              <h3 className="text-sm font-bold text-slate-900">{activeStep?.title}</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">{activeStep?.description}</p>
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="border-b border-slate-100 bg-white px-4 py-3">
+            <div className="flex items-center gap-1 overflow-x-auto pb-1" aria-label="Onboarding steps">
+              {steps.map((step, index) => {
+                const done = completed.has(step.id);
+                return (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setActiveIndex(index)}
+                    title={`${index + 1}. ${step.title}`}
+                    aria-label={`Step ${index + 1}: ${step.title}`}
+                    aria-current={activeIndex === index ? "step" : undefined}
+                    className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[10px] font-bold transition ${done ? "bg-emerald-500 text-white" : activeIndex === index ? "bg-brand-pink text-white shadow-sm" : "bg-slate-100 text-slate-400 hover:bg-pink-50 hover:text-brand-text"}`}
+                  >
+                    {done ? <Check className="h-3.5 w-3.5" /> : index + 1}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1">
-              <button type="button" onClick={movePrevious} disabled={activeIndex === 0} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30">
-                <ChevronLeft className="h-3.5 w-3.5" /> Back
-              </button>
-              <button type="button" onClick={dismiss} className="rounded-lg px-2 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-700">
-                Skip
-              </button>
+          <div className="p-4">
+            {query.data?.is_admin && activeIndex === 0 && (
+              <p className="mb-3 rounded-xl border border-pink-100 bg-pink-50/60 px-3 py-2 text-[11px] leading-4 text-brand-text">
+                This guide includes your everyday user steps and your administrator setup steps.
+              </p>
+            )}
+            <div className="flex items-start gap-3">
+              <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${activeStepComplete ? "bg-emerald-50 text-emerald-600" : "bg-pink-50 text-brand-pink"}`}>
+                {activeStepComplete ? <Check className="h-4 w-4" /> : <span className="text-sm font-bold">{activeIndex + 1}</span>}
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-bold text-slate-900">{activeStep?.title}</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-500">{activeStep?.description}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {activeStep?.href && (
-                <Link href={activeStep.href} onClick={() => completeStep(activeStep.id)} className="inline-flex items-center gap-1 rounded-lg bg-pink-50 px-2.5 py-1.5 text-xs font-bold text-brand-text hover:bg-pink-100">
-                  {activeStep.action || "Open"} <ChevronRight className="h-3.5 w-3.5" />
-                </Link>
-              )}
-              {activeIndex === steps.length - 1 ? (
-                <button type="button" onClick={finish} disabled={update.isPending} className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-brand-text to-brand-pink px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-60">
-                  Finish <Check className="h-3.5 w-3.5" />
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-1">
+                <button type="button" onClick={movePrevious} disabled={activeIndex === 0} className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30">
+                  <ChevronLeft className="h-3.5 w-3.5" /> Back
                 </button>
-              ) : (
-                <button type="button" onClick={moveNext} disabled={update.isPending} className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-brand-text to-brand-pink px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-60">
-                  {activeStepComplete ? "Next" : "Done & next"} <ChevronRight className="h-3.5 w-3.5" />
+                <button type="button" onClick={dismiss} className="rounded-lg px-2 py-1.5 text-xs font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-700">
+                  Skip
                 </button>
-              )}
+              </div>
+              <div className="flex items-center gap-2">
+                {activeStep?.href && (
+                  <Link href={activeStep.href} onClick={() => completeStep(activeStep.id)} className="inline-flex items-center gap-1 rounded-lg bg-pink-50 px-2.5 py-1.5 text-xs font-bold text-brand-text hover:bg-pink-100">
+                    {activeStep.action || "Open"} <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
+                )}
+                {activeIndex === steps.length - 1 ? (
+                  <button type="button" onClick={finish} disabled={update.isPending} className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-brand-text to-brand-pink px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-60">
+                    Finish <Check className="h-3.5 w-3.5" />
+                  </button>
+                ) : (
+                  <button type="button" onClick={moveNext} disabled={update.isPending} className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-brand-text to-brand-pink px-2.5 py-1.5 text-xs font-bold text-white disabled:opacity-60">
+                    {activeStepComplete ? "Next" : "Done & next"} <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

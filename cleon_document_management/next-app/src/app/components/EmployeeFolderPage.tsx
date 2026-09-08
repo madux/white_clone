@@ -12,7 +12,7 @@ import {
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useAddEmployeesToFolder, useComplianceTargets, useDocuments, useFolders } from "../../../hooks/useDocuments";
+import { useAddEmployeesToFolder, useComplianceTargets, useDocuments, useFolders, useRemoveEmployeesFromFolder } from "../../../hooks/useDocuments";
 
 export default function EmployeeFolderPage() {
   const params = useSearchParams();
@@ -22,6 +22,7 @@ export default function EmployeeFolderPage() {
   const targets = useComplianceTargets();
   const [search, setSearch] = useState("");
   const [showAddEmployees, setShowAddEmployees] = useState(false);
+  const [selectedEmployees, setSelectedEmployees] = useState<number[]>([]);
   const folder = folders.data?.find((item) => item.id === folderId);
   const employees = useMemo(() => {
     const grouped = new Map<
@@ -45,6 +46,14 @@ export default function EmployeeFolderPage() {
       employee.name.toLowerCase().includes(search.toLowerCase()),
     );
   }, [documents.data, folder?.employee_ids, search, targets.data]);
+  const allSelected = employees.length > 0 && employees.every((employee) => selectedEmployees.includes(employee.id));
+  const removeEmployees = useRemoveEmployeesFromFolder();
+  const deleteSelectedEmployees = async () => {
+    if (!selectedEmployees.length || !folderId) return;
+    if (!window.confirm(`Remove ${selectedEmployees.length} employee${selectedEmployees.length === 1 ? "" : "s"} and delete their files from this folder?`)) return;
+    await removeEmployees.mutateAsync({ id: folderId, employee_ids: selectedEmployees });
+    setSelectedEmployees([]);
+  };
 
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
@@ -82,8 +91,9 @@ export default function EmployeeFolderPage() {
         </div>
       </div>
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="grid grid-cols-[minmax(240px,2fr)_1fr_1fr_1fr] border-b border-slate-100 bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-          <span>Employee</span>
+        {selectedEmployees.length > 0 && <div className="flex items-center gap-2 border-b border-pink-100 bg-pink-50 px-5 py-3"><span className="text-sm font-bold text-brand-text">{selectedEmployees.length} selected</span><button type="button" onClick={deleteSelectedEmployees} disabled={removeEmployees.isPending} className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600">{removeEmployees.isPending ? "Removing..." : "Remove and delete files"}</button><button type="button" onClick={() => setSelectedEmployees([])} className="ml-auto rounded-lg px-3 py-2 text-xs font-bold text-slate-500">Clear</button></div>}
+        <div className="grid grid-cols-[40px_minmax(240px,2fr)_1fr_1fr_1fr] border-b border-slate-100 bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
+          <span><input type="checkbox" checked={allSelected} onChange={() => setSelectedEmployees(allSelected ? [] : employees.map((employee) => employee.id))} aria-label="Select all employees" className="h-4 w-4 accent-pink-600" /></span><span>Employee</span>
           <span>Documents</span>
           <span>Department</span>
           <span>Compliance</span>
@@ -106,8 +116,9 @@ export default function EmployeeFolderPage() {
               <Link
                 key={employee.id}
                 href={`/pages/employee/profile?employee=${employee.id}`}
-                className="grid grid-cols-[minmax(240px,2fr)_1fr_1fr_1fr] items-center border-b border-slate-100 px-5 py-5 transition hover:bg-pink-50/30"
+                className="grid grid-cols-[40px_minmax(240px,2fr)_1fr_1fr_1fr] items-center border-b border-slate-100 px-5 py-5 transition hover:bg-pink-50/30"
               >
+                <span onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedEmployees.includes(employee.id)} onChange={() => setSelectedEmployees((current) => current.includes(employee.id) ? current.filter((id) => id !== employee.id) : [...current, employee.id])} aria-label={`Select ${employee.name}`} className="h-4 w-4 accent-pink-600" /></span>
                 <span className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-50 font-bold text-brand-pink">
                     {employee.name

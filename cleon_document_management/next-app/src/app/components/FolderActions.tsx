@@ -60,7 +60,7 @@ export default function FolderActions({
       const rect = triggerRef.current?.getBoundingClientRect();
       if (rect)
         setMenuPosition({
-          top: rect.bottom + 8,
+          top: Math.max(12, rect.top - 250 - 8),
           left: Math.max(8, rect.right - 208),
         });
     };

@@ -268,6 +268,17 @@ export function useAddEmployeesToFolder() {
   return useMutation({ mutationFn: api.addEmployeesToFolder, onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders }) });
 }
 
+export function useRemoveEmployeesFromFolder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.removeEmployeesFromFolder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.folders });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+    },
+  });
+}
+
 export function useDeleteFolder() {
   const queryClient = useQueryClient();
 

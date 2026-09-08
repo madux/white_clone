@@ -68,7 +68,7 @@ export default function ThemedSelect({
   };
 
   return (
-    <div ref={root} className="relative w-full">
+    <div ref={root} className="relative min-w-0 w-full">
       <button
         type="button"
         aria-haspopup="listbox"
