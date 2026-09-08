@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <record id="cat_coop" model="cleon.payroll.category">
+            <field name="name">Cooperative</field>
+            <field name="code">COOP</field>
+            <field name="sequence">45</field>
+            <field name="parent_id" ref="cleon_payroll.cat_deduction"/>
+        </record>
+
+        <record id="rule_coop" model="cleon.payroll.rule">
+            <field name="name">Cooperative Contribution</field>
+            <field name="code">COOP</field>
+            <field name="sequence">80</field>
+            <field name="category_id" ref="cat_coop"/>
+            <field name="rule_type">deduction</field>
+            <field name="amount_select">percentage</field>
+            <field name="amount_percentage">5</field>
+            <field name="amount_percentage_base">rules.BASIC</field>
+        </record>
+
+        <record id="cleon_payroll.structure_monthly_staff" model="cleon.payroll.structure">
+            <field name="rule_ids" eval="[(4, ref('rule_coop'))]"/>
+        </record>
+
+    </data>
+</odoo>

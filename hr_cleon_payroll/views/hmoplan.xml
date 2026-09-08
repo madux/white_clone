@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    
+    <!-- ══════════════════════════════════════════════════
+         TREE / LIST VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_plan_tree" model="ir.ui.view">
+        <field name="name">hmo.hmo_plan.tree</field>
+        <field name="model">hmo.plan</field>
+        <field name="arch" type="xml">
+            <tree
+                string="Plan" 
+                multi_edit="1"
+                class="o_qms_list">
+
+                <field name="name" string="Name"/>
+                <field name="hmo_marketplace_id" string="Name" optional="show"/>
+                <field name="hmo_plan_value_ids" widget="many2many_tags" string="Values" optional="show"/>
+                <field name="plan_price"/>
+                <field name="max_person"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         SEARCH VIEW
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_plan_search" model="ir.ui.view">
+        <field name="name">hmo.plan.search</field>
+        <field name="model">hmo.plan</field>
+        <field name="arch" type="xml">
+            <search string="plan search">
+                <field name="name" string="Name"/>
+                <field name="hmo_marketplace_id" string="Name" optional="show"/>
+                <field name="plan_price"/>
+                <field name="max_person"/>
+                <!-- <filter string="Active" name="actives" domain="[('active','=', True)]"/> -->
+                <separator/>
+                <!-- <filter string="My Requests" name="my_requests"
+                        domain="[('responsible_id','=',uid)]"/> -->
+            </search>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         FORM VIEW  — Modern Card-based UI
+    ══════════════════════════════════════════════════ -->
+    <record id="view_hmo_plan_form" model="ir.ui.view">
+        <field name="name">hmo.plan.form</field>
+        <field name="model">hmo.plan</field>
+        <field name="arch" type="xml">
+            <form string="HMO Market Place" class="o_qms_form">
+                <!-- ══ STATUS BAR ══ --> 
+                <sheet>
+                     
+                    <!-- ══ HERO HEADER BANNER ══ -->
+                    <div class="qms-header-hero">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="qms-hero-ref">
+                                    <field name="name" readonly="1" class="d-inline"/>
+                                </div>
+                                <div class="qms-hero-sub">HMO plan</div>
+                                <div class="qms-badge-row">
+                                    <!-- <field name="active" widget="boolean_toggle"/> -->
+                                </div>
+                            </div>
+                            <div class="text-end" style="color:rgba(255,255,255,.7); font-size:12px;">
+                                <div style="margin-top:4px;">
+                                    <!-- Responsible: <field name="create_uid" readonly="1"
+                                                        style="color:#FFC940; font-weight:600;"/>-->
+                                </div>     
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ══ KPI STRIP ══ -->
+                    <!-- <div class="qms-kpi-strip">
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">Code</div>
+                            <div class="qms-kpi-value">
+                                <field name="code" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="qms-kpi-box">
+                            <div class="qms-kpi-label">plan #</div>
+                            <div class="qms-kpi-value">
+                                <field name="plan_no" readonly="1"/>
+                            </div>
+                        </div>
+                         
+                    </div> -->
+                    <div class="qms-card">
+                        <div class="qms-card-header">
+                            <div class="qms-card-icon">
+                                <svg viewBox="0 0 24 24"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <span class="qms-card-title">Details</span>
+                        </div>
+                        <div class="qms-card-body">
+                            <group>
+                                <group col="4">
+                                    <field name="name" placeholder="HMEDIC" readonly="0"/>
+                                    <field name="hmo_marketplace_id" readonly="0"/>
+                                    <field name="hmo_plan_value_ids" widget="many2many_tags" string="Values" optional="show"/>
+
+                                    <field name="plan_price"/>
+                                </group>
+                                <!-- <div class="qms-divider"/> -->
+                                <group>
+                                    <field name="max_person" string="Maximum Employee Allowed"/>
+                                </group>
+                            </group>
+                        </div>
+                    </div> 
+                </sheet>
+                <!-- ── Chatter ── -->
+                <!-- <chatter/> -->
+            </form>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════
+         ACTION
+    ══════════════════════════════════════════════════ -->
+    <record id="action_hmo_plan" model="ir.actions.act_window">
+        <field name="name">HMO plan</field>
+        <field name="res_model">hmo.plan</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="view_hmo_plan_search"/>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No record found
+            </p>
+            <p>
+                Create a new plan
+            </p>
+        </field>
+    </record> 
+
+    <record id="view_hmo_plan_kanban" model="ir.ui.view">
+        <field name="name">hmo.plan.kanban</field>
+        <field name="model">hmo.plan</field>
+
+        <field name="arch" type="xml">
+
+            <kanban class="o_hmo_marketplace_kanban"
+                    create="1"
+                    records_draggable="0">
+
+                <field name="name" string="Name"/>
+                    <field name="hmo_marketplace_id" string="Name" optional="show"/>
+                    <field name="plan_price"/>
+                    <field name="max_person"/>
+                    <!-- <field name="active"/> -->
+                <!-- STATIC HEADER (unchanged) -->
+                <header>
+                    <div class="marketplace-header">
+                        <div class="topbar">
+                            <div>
+                                <h1>HMO plan</h1>
+                                <p>Browse plans</p>
+                            </div>
+                            <div class="top-actions">
+                                <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
+                                <!-- <button type="object" name="open_record" class="btn-hmo btn-outline-hmo">⤴ Bulk Upload</button>
+                                <button name="open_record" type="object" class="btn-hmo btn-light-hmo">🛡 Take Tour</button> -->
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <div class="search-box">🔍</div>
+                            <div class="toolbar-actions">
+                                <button name="open_record" type="object" class="icon-btn active">▦</button>
+                                <!-- <button name="open_record" type="object" class="icon-btn">☰</button> -->
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <!-- CARD TEMPLATE -->
+                <!-- CARD TEMPLATE -->
+                <templates>
+                    <t t-name="kanban-box">
+
+                        <div class="oe_kanban_card ins_provider_card">
+
+                            <!-- Top row: avatar, name/contact, verified badge -->
+                            <div class="ins_card_top">
+
+                                <div class="ins_avatar ins_avatar_pink">
+                                    <t t-esc="record.code.value or (record.name.value and record.name.value.substring(0,2).toUpperCase())"/>
+                                </div>
+
+                                <div class="ins_provider_info">
+                                    <h3 class="ins_provider_name">
+                                        <field name="name" readonly="1"/>
+                                    </h3>
+
+                                    <p class="ins_contact_line">
+                                        <i class="fa fa-map-marker ins_contact_icon"/>
+                                        <field name="hmo_marketplace_id" readonly="1"/>
+                                    </p>
+                                    <p class="ins_contact_line">
+                                        <i class="fa fa-map-marker ins_contact_icon"/>
+                                        <field name="plan_price" readonly="1"/>
+                                    </p>
+    
+                                    <p class="ins_contact_line">
+                                        <i class="fa fa-envelope ins_contact_icon"/>
+                                        <field name="max_person" readonly="1"/>
+                                    </p>
+                                </div>
+
+                                <div class="ins_verified_badge" title="Verified provider">
+                                    <i class="fa fa-check-circle"/>
+                                </div>
+
+                            </div>
+
+                            <!-- Tags: category tags (blue) + plan tags (purple) -->
+                            <!-- <div class="ins_tags_row">
+                                <div class="ins_tag_group ins_tag_group_type">
+                                    <field name="hmo_tag_ids" widget="many2many_tags" readonly="1"/>
+                                </div>
+                                <div class="ins_tag_group ins_tag_group_plan">
+                                    <field name="hmo_plan_ids" widget="many2many_tags" readonly="1"/>
+                                </div>
+                            </div>-->
+
+                            <div class="ins_divider"/>
+
+                            <div class="ins_card_footer">
+                                <span class="ins_plan_count">
+                                    <i class="fa fa-plan-o ins_contact_icon"/>
+                                </span>
+
+                                <button name="open_record" type="object" class="ins_view_details_btn">
+                                    View Details
+                                </button>
+                            </div>  
+                        </div> 
+                    </t>
+                </templates>
+            
+            </kanban>
+
+        </field>
+    </record> 
+
+    <!-- ══════════════════════════════════════════════════
+         MENU
+    ══════════════════════════════════════════════════ -->
+
+    <menuitem
+        id="menu_hmo_hmo_plan"
+        name="Plan"
+        action="action_hmo_plan"
+        sequence="44"
+        parent="menu_hr_insurance_hmo"
+        /> 
+</odoo>

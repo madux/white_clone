@@ -1,0 +1,454 @@
+/* ===========================================================
+   Cleon Payroll Dashboard — Pink Theme
+   =========================================================== */
+:root{
+  --cpd-pink-50:#fff0f6;
+  --cpd-pink-100:#ffd9e8;
+  --cpd-pink-200:#ffb3d1;
+  --cpd-pink-400:#ff6fa5;
+  --cpd-pink-500:#ec4899;
+  --cpd-pink-600:#db2777;
+  --cpd-pink-700:#be185d;
+  --cpd-purple-500:#a855f7;
+  --cpd-rose-500:#f43f5e;
+  --cpd-fuchsia-500:#d946ef;
+  --cpd-ink-900:#241624;
+  --cpd-ink-700:#4a3550;
+  --cpd-ink-500:#8a7690;
+  --cpd-bg:#fdf5f9;
+  --cpd-card-bg:#ffffff;
+  --cpd-border:#f3d9e8;
+  --cpd-shadow:0 6px 24px rgba(219,39,119,0.08);
+  --cpd-radius:16px;
+  --cpd-sidebar-w:264px;
+}
+
+html{
+  /* Always reserve the scrollbar gutter so a chart resize can never
+     toggle the scrollbar on/off, which would otherwise change the
+     viewport width and re-trigger Chart.js's ResizeObserver in a loop. */
+  overflow-y: scroll;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family: "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--cpd-bg);
+  color: var(--cpd-ink-900);
+  font-size:14px;
+}
+a{ text-decoration:none; color:inherit; }
+table{ border-collapse:collapse; width:100%; }
+.text-end{ text-align:right; }
+.d-lg-none{ display:none; }
+
+.cpd-app{ display:flex; min-height:100vh; }
+
+/* ---------------- Sidebar ---------------- */
+.cpd-sidebar{
+  width: var(--cpd-sidebar-w);
+  flex-shrink:0;
+  background: linear-gradient(180deg, var(--cpd-pink-600) 0%, var(--cpd-pink-700) 100%);
+  color:#fff;
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+  z-index:20;
+}
+.cpd-sidebar-brand{
+  display:flex; align-items:center; gap:10px;
+  padding:22px 20px;
+  font-size:17px;
+  border-bottom:1px solid rgba(255,255,255,0.15);
+}
+.cpd-logo-dot{
+  width:12px; height:12px; border-radius:50%;
+  background:#fff; box-shadow:0 0 0 4px rgba(255,255,255,0.25);
+}
+.cpd-brand-text b{ font-weight:700; }
+.cpd-sidebar-close{
+  margin-left:auto; background:transparent; border:none; color:#fff;
+  font-size:16px; cursor:pointer;
+}
+.cpd-nav{ padding:14px 10px 30px; flex:1; }
+.cpd-nav-section{
+  font-size:11px; text-transform:uppercase; letter-spacing:.08em;
+  color:rgba(255,255,255,0.6); margin:18px 12px 6px;
+}
+.cpd-nav-section:first-child{ margin-top:4px; }
+.cpd-nav-link{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px;
+  color:rgba(255,255,255,0.88);
+  font-size:13.5px; margin-bottom:2px;
+  transition: background .15s ease, transform .1s ease;
+}
+.cpd-nav-link i{ width:18px; text-align:center; font-size:14px; }
+.cpd-nav-link:hover{ background:rgba(255,255,255,0.12); }
+.cpd-nav-link.active{
+  background:#fff; color: var(--cpd-pink-700); font-weight:600;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+/* ---------------- Main ---------------- */
+.cpd-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+
+.cpd-topbar{
+  display:flex; align-items:center; gap:14px;
+  padding:16px 24px; background:var(--cpd-card-bg);
+  border-bottom:1px solid var(--cpd-border);
+  position:sticky; top:0; z-index:10;
+}
+.cpd-topbar-title{ font-size:19px; font-weight:700; color:var(--cpd-ink-900); }
+.cpd-topbar-actions{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+.cpd-icon-btn{
+  display:flex; align-items:center; gap:8px;
+  background:var(--cpd-pink-50); border:1px solid var(--cpd-border);
+  color:var(--cpd-pink-700); padding:9px 14px; border-radius:10px;
+  cursor:pointer; font-size:13px; font-weight:600;
+}
+.cpd-icon-btn:hover{ background:var(--cpd-pink-100); }
+.cpd-btn-label{ display:inline; }
+.cpd-user-avatar{
+  width:36px; height:36px; border-radius:50%;
+  background: linear-gradient(135deg, var(--cpd-pink-500), var(--cpd-purple-500));
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-weight:700;
+}
+
+/* ---------------- Accordion Filters ---------------- */
+.cpd-filters{
+  max-height:0; overflow:hidden;
+  background:#fff; border-bottom:1px solid var(--cpd-border);
+  transition: max-height .25s ease;
+}
+.cpd-filters.open{ max-height:220px; }
+.cpd-filters-grid{
+  display:grid; grid-template-columns: repeat(6, 1fr);
+  gap:14px; padding:18px 24px; align-items:end;
+}
+.cpd-filter-item{ display:flex; flex-direction:column; gap:6px; }
+.cpd-filter-item label{ font-size:11.5px; color:var(--cpd-ink-500); font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
+.cpd-filter-item select, .cpd-filter-item input{
+  border:1px solid var(--cpd-border); border-radius:9px;
+  padding:8px 10px; font-size:13px; background:#fff; color:var(--cpd-ink-900);
+}
+.cpd-filter-actions{ display:flex; gap:8px; }
+.cpd-btn{
+  border:none; padding:9px 16px; border-radius:9px; cursor:pointer;
+  font-size:13px; font-weight:600;
+}
+.cpd-btn-primary{ background: var(--cpd-pink-600); color:#fff; }
+.cpd-btn-primary:hover{ background: var(--cpd-pink-700); }
+.cpd-btn-ghost{ background:transparent; color:var(--cpd-ink-500); border:1px solid var(--cpd-border); }
+
+/* ---------------- Content ---------------- */
+.cpd-content{ padding:22px 24px 60px; }
+.cpd-panel{ display:none; animation: cpdFade .2s ease; }
+.cpd-panel.active{ display:block; }
+@keyframes cpdFade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+
+.cpd-kpi-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px;
+}
+.cpd-kpi-grid-1{ grid-template-columns:repeat(3,1fr); }
+.cpd-kpi-card{
+  background:var(--cpd-card-bg); border:1px solid var(--cpd-border);
+  border-radius:var(--cpd-radius); padding:18px; display:flex; gap:14px; align-items:center;
+  box-shadow:var(--cpd-shadow);
+}
+.cpd-kpi-icon{
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;
+}
+.cpd-kpi-icon.pink{ background:linear-gradient(135deg, var(--cpd-pink-400), var(--cpd-pink-600)); }
+.cpd-kpi-icon.purple{ background:linear-gradient(135deg, var(--cpd-purple-500), var(--cpd-pink-500)); }
+.cpd-kpi-icon.rose{ background:linear-gradient(135deg, var(--cpd-rose-500), var(--cpd-pink-500)); }
+.cpd-kpi-icon.fuchsia{ background:linear-gradient(135deg, var(--cpd-fuchsia-500), var(--cpd-purple-500)); }
+.cpd-kpi-body{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.cpd-kpi-label{ font-size:12px; color:var(--cpd-ink-500); font-weight:600; }
+.cpd-kpi-value{ font-size:21px; font-weight:800; color:var(--cpd-ink-900); }
+
+.cpd-grid-2{ display:grid; grid-template-columns:1.3fr 1fr; gap:18px; }
+
+.cpd-card{
+  background:var(--cpd-card-bg); border:1px solid var(--cpd-border);
+  border-radius:var(--cpd-radius); box-shadow:var(--cpd-shadow);
+  margin-bottom:18px; overflow:hidden;
+}
+.cpd-card-header{ padding:16px 18px 0; }
+.cpd-card-header h3{ margin:0 0 12px; font-size:15px; font-weight:700; color:var(--cpd-ink-900); }
+.cpd-card-body{ padding:0 18px 18px; }
+.cpd-muted{ color:var(--cpd-ink-500); font-size:13px; }
+
+.cpd-table-wrap{ overflow-x:auto; }
+
+/* Fixed-height wrapper for every chart canvas. Chart.js needs its
+   parent to have an explicit, non-canvas-derived height; otherwise
+   (with maintainAspectRatio) resizing the canvas can change the
+   parent's height, which can change the page height, which can
+   trigger another resize — an infinite "zoom in/out" loop. */
+.cpd-chart-wrap{ position:relative; width:100%; height:260px; }
+.cpd-chart-wrap.short{ height:220px; }
+.cpd-chart-wrap canvas{ 
+  /* width:100% !important;  */
+  height:100% !important; }
+.cpd-table th{
+  text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--cpd-ink-500); padding:10px 12px; border-bottom:2px solid var(--cpd-border);
+}
+.cpd-table td{ padding:10px 12px; border-bottom:1px solid var(--cpd-border); font-size:13.5px; }
+.cpd-table tbody tr:hover{ background:var(--cpd-pink-50); }
+.cpd-badge{ padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700; }
+.cpd-badge.draft{ background:#fde2e2; color:#b91c1c; }
+.cpd-badge.computed{ background:#dbeafe; color:#1d4ed8; }
+.cpd-badge.confirm{ background:#fef3c7; color:#b45309; }
+.cpd-badge.paid{ background:#dcfce7; color:#15803d; }
+
+/* ---------------- Stepper / Timeline ---------------- */
+.cpd-stepper{ display:flex; align-items:center; flex-wrap:wrap; gap:0; }
+.cpd-step{ display:flex; align-items:center; }
+.cpd-step-circle{
+  width:44px; height:44px; border-radius:50%;
+  background: var(--cpd-pink-50); border:2px solid var(--cpd-pink-200);
+  color:var(--cpd-pink-700); display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:15px;
+}
+.cpd-step-info{ margin-left:10px; margin-right:22px; }
+.cpd-step-info .name{ font-weight:700; font-size:13px; }
+.cpd-step-info .count{ font-size:12px; color:var(--cpd-ink-500); }
+.cpd-step-line{ width:40px; height:2px; background:var(--cpd-pink-200); margin-right:22px; }
+
+.cpd-timeline{ display:flex; flex-direction:column; gap:0; }
+.cpd-timeline-item{ display:flex; gap:14px; padding:14px 0; border-bottom:1px dashed var(--cpd-border); }
+.cpd-timeline-item:last-child{ border-bottom:none; }
+.cpd-timeline-dot{
+  width:12px; height:12px; border-radius:50%; margin-top:5px; flex-shrink:0;
+  background: var(--cpd-pink-500);
+}
+.cpd-timeline-body{ flex:1; }
+.cpd-timeline-title{ font-weight:700; font-size:13.5px; }
+.cpd-timeline-meta{ font-size:12px; color:var(--cpd-ink-500); margin-top:2px; }
+
+/* ---------------- Loading ---------------- */
+.cpd-loading{
+  position:fixed; inset:0; background:rgba(255,255,255,0.55);
+  display:none; align-items:center; justify-content:center; z-index:999;
+}
+.cpd-loading.show{ display:flex; }
+.cpd-spinner{
+  width:44px; height:44px; border-radius:50%;
+  border:4px solid var(--cpd-pink-100); border-top-color:var(--cpd-pink-600);
+  animation: cpdSpin .7s linear infinite;
+}
+@keyframes cpdSpin{ to{ transform:rotate(360deg); } }
+
+/* ---------------- Offcanvas backdrop ---------------- */
+.cpd-backdrop{ display:none; position:fixed; inset:0; background:rgba(36,22,36,0.4); z-index:15; }
+.cpd-backdrop.show{ display:block; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 992px){
+  .d-lg-none{ display:inline-flex; }
+  .cpd-sidebar{
+    position:fixed; left:0; top:0; height:100vh;
+    transform:translateX(-100%);
+    transition: transform .25s ease;
+  }
+  .cpd-sidebar.open{ transform:translateX(0); }
+  .cpd-grid-2{ grid-template-columns:1fr; }
+  .cpd-kpi-grid{ grid-template-columns:repeat(2,1fr); }
+  .cpd-kpi-grid-1{ grid-template-columns:1fr; }
+  .cpd-filters-grid{ grid-template-columns:repeat(2,1fr); }
+  .cpd-btn-label{ display:none; }
+}
+@media (max-width: 560px){
+  .cpd-kpi-grid{ grid-template-columns:1fr; }
+  .cpd-filters-grid{ grid-template-columns:1fr; }
+  .cpd-content{ padding:16px; }
+}
+
+.o_payroll_kanban {
+    .o_kanban_renderer {
+        display: grid !important;
+        grid-template-columns: repeat(4, minmax(650px, 1fr));
+        gap: 5px;
+        padding: 24px;
+        align-items: start;
+    }
+    .o_kanban_record {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
+    .provider-card {
+        width: 100%;
+        min-height: 320px;
+        border-radius: 20px;
+        background: white;
+        padding: 32px;
+
+        border: 1px solid #e5e7eb;
+
+        box-shadow: 0 4px 12px rgba(0,0,0,.04);
+
+        transition: .3s;
+    }
+
+    .provider-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+
+    .ins_provider_card {
+      background-color: #ffffff;
+      border: 1px solid #e7e9ee;
+      border-radius: 14px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+      padding: 18px 18px 14px;
+      width: 100%;
+  }
+
+  /* ---- Top row ---- */
+  .ins_card_top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+  }
+
+  .ins_avatar {
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+  }
+
+  .ins_avatar_pink   { background-color: #ec4899; }
+  .ins_avatar_blue   { background-color: #3b82f6; }
+  .ins_avatar_purple { background-color: #a855f7; }
+  .ins_avatar_orange { background-color: #f97316; }
+
+  .ins_provider_info {
+      flex: 1;
+      min-width: 0;
+  }
+
+  .ins_provider_name {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #14161a;
+  }
+
+  .ins_contact_line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 4px;
+      font-size: 12.5px;
+      color: #6b7280;
+  }
+
+  .ins_contact_icon {
+      width: 12px;
+      text-align: center;
+      color: #9aa0ab;
+      font-size: 11px;
+  }
+
+  .ins_verified_badge {
+      color: #22c55e;
+      font-size: 16px;
+      line-height: 1;
+      margin-top: 2px;
+  }
+
+  /* ---- Tags ---- */
+  .ins_tags_row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 14px 0 12px;
+  }
+
+  .ins_tag_group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+  }
+
+  /* Category tags (Individual / Family / Corporate) — blue */
+  .ins_tag_group_type .o_tag {
+      background-color: #eaf1ff !important;
+      color: #3b6fe0 !important;
+      border-radius: 999px !important;
+      font-size: 11.5px !important;
+      font-weight: 600 !important;
+      padding: 4px 10px !important;
+      border: none !important;
+  }
+
+  /* Plan tags (Bronze / Silver / Gold) — purple/pink */
+  .ins_tag_group_plan .o_tag {
+      background-color: #f7ecfb !important;
+      color: #a534c9 !important;
+      border-radius: 999px !important;
+      font-size: 11.5px !important;
+      font-weight: 600 !important;
+      padding: 4px 10px !important;
+      border: none !important;
+  }
+
+  /* Hide the default delete "x" since tags are readonly */
+  .ins_tags_row .o_tag .o_delete {
+      display: none !important;
+  }
+
+  /* ---- Divider ---- */
+  .ins_divider {
+      border-top: 1px solid #eef0f2;
+      margin: 4px 0 12px;
+  }
+
+  /* ---- Footer ---- */
+  .ins_card_footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+  }
+
+  .ins_hospital_count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      color: #6b7280;
+  }
+
+  .ins_view_details_btn {
+      background-color: #ec4899;
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 12.5px;
+      font-weight: 600;
+  }
+
+  .ins_view_details_btn:hover {
+      background-color: #db2777;
+      color: #ffffff;
+  }
+
+}
+
+

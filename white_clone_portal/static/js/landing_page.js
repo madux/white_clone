@@ -1,94 +1,174 @@
 const MODULES = [
         {
+          id: 'hradmin', title: 'HR Admin', color: 'c-cyan',
+          desc: 'R management, Leave management and absence tracking',
+          features: ['Leave requests', 'Absence tracking', 'Leave policies'],
+          more: '+ 18 more feature',
+          technical_name: 'hr_administration.action_dashboard'
+        },
+        {
           id: 'recruitment', title: 'Recruitment', color: 'c-blue',
           desc: 'End-to-end recruitment and applicant tracking system',
           features: ['Job posting', 'Candidate pipeline', 'Interview scheduling'],
-          more: '+ 1 more feature'
+          more: '+ 14 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_cleon_recruitment.action_hr_job_recruitment',
         },
         {
-          id: 'employee-experience', title: 'Employee Experience', color: 'c-purple',
-          desc: 'Core HR management and employee lifecycle',
-          features: ['Employee records', 'Onboarding', 'Document management'],
-          more: '+ 1 more feature'
+          id: 'hr-core', title: 'HR Employee', color: 'c-purple',
+          desc: 'Core HR management system',
+          features: ['Employee records', 'Onboarding', 'Preonboarding'],
+          more: '+ 53 more feature',
+          technical_name: 'hr_employee',
+          action: 'hr_employee.action_core_multi_branch',
+
+        },
+        {
+          id: 'hr-calendar', title: 'Company Calendar', color: 'c-purple',
+          desc: 'Company calendar: Event managements',
+          features: ['Events', 'Announcements', 'Incident reports', 'Anniversary'],
+          more: '+ 6 more feature',
+          technical_name: 'hr_company_calendar',
+          action: 'xxxxxxxxxx',
+        },
+        {
+          id: 'hr-warning', title: 'HR Displinary', color: 'c-purple',
+          desc: 'Displinary managements',
+          features: ['Warnings', 'Displinary Actions', 'Termination Workflow'],
+          more: '+ 14 more feature',
+          technical_name: 'hr_warning',
+          action: 'hr_warning.action_hr_warning',
+
         },
         {
           id: 'payroll', title: 'Payroll & Remittance', color: 'c-green',
           desc: 'Automated payroll processing and tax remittance',
-          features: ['Salary calculation', 'Tax automation', 'Bank integration'],
-          more: '+ 3 more features'
+          features: ['Salary calculation', 'Tax automation', 'Rmeittance'],
+          more: '+ 31 more features',
+          technical_name: 'cleon_payroll',
+          action: 'cleon_payroll.action_hr_employee_pink_kanban',
         },
+        
         {
-          id: 'finance', title: 'Finance', color: 'c-green',
-          desc: 'Financial management and accounting integration',
+          id: 'expense-mgt', title: 'Expense Management', color: 'c-green',
+          desc: 'Employee management integration',
           features: ['Budgeting', 'Expense tracking', 'Financial reports'],
-          more: '+ 1 more feature'
+          more: '+ 21 more feature',
+          technical_name: 'hr_expense_management',
+          action: 'hr_expense_management.action_hr_claim_dashboard',
+
         },
         {
           id: 'cleon-time', title: 'Cleon Time', color: 'c-orange',
           desc: 'Comprehensive time and attendance management',
           features: ['Time tracking', 'Overtime', 'Timesheets'],
-          more: '+ 1 more feature'
+          more: '+ 12 more feature',
+          technical_name: 'hr_employee',
+          action: 'hr_employee.action_hr_core_time_attendance',
         },
         {
           id: 'leave', title: 'Leave & Absence', color: 'c-cyan',
           desc: 'Leave management and absence tracking',
           features: ['Leave requests', 'Absence tracking', 'Leave policies'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_leave_dashboard',
+          action: 'hr_leave_dashboard.action_hr_leave_dashboard',
         },
+        
         {
-          id: 'performance', title: 'Performance Appraisal', color: 'c-blue',
-          desc: 'Goal setting, appraisals, and performance tracking',
-          features: ['Goal setting', 'Performance reviews', '360° feedback'],
-          more: '+ 1 more feature'
+          id: 'document-mgt', title: 'Document Management', color: 'c-orange',
+          desc: 'Document Management',
+          features: ['Document intelligence', 'Social Gallery', 'Department folders'],
+          more: '+ 23 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_leave_dashboard.action_hr_leave_dashboard',
         },
-        {
-          id: 'kyc', title: 'Verification & KYC', color: 'c-teal',
-          desc: 'Employee verification and KYC compliance',
-          features: ['Background checks', 'Document verification', 'Compliance tracking'],
-          more: '+ 2 more features'
-        },
-        {
-          id: 'internal-control', title: 'Internal Control', color: 'c-gray',
-          desc: 'Risk management and internal controls',
-          features: ['Risk assessment', 'Control monitoring', 'Policy enforcement'],
-          more: '+ 1 more feature'
-        },
-        {
-          id: 'marketplace', title: 'Cleon Market Place', color: 'c-violet',
-          desc: 'Internal marketplace for HR services and benefits',
-          features: ['Service catalog', 'Benefits marketplace', 'Vendor management'],
-          more: '+ 1 more feature'
-        },
+
+        
+        
         {
           id: 'hmo', title: 'Health & HMO', color: 'c-pink',
           desc: 'Comprehensive health insurance and HMO management',
           features: ['HMO enrollment', 'Hospital listings', 'Claims management'],
-          more: '+ 1 more feature'
+          more: '+ 10 more feature',
+          technical_name: 'hr_insurance',
+          action: 'hr_insurance.action_dashboard_server',
         },
         {
           id: 'attendance', title: 'Attendance & Shift Management', color: 'c-orange',
           desc: 'Attendance tracking and shift scheduling',
           features: ['Attendance tracking', 'Shift scheduling', 'Shift swaps'],
-          more: '+ 3 more features'
+          more: '+ 15 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_employee.action_hr_core_time_attendance',
+        },
+        {
+          id: 'staff_directory', title: 'Staff Directory', color: 'c-orange',
+          desc: 'Staff Directory',
+          features: ['Staff details', 'Hierachy Mgt', 'Positions'],
+          more: '+ 10 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'hr_employee.action_hr_core_time_attendance',
+        },
+        {
+          id: 'marketplace', title: 'Cleon Market Place', color: 'c-violet',
+          desc: 'Internal marketplace for HR services and benefits',
+          features: ['Service catalog', 'Benefits marketplace', 'Vendor management'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'elearning', title: 'e-Learning', color: 'c-purple',
           desc: 'Learning management and training platform',
           features: ['Course library', 'Training programs', 'Certifications'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'hr-advisory', title: 'HR Advisory', color: 'c-red',
           desc: 'HR consulting and advisory services',
           features: ['Expert consultation', 'HR policies', 'Best practices'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
         {
           id: 'contracts', title: 'Client & Contract Management', color: 'c-blue-l',
           desc: 'Manage client relationships and contracts',
           features: ['Client portal', 'Contract lifecycle', 'SLA tracking'],
-          more: '+ 1 more feature'
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
         },
+        {
+          id: 'kyc', title: 'Verification & KYC', color: 'c-teal',
+          desc: 'Employee verification and KYC compliance',
+          features: ['Background checks', 'Document verification', 'Compliance tracking'],
+          more: '+ 2 more features',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+
+        },
+        {
+          id: 'internal-control', title: 'Internal Control', color: 'c-gray',
+          desc: 'Risk management and internal controls',
+          features: ['Risk assessment', 'Control monitoring', 'Policy enforcement'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+        },
+        {
+          id: 'performance', title: 'Performance Appraisal', color: 'c-blue',
+          desc: 'Goal setting, appraisals, and performance tracking',
+          features: ['Goal setting', 'Performance reviews', '360° feedback'],
+          more: '+ 1 more feature',
+          technical_name: 'hr_cleon_recruitment',
+          action: 'xxxxxxxxxx',
+        },
+        
+        
       ];
 
       const ICONS = {
@@ -128,20 +208,20 @@ const MODULES = [
           const card = document.createElement('div');
           card.className = 'module-card';
           card.innerHTML = `
-      <div class="card-icon ${m.color}">${ICONS[m.color] || ICONS['c-blue']}</div>
-      <div class="card-title">${m.title}</div>
-      <div class="card-desc">${m.desc}</div>
-      <ul class="card-features">
-        ${m.features.map(f => `<li>${f}</li>`).join('')}
-        <li class="more">${m.more}</li>
-      </ul>
-      <button class="btn-install ${m.color} ${isInstalled ? 'installed' : ''}" data-id="${m.id}">
-        ${isInstalled
-              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Installed`
-              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Install Module`
-            }
-      </button>
-    `;
+            <div class="card-icon ${m.color}">${ICONS[m.color] || ICONS['c-blue']}</div>
+            <div class="card-title">${m.title}</div>
+            <div class="card-desc">${m.desc}</div>
+            <ul class="card-features">
+              ${m.features.map(f => `<li>${f}</li>`).join('')}
+              <li class="more">${m.more}</li>
+            </ul>
+            <button class="btn-install ${m.color} ${isInstalled ? 'installed' : ''}" data-id="${m.id}">
+              ${isInstalled
+                    ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Installed`
+                    : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Install Module`
+                  }
+            </button>
+          `;
           card.querySelector('.btn-install').addEventListener('click', (e) => {
             const id = e.currentTarget.dataset.id;
             const mod = MODULES.find(x => x.id === id);

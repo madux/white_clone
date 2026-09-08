@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_cleon_payroll_category_form" model="ir.ui.view">
+        <field name="name">cleon.payroll.category.form</field>
+        <field name="model">cleon.payroll.category</field>
+        <field name="arch" type="xml">
+            <form string="Rule Category" class="o_qms_form">
+                <div class="qms-card">
+                    <div class="qms-card-header">
+                        <div class="qms-card-icon">
+                            <svg viewBox="0 0 24 24"><path d="M7 7h10M7 12h10M7 17h6"/></svg>
+                        </div>
+                        <span class="qms-card-title">Category Details</span>
+                    </div>
+                    <div class="pink-card-body">
+                        <group>
+                            <group col="4">
+                                <field name="name" class="pink-text" placeholder="Allowances"/>
+                                <field name="code" placeholder="ALW"/>
+                            </group>
+                            <group>
+                                <field name="parent_id" options="{'no_open': true, 'no_create': true}"/>
+                                <field name="sequence"/>
+                            </group>
+                        </group>
+                    </div>
+                    <div class="ash-card-body text-sm">
+                        <span class="qms-card-title">Notes</span>
+                        <group>
+                            <field name="note" nolabel="1"/>
+                        </group>
+                    </div>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_cleon_payroll_category_list" model="ir.ui.view">
+        <field name="name">cleon.payroll.category.list</field>
+        <field name="model">cleon.payroll.category</field>
+        <field name="arch" type="xml">
+            <tree string="Rule Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="parent_id"/>
+            </tree>
+        </field>
+    </record>
+    <record id="view_cleon_payroll_category_kanban" model="ir.ui.view">
+        <field name="name">cleon.payroll.category.kanban</field>
+        <field name="model">cleon.payroll.category</field>
+
+        <field name="arch" type="xml">
+
+            <kanban js_class="payroll_kanban_sidebar" class="o_payroll_kanban"
+                    create="1"
+                    records_draggable="0">
+
+                <field name="name" string="Name"/>
+                    <field name="name" string="Name" optional="show"/>
+                    <field name="code"/>
+                    <field name="parent_id"/>
+                    <!-- <field name="active"/> -->
+                <!-- STATIC HEADER (unchanged) -->
+                <header>
+                    <div class="marketplace-header">
+                        <div class="topbar">
+                            <div>
+                                <h1>Category</h1>
+                                <p>Click to setup or view</p>
+                            </div>
+                            <div class="top-actions">
+                                <button type="object" name="open_record" class="btn-hmo btn-primary-hmo">＋ Onboard Your HMO plans</button>
+                            </div>
+                        </div>
+                        <div class="toolbar">
+                            <div class="search-box">🔍</div>
+                            <div class="toolbar-actions">
+                                <button name="open_record" type="object" class="icon-btn active">▦</button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="payroll-card">
+                            <!-- Header -->
+                            <div class="payroll-card-header">
+                                <div class="payroll-avatar">
+                                    <field name="name"/>
+                                </div>
+
+                                <div class="payroll-title">
+                                    <h4>
+                                        <field name="parent_id" readonly="1"/>
+                                    </h4>
+                                    <span class="payroll-status">
+                                        <field name="code" widget="badge" readonly="1"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Metrics -->
+                            <div class="payroll-metrics">
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Create date</span>
+                                    <span class="metric-value">
+                                        <field name="create_date" readonly="1"/>
+                                    </span>
+                                </div>
+
+                                <div class="metric-box">
+                                    <span class="metric-label">Sequence</span>
+                                    <span class="metric-value">
+                                        <field name="sequence" readonly="1"/>
+                                    </span>
+                                </div>
+
+                            </div>
+
+                            <!-- Dates -->
+                            <!-- <div class="payroll-dates">
+
+                                <div>
+                                    <i class="fa fa-calendar pl-3"/>
+                                    <strong> Start </strong>
+                                    <field name="date_start" readonly="1"/>
+                                </div>
+
+                                <div>
+                                    <i class="fa fa-calendar-check-o pl-3"/>
+                                    <strong> End </strong>
+                                    <field name="date_end" readonly="1"/>
+                                </div>
+
+                            </div> -->
+
+                            <!-- Footer -->
+                            <div class="payroll-footer">
+
+                                <button name="open_record"
+                                        type="object"
+                                        class="payroll-btn">
+                                    View Details
+                                </button> 
+                            </div> 
+                        </div>
+                    </t>
+                </templates>
+                 
+            </kanban>
+
+        </field>
+    </record> 
+    <record id="action_cleon_payroll_category" model="ir.actions.act_window">
+        <field name="name">Pay Group / Category</field>
+        <field name="res_model">cleon.payroll.category</field>
+        <field name="view_mode">kanban,tree,form</field>
+    </record>
+
+</odoo>

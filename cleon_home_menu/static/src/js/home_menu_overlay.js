@@ -10,6 +10,7 @@
  * Also self-injects the landing stylesheet, since this overlay can be
  * opened from arbitrary Odoo backend pages that never load it.
  */
+// var HMO = {}
 (function ($) {
   "use strict";
 
@@ -468,3 +469,4 @@
 
   window.HomeMenuOverlay = HMO;
 })(jQuery);
+// window.HomeMenuOverlay = HMO;

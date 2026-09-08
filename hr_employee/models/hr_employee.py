@@ -26,6 +26,21 @@ class HrEmployee(models.Model):
         string="Staff Number", 
         )
 
+    employee_status = fields.Selection(
+            selection=[
+                ('Definite Suspension', 'Definite Suspension'),
+                ('Resigned', 'Sent home For Day'),
+                ('Indefinite Suspension', 'Indefinite Suspension'),
+                ('Employeed', 'Currently Employeed'),
+                ('Disqualified', 'Disqualified'),
+                ('Terminated', 'Terminated'),
+            ],
+            string='Employee status',
+            default='Employeed',
+            tracking=True,
+        )
+    
+
     @api.model
     def get_employee_profile_dashboard(self):
         view_id = self.env.ref(
@@ -292,7 +307,7 @@ class HrEmployee(models.Model):
                 (False, 'list'),
                 (False, 'form')
             ],
-            'domain': [('id', 'in', birthday_celebrant_ids.ids)],
+            'domain': [('id', 'in', self.birthday_celebrant_ids.ids)],
             'target': 'current',
         }
 

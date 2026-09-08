@@ -65,6 +65,8 @@ class HrGrade(models.Model):
         copy=True,
         default=20000,
     )
+    active = fields.Boolean(
+            string="Active")
 
     cash_approval_limit = fields.Float(
         string="Cash Approval limit",

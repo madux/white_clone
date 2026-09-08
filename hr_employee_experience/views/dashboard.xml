@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo> 
+    
+     
+    <record id="hr_experience_dashboard_form_view" model="ir.ui.view">
+        <field name="name">hr.experience.dashboard.form</field>
+        <field name="model">hr.experience.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Create a Job" create="0" edit="0" class="hr_experience_form">
+                <sheet> 
+                    <div class="o_exp_sidebar">
+ 
+                        <div class="o_cc_sidebar_header">
+                            <span class="o_cc_header_dot"/>
+                            <span class="o_cc_header_title">Employee Experience</span>
+                            <button class="btn btn-sm o_cc_collapse_btn" title="Collapse sidebar">
+                                <i class="fa fa-th-large"/>
+                            </button>
+                        </div>
+        
+                        <nav class="o_cc_nav">
+
+                            <!-- Dashboard -->
+                            <a class="o_cc_nav_item o_cc_nav_active"
+                            type="action"
+                            name="%(hr_employee_experience.action_menu_employee_experience)d">
+                                <span class="o_cc_nav_icon">
+                                    <i class="fa fa-dashboard"/>
+                                </span>
+                                <span class="o_cc_nav_label">Dashboard</span>
+                                <span class="o_cc_nav_badge">2</span>
+                            </a>
+
+                            <!-- Experience -->
+                            <p class="sidebar-section-label o_cc_section_toggle">
+                                <i class="fa fa-star-o o_cc_nav_arrow"/>
+                                Experience
+                            </p>
+
+                            <ul>
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_message)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-comments"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">People Experience</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-bolt"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Moment Engine</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-book"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Knowledge Share</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <!-- People & Culture -->
+                            <p class="sidebar-section-label o_cc_section_toggle">
+                                <i class="fa fa-heart o_cc_nav_arrow"/>
+                                People &amp; Culture
+                            </p>
+
+                            <ul>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_message)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-envelope-open"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">People Messages</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_video)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-gift"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Celebrations</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_video_watch)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-line-chart"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Engagement</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-globe"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Culture</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-handshake-o"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Buddy System</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-bar-chart"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Reports &amp; Analytics</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                                <li>
+                                    <a class="o_cc_nav_item"
+                                    type="action"
+                                    name="%(hr_employee_experience.action_hr_experience_knowledge)d">
+                                        <span class="o_cc_nav_icon">
+                                            <i class="fa fa-cogs"/>
+                                        </span>
+                                        <span class="o_cc_nav_label">Settings</span>
+                                        <i class="fa fa-angle-right o_cc_nav_arrow"/>
+                                    </a>
+                                </li>
+
+                            </ul>
+
+                        </nav>
+        
+                        <div class="o_cc_sidebar_footer">
+                            <span class="o_cc_footer_label">Solution By MaachSoftware</span>
+                            <div class="o_cc_footer_status">
+                                <span class="o_cc_status_dot o_cc_status_green"/>
+                                All integrations active
+                            </div>
+                        </div>
+        
+                    </div>
+                    <div class="expbody exp_dashboard">
+                        
+                        <h1 class="exp_greeting_title"><span id="exp_greeting_text">Good morning, <field name="create_uid" class="exp_greeting_text"/></span><span class="exp_greeting_wave">👋</span></h1>
+                        <p class="exp_greeting_subtitle">Here's what's happening in Employee Experience today</p>
+
+                        <!-- Stat cards -->
+                        <div class="exp_stats_grid">
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Videos Watched Today</p>
+                                <p class="exp_stat_value" id="exp_stat_videos"><field name="video_watched" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_blue">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                            </div>
+                            </div>
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Messages Sent This Month</p>
+                                <p class="exp_stat_value" id="exp_stat_messages"><field name="messages_sent_this_month" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_green">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            </div>
+                            </div>
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Active Campaigns</p>
+                                <p class="exp_stat_value" id="exp_stat_campaigns"><field name="active_campaigns" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_purple">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            </div>
+                            </div>
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Upcoming Celebrations (30 days)</p>
+                                <p class="exp_stat_value" id="exp_stat_celebrations"><field name="upcoming_celebrations" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_pink">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            </div>
+                            </div>
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Knowledge Items Published</p>
+                                <p class="exp_stat_value" id="exp_stat_knowledge"><field name="knowledge_item_published" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_orange">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            </div>
+                            </div>
+
+                            <div class="exp_stat_card">
+                            <div>
+                                <p class="exp_stat_label">Recognitions This Month</p>
+                                <p class="exp_stat_value" id="exp_stat_recognitions"><field name="recognition_this_month" class="exp_stat_value" nolabel="1" readonly="1"/></p>
+                            </div>
+                            <div class="exp_stat_icon exp_icon_red">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Panels -->
+                        <div class="exp_content_grid">
+
+                            <div class="exp_panel">
+                                <h2 class="exp_panel_title">Active Campaigns</h2>
+                                <div class="exp_list" id="exp_campaigns_list">
+                                    <!-- <div class="exp_loading">Loading campaigns…</div> -->
+                                    <!-- <widget name="active_campaigns_widget"/> -->
+                                </div>
+                            </div>
+
+                            <div class="exp_panel">
+                                <h2 class="exp_panel_title">Upcoming Celebrations</h2>
+                                <div class="exp_list" id="exp_celebrations_list">
+                                    <!-- <widget name="upcoming_celebration_widget"/> -->
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div> 
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    
+    <menuitem
+        id="menu_employee_experience"
+        name="Experience"
+        action="action_menu_employee_experience"
+        sequence="15"/>
+
+    <menuitem
+        id="menu_employee_experience2"
+        name="Employee experience"
+        parent="hr_employee_experience.menu_employee_experience"
+        action="action_menu_employee_experience"
+        sequence="10"/>
+
+    <record id="hr_employee_experience.menu_employee_experience2" model="ir.ui.menu">
+        <field name="icon_class">fa fa-users</field>
+        <field name="category_name">CleonHR-HR CORE</field>
+    </record>
+</odoo> 

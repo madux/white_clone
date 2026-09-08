@@ -30,6 +30,7 @@ Features
         'web.assets_backend': [
             'cleon_home_menu/static/src/css/home_menu_overlay.css',
             'cleon_home_menu/static/src/js/home_menu_overlay.js',
+            'cleon_home_menu/static/src/css/general_qms_css.css',
         ],
     },
     'installable': True,
