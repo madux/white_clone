@@ -1,5 +1,5 @@
-import IntelligencePage from "@/app/components/IntelligencePage";
+import OverviewScreen from "@/app/components/intelligence/OverviewScreen";
 
-export default function DocumentIntelligencePage() {
-  return <IntelligencePage />;
+export default function DocumentIntelligenceOverviewPage() {
+  return <OverviewScreen />;
 }

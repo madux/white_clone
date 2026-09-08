@@ -1,6 +1,7 @@
 import json
-import os
 import logging
+import mimetypes
+import os
 from odoo import http, fields
 from odoo.http import request
 from odoo.tools.misc import file_path
@@ -9,6 +10,18 @@ _logger = logging.getLogger(__name__)
 
 MODULE = "cleon_document_management"
 NEXTAPP_STATIC_DIR = "static/src/nextapp"
+NEXTAPP_ASSET_EXT = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".ico",
+    ".woff",
+    ".woff2",
+    ".ttf",
+}
 ONBOARDING_STEPS = {
     "workspace",
     "upload",
@@ -44,6 +57,30 @@ class NextAppController(http.Controller):
                 return f.read()
         return None
 
+    def _serve_public_asset(self, subpath):
+        """Serve Next public files (png/svg/ico) from the exported nextapp folder."""
+        if not subpath or ".." in subpath or subpath.startswith("/"):
+            return None
+        ext = os.path.splitext(subpath)[1].lower()
+        if ext not in NEXTAPP_ASSET_EXT:
+            return None
+        try:
+            abs_path = file_path(f"{MODULE}/{NEXTAPP_STATIC_DIR}/{subpath}")
+        except FileNotFoundError:
+            return None
+        if not abs_path or not os.path.isfile(abs_path):
+            return None
+        mime, _ = mimetypes.guess_type(abs_path)
+        with open(abs_path, "rb") as handle:
+            data = handle.read()
+        return request.make_response(
+            data,
+            headers=[
+                ("Content-Type", mime or "application/octet-stream"),
+                ("Cache-Control", "public, max-age=86400"),
+            ],
+        )
+
     def _get_user_script(self, user):
         """Generates window.__ODOO_USER__ injection script."""
         user_data = json.dumps(
@@ -77,6 +114,10 @@ class NextAppController(http.Controller):
     )
     def serve_nextapp(self, subpath="", **kw):
         user = request.env.user
+
+        asset = self._serve_public_asset(subpath)
+        if asset is not None:
+            return asset
 
         is_next_metadata = subpath.endswith(".txt")
         html_path = subpath if is_next_metadata else (f"{subpath}/index.html" if subpath else "index.html")

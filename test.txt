@@ -1,0 +1,4 @@
+Employment Contract
+Employee name: Jane Doe
+Start date: 2026-01-01
+Notice period: 30 days

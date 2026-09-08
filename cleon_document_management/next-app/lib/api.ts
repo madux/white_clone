@@ -54,7 +54,7 @@ const multipartClient = axios.create({
   withCredentials: true,
 });
 
-async function rpc<T = any>(
+export async function rpc<T = any>(
   path: string,
   params: Record<string, any> = {},
 ): Promise<T> {

@@ -9,3 +9,9 @@ from . import document_version
 from . import share_link
 from . import hr_employee
 from . import res_users
+from . import intelligence_profile
+from . import intelligence_dataset
+from . import intelligence_record
+from . import intelligence_index
+from . import intelligence_audit
+from . import intelligence_conversation
