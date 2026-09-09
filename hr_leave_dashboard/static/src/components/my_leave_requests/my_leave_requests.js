@@ -13,6 +13,11 @@ export class MyLeaveRequestsPage extends Component {
     static components = { EmployeeRequestModal, LeaveRequestDetailModal, CalendarSidebar, LeaveRequestsPage };
     static props = {
         ...standardActionServiceProps,
+        // The action service supplies these when this page is opened as an
+        // Odoo client action. They are intentionally optional when the same
+        // page is embedded inside the Employee Portal workspace.
+        action: { type: Object, optional: true },
+        className: { type: String, optional: true },
         embedded: { type: Boolean, optional: true },
         personalOnly: { type: Boolean, optional: true },
         "*": true,
