@@ -1,9 +1,332 @@
-<?xml version="1.0" encoding="UTF-8"?><templates xml:space="preserve"><t t-name="hr_leave_dashboard.MyLeaveRequestsPage" owl="1"><div t-att-class="props.embedded ? 'o_mlr_page o_mlr_embedded' : 'o_mlr_page'"><CalendarSidebar t-if="!props.embedded" activeMenu="'requests'"/><main>
-<nav class="o_mlr_view_tabs" aria-label="Leave request workspaces"><button t-if="state.access.has_personal_scope" t-att-class="state.activeView === 'my' ? 'active' : ''" t-on-click="()=>this.setView('my')"><i class="fa fa-file-text-o"/><span><b>My Leave Requests</b><small>View and manage your own requests</small></span></button><button t-if="state.access.can_approve" t-att-class="state.activeView === 'approvals' ? 'active' : ''" t-on-click="()=>this.setView('approvals')"><i class="fa fa-check-square-o"/><span><b>Pending Approval</b><small>Review requests awaiting your action</small></span><em t-esc="state.approvalRows.length"/></button><button t-if="state.access.can_operate" t-att-class="state.activeView === 'records' ? 'active' : ''" t-on-click="()=>this.setView('records')"><i class="fa fa-files-o"/><span><b>Leave Records</b><small>Manage organisation leave records</small></span></button></nav>
-<t t-if="state.access.has_personal_scope and state.activeView === 'my'"><section class="o_mlr_tabs"><button t-foreach="[['all','All Requests'],['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['changes_requested','Changes Requested'],['cancelled','Cancelled']]" t-as="tab" t-key="tab[0]" t-att-class="state.status===tab[0]?'active':''" t-on-click="()=>this.setStatus(tab[0])"><b t-esc="state.counts[tab[0]]||0"/><span t-esc="tab[1]"/></button></section>
-<section class="o_mlr_toolbar"><div><i class="fa fa-search"/><input t-model="state.search" t-on-keydown="onSearchKeydown" placeholder="Search by leave type or reason..."/></div><select t-model="state.typeId" t-on-change="load"><option value="">All Types</option><option t-foreach="state.types" t-as="type" t-key="type.id" t-att-value="type.id" t-esc="type.name"/></select><button t-on-click="()=>this.exportCsv()"><i class="fa fa-download"/> Export</button><button class="primary" t-on-click="()=>this.openNew()"><i class="fa fa-plus"/> New Request</button></section>
-<section class="o_mlr_table"><table><thead><tr><th>Leave Type</th><th>Dates</th><th>Duration</th><th>Reason</th><th>Status</th><th>Approver</th><th>Submitted</th><th>Actions</th></tr></thead><tbody><tr t-foreach="state.rows" t-as="row" t-key="row.id"><td><i class="dot" t-att-style="'background:'+row.color"/><b t-esc="row.leave_type"/></td><td><i class="fa fa-calendar-o"/> <t t-esc="formatDate(row.date_from)"/> – <t t-esc="formatDate(row.date_to)"/></td><td><t t-esc="row.duration"/> days</td><td t-esc="row.reason||'—'"/><td><span t-att-class="'status '+row.status" t-esc="row.status"/><small t-if="row.escalated" class="ms-1 text-warning"><i class="fa fa-level-up"/> Escalated</small></td><td><i class="approver-dot"/><t t-esc="row.approver"/></td><td t-esc="formatSubmitted(row.submitted)"/><td><button t-on-click="()=>this.view(row.id)"><i class="fa fa-eye"/> View</button><button t-if="row.can_escalate" t-on-click="()=>this.openEscalate(row.id)">Escalate</button><button t-if="row.can_cancel" class="cancel" t-on-click="()=>this.openCancel(row.id)">Cancel</button><button t-if="row.can_resubmit" class="resubmit" t-on-click="()=>this.resubmit(row)">Re-submit</button></td></tr></tbody></table><div t-if="!state.loading and !state.rows.length" class="empty"><i class="fa fa-calendar-times-o"/><h3>No leave requests found</h3><p t-if="state.status==='all'">Submit your first leave request to begin tracking it here.</p><p t-else="">No requests match this filter.</p><button t-if="state.status==='all'" t-on-click="()=>this.openNew()">Submit Your First Request</button></div><div t-if="state.loading" class="empty"><i class="fa fa-spinner fa-spin"/> Loading requests...</div></section></t>
-<section t-if="state.access.can_approve and state.activeView === 'approvals'" class="o_mlr_approvals"><header><div><h3>Pending My Approval</h3><p>Requests currently routed to you through a reporting relationship or approval workflow.</p></div><span t-esc="state.approvalRows.length"/></header><div class="o_mlr_table"><table><thead><tr><th>Employee</th><th>Leave Type</th><th>Dates</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody><tr t-foreach="state.approvalRows" t-as="row" t-key="'approval_'+row.id"><td><b t-esc="row.employee.name"/><small t-esc="row.employee.department"/></td><td><i class="dot" t-att-style="'background:'+row.leave_type.color_hex"/><b t-esc="row.leave_type.name"/></td><td><t t-esc="formatDate(row.date_from)"/> – <t t-esc="formatDate(row.date_to)"/></td><td><t t-esc="row.duration"/> days</td><td><span class="status pending">pending</span></td><td><button t-on-click="()=>this.viewApproval(row.id)"><i class="fa fa-eye"/> Review</button><button class="resubmit" t-on-click="()=>this.approveApproval(row.id)">Approve</button><button class="cancel" t-on-click="()=>this.openApprovalReject(row.id)">Reject</button></td></tr></tbody></table></div></section>
-<LeaveRequestsPage t-if="state.access.can_operate and state.activeView === 'records'" embedded="true"/>
-<EmployeeRequestModal t-if="state.requestOpen" close.bind="closeNew" submitted.bind="load" initial="state.initial"/><LeaveRequestDetailModal t-if="state.detailId" requestId="state.detailId" close.bind="closeDetail" onChanged.bind="load" readOnly="state.detailReadOnly"/><div t-if="state.cancelId" class="o_mlr_overlay"><section class="o_mlr_cancel"><h3>Cancel Leave Request</h3><p>Please tell us why you are cancelling this request. Pending or approved days will be restored to your remaining balance.</p><textarea t-model="state.cancelReason" placeholder="Cancellation reason..."/><div t-if="state.cancelError" class="error" t-esc="state.cancelError"/><footer><button t-on-click="()=>this.closeCancel()">Keep Request</button><button class="danger" t-on-click="()=>this.cancel()" t-att-disabled="state.cancelReason.trim().length&lt;3">Confirm Cancellation</button></footer></section></div><div t-if="state.escalateId" class="o_mlr_overlay"><section class="o_mlr_cancel"><h3>Escalate Request</h3><p>This flags the pending request for priority review. Explain why follow-up is needed.</p><textarea maxlength="300" t-model="state.escalationNote" placeholder="Escalation note (maximum 300 characters)..."/><small><t t-esc="state.escalationNote.length"/> / 300</small><div t-if="state.escalationError" class="error" t-esc="state.escalationError"/><footer><button t-on-click="()=>this.closeEscalate()">Back</button><button class="primary" t-on-click="()=>this.escalate()" t-att-disabled="!state.escalationNote.trim()">Send Escalation</button></footer></section></div><div t-if="state.approvalRejectId" class="o_mlr_overlay"><section class="o_mlr_cancel"><h3>Reject Leave Request</h3><p>The reason is required and will be included in the request history.</p><textarea t-model="state.approvalRejectReason" placeholder="Rejection reason..."/><div t-if="state.approvalRejectError" class="error" t-esc="state.approvalRejectError"/><footer><button t-on-click="()=>this.closeApprovalReject()">Back</button><button class="danger" t-on-click="()=>this.rejectApproval()">Reject Request</button></footer></section></div>
-</main></div></t></templates>
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="hr_leave_dashboard.MyLeaveRequestsPage" owl="1">
+<div t-att-class="props.embedded ? 'o_mlr_page o_mlr_embedded' : 'o_mlr_page'">
+    <CalendarSidebar t-if="!props.embedded" activeMenu="'requests'"/>
+    <main>
+        <!-- ═══════════════════════════════════════════════
+             PAGE HEADER
+             ═══════════════════════════════════════════════ -->
+        <header class="o_mlr_header">
+            <div>
+                <h2>Leave Requests</h2>
+                <p>View, track and manage employee leave requests.</p>
+            </div>
+            <button class="o_mlr_btn_primary" t-on-click="() => this.openNew()">
+                <i class="fa fa-plus"/> Request Leave
+            </button>
+        </header>
+
+        <!-- ═══════════════════════════════════════════════
+             TOP-LEVEL TABS (My Leave Requests / Approvals)
+             Only render tab bar when user has both roles.
+             ═══════════════════════════════════════════════ -->
+        <nav t-if="hasBothTabs" class="o_mlr_top_tabs" aria-label="Leave request workspaces">
+            <button t-att-class="'o_mlr_top_tab ' + (state.activeTab === 'my' ? 'active' : '')"
+                    t-on-click="() => this.setTab('my')">
+                <i class="fa fa-file-text-o"/>
+                <span><b>My Leave Requests</b><small>View your own leave requests</small></span>
+            </button>
+            <button t-att-class="'o_mlr_top_tab ' + (state.activeTab === 'approvals' ? 'active' : '')"
+                    t-on-click="() => this.setTab('approvals')">
+                <i class="fa fa-check-square-o"/>
+                <span><b>Approvals</b><small>Review and take action on requests</small></span>
+                <em t-if="state.approvalRows.length" t-esc="state.approvalRows.length"/>
+            </button>
+        </nav>
+
+        <!-- ═══════════════════════════════════════════════════════
+             MY LEAVE REQUESTS VIEW
+             ═══════════════════════════════════════════════════════ -->
+        <t t-if="state.access.has_personal_scope and state.activeTab === 'my'">
+
+            <!-- Sub-tabs: Pending Approval / Resolved History -->
+            <div class="o_mlr_sub_bar">
+                <div class="o_mlr_sub_tabs">
+                    <button t-att-class="'o_mlr_sub_tab ' + (state.mySubTab === 'pending' ? 'active' : '')"
+                            t-on-click="() => this.setMySubTab('pending')">
+                        <i class="fa fa-clock-o"/> Pending Approval
+                        <em t-esc="pendingCount"/>
+                    </button>
+                    <button t-att-class="'o_mlr_sub_tab ' + (state.mySubTab === 'resolved' ? 'active' : '')"
+                            t-on-click="() => this.setMySubTab('resolved')">
+                        <i class="fa fa-check-circle-o"/> Resolved History
+                        <em t-esc="resolvedCount"/>
+                    </button>
+                </div>
+                <div class="o_mlr_sub_actions">
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.toggleFilters()" title="Filters">
+                        <i class="fa fa-filter"/> Filters
+                    </button>
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export">
+                        <i class="fa fa-download"/> Export
+                    </button>
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Panel -->
+            <section t-if="state.showFilters" class="o_mlr_filters">
+                <div class="o_mlr_filter_grid">
+                    <div>
+                        <label>Search</label>
+                        <div class="o_mlr_search_wrap"><i class="fa fa-search"/>
+                            <input t-model="state.search" t-on-keydown="onSearchKeydown"
+                                   placeholder="Search by name, leave type or request ID..."/>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Request ID</label>
+                        <input t-model="state.requestId" placeholder="Search by request ID"/>
+                    </div>
+                    <div>
+                        <label>Leave Type</label>
+                        <select t-model="state.typeId" t-on-change="load">
+                            <option value="">All Types</option>
+                            <option t-foreach="state.types" t-as="type" t-key="type.id"
+                                    t-att-value="type.id" t-esc="type.name"/>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Status</label>
+                        <select t-model="state.status" t-on-change="load">
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="changes_requested">Changes Requested</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Approver</label>
+                        <input t-model="state.approverFilter" placeholder="All Approvers"/>
+                    </div>
+                    <div>
+                        <label>Added Type</label>
+                        <select t-model="state.addedType">
+                            <option value="">All (With/Without Handover)</option>
+                            <option value="with_handover">With Handover</option>
+                            <option value="without_handover">Without Handover</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Reason</label>
+                        <input t-model="state.reasonFilter" placeholder="Search by reason"/>
+                    </div>
+                    <div>
+                        <label>Date Range</label>
+                        <div class="o_mlr_date_range">
+                            <input type="date" t-model="state.dateFrom"/>
+                            <span>–</span>
+                            <input type="date" t-model="state.dateTo"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="o_mlr_clear_filters">
+                    <a t-on-click="() => this.clearFilters()">Clear Filters</a>
+                </div>
+            </section>
+
+            <!-- Data Table — My Requests -->
+            <section class="o_mlr_table">
+                <table>
+                    <thead><tr>
+                        <th>REQUEST ID</th>
+                        <th>LEAVE TYPE</th>
+                        <th>LEAVE BALANCE</th>
+                        <th>DATES</th>
+                        <th>DURATION</th>
+                        <th>STATUS</th>
+                        <th>APPROVER</th>
+                        <th>SUBMITTED ON</th>
+                        <th>ACTIONS</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-foreach="filteredMyRows" t-as="row" t-key="row.id">
+                            <td class="o_mlr_ref"><t t-esc="row.reference"/></td>
+                            <td><i class="dot" t-att-style="'background:'+row.color"/><b t-esc="row.leave_type"/></td>
+                            <td>—</td>
+                            <td><i class="fa fa-calendar-o"/> <t t-esc="formatDate(row.date_from)"/> – <t t-esc="formatDate(row.date_to)"/></td>
+                            <td><t t-esc="row.duration"/> <t t-if="row.duration === 1">day</t><t t-else="">days</t></td>
+                            <td>
+                                <span t-att-class="'status ' + row.status" t-esc="statusLabel(row.status)"/>
+                                <small t-if="row.escalated" class="o_mlr_escalated"><i class="fa fa-level-up"/> Escalated</small>
+                            </td>
+                            <td><i class="approver-dot"/><t t-esc="row.approver"/></td>
+                            <td t-esc="formatSubmitted(row.submitted)"/>
+                            <td class="o_mlr_actions">
+                                <button class="o_mlr_review_btn" t-on-click="() => this.view(row.id)">Review</button>
+                                <button t-if="row.can_escalate" class="o_mlr_text_btn" t-on-click="() => this.openEscalate(row.id)">Escalate</button>
+                                <button t-if="row.can_cancel" class="o_mlr_text_btn danger" t-on-click="() => this.openCancel(row.id)">Cancel</button>
+                                <button t-if="row.can_resubmit" class="o_mlr_text_btn resubmit" t-on-click="() => this.resubmit(row)">Re-submit</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div t-if="!state.loading and !filteredMyRows.length" class="empty">
+                    <i class="fa fa-calendar-times-o"/>
+                    <h3>No leave requests found</h3>
+                    <p t-if="state.mySubTab === 'pending'">You have no pending leave requests.</p>
+                    <p t-else="">No resolved requests match the current filter.</p>
+                    <button t-if="state.mySubTab === 'pending'" t-on-click="() => this.openNew()">Submit Your First Request</button>
+                </div>
+                <div t-if="state.loading" class="empty">
+                    <i class="fa fa-spinner fa-spin"/> Loading requests...
+                </div>
+            </section>
+
+            <!-- Status Legend -->
+            <div class="o_mlr_legend">
+                <span><i class="dot" style="background:#e5a400"/> Pending Approval</span>
+                <span><i class="dot" style="background:#14b87a"/> Approved</span>
+                <span><i class="dot" style="background:#d93045"/> Rejected</span>
+                <span><i class="dot" style="background:#7040bd"/> Changes Requested</span>
+                <span><i class="dot" style="background:#7b899f"/> Cancelled</span>
+            </div>
+        </t>
+
+        <!-- ═══════════════════════════════════════════════════════
+             APPROVALS VIEW
+             ═══════════════════════════════════════════════════════ -->
+        <t t-if="state.access.can_approve and state.activeTab === 'approvals'">
+            <div class="o_mlr_sub_bar">
+                <div class="o_mlr_sub_tabs">
+                    <button class="o_mlr_sub_tab active">
+                        <i class="fa fa-clock-o"/> Pending My Approval
+                        <em t-esc="state.approvalRows.length"/>
+                    </button>
+                </div>
+                <div class="o_mlr_sub_actions">
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.toggleFilters()" title="Filters">
+                        <i class="fa fa-filter"/> Filters
+                    </button>
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Panel (Approvals) -->
+            <section t-if="state.showFilters" class="o_mlr_filters">
+                <div class="o_mlr_filter_grid">
+                    <div>
+                        <label>Search</label>
+                        <div class="o_mlr_search_wrap"><i class="fa fa-search"/>
+                            <input t-model="state.search" t-on-keydown="onSearchKeydown"
+                                   placeholder="Search by employee name or leave type..."/>
+                        </div>
+                    </div>
+                    <div>
+                        <label>Request ID</label>
+                        <input t-model="state.requestId" placeholder="Search by request ID"/>
+                    </div>
+                    <div>
+                        <label>Date Range</label>
+                        <div class="o_mlr_date_range">
+                            <input type="date" t-model="state.dateFrom"/>
+                            <span>–</span>
+                            <input type="date" t-model="state.dateTo"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="o_mlr_clear_filters">
+                    <a t-on-click="() => this.clearFilters()">Clear Filters</a>
+                </div>
+            </section>
+
+            <!-- Approvals Table -->
+            <section class="o_mlr_table">
+                <table>
+                    <thead><tr>
+                        <th>REQUEST ID</th>
+                        <th>EMPLOYEE</th>
+                        <th>LEAVE TYPE</th>
+                        <th>LEAVE BALANCE</th>
+                        <th>DATES</th>
+                        <th>DURATION</th>
+                        <th>STATUS</th>
+                        <th>SUBMITTED ON</th>
+                        <th>ACTIONS</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr t-foreach="filteredApprovalRows" t-as="row" t-key="'approval_'+row.id">
+                            <td class="o_mlr_ref"><t t-esc="row.request_ref || row.reference || ('LR-' + row.id)"/></td>
+                            <td>
+                                <b t-esc="row.employee.name"/>
+                                <small class="o_mlr_dept" t-esc="row.employee.department"/>
+                            </td>
+                            <td><i class="dot" t-att-style="'background:'+row.leave_type.color_hex"/><b t-esc="row.leave_type.name"/></td>
+                            <td>
+                                <t t-if="row.balance !== undefined">
+                                    <b t-esc="row.balance"/> days
+                                </t>
+                                <t t-else="">—</t>
+                            </td>
+                            <td><i class="fa fa-calendar-o"/> <t t-esc="formatDate(row.date_from)"/> – <t t-esc="formatDate(row.date_to)"/></td>
+                            <td><t t-esc="row.duration"/> <t t-if="row.duration === 1">day</t><t t-else="">days</t></td>
+                            <td><span class="status pending">Pending Approval</span></td>
+                            <td t-esc="formatSubmitted(row.submitted || row.create_date)"/>
+                            <td class="o_mlr_actions">
+                                <button class="o_mlr_review_btn" t-on-click="() => this.viewApproval(row.id)">Review</button>
+                                <button class="o_mlr_text_btn approve" t-on-click="() => this.approveApproval(row.id)">Approve</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div t-if="!state.loading and !filteredApprovalRows.length" class="empty">
+                    <i class="fa fa-check-circle-o"/>
+                    <h3>No pending approvals</h3>
+                    <p>There are no leave requests currently waiting for your approval.</p>
+                </div>
+                <div t-if="state.loading" class="empty">
+                    <i class="fa fa-spinner fa-spin"/> Loading requests...
+                </div>
+            </section>
+        </t>
+
+        <!-- ═══════════════════════════════════════════════════════
+             ADMIN RECORDS VIEW (delegated to LeaveRequestsPage)
+             ═══════════════════════════════════════════════════════ -->
+        <LeaveRequestsPage t-if="state.access.can_operate and state.activeTab === 'records'" embedded="true"/>
+
+        <!-- ═══════════════════════════════════════════════════════
+             MODALS (New Request / Detail / Cancel / Escalate)
+             ═══════════════════════════════════════════════════════ -->
+        <EmployeeRequestModal t-if="state.requestOpen" close.bind="closeNew" submitted.bind="load" initial="state.initial"/>
+        <LeaveRequestDetailModal t-if="state.detailId" requestId="state.detailId" close.bind="closeDetail" onChanged.bind="load" readOnly="state.detailReadOnly"/>
+
+        <!-- Cancel Modal -->
+        <div t-if="state.cancelId" class="o_mlr_overlay">
+            <section class="o_mlr_modal">
+                <h3>Cancel Leave Request</h3>
+                <p>Please tell us why you are cancelling this request. Pending or approved days will be restored to your remaining balance.</p>
+                <textarea t-model="state.cancelReason" placeholder="Cancellation reason..."/>
+                <div t-if="state.cancelError" class="error" t-esc="state.cancelError"/>
+                <footer>
+                    <button t-on-click="() => this.closeCancel()">Keep Request</button>
+                    <button class="danger" t-on-click="() => this.cancel()" t-att-disabled="state.cancelReason.trim().length&lt;3">Confirm Cancellation</button>
+                </footer>
+            </section>
+        </div>
+
+        <!-- Escalate Modal -->
+        <div t-if="state.escalateId" class="o_mlr_overlay">
+            <section class="o_mlr_modal">
+                <h3>Escalate Request</h3>
+                <p>This flags the pending request for priority review. Explain why follow-up is needed.</p>
+                <textarea maxlength="300" t-model="state.escalationNote" placeholder="Escalation note (maximum 300 characters)..."/>
+                <small><t t-esc="state.escalationNote.length"/> / 300</small>
+                <div t-if="state.escalationError" class="error" t-esc="state.escalationError"/>
+                <footer>
+                    <button t-on-click="() => this.closeEscalate()">Back</button>
+                    <button class="primary" t-on-click="() => this.escalate()" t-att-disabled="!state.escalationNote.trim()">Send Escalation</button>
+                </footer>
+            </section>
+        </div>
+    </main>
+</div>
+</t>
+</templates>
