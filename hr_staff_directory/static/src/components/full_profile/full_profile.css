@@ -682,3 +682,461 @@
 .sdir-fp-perf-badge.pink { background: rgba(233, 30, 140, 0.1); color: rgb(233, 30, 140); }
 .sdir-fp-perf-badge.blue { background: rgba(59, 130, 246, 0.1); color: rgb(59, 130, 246); }
 .sdir-fp-perf-badge.gray { background: rgba(107, 114, 128, 0.1); color: rgb(107, 114, 128); }
+
+/* --- Org Chart Tab --- */
+
+.sdir-fp-org-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.sdir-fp-org-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+}
+
+.sdir-fp-org-stat-card {
+    background-color: rgb(255, 255, 255);
+    border-radius: 12px;
+    padding: 16px 18px;
+    border: 1px solid rgb(240, 240, 245);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: rgba(0, 0, 0, 0.03) 0px 1px 3px;
+    transition: 0.15s;
+}
+
+.sdir-fp-org-stat-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background-color: rgb(255, 240, 247);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-stat-val {
+    font-size: 22px;
+    font-weight: 900;
+    color: rgb(17, 24, 39);
+    margin: 0px;
+    line-height: 1;
+}
+
+.sdir-fp-org-stat-label {
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    margin: 3px 0px 0px;
+    font-weight: 500;
+}
+
+.sdir-fp-org-main-card {
+    background-color: rgb(255, 255, 255);
+    border-radius: 18px;
+    padding: 0px;
+    box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px;
+    border: 1px solid rgb(245, 245, 247);
+    overflow: hidden;
+}
+
+.sdir-fp-org-main-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid rgb(245, 245, 247);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-org-main-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: rgb(17, 24, 39);
+    margin: 0px;
+    letter-spacing: -0.01em;
+}
+
+.sdir-fp-org-chart-wrapper {
+    height: 520px;
+}
+
+.sdir-fp-org-chart-inner {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background-color: rgb(255, 255, 255);
+    position: relative;
+    height: 100%;
+}
+
+.sdir-fp-org-toolbar {
+    background-color: rgb(255, 255, 255);
+    border-bottom: 1px solid rgb(229, 231, 235);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-search-wrap {
+    position: relative;
+}
+
+.sdir-fp-org-search-icon {
+    position: absolute;
+    left: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.sdir-fp-org-search-input {
+    height: 32px;
+    padding-left: 28px;
+    padding-right: 10px;
+    border-radius: 8px;
+    border: 1px solid rgb(229, 231, 235);
+    font-size: 12px;
+    outline: none;
+    width: 180px;
+}
+
+.sdir-fp-org-toolbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-org-btn-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid rgb(229, 231, 235);
+    background-color: rgb(255, 255, 255);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.sdir-fp-org-zoom-val {
+    font-size: 12px;
+    color: rgb(107, 114, 128);
+    min-width: 36px;
+    text-align: center;
+}
+
+.sdir-fp-org-btn-text {
+    height: 30px;
+    padding: 0px 12px;
+    border-radius: 8px;
+    border: 1px solid rgb(229, 231, 235);
+    background-color: rgb(255, 255, 255);
+    font-size: 12px;
+    color: rgb(55, 65, 81);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sdir-fp-org-canvas {
+    flex: 1 1 0%;
+    overflow: auto;
+    background: rgb(255, 255, 255);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px 40px;
+}
+
+.sdir-fp-org-back-btn {
+    align-self: flex-start;
+    margin-bottom: 20px;
+}
+
+.sdir-fp-org-btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0px 14px;
+    border-radius: 8px;
+    border: 1px solid rgb(229, 231, 235);
+    background: rgb(255, 255, 255);
+    font-size: 12px;
+    font-weight: 600;
+    color: rgb(55, 65, 81);
+    cursor: pointer;
+}
+
+.sdir-fp-org-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0px;
+}
+
+.sdir-fp-org-node-active {
+    width: 160px;
+    background: rgb(255, 255, 255);
+    border-radius: 14px;
+    border: 2px solid rgb(233, 30, 140);
+    box-shadow: rgba(233, 30, 140, 0.125) 0px 0px 0px 4px, rgba(0, 0, 0, 0.1) 0px 4px 16px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-node-normal {
+    width: 160px;
+    background: rgb(255, 255, 255);
+    border-radius: 14px;
+    border: 2px solid rgb(229, 231, 235);
+    box-shadow: rgba(0, 0, 0, 0.07) 0px 2px 8px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-node-top {
+    height: 6px;
+    background: rgb(233, 30, 140);
+}
+
+.sdir-fp-org-node-body {
+    padding: 12px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-org-avatar-active {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(233, 30, 140, 0.125);
+    border: 3px solid rgb(233, 30, 140);
+    box-sizing: border-box;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-avatar-normal {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(233, 30, 140, 0.125);
+    border: 3px solid rgb(233, 30, 140);
+    box-sizing: border-box;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sdir-fp-org-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sdir-fp-org-node-text {
+    text-align: center;
+}
+
+.sdir-fp-org-node-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: rgb(17, 24, 39);
+    line-height: 1.3;
+    margin-bottom: 2px;
+}
+
+.sdir-fp-org-node-job {
+    font-size: 10px;
+    color: rgb(107, 114, 128);
+    line-height: 1.4;
+}
+
+.sdir-fp-org-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: rgb(252, 231, 243);
+    color: rgb(233, 30, 140);
+    letter-spacing: 0.03em;
+}
+
+.sdir-fp-org-badge-here {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 99px;
+    background: rgba(233, 30, 140, 0.082);
+    color: rgb(233, 30, 140);
+}
+
+.sdir-fp-org-line-v {
+    width: 2px;
+    height: 24px;
+    background: rgb(209, 213, 219);
+}
+
+.sdir-fp-org-line-h-wrap {
+    position: relative;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.sdir-fp-org-line-h {
+    position: absolute;
+    top: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 2px;
+    background: rgb(209, 213, 219);
+    width: 860px;
+}
+
+.sdir-fp-org-children {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-top: 24px;
+}
+
+.sdir-fp-org-legend {
+    margin-top: 40px;
+    display: flex;
+    gap: 20px;
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    align-items: center;
+}
+
+.sdir-fp-org-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.sdir-fp-org-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: rgb(233, 30, 140);
+    display: inline-block;
+}
+
+.sdir-fp-org-btn-changes {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    height: 34px;
+    padding: 0px 14px;
+    border-radius: 8px;
+    border: 1.5px solid rgb(229, 231, 235);
+    background: rgb(255, 255, 255);
+    color: rgb(55, 65, 81);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 2px 8px;
+    transition: right 0.2s;
+}
+
+.sdir-fp-org-history-card {
+    background-color: rgb(255, 255, 255);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: rgba(16, 24, 40, 0.04) 0px 1px 3px, rgba(16, 24, 40, 0.06) 0px 1px 2px;
+    border: 1px solid rgb(245, 245, 247);
+}
+
+.sdir-fp-org-history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.sdir-fp-org-history-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sdir-fp-org-history-title {
+    font-size: 15.5px;
+    font-weight: 800;
+    color: rgb(17, 24, 39);
+    margin: 0px;
+    letter-spacing: -0.01em;
+}
+
+.sdir-fp-org-history-timeline {
+    position: relative;
+    padding-left: 24px;
+}
+
+.sdir-fp-org-history-line {
+    position: absolute;
+    left: 7px;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background-color: rgb(243, 244, 246);
+    border-radius: 1px;
+}
+
+.sdir-fp-org-history-item {
+    position: relative;
+    margin-bottom: 0px;
+    transition: 0.15s;
+}
+
+.sdir-fp-org-history-dot {
+    position: absolute;
+    left: -20px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: rgb(16, 185, 129);
+    border: 2px solid rgb(255, 255, 255);
+    box-shadow: rgba(16, 185, 129, 0.19) 0px 0px 0px 2px;
+}
+
+.sdir-fp-org-history-date {
+    font-size: 11px;
+    color: rgb(156, 163, 175);
+    margin: 0px 0px 2px;
+    font-weight: 600;
+}
+
+.sdir-fp-org-history-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgb(17, 24, 39);
+    margin: 0px 0px 2px;
+}
+
+.sdir-fp-org-history-desc {
+    font-size: 12px;
+    color: rgb(107, 114, 128);
+    margin: 0px;
+}
