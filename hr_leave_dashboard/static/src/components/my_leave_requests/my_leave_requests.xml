@@ -7,7 +7,7 @@
         <!-- ═══════════════════════════════════════════════
              PAGE HEADER
              ═══════════════════════════════════════════════ -->
-        <header class="o_mlr_header">
+        <header t-if="!props.embedded" class="o_mlr_header">
             <div>
                 <h2>Leave Requests</h2>
                 <p>View, track and manage employee leave requests.</p>
@@ -21,17 +21,25 @@
              TOP-LEVEL TABS (My Leave Requests / Approvals)
              Only render tab bar when user has both roles.
              ═══════════════════════════════════════════════ -->
-        <nav t-if="hasBothTabs" class="o_mlr_top_tabs" aria-label="Leave request workspaces">
+        <nav t-if="workspaceTabCount > 1" class="o_mlr_top_tabs" aria-label="Leave request workspaces">
             <button t-att-class="'o_mlr_top_tab ' + (state.activeTab === 'my' ? 'active' : '')"
+                    t-if="state.access.has_personal_scope"
                     t-on-click="() => this.setTab('my')">
                 <i class="fa fa-file-text-o"/>
                 <span><b>My Leave Requests</b><small>View your own leave requests</small></span>
             </button>
             <button t-att-class="'o_mlr_top_tab ' + (state.activeTab === 'approvals' ? 'active' : '')"
+                    t-if="state.access.can_approve"
                     t-on-click="() => this.setTab('approvals')">
                 <i class="fa fa-check-square-o"/>
                 <span><b>Approvals</b><small>Review and take action on requests</small></span>
                 <em t-if="state.approvalRows.length" t-esc="state.approvalRows.length"/>
+            </button>
+            <button t-if="state.access.can_operate"
+                    t-att-class="'o_mlr_top_tab ' + (state.activeTab === 'records' ? 'active' : '')"
+                    t-on-click="() => this.setTab('records')">
+                <i class="fa fa-list-alt"/>
+                <span><b>All Requests</b><small>Manage organisation leave records</small></span>
             </button>
         </nav>
 
@@ -67,31 +75,41 @@
                 </div>
             </div>
 
+            <div class="o_mlr_stats" aria-label="My request status summary">
+                <button t-foreach="[['all','All'],['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['changes_requested','Changes Requested'],['cancelled','Cancelled']]"
+                        t-as="item" t-key="item[0]"
+                        t-att-class="'o_mlr_stat ' + (state.status === item[0] ? 'active' : '')"
+                        t-on-click="() => this.setStatus(item[0])">
+                    <strong t-esc="state.counts[item[0]] || 0"/>
+                    <span t-esc="item[1]"/>
+                </button>
+            </div>
+
             <!-- Filter Panel -->
             <section t-if="state.showFilters" class="o_mlr_filters">
                 <div class="o_mlr_filter_grid">
                     <div>
                         <label>Search</label>
                         <div class="o_mlr_search_wrap"><i class="fa fa-search"/>
-                            <input t-model="state.search" t-on-keydown="onSearchKeydown"
+                            <input t-model="state.search" t-on-input="onFilterChange" t-on-keydown="onSearchKeydown"
                                    placeholder="Search by name, leave type or request ID..."/>
                         </div>
                     </div>
                     <div>
                         <label>Request ID</label>
-                        <input t-model="state.requestId" placeholder="Search by request ID"/>
+                        <input t-model="state.requestId" t-on-input="onFilterChange" placeholder="Search by request ID"/>
                     </div>
                     <div>
                         <label>Leave Type</label>
-                        <select t-model="state.typeId" t-on-change="load">
+                        <select t-model="state.typeId" t-on-change="onFilterChange">
                             <option value="">All Types</option>
-                            <option t-foreach="state.types" t-as="type" t-key="type.id"
+                            <option t-foreach="leaveTypeOptions" t-as="type" t-key="type.id"
                                     t-att-value="type.id" t-esc="type.name"/>
                         </select>
                     </div>
                     <div>
                         <label>Status</label>
-                        <select t-model="state.status" t-on-change="load">
+                        <select t-att-value="state.status" t-on-change="(ev) => this.setStatus(ev.target.value)">
                             <option value="all">All Statuses</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
@@ -102,11 +120,11 @@
                     </div>
                     <div>
                         <label>Approver</label>
-                        <input t-model="state.approverFilter" placeholder="All Approvers"/>
+                        <input t-model="state.approverFilter" t-on-input="onFilterChange" placeholder="All Approvers"/>
                     </div>
                     <div>
                         <label>Added Type</label>
-                        <select t-model="state.addedType">
+                        <select t-model="state.addedType" t-on-change="onFilterChange">
                             <option value="">All (With/Without Handover)</option>
                             <option value="with_handover">With Handover</option>
                             <option value="without_handover">Without Handover</option>
@@ -114,14 +132,14 @@
                     </div>
                     <div>
                         <label>Reason</label>
-                        <input t-model="state.reasonFilter" placeholder="Search by reason"/>
+                        <input t-model="state.reasonFilter" t-on-input="onFilterChange" placeholder="Search by reason"/>
                     </div>
                     <div>
                         <label>Date Range</label>
                         <div class="o_mlr_date_range">
-                            <input type="date" t-model="state.dateFrom"/>
+                            <input type="date" t-model="state.dateFrom" t-on-change="onFilterChange"/>
                             <span>–</span>
-                            <input type="date" t-model="state.dateTo"/>
+                            <input type="date" t-model="state.dateTo" t-on-change="onFilterChange"/>
                         </div>
                     </div>
                 </div>
@@ -145,10 +163,10 @@
                         <th>ACTIONS</th>
                     </tr></thead>
                     <tbody>
-                        <tr t-foreach="filteredMyRows" t-as="row" t-key="row.id">
+                        <tr t-foreach="pagedMyRows" t-as="row" t-key="row.id">
                             <td class="o_mlr_ref"><t t-esc="row.reference"/></td>
                             <td><i class="dot" t-att-style="'background:'+row.color"/><b t-esc="row.leave_type"/></td>
-                            <td>—</td>
+                            <td><b t-esc="row.balance"/> days</td>
                             <td><i class="fa fa-calendar-o"/> <t t-esc="formatDate(row.date_from)"/> – <t t-esc="formatDate(row.date_to)"/></td>
                             <td><t t-esc="row.duration"/> <t t-if="row.duration === 1">day</t><t t-else="">days</t></td>
                             <td>
@@ -175,6 +193,11 @@
                 </div>
                 <div t-if="state.loading" class="empty">
                     <i class="fa fa-spinner fa-spin"/> Loading requests...
+                </div>
+                <div t-if="!state.loading and filteredMyRows.length" class="o_mlr_pager">
+                    <span>Showing <b t-esc="pageFrom"/>–<b t-esc="pageTo"/> of <b t-esc="filteredMyRows.length"/></span>
+                    <label>Rows <select t-att-value="state.pageSize" t-on-change="changePageSize"><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+                    <div><button t-on-click="() => this.goToPage(1)" t-att-disabled="state.page &lt;= 1">«</button><button t-on-click="() => this.goToPage(state.page - 1)" t-att-disabled="state.page &lt;= 1">‹</button><button t-foreach="visiblePages" t-as="page" t-key="page" t-att-class="state.page === page ? 'active' : ''" t-on-click="() => this.goToPage(page)"><t t-esc="page"/></button><button t-on-click="() => this.goToPage(state.page + 1)" t-att-disabled="state.page >= pageCount">›</button><button t-on-click="() => this.goToPage(pageCount)" t-att-disabled="state.page >= pageCount">»</button></div>
                 </div>
             </section>
 
@@ -203,6 +226,9 @@
                     <button class="o_mlr_icon_btn" t-on-click="() => this.toggleFilters()" title="Filters">
                         <i class="fa fa-filter"/> Filters
                     </button>
+                    <button class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export matching approvals">
+                        <i class="fa fa-download"/> Export
+                    </button>
                     <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">
                         <i class="fa fa-refresh"/>
                     </button>
@@ -215,20 +241,43 @@
                     <div>
                         <label>Search</label>
                         <div class="o_mlr_search_wrap"><i class="fa fa-search"/>
-                            <input t-model="state.search" t-on-keydown="onSearchKeydown"
+                            <input t-model="state.search" t-on-input="onFilterChange" t-on-keydown="onSearchKeydown"
                                    placeholder="Search by employee name or leave type..."/>
                         </div>
                     </div>
                     <div>
                         <label>Request ID</label>
-                        <input t-model="state.requestId" placeholder="Search by request ID"/>
+                        <input t-model="state.requestId" t-on-input="onFilterChange" placeholder="Search by request ID"/>
+                    </div>
+                    <div>
+                        <label>Leave Type</label>
+                        <select t-model="state.typeId" t-on-change="onFilterChange">
+                            <option value="">All Types</option>
+                            <option t-foreach="leaveTypeOptions" t-as="type" t-key="type.id" t-att-value="type.id" t-esc="type.name"/>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Department</label>
+                        <input t-model="state.departmentFilter" t-on-input="onFilterChange" placeholder="All Departments"/>
+                    </div>
+                    <div>
+                        <label>Approver</label>
+                        <input t-model="state.approverFilter" t-on-input="onFilterChange" placeholder="All Approvers"/>
+                    </div>
+                    <div>
+                        <label>Added Type</label>
+                        <select t-model="state.addedType" t-on-change="onFilterChange"><option value="">All (With/Without Handover)</option><option value="with_handover">With Handover</option><option value="without_handover">Without Handover</option></select>
+                    </div>
+                    <div>
+                        <label>Reason</label>
+                        <input t-model="state.reasonFilter" t-on-input="onFilterChange" placeholder="Search by reason"/>
                     </div>
                     <div>
                         <label>Date Range</label>
                         <div class="o_mlr_date_range">
-                            <input type="date" t-model="state.dateFrom"/>
+                            <input type="date" t-model="state.dateFrom" t-on-change="onFilterChange"/>
                             <span>–</span>
-                            <input type="date" t-model="state.dateTo"/>
+                            <input type="date" t-model="state.dateTo" t-on-change="onFilterChange"/>
                         </div>
                     </div>
                 </div>
@@ -252,7 +301,7 @@
                         <th>ACTIONS</th>
                     </tr></thead>
                     <tbody>
-                        <tr t-foreach="filteredApprovalRows" t-as="row" t-key="'approval_'+row.id">
+                        <tr t-foreach="pagedApprovalRows" t-as="row" t-key="'approval_'+row.id">
                             <td class="o_mlr_ref"><t t-esc="row.request_ref || row.reference || ('LR-' + row.id)"/></td>
                             <td>
                                 <b t-esc="row.employee.name"/>
@@ -271,7 +320,6 @@
                             <td t-esc="formatSubmitted(row.submitted || row.create_date)"/>
                             <td class="o_mlr_actions">
                                 <button class="o_mlr_review_btn" t-on-click="() => this.viewApproval(row.id)">Review</button>
-                                <button class="o_mlr_text_btn approve" t-on-click="() => this.approveApproval(row.id)">Approve</button>
                             </td>
                         </tr>
                     </tbody>
@@ -283,6 +331,11 @@
                 </div>
                 <div t-if="state.loading" class="empty">
                     <i class="fa fa-spinner fa-spin"/> Loading requests...
+                </div>
+                <div t-if="!state.loading and filteredApprovalRows.length" class="o_mlr_pager">
+                    <span>Showing <b t-esc="pageFrom"/>–<b t-esc="pageTo"/> of <b t-esc="filteredApprovalRows.length"/></span>
+                    <label>Rows <select t-att-value="state.pageSize" t-on-change="changePageSize"><option value="5">5</option><option value="10">10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select></label>
+                    <div><button t-on-click="() => this.goToPage(1)" t-att-disabled="state.page &lt;= 1">«</button><button t-on-click="() => this.goToPage(state.page - 1)" t-att-disabled="state.page &lt;= 1">‹</button><button t-foreach="visiblePages" t-as="page" t-key="page" t-att-class="state.page === page ? 'active' : ''" t-on-click="() => this.goToPage(page)"><t t-esc="page"/></button><button t-on-click="() => this.goToPage(state.page + 1)" t-att-disabled="state.page >= pageCount">›</button><button t-on-click="() => this.goToPage(pageCount)" t-att-disabled="state.page >= pageCount">»</button></div>
                 </div>
             </section>
         </t>

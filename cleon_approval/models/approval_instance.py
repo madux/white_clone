@@ -124,10 +124,21 @@ class CleonApprovalInstance(models.Model):
         skip_default_chain = False
         if hasattr(res_record, "_approval_resolve_chain"):
             target_route = res_record._approval_resolve_chain(wft)
-            if target_route in ("none", "no_approval") or (isinstance(target_route, dict) and not target_route.get("require_approval", True)):
-                # Target explicitly bypasses approval; generic default chain must not override
-                return False
-            elif target_route in ("fallback", "single_fallback"):
+            route_code = target_route if isinstance(target_route, str) else False
+            if route_code in ("none", "no_approval") or (isinstance(target_route, dict) and not target_route.get("require_approval", True)):
+                # A native no-validation target may already be final.  When a
+                # shared leave type is pending-capable because another policy
+                # requires approval, explicitly finalise this employee's
+                # policy bypass instead of leaving the request stuck pending.
+                if getattr(res_record, "state", False) in ("validate", "done", "approved"):
+                    return False
+                return self.record_automatic_decision(
+                    res_record,
+                    decision="approve",
+                    source="policy_bypass",
+                    reason=_("Approval is disabled by the governing policy."),
+                )
+            elif route_code in ("fallback", "single_fallback"):
                 # Target explicitly specifies fallback single-approver; do not use default chain
                 skip_default_chain = True
             elif target_route:

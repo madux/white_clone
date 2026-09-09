@@ -27,6 +27,13 @@ export class LeaveRequestsPage extends Component {
             search: "",
             leaveTypeId: false,
             departmentId: false,
+            requestId: "",
+            approver: "",
+            reason: "",
+            addedType: "",
+            dateFrom: "",
+            dateTo: "",
+            showFilters: false,
             detailRequestId: null,
 
             rows: [],
@@ -95,14 +102,7 @@ export class LeaveRequestsPage extends Component {
         try {
             const data = await this.orm.call(
                 "hr.leave", "get_leave_requests_page", [],
-                {
-                    search_term: this.state.search,
-                    status: this.state.status,
-                    leave_type_id: this.state.leaveTypeId || false,
-                    department_id: this.state.departmentId || false,
-                    page: this.state.page,
-                    page_size: this.state.pageSize,
-                }
+                this._requestParams(this.state.page, this.state.pageSize)
             );
 
             this.state.rows = data.rows || [];
@@ -128,6 +128,23 @@ export class LeaveRequestsPage extends Component {
         } finally {
             this.state.loading = false;
         }
+    }
+
+    _requestParams(page, pageSize) {
+        return {
+            search_term: this.state.search,
+            status: this.state.status,
+            leave_type_id: this.state.leaveTypeId || false,
+            department_id: this.state.departmentId || false,
+            request_id: this.state.requestId,
+            approver: this.state.approver,
+            reason: this.state.reason,
+            added_type: this.state.addedType,
+            date_from: this.state.dateFrom || false,
+            date_to: this.state.dateTo || false,
+            page,
+            page_size: pageSize,
+        };
     }
 
     async selectStatus(status) {
@@ -158,20 +175,56 @@ export class LeaveRequestsPage extends Component {
         await this.loadRequests();
     }
 
+    toggleFilters() {
+        this.state.showFilters = !this.state.showFilters;
+    }
+
+    onAdvancedFilterInput(ev, field) {
+        this.state[field] = ev.target.value;
+        clearTimeout(this.searchTimer);
+        this.searchTimer = setTimeout(async () => {
+            this.state.page = 1;
+            await this.loadRequests();
+        }, 300);
+    }
+
+    async onAdvancedFilterChange(ev, field) {
+        this.state[field] = ev.target.value;
+        this.state.page = 1;
+        await this.loadRequests();
+    }
+
+    async clearAdvancedFilters() {
+        Object.assign(this.state, {
+            requestId: "", approver: "", reason: "", addedType: "",
+            dateFrom: "", dateTo: "", page: 1,
+        });
+        await this.loadRequests();
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // EXPORT (FR-081)
 
     // ═══════════════════════════════════════════════════════════════
 
-    exportRequests() {
-        if (!this.state.rows.length) {
+    async exportRequests() {
+        if (!this.state.total) {
             this.notification.add("No requests to export.", { type: "warning" });
             return;
         }
 
-        const headers = ["ID", "Employee", "Department", "Leave Type", "Start Date", "End Date", "Duration (Days)", "Status", "Approver", "Submitted Date"];
-        const rows = this.state.rows.map((r) => [
-            r.id,
+        const exported = [];
+        const pageCount = Math.max(1, Math.ceil(this.state.total / 100));
+        for (let page = 1; page <= pageCount; page++) {
+            const data = await this.orm.call(
+                "hr.leave", "get_leave_requests_page", [], this._requestParams(page, 100)
+            );
+            exported.push(...(data.rows || []));
+        }
+
+        const headers = ["Request ID", "Employee", "Department", "Leave Type", "Start Date", "End Date", "Duration (Days)", "Status", "Approver", "Submitted Date"];
+        const rows = exported.map((r) => [
+            r.request_ref,
             `"${r.employee.name.replace(/"/g, '""')}"`,
             `"${r.employee.department.replace(/"/g, '""')}"`,
             `"${r.leave_type.name.replace(/"/g, '""')}"`,
@@ -232,7 +285,16 @@ export class LeaveRequestsPage extends Component {
         const res = await this.orm.call("hr.leave", "bulk_approve_leave_requests", [], {
             leave_ids: this.state.selectedIds,
         });
-        this.notification.add(`${res.processed} leave request(s) approved successfully.`, { type: "success" });
+        const failures = res.failed || [];
+        if (res.processed) {
+            this.notification.add(`${res.processed} leave request(s) approved successfully.`, { type: "success" });
+        }
+        if (failures.length) {
+            this.notification.add(
+                `${failures.length} request(s) require individual Review (for example, coverage acknowledgement or route integrity).`,
+                { type: "warning", sticky: true }
+            );
+        }
         await this.loadRequests();
     }
 
@@ -274,6 +336,9 @@ export class LeaveRequestsPage extends Component {
         }
 
         this.notification.add(`${res.processed} leave request(s) rejected.`, { type: "info" });
+        if ((res.failed || []).length) {
+            this.notification.add(`${res.failed.length} request(s) could not be rejected; open Review for details.`, { type: "warning", sticky: true });
+        }
         await this.loadRequests();
     }
 

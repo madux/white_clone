@@ -40,6 +40,18 @@
                         <strong><t t-esc="state.counts.rejected"/></strong>
                         <span>Rejected</span>
                     </button>
+                    <button type="button"
+                            t-att-class="state.status === 'changes_requested' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('changes_requested')">
+                        <strong><t t-esc="state.counts.changes_requested || 0"/></strong>
+                        <span>Changes Requested</span>
+                    </button>
+                    <button type="button"
+                            t-att-class="state.status === 'cancelled' ? 'request-summary-card active' : 'request-summary-card'"
+                            t-on-click="() => this.selectStatus('cancelled')">
+                        <strong><t t-esc="state.counts.cancelled || 0"/></strong>
+                        <span>Cancelled</span>
+                    </button>
                 </div>
 
                 <!-- SEARCH & FILTER TOOLBAR (FR-078 to FR-081) -->
@@ -73,9 +85,19 @@
                     <button type="button" class="request-export-btn" t-on-click="exportRequests">
                         <i class="fa fa-download me-1"/> Export
                     </button>
-                    <button t-if="state.canCreate" type="button" class="btn btn-primary cleon-btn-create-req" t-on-click="openCreateModal">
-                        <i class="fa fa-plus me-1"/> Create Leave Request
+                    <button type="button" class="request-export-btn" t-on-click="toggleFilters">
+                        <i class="fa fa-filter me-1"/> Filters
                     </button>
+                </div>
+
+                <div t-if="state.showFilters" class="leave-request-advanced-filters">
+                    <label>Request ID<input type="text" t-att-value="state.requestId" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'requestId')" placeholder="LR-..."/></label>
+                    <label>Approver<input type="text" t-att-value="state.approver" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'approver')" placeholder="Approver name"/></label>
+                    <label>Reason<input type="text" t-att-value="state.reason" t-on-input="(ev) => this.onAdvancedFilterInput(ev, 'reason')" placeholder="Reason contains"/></label>
+                    <label>Added Type<select t-att-value="state.addedType" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'addedType')"><option value="">All (With/Without Handover)</option><option value="with_handover">With Handover</option><option value="without_handover">Without Handover</option></select></label>
+                    <label>From<input type="date" t-att-value="state.dateFrom" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'dateFrom')"/></label>
+                    <label>To<input type="date" t-att-value="state.dateTo" t-on-change="(ev) => this.onAdvancedFilterChange(ev, 'dateTo')"/></label>
+                    <button type="button" class="request-clear-filters" t-on-click="clearAdvancedFilters">Clear filters</button>
                 </div>
 
                 <!-- FLOATING BULK ACTIONS BAR (FR-097 to FR-100) -->
@@ -105,8 +127,10 @@
                                                t-att-checked="this.allVisibleSelected"
                                                t-on-change="toggleSelectAll"/>
                                     </th>
+                                    <th>REQUEST ID</th>
                                     <th>EMPLOYEE</th>
                                     <th>LEAVE TYPE</th>
+                                    <th>BALANCE</th>
                                     <th>DATES</th>
                                     <th>DURATION</th>
                                     <th>STATUS</th>
@@ -118,14 +142,14 @@
                             <tbody>
                                 <t t-if="state.loading">
                                     <tr>
-                                        <td colspan="9" class="text-center py-4 text-muted">
+                                        <td colspan="11" class="text-center py-4 text-muted">
                                             <i class="fa fa-spinner fa-spin me-2"/> Loading leave requests...
                                         </td>
                                     </tr>
                                 </t>
                                 <t t-elif="!state.rows.length">
                                     <tr>
-                                        <td colspan="9" class="dashboard-empty">
+                                        <td colspan="11" class="dashboard-empty">
                                             No leave requests found matching your filter criteria.
                                         </td>
                                     </tr>
@@ -137,6 +161,7 @@
                                                    t-att-checked="state.selectedIds.includes(req.id)"
                                                    t-on-change="() => this.toggleRow(req.id)"/>
                                         </td>
+                                        <td><strong class="request-reference"><t t-esc="req.request_ref"/></strong></td>
                                         <td>
                                             <div class="employee-cell">
                                                 <div>
@@ -158,6 +183,7 @@
                                                 <t t-esc="req.leave_type.name"/>
                                             </span>
                                         </td>
+                                        <td><strong><t t-esc="req.balance"/></strong> days</td>
                                         <td>
                                             <span class="request-date">
                                                 <i class="fa fa-calendar-o me-1"/>

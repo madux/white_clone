@@ -58,6 +58,13 @@ class HrLeavePolicy(models.Model):
 
     _sql_constraints = [("policy_code_company_uniq", "unique(code, company_id)", "Policy code must be unique per company.")]
 
+    def write(self, values):
+        leave_types = self.line_ids.leave_type_id
+        result = super().write(values)
+        if {"state", "active", "approval_required", "approval_workflow"}.intersection(values):
+            (leave_types | self.line_ids.leave_type_id)._sync_native_validation_from_policies()
+        return result
+
     def _check_configure(self):
         if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
             raise AccessError(_("You do not have permission to configure leave policies."))
@@ -337,6 +344,7 @@ class HrLeavePolicy(models.Model):
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             vals[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         before = policy._row() if policy else {}
+        previous_leave_types = policy.line_ids.leave_type_id if policy else self.env["hr.leave.type"]
         target_state = vals["state"]
         if policy:
             policy.write(vals)
@@ -365,6 +373,7 @@ class HrLeavePolicy(models.Model):
             policy.write({"state": target_state})
         if policy.state == "active":
             policy._sync_assignments(payload.get("conflict_resolution") or "review")
+        (previous_leave_types | policy.line_ids.leave_type_id)._sync_native_validation_from_policies()
         policy._audit(_("%s policy '%s'.") % (_("Updated") if record_id else _("Created"), policy.name), before, policy._row())
         return {"id": policy.id, "name": policy.name}
 
@@ -488,9 +497,11 @@ class HrLeavePolicy(models.Model):
             raise ValidationError(_("Unsupported policy status."))
         policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
         before = policy.state
+        leave_types = policy.line_ids.leave_type_id
         policy.write({"state": state, "active": state != "archived"})
         if state == "active":
             policy._sync_assignments("review")
+        leave_types._sync_native_validation_from_policies()
         policy._audit(_("Changed policy status from %s to %s.") % (before, state), {"state": before}, {"state": state})
         return True
 
@@ -499,12 +510,15 @@ class HrLeavePolicy(models.Model):
         self._check_configure()
         policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
         historical = policy.assignment_ids or self.env["hr.leave"].sudo().search_count([("governing_policy_id", "=", policy.id)])
+        leave_types = policy.line_ids.leave_type_id
         if historical:
             policy.write({"state": "archived", "active": False})
+            leave_types._sync_native_validation_from_policies()
             policy._audit(_("Archived instead of deleting because historical records depend on this policy."))
             return {"archived": True}
         name, code = policy.name, policy.code
         policy.unlink()
+        leave_types._sync_native_validation_from_policies()
         self.env["hr.leave.audit.log"].sudo().create({"action": "policy_change", "entity_name": name, "entity_reference": code, "actor_id": self.env.user.id, "actor_label": self.env.user.name, "note": _("Deleted unused policy '%s'.") % name})
         return {"deleted": True}
 
@@ -545,6 +559,25 @@ class HrLeavePolicyLine(models.Model):
     assignment_ids = fields.One2many("hr.leave.policy.assignment", "policy_line_id")
 
     _sql_constraints = [("policy_leave_type_uniq", "unique(policy_id, leave_type_id)", "A Leave Type can only appear once in a policy.")]
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines.leave_type_id._sync_native_validation_from_policies()
+        return lines
+
+    def write(self, values):
+        leave_types = self.leave_type_id
+        result = super().write(values)
+        if {"active", "policy_id", "leave_type_id"}.intersection(values):
+            (leave_types | self.leave_type_id)._sync_native_validation_from_policies()
+        return result
+
+    def unlink(self):
+        leave_types = self.leave_type_id
+        result = super().unlink()
+        leave_types._sync_native_validation_from_policies()
+        return result
 
     @api.constrains("accrual_amount", "waiting_period_days", "minimum_notice_days", "minimum_duration", "maximum_duration", "document_required_after_days")
     def _check_limits(self):

@@ -38,6 +38,7 @@ export class MyLeaveRequestsPage extends Component {
             typeId: "",
             requestId: "",
             approverFilter: "",
+            departmentFilter: "",
             addedType: "",     // "" | "with_handover" | "without_handover"
             reasonFilter: "",
             dateFrom: "",
@@ -59,6 +60,8 @@ export class MyLeaveRequestsPage extends Component {
             access: { has_personal_scope: false, can_approve: false, can_operate: false },
             // ── Approval data ──
             approvalRows: [],
+            page: 1,
+            pageSize: 10,
         });
 
         onWillStart(() => this.load());
@@ -72,7 +75,7 @@ export class MyLeaveRequestsPage extends Component {
         this.state.loading = true;
         try {
             const [data, access] = await Promise.all([
-                this.orm.call("hr.leave", "get_my_leave_requests", [this.state.status, this.state.search, this.state.typeId || false]),
+                this.orm.call("hr.leave", "get_my_leave_requests", ["all", "", false]),
                 this.orm.call("hr.leave", "get_leave_access_profile", []),
             ]);
             this.state.rows = data.rows || [];
@@ -107,8 +110,24 @@ export class MyLeaveRequestsPage extends Component {
         return this.state.access.has_personal_scope && this.state.access.can_approve;
     }
 
+    get workspaceTabCount() {
+        return Number(this.state.access.has_personal_scope)
+            + Number(this.state.access.can_approve)
+            + Number(this.state.access.can_operate);
+    }
+
     get onlyMyRequests() {
         return this.state.access.has_personal_scope && !this.state.access.can_approve;
+    }
+
+    get leaveTypeOptions() {
+        const byId = new Map(this.state.types.map(type => [String(type.id), type]));
+        for (const row of this.state.approvalRows) {
+            if (row.leave_type?.id) {
+                byId.set(String(row.leave_type.id), { id: row.leave_type.id, name: row.leave_type.name });
+            }
+        }
+        return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
     }
 
     get pendingCount() {
@@ -127,7 +146,9 @@ export class MyLeaveRequestsPage extends Component {
         } else {
             rows = rows.filter(r => r.status === "approved" || r.status === "rejected" || r.status === "cancelled");
         }
-        // Additional filters
+        if (this.state.status !== "all") {
+            rows = rows.filter(r => r.status === this.state.status);
+        }
         rows = this._applyFilters(rows);
         return rows;
     }
@@ -137,7 +158,19 @@ export class MyLeaveRequestsPage extends Component {
     }
 
     _applyFilters(rows) {
-        const { requestId, approverFilter, addedType, reasonFilter, dateFrom, dateTo } = this.state;
+        const { search, typeId, requestId, approverFilter, departmentFilter, addedType, reasonFilter, dateFrom, dateTo } = this.state;
+        if (search) {
+            const q = search.trim().toLowerCase();
+            rows = rows.filter(r => [
+                r.reference, r.request_ref,
+                r.employee?.name,
+                r.leave_type?.name || r.leave_type,
+                r.reason || r.notes,
+            ].filter(Boolean).join(" ").toLowerCase().includes(q));
+        }
+        if (typeId) {
+            rows = rows.filter(r => String(r.leave_type_id || r.leave_type?.id || "") === String(typeId));
+        }
         if (requestId) {
             const q = requestId.toLowerCase();
             rows = rows.filter(r => {
@@ -152,10 +185,14 @@ export class MyLeaveRequestsPage extends Component {
                 return name.includes(q);
             });
         }
+        if (departmentFilter) {
+            const q = departmentFilter.toLowerCase();
+            rows = rows.filter(r => (r.employee?.department || "").toLowerCase().includes(q));
+        }
         if (addedType === "with_handover") {
-            rows = rows.filter(r => r.handover_enabled);
+            rows = rows.filter(r => r.handover_enabled || r.has_handover);
         } else if (addedType === "without_handover") {
-            rows = rows.filter(r => !r.handover_enabled);
+            rows = rows.filter(r => !(r.handover_enabled || r.has_handover));
         }
         if (reasonFilter) {
             const q = reasonFilter.toLowerCase();
@@ -165,12 +202,45 @@ export class MyLeaveRequestsPage extends Component {
             });
         }
         if (dateFrom) {
-            rows = rows.filter(r => (r.date_from || r.date_to || "") >= dateFrom);
+            rows = rows.filter(r => (r.date_to || r.date_from || "") >= dateFrom);
         }
         if (dateTo) {
-            rows = rows.filter(r => (r.date_to || r.date_from || "") <= dateTo);
+            rows = rows.filter(r => (r.date_from || r.date_to || "") <= dateTo);
         }
         return rows;
+    }
+
+    get activeFilteredRows() {
+        return this.state.activeTab === "approvals" ? this.filteredApprovalRows : this.filteredMyRows;
+    }
+
+    get pageCount() {
+        return Math.max(1, Math.ceil(this.activeFilteredRows.length / this.state.pageSize));
+    }
+
+    get pagedMyRows() {
+        const start = (Math.min(this.state.page, this.pageCount) - 1) * this.state.pageSize;
+        return this.filteredMyRows.slice(start, start + this.state.pageSize);
+    }
+
+    get pagedApprovalRows() {
+        const start = (Math.min(this.state.page, this.pageCount) - 1) * this.state.pageSize;
+        return this.filteredApprovalRows.slice(start, start + this.state.pageSize);
+    }
+
+    get pageFrom() {
+        return this.activeFilteredRows.length ? (Math.min(this.state.page, this.pageCount) - 1) * this.state.pageSize + 1 : 0;
+    }
+
+    get pageTo() {
+        return Math.min(this.pageFrom + this.state.pageSize - 1, this.activeFilteredRows.length);
+    }
+
+    get visiblePages() {
+        const current = Math.min(this.state.page, this.pageCount);
+        const start = Math.max(1, current - 2);
+        const end = Math.min(this.pageCount, current + 2);
+        return Array.from({ length: end - start + 1 }, (_, index) => start + index);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -179,16 +249,21 @@ export class MyLeaveRequestsPage extends Component {
 
     setTab(tab) {
         this.state.activeTab = tab;
+        this.state.page = 1;
         this.emitRequestContext();
     }
 
     setMySubTab(sub) {
         this.state.mySubTab = sub;
+        this.state.status = "all";
+        this.state.page = 1;
     }
 
-    async setStatus(status) {
+    setStatus(status) {
         this.state.status = status;
-        await this.load();
+        this.state.mySubTab = ["pending", "changes_requested"].includes(status) ? "pending" : "resolved";
+        if (status === "all") this.state.mySubTab = "pending";
+        this.state.page = 1;
     }
 
     toggleFilters() {
@@ -200,15 +275,27 @@ export class MyLeaveRequestsPage extends Component {
         this.state.typeId = "";
         this.state.requestId = "";
         this.state.approverFilter = "";
+        this.state.departmentFilter = "";
         this.state.addedType = "";
         this.state.reasonFilter = "";
         this.state.dateFrom = "";
         this.state.dateTo = "";
-        this.load();
+        this.state.page = 1;
     }
 
     onSearchKeydown(ev) {
-        if (ev.key === "Enter") this.load();
+        if (ev.key === "Enter") this.state.page = 1;
+    }
+
+    onFilterChange() { this.state.page = 1; }
+
+    goToPage(page) {
+        if (page >= 1 && page <= this.pageCount) this.state.page = page;
+    }
+
+    changePageSize(ev) {
+        this.state.pageSize = Number(ev.target.value) || 10;
+        this.state.page = 1;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -236,12 +323,6 @@ export class MyLeaveRequestsPage extends Component {
     view(id) { this.state.detailReadOnly = true; this.state.detailId = id; }
     viewApproval(id) { this.state.detailReadOnly = false; this.state.detailId = id; }
     closeDetail() { this.state.detailId = null; }
-
-    async approveApproval(id) {
-        await this.orm.call("hr.leave", "approve_single_request", [id]);
-        this.notification.add("Leave request approved.", { type: "success" });
-        await this.load();
-    }
 
     resubmit(row) {
         this.state.initial = {
@@ -304,15 +385,33 @@ export class MyLeaveRequestsPage extends Component {
     }
 
     exportCsv() {
+        const sourceRows = this.activeFilteredRows;
+        if (!sourceRows.length) {
+            this.notification.add("No matching requests to export.", { type: "warning" });
+            return;
+        }
         const rows = [
-            ["Request ID", "Leave Type", "Start", "End", "Duration", "Reason", "Status", "Approver", "Submitted"],
-            ...this.state.rows.map(r => [r.reference, r.leave_type, r.date_from, r.date_to, r.duration, r.reason, r.status, r.approver, r.submitted]),
+            ["Request ID", "Employee", "Department", "Leave Type", "Balance", "Start", "End", "Duration", "Reason", "Status", "Approver", "Submitted"],
+            ...sourceRows.map(r => [
+                r.reference || r.request_ref,
+                r.employee?.name || "",
+                r.employee?.department || "",
+                r.leave_type?.name || r.leave_type,
+                r.balance,
+                r.date_from,
+                r.date_to,
+                r.duration,
+                r.reason || r.notes,
+                r.status,
+                r.approver,
+                r.submitted || r.create_date,
+            ]),
         ];
         const q = v => `"${String(v ?? "").replaceAll('"', '""')}"`;
         const blob = new Blob(["\uFEFF" + rows.map(r => r.map(q).join(",")).join("\n")], { type: "text/csv" });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "my_leave_requests.csv";
+        a.download = this.state.activeTab === "approvals" ? "leave_approvals.csv" : "my_leave_requests.csv";
         a.click();
         URL.revokeObjectURL(a.href);
     }

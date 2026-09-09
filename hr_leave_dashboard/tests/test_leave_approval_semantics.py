@@ -782,3 +782,66 @@ class TestLeaveApprovalSemantics(TransactionCase):
         self.env["hr.leave"].with_user(ceo_user).approve_leave_request(leave_ceo.id)
         self.assertEqual(inst_ceo.state, "approved")
         self.assertEqual(leave_ceo.state, "validate")
+
+    def test_14_policy_required_approval_repairs_native_validation(self):
+        """An active approval policy must prevent Odoo's no-validation shortcut."""
+        chain = self.env["cleon.approval.chain"].create({
+            "name": "Policy Synchronisation Chain",
+            "company_id": self.company.id,
+            "workflow_type_id": self.wft.id,
+            "active": True,
+            "is_default": False,
+            "step_ids": [(0, 0, {
+                "sequence": 10,
+                "name": "Policy Manager",
+                "completion_mode": "single",
+                "approver_type": "specific_user",
+                "specific_user_id": self.user_mgr_1.id,
+            })],
+        })
+        leave_type = self.env["hr.leave.type"].create({
+            "name": "Policy Synchronisation Leave",
+            "company_id": self.company.id,
+            "leave_code": "PSL1",
+            "requires_allocation": "no",
+            "approval_workflow": "single",
+        })
+        # Reproduce the inconsistent configuration found in the live DB.
+        leave_type.with_context(skip_leave_validation_sync=True).write({
+            "leave_validation_type": "no_validation",
+        })
+        policy = self.env["hr.leave.policy"].create({
+            "name": "Policy Synchronisation",
+            "code": "POLSYNC",
+            "company_id": self.company.id,
+            "state": "draft",
+            "apply_to": "all",
+            "approval_required": True,
+            "approval_workflow": "custom",
+            "approval_chain_id": chain.id,
+        })
+        self.env["hr.leave.policy.line"].create({
+            "policy_id": policy.id,
+            "leave_type_id": leave_type.id,
+            "active": True,
+        })
+        policy.write({"state": "active"})
+
+        leave_type._sync_native_validation_from_policies()
+        self.assertEqual(leave_type.leave_validation_type, "hr")
+
+        start = self._next_working_monday(24)
+        leave = self.env["hr.leave"].with_user(self.user_applicant).create({
+            "employee_id": self.emp_applicant.id,
+            "holiday_status_id": leave_type.id,
+            "request_date_from": start,
+            "request_date_to": start + timedelta(days=1),
+            "notes": "Verify policy approval synchronisation.",
+        })
+        instance = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"),
+            ("res_id", "=", leave.id),
+            ("state", "=", "pending"),
+        ], limit=1)
+        self.assertIn(leave.state, ("confirm", "validate1"))
+        self.assertTrue(instance, "A policy-required request must remain pending with an approval instance")

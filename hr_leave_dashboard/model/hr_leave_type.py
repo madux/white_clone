@@ -247,13 +247,55 @@ class HrLeaveType(models.Model):
     def create(self, vals_list):
         records = super().create(vals_list)
         records._sync_cleon_approval_chain()
+        records._sync_native_validation_from_policies()
         return records
 
     def write(self, vals):
         res = super().write(vals)
+        if self.env.context.get("skip_leave_validation_sync"):
+            return res
         if any(f in vals for f in ("approval_workflow", "approval_stage_ids", "name", "company_id")):
             self._sync_cleon_approval_chain()
+        if "approval_workflow" in vals or "leave_validation_type" in vals:
+            self._sync_native_validation_from_policies()
         return res
+
+    def _sync_native_validation_from_policies(self):
+        """Keep Odoo's submission state aligned with Cleon's approval policy.
+
+        ``hr_holidays`` uses ``leave_validation_type`` during ``create`` and
+        ``action_confirm``.  If it remains ``no_validation`` while a Cleon
+        policy requires approval, Odoo validates the leave before the shared
+        approval engine has a chance to create its instance.
+
+        A leave type is global while policies can target different employee
+        populations, so any active approval-required policy must keep the
+        native type in a pending-capable state.  Employee-specific bypasses
+        are then finalised explicitly by the shared approval engine.
+        """
+        if "hr.leave.policy.line" not in self.env:
+            return
+        PolicyLine = self.env["hr.leave.policy.line"]
+        for leave_type in self.with_context(active_test=False):
+            active_lines = PolicyLine.sudo().search([
+                ("leave_type_id", "=", leave_type.id),
+                ("active", "=", True),
+                ("policy_id.state", "=", "active"),
+                ("policy_id.active", "=", True),
+            ])
+            if active_lines:
+                approval_required = any(active_lines.mapped("policy_id.approval_required"))
+            else:
+                approval_required = leave_type.approval_workflow != "none"
+            expected = (
+                "both" if approval_required and leave_type.approval_workflow == "multi"
+                else "hr" if approval_required
+                else "no_validation"
+            )
+            if leave_type.leave_validation_type != expected:
+                leave_type.with_context(skip_leave_validation_sync=True).write({
+                    "leave_validation_type": expected,
+                })
 
     def _sync_cleon_approval_chain(self):
         for leave_type in self:

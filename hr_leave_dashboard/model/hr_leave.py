@@ -178,6 +178,20 @@ class HrLeave(models.Model):
                     self.env["ir.sequence"].next_by_code("hr.leave.request.ref") or _("New")
                 )
             vals.pop("submitted_at", None)
+
+        # ── Defensive sync: ensure Odoo's native leave_validation_type is
+        #    aligned with CleonHR approval policies BEFORE super().create().
+        #    Without this, no_validation types are auto-approved by Odoo
+        #    during create(), bypassing the approval workflow entirely.
+        type_ids = set()
+        for vals in vals_list:
+            if vals.get("holiday_status_id"):
+                type_ids.add(vals["holiday_status_id"])
+        if type_ids:
+            leave_types = self.env["hr.leave.type"].sudo().browse(list(type_ids)).exists()
+            if leave_types:
+                leave_types._sync_native_validation_from_policies()
+
         leaves = super().create(vals_list)
         # ``hr_holidays`` may immediately promote a newly-created record for
         # some validation configurations.  Save Draft is an explicit product
@@ -199,6 +213,18 @@ class HrLeave(models.Model):
         for leave in leaves:
             if not leave.admin_created and leave.state != "draft":
                 leave._create_audit_record("submitted", note=leave.notes or "")
+
+            # ── Guard against auto-validation race ──
+            # If Odoo auto-validated (state=validate) but CleonHR policy
+            # requires approval, revert to 'confirm' so the approval
+            # workflow can proceed correctly.
+            if leave.state == "validate" and not requested_draft[leaves.ids.index(leave.id)] if leave.id in leaves.ids else False:
+                policy_line = leave._policy_rule_line()
+                if policy_line and policy_line.policy_id.approval_required:
+                    super(HrLeave, leave.sudo()).with_context(
+                        _leave_authorised_state_change=True
+                    ).write({"state": "confirm"})
+
             # Odoo may create an HR-approved leave type directly in the
             # "To Approve" state, without calling action_confirm().
             if leave.state in ("confirm", "validate1"):
@@ -1221,7 +1247,12 @@ class HrLeave(models.Model):
         elif status == "cancelled": domain += [("is_cancelled", "=", True)]
         if leave_type_id: domain.append(("holiday_status_id", "=", int(leave_type_id)))
         search = (search or "").strip()
-        if search: domain += ["|", ("holiday_status_id.name", "ilike", search), ("notes", "ilike", search)]
+        if search:
+            domain = expression.AND([domain, expression.OR([
+                [("request_ref", "ilike", search)],
+                [("holiday_status_id.name", "ilike", search)],
+                [("notes", "ilike", search)],
+            ])])
         all_records = self.sudo().search([("employee_id", "=", employee.id)])
         records = self.sudo().search(domain, order="create_date desc, id desc")
         def request_status(record):
@@ -1230,11 +1261,15 @@ class HrLeave(models.Model):
             return "approved" if record.state == "validate" else "pending" if record.state in ("confirm", "validate1") else "rejected" if record.state == "refuse" else "draft"
         counts = {key: 0 for key in ("all", "pending", "approved", "rejected", "changes_requested", "cancelled")}; counts["all"] = len(all_records)
         for record in all_records: counts[request_status(record)] = counts.get(request_status(record), 0) + 1
+        balance_components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            [employee.id], all_records.mapped("holiday_status_id").ids,
+        )
         rows = []
         for record in records:
             approver = record.second_approver_id or record.first_approver_id
             if not approver and employee.parent_id: approver = employee.parent_id.user_id
-            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.create_date), "can_cancel": request_status(record) in ("pending", "approved", "changes_requested"), "can_escalate": request_status(record) == "pending" and not record.escalated, "escalated": bool(record.escalated), "can_resubmit": request_status(record) in ("rejected", "changes_requested"), "changes_requested_comment": record.changes_requested_comment or "", "handover_enabled": bool(record.handover_enabled), "backup_colleague_ids": record.backup_colleague_ids.ids, "emergency_contact": record.emergency_contact or "", "handover_notes": record.handover_notes or ""})
+            component = balance_components.get((employee.id, record.holiday_status_id.id), {})
+            rows.append({"id": record.id, "reference": record.request_ref or "LR-%06d" % record.id, "leave_type_id": record.holiday_status_id.id, "leave_type": record.holiday_status_id.name, "color": record.holiday_status_id.cleon_color_hex or "#3B82F6", "balance": round(component.get("available", 0.0), 1), "date_from": fields.Date.to_string(record.request_date_from), "date_to": fields.Date.to_string(record.request_date_to), "duration": round(record.number_of_days or 0, 1), "reason": record.notes or "", "status": request_status(record), "approver": approver.name if approver else _("Line Manager"), "submitted": fields.Datetime.to_string(record.submitted_at or record.create_date), "can_cancel": request_status(record) in ("pending", "approved", "changes_requested"), "can_escalate": request_status(record) == "pending" and not record.escalated, "escalated": bool(record.escalated), "can_resubmit": request_status(record) in ("rejected", "changes_requested"), "changes_requested_comment": record.changes_requested_comment or "", "handover_enabled": bool(record.handover_enabled), "backup_colleague_ids": record.backup_colleague_ids.ids, "emergency_contact": record.emergency_contact or "", "handover_notes": record.handover_notes or ""})
         types = self.env["hr.leave.type"].sudo().browse(all_records.mapped("holiday_status_id").ids).sorted("name")
         return {"rows": rows, "counts": counts, "leave_types": [{"id": item.id, "name": item.name} for item in types]}
 
@@ -1248,8 +1283,18 @@ class HrLeave(models.Model):
             self._leave_pending_approval_domain(),
             order="escalated desc, create_date asc, id asc",
         )
+        rows = [self._serialize_leave_request(record) for record in records]
+        components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            records.mapped("employee_id").ids, records.mapped("holiday_status_id").ids,
+        )
+        for row, record in zip(rows, records):
+            row.update({
+                "balance": round(components.get((record.employee_id.id, record.holiday_status_id.id), {}).get("available", 0.0), 1),
+                "handover_enabled": bool(record.handover_enabled),
+                "reason": record.notes or record.admin_creation_note or "",
+            })
         return {
-            "rows": [self._serialize_leave_request(record) for record in records],
+            "rows": rows,
             "count": len(records),
         }
 
@@ -1787,6 +1832,12 @@ class HrLeave(models.Model):
         status="all",
         leave_type_id=False,
         department_id=False,
+        request_id="",
+        approver="",
+        reason="",
+        added_type="",
+        date_from=False,
+        date_to=False,
         page=1,
         page_size=10,
     ):
@@ -1795,7 +1846,7 @@ class HrLeave(models.Model):
         if not emp_ids:
             return {
                 "rows": [],
-                "counts": {"all": 0, "pending": 0, "approved": 0, "rejected": 0},
+                "counts": {"all": 0, "pending": 0, "approved": 0, "rejected": 0, "changes_requested": 0, "cancelled": 0},
                 "pagination": {"page": 1, "page_size": 10, "total": 0, "page_count": 1, "from": 0, "to": 0},
                 "leave_types": [],
                 "departments": [],
@@ -1827,21 +1878,48 @@ class HrLeave(models.Model):
             base_domain.append(("holiday_status_id", "=", int(leave_type_id)))
         if department_id:
             base_domain.append(("department_id", "=", int(department_id)))
+        if (request_id or "").strip():
+            base_domain.append(("request_ref", "ilike", request_id.strip()))
+        if (reason or "").strip():
+            base_domain.append(("notes", "ilike", reason.strip()))
+        if (approver or "").strip():
+            name = approver.strip()
+            base_domain = expression.AND([base_domain, expression.OR([
+                [("first_approver_id.name", "ilike", name)],
+                [("second_approver_id.name", "ilike", name)],
+                [("employee_id.parent_id.name", "ilike", name)],
+            ])])
+        if added_type == "with_handover":
+            base_domain.append(("handover_enabled", "=", True))
+        elif added_type == "without_handover":
+            base_domain.append(("handover_enabled", "=", False))
+        # Date filters use overlap semantics: a request is included when any
+        # portion of its range intersects the selected range.
+        if date_from:
+            base_domain.append(("request_date_to", ">=", fields.Date.to_date(date_from)))
+        if date_to:
+            base_domain.append(("request_date_from", "<=", fields.Date.to_date(date_to)))
 
         counts = {
             "all": self.search_count(base_domain + [("state", "!=", "draft")]),
-            "pending": self.search_count(base_domain + [("state", "in", ("confirm", "validate1"))]),
-            "approved": self.search_count(base_domain + [("state", "=", "validate")]),
-            "rejected": self.search_count(base_domain + [("state", "=", "refuse")]),
+            "pending": self.search_count(base_domain + [("state", "in", ("confirm", "validate1")), ("changes_requested", "=", False), ("is_cancelled", "=", False)]),
+            "approved": self.search_count(base_domain + [("state", "=", "validate"), ("is_cancelled", "=", False)]),
+            "rejected": self.search_count(base_domain + [("state", "=", "refuse"), ("is_cancelled", "=", False)]),
+            "changes_requested": self.search_count(base_domain + [("changes_requested", "=", True), ("is_cancelled", "=", False)]),
+            "cancelled": self.search_count(base_domain + [("is_cancelled", "=", True)]),
         }
 
         domain = list(base_domain)
         if status == "pending":
-            domain.append(("state", "in", ("confirm", "validate1")))
+            domain += [("state", "in", ("confirm", "validate1")), ("changes_requested", "=", False), ("is_cancelled", "=", False)]
         elif status == "approved":
-            domain.append(("state", "=", "validate"))
+            domain += [("state", "=", "validate"), ("is_cancelled", "=", False)]
         elif status == "rejected":
-            domain.append(("state", "=", "refuse"))
+            domain += [("state", "=", "refuse"), ("is_cancelled", "=", False)]
+        elif status == "changes_requested":
+            domain += [("changes_requested", "=", True), ("is_cancelled", "=", False)]
+        elif status == "cancelled":
+            domain.append(("is_cancelled", "=", True))
         else:
             domain.append(("state", "!=", "draft"))
 
@@ -1853,6 +1931,13 @@ class HrLeave(models.Model):
         offset = (page - 1) * page_size
         leaves = self.search(domain, offset=offset, limit=page_size, order="create_date desc, id desc")
         rows = [self._serialize_leave_request(leave) for leave in leaves]
+        balance_components = self.env["hr.leave.balance.transaction"].sudo()._balance_components(
+            leaves.mapped("employee_id").ids, leaves.mapped("holiday_status_id").ids,
+        )
+        for row, leave in zip(rows, leaves):
+            row["balance"] = round(balance_components.get(
+                (leave.employee_id.id, leave.holiday_status_id.id), {}
+            ).get("available", 0.0), 1)
 
         leave_types = self.env["hr.leave.type"].search([
             ("active", "=", True),
@@ -1895,32 +1980,22 @@ class HrLeave(models.Model):
         )
         self._check_leave_review_access(leaves)
         processed = 0
+        failures = []
         for leave in leaves:
-            if leave._has_active_disciplinary_suspension():
-                leave._create_audit_record(
-                    "failed",
-                    note=_("Bulk approval blocked: employee is under an active disciplinary suspension."),
-                )
-                continue
-            if leave.holiday_status_id.approval_workflow == "multi" and leave.approval_line_ids:
-                stage_result = leave._approve_configured_stage()
-                action_name = "final_approval" if stage_result == "final" else "first_approval"
-            elif leave.state == "confirm":
-                leave.action_approve()
-                action_name = "first_approval" if leave.state == "validate1" else "final_approval"
-            elif leave.state == "validate1":
-                leave.action_validate()
-                action_name = "final_approval"
-            else:
-                action_name = "approve"
-
-            # Immutable Audit Log Entry (FR-111)
-            leave._create_audit_record(action_name)
-            leave._post_configured_leave_update(
-                _("Leave request approved by %s.", self.env.user.name)
-            )
-            processed += 1
-        return {"processed": processed}
+            try:
+                with self.env.cr.savepoint():
+                    # Use the same guarded path as the detail modal.  Requests
+                    # with coverage conflicts are intentionally skipped: an
+                    # approver must open Review and log an acknowledgement.
+                    self.approve_leave_request(leave.id)
+                    processed += 1
+            except (ValidationError, UserError, AccessError) as error:
+                failures.append({
+                    "id": leave.id,
+                    "reference": leave.request_ref or "LR-%06d" % leave.id,
+                    "message": str(error.args[0] if error.args else error),
+                })
+        return {"processed": processed, "failed": failures}
 
     @api.model
     def bulk_reject_leave_requests(self, leave_ids, reason="", category=""):
@@ -1934,17 +2009,20 @@ class HrLeave(models.Model):
             and leave.state in ("confirm", "validate1")
         )
         self._check_leave_review_access(leaves)
+        processed = 0
+        failures = []
         for leave in leaves:
-            # Post rejection reason to chatter without destroying original leave.notes.
-            body = _("Leave request rejected by %(user)s.<br/><strong>Reason:</strong> %(reason)s",
-                     user=self.env.user.name, reason=reason)
-            leave._post_configured_leave_update(body)
-            leave._reject_configured_stages(reason)
-            leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
-            leave.action_refuse()
-            # Immutable Audit Log Entry (FR-111)
-            leave._create_audit_record("reject", note=reason)
-        return {"processed": len(leaves)}
+            try:
+                with self.env.cr.savepoint():
+                    self.reject_leave_request(leave.id, reason=reason, category=category)
+                    processed += 1
+            except (ValidationError, UserError, AccessError) as error:
+                failures.append({
+                    "id": leave.id,
+                    "reference": leave.request_ref or "LR-%06d" % leave.id,
+                    "message": str(error.args[0] if error.args else error),
+                })
+        return {"processed": processed, "failed": failures}
 
     def _create_audit_record(
         self,
