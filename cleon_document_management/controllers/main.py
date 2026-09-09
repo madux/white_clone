@@ -883,40 +883,48 @@ class DocumentUICreation(http.Controller):
     )
     def get_documents(self, folder_id=False, **kwargs):
         """List documents, optionally filtered by folder_id."""
-        domain = (
-            []
-            if kwargs.get("include_inactive")
-            and request.env.user.has_group(
-                "cleon_document_management.group_document_manager"
+        try:
+            domain = (
+                []
+                if kwargs.get("include_inactive")
+                and request.env.user.has_group(
+                    "cleon_document_management.group_document_manager"
+                )
+                else [
+                    ("active", "=", True),
+                    ("deleted_at", "=", False),
+                    ("folder_id.active", "=", True),
+                    ("folder_id.deleted_at", "=", False),
+                    ("folder_id.distribution_status", "=", "active"),
+                ]
             )
-            else [
-                ("active", "=", True),
-                ("deleted_at", "=", False),
-                ("folder_id.active", "=", True),
-                ("folder_id.deleted_at", "=", False),
-                ("folder_id.distribution_status", "=", "active"),
-            ]
-        )
-        if folder_id:
-            domain.append(("folder_id", "=", int(folder_id)))
+            if folder_id:
+                domain.append(("folder_id", "=", int(folder_id)))
 
-        documents = request.env["doc.document"].search(domain, order="create_date desc")
-        user = request.env.user
-        return {
-            "success": True,
-            "count": len(documents),
-            "data": {
-                "data": [
-                    document.serialize_for_api(
-                        user,
-                        favorite=user in document.favorite_user_ids,
-                        pinned=user in document.pinned_user_ids,
-                    )
-                    for document in documents
-                ],
-                "total_count": len(documents.ids),
-            },
-        }
+            documents = request.env["doc.document"].search(domain, order="create_date desc")
+            user = request.env.user
+            return {
+                "success": True,
+                "count": len(documents),
+                "data": {
+                    "data": [
+                        document.serialize_for_api(
+                            user,
+                            favorite=user in document.favorite_user_ids,
+                            pinned=user in document.pinned_user_ids,
+                        )
+                        for document in documents
+                    ],
+                    "total_count": len(documents.ids),
+                },
+            }
+        except AccessError:
+            return {
+                "success": False,
+                "message": _(
+                    "Document access is not configured for your account. Contact your administrator."
+                ),
+            }
 
     @http.route(
         "/api/quick-access", type="json", auth="user", methods=["POST"], csrf=False
@@ -1220,6 +1228,17 @@ class DocumentUICreation(http.Controller):
         "/api/my-workspace", type="json", auth="user", methods=["POST"], csrf=False
     )
     def my_workspace(self, **kwargs):
+        try:
+            return self._my_workspace_data()
+        except AccessError:
+            return {
+                "success": False,
+                "message": _(
+                    "Document access is not configured for your account. Contact your administrator."
+                ),
+            }
+
+    def _my_workspace_data(self):
         user = request.env.user
         employee = user.employee_id
         own_domain = [

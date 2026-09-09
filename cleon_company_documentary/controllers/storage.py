@@ -1,4 +1,5 @@
 import logging
+import os
 
 from odoo import _
 from odoo.exceptions import UserError
@@ -6,11 +7,17 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+_ENV_SECRET_KEYS = {
+    "access_key_id": "COMPANY_DOCUMENTARY_R2_ACCESS_KEY_ID",
+    "secret_access_key": "COMPANY_DOCUMENTARY_R2_SECRET_ACCESS_KEY",
+}
+
 
 class CloudflareR2Storage:
     """S3-compatible Cloudflare R2 adapter.
 
-    Credentials come from ir.config_parameter and are never returned to the
+    Credentials are platform-managed via ir.config_parameter (and optional
+    environment-variable overrides for secrets). They are never returned to the
     browser. boto3 is imported lazily so the addon can be installed before
     the deployment image adds the storage dependency.
     """
@@ -30,6 +37,10 @@ class CloudflareR2Storage:
     def config(self):
         params = self.env["ir.config_parameter"].sudo()
         values = {name: params.get_param(key, "") for name, key in self.PARAMS.items()}
+        for name, env_key in _ENV_SECRET_KEYS.items():
+            env_value = os.environ.get(env_key, "").strip()
+            if env_value:
+                values[name] = env_value
         values["region"] = values["region"] or "auto"
         return values
 
@@ -49,19 +60,51 @@ class CloudflareR2Storage:
         }
 
     def save_config(self, values):
-        unknown = set(values) - set(self.PARAMS)
-        if unknown:
-            raise UserError(_("Unsupported storage settings: %s") % ", ".join(sorted(unknown)))
+        _logger.info(
+            "Rejected attempt to change platform-managed Company Documentary storage settings.",
+        )
+        raise UserError(
+            _("Cloudflare R2 storage is platform-managed and cannot be changed from the app."),
+        )
+
+    def cors_origins(self):
         params = self.env["ir.config_parameter"].sudo()
-        for name, value in values.items():
-            if value is not None:
-                params.set_param(self.PARAMS[name], str(value).strip())
-        if values.get("account_id") and not values.get("endpoint_url"):
-            params.set_param(
-                self.PARAMS["endpoint_url"],
-                "https://%s.r2.cloudflarestorage.com" % values["account_id"].strip(),
+        configured = params.get_param("company_documentary.r2_cors_origins", "")
+        origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
+        base_url = params.get_param("web.base.url", "").strip().rstrip("/")
+        if base_url:
+            origins.append(base_url)
+        origins.append("http://localhost:8069")
+        return list(dict.fromkeys(origins))
+
+    def ensure_bucket_cors(self):
+        if not self.is_configured():
+            return []
+        config = self.config()
+        origins = self.cors_origins()
+        try:
+            self._client().put_bucket_cors(
+                Bucket=config["bucket"],
+                CORSConfiguration={
+                    "CORSRules": [{
+                        "AllowedHeaders": ["*"],
+                        "AllowedMethods": ["GET", "PUT", "HEAD", "POST"],
+                        "AllowedOrigins": origins,
+                        "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
+                        "MaxAgeSeconds": 3600,
+                    }],
+                },
             )
-        return self.public_status()
+            return origins
+        except Exception as error:
+            _logger.warning(
+                "Could not apply Company Documentary R2 CORS via API (%s). "
+                "Add the CORS policy manually in Cloudflare for bucket %s. Origins: %s",
+                error,
+                config["bucket"],
+                ", ".join(origins),
+            )
+            return []
 
     def _client(self):
         config = self.config()
@@ -127,5 +170,6 @@ class CloudflareR2Storage:
 
     def check_connection(self):
         config = self.config()
+        origins = self.ensure_bucket_cors()
         self._client().head_bucket(Bucket=config["bucket"])
-        return {"reachable": True, "bucket": config["bucket"]}
+        return {"reachable": True, "bucket": config["bucket"], "cors_origins": origins}

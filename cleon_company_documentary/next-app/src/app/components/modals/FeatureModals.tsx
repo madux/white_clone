@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Link2, LoaderCircle, Mail, RotateCcw, Trash2, X } from "lucide-react";
+import { Check, Copy, Link2, LoaderCircle, Mail, RotateCcw, Settings2, Trash2, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import type { DocumentaryFolder, DocumentaryMedia, DocumentarySettings } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
@@ -156,10 +156,25 @@ export function SettingsPanelModal({
   const query = useDocumentarySettings(true);
   const save = useSaveDocumentarySettings();
   const [form, setForm] = useState<DocumentarySettings | null>(null);
+  const [storageStatus, setStorageStatus] = useState<{
+    configured?: boolean;
+    reachable?: boolean;
+    bucket?: string;
+    endpoint_url?: string;
+  } | null>(null);
+  const [storageLoading, setStorageLoading] = useState(true);
 
   useEffect(() => {
     if (query.data) setForm(query.data);
   }, [query.data]);
+
+  useEffect(() => {
+    api
+      .storageConfig(true)
+      .then(setStorageStatus)
+      .catch(() => setStorageStatus(null))
+      .finally(() => setStorageLoading(false));
+  }, []);
 
   async function handleSave(event: FormEvent) {
     event.preventDefault();
@@ -275,6 +290,36 @@ export function SettingsPanelModal({
             }
           />
         </label>
+        <div className="storage-status-panel">
+          <p className="form-hint">
+            <Settings2 size={14} /> Object storage is provided by CleonHR and
+            managed on the platform. Credentials are never exposed in the app.
+          </p>
+          {storageLoading ? (
+            <div className="loading-state compact">
+              <LoaderCircle className="spin" size={18} />
+            </div>
+          ) : storageStatus ? (
+            <div
+              className={
+                storageStatus.reachable
+                  ? "connection-status connected"
+                  : "connection-status"
+              }
+            >
+              {storageStatus.reachable ? <Check size={15} /> : <Settings2 size={15} />}
+              {storageStatus.reachable
+                ? `Cloudflare R2 connected (${storageStatus.bucket || "bucket configured"}).`
+                : storageStatus.configured
+                  ? "R2 is configured but could not be reached. Check server logs and boto3."
+                  : "Cloudflare R2 is not configured on this server."}
+            </div>
+          ) : (
+            <div className="connection-status">
+              <Settings2 size={15} /> Storage status could not be loaded.
+            </div>
+          )}
+        </div>
         <div className="modal-actions">
           <button type="button" className="secondary-button" onClick={onClose}>
             Cancel

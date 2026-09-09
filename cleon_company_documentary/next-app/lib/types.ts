@@ -26,6 +26,7 @@ export interface DocumentaryFolder {
   media_count: number;
   can_edit: boolean;
   is_pinned?: boolean;
+  favorite?: boolean;
   department_ids?: number[];
   grade_ids?: number[];
   employee_ids?: number[];
@@ -65,6 +66,10 @@ export interface DocumentaryMedia {
   grade_ids?: number[];
   employee_ids?: number[];
   favorite: boolean;
+  like_count: number;
+  liked_by_me: boolean;
+  comment_count: number;
+  owner_name?: string;
   view_count: number;
   unique_viewer_count: number;
   created_at: string;
@@ -96,10 +101,13 @@ export interface DocumentarySubtitle {
 
 export interface DocumentaryComment {
   id: number;
+  media_id?: number;
   body: string;
   user_id: number;
   user_name: string;
   created_at: string;
+  parent_id?: number | false;
+  replies?: DocumentaryComment[];
   mentioned_user_ids?: number[];
   mentioned_names?: string[];
 }

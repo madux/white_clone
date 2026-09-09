@@ -59,10 +59,15 @@ export function useFolders() {
   });
 }
 
-export function useDocuments(folderId?: number | null, includeInactive = false) {
+export function useDocuments(
+  folderId?: number | null,
+  includeInactive = false,
+  enabled = true,
+) {
   return useQuery({
     queryKey: [...QUERY_KEYS.documents(folderId), includeInactive],
     queryFn: () => api.getDocuments(folderId, includeInactive),
+    enabled,
   });
 }
 
@@ -215,10 +220,11 @@ export function useDocumentVersions(documentId?: number | null) {
   });
 }
 
-export function usePolicies() {
+export function usePolicies(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEYS.policies,
     queryFn: api.getPolicies,
+    enabled,
   });
 }
 
@@ -229,10 +235,11 @@ export function usePolicyTypes() {
   });
 }
 
-export function useComplianceTargets() {
+export function useComplianceTargets(enabled = true) {
   return useQuery({
     queryKey: QUERY_KEYS.complianceTargets,
     queryFn: api.getComplianceTargets,
+    enabled,
   });
 }
 

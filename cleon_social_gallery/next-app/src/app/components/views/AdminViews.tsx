@@ -13,6 +13,7 @@ import { EmptyState } from "../shared/EmptyState";
 import { LoadingState } from "../shared/LoadingState";
 import { PageToolbar } from "../shared/PageToolbar";
 import { initials } from "../galleryUtils";
+import { formatStatusLabel } from "@/lib/statusUtils";
 import { QueryError } from "../shared/QueryError";
 import { useGalleryContributions } from "@/hooks/useSocialGallery";
 
@@ -172,7 +173,7 @@ export function PendingAIReviewView({
             <span className="meta-muted">{item.ai_moderation_note}</span>
             <div className="review-flags">
               {(item.ai_moderation_flags || []).map((flag) => (
-                <span key={flag} className="status-badge flagged">{flag}</span>
+                <span key={flag} className="status-badge flagged">{formatStatusLabel(flag)}</span>
               ))}
             </div>
           </div>

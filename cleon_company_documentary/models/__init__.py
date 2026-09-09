@@ -8,3 +8,4 @@ from . import documentary_watch
 from . import documentary_watch_event
 from . import documentary_audit
 from . import documentary_comment
+from . import documentary_like

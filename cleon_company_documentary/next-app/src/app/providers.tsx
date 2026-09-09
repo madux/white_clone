@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import { NavigationHistoryProvider } from "../../hooks/useNavigationHistory";
 
 export function DocumentaryProviders({
   children,
@@ -15,6 +16,8 @@ export function DocumentaryProviders({
       }),
   );
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <NavigationHistoryProvider>{children}</NavigationHistoryProvider>
+    </QueryClientProvider>
   );
 }

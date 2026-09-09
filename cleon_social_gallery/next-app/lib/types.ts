@@ -32,6 +32,8 @@ export interface GalleryAlbum {
   created_by: number;
   created_by_name: string;
   cover_available: boolean;
+  preview_media_id?: number | false;
+  preview_media_type?: "image" | "video" | false;
   visibility: "public" | "private";
   access_scope: string;
   department_ids: number[];
@@ -123,6 +125,32 @@ export interface GallerySettings {
   ai_moderation_enabled: boolean;
 }
 
+export interface DashboardAlbum extends GalleryAlbum {
+  preview_media_id?: number | false;
+}
+
+export interface DashboardActivity {
+  event_type: string;
+  entity_type: string;
+  user_name: string;
+  details: string;
+  album_id?: number | false;
+  media_id?: number | false;
+  create_date: string;
+}
+
+export interface DepartmentEngagement {
+  department: string;
+  uploads: number;
+  likes: number;
+  comments: number;
+  engagement_score: number;
+  rank: number;
+  score_share: number;
+  gap_to_leader: number;
+  is_user_department?: boolean;
+}
+
 export interface GalleryDashboard {
   total_albums: number;
   total_media: number;
@@ -130,11 +158,20 @@ export interface GalleryDashboard {
   video_count: number;
   storage_used: number;
   today_uploads: number;
+  week_uploads: number;
   pending_approvals: number;
-  department_engagement: Array<{ department: string; uploads: number; likes: number; comments: number }>;
+  total_likes: number;
+  total_comments: number;
+  total_views: number;
+  upload_trend: Array<{ date: string; label: string; count: number }>;
+  user_department?: string | false;
+  leaderboard_period?: string;
+  department_engagement: DepartmentEngagement[];
   top_contributors: Array<{ name: string; uploads: number }>;
-  recent_albums: GalleryAlbum[];
-  recent_activity: Array<{ event_type: string; entity_type: string; user_name: string; details: string; create_date: string }>;
+  recent_albums: DashboardAlbum[];
+  trending_media: GalleryMedia[];
+  recent_media: GalleryMedia[];
+  recent_activity: DashboardActivity[];
 }
 
 export interface UploadInit {
@@ -194,4 +231,10 @@ export interface TrustedUser {
   user_id: number;
   user_name: string;
   notes: string;
+}
+
+export interface GalleryUserOption {
+  id: number;
+  name: string;
+  email: string;
 }

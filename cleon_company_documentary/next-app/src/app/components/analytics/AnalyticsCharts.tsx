@@ -22,6 +22,13 @@ export function AnalyticsProgress({
   );
 }
 
+function formatAxisValue(value: number, percentage: boolean) {
+  if (percentage) return `${Math.round(value)}%`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  if (Number.isInteger(value) || value >= 10) return String(Math.round(value));
+  return value.toFixed(1);
+}
+
 export function AnalyticsLineChart({
   points,
   lines,
@@ -33,18 +40,29 @@ export function AnalyticsLineChart({
 }) {
   const width = 760;
   const height = 230;
-  const pad = 25;
+  const pad = { top: 18, right: 25, bottom: 32, left: 52 };
+  const innerWidth = width - pad.left - pad.right;
+  const innerHeight = height - pad.top - pad.bottom;
   const values = lines.flatMap((line) =>
     points.map((point) => Number(point[line.key]) || 0),
   );
   const max = percentage ? 100 : Math.max(...values, 1);
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, index) => (max / tickCount) * index);
+
+  const xAt = (index: number) =>
+    pad.left + (index / Math.max(points.length - 1, 1)) * innerWidth;
+  const yAt = (value: number) =>
+    pad.top + innerHeight - (value / max) * innerHeight;
+
   const pointString = (line: { key: string }) =>
     points
       .map(
         (point, index) =>
-          `${pad + (index / Math.max(points.length - 1, 1)) * (width - pad * 2)},${height - pad - ((Number(point[line.key]) || 0) / max) * (height - pad * 2)}`,
+          `${xAt(index)},${yAt(Number(point[line.key]) || 0)}`,
       )
       .join(" ");
+
   return (
     <div className="line-chart">
       <svg
@@ -52,12 +70,42 @@ export function AnalyticsLineChart({
         role="img"
         aria-label="Analytics trend chart"
       >
+        {ticks.map((tick) => {
+          const y = yAt(tick);
+          return (
+            <g key={tick}>
+              <line
+                x1={pad.left}
+                x2={width - pad.right}
+                y1={y}
+                y2={y}
+                stroke="#eee6ed"
+                strokeDasharray={tick === 0 ? undefined : "4 4"}
+              />
+              <text
+                x={pad.left - 8}
+                y={y + 4}
+                textAnchor="end"
+                className="chart-y-label"
+              >
+                {formatAxisValue(tick, percentage)}
+              </text>
+            </g>
+          );
+        })}
         <line
-          x1={pad}
-          x2={width - pad}
-          y1={height - pad}
-          y2={height - pad}
-          stroke="#eee6ed"
+          x1={pad.left}
+          x2={width - pad.right}
+          y1={pad.top + innerHeight}
+          y2={pad.top + innerHeight}
+          stroke="#ddd5dc"
+        />
+        <line
+          x1={pad.left}
+          x2={pad.left}
+          y1={pad.top}
+          y2={pad.top + innerHeight}
+          stroke="#ddd5dc"
         />
         {lines.map((line) => (
           <polyline
@@ -70,6 +118,19 @@ export function AnalyticsLineChart({
             strokeLinejoin="round"
           />
         ))}
+        {lines.map((line) =>
+          points.map((point, index) => (
+            <circle
+              key={`${line.key}-${index}`}
+              cx={xAt(index)}
+              cy={yAt(Number(point[line.key]) || 0)}
+              r="3.5"
+              fill="#fff"
+              stroke={line.color}
+              strokeWidth="2"
+            />
+          )),
+        )}
       </svg>
       <div className="chart-axis">
         <span>{points[0]?.date || ""}</span>

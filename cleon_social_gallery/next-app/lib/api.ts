@@ -10,6 +10,7 @@ import type {
   GallerySettings,
   GalleryTag,
   LayoutMode,
+  GalleryUserOption,
   TrustedUser,
   UploadHistoryEntry,
   UploadInit,
@@ -229,6 +230,10 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: TrustedUser[] | { id: number } | { removed: boolean }; message?: string }>("/api/social-gallery/trusted-users", { action, ...payload }));
   },
 
+  async searchUsers(search = "", limit = 20) {
+    return unwrap(await rpc<{ success: boolean; data: GalleryUserOption[]; message?: string }>("/api/social-gallery/users/search", { search, limit }));
+  },
+
   async tags(action = "list", payload: Record<string, unknown> = {}) {
     return unwrap(await rpc<{ success: boolean; data: GalleryTag[] | GalleryTag; message?: string }>("/api/social-gallery/tags", { action, ...payload }));
   },
@@ -249,8 +254,8 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: Record<string, unknown>; message?: string }>("/api/social-gallery/export/brand", { album_ids }));
   },
 
-  async storageConfig(action = "read", values?: Record<string, unknown>) {
-    return unwrap(await rpc<{ success: boolean; data: Record<string, unknown>; message?: string }>("/api/social-gallery/storage/config", { action, values }));
+  async storageConfig(check = false) {
+    return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean; provider?: string; region?: string }; message?: string }>("/api/social-gallery/storage/config", { check }));
   },
 };
 

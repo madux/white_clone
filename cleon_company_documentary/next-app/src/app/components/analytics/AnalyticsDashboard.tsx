@@ -1,7 +1,7 @@
 "use client";
 
-import { Download, LoaderCircle, ShieldCheck, X } from "lucide-react";
-import { useState } from "react";
+import { Download, LoaderCircle, Maximize2, Minimize2, ShieldCheck, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import type { DocumentaryFolder } from "../../../../lib/types";
 import { useDocumentaryAnalytics } from "../../../../hooks/useDocumentary";
 import {
@@ -21,6 +21,26 @@ export function AnalyticsDashboard({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<AnalyticsTab>("overview");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setIsFullscreen(false);
+    onClose();
+  }, [onClose]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (isFullscreen) {
+        event.preventDefault();
+        setIsFullscreen(false);
+        return;
+      }
+      handleClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [handleClose, isFullscreen]);
   const [dateFrom, setDateFrom] = useState(() =>
     new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10),
   );
@@ -82,7 +102,7 @@ export function AnalyticsDashboard({
   }
 
   return (
-    <div className="analytics-backdrop">
+    <div className={`analytics-backdrop${isFullscreen ? " is-fullscreen" : ""}`}>
       <section className="analytics-shell" aria-label="Library analytics">
         <header className="analytics-header">
           <div>
@@ -93,13 +113,25 @@ export function AnalyticsDashboard({
               company needs next.
             </p>
           </div>
-          <button
-            className="modal-close"
-            onClick={onClose}
-            aria-label="Close analytics"
-          >
-            <X size={18} />
-          </button>
+          <div className="modal-header-actions">
+            <button
+              type="button"
+              className="modal-icon-button"
+              onClick={() => setIsFullscreen((current) => !current)}
+              aria-label={isFullscreen ? "Exit full screen" : "Maximize full screen"}
+              title={isFullscreen ? "Exit full screen" : "Maximize full screen"}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+            <button
+              type="button"
+              className="modal-close"
+              onClick={handleClose}
+              aria-label="Close analytics"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </header>
         <div className="analytics-toolbar">
           <label>

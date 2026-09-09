@@ -93,6 +93,10 @@ class CompanyDocumentaryMedia(models.Model):
     )
     subtitle_ids = fields.One2many("company.documentary.subtitle", "media_id")
     watch_progress_ids = fields.One2many("company.documentary.watch", "media_id")
+    like_ids = fields.One2many("company.documentary.like", "media_id")
+    comment_ids = fields.One2many("company.documentary.comment", "media_id")
+    like_count = fields.Integer(compute="_compute_like_count", store=True)
+    comment_count = fields.Integer(compute="_compute_comment_count", store=True)
     view_count = fields.Integer(compute="_compute_engagement", store=True)
     unique_viewer_count = fields.Integer(compute="_compute_engagement", store=True)
     approval_status = fields.Selection(
@@ -118,6 +122,16 @@ class CompanyDocumentaryMedia(models.Model):
     approver_comment = fields.Text()
     approved_by_id = fields.Many2one("res.users", readonly=True)
     approved_at = fields.Datetime(readonly=True)
+
+    @api.depends("like_ids")
+    def _compute_like_count(self):
+        for media in self:
+            media.like_count = len(media.like_ids)
+
+    @api.depends("comment_ids", "comment_ids.active")
+    def _compute_comment_count(self):
+        for media in self:
+            media.comment_count = len(media.comment_ids.filtered("active"))
 
     @api.depends("watch_progress_ids", "watch_progress_ids.view_count", "watch_progress_ids.user_id")
     def _compute_engagement(self):

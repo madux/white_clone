@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Grid3X3, LayoutGrid, List, Upload } from "lucide-react";
+import { Grid3X3, Heart, LayoutGrid, List, MessageCircle, Upload } from "lucide-react";
 import type { GalleryAlbum, GalleryMedia, LayoutMode } from "@/lib/types";
 import { formatBytes, formatDate } from "@/lib/api";
 import { MediaThumb, StatusBadge } from "../shared/MediaThumb";
 import UploadModal from "../modals/UploadModal";
-import { BackButton } from "../shared/BackButton";
 import { EmptyState } from "../shared/EmptyState";
 import { LoadingGrid } from "../shared/LoadingGrid";
 import { PageToolbar } from "../shared/PageToolbar";
@@ -122,7 +121,13 @@ export default function GalleryFeedView({
                 }
               }}
             >
-              <MediaThumb media={item} />
+              <div className="media-thumb-wrap">
+                <MediaThumb media={item} />
+                <div className="social-card-overlay">
+                  <span className="social-card-stat"><Heart size={18} fill="currentColor" /> {item.like_count}</span>
+                  <span className="social-card-stat"><MessageCircle size={18} /> {item.comment_count}</span>
+                </div>
+              </div>
               <div className="media-copy">
                 <div className="media-title-row">
                   <span className="media-title">{item.display_name}</span>
@@ -154,7 +159,7 @@ export default function GalleryFeedView({
 }
 
 export function AlbumDetailView({
-  album, media, loading, layout, onLayoutChange, onOpenMedia, onBack, onRefresh, onUpload, fromDashboard,
+  album, media, loading, layout, onLayoutChange, onOpenMedia, onRefresh, onUpload,
 }: {
   album: GalleryAlbum;
   media: GalleryMedia[];
@@ -162,14 +167,11 @@ export function AlbumDetailView({
   layout: LayoutMode;
   onLayoutChange: (layout: LayoutMode) => void;
   onOpenMedia: (media: GalleryMedia) => void;
-  onBack: () => void;
   onRefresh: () => void;
   onUpload?: () => void;
-  fromDashboard?: boolean;
 }) {
   return (
     <div>
-      <BackButton label={fromDashboard ? "Back to Dashboard" : "Back to Albums"} onClick={onBack} />
       <div className="filter-toolbar">
         <p className="album-meta-line">
           {album.description || "No description"} · {album.photo_count} photos · {album.video_count} videos · {formatBytes(album.total_size)}

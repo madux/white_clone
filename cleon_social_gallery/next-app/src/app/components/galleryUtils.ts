@@ -28,3 +28,32 @@ export function relativeTime(value: string) {
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
 }
+
+export function greeting(name?: string) {
+  const hour = new Date().getHours();
+  const salutation = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  return name ? `${salutation}, ${name.split(" ")[0]}` : salutation;
+}
+
+export function formatActivityMessage(event: {
+  event_type: string;
+  entity_type: string;
+  details?: string;
+}) {
+  const entity = event.entity_type === "album" ? "an album" : event.entity_type === "media" ? "media" : "a comment";
+  const messages: Record<string, string> = {
+    created: `created ${entity}`,
+    uploaded: "uploaded new media",
+    modified: `updated ${entity}`,
+    deleted: `removed ${entity}`,
+    restored: `restored ${entity}`,
+    approved: "approved media",
+    rejected: "rejected media",
+    reported: "reported content",
+    shared: "shared content",
+    exported: "exported brand content",
+  };
+  const action = messages[event.event_type] || event.event_type;
+  if (event.details) return `${action} — ${event.details}`;
+  return action;
+}

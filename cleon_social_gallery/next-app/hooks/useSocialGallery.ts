@@ -21,6 +21,7 @@ export const galleryKeys = {
   comments: (mediaId: number) => ["social-gallery", "comments", mediaId] as const,
   tags: ["social-gallery", "tags"] as const,
   trustedUsers: ["social-gallery", "trusted-users"] as const,
+  userSearch: (search: string) => ["social-gallery", "user-search", search] as const,
 };
 
 export function useGalleryUser() {
@@ -123,6 +124,14 @@ export function useGalleryTrustedUsers(enabled = true) {
   });
 }
 
+export function useGalleryUserSearch(search = "", enabled = true) {
+  return useQuery({
+    queryKey: galleryKeys.userSearch(search),
+    queryFn: () => api.searchUsers(search),
+    enabled,
+  });
+}
+
 export function useGalleryComments(mediaId: number) {
   return useQuery({
     queryKey: galleryKeys.comments(mediaId),
@@ -179,17 +188,26 @@ export function useGalleryMutations() {
     postComment: useMutation({
       mutationFn: (payload: { media_id: number; body: string; parent_id?: number }) =>
         api.comments(payload.media_id, "create", payload),
-      onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) }),
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) });
+        queryClient.invalidateQueries({ queryKey: ["social-gallery", "media"] });
+      },
     }),
     editComment: useMutation({
       mutationFn: (payload: { media_id: number; comment_id: number; body: string }) =>
         api.comments(payload.media_id, "edit", payload),
-      onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) }),
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) });
+        queryClient.invalidateQueries({ queryKey: ["social-gallery", "media"] });
+      },
     }),
     deleteComment: useMutation({
       mutationFn: (payload: { media_id: number; comment_id: number }) =>
         api.comments(payload.media_id, "delete", payload),
-      onSuccess: (_, vars) => queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) }),
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: galleryKeys.comments(vars.media_id) });
+        queryClient.invalidateQueries({ queryKey: ["social-gallery", "media"] });
+      },
     }),
     toggleLike: useMutation({
       mutationFn: (media_id: number) => api.likes(media_id),
@@ -220,19 +238,6 @@ export function useGalleryMutations() {
       onSuccess: () => queryClient.invalidateQueries({ queryKey: galleryKeys.tags }),
     }),
   };
-}
-
-export function applyGalleryTheme(themeColor?: string) {
-  const BRAND_PINK = "#e83e8c";
-  const LEGACY_PURPLE = new Set(["#9333ea", "#6e5be7", "#7c3aed", "#71639e", "#714b67"]);
-  const color = !themeColor || LEGACY_PURPLE.has(themeColor.toLowerCase()) ? BRAND_PINK : themeColor;
-  const root = document.querySelector(".gallery-app") as HTMLElement | null;
-  if (!root) return;
-  if (color.toLowerCase() === BRAND_PINK) {
-    root.style.removeProperty("--pink");
-  } else {
-    root.style.setProperty("--pink", color);
-  }
 }
 
 export function isValidLayout(value?: string): value is LayoutMode {

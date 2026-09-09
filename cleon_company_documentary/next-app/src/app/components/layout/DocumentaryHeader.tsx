@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Menu, Search } from "lucide-react";
+import { BackButton } from "../BackButton";
 import { initials } from "../documentaryUtils";
 
 export function DocumentaryHeader({
@@ -25,6 +26,7 @@ export function DocumentaryHeader({
       >
         <Menu size={20} />
       </button>
+      <BackButton variant="header" />
       <div className="header-wordmark">
         Cleon<span>HR</span>
       </div>

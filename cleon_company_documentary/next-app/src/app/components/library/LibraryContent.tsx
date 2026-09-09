@@ -5,11 +5,9 @@ import {
   ArrowLeft,
   Check,
   Filter,
-  FolderOpen,
   LayoutGrid,
-  Library,
   List,
-  Menu,
+  Pin,
   ShieldCheck,
   Star,
   Trash2,
@@ -23,8 +21,6 @@ import {
   EmptyState,
   LoadingState,
 } from "./LibraryCards";
-import { scopeLabel } from "../documentaryUtils";
-
 type MediaAction = "favorite" | "archive" | "delete";
 
 export function LibraryContent({
@@ -40,12 +36,13 @@ export function LibraryContent({
   batchTargetFolder,
   mediaLoading,
   visibleMedia,
+  uploadProgressByMediaId,
   onCreateFolder,
   onUpload,
   onViewAll,
   onSelectFolder,
   onPinFolder,
-  onBackToHome,
+  onFavoriteFolder,
   onFolderAction,
   onEditFolder,
   onSelectMedia,
@@ -73,12 +70,13 @@ export function LibraryContent({
   batchTargetFolder: string;
   mediaLoading: boolean;
   visibleMedia: DocumentaryMedia[];
+  uploadProgressByMediaId?: Record<number, number>;
   onCreateFolder: () => void;
   onUpload: () => void;
   onViewAll: () => void;
   onSelectFolder: (folder: DocumentaryFolder) => void;
   onPinFolder: (folder: DocumentaryFolder) => void;
-  onBackToHome: () => void;
+  onFavoriteFolder: (folder: DocumentaryFolder) => void;
   onFolderAction: (id: number, action: "archive" | "delete") => void;
   onEditFolder: (folder: DocumentaryFolder) => void;
   onSelectMedia: (id: number) => void;
@@ -129,34 +127,19 @@ export function LibraryContent({
           </div>
         </section>
       )}
-      {(selectedFolder || showLibraryOverview) && libraryView !== "recent" && (
+      {showLibraryOverview && (
         <section className="section-block">
           <div className="section-heading">
             <div>
-              <h2>{selectedFolder ? "Folder contents" : "Folders"}</h2>
-              <p>{selectedFolder ? `${selectedFolder.media_count} videos in this space` : "A simple, calm place to keep every story together."}</p>
+              <h2>Folders</h2>
+              <p>A simple, calm place to keep every story together.</p>
             </div>
-            {selectedFolder && (
-              <button className="text-button" onClick={onBackToHome}>
-                <ArrowLeft size={14} /> All folders
-              </button>
-            )}
           </div>
           <div className="folder-grid">
-            {!selectedFolder && folders.map((folder) => (
+            {folders.map((folder) => (
               <FolderCard key={folder.id} folder={folder} canManage={canManage} onOpen={() => onSelectFolder(folder)} onAction={onFolderAction} onEdit={() => onEditFolder(folder)} onPin={() => onPinFolder(folder)} />
             ))}
-            {selectedFolder && (
-              <div className="folder-context-card">
-                <div className="folder-icon large"><FolderOpen size={25} /></div>
-                <div>
-                  <strong>{selectedFolder.name}</strong>
-                  <span>{scopeLabel(selectedFolder.access_scope)} · {selectedFolder.media_count} videos</span>
-                </div>
-                <button className="icon-button" onClick={onBackToHome} aria-label="Go back"><ArrowLeft size={17} /></button>
-              </div>
-            )}
-            {!selectedFolder && !folders.length && (
+            {!folders.length && (
               <EmptyState title="No folders yet" description="A folder gives every upload a clear home." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
             )}
           </div>
@@ -170,9 +153,33 @@ export function LibraryContent({
               {mediaSectionHeading.description ? <p>{mediaSectionHeading.description}</p> : null}
             </div>
           ) : <div />}
-          <div className="view-toggle">
-            <button className={layoutMode === "grid" ? "active" : ""} onClick={() => onLayoutChange("grid")} aria-label="Grid view"><LayoutGrid size={16} /></button>
-            <button className={layoutMode === "list" ? "active" : ""} onClick={() => onLayoutChange("list")} aria-label="List view"><List size={16} /></button>
+          <div className="section-heading-actions">
+            {selectedFolder && (
+              <div className="folder-quick-actions">
+                <button
+                  type="button"
+                  className={`folder-quick-action${selectedFolder.favorite ? " active" : ""}`}
+                  onClick={() => onFavoriteFolder(selectedFolder)}
+                  aria-label={selectedFolder.favorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Star size={15} fill={selectedFolder.favorite ? "currentColor" : "none"} />
+                  Favorite
+                </button>
+                <button
+                  type="button"
+                  className={`folder-quick-action${selectedFolder.is_pinned ? " active" : ""}`}
+                  onClick={() => onPinFolder(selectedFolder)}
+                  aria-label={selectedFolder.is_pinned ? "Unpin folder" : "Pin folder"}
+                >
+                  <Pin size={15} fill={selectedFolder.is_pinned ? "currentColor" : "none"} />
+                  Pin
+                </button>
+              </div>
+            )}
+            <div className="view-toggle">
+              <button className={layoutMode === "grid" ? "active" : ""} onClick={() => onLayoutChange("grid")} aria-label="Grid view"><LayoutGrid size={16} /></button>
+              <button className={layoutMode === "list" ? "active" : ""} onClick={() => onLayoutChange("list")} aria-label="List view"><List size={16} /></button>
+            </div>
           </div>
         </div>
         {showFilters && (
@@ -218,7 +225,7 @@ export function LibraryContent({
         <div className={layoutMode === "list" ? "media-list" : "media-grid"}>
           {mediaLoading && <LoadingState />}
           {!mediaLoading && visibleMedia.map((item, index) => (
-            <MediaCard key={item.id} media={item} index={index} layoutMode={layoutMode} canManage={canManage} selected={selectedMediaIds.includes(item.id)} onOpen={() => onOpenMedia(item)} onEdit={() => onEditMedia(item)} onShare={() => onShareMedia(item)} onSelect={() => onSelectMedia(item.id)} onAction={onMediaAction} />
+            <MediaCard key={item.id} media={item} index={index} layoutMode={layoutMode} canManage={canManage} selected={selectedMediaIds.includes(item.id)} uploadProgress={uploadProgressByMediaId?.[item.id]} onOpen={() => onOpenMedia(item)} onEdit={() => onEditMedia(item)} onShare={() => onShareMedia(item)} onSelect={() => onSelectMedia(item.id)} onAction={onMediaAction} />
           ))}
           {!mediaLoading && !visibleMedia.length && (
             <EmptyState

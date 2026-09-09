@@ -1,4 +1,5 @@
-from odoo import fields, http
+from odoo import _, fields, http
+from odoo.exceptions import AccessError
 from odoo.http import request
 
 
@@ -218,15 +219,23 @@ class ComplianceController(http.Controller):
         csrf=False,
     )
     def policies(self, **kwargs):
-        domain = []
-        if kwargs.get("active_only", True):
-            domain.append(("active", "=", True))
-        policies = request.env["doc.compliance.policy"].search(domain)
-        return {
-            "success": True,
-            "count": len(policies),
-            "data": [self._policy_data(policy) for policy in policies],
-        }
+        try:
+            domain = []
+            if kwargs.get("active_only", True):
+                domain.append(("active", "=", True))
+            policies = request.env["doc.compliance.policy"].search(domain)
+            return {
+                "success": True,
+                "count": len(policies),
+                "data": [self._policy_data(policy) for policy in policies],
+            }
+        except AccessError:
+            return {
+                "success": False,
+                "message": _(
+                    "Document access is not configured for your account. Contact your administrator."
+                ),
+            }
 
     @http.route(
         "/api/compliance/policies/<int:policy_id>",

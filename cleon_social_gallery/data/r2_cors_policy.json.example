@@ -1,0 +1,12 @@
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:8069",
+      "https://your-odoo-domain.com"
+    ],
+    "AllowedMethods": ["GET", "PUT", "HEAD", "POST"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
+    "MaxAgeSeconds": 3600
+  }
+]

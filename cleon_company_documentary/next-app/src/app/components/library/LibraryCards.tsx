@@ -12,6 +12,8 @@ import {
   Plus,
   Settings2,
   Share2,
+  Heart,
+  MessageCircle,
   Star,
   Trash2,
   Users,
@@ -22,14 +24,7 @@ import type { DocumentaryFolder, DocumentaryMedia } from "../../../../lib/types"
 import { api } from "../../../../lib/api";
 import type { LayoutMode } from "./libraryTypes";
 import { formatBytes, formatDuration, scopeLabel } from "../documentaryUtils";
-
-function statusBadge(media: DocumentaryMedia) {
-  if (media.processing_state !== "ready") return media.processing_state;
-  if (media.approval_status === "pending") return "pending review";
-  if (media.approval_status === "scheduled") return "scheduled";
-  if (media.approval_status === "rejected") return "rejected";
-  return null;
-}
+import { mediaStatusInfo } from "../../../../lib/statusUtils";
 
 export function FeaturedFolder({
   folder,
@@ -116,6 +111,7 @@ export function MediaCard({
   layoutMode,
   canManage,
   selected,
+  uploadProgress,
   onSelect,
   onEdit,
   onOpen,
@@ -127,6 +123,7 @@ export function MediaCard({
   layoutMode: LayoutMode;
   canManage: boolean;
   selected: boolean;
+  uploadProgress?: number;
   onSelect: () => void;
   onEdit: () => void;
   onOpen: () => void;
@@ -135,8 +132,17 @@ export function MediaCard({
 }) {
   const palette = ["rose", "lilac", "peach", "berry"][index % 4];
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const badge = statusBadge(media);
+  const badge = mediaStatusInfo(media);
   const progress = media.watch_progress;
+  const isUploading =
+    media.processing_state === "uploading" ||
+    (uploadProgress !== undefined && uploadProgress < 100);
+  const uploadPct = uploadProgress ?? (media.processing_state === "uploading" ? 0 : undefined);
+
+  const handleOpen = () => {
+    if (isUploading) return;
+    onOpen();
+  };
 
   useEffect(() => {
     if (!media.thumbnail_available) return () => undefined;
@@ -151,11 +157,18 @@ export function MediaCard({
         {canManage && (
           <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
         )}
-        <button className="media-list-main" onClick={onOpen}>
-          <span className={`media-type-badge ${media.processing_state}`}>{badge || "ready"}</span>
+        <button className="media-list-main" onClick={handleOpen} disabled={isUploading}>
+          <span className={`media-type-badge ${badge?.variant || "approved"}`}>{badge?.label || "Ready"}</span>
           <strong>{media.title}</strong>
           <span>{media.folder_name} · {formatDuration(media.duration_seconds)} · {formatBytes(media.file_size)}</span>
-          {progress && !progress.completed && (
+          {isUploading && uploadPct !== undefined && (
+            <div className="media-upload-bar list">
+              <div className="progress-track">
+                <span style={{ width: `${uploadPct}%` }} />
+              </div>
+            </div>
+          )}
+          {progress && !progress.completed && !isUploading && (
             <span className="continue-meta"><Clock3 size={13} /> {Math.round(progress.completion_percent)}% watched</span>
           )}
         </button>
@@ -171,30 +184,47 @@ export function MediaCard({
   return (
     <article className={`media-card ${selected ? "is-selected" : ""}`}>
       <button
-        className={`media-preview ${palette} ${thumbnailUrl ? "has-thumbnail" : ""}`}
+        className={`media-preview ${palette} ${thumbnailUrl ? "has-thumbnail" : ""}${isUploading ? " is-uploading" : ""}`}
         style={thumbnailUrl ? { backgroundImage: `linear-gradient(#24162a55,#24162a55), url(${thumbnailUrl})` } : undefined}
-        onClick={onOpen}
+        onClick={handleOpen}
+        disabled={isUploading}
       >
+        {isUploading && (
+          <span className="media-upload-overlay">
+            <LoaderCircle className="spin" size={28} />
+          </span>
+        )}
         {canManage && (
           <span className="media-select" onClick={(event) => { event.stopPropagation(); onSelect(); }}>
             <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
           </span>
         )}
-        {badge && <span className={`status-badge ${badge.replace(" ", "-")}`}>{badge}</span>}
         <span className="media-type"><Video size={14} /> {media.mime_type.split("/")[1]?.toUpperCase() || "VIDEO"}</span>
         <span className="play-button"><Play size={19} fill="currentColor" /></span>
+        <div className="social-card-overlay">
+          <span className="social-card-stat"><Heart size={16} fill="currentColor" /> {media.like_count || 0}</span>
+          <span className="social-card-stat"><MessageCircle size={16} /> {media.comment_count || 0}</span>
+        </div>
         <span className="duration">{formatDuration(media.duration_seconds)}</span>
-        {progress && !progress.completed && (
-          <span className="progress-chip">{Math.round(progress.completion_percent)}%</span>
-        )}
       </button>
       <div className="media-copy">
+        {(badge || (progress && !progress.completed && !isUploading)) && (
+          <div className="media-card-head">
+            {badge ? <span className={`status-badge ${badge.variant}`}>{badge.label}</span> : <span />}
+            {progress && !progress.completed && !isUploading && (
+              <span className="watch-progress-chip">
+                <Clock3 size={12} />
+                {Math.round(progress.completion_percent)}% watched
+              </span>
+            )}
+          </div>
+        )}
         <div className="media-meta">
           <span>{formatBytes(media.file_size)}</span>
           <span>Updated {new Date(media.updated_at || media.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
         </div>
         <div className="media-title-row">
-          <button className="media-title" onClick={onOpen}>{media.title}</button>
+          <button className="media-title" onClick={handleOpen} disabled={isUploading}>{media.title}</button>
           <button className="icon-button compact" onClick={() => onAction(media, "favorite")} aria-label="Toggle favorite">
             <Star size={16} fill={media.favorite ? "currentColor" : "none"} />
           </button>
@@ -208,7 +238,18 @@ export function MediaCard({
             </button>
           </div>
         </div>
-        {progress && !progress.completed && (
+        {isUploading && uploadPct !== undefined && (
+          <div className="media-upload-bar">
+            <div className="progress-label">
+              <span>Uploading</span>
+              <strong>{uploadPct}%</strong>
+            </div>
+            <div className="progress-track">
+              <span style={{ width: `${uploadPct}%` }} />
+            </div>
+          </div>
+        )}
+        {progress && !progress.completed && !isUploading && (
           <div className="watch-progress-bar"><span style={{ width: `${progress.completion_percent}%` }} /></div>
         )}
       </div>

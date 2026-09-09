@@ -161,8 +161,28 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: AudienceOptions; message?: string }>("/api/company-documentary/audience", { search }));
   },
 
-  async comments(media_id: number, action: "list" | "create" | "delete" = "list", body?: string, comment_id?: number) {
-    return unwrap(await rpc<{ success: boolean; data: DocumentaryComment[]; message?: string }>("/api/company-documentary/comments", { media_id, action, body, comment_id }));
+  async comments(
+    media_id: number,
+    action: "list" | "create" | "delete" = "list",
+    body?: string,
+    comment_id?: number,
+    parent_id?: number,
+  ) {
+    return unwrap(
+      await rpc<{ success: boolean; data: DocumentaryComment[] | DocumentaryComment | { deleted: boolean }; message?: string }>(
+        "/api/company-documentary/comments",
+        { media_id, action, body, comment_id, parent_id },
+      ),
+    );
+  },
+
+  async likes(media_id: number, action: "toggle" | "status" = "toggle") {
+    return unwrap(
+      await rpc<{ success: boolean; data: { liked: boolean; like_count: number }; message?: string }>(
+        "/api/company-documentary/likes",
+        { media_id, action },
+      ),
+    );
   },
 
   async subtitle(media_id: number, payload: { name: string; language: string; format: "vtt" | "srt"; filename: string; mime_type: string }) {
@@ -205,6 +225,10 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/pin", payload));
   },
 
+  async favoriteFolder(payload: { id: number; favorite: boolean }) {
+    return unwrap(await rpc<{ success: boolean; data: DocumentaryFolder; message?: string }>("/api/company-documentary/folders/favorite", payload));
+  },
+
   async mediaApproval(payload: { id: number; action: "approve" | "reject" | "submit" | "cancel_schedule"; comment?: string; publish_at?: string }) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryMedia; message?: string }>("/api/company-documentary/media/approval", payload));
   },
@@ -221,8 +245,8 @@ export const api = {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryAnalyticsDashboard; message?: string }>("/api/company-documentary/analytics/summary", filters));
   },
 
-  async storageConfig(values: Record<string, unknown> = {}, check = false) {
-    return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean }; message?: string }>("/api/company-documentary/storage/config", { ...values, check }));
+  async storageConfig(check = false) {
+    return unwrap(await rpc<{ success: boolean; data: { configured: boolean; reachable?: boolean; bucket?: string; endpoint_url?: string; credentials_present?: boolean; provider?: string; region?: string }; message?: string }>("/api/company-documentary/storage/config", { check }));
   },
 
   async initiateUpload(payload: {

@@ -9,6 +9,7 @@ import EditAlbumModal from "../modals/EditAlbumModal";
 import { EmptyState } from "../shared/EmptyState";
 import { LoadingGrid } from "../shared/LoadingGrid";
 import { PageToolbar } from "../shared/PageToolbar";
+import { AlbumCover } from "../shared/AlbumCover";
 import { StatusBadge } from "../shared/StatusBadge";
 
 interface AlbumsViewProps {
@@ -89,9 +90,11 @@ export default function AlbumsView({
                 }
               }}
             >
-              <div className="sg-album-cover">
-                <Images size={32} />
-              </div>
+              <AlbumCover
+                mediaId={album.preview_media_id}
+                mediaType={album.preview_media_type || undefined}
+                name={album.name}
+              />
               <div className="album-card-body">
                 <div className="album-title-row">
                   <strong>{album.name}</strong>

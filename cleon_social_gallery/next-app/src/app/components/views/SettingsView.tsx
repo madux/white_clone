@@ -2,20 +2,13 @@
 
 import { useEffect, useState } from "react";
 import {
-  Bell, Cloud, Download, LoaderCircle, Palette, Settings2, SlidersHorizontal,
+  Bell, Cloud, Download, LoaderCircle, Settings2, SlidersHorizontal,
 } from "lucide-react";
 import type { GallerySettings } from "@/lib/types";
-import { useGalleryMutations, useGalleryTrustedUsers, applyGalleryTheme } from "@/hooks/useSocialGallery";
+import { useGalleryMutations, useGalleryTrustedUsers } from "@/hooks/useSocialGallery";
 import { api } from "@/lib/api";
 import { LoadingState } from "../shared/LoadingState";
-
-const BRAND_PINK = "#e83e8c";
-const LEGACY_PURPLE = new Set(["#9333ea", "#6e5be7", "#7c3aed", "#71639e", "#714b67"]);
-
-function resolveThemeColor(color?: string) {
-  if (!color || LEGACY_PURPLE.has(color.toLowerCase())) return BRAND_PINK;
-  return color;
-}
+import { UserSearchPicker } from "../shared/UserSearchPicker";
 
 export default function SettingsView({
   settings, loading, albums = [], onRefresh, onError,
@@ -29,33 +22,24 @@ export default function SettingsView({
   const { saveSettings, exportBrand, trustedUsers } = useGalleryMutations();
   const trustedQuery = useGalleryTrustedUsers(!!settings);
   const [form, setForm] = useState<Partial<GallerySettings>>({});
-  const [storage, setStorage] = useState<Record<string, unknown>>({});
+  const [storage, setStorage] = useState<{
+    configured?: boolean;
+    reachable?: boolean;
+    bucket?: string;
+    provider?: string;
+  }>({});
   const [selectedAlbums, setSelectedAlbums] = useState<number[]>([]);
   const [exporting, setExporting] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [trustedUserId, setTrustedUserId] = useState("");
+  const [addingTrusted, setAddingTrusted] = useState(false);
 
   useEffect(() => {
-    if (settings) setForm({ ...settings, theme_color: resolveThemeColor(settings.theme_color) });
+    if (settings) setForm({ ...settings });
   }, [settings]);
 
   useEffect(() => {
-    api.storageConfig().then(setStorage).catch(() => {});
+    api.storageConfig(true).then(setStorage).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    const root = document.querySelector(".gallery-app") as HTMLElement | null;
-    if (!root) return undefined;
-    const color = resolveThemeColor(form.theme_color);
-    if (color.toLowerCase() === BRAND_PINK) {
-      root.style.removeProperty("--pink");
-    } else {
-      root.style.setProperty("--pink", color);
-    }
-    return () => {
-      root.style.removeProperty("--pink");
-    };
-  }, [form.theme_color]);
 
   if (loading || !settings) return <LoadingState message="Loading settings…" />;
 
@@ -65,7 +49,6 @@ export default function SettingsView({
     setSaving(true);
     try {
       await saveSettings.mutateAsync(form);
-      applyGalleryTheme(form.theme_color);
       onRefresh();
     } catch (err) {
       onError?.(err instanceof Error ? err.message : "Failed to save settings");
@@ -121,13 +104,6 @@ export default function SettingsView({
               <option value="list">List View</option>
               <option value="masonry">Masonry Layout</option>
             </select>
-          </label>
-          <label className="field">
-            <span className="label">Theme Color</span>
-            <div className="contributor-row">
-              <Palette size={16} />
-              <input type="color" value={resolveThemeColor(form.theme_color)} onChange={(e) => update("theme_color", e.target.value)} />
-            </div>
           </label>
           <label className="field">
             <span className="label">Default Destination Album</span>
@@ -236,23 +212,20 @@ export default function SettingsView({
             </div>
           ))}
         </div>
-        <div className="contributor-row">
-          <input
-            type="number"
-            min={1}
-            placeholder="User ID"
-            value={trustedUserId}
-            onChange={(e) => setTrustedUserId(e.target.value)}
-          />
-          <button
-            type="button"
-            className="secondary-button small"
-            disabled={!trustedUserId}
-            onClick={() => trustedUsers.mutateAsync({ action: "add", user_id: Number(trustedUserId) }).then(() => setTrustedUserId("")).catch((err) => onError?.(err instanceof Error ? err.message : "Failed"))}
-          >
-            Add trusted user
-          </button>
-        </div>
+        <UserSearchPicker
+          disabled={addingTrusted}
+          excludeUserIds={(trustedQuery.data || []).map((trusted) => trusted.user_id)}
+          onSelect={async (user) => {
+            setAddingTrusted(true);
+            try {
+              await trustedUsers.mutateAsync({ action: "add", user_id: user.id });
+            } catch (err) {
+              onError?.(err instanceof Error ? err.message : "Failed to add trusted user");
+            } finally {
+              setAddingTrusted(false);
+            }
+          }}
+        />
       </div>
 
       <div className="settings-section">
@@ -263,10 +236,18 @@ export default function SettingsView({
             <h2>Cloud connection</h2>
           </div>
         </div>
-        <p className="meta-muted">Provider: {String(storage.provider || "cloudflare_r2")}</p>
-        <p className="meta-muted">Bucket: {String(storage.bucket || "—")}</p>
-        <span className={`status-badge ${storage.configured ? "success" : "pending"}`}>
-          {storage.configured ? "Configured" : "Not configured"}
+        <p className="meta-muted">
+          Object storage is provided by CleonHR and managed on the platform.
+          Credentials are never exposed in the app.
+        </p>
+        <p className="meta-muted">Provider: {storage.provider || "cloudflare_r2"}</p>
+        <p className="meta-muted">Bucket: {storage.bucket || "—"}</p>
+        <span className={`status-badge ${storage.reachable ? "success" : storage.configured ? "pending" : "pending"}`}>
+          {storage.reachable
+            ? "Connected"
+            : storage.configured
+              ? "Configured (connection check failed)"
+              : "Not configured"}
         </span>
       </div>
 

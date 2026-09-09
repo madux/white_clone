@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import math
 import re
 import uuid
@@ -11,6 +12,7 @@ from odoo.http import request
 
 from .storage import CloudflareR2Storage
 
+_logger = logging.getLogger(__name__)
 
 MANAGER_GROUP = "cleon_social_gallery.group_social_gallery_manager"
 ADMIN_GROUP = "cleon_social_gallery.group_social_gallery_admin"
@@ -91,7 +93,19 @@ class SocialGalleryController(http.Controller):
         return media
 
     @staticmethod
+    def _album_preview_media(album, user):
+        preview = request.env["social.gallery.media"].sudo().search([
+            ("album_id", "=", album.id),
+            ("approval_status", "=", "approved"),
+            ("deleted_at", "=", False),
+        ], order="create_date desc", limit=1)
+        if preview and preview._user_can_view(user):
+            return preview
+        return False
+
+    @staticmethod
     def _album_data(album, user):
+        preview = SocialGalleryController._album_preview_media(album, user)
         return {
             "id": album.id,
             "name": album.name,
@@ -100,6 +114,8 @@ class SocialGalleryController(http.Controller):
             "created_by": album.created_by.id,
             "created_by_name": album.created_by.name,
             "cover_available": bool(album.cover_storage_key),
+            "preview_media_id": preview.id if preview else False,
+            "preview_media_type": preview.media_type if preview else False,
             "visibility": album.visibility,
             "access_scope": album.access_scope,
             "department_ids": album.department_ids.ids,
@@ -252,20 +268,19 @@ class SocialGalleryController(http.Controller):
     # ── Storage ─────────────────────────────────────────────────────────────
 
     @http.route("/api/social-gallery/storage/config", type="json", auth="user", methods=["POST"], csrf=False)
-    def storage_config(self, action="read", values=None, **kwargs):
+    def storage_config(self, check=False, **kwargs):
+        if not self._is_admin():
+            return self._error(_("Only gallery administrators can view storage settings."))
         try:
             storage = CloudflareR2Storage(request.env)
-            if action == "read":
-                return {"success": True, "data": storage.public_status()}
-            if not self._is_admin():
-                raise AccessError(_("Only gallery administrators can change storage settings."))
-            if action == "save":
-                return {"success": True, "data": storage.save_config(values or {})}
-            if action == "test":
-                return {"success": True, "data": storage.check_connection()}
-            raise UserError(_("Unsupported storage action."))
+            status = storage.public_status()
+            if check and status["configured"]:
+                status.update(storage.check_connection())
+            return {"success": True, "data": status}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
+        except Exception:
+            return self._error(_("Cloudflare R2 could not be reached."))
 
     # ── Albums ──────────────────────────────────────────────────────────────
 
@@ -565,6 +580,10 @@ class SocialGalleryController(http.Controller):
             storage = CloudflareR2Storage(request.env)
             if not storage.is_configured():
                 raise UserError(_("Storage is not configured."))
+            try:
+                storage.ensure_bucket_cors()
+            except Exception:
+                _logger.warning("Could not refresh Social Gallery R2 CORS policy", exc_info=True)
             safe = _safe_name(file_name)
             object_key = "social-gallery/%s/%s-%s" % (self._company().id, uuid.uuid4().hex, safe)
             upload_id = storage.initiate_multipart(object_key, mime_type)
@@ -1068,6 +1087,38 @@ class SocialGalleryController(http.Controller):
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
+    @http.route("/api/social-gallery/users/search", type="json", auth="user", methods=["POST"], csrf=False)
+    def users_search(self, search="", limit=20, **kwargs):
+        try:
+            if not self._is_admin():
+                raise AccessError(_("Only administrators can search users."))
+            term = (search or "").strip()
+            company = self._company()
+            domain = [
+                ("share", "=", False),
+                ("active", "=", True),
+                ("company_id", "=", company.id),
+            ]
+            if term:
+                domain += [
+                    "|", "|",
+                    ("name", "ilike", term),
+                    ("login", "ilike", term),
+                    ("email", "ilike", term),
+                ]
+            users = request.env["res.users"].sudo().search(
+                domain,
+                limit=min(max(_int(limit, 20), 1), 50),
+                order="name",
+            )
+            return {"success": True, "data": [{
+                "id": user.id,
+                "name": user.name,
+                "email": user.email or user.login or "",
+            } for user in users]}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
     @http.route("/api/social-gallery/trusted-users", type="json", auth="user", methods=["POST"], csrf=False)
     def trusted_users(self, action="list", user_id=None, **kwargs):
         try:
@@ -1155,6 +1206,9 @@ class SocialGalleryController(http.Controller):
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
+    def _album_dashboard_data(self, album, user):
+        return self._album_data(album, user)
+
     @http.route("/api/social-gallery/analytics/dashboard", type="json", auth="user", methods=["POST"], csrf=False)
     def analytics_dashboard(self, **kwargs):
         try:
@@ -1166,7 +1220,9 @@ class SocialGalleryController(http.Controller):
             approved = all_media.filtered(lambda m: m.approval_status == "approved")
             today = fields.Date.today()
             today_start = fields.Datetime.to_string(datetime.combine(today, time.min))
+            week_start = fields.Datetime.to_string(datetime.combine(today - timedelta(days=6), time.min))
             today_uploads = Media.search_count(base_domain + [("create_date", ">=", today_start)])
+            week_uploads = Media.search_count(base_domain + [("create_date", ">=", week_start)])
             pending = Media.search_count(base_domain + [("approval_status", "=", "pending")])
 
             dept_stats = defaultdict(lambda: {"uploads": 0, "likes": 0, "comments": 0})
@@ -1186,6 +1242,52 @@ class SocialGalleryController(http.Controller):
 
             albums = Album.search([("company_id", "=", company.id), ("active", "=", True)], order="create_date desc", limit=6)
             user = self._user()
+            visible_approved = approved.filtered(lambda m: m._user_can_view(user))
+            trending = sorted(
+                visible_approved,
+                key=lambda m: (m.like_count or 0) + (m.comment_count or 0) * 2 + (m.view_count or 0) * 0.1,
+                reverse=True,
+            )[:8]
+            recent_media = visible_approved.sorted("create_date", reverse=True)[:8]
+
+            upload_trend = []
+            for offset in range(6, -1, -1):
+                day = today - timedelta(days=offset)
+                day_start = fields.Datetime.to_string(datetime.combine(day, time.min))
+                day_end = fields.Datetime.to_string(datetime.combine(day, time.max))
+                upload_trend.append({
+                    "date": fields.Date.to_string(day),
+                    "label": day.strftime("%a"),
+                    "count": Media.search_count(base_domain + [
+                        ("create_date", ">=", day_start),
+                        ("create_date", "<=", day_end),
+                    ]),
+                })
+
+            employee = user.employee_id
+            user_department = employee.department_id.name if employee and employee.department_id else False
+
+            def _engagement_score(stats):
+                return stats["uploads"] * 10 + stats["likes"] * 3 + stats["comments"] * 5
+
+            dept_rows = []
+            for dept_name, stats in dept_stats.items():
+                score = _engagement_score(stats)
+                dept_rows.append({
+                    "department": dept_name,
+                    "uploads": stats["uploads"],
+                    "likes": stats["likes"],
+                    "comments": stats["comments"],
+                    "engagement_score": score,
+                })
+            dept_rows.sort(key=lambda row: row["engagement_score"], reverse=True)
+            leader_score = dept_rows[0]["engagement_score"] if dept_rows else 0
+            total_score = sum(row["engagement_score"] for row in dept_rows) or 1
+            for index, row in enumerate(dept_rows, start=1):
+                row["rank"] = index
+                row["gap_to_leader"] = max(leader_score - row["engagement_score"], 0)
+                row["score_share"] = round((row["engagement_score"] / total_score) * 100, 1) if total_score else 0
+                row["is_user_department"] = bool(user_department and row["department"] == user_department)
 
             return {"success": True, "data": {
                 "total_albums": Album.search_count([("company_id", "=", company.id), ("active", "=", True)]),
@@ -1194,19 +1296,28 @@ class SocialGalleryController(http.Controller):
                 "video_count": len(approved.filtered(lambda m: m.media_type == "video")),
                 "storage_used": sum(approved.mapped("file_size")),
                 "today_uploads": today_uploads,
+                "week_uploads": week_uploads,
                 "pending_approvals": pending,
-                "department_engagement": [
-                    {"department": k, **v} for k, v in sorted(dept_stats.items(), key=lambda x: x[1]["uploads"], reverse=True)
-                ],
+                "total_likes": sum(approved.mapped("like_count")),
+                "total_comments": sum(approved.mapped("comment_count")),
+                "total_views": sum(approved.mapped("view_count")),
+                "upload_trend": upload_trend,
+                "user_department": user_department or False,
+                "leaderboard_period": "all_time",
+                "department_engagement": dept_rows,
                 "top_contributors": [
                     {"name": k, "uploads": v} for k, v in sorted(top_contributors.items(), key=lambda x: x[1], reverse=True)[:10]
                 ],
-                "recent_albums": [self._album_data(a, user) for a in albums if a._user_can_view(user)],
+                "recent_albums": [self._album_dashboard_data(a, user) for a in albums if a._user_can_view(user)],
+                "trending_media": [self._media_data(m, user) for m in trending],
+                "recent_media": [self._media_data(m, user) for m in recent_media],
                 "recent_activity": [{
                     "event_type": log.event_type,
                     "entity_type": log.entity_type,
                     "user_name": log.user_id.name,
                     "details": log.details or "",
+                    "album_id": log.album_id.id if log.album_id else False,
+                    "media_id": log.media_id.id if log.media_id else False,
                     "create_date": fields.Datetime.to_string(log.create_date),
                 } for log in recent_activity],
             }}

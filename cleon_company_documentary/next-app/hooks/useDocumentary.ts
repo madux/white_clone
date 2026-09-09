@@ -24,6 +24,7 @@ export const documentaryKeys = {
   settings: ["company-documentary", "settings"],
   audience: (search: string) => ["company-documentary", "audience", search],
   analytics: (filters: Record<string, unknown>) => ["company-documentary", "analytics", filters],
+  comments: (mediaId: number) => ["company-documentary", "comments", mediaId],
 };
 
 export function useDocumentaryUser() {
@@ -146,6 +147,14 @@ export function usePinFolder() {
   });
 }
 
+export function useFavoriteFolder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.favoriteFolder,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["company-documentary", "folders"] }),
+  });
+}
+
 export function useMediaApproval() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -160,4 +169,40 @@ export function useSaveDocumentarySettings() {
     mutationFn: api.saveSettings,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: documentaryKeys.settings }),
   });
+}
+
+export function useDocumentaryComments(mediaId: number) {
+  return useQuery({
+    queryKey: documentaryKeys.comments(mediaId),
+    queryFn: () => api.comments(mediaId, "list") as Promise<import("../lib/types").DocumentaryComment[]>,
+    enabled: mediaId > 0,
+  });
+}
+
+export function useDocumentaryMutations() {
+  const queryClient = useQueryClient();
+  const invalidateMedia = () => queryClient.invalidateQueries({ queryKey: ["company-documentary", "media"] });
+
+  return {
+    postComment: useMutation({
+      mutationFn: (payload: { media_id: number; body: string; parent_id?: number }) =>
+        api.comments(payload.media_id, "create", payload.body, undefined, payload.parent_id),
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: documentaryKeys.comments(vars.media_id) });
+        invalidateMedia();
+      },
+    }),
+    deleteComment: useMutation({
+      mutationFn: (payload: { media_id: number; comment_id: number }) =>
+        api.comments(payload.media_id, "delete", undefined, payload.comment_id),
+      onSuccess: (_, vars) => {
+        queryClient.invalidateQueries({ queryKey: documentaryKeys.comments(vars.media_id) });
+        invalidateMedia();
+      },
+    }),
+    toggleLike: useMutation({
+      mutationFn: (media_id: number) => api.likes(media_id),
+      onSuccess: invalidateMedia,
+    }),
+  };
 }

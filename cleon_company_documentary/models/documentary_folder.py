@@ -79,6 +79,13 @@ class CompanyDocumentaryFolder(models.Model):
         "user_id",
         string="Pinned By",
     )
+    favorite_user_ids = fields.Many2many(
+        "res.users",
+        "company_documentary_folder_favorite_rel",
+        "folder_id",
+        "user_id",
+        string="Favorited By",
+    )
 
     @api.depends("media_ids", "media_ids.active")
     def _compute_media_count(self):

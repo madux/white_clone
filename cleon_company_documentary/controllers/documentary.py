@@ -1,3 +1,4 @@
+import logging
 import math
 import re
 import uuid
@@ -10,6 +11,7 @@ from odoo.http import request
 
 from .storage import CloudflareR2Storage
 
+_logger = logging.getLogger(__name__)
 
 MANAGER_GROUP = "cleon_company_documentary.group_company_documentary_manager"
 ADMIN_GROUP = "cleon_company_documentary.group_company_documentary_admin"
@@ -90,6 +92,7 @@ class CompanyDocumentaryController(http.Controller):
             "media_count": folder.media_count,
             "can_edit": folder._user_can_edit(user),
             "is_pinned": user in folder.pinned_user_ids,
+            "favorite": user in folder.favorite_user_ids,
         }
 
     @staticmethod
@@ -102,6 +105,20 @@ class CompanyDocumentaryController(http.Controller):
             "default_completion_threshold": company.documentary_default_completion_threshold,
             "deleted_retention_days": company.documentary_deleted_retention_days,
             "auto_transcription": company.documentary_auto_transcription,
+        }
+
+    def _comment_data(self, comment):
+        return {
+            "id": comment.id,
+            "media_id": comment.media_id.id,
+            "body": comment.body,
+            "user_id": comment.user_id.id,
+            "user_name": comment.user_id.name,
+            "parent_id": comment.parent_id.id if comment.parent_id else False,
+            "created_at": fields.Datetime.to_string(comment.create_date),
+            "mentioned_user_ids": comment.mentioned_user_ids.ids,
+            "mentioned_names": comment.mentioned_user_ids.mapped("name"),
+            "replies": [self._comment_data(reply) for reply in comment.child_ids.filtered("active")],
         }
 
     def _media_data(self, media, user):
@@ -150,6 +167,12 @@ class CompanyDocumentaryController(http.Controller):
                 "is_default": subtitle.is_default,
             } for subtitle in media.subtitle_ids.filtered("active")],
             "favorite": user in media.favorite_user_ids,
+            "like_count": media.like_count,
+            "liked_by_me": bool(request.env["company.documentary.like"].sudo().search_count([
+                ("media_id", "=", media.id), ("user_id", "=", user.id),
+            ])),
+            "comment_count": media.comment_count,
+            "owner_name": media.owner_id.name,
             "view_count": media.view_count,
             "unique_viewer_count": media.unique_viewer_count,
             "created_at": media.create_date,
@@ -176,13 +199,12 @@ class CompanyDocumentaryController(http.Controller):
         }
 
     @http.route("/api/company-documentary/storage/config", type="json", auth="user", methods=["POST"], csrf=False)
-    def storage_config(self, check=False, **values):
+    def storage_config(self, check=False, **kwargs):
         if not self._is_admin():
             return self._error(_("Documentary Administrator access is required."))
         storage = CloudflareR2Storage(request.env)
         try:
-            keys = {key: values[key] for key in storage.PARAMS if key in values}
-            status = storage.save_config(keys) if keys else storage.public_status()
+            status = storage.public_status()
             if check and status["configured"]:
                 status.update(storage.check_connection())
             return {"success": True, "data": status}
@@ -394,6 +416,10 @@ class CompanyDocumentaryController(http.Controller):
             if size <= 0 or size > 10 * 1024 * 1024 * 1024:
                 return self._error(_("Video files must be greater than 0 and no larger than 10 GB."))
             storage = CloudflareR2Storage(request.env)
+            try:
+                storage.ensure_bucket_cors()
+            except Exception:
+                _logger.warning("Could not refresh Company Documentary R2 CORS policy", exc_info=True)
             object_key = "%s/%s/original/%s" % (self._user().company_id.id, uuid.uuid4(), _safe_name(filename))
             provider_upload_id = storage.initiate_multipart(object_key, mime_type)
             total_parts = max(1, math.ceil(size / PART_SIZE))
@@ -661,12 +687,17 @@ class CompanyDocumentaryController(http.Controller):
             return self._error(_("A signed subtitle upload URL could not be created."))
 
     @http.route("/api/company-documentary/comments", type="json", auth="user", methods=["POST"], csrf=False)
-    def comments(self, media_id=None, body=None, action="list", comment_id=None, **kwargs):
+    def comments(self, media_id=None, body=None, action="list", comment_id=None, parent_id=None, **kwargs):
         try:
             media = self._media(media_id)
-            if not media.comments_enabled and action != "list":
-                return self._error(_("Comments are disabled for this video."))
             comment_model = request.env["company.documentary.comment"].sudo()
+            if action == "list":
+                comments = comment_model.search([
+                    ("media_id", "=", media.id), ("parent_id", "=", False), ("active", "=", True),
+                ], order="create_date asc")
+                return {"success": True, "data": [self._comment_data(comment) for comment in comments]}
+            if not media.comments_enabled and not self._is_manager():
+                return self._error(_("Comments are disabled for this video."))
             if action == "create":
                 if not body or not body.strip():
                     return self._error(_("A comment cannot be empty."))
@@ -682,6 +713,7 @@ class CompanyDocumentaryController(http.Controller):
                     "media_id": media.id,
                     "user_id": self._user().id,
                     "body": body.strip(),
+                    "parent_id": _int(parent_id) if parent_id else False,
                     "mentioned_user_ids": [(6, 0, mentioned_ids)],
                 })
                 if self._user().employee_id:
@@ -689,23 +721,37 @@ class CompanyDocumentaryController(http.Controller):
                         "media_id": media.id, "user_id": self._user().id,
                         "employee_id": self._user().employee_id.id, "event_type": "comment",
                     })
-            if action == "delete":
+                media.invalidate_recordset(["comment_count"])
+                return {"success": True, "data": self._comment_data(comment)}
+            if action == "delete" and comment_id:
                 comment = comment_model.browse(_int(comment_id)).exists()
                 if not comment or comment.media_id != media:
                     return self._error(_("Comment not found."))
                 if comment.user_id != self._user() and not self._is_manager():
                     return self._error(_("You can only delete your own comments."))
                 comment.unlink()
-            records = comment_model.search([("media_id", "=", media.id), ("active", "=", True)], order="create_date asc")
-            return {"success": True, "data": [{
-                "id": item.id,
-                "body": item.body,
-                "user_id": item.user_id.id,
-                "user_name": item.user_id.name,
-                "created_at": item.create_date,
-                "mentioned_user_ids": item.mentioned_user_ids.ids,
-                "mentioned_names": item.mentioned_user_ids.mapped("name"),
-            } for item in records]}
+                media.invalidate_recordset(["comment_count"])
+                return {"success": True, "data": {"deleted": True}}
+            raise UserError(_("Unsupported comment action."))
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/likes", type="json", auth="user", methods=["POST"], csrf=False)
+    def likes(self, media_id, action="toggle", **kwargs):
+        try:
+            media = self._media(media_id)
+            Like = request.env["company.documentary.like"].sudo()
+            existing = Like.search([("media_id", "=", media.id), ("user_id", "=", self._user().id)], limit=1)
+            if action == "toggle":
+                if existing:
+                    existing.unlink()
+                    liked = False
+                else:
+                    Like.create({"media_id": media.id, "user_id": self._user().id})
+                    liked = True
+                media.invalidate_recordset(["like_count"])
+                return {"success": True, "data": {"liked": liked, "like_count": media.like_count}}
+            return {"success": True, "data": {"liked": bool(existing), "like_count": media.like_count}}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -987,7 +1033,7 @@ class CompanyDocumentaryController(http.Controller):
             departments[key]["completion"].append(item.completion_percent)
         department_rows = []
         for value in departments.values():
-            viewer_rate = value["viewer_ids"] and len(value["viewer_ids"]) / value["eligible"] * 100 if value["eligible"] else 0
+            viewer_rate = len(value["viewer_ids"]) / value["eligible"] * 100 if value["eligible"] else 0
             completion = sum(value["completion"]) / len(value["completion"]) if value["completion"] else 0
             score = viewer_rate * 0.4 + completion * 0.4 + min(value["watch_seconds"] / max(len(value["viewer_ids"]), 1) / 60, 100) * 0.2
             performance = "Excellent" if score >= 80 else "Healthy" if score >= 60 else "Needs attention" if score >= 40 else "At risk"
@@ -1176,6 +1222,16 @@ class CompanyDocumentaryController(http.Controller):
             folder = self._folder(id)
             command = fields.Command.link(self._user().id) if pinned else fields.Command.unlink(self._user().id)
             folder.sudo().write({"pinned_user_ids": [command]})
+            return {"success": True, "data": self._folder_data(folder, self._user())}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/folders/favorite", type="json", auth="user", methods=["POST"], csrf=False)
+    def favorite_folder(self, id=None, favorite=True, **kwargs):
+        try:
+            folder = self._folder(id)
+            command = fields.Command.link(self._user().id) if favorite else fields.Command.unlink(self._user().id)
+            folder.sudo().write({"favorite_user_ids": [command]})
             return {"success": True, "data": self._folder_data(folder, self._user())}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))

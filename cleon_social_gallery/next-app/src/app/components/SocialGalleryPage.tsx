@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Upload } from "lucide-react";
-import type { GalleryMedia, GalleryView, LayoutMode } from "@/lib/types";
+import type { GalleryMedia, LayoutMode } from "@/lib/types";
 import { api } from "@/lib/api";
 import Sidebar from "./layout/Sidebar";
 import { GalleryHeader } from "./layout/GalleryHeader";
@@ -19,11 +19,18 @@ import CreateAlbumModal from "./modals/CreateAlbumModal";
 import UploadModal from "./modals/UploadModal";
 import { LoadingState } from "./shared/LoadingState";
 import { QueryError } from "./shared/QueryError";
+import type { GalleryView } from "@/lib/types";
+import { useNavigationHistory } from "@/hooks/useNavigationHistory";
 import {
-  applyGalleryTheme, isValidLayout, useGalleryAlbums, useGalleryAudit,
+  isValidLayout, useGalleryAlbums, useGalleryAudit,
   useGalleryDashboard, useGalleryDuplicates, useGalleryFlagged, useGalleryMedia, useGalleryPending,
   useGalleryPendingAi, useGalleryRecycle, useGallerySettings, useGalleryUploadHistory, useGalleryUser,
 } from "@/hooks/useSocialGallery";
+
+type GalleryNavState = {
+  activeView: GalleryView;
+  selectedAlbumId: number | null;
+};
 
 const VIEW_LABELS: Record<GalleryView, string> = {
   dashboard: "Dashboard",
@@ -45,6 +52,12 @@ export default function SocialGalleryPage() {
   const [search, setSearch] = useState("");
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [selectedMedia, setSelectedMedia] = useState<GalleryMedia | null>(null);
+  const [browseList, setBrowseList] = useState<GalleryMedia[]>([]);
+
+  const openMedia = (item: GalleryMedia, list: GalleryMedia[] = []) => {
+    setSelectedMedia(item);
+    setBrowseList(list.length ? list : [item]);
+  };
   const [layout, setLayout] = useState<LayoutMode>("grid");
   const [mobileNav, setMobileNav] = useState(false);
   const [showCreateAlbum, setShowCreateAlbum] = useState(false);
@@ -72,6 +85,7 @@ export default function SocialGalleryPage() {
   const auditQuery = useGalleryAudit({}, isManager);
   const settingsQuery = useGallerySettings(isAdmin);
   const duplicatesQuery = useGalleryDuplicates(activeView === "duplicates" && isManager);
+  const { trackNavigation, registerRestore } = useNavigationHistory<GalleryNavState>();
 
   const pendingCount = pendingQuery.data?.length || 0;
   const aiReviewCount = pendingAiQuery.data?.length || 0;
@@ -85,7 +99,6 @@ export default function SocialGalleryPage() {
 
   useEffect(() => {
     if (!settingsQuery.data) return;
-    applyGalleryTheme(settingsQuery.data.theme_color);
     if (isValidLayout(settingsQuery.data.default_layout)) {
       setLayout(settingsQuery.data.default_layout);
     }
@@ -98,7 +111,7 @@ export default function SocialGalleryPage() {
     api.shareResolve(token)
       .then((result) => {
         if (result.type === "media") {
-          setSelectedMedia(result.media);
+          openMedia(result.media, [result.media]);
         } else {
           setActiveView("albums");
           setSelectedAlbumId(result.album.id);
@@ -135,6 +148,23 @@ export default function SocialGalleryPage() {
     : VIEW_LABELS[activeView];
   const showUploadActions = !selectedAlbumId && (activeView === "albums" || activeView === "gallery");
 
+  useEffect(() => {
+    registerRestore((state) => {
+      setActiveView(state.activeView);
+      setSelectedAlbumId(state.selectedAlbumId);
+      setMobileNav(false);
+    });
+  }, [registerRestore]);
+
+  useEffect(() => {
+    const navKey = `${activeView}:${selectedAlbumId ?? ""}`;
+    trackNavigation(
+      { activeView, selectedAlbumId },
+      headerTitle,
+      navKey,
+    );
+  }, [activeView, selectedAlbumId, headerTitle, trackNavigation]);
+
   const navigate = (view: GalleryView) => {
     setActiveView(view);
     setSelectedAlbumId(null);
@@ -170,11 +200,9 @@ export default function SocialGalleryPage() {
           loading={mediaQuery.isLoading}
           layout={layout}
           onLayoutChange={setLayout}
-          onOpenMedia={setSelectedMedia}
-          onBack={() => setSelectedAlbumId(null)}
+          onOpenMedia={(item) => openMedia(item, mediaQuery.data || [])}
           onRefresh={refreshAll}
           onUpload={() => setShowUpload(true)}
-          fromDashboard={activeView === "dashboard"}
         />
       );
     }
@@ -188,8 +216,19 @@ export default function SocialGalleryPage() {
           <DashboardView
             data={dashboardQuery.data}
             loading={dashboardQuery.isLoading}
+            userName={user?.name}
+            isManager={isManager}
+            pendingCount={pendingCount}
+            aiReviewCount={aiReviewCount}
+            flaggedCount={flaggedCount}
             onOpenPending={() => navigate("pending")}
+            onOpenAiReview={() => navigate("pending-ai")}
+            onOpenFlagged={() => navigate("flagged")}
             onOpenAlbum={openAlbum}
+            onOpenMedia={(item, list) => openMedia(item, list || [])}
+            onBrowseGallery={() => navigate("gallery")}
+            onUpload={() => setShowUpload(true)}
+            onCreateAlbum={() => setShowCreateAlbum(true)}
           />
         );
       case "albums":
@@ -216,7 +255,7 @@ export default function SocialGalleryPage() {
             loading={mediaQuery.isLoading}
             layout={layout}
             onLayoutChange={setLayout}
-            onOpenMedia={setSelectedMedia}
+            onOpenMedia={(item) => openMedia(item, mediaQuery.data || [])}
             albums={albumsQuery.data}
             onRefresh={refreshAll}
             onUpload={() => setShowUpload(true)}
@@ -239,7 +278,7 @@ export default function SocialGalleryPage() {
             media={pendingAiQuery.data || []}
             loading={pendingAiQuery.isLoading}
             onRefresh={refreshAll}
-            onOpenMedia={setSelectedMedia}
+            onOpenMedia={(item) => openMedia(item, pendingAiQuery.data || [])}
             onError={(msg) => showToast(msg, true)}
           />
         );
@@ -249,7 +288,7 @@ export default function SocialGalleryPage() {
             reports={flaggedReports}
             loading={flaggedQuery.isLoading}
             onRefresh={() => { refreshAll(); showToast("Flag resolved"); }}
-            onOpenMedia={setSelectedMedia}
+            onOpenMedia={(item) => openMedia(item, flaggedReports.map((r) => r.media).filter(Boolean) as GalleryMedia[])}
             onError={(msg) => showToast(msg, true)}
           />
         );
@@ -264,9 +303,15 @@ export default function SocialGalleryPage() {
           />
         );
       case "contributions":
-        return <ContributionsView onOpenMedia={setSelectedMedia} />;
+        return <ContributionsView onOpenMedia={(item) => openMedia(item, [])} />;
       case "upload-history":
-        return <UploadHistoryView history={uploadHistoryQuery.data || []} loading={uploadHistoryQuery.isLoading} onOpenMedia={setSelectedMedia} />;
+        return (
+          <UploadHistoryView
+            history={uploadHistoryQuery.data || []}
+            loading={uploadHistoryQuery.isLoading}
+            onOpenMedia={(item) => openMedia(item, [])}
+          />
+        );
       case "duplicates":
         return <DuplicateScanView groups={duplicatesQuery.data || []} loading={duplicatesQuery.isLoading} onRefresh={refreshAll} onError={(msg) => showToast(msg, true)} />;
       case "audit":
@@ -336,9 +381,19 @@ export default function SocialGalleryPage() {
           userId={user?.id}
           isManager={isManager}
           allowExternalShare={settingsQuery.data?.allow_external_share}
-          onClose={() => setSelectedMedia(null)}
+          onClose={() => { setSelectedMedia(null); setBrowseList([]); }}
           onRefresh={refreshAll}
           onError={(msg) => showToast(msg, true)}
+          hasPrev={browseList.findIndex((item) => item.id === selectedMedia.id) > 0}
+          hasNext={browseList.findIndex((item) => item.id === selectedMedia.id) < browseList.length - 1}
+          onPrev={() => {
+            const index = browseList.findIndex((item) => item.id === selectedMedia.id);
+            if (index > 0) setSelectedMedia(browseList[index - 1]);
+          }}
+          onNext={() => {
+            const index = browseList.findIndex((item) => item.id === selectedMedia.id);
+            if (index < browseList.length - 1) setSelectedMedia(browseList[index + 1]);
+          }}
         />
       )}
       {showCreateAlbum && (
@@ -352,7 +407,7 @@ export default function SocialGalleryPage() {
           albumId={selectedAlbumId || undefined}
           albums={albumsQuery.data}
           onClose={() => setShowUpload(false)}
-          onComplete={() => { setShowUpload(false); refreshAll(); showToast("Upload complete"); }}
+          onComplete={() => { setShowUpload(false); refreshAll(); showToast("Uploads complete"); }}
         />
       )}
       {toast && (

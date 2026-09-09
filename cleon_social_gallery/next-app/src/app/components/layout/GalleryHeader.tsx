@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Menu, Search } from "lucide-react";
+import { BackButton } from "../shared/BackButton";
 import { initials } from "../galleryUtils";
 
 export function GalleryHeader({
@@ -28,6 +29,7 @@ export function GalleryHeader({
       >
         <Menu size={20} />
       </button>
+      <BackButton variant="header" />
       <div className="header-wordmark">
         Cleon<span>HR</span>
       </div>

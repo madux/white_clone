@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON DOCUMENT MANAGEMENT",
-    "version": "17.0.1.11.0",
+    "version": "17.0.1.12.0",
     "category": "CleonHR Document Management",
     "sequence": -1,
     "summary": "CLEON DOCUMENT MANAGEMENT",
@@ -30,4 +30,5 @@
     "auto_install": True,
     "application": False,
     "license": "LGPL-3",
+    "post_init_hook": "post_init_hook",
 }

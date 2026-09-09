@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Plus, UploadCloud, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { DocumentaryFolder, DocumentaryMedia } from "../../../lib/types";
 import { api } from "../../../lib/api";
 import {
@@ -13,10 +13,13 @@ import {
   useDocumentaryMediaAction,
   useDocumentaryMediaBatchAction,
   useDocumentaryUser,
+  useFavoriteFolder,
   usePinFolder,
   useRecycleBin,
   useUpdateDocumentaryFolder,
 } from "../../../hooks/useDocumentary";
+import { useNavigationHistory } from "../../../hooks/useNavigationHistory";
+import { useUploadManager } from "../../../hooks/useUploadManager";
 import { AnalyticsDashboard } from "./analytics/AnalyticsDashboard";
 import { DocumentaryHeader } from "./layout/DocumentaryHeader";
 import { DocumentarySidebar } from "./layout/DocumentarySidebar";
@@ -33,9 +36,15 @@ import {
   SettingsPanelModal,
   ShareModal,
 } from "./modals/FeatureModals";
-import { MediaEditModal, StorageSettingsModal } from "./modals/MediaModals";
+import { MediaEditModal } from "./modals/MediaModals";
 import { UploadModal } from "./modals/UploadModal";
 import { VideoModal } from "./modals/VideoModal";
+import { UploadToastStack } from "./uploads/UploadToastStack";
+
+type DocumentaryNavState = {
+  libraryView: LibraryView;
+  selectedFolderId: number | null;
+};
 
 export default function CompanyDocumentaryPage() {
   const [search, setSearch] = useState("");
@@ -47,7 +56,6 @@ export default function CompanyDocumentaryPage() {
   const [editingFolder, setEditingFolder] = useState<DocumentaryFolder | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
-  const [showStorageSettings, setShowStorageSettings] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<DocumentaryMedia | null>(null);
   const [shareMedia, setShareMedia] = useState<DocumentaryMedia | null>(null);
@@ -69,6 +77,38 @@ export default function CompanyDocumentaryPage() {
   const mediaAction = useDocumentaryMediaAction();
   const mediaBatchAction = useDocumentaryMediaBatchAction();
   const pinFolder = usePinFolder();
+  const favoriteFolder = useFavoriteFolder();
+  const { trackNavigation, registerRestore } = useNavigationHistory<DocumentaryNavState>();
+
+  function showNotice(type: "error" | "success", text: string) {
+    setNotice({ type, text });
+    window.setTimeout(() => setNotice(null), 4200);
+  }
+
+  const uploadManager = useUploadManager({
+    onMediaCreated: () => void mediaQuery.refetch(),
+    onJobComplete: () => {
+      void mediaQuery.refetch();
+      void foldersQuery.refetch();
+    },
+    onJobError: (message) => showNotice("error", message),
+    onBatchComplete: (count) => {
+      showNotice(
+        "success",
+        count === 1 ? "Video uploaded successfully." : `${count} videos uploaded successfully.`,
+      );
+    },
+  });
+
+  const uploadProgressByMediaId = useMemo(() => {
+    const map: Record<number, number> = {};
+    for (const job of uploadManager.jobs) {
+      if (job.mediaId && !["completed", "cancelled", "error"].includes(job.status)) {
+        map[job.mediaId] = job.progress;
+      }
+    }
+    return map;
+  }, [uploadManager.jobs]);
 
   const folders = useMemo(() => foldersQuery.data ?? [], [foldersQuery.data]);
   const media = useMemo(() => mediaQuery.data ?? [], [mediaQuery.data]);
@@ -92,11 +132,6 @@ export default function CompanyDocumentaryPage() {
   }, [libraryView, media, continueQuery.data]);
   const canManage = Boolean(userQuery.data?.is_admin || userQuery.data?.is_document_manager);
   const isAdmin = Boolean(userQuery.data?.is_admin);
-
-  function showNotice(type: "error" | "success", text: string) {
-    setNotice({ type, text });
-    window.setTimeout(() => setNotice(null), 4200);
-  }
 
   function navigate(view: LibraryView) {
     setLibraryView(view);
@@ -122,10 +157,21 @@ export default function CompanyDocumentaryPage() {
 
   async function handlePinFolder(folder: DocumentaryFolder) {
     try {
-      await pinFolder.mutateAsync({ id: folder.id, pinned: !folder.is_pinned });
+      const updated = await pinFolder.mutateAsync({ id: folder.id, pinned: !folder.is_pinned });
+      if (selectedFolder?.id === folder.id) setSelectedFolder(updated);
       showNotice("success", folder.is_pinned ? "Folder unpinned." : "Folder pinned.");
     } catch (error) {
       showNotice("error", error instanceof Error ? error.message : "Pin action failed.");
+    }
+  }
+
+  async function handleFavoriteFolder(folder: DocumentaryFolder) {
+    try {
+      const updated = await favoriteFolder.mutateAsync({ id: folder.id, favorite: !folder.favorite });
+      if (selectedFolder?.id === folder.id) setSelectedFolder(updated);
+      showNotice("success", folder.favorite ? "Removed from favorites." : "Added to favorites.");
+    } catch (error) {
+      showNotice("error", error instanceof Error ? error.message : "Favorite action failed.");
     }
   }
 
@@ -219,6 +265,30 @@ export default function CompanyDocumentaryPage() {
 
   const showLibrary = !["recycle", "approvals"].includes(libraryView);
 
+  useEffect(() => {
+    registerRestore((state) => {
+      setLibraryView(state.libraryView);
+      setSelectedFolder(
+        state.selectedFolderId
+          ? folders.find((folder) => folder.id === state.selectedFolderId) ?? null
+          : null,
+      );
+      setMobileNav(false);
+    });
+  }, [folders, registerRestore]);
+
+  useEffect(() => {
+    const navKey = `${libraryView}:${selectedFolder?.id ?? ""}`;
+    trackNavigation(
+      {
+        libraryView,
+        selectedFolderId: selectedFolder?.id ?? null,
+      },
+      pageTitle,
+      navKey,
+    );
+  }, [libraryView, selectedFolder, pageTitle, trackNavigation]);
+
   return (
     <main className="documentary-app">
       <DocumentarySidebar
@@ -235,7 +305,7 @@ export default function CompanyDocumentaryPage() {
         onNavigate={navigate}
         onOpenFolder={openFolder}
         onAnalytics={() => setShowAnalytics(true)}
-        onSettings={() => (isAdmin ? setShowSettings(true) : setShowStorageSettings(true))}
+        onSettings={() => setShowSettings(true)}
         onClose={() => setMobileNav(false)}
       />
       <section className="documentary-content">
@@ -293,12 +363,13 @@ export default function CompanyDocumentaryPage() {
               batchTargetFolder={batchTargetFolder}
               mediaLoading={libraryView === "recent" ? continueQuery.isLoading : mediaQuery.isLoading}
               visibleMedia={visibleMedia}
+              uploadProgressByMediaId={uploadProgressByMediaId}
               onCreateFolder={() => setShowCreateFolder(true)}
               onUpload={() => setShowUpload(true)}
               onViewAll={() => navigate("all")}
               onSelectFolder={openFolder}
               onPinFolder={(folder) => void handlePinFolder(folder)}
-              onBackToHome={() => navigate("home")}
+              onFavoriteFolder={(folder) => void handleFavoriteFolder(folder)}
               onFolderAction={handleFolderAction}
               onEditFolder={setEditingFolder}
               onSelectMedia={toggleMediaSelection}
@@ -317,6 +388,7 @@ export default function CompanyDocumentaryPage() {
           )}
         </div>
       </section>
+      <UploadToastStack jobs={uploadManager.jobs} onDismiss={uploadManager.dismissJob} />
       {notice && (
         <div className={`toast ${notice.type}`}>
           <span>{notice.type === "success" ? <Check size={16} /> : <X size={16} />}</span>
@@ -330,10 +402,33 @@ export default function CompanyDocumentaryPage() {
         <CreateFolderModal key={editingFolder.id} folders={folders} loading={updateFolder.isPending} initialFolder={editingFolder} onSave={handleSaveFolder} onClose={() => setEditingFolder(null)} />
       )}
       {showUpload && (
-        <UploadModal folders={folders} selectedFolder={selectedFolder} onClose={() => setShowUpload(false)} onSuccess={() => { setShowUpload(false); void mediaQuery.refetch(); showNotice("success", "Video uploaded successfully."); }} onError={(message) => showNotice("error", message)} />
+        <UploadModal
+          folders={folders}
+          selectedFolder={selectedFolder}
+          onClose={() => setShowUpload(false)}
+          onStartBatch={uploadManager.startBatch}
+        />
       )}
       {selectedMedia && (
-        <VideoModal media={selectedMedia} onClose={() => setSelectedMedia(null)} onShare={() => setShareMedia(selectedMedia)} onError={(message) => showNotice("error", message)} />
+        <VideoModal
+          media={selectedMedia}
+          userId={userQuery.data?.id}
+          isManager={canManage}
+          onClose={() => setSelectedMedia(null)}
+          onShare={() => setShareMedia(selectedMedia)}
+          onError={(message) => showNotice("error", message)}
+          onMediaChange={setSelectedMedia}
+          hasPrev={visibleMedia.findIndex((item) => item.id === selectedMedia.id) > 0}
+          hasNext={visibleMedia.findIndex((item) => item.id === selectedMedia.id) < visibleMedia.length - 1}
+          onPrev={() => {
+            const index = visibleMedia.findIndex((item) => item.id === selectedMedia.id);
+            if (index > 0) setSelectedMedia(visibleMedia[index - 1]);
+          }}
+          onNext={() => {
+            const index = visibleMedia.findIndex((item) => item.id === selectedMedia.id);
+            if (index < visibleMedia.length - 1) setSelectedMedia(visibleMedia[index + 1]);
+          }}
+        />
       )}
       {shareMedia && (
         <ShareModal media={shareMedia} onClose={() => setShareMedia(null)} onError={(message) => showNotice("error", message)} />
@@ -345,9 +440,6 @@ export default function CompanyDocumentaryPage() {
         <BatchShareModal count={selectedMediaIds.length} onClose={() => setShowBatchShare(false)} onSave={handleBatchShare} />
       )}
       {showAnalytics && <AnalyticsDashboard folders={folders} onClose={() => setShowAnalytics(false)} />}
-      {showStorageSettings && (
-        <StorageSettingsModal onClose={() => setShowStorageSettings(false)} onError={(message) => showNotice("error", message)} onSuccess={(message) => showNotice("success", message)} />
-      )}
       {showSettings && (
         <SettingsPanelModal onClose={() => setShowSettings(false)} onNotice={showNotice} />
       )}
