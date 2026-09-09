@@ -110,7 +110,7 @@ class LicensePortal(http.Controller):
     @http.route('/', type='http', auth='public', website=True, csrf=False)
     def master_home(self, **kwargs):
         """Use the licensing gateway as the master database home page."""
-        return request.redirect('/erp')
+        return request.redirect('/landing')
 
     @http.route(['/erp'], type='http', auth='public', website=True, csrf=False)
     def erp_gateway(self, **kwargs):

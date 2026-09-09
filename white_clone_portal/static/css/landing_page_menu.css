@@ -1,0 +1,130 @@
+/* ================================================================
+   Services Mega Menu – landing_page_menu.css
+   ================================================================ */
+
+/* Slide-down entrance animation */
+@keyframes enterprise-mega-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Overlay backdrop */
+#services-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  top: 72px;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 40;
+}
+#services-backdrop.visible {
+  display: block;
+}
+
+/* Mega-menu container */
+#services-mega-menu {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 72px;
+  max-height: calc(100vh - 72px);
+  background: #fff;
+  z-index: 50;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 12px 48px;
+  border-top: 3px solid rgb(233, 30, 140);
+  overflow: hidden;
+}
+#services-mega-menu.open {
+  display: block;
+  animation: enterprise-mega-slide-down 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Sidebar category buttons ── */
+.mega-cat-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  text-align: left;
+  border-radius: 12px;
+  transition: background-color 0.15s, color 0.15s;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: rgb(55, 65, 81);
+}
+.mega-cat-btn.active {
+  background-color: rgb(255, 240, 247);
+  color: rgb(233, 30, 140);
+}
+.mega-cat-btn .cat-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: rgb(229, 231, 235);
+  color: rgb(107, 114, 128);
+  transition: background-color 0.15s, color 0.15s;
+}
+.mega-cat-btn.active .cat-icon-wrap {
+  background-color: rgb(233, 30, 140);
+  color: #fff;
+}
+.mega-cat-btn .cat-chevron {
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  color: rgb(233, 30, 140);
+}
+.mega-cat-btn.active .cat-chevron {
+  opacity: 1;
+}
+
+/* ── Module cards in the right panel ── */
+.mega-module-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 16px;
+  text-align: left;
+  border: 1px solid rgb(235, 235, 235);
+  background-color: #fff;
+  min-height: 172px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.mega-module-card:hover {
+  border-color: rgb(233, 30, 140);
+  box-shadow: 0 4px 16px rgba(233, 30, 140, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ── Search input focus ring ── */
+#mega-search:focus {
+  outline: none;
+  border-color: rgb(233, 30, 140);
+  box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.1);
+}
+
+/* ── Services nav button – active state ── */
+#services-btn.active {
+  color: rgb(233, 30, 140);
+  background-color: rgb(255, 240, 248);
+}
+#services-btn.active svg {
+  transform: rotate(180deg);
+}
+#services-btn svg {
+  transition: transform 0.2s ease;
+}

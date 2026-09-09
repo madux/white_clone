@@ -4,6 +4,7 @@ import logging
 from odoo import http
 from odoo.http import request
 from odoo.modules.module import get_resource_path
+from odoo.addons.website.controllers.main import Website
 
 _logger = logging.getLogger(__name__)
 
@@ -119,3 +120,8 @@ class CrmPortalController(http.Controller):
             'state': module.state,
             'action_url': self._resolve_action_url(action_xmlid),
         }
+
+class WebsiteLandingRedirect(Website):
+    @http.route('/', type='http', auth="public", website=True, sitemap=False)
+    def index(self, **kw):
+        return request.redirect('/landing')
