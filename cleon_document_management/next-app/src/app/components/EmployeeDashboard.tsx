@@ -37,14 +37,7 @@ export default function EmployeeDashboard() {
   return (
     <div className="mx-auto min-h-full w-full max-w-[1650px] space-y-8 bg-slate-50 p-6">
       <section className="rounded-2xl shadow-brand-secondary/10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-2">
-            <span className="text-3xl font-medium">Dashboard</span>
-            <span className="font-light text-slate-400">
-              Welcome back, {user.data?.name || "there"}. Overview of actions,
-              requirements, and shortcuts — manage files in My Documents.
-            </span>
-          </div>
+        <div className="flex justify-end">
           <Link
             href="/pages/my-documents?upload=1"
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 text-sm font-medium text-white shadow-lg shadow-pink-200"

@@ -89,10 +89,32 @@ class CompanyDocumentaryController(http.Controller):
             "deleted_at": folder.deleted_at,
             "media_count": folder.media_count,
             "can_edit": folder._user_can_edit(user),
+            "is_pinned": user in folder.pinned_user_ids,
         }
 
     @staticmethod
-    def _media_data(media, user):
+    def _settings_data(company):
+        return {
+            "require_upload_approval": company.documentary_require_upload_approval,
+            "default_mandatory": company.documentary_default_mandatory,
+            "default_comments_enabled": company.documentary_default_comments_enabled,
+            "default_allow_download": company.documentary_default_allow_download,
+            "default_completion_threshold": company.documentary_default_completion_threshold,
+            "deleted_retention_days": company.documentary_deleted_retention_days,
+            "auto_transcription": company.documentary_auto_transcription,
+        }
+
+    def _media_data(self, media, user):
+        progress = request.env["company.documentary.watch"].sudo().search([
+            ("media_id", "=", media.id),
+            ("user_id", "=", user.id),
+        ], limit=1)
+        retention_days = media.company_id.documentary_deleted_retention_days or 365
+        purge_date = False
+        if media.deleted_at:
+            purge_date = fields.Datetime.to_string(
+                fields.Datetime.from_string(media.deleted_at) + timedelta(days=retention_days)
+            )
         return {
             "id": media.id,
             "title": media.name,
@@ -133,6 +155,24 @@ class CompanyDocumentaryController(http.Controller):
             "created_at": media.create_date,
             "updated_at": media.write_date,
             "can_edit": media._user_can_edit(user),
+            "approval_status": media.approval_status,
+            "publish_at": media.publish_at or False,
+            "published_at": media.published_at or False,
+            "transcript": media.transcript or "",
+            "chapters": media.chapters or [],
+            "share_token": media.share_token or False,
+            "is_official": media.is_official,
+            "replaces_media_id": media.replaces_media_id.id or False,
+            "approver_comment": media.approver_comment or "",
+            "approved_by_name": media.approved_by_id.name if media.approved_by_id else False,
+            "approved_at": media.approved_at or False,
+            "purge_date": purge_date,
+            "watch_progress": {
+                "position_seconds": progress.position_seconds,
+                "completion_percent": progress.completion_percent,
+                "completed": progress.completed,
+                "last_watched_at": progress.last_watched_at,
+            } if progress else None,
         }
 
     @http.route("/api/company-documentary/storage/config", type="json", auth="user", methods=["POST"], csrf=False)
@@ -226,6 +266,11 @@ class CompanyDocumentaryController(http.Controller):
             elif action == "delete":
                 folder.action_move_to_recycle_bin()
                 event = "folder_deleted"
+            elif action == "purge":
+                if folder.media_ids:
+                    return self._error(_("Move or delete the videos in a folder before permanently deleting it."))
+                folder.unlink()
+                return {"success": True, "data": {"purged": True, "id": _int(id)}}
             else:
                 return self._error(_("Unsupported folder action."))
             self._audit(event, folder=folder)
@@ -234,12 +279,23 @@ class CompanyDocumentaryController(http.Controller):
             return self._error(str(error))
 
     @http.route("/api/company-documentary/media", type="json", auth="user", methods=["POST"], csrf=False)
-    def list_media(self, folder_id=None, search="", include_archived=False, **kwargs):
-        domain = [("company_id", "=", self._user().company_id.id)]
-        if folder_id is not None:
-            domain.append(("folder_id", "=", _int(folder_id)))
-        if not include_archived or not self._is_manager():
-            domain.append(("active", "=", True))
+    def list_media(self, folder_id=None, search="", include_archived=False, recycle_bin=False,
+                   mandatory=None, processing_state=None, approval_status=None,
+                   date_from=None, date_to=None, **kwargs):
+        if recycle_bin:
+            if not self._is_manager():
+                return self._error(_("Documentary Manager access is required."))
+            domain = [
+                ("company_id", "=", self._user().company_id.id),
+                ("deleted_at", "!=", False),
+            ]
+        else:
+            domain = [("company_id", "=", self._user().company_id.id)]
+            if folder_id is not None:
+                domain.append(("folder_id", "=", _int(folder_id)))
+            if not include_archived or not self._is_manager():
+                domain.append(("active", "=", True))
+                domain.append(("deleted_at", "=", False))
         if search:
             domain += [
                 "|", "|",
@@ -247,9 +303,21 @@ class CompanyDocumentaryController(http.Controller):
                 ("original_filename", "ilike", search.strip()),
                 ("tag_ids.name", "ilike", search.strip()),
             ]
+        if mandatory is not None:
+            domain.append(("mandatory", "=", bool(mandatory)))
+        if processing_state:
+            domain.append(("processing_state", "=", processing_state))
+        if approval_status:
+            domain.append(("approval_status", "=", approval_status))
+        if date_from:
+            domain.append(("create_date", ">=", date_from))
+        if date_to:
+            domain.append(("create_date", "<=", date_to + " 23:59:59"))
         media = request.env["company.documentary.media"].sudo().search(domain, order="create_date desc")
-        if not (include_archived and self._is_manager()):
-            media = media.filtered(lambda item: item._user_can_view(self._user()))
+        if recycle_bin:
+            media = media.filtered(lambda item: item._user_can_edit(self._user()))
+        elif not (include_archived and self._is_manager()):
+            media = media.filtered(lambda item: item._user_can_view(self._user()) or item._user_can_edit(self._user()))
         return {"success": True, "data": [self._media_data(item, self._user()) for item in media]}
 
     @http.route("/api/company-documentary/tags", type="json", auth="user", methods=["POST"], csrf=False)
@@ -329,6 +397,10 @@ class CompanyDocumentaryController(http.Controller):
             object_key = "%s/%s/original/%s" % (self._user().company_id.id, uuid.uuid4(), _safe_name(filename))
             provider_upload_id = storage.initiate_multipart(object_key, mime_type)
             total_parts = max(1, math.ceil(size / PART_SIZE))
+            company = self._user().company_id
+            require_approval = company.documentary_require_upload_approval
+            publish_at = values.get("publish_at") or False
+            approval_status = "pending" if require_approval else ("scheduled" if publish_at else "approved")
             media = request.env["company.documentary.media"].sudo().create({
                 "name": (values.get("title") or filename or "Untitled video").strip(),
                 "description": values.get("description") or False,
@@ -339,16 +411,20 @@ class CompanyDocumentaryController(http.Controller):
                 "mime_type": mime_type,
                 "file_size": size,
                 "storage_key": object_key,
-                "mandatory": bool(values.get("mandatory", False)),
-                "completion_threshold": float(values.get("completion_threshold", 85) or 85),
-                "comments_enabled": bool(values.get("comments_enabled", False)),
+                "mandatory": bool(values.get("mandatory", company.documentary_default_mandatory)),
+                "completion_threshold": float(values.get("completion_threshold", company.documentary_default_completion_threshold) or 85),
+                "comments_enabled": bool(values.get("comments_enabled", company.documentary_default_comments_enabled)),
                 "scope_mode": values.get("scope_mode", "inherited"),
                 "access_scope": values.get("access_scope", "employee"),
                 "department_ids": [(6, 0, [_int(value) for value in values.get("department_ids", [])])],
                 "grade_ids": [(6, 0, [_int(value) for value in values.get("grade_ids", [])])],
                 "employee_ids": [(6, 0, [_int(value) for value in values.get("employee_ids", [])])],
                 "tag_ids": [(6, 0, [_int(value) for value in values.get("tag_ids", [])])],
-                "download_policy": values.get("download_policy", "inherit"),
+                "download_policy": values.get("download_policy", "allow" if company.documentary_default_allow_download else "inherit"),
+                "approval_status": approval_status,
+                "publish_at": publish_at or False,
+                "is_official": bool(values.get("is_official", False)),
+                "replaces_media_id": _int(values.get("replaces_media_id")) or False,
             })
             upload = request.env["company.documentary.upload"].sudo().create({
                 "name": filename or media.name,
@@ -439,7 +515,18 @@ class CompanyDocumentaryController(http.Controller):
             CloudflareR2Storage(request.env).complete_multipart(upload.object_key, upload.provider_upload_id, normalized)
             upload.write({"state": "completed", "uploaded_parts": normalized})
             media = upload.media_id
-            media.write({"processing_state": "ready"})
+            company = self._user().company_id
+            now = fields.Datetime.now()
+            completion_values = {"processing_state": "ready"}
+            if not company.documentary_require_upload_approval:
+                if media.publish_at and media.publish_at > now:
+                    completion_values["approval_status"] = "scheduled"
+                else:
+                    completion_values["approval_status"] = "approved"
+                    completion_values["published_at"] = now
+            media.write(completion_values)
+            if completion_values.get("approval_status") == "approved":
+                media._activate_replacement()
             self._audit("media_uploaded", media=media, metadata={"event": "upload_completed"})
             return {"success": True, "data": self._media_data(media, self._user())}
         except (UserError, AccessError, ValidationError) as error:
@@ -469,6 +556,7 @@ class CompanyDocumentaryController(http.Controller):
             payload = {key: values[key] for key in (
                 "name", "description", "mandatory", "completion_threshold", "comments_enabled",
                 "download_policy", "scope_mode", "access_scope", "duration_seconds", "thumbnail_key",
+                "transcript", "chapters", "publish_at", "is_official",
             ) if key in values}
             for key in ("department_ids", "grade_ids", "employee_ids", "tag_ids"):
                 if key in values:
@@ -582,7 +670,20 @@ class CompanyDocumentaryController(http.Controller):
             if action == "create":
                 if not body or not body.strip():
                     return self._error(_("A comment cannot be empty."))
-                comment_model.create({"media_id": media.id, "user_id": self._user().id, "body": body.strip()})
+                mentioned_ids = []
+                for token in re.findall(r"@([\w\s.-]+)", body.strip()):
+                    match = request.env["res.users"].sudo().search([
+                        ("name", "ilike", token.strip()),
+                        ("company_ids", "in", self._user().company_id.id),
+                    ], limit=1)
+                    if match:
+                        mentioned_ids.append(match.id)
+                comment = comment_model.create({
+                    "media_id": media.id,
+                    "user_id": self._user().id,
+                    "body": body.strip(),
+                    "mentioned_user_ids": [(6, 0, mentioned_ids)],
+                })
                 if self._user().employee_id:
                     request.env["company.documentary.watch.event"].sudo().create({
                         "media_id": media.id, "user_id": self._user().id,
@@ -596,7 +697,15 @@ class CompanyDocumentaryController(http.Controller):
                     return self._error(_("You can only delete your own comments."))
                 comment.unlink()
             records = comment_model.search([("media_id", "=", media.id), ("active", "=", True)], order="create_date asc")
-            return {"success": True, "data": [{"id": item.id, "body": item.body, "user_id": item.user_id.id, "user_name": item.user_id.name, "created_at": item.create_date} for item in records]}
+            return {"success": True, "data": [{
+                "id": item.id,
+                "body": item.body,
+                "user_id": item.user_id.id,
+                "user_name": item.user_id.name,
+                "created_at": item.create_date,
+                "mentioned_user_ids": item.mentioned_user_ids.ids,
+                "mentioned_names": item.mentioned_user_ids.mapped("name"),
+            } for item in records]}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
@@ -613,6 +722,9 @@ class CompanyDocumentaryController(http.Controller):
             elif action == "delete":
                 media.action_move_to_recycle_bin()
                 event = "media_deleted"
+            elif action == "purge":
+                media.action_permanent_delete()
+                return {"success": True, "data": {"purged": True, "id": media.id}}
             elif action == "favorite":
                 command = (fields.Command.unlink(self._user().id)
                            if self._user() in media.favorite_user_ids
@@ -635,7 +747,7 @@ class CompanyDocumentaryController(http.Controller):
 
     @http.route("/api/company-documentary/media/batch-action", type="json", auth="user", methods=["POST"], csrf=False)
     def media_batch_action(self, ids=None, action=None, target_folder_id=None, **kwargs):
-        if action not in ("archive", "delete", "restore", "favorite", "move"):
+        if action not in ("archive", "delete", "restore", "favorite", "move", "purge"):
             return self._error(_("Unsupported batch action."))
         try:
             media_records = request.env["company.documentary.media"].sudo().browse(
@@ -656,6 +768,8 @@ class CompanyDocumentaryController(http.Controller):
                     media.action_move_to_recycle_bin()
                 elif action == "restore":
                     media.action_restore()
+                elif action == "purge":
+                    media.action_permanent_delete()
                 elif action == "favorite":
                     command = (fields.Command.unlink(self._user().id)
                                if self._user() in media.favorite_user_ids
@@ -888,16 +1002,52 @@ class CompanyDocumentaryController(http.Controller):
             content_rows.append({"id": item.id, "title": item.name, "folder_name": item.folder_id.name, "mandatory": item.mandatory, "total_views": len(item_starts), "unique_viewers": len(set(item_starts.mapped("employee_id").ids)), "watch_seconds": round(sum(item_events.mapped("delta_seconds")), 2), "average_completion": round(sum(item_progress.mapped("completion_percent")) / len(item_progress), 2) if item_progress else 0, "completion_rate": round(len(item_progress.filtered("completed")) / len(item_progress) * 100, 2) if item_progress else 0})
         content_rows.sort(key=lambda row: row["total_views"], reverse=True)
         distribution = {"strong": 0, "developing": 0, "at_risk": 0}
+        completion_bands = {"under_25": 0, "between_25_75": 0, "over_75": 0}
         for item in progress:
             key = "strong" if item.completion_percent >= 75 else "developing" if item.completion_percent >= 40 else "at_risk"
             distribution[key] += 1
+            if item.completion_percent < 25:
+                completion_bands["under_25"] += 1
+            elif item.completion_percent < 75:
+                completion_bands["between_25_75"] += 1
+            else:
+                completion_bands["over_75"] += 1
+        caption_events = events.filtered(lambda event: event.event_type == "caption")
+        caption_users = len(set(caption_events.mapped("user_id").ids))
+        recent_viewer_events = starts.sorted(key=lambda event: event.happened_at, reverse=True)[:10]
+        recent_viewers = [{
+            "user_name": event.user_id.name,
+            "employee_name": event.employee_id.name,
+            "media_title": event.media_id.name,
+            "happened_at": event.happened_at,
+        } for event in recent_viewer_events]
+        pending_approval_count = request.env["company.documentary.media"].sudo().search_count([
+            ("company_id", "=", company.id),
+            ("approval_status", "=", "pending"),
+            ("deleted_at", "=", False),
+        ])
         middle = start + (end - start) / 2
         first_views = len(starts.filtered(lambda event: event.happened_at < middle))
         second_views = len(starts.filtered(lambda event: event.happened_at >= middle))
         return {"success": True, "data": {
             "period": {"from": start.date().isoformat(), "to": (end - timedelta(days=1)).date().isoformat()},
             "overview": {"total_views": len(starts), "unique_viewers": len(active_user_ids), "eligible_employees": len(eligible_ids), "viewer_rate": round(len(started_employee_ids & eligible_ids) / len(eligible_ids) * 100, 2) if eligible_ids else 0, "total_watch_seconds": round(total_watch_seconds, 2), "average_watch_seconds": round(average_watch_seconds, 2), "median_watch_seconds": round(median_watch_seconds, 2), "completion_rate": round(len(completed_pairs_in_period & started_pairs) / len(started_pairs) * 100, 2) if started_pairs else 0, "average_completion": round(sum(completion_values) / len(completion_values), 2) if completion_values else 0, "engagement_rate": round(len(engaged_users & eligible_ids) / len(eligible_ids) * 100, 2) if eligible_ids else 0, "mandatory_assignments": mandatory_assignments, "mandatory_completed": mandatory_completed, "compliance_rate": round(mandatory_completed / mandatory_assignments * 100, 2) if mandatory_assignments else 0},
-            "views_over_time": day_rows(), "departments": department_rows, "department_chart": [{"name": row["name"], "views": row["total_views"], "viewer_rate": row["viewer_rate"], "completion": row["average_completion"]} for row in department_rows], "engagement_distribution": distribution, "engagement_over_time": day_rows(), "content_performance": content_rows[:25], "trends": {"period_change_percent": round((second_views - first_views) / first_views * 100, 2) if first_views else (100 if second_views else 0), "rising": content_rows[:5], "declining": sorted(content_rows, key=lambda row: row["completion_rate"])[:5], "at_risk": sorted([row for row in content_rows if row["mandatory"]], key=lambda row: (row["completion_rate"], -row["total_views"]))[:5]},
+            "views_over_time": day_rows(), "departments": department_rows, "department_chart": [{"name": row["name"], "views": row["total_views"], "viewer_rate": row["viewer_rate"], "completion": row["average_completion"]} for row in department_rows],             "engagement_distribution": distribution, "engagement_over_time": day_rows(), "content_performance": content_rows[:25], "trends": {"period_change_percent": round((second_views - first_views) / first_views * 100, 2) if first_views else (100 if second_views else 0), "rising": content_rows[:5], "declining": sorted(content_rows, key=lambda row: row["completion_rate"])[:5], "at_risk": sorted([row for row in content_rows if row["mandatory"]], key=lambda row: (row["completion_rate"], -row["total_views"]))[:5]},
+            "caption_usage": {
+                "events": len(caption_events),
+                "unique_viewers": caption_users,
+                "usage_rate": round(caption_users / len(active_user_ids) * 100, 2) if active_user_ids else 0,
+            },
+            "completion_bands": completion_bands,
+            "recent_viewers": recent_viewers,
+            "approval_compliance": {
+                "pending_count": pending_approval_count,
+                "approved_count": request.env["company.documentary.media"].sudo().search_count([
+                    ("company_id", "=", company.id),
+                    ("approval_status", "=", "approved"),
+                    ("deleted_at", "=", False),
+                ]),
+            },
         }}
 
     @http.route("/api/company-documentary/analytics", type="json", auth="user", methods=["POST"], csrf=False)
@@ -942,5 +1092,166 @@ class CompanyDocumentaryController(http.Controller):
                 folder_id=kwargs.get("folder_id"),
                 media_id=kwargs.get("media_id"),
             )
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/continue-watching", type="json", auth="user", methods=["POST"], csrf=False)
+    def continue_watching(self, **kwargs):
+        progress = request.env["company.documentary.watch"].sudo().search([
+            ("user_id", "=", self._user().id),
+            ("completed", "=", False),
+            ("position_seconds", ">", 0),
+        ], order="last_watched_at desc", limit=24)
+        items = []
+        for record in progress:
+            media = record.media_id
+            if media._user_can_view(self._user()):
+                payload = self._media_data(media, self._user())
+                payload["watch_progress"] = {
+                    "position_seconds": record.position_seconds,
+                    "completion_percent": record.completion_percent,
+                    "completed": record.completed,
+                    "last_watched_at": record.last_watched_at,
+                }
+                items.append(payload)
+        return {"success": True, "data": items}
+
+    @http.route("/api/company-documentary/recycle-bin", type="json", auth="user", methods=["POST"], csrf=False)
+    def recycle_bin(self, **kwargs):
+        if not self._is_manager():
+            return self._error(_("Documentary Manager access is required."))
+        media = request.env["company.documentary.media"].sudo().search([
+            ("company_id", "=", self._user().company_id.id),
+            ("deleted_at", "!=", False),
+        ], order="deleted_at desc")
+        folders = request.env["company.documentary.folder"].sudo().search([
+            ("company_id", "=", self._user().company_id.id),
+            ("deleted_at", "!=", False),
+        ], order="deleted_at desc")
+        media = media.filtered(lambda item: item._user_can_edit(self._user()))
+        folders = folders.filtered(lambda item: item._user_can_edit(self._user()))
+        return {"success": True, "data": {
+            "media": [self._media_data(item, self._user()) for item in media],
+            "folders": [self._folder_data(item, self._user()) for item in folders],
+        }}
+
+    @http.route("/api/company-documentary/recycle-bin/clear", type="json", auth="user", methods=["POST"], csrf=False)
+    def clear_recycle_bin(self, **kwargs):
+        if not self._is_manager():
+            return self._error(_("Documentary Manager access is required."))
+        media = request.env["company.documentary.media"].sudo().search([
+            ("company_id", "=", self._user().company_id.id),
+            ("deleted_at", "!=", False),
+        ])
+        media = media.filtered(lambda item: item._user_can_edit(self._user()))
+        count = len(media)
+        media.action_permanent_delete()
+        return {"success": True, "data": {"purged_count": count}}
+
+    @http.route("/api/company-documentary/settings", type="json", auth="user", methods=["POST"], csrf=False)
+    def documentary_settings(self, save=False, **values):
+        company = self._user().company_id
+        if save:
+            if not self._is_admin():
+                return self._error(_("Documentary Administrator access is required."))
+            payload = {}
+            for key, field in (
+                ("require_upload_approval", "documentary_require_upload_approval"),
+                ("default_mandatory", "documentary_default_mandatory"),
+                ("default_comments_enabled", "documentary_default_comments_enabled"),
+                ("default_allow_download", "documentary_default_allow_download"),
+                ("default_completion_threshold", "documentary_default_completion_threshold"),
+                ("deleted_retention_days", "documentary_deleted_retention_days"),
+                ("auto_transcription", "documentary_auto_transcription"),
+            ):
+                if key in values:
+                    payload[field] = values[key]
+            if payload:
+                company.write(payload)
+        return {"success": True, "data": self._settings_data(company)}
+
+    @http.route("/api/company-documentary/folders/pin", type="json", auth="user", methods=["POST"], csrf=False)
+    def pin_folder(self, id=None, pinned=True, **kwargs):
+        try:
+            folder = self._folder(id)
+            command = fields.Command.link(self._user().id) if pinned else fields.Command.unlink(self._user().id)
+            folder.sudo().write({"pinned_user_ids": [command]})
+            return {"success": True, "data": self._folder_data(folder, self._user())}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/media/approval", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_approval(self, id=None, action=None, comment=None, publish_at=None, **kwargs):
+        if not self._is_manager():
+            return self._error(_("Documentary Manager access is required."))
+        try:
+            media = self._media(id, edit=True)
+            if action == "approve":
+                if publish_at:
+                    media.write({"publish_at": publish_at})
+                media.action_approve(comment)
+            elif action == "reject":
+                media.action_reject(comment)
+            elif action == "submit":
+                media.action_submit_for_approval()
+            elif action == "cancel_schedule":
+                media.write({"publish_at": False, "approval_status": "approved", "published_at": fields.Datetime.now()})
+            else:
+                return self._error(_("Unsupported approval action."))
+            self._audit("media_updated", media=media, metadata={"approval_action": action})
+            return {"success": True, "data": self._media_data(media, self._user())}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/media/batch-update", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_batch_update(self, ids=None, **values):
+        try:
+            media_records = request.env["company.documentary.media"].sudo().browse(
+                [_int(value) for value in (ids or [])]
+            ).exists().filtered(lambda item: item.company_id == self._user().company_id)
+            if not media_records:
+                return self._error(_("Select at least one video."))
+            payload = {key: values[key] for key in (
+                "mandatory", "comments_enabled", "download_policy", "scope_mode", "access_scope",
+            ) if key in values}
+            for key in ("department_ids", "grade_ids", "employee_ids", "tag_ids"):
+                if key in values:
+                    payload[key] = [(6, 0, [_int(value) for value in values[key]])]
+            if not payload:
+                return self._error(_("No update fields were provided."))
+            for media in media_records:
+                if not media._user_can_edit(self._user()):
+                    raise AccessError(_("You do not have permission to update one of the selected videos."))
+                media.write(payload)
+            return {"success": True, "data": {"updated_ids": media_records.ids}}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/media/share", type="json", auth="user", methods=["POST"], csrf=False)
+    def media_share(self, id=None, **kwargs):
+        try:
+            media = self._media(id)
+            media._ensure_share_token()
+            host = request.httprequest.host_url.rstrip("/")
+            return {"success": True, "data": {
+                "url": "%s/company-documentary?share=%s" % (host, media.share_token),
+                "token": media.share_token,
+            }}
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
+    @http.route("/api/company-documentary/media/caption-event", type="json", auth="user", methods=["POST"], csrf=False)
+    def caption_event(self, media_id=None, **kwargs):
+        try:
+            media = self._media(media_id)
+            employee = self._user().employee_id
+            if employee:
+                request.env["company.documentary.watch.event"].sudo().create({
+                    "media_id": media.id,
+                    "user_id": self._user().id,
+                    "employee_id": employee.id,
+                    "event_type": "caption",
+                })
+            return {"success": True, "data": {"recorded": True}}
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))

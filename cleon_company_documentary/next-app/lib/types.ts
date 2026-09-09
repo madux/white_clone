@@ -7,6 +7,13 @@ export interface User {
   is_document_manager?: boolean;
 }
 
+export interface WatchProgress {
+  position_seconds: number;
+  completion_percent: number;
+  completed: boolean;
+  last_watched_at?: string;
+}
+
 export interface DocumentaryFolder {
   id: number;
   name: string;
@@ -18,10 +25,16 @@ export interface DocumentaryFolder {
   deleted_at: string | false;
   media_count: number;
   can_edit: boolean;
+  is_pinned?: boolean;
   department_ids?: number[];
   grade_ids?: number[];
   employee_ids?: number[];
   editor_ids?: number[];
+}
+
+export interface DocumentaryChapter {
+  title: string;
+  start_seconds: number;
 }
 
 export interface DocumentaryMedia {
@@ -58,6 +71,19 @@ export interface DocumentaryMedia {
   updated_at: string;
   can_edit: boolean;
   subtitles?: DocumentarySubtitle[];
+  approval_status?: "draft" | "pending" | "approved" | "rejected" | "scheduled";
+  publish_at?: string | false;
+  published_at?: string | false;
+  transcript?: string;
+  chapters?: DocumentaryChapter[];
+  share_token?: string | false;
+  is_official?: boolean;
+  replaces_media_id?: number | false;
+  approver_comment?: string;
+  approved_by_name?: string | false;
+  approved_at?: string | false;
+  purge_date?: string | false;
+  watch_progress?: WatchProgress | null;
 }
 
 export interface DocumentarySubtitle {
@@ -74,6 +100,8 @@ export interface DocumentaryComment {
   user_id: number;
   user_name: string;
   created_at: string;
+  mentioned_user_ids?: number[];
+  mentioned_names?: string[];
 }
 
 export interface AudienceOptions {
@@ -88,6 +116,30 @@ export interface AudienceOptions {
     grade_id: number | false;
     grade: string;
   }[];
+}
+
+export interface DocumentarySettings {
+  require_upload_approval: boolean;
+  default_mandatory: boolean;
+  default_comments_enabled: boolean;
+  default_allow_download: boolean;
+  default_completion_threshold: number;
+  deleted_retention_days: number;
+  auto_transcription: boolean;
+}
+
+export interface RecycleBinData {
+  media: DocumentaryMedia[];
+  folders: DocumentaryFolder[];
+}
+
+export interface MediaFilters {
+  mandatory?: boolean;
+  processing_state?: string;
+  approval_status?: string;
+  date_from?: string;
+  date_to?: string;
+  recycle_bin?: boolean;
 }
 
 export interface DocumentaryAnalytics {
@@ -136,6 +188,10 @@ export interface DocumentaryAnalyticsDashboard {
   engagement_distribution: { strong: number; developing: number; at_risk: number };
   content_performance: { id: number; title: string; folder_name: string; mandatory: boolean; total_views: number; unique_viewers: number; watch_seconds: number; average_completion: number; completion_rate: number }[];
   trends: { period_change_percent: number; rising: DocumentaryAnalyticsDashboard["content_performance"]; declining: DocumentaryAnalyticsDashboard["content_performance"]; at_risk: DocumentaryAnalyticsDashboard["content_performance"] };
+  caption_usage?: { events: number; unique_viewers: number; usage_rate: number };
+  completion_bands?: { under_25: number; between_25_75: number; over_75: number };
+  recent_viewers?: { user_name: string; employee_name: string; media_title: string; happened_at: string }[];
+  approval_compliance?: { pending_count: number; approved_count: number };
 }
 
 export interface Tag {

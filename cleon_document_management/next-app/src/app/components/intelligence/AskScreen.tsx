@@ -401,13 +401,6 @@ export default function AskScreen() {
               <div className="h-28 w-28 overflow-hidden rounded-full bg-black shadow-lg ring-4 ring-slate-100">
                 <img src={MASCOT} alt="Ask Cleon AI" className="h-full w-full object-cover" />
               </div>
-              <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-                Welcome to Ask Cleon AI
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
-                Ask anything about your HR documents — contracts, employee files,
-                certifications, and compliance records.
-              </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {CATEGORIES.map((item) => (
                   <button

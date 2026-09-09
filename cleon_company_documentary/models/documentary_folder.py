@@ -72,6 +72,13 @@ class CompanyDocumentaryFolder(models.Model):
     deleted_by = fields.Many2one("res.users", readonly=True)
     media_ids = fields.One2many("company.documentary.media", "folder_id")
     media_count = fields.Integer(compute="_compute_media_count", store=True)
+    pinned_user_ids = fields.Many2many(
+        "res.users",
+        "company_documentary_folder_pin_rel",
+        "folder_id",
+        "user_id",
+        string="Pinned By",
+    )
 
     @api.depends("media_ids", "media_ids.active")
     def _compute_media_count(self):

@@ -101,17 +101,6 @@ export default function QuickAccessPage() {
 
   return (
     <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-          Personal shortcuts
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-          Quick Access
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Your pinned folders and documents, available from one place.
-        </p>
-      </div>
       {quickAccess.isLoading ? (
         <div className="h-48 animate-pulse rounded-2xl bg-white" />
       ) : (

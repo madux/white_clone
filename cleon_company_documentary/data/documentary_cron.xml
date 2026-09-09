@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_company_documentary_publish_scheduled" model="ir.cron">
+        <field name="name">Company Documentary: publish scheduled videos</field>
+        <field name="model_id" ref="model_company_documentary_media"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_publish_scheduled()</field>
+        <field name="interval_number">15</field>
+        <field name="interval_type">minutes</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_company_documentary_purge_recycle_bin" model="ir.cron">
+        <field name="name">Company Documentary: purge expired recycle bin items</field>
+        <field name="model_id" ref="model_company_documentary_media"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_purge_recycle_bin()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

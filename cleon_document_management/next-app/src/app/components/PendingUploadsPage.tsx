@@ -108,21 +108,7 @@ export default function PendingUploadsPage() {
 
   return (
     <div className="mx-auto min-h-full max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-            Employee uploads
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
-            Pending Employee Uploads
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-slate-500">
-            <strong>Pending review</strong> items need approval.{" "}
-            <strong>Awaiting folder</strong> items are already approved and need a
-            department folder. <strong>Awaiting restore</strong> items came from a
-            deleted folder — manage them in the recycle bin.
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end">
         <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
           <p className="text-2xl font-bold text-brand-text">{counts.all}</p>
           <p className="text-xs font-semibold text-slate-400">open items</p>

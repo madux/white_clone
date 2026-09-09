@@ -118,12 +118,6 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
         : compliance < 100,
   );
   const isLoading = folders.isLoading || documents.isLoading;
-  const pageTitle =
-    kind === "employee" ? "Employee Files" : "Organizational Files";
-  const pageDescription =
-    kind === "employee"
-      ? "Manage employee records, contracts, and identity documents in one secure workspace."
-      : "Keep company policies, finance evidence, and operational records organized.";
   const visibleIds = filteredRows.map(({ folder }) => folder.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
@@ -136,15 +130,7 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
 
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="mt-2 text-3xl font-medium tracking-tight text-slate-900">
-            {pageTitle}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-            {pageDescription}
-          </p>
-        </div>
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
           {kind === "employee" && (
             <Link

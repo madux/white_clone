@@ -80,17 +80,7 @@ export default function ValidateScreen() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-            Review queue
-          </p>
-          <h1 className="mt-1 text-3xl font-medium text-slate-900">Validate</h1>
-          <p className="mt-2 max-w-2xl text-sm font-light text-slate-400">
-            Compare the source file with extracted fields. Approve only after
-            blocking issues are resolved. Overrides always need a reason.
-          </p>
-        </div>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <button
           type="button"
           className="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50"

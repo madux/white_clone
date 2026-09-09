@@ -237,10 +237,7 @@ export default function EmployeeProfilePage() {
               {employee ? initials : <UserRound className="h-8 w-8" />}
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-                Employee profile
-              </p>
-              <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">
                 {name}
               </h1>
               <p className="mt-1 text-sm text-slate-500">

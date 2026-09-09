@@ -140,15 +140,11 @@ export default function OrganizationFolderPage() {
       <BackButton variant="page" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-            Organizational folder
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {folder?.folder_name ?? "Organizational Files"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {folder?.description ?? "Manage company documents and policies."}
-          </p>
+          {folder?.folder_name ? (
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {folder.folder_name}
+            </h1>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link

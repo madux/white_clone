@@ -129,6 +129,54 @@ export function AnalyticsOverview({
           </div>
         </div>
       </div>
+      {(data.caption_usage || data.completion_bands || data.approval_compliance) && (
+        <div className="analytics-three-column">
+          {data.caption_usage && (
+            <div className="analytics-panel compact">
+              <h3>Caption usage</h3>
+              <div className="quality-stat">
+                <strong>{data.caption_usage.usage_rate.toFixed(1)}%</strong>
+                <span>{data.caption_usage.unique_viewers} viewers used captions</span>
+              </div>
+            </div>
+          )}
+          {data.completion_bands && (
+            <div className="analytics-panel compact">
+              <h3>Completion bands</h3>
+              <AnalyticsProgress label="< 25%" value={(data.completion_bands.under_25 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.under_25)} />
+              <AnalyticsProgress label="25–75%" value={(data.completion_bands.between_25_75 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.between_25_75)} />
+              <AnalyticsProgress label="≥ 75%" value={(data.completion_bands.over_75 / Math.max(data.completion_bands.under_25 + data.completion_bands.between_25_75 + data.completion_bands.over_75, 1)) * 100} text={String(data.completion_bands.over_75)} />
+            </div>
+          )}
+          {data.approval_compliance && (
+            <div className="analytics-panel compact">
+              <h3>Approval compliance</h3>
+              <div className="quality-stat">
+                <strong>{data.approval_compliance.pending_count}</strong>
+                <span>Pending approval</span>
+              </div>
+              <div className="quality-stat">
+                <strong>{data.approval_compliance.approved_count}</strong>
+                <span>Approved videos</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {!!data.recent_viewers?.length && (
+        <div className="analytics-panel compact">
+          <h3>Recent viewers</h3>
+          <div className="recent-viewers-list">
+            {data.recent_viewers.map((viewer, index) => (
+              <div className="recent-viewer-row" key={`${viewer.user_name}-${index}`}>
+                <strong>{viewer.user_name}</strong>
+                <span>{viewer.media_title}</span>
+                <small>{new Date(viewer.happened_at).toLocaleString()}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

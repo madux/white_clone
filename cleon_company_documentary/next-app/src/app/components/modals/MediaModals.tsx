@@ -36,11 +36,29 @@ export function MediaEditModal({
   const [downloadPolicy, setDownloadPolicy] = useState(
     media.download_allowed ? "allow" : "deny",
   );
+  const [transcript, setTranscript] = useState(media.transcript || "");
+  const [publishAt, setPublishAt] = useState(
+    media.publish_at ? String(media.publish_at).slice(0, 16) : "",
+  );
+  const [chaptersText, setChaptersText] = useState(
+    (media.chapters || [])
+      .map((chapter) => `${chapter.start_seconds}|${chapter.title}`)
+      .join("\n"),
+  );
   const [loading, setLoading] = useState(false);
   async function save(event: FormEvent) {
     event.preventDefault();
     setLoading(true);
     try {
+      const chapters = chaptersText
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [start, ...rest] = line.split("|");
+          return { start_seconds: Number(start), title: rest.join("|").trim() || "Chapter" };
+        })
+        .filter((chapter) => !Number.isNaN(chapter.start_seconds));
       await api.updateMedia({
         id: media.id,
         name,
@@ -53,6 +71,9 @@ export function MediaEditModal({
         department_ids: scopeMode === "override" ? departmentIds : [],
         grade_ids: scopeMode === "override" ? gradeIds : [],
         employee_ids: scopeMode === "override" ? employeeIds : [],
+        transcript,
+        chapters,
+        publish_at: publishAt || false,
       });
       onSaved();
     } catch (error) {
@@ -144,6 +165,18 @@ export function MediaEditModal({
             />
           </label>
         </div>
+        <label>
+          Publishing schedule
+          <input type="datetime-local" value={publishAt} onChange={(event) => setPublishAt(event.target.value)} />
+        </label>
+        <label>
+          Transcript
+          <textarea value={transcript} onChange={(event) => setTranscript(event.target.value)} rows={4} placeholder="Paste or edit the video transcript" />
+        </label>
+        <label>
+          Chapters
+          <textarea value={chaptersText} onChange={(event) => setChaptersText(event.target.value)} rows={4} placeholder="seconds|Chapter title (one per line)" />
+        </label>
         <div className="modal-actions">
           <button type="button" className="secondary-button" onClick={onClose}>
             Cancel

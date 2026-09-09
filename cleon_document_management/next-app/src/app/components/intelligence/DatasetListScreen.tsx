@@ -18,17 +18,7 @@ export default function DatasetListScreen() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-            Datasets
-          </p>
-          <h1 className="mt-1 text-3xl font-medium text-slate-900">Dataset</h1>
-          <p className="mt-2 max-w-2xl text-sm font-light text-slate-400">
-            Open drafts, queue a run, and continue an unfinished wizard. Extraction
-            of document text starts when you click Run.
-          </p>
-        </div>
+      <section className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <Link
           href="/pages/document-intelligence/datasets/new"
           className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-brand-text to-brand-pink px-4 py-3 text-sm font-medium text-white shadow-lg shadow-pink-200"

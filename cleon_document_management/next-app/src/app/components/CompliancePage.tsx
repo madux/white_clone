@@ -196,19 +196,7 @@ export default function CompliancePage() {
 
   return (
     <div className="relative min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-            Employee compliance
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Compliance
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-            Manage requirements, exceptions, and evaluation history for employee
-            documents.
-          </p>
-        </div>
+      <div className="flex flex-col gap-5 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-end">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"

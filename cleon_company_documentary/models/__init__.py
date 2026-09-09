@@ -1,3 +1,4 @@
+from . import res_company
 from . import documentary_tag
 from . import documentary_folder
 from . import documentary_media

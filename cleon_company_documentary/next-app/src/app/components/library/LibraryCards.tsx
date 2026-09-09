@@ -2,46 +2,59 @@
 
 import {
   Archive,
+  Clock3,
   Folder,
   FolderOpen,
   LoaderCircle,
   MoreVertical,
+  Pin,
   Play,
   Plus,
   Settings2,
+  Share2,
   Star,
   Trash2,
   Users,
   Video,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type {
-  DocumentaryFolder,
-  DocumentaryMedia,
-} from "../../../../lib/types";
+import type { DocumentaryFolder, DocumentaryMedia } from "../../../../lib/types";
 import { api } from "../../../../lib/api";
+import type { LayoutMode } from "./libraryTypes";
 import { formatBytes, formatDuration, scopeLabel } from "../documentaryUtils";
+
+function statusBadge(media: DocumentaryMedia) {
+  if (media.processing_state !== "ready") return media.processing_state;
+  if (media.approval_status === "pending") return "pending review";
+  if (media.approval_status === "scheduled") return "scheduled";
+  if (media.approval_status === "rejected") return "rejected";
+  return null;
+}
 
 export function FeaturedFolder({
   folder,
   tint,
   onClick,
+  onPin,
+  canManage,
 }: {
   folder: DocumentaryFolder;
   tint: number;
   onClick: () => void;
+  onPin?: () => void;
+  canManage?: boolean;
 }) {
   return (
     <button className={`featured-card tint-${tint}`} onClick={onClick}>
       <div className="featured-card-top">
-        <span className="pin-dot">
-          <Star size={14} fill="currentColor" />
-        </span>
-        <MoreVertical size={17} />
+        <span className="pin-dot"><Star size={14} fill="currentColor" /></span>
+        {canManage && onPin && (
+          <button className="icon-button compact" onClick={(e) => { e.stopPropagation(); onPin(); }} aria-label="Pin folder">
+            <Pin size={16} fill={folder.is_pinned ? "currentColor" : "none"} />
+          </button>
+        )}
       </div>
-      <div className="featured-illustration">
-        <FolderOpen size={42} strokeWidth={1.3} />
-      </div>
+      <div className="featured-illustration"><FolderOpen size={42} strokeWidth={1.3} /></div>
       <div className="featured-card-copy">
         <span>{folder.media_count} videos</span>
         <strong>{folder.name}</strong>
@@ -57,63 +70,40 @@ export function FolderCard({
   onOpen,
   onAction,
   onEdit,
+  onPin,
 }: {
   folder: DocumentaryFolder;
   canManage: boolean;
   onOpen: () => void;
   onAction: (id: number, action: "archive" | "delete") => void;
   onEdit: () => void;
+  onPin?: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="folder-card" style={{ position: "relative" }}>
       <button className="folder-card-main" onClick={onOpen}>
-        <span className="folder-icon">
-          <Folder size={19} />
-        </span>
+        <span className="folder-icon"><Folder size={19} /></span>
         <span className="folder-card-copy">
           <strong>{folder.name}</strong>
-          <small>
-            {folder.media_count} videos · {scopeLabel(folder.access_scope)}
-          </small>
+          <small>{folder.media_count} videos · {scopeLabel(folder.access_scope)}</small>
         </span>
       </button>
       {canManage && folder.can_edit && (
-        <button
-          className="icon-button"
-          onClick={() => setMenuOpen((value) => !value)}
-          aria-label={`Manage ${folder.name}`}
-        >
+        <button className="icon-button" onClick={() => setMenuOpen((value) => !value)} aria-label={`Manage ${folder.name}`}>
           <MoreVertical size={18} />
         </button>
       )}
       {menuOpen && canManage && folder.can_edit && (
         <div className="context-menu">
-          <button
-            onClick={() => {
-              setMenuOpen(false);
-              onEdit();
-            }}
-          >
-            <span className="pencil-icon">✎</span> Edit folder
-          </button>
-          <button
-            onClick={() => {
-              setMenuOpen(false);
-              onAction(folder.id, "archive");
-            }}
-          >
-            <Archive size={14} /> Archive
-          </button>
-          <button
-            className="danger"
-            onClick={() => {
-              setMenuOpen(false);
-              onAction(folder.id, "delete");
-            }}
-          >
-            <Trash2 size={14} /> Move to recycle bin
-          </button>
+          <button onClick={() => { setMenuOpen(false); onEdit(); }}>✎ Edit folder</button>
+          {onPin && (
+            <button onClick={() => { setMenuOpen(false); onPin(); }}>
+              <Pin size={14} /> {folder.is_pinned ? "Unpin" : "Pin folder"}
+            </button>
+          )}
+          <button onClick={() => { setMenuOpen(false); onAction(folder.id, "archive"); }}><Archive size={14} /> Archive</button>
+          <button className="danger" onClick={() => { setMenuOpen(false); onAction(folder.id, "delete"); }}><Trash2 size={14} /> Move to recycle bin</button>
         </div>
       )}
     </div>
@@ -123,142 +113,117 @@ export function FolderCard({
 export function MediaCard({
   media,
   index,
+  layoutMode,
   canManage,
   selected,
   onSelect,
   onEdit,
   onOpen,
+  onShare,
   onAction,
 }: {
   media: DocumentaryMedia;
   index: number;
+  layoutMode: LayoutMode;
   canManage: boolean;
   selected: boolean;
   onSelect: () => void;
   onEdit: () => void;
   onOpen: () => void;
-  onAction: (
-    media: DocumentaryMedia,
-    action: "favorite" | "archive" | "delete",
-  ) => void;
+  onShare?: () => void;
+  onAction: (media: DocumentaryMedia, action: "favorite" | "archive" | "delete") => void;
 }) {
   const palette = ["rose", "lilac", "peach", "berry"][index % 4];
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const badge = statusBadge(media);
+  const progress = media.watch_progress;
+
   useEffect(() => {
     if (!media.thumbnail_available) return () => undefined;
     let active = true;
-    api
-      .assetReadUrl(media.id, "thumbnail")
-      .then((result) => {
-        if (active) setThumbnailUrl(result.url);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
+    api.assetReadUrl(media.id, "thumbnail").then((result) => { if (active) setThumbnailUrl(result.url); }).catch(() => undefined);
+    return () => { active = false; };
   }, [media.id, media.thumbnail_available]);
+
+  if (layoutMode === "list") {
+    return (
+      <article className={`media-list-row ${selected ? "is-selected" : ""}`}>
+        {canManage && (
+          <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
+        )}
+        <button className="media-list-main" onClick={onOpen}>
+          <span className={`media-type-badge ${media.processing_state}`}>{badge || "ready"}</span>
+          <strong>{media.title}</strong>
+          <span>{media.folder_name} · {formatDuration(media.duration_seconds)} · {formatBytes(media.file_size)}</span>
+          {progress && !progress.completed && (
+            <span className="continue-meta"><Clock3 size={13} /> {Math.round(progress.completion_percent)}% watched</span>
+          )}
+        </button>
+        <div className="media-list-actions">
+          <button onClick={() => onAction(media, "favorite")} aria-label="Toggle favorite"><Star size={16} fill={media.favorite ? "currentColor" : "none"} /></button>
+          {onShare && <button onClick={onShare} aria-label="Share"><Share2 size={16} /></button>}
+          <button onClick={() => (canManage ? onEdit() : onOpen())} aria-label="Edit">{canManage ? <Settings2 size={16} /> : <MoreVertical size={16} />}</button>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className={`media-card ${selected ? "is-selected" : ""}`}>
       <button
         className={`media-preview ${palette} ${thumbnailUrl ? "has-thumbnail" : ""}`}
-        style={
-          thumbnailUrl
-            ? {
-                backgroundImage: `linear-gradient(#24162a55,#24162a55), url(${thumbnailUrl})`,
-              }
-            : undefined
-        }
+        style={thumbnailUrl ? { backgroundImage: `linear-gradient(#24162a55,#24162a55), url(${thumbnailUrl})` } : undefined}
         onClick={onOpen}
       >
         {canManage && (
-          <span
-            className="media-select"
-            onClick={(event) => {
-              event.stopPropagation();
-              onSelect();
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={onSelect}
-              aria-label={`Select ${media.title}`}
-            />
+          <span className="media-select" onClick={(event) => { event.stopPropagation(); onSelect(); }}>
+            <input type="checkbox" checked={selected} onChange={onSelect} aria-label={`Select ${media.title}`} />
           </span>
         )}
-        <span className="media-type">
-          <Video size={14} />{" "}
-          {media.mime_type.split("/")[1]?.toUpperCase() || "VIDEO"}
-        </span>
-        <span className="play-button">
-          <Play size={19} fill="currentColor" />
-        </span>
-        <span className="duration">
-          {formatDuration(media.duration_seconds)}
-        </span>
+        {badge && <span className={`status-badge ${badge.replace(" ", "-")}`}>{badge}</span>}
+        <span className="media-type"><Video size={14} /> {media.mime_type.split("/")[1]?.toUpperCase() || "VIDEO"}</span>
+        <span className="play-button"><Play size={19} fill="currentColor" /></span>
+        <span className="duration">{formatDuration(media.duration_seconds)}</span>
+        {progress && !progress.completed && (
+          <span className="progress-chip">{Math.round(progress.completion_percent)}%</span>
+        )}
       </button>
       <div className="media-copy">
         <div className="media-meta">
           <span>{formatBytes(media.file_size)}</span>
-          <span>
-            Updated{" "}
-            {new Date(media.updated_at || media.created_at).toLocaleDateString(
-              undefined,
-              { month: "short", day: "numeric" },
-            )}
-          </span>
+          <span>Updated {new Date(media.updated_at || media.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
         </div>
         <div className="media-title-row">
-          <button className="media-title" onClick={onOpen}>
-            {media.title}
-          </button>
-          <button
-            className="icon-button compact"
-            onClick={() => onAction(media, "favorite")}
-            aria-label="Toggle favorite"
-          >
+          <button className="media-title" onClick={onOpen}>{media.title}</button>
+          <button className="icon-button compact" onClick={() => onAction(media, "favorite")} aria-label="Toggle favorite">
             <Star size={16} fill={media.favorite ? "currentColor" : "none"} />
           </button>
         </div>
         <div className="media-footer">
-          <span>
-            <Users size={14} /> {media.folder_name}
-          </span>
-          <button
-            className="icon-button compact"
-            onClick={() => (canManage ? onEdit() : onOpen())}
-            aria-label={canManage ? "Edit video" : "View video"}
-          >
-            {canManage ? <Settings2 size={16} /> : <MoreVertical size={16} />}
-          </button>
+          <span><Users size={14} /> {media.folder_name}</span>
+          <div className="media-footer-actions">
+            {onShare && <button className="icon-button compact" onClick={onShare} aria-label="Share"><Share2 size={16} /></button>}
+            <button className="icon-button compact" onClick={() => (canManage ? onEdit() : onOpen())} aria-label={canManage ? "Edit video" : "View video"}>
+              {canManage ? <Settings2 size={16} /> : <MoreVertical size={16} />}
+            </button>
+          </div>
         </div>
+        {progress && !progress.completed && (
+          <div className="watch-progress-bar"><span style={{ width: `${progress.completion_percent}%` }} /></div>
+        )}
       </div>
     </article>
   );
 }
 
-export function EmptyState({
-  title,
-  description,
-  action,
-  onAction,
-}: {
-  title: string;
-  description: string;
-  action?: string;
-  onAction?: () => void;
-}) {
+export function EmptyState({ title, description, action, onAction }: { title: string; description: string; action?: string; onAction?: () => void }) {
   return (
     <div className="empty-state">
-      <div className="empty-icon">
-        <Video size={22} />
-      </div>
+      <div className="empty-icon"><Video size={22} /></div>
       <strong>{title}</strong>
       <p>{description}</p>
       {action && onAction && (
-        <button className="secondary-button small" onClick={onAction}>
-          <Plus size={15} /> {action}
-        </button>
+        <button className="secondary-button small" onClick={onAction}><Plus size={15} /> {action}</button>
       )}
     </div>
   );

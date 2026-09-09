@@ -2,11 +2,13 @@
 
 import {
   BarChart3,
+  CheckCircle2,
   Clock3,
   Folder,
   Home,
   Library,
   MoreVertical,
+  Recycle,
   Settings2,
   Star,
   X,
@@ -20,6 +22,7 @@ export function DocumentarySidebar({
   selectedFolder,
   libraryView,
   mediaCount,
+  pendingCount,
   canManage,
   isAdmin,
   mobileNav,
@@ -28,13 +31,14 @@ export function DocumentarySidebar({
   onNavigate,
   onOpenFolder,
   onAnalytics,
-  onStorage,
+  onSettings,
   onClose,
 }: {
   folders: DocumentaryFolder[];
   selectedFolder: DocumentaryFolder | null;
   libraryView: LibraryView;
   mediaCount: number;
+  pendingCount: number;
   canManage: boolean;
   isAdmin: boolean;
   mobileNav: boolean;
@@ -43,13 +47,16 @@ export function DocumentarySidebar({
   onNavigate: (view: LibraryView) => void;
   onOpenFolder: (folder: DocumentaryFolder) => void;
   onAnalytics: () => void;
-  onStorage: () => void;
+  onSettings: () => void;
   onClose: () => void;
 }) {
+  const pinned = folders.filter((folder) => folder.is_pinned);
+  const otherFolders = folders.filter((folder) => !folder.is_pinned);
+
   return (
     <aside className={`documentary-sidebar ${mobileNav ? "is-open" : ""}`}>
       <div className="brand-lockup">
-        <span className="directory-brand">Company Directory</span>
+        <span className="directory-brand">Company Documentary</span>
       </div>
       <button
         className="mobile-close"
@@ -87,14 +94,43 @@ export function DocumentarySidebar({
           onClick={() => onNavigate("recent")}
         >
           <Clock3 size={17} />
-          <span>Recently watched</span>
+          <span>Continue watching</span>
         </button>
+        {canManage && (
+          <>
+            <button
+              className={`sidebar-link ${libraryView === "approvals" ? "active" : ""}`}
+              onClick={() => onNavigate("approvals")}
+            >
+              <CheckCircle2 size={17} />
+              <span>Pending review</span>
+              {pendingCount > 0 && <span className="nav-count alert">{pendingCount}</span>}
+            </button>
+            <button
+              className={`sidebar-link ${libraryView === "recycle" ? "active" : ""}`}
+              onClick={() => onNavigate("recycle")}
+            >
+              <Recycle size={17} />
+              <span>Recycle bin</span>
+            </button>
+          </>
+        )}
       </nav>
       <div className="sidebar-section-label folder-label">
         Folders <span>{folders.length}</span>
       </div>
-      <div className="sidebar-folder-list">
-        {folders.slice(0, 6).map((folder) => (
+      <div className="sidebar-folder-list scrollable">
+        {pinned.map((folder) => (
+          <button
+            key={folder.id}
+            className={`sidebar-link pinned ${selectedFolder?.id === folder.id ? "selected" : ""}`}
+            onClick={() => onOpenFolder(folder)}
+          >
+            <Star size={14} fill="currentColor" />
+            <span>{folder.name}</span>
+          </button>
+        ))}
+        {otherFolders.map((folder) => (
           <button
             key={folder.id}
             className={`sidebar-link ${selectedFolder?.id === folder.id ? "selected" : ""}`}
@@ -116,9 +152,9 @@ export function DocumentarySidebar({
               <span>Library analytics</span>
             </button>
             {isAdmin && (
-              <button className="sidebar-link" onClick={onStorage}>
+              <button className="sidebar-link" onClick={onSettings}>
                 <Settings2 size={17} />
-                <span>Storage settings</span>
+                <span>Settings</span>
               </button>
             )}
           </>

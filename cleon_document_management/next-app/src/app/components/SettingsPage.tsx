@@ -247,18 +247,6 @@ export default function SettingsPage() {
   return (
     <div className="min-h-full bg-[#f7f8fc] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[1320px]">
-        <header className="mb-7 flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-[2rem] font-bold tracking-[-0.035em] text-slate-950">
-              Settings
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Shape how your organization classifies, reviews, shares, and keeps
-              its documents.
-            </p>
-          </div>
-        </header>
-
         {query.isError && (
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-800 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">

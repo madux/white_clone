@@ -430,9 +430,6 @@ export default function MyDocumentsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Welcome, {user.data?.name || "there"}
           </h1>
-          <p className="mt-1 text-xs font-medium text-slate-500">
-            File management · upload, review, and organize your documents
-          </p>
         </div>
         <button
           type="button"

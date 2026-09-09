@@ -11,6 +11,7 @@
         "security/ir.model.access.csv",
         "security/record_rules.xml",
         "data/cleanup.xml",
+        "data/documentary_cron.xml",
         "views/company_documentary_views.xml",
         "views/menu.xml",
     ],

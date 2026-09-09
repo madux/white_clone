@@ -141,14 +141,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-full mx-auto w-full max-w-[1650px] space-y-8 bg-slate-50 p-6">
       <section className="rounded-2xl shadow-brand-secondary/10">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col gap-2">
-            <span className="text-3xl font-medium">Dashboard</span>
-            <span className="text-slate-400 font-light">
-              Centralized repository for employee files, compliance policies,
-              and audits.
-            </span>
-          </div>
+        <div className="flex justify-end items-center">
           <div className="flex gap-4">
             <Link
               href="/pages/organization?create=1"

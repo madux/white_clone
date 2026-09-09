@@ -29,19 +29,6 @@ export default function ConfigurationScreen({
 
   return (
     <div className="space-y-8">
-      <section>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-          Admin
-        </p>
-        <h1 className="mt-1 text-3xl font-medium text-slate-900">
-          Configuration
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm font-light text-slate-400">
-          Document Intelligence settings stay separate from general Document
-          Management menus.
-        </p>
-      </section>
-
       <nav className="flex flex-wrap gap-2">
         {TABS.map((tab) => {
           const active =

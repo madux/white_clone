@@ -4,18 +4,18 @@ import {
   Archive,
   ArrowLeft,
   Check,
+  Filter,
   FolderOpen,
+  LayoutGrid,
   Library,
+  List,
   Menu,
   ShieldCheck,
   Star,
   Trash2,
 } from "lucide-react";
-import type {
-  DocumentaryFolder,
-  DocumentaryMedia,
-} from "../../../../lib/types";
-import type { LibraryView } from "./libraryTypes";
+import type { DocumentaryFolder, DocumentaryMedia } from "../../../../lib/types";
+import type { LayoutMode, LibraryView, MediaFiltersState } from "./libraryTypes";
 import {
   FeaturedFolder,
   FolderCard,
@@ -32,9 +32,10 @@ export function LibraryContent({
   featuredFolders,
   selectedFolder,
   libraryView,
-  pageTitle,
   search,
   canManage,
+  layoutMode,
+  filters,
   selectedMediaIds,
   batchTargetFolder,
   mediaLoading,
@@ -43,26 +44,31 @@ export function LibraryContent({
   onUpload,
   onViewAll,
   onSelectFolder,
+  onPinFolder,
   onBackToHome,
   onFolderAction,
   onEditFolder,
   onSelectMedia,
   onOpenMedia,
+  onShareMedia,
   onEditMedia,
   onMediaAction,
   onBatchAction,
   onOpenBatchShare,
   onMove,
   onClearSelection,
+  onLayoutChange,
+  onFiltersChange,
   onNotice,
 }: {
   folders: DocumentaryFolder[];
   featuredFolders: DocumentaryFolder[];
   selectedFolder: DocumentaryFolder | null;
   libraryView: LibraryView;
-  pageTitle: string;
   search: string;
   canManage: boolean;
+  layoutMode: LayoutMode;
+  filters: MediaFiltersState;
   selectedMediaIds: number[];
   batchTargetFolder: string;
   mediaLoading: boolean;
@@ -71,20 +77,35 @@ export function LibraryContent({
   onUpload: () => void;
   onViewAll: () => void;
   onSelectFolder: (folder: DocumentaryFolder) => void;
+  onPinFolder: (folder: DocumentaryFolder) => void;
   onBackToHome: () => void;
   onFolderAction: (id: number, action: "archive" | "delete") => void;
   onEditFolder: (folder: DocumentaryFolder) => void;
   onSelectMedia: (id: number) => void;
   onOpenMedia: (media: DocumentaryMedia) => void;
+  onShareMedia: (media: DocumentaryMedia) => void;
   onEditMedia: (media: DocumentaryMedia) => void;
   onMediaAction: (media: DocumentaryMedia, action: MediaAction) => void;
   onBatchAction: (action: MediaAction) => void;
   onOpenBatchShare: () => void;
   onMove: (folderId: string) => void;
   onClearSelection: () => void;
+  onLayoutChange: (mode: LayoutMode) => void;
+  onFiltersChange: (filters: MediaFiltersState) => void;
   onNotice: (type: "error" | "success", text: string) => void;
 }) {
   const showLibraryOverview = !selectedFolder && libraryView === "home";
+  const showFilters = libraryView === "all" || !!selectedFolder;
+  const mediaSectionHeading = selectedFolder
+    ? { title: selectedFolder.name, description: `${selectedFolder.media_count} videos in this space` }
+    : libraryView === "home"
+      ? search
+        ? { title: `Results for “${search}”`, description: "" }
+        : { title: "Latest videos", description: "" }
+      : search
+        ? { title: `Results for “${search}”`, description: "" }
+        : null;
+
   return (
     <>
       {showLibraryOverview && (
@@ -100,34 +121,20 @@ export function LibraryContent({
           </div>
           <div className="featured-grid">
             {featuredFolders.map((folder, index) => (
-              <FeaturedFolder
-                key={folder.id}
-                folder={folder}
-                tint={index}
-                onClick={() => onSelectFolder(folder)}
-              />
+              <FeaturedFolder key={folder.id} folder={folder} tint={index} onClick={() => onSelectFolder(folder)} onPin={() => onPinFolder(folder)} canManage={canManage} />
             ))}
             {!featuredFolders.length && (
-              <EmptyState
-                title="Create your first library"
-                description="Organize company stories and training into a shared space."
-                action={canManage ? "Create a folder" : undefined}
-                onAction={onCreateFolder}
-              />
+              <EmptyState title="Create your first library" description="Organize company stories and training into a shared space." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
             )}
           </div>
         </section>
       )}
-      {(selectedFolder || showLibraryOverview) && (
+      {(selectedFolder || showLibraryOverview) && libraryView !== "recent" && (
         <section className="section-block">
           <div className="section-heading">
             <div>
               <h2>{selectedFolder ? "Folder contents" : "Folders"}</h2>
-              <p>
-                {selectedFolder
-                  ? `${folders.find((item) => item.id === selectedFolder.id)?.media_count || 0} videos in this space`
-                  : "A simple, calm place to keep every story together."}
-              </p>
+              <p>{selectedFolder ? `${selectedFolder.media_count} videos in this space` : "A simple, calm place to keep every story together."}</p>
             </div>
             {selectedFolder && (
               <button className="text-button" onClick={onBackToHome}>
@@ -136,152 +143,88 @@ export function LibraryContent({
             )}
           </div>
           <div className="folder-grid">
-            {!selectedFolder &&
-              folders.map((folder) => (
-                <FolderCard
-                  key={folder.id}
-                  folder={folder}
-                  canManage={canManage}
-                  onOpen={() => onSelectFolder(folder)}
-                  onAction={onFolderAction}
-                  onEdit={() => onEditFolder(folder)}
-                />
-              ))}
+            {!selectedFolder && folders.map((folder) => (
+              <FolderCard key={folder.id} folder={folder} canManage={canManage} onOpen={() => onSelectFolder(folder)} onAction={onFolderAction} onEdit={() => onEditFolder(folder)} onPin={() => onPinFolder(folder)} />
+            ))}
             {selectedFolder && (
               <div className="folder-context-card">
-                <div className="folder-icon large">
-                  <FolderOpen size={25} />
-                </div>
+                <div className="folder-icon large"><FolderOpen size={25} /></div>
                 <div>
                   <strong>{selectedFolder.name}</strong>
-                  <span>
-                    {scopeLabel(selectedFolder.access_scope)} ·{" "}
-                    {selectedFolder.media_count} videos
-                  </span>
+                  <span>{scopeLabel(selectedFolder.access_scope)} · {selectedFolder.media_count} videos</span>
                 </div>
-                <button
-                  className="icon-button"
-                  onClick={onBackToHome}
-                  aria-label="Go back"
-                >
-                  <ArrowLeft size={17} />
-                </button>
+                <button className="icon-button" onClick={onBackToHome} aria-label="Go back"><ArrowLeft size={17} /></button>
               </div>
             )}
             {!selectedFolder && !folders.length && (
-              <EmptyState
-                title="No folders yet"
-                description="A folder gives every upload a clear home."
-                action={canManage ? "Create a folder" : undefined}
-                onAction={onCreateFolder}
-              />
+              <EmptyState title="No folders yet" description="A folder gives every upload a clear home." action={canManage ? "Create a folder" : undefined} onAction={onCreateFolder} />
             )}
           </div>
         </section>
       )}
       <section className="section-block media-section">
         <div className="section-heading">
-          <div>
-            <h2>
-              {selectedFolder
-                ? selectedFolder.name
-                : libraryView === "home"
-                  ? "Latest videos"
-                  : pageTitle}
-            </h2>
-            <p>
-              {search
-                ? `Results matching “${search}”`
-                : "The latest additions to your company library."}
-            </p>
-          </div>
+          {mediaSectionHeading ? (
+            <div>
+              <h2>{mediaSectionHeading.title}</h2>
+              {mediaSectionHeading.description ? <p>{mediaSectionHeading.description}</p> : null}
+            </div>
+          ) : <div />}
           <div className="view-toggle">
-            <button className="active" aria-label="Grid view">
-              <Library size={16} />
-            </button>
-            <button
-              onClick={() =>
-                onNotice("success", "Grid view is the default library layout.")
-              }
-              aria-label="List view"
-            >
-              <Menu size={16} />
-            </button>
+            <button className={layoutMode === "grid" ? "active" : ""} onClick={() => onLayoutChange("grid")} aria-label="Grid view"><LayoutGrid size={16} /></button>
+            <button className={layoutMode === "list" ? "active" : ""} onClick={() => onLayoutChange("list")} aria-label="List view"><List size={16} /></button>
           </div>
         </div>
-        {canManage && selectedMediaIds.length > 0 && (
-          <div className="batch-toolbar">
-            <span>
-              <Check size={15} /> {selectedMediaIds.length} selected
-            </span>
-            <button onClick={() => onBatchAction("favorite")}>
-              <Star size={14} /> Favorite
-            </button>
-            <button onClick={() => onBatchAction("archive")}>
-              <Archive size={14} /> Archive
-            </button>
-            <button onClick={onOpenBatchShare}>
-              <ShieldCheck size={14} /> Share
-            </button>
-            <select
-              value={batchTargetFolder}
-              onChange={(event) => onMove(event.target.value)}
-              aria-label="Move selected videos"
-            >
-              <option value="">Move to…</option>
-              {folders
-                .filter((folder) => folder.can_edit)
-                .map((folder) => (
-                  <option value={folder.id} key={folder.id}>
-                    {folder.name}
-                  </option>
-                ))}
+        {showFilters && (
+          <div className="filter-toolbar">
+            <Filter size={15} />
+            <select value={filters.processing_state || ""} onChange={(e) => onFiltersChange({ ...filters, processing_state: e.target.value || undefined })}>
+              <option value="">All statuses</option>
+              <option value="ready">Ready</option>
+              <option value="processing">Processing</option>
+              <option value="uploading">Uploading</option>
+              <option value="failed">Failed</option>
             </select>
-            <button className="danger" onClick={() => onBatchAction("delete")}>
-              <Trash2 size={14} /> Recycle
-            </button>
-            <button className="batch-clear" onClick={onClearSelection}>
-              Clear
-            </button>
+            <select value={filters.approval_status || ""} onChange={(e) => onFiltersChange({ ...filters, approval_status: e.target.value || undefined })}>
+              <option value="">All approval states</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <label className="filter-check">
+              <input type="checkbox" checked={Boolean(filters.mandatory)} onChange={(e) => onFiltersChange({ ...filters, mandatory: e.target.checked || undefined })} />
+              Mandatory only
+            </label>
+            <button className="text-button" onClick={() => onFiltersChange({})}>Clear filters</button>
           </div>
         )}
-        <div className="media-grid">
+        {canManage && selectedMediaIds.length > 0 && (
+          <div className="batch-toolbar">
+            <span><Check size={15} /> {selectedMediaIds.length} selected</span>
+            <button onClick={() => onBatchAction("favorite")}><Star size={14} /> Favorite</button>
+            <button onClick={() => onBatchAction("archive")}><Archive size={14} /> Archive</button>
+            <button onClick={onOpenBatchShare}><ShieldCheck size={14} /> Share</button>
+            <select value={batchTargetFolder} onChange={(event) => onMove(event.target.value)} aria-label="Move selected videos">
+              <option value="">Move to…</option>
+              {folders.filter((folder) => folder.can_edit).map((folder) => (
+                <option value={folder.id} key={folder.id}>{folder.name}</option>
+              ))}
+            </select>
+            <button className="danger" onClick={() => onBatchAction("delete")}><Trash2 size={14} /> Recycle</button>
+            <button className="batch-clear" onClick={onClearSelection}>Clear</button>
+          </div>
+        )}
+        <div className={layoutMode === "list" ? "media-list" : "media-grid"}>
           {mediaLoading && <LoadingState />}
-          {!mediaLoading &&
-            visibleMedia.map((item, index) => (
-              <MediaCard
-                key={item.id}
-                media={item}
-                index={index}
-                canManage={canManage}
-                selected={selectedMediaIds.includes(item.id)}
-                onOpen={() => onOpenMedia(item)}
-                onEdit={() => onEditMedia(item)}
-                onSelect={() => onSelectMedia(item.id)}
-                onAction={onMediaAction}
-              />
-            ))}
+          {!mediaLoading && visibleMedia.map((item, index) => (
+            <MediaCard key={item.id} media={item} index={index} layoutMode={layoutMode} canManage={canManage} selected={selectedMediaIds.includes(item.id)} onOpen={() => onOpenMedia(item)} onEdit={() => onEditMedia(item)} onShare={() => onShareMedia(item)} onSelect={() => onSelectMedia(item.id)} onAction={onMediaAction} />
+          ))}
           {!mediaLoading && !visibleMedia.length && (
             <EmptyState
-              title={
-                search
-                  ? "No videos found"
-                  : libraryView === "favorites"
-                    ? "No favorites yet"
-                    : "Your video library is ready"
-              }
-              description={
-                search
-                  ? "Try a different title, filename, or tag."
-                  : "Upload a video to make your company knowledge easy to revisit."
-              }
-              action={
-                canManage && !selectedFolder
-                  ? "Create a folder first"
-                  : canManage
-                    ? "Upload a video"
-                    : undefined
-              }
+              title={search ? "No videos found" : libraryView === "favorites" ? "No favorites yet" : libraryView === "recent" ? "Nothing to continue" : "Your video library is ready"}
+              description={search ? "Try a different title, filename, or tag." : libraryView === "recent" ? "Start watching a video to see it here." : "Upload a video to make your company knowledge easy to revisit."}
+              action={canManage && !selectedFolder ? "Create a folder first" : canManage ? "Upload a video" : undefined}
               onAction={selectedFolder ? onUpload : onCreateFolder}
             />
           )}

@@ -214,17 +214,6 @@ export default function DatasetWizardScreen() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-pink">
-          New dataset
-        </p>
-        <h1 className="text-3xl font-medium text-slate-900">Extraction wizard</h1>
-        <p className="max-w-2xl text-sm font-light text-slate-400">
-          Six validated steps. Balanced processing is the default. Run is blocked
-          when types or fields are empty.
-        </p>
-      </section>
-
       <ol className="grid gap-2 sm:grid-cols-6">
         {STEPS.map((label, index) => (
           <li

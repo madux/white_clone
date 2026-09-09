@@ -10,6 +10,13 @@ class CompanyDocumentaryComment(models.Model):
     media_id = fields.Many2one("company.documentary.media", required=True, ondelete="cascade", index=True)
     user_id = fields.Many2one("res.users", required=True, default=lambda self: self.env.user, readonly=True)
     body = fields.Text(required=True)
+    mentioned_user_ids = fields.Many2many(
+        "res.users",
+        "company_documentary_comment_mention_rel",
+        "comment_id",
+        "user_id",
+        string="Mentioned Users",
+    )
     active = fields.Boolean(default=True)
 
     def unlink(self):

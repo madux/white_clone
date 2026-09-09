@@ -200,16 +200,11 @@ export default function EmployeeFolderPage() {
       <BackButton variant="page" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-            Employee folder
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            {folder?.folder_name ?? "Employee Files"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {folder?.description ??
-              "Browse employee records and their documents."}
-          </p>
+          {folder?.folder_name ? (
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+              {folder.folder_name}
+            </h1>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
           <label className="relative block sm:w-80">

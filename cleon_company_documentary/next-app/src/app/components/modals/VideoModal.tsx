@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Share2,
   Download,
   Gauge,
   LoaderCircle,
@@ -23,13 +24,23 @@ import type {
 import { api } from "../../../../lib/api";
 import { formatBytes, formatDuration, initials } from "../documentaryUtils";
 
+function canShowTranscript(media: DocumentaryMedia) {
+  return Boolean(media.transcript);
+}
+
+function hasSidePanel(media: DocumentaryMedia) {
+  return media.comments_enabled || canShowTranscript(media) || (media.chapters?.length || 0) > 0;
+}
+
 export function VideoModal({
   media,
   onClose,
+  onShare,
   onError,
 }: {
   media: DocumentaryMedia;
   onClose: () => void;
+  onShare?: () => void;
   onError: (message: string) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -48,6 +59,9 @@ export function VideoModal({
   const [comments, setComments] = useState<DocumentaryComment[]>([]);
   const [comment, setComment] = useState("");
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [sidePanel, setSidePanel] = useState<"comments" | "transcript" | "chapters">(
+    media.comments_enabled ? "comments" : media.transcript ? "transcript" : "chapters",
+  );
   const lastTracked = useRef(0);
   const sessionId = useId();
   const qualityOptions = [
@@ -196,6 +210,11 @@ export function VideoModal({
             <h2>{media.title}</h2>
           </div>
           <div className="video-modal-actions">
+            {onShare && (
+              <button className="secondary-button dark" onClick={onShare}>
+                <Share2 size={16} /> Share
+              </button>
+            )}
             {media.download_allowed && (
               <button
                 className="secondary-button dark"
@@ -235,9 +254,13 @@ export function VideoModal({
                 className="video-player"
                 onPlay={() => setPlaying(true)}
                 onPause={() => setPlaying(false)}
-                onLoadedMetadata={(event) =>
-                  setDuration(event.currentTarget.duration || duration)
-                }
+                onLoadedMetadata={(event) => {
+                  setDuration(event.currentTarget.duration || duration);
+                  if (media.watch_progress?.position_seconds) {
+                    event.currentTarget.currentTime = media.watch_progress.position_seconds;
+                    setCurrentTime(media.watch_progress.position_seconds);
+                  }
+                }}
                 onTimeUpdate={(event) => {
                   setCurrentTime(event.currentTarget.currentTime);
                   updateProgress(event.currentTarget);
@@ -255,6 +278,7 @@ export function VideoModal({
                         srcLang={subtitle.language}
                         label={subtitle.name}
                         default={subtitle.is_default}
+                        onLoad={() => void api.captionEvent(media.id)}
                       />
                     ),
                 )}
@@ -370,51 +394,74 @@ export function VideoModal({
             </div>
           )}
         </div>
-        {media.comments_enabled && (
+        {hasSidePanel(media) && (
           <section className="comments-panel">
+            <div className="panel-tabs">
+              {media.comments_enabled && (
+                <button className={sidePanel === "comments" ? "active" : ""} onClick={() => setSidePanel("comments")}>
+                  <MessageCircle size={15} /> Discussion
+                </button>
+              )}
+              {(media.transcript || canShowTranscript(media)) && (
+                <button className={sidePanel === "transcript" ? "active" : ""} onClick={() => setSidePanel("transcript")}>
+                  Transcript
+                </button>
+              )}
+              {(media.chapters?.length || 0) > 0 && (
+                <button className={sidePanel === "chapters" ? "active" : ""} onClick={() => setSidePanel("chapters")}>
+                  Chapters
+                </button>
+              )}
+            </div>
+            {sidePanel === "comments" && (
+              <>
             <div className="comments-heading">
-              <span>
-                <MessageCircle size={15} /> Discussion
-              </span>
-              <small>
-                {comments.length} comment{comments.length === 1 ? "" : "s"}
-              </small>
+              <span><MessageCircle size={15} /> Discussion</span>
+              <small>{comments.length} comment{comments.length === 1 ? "" : "s"}</small>
             </div>
             <div className="comments-list">
               {comments.map((item) => (
                 <div className="comment-item" key={item.id}>
-                  <div className="comment-avatar">
-                    {initials(item.user_name)}
-                  </div>
+                  <div className="comment-avatar">{initials(item.user_name)}</div>
                   <div>
                     <strong>{item.user_name}</strong>
+                    {item.mentioned_names?.length ? (
+                      <small className="mention-line">Mentioned {item.mentioned_names.join(", ")}</small>
+                    ) : null}
                     <p>{item.body}</p>
                   </div>
                 </div>
               ))}
-              {!comments.length && (
-                <span className="comments-empty">
-                  Be the first to add context.
-                </span>
-              )}
+              {!comments.length && <span className="comments-empty">Be the first to add context. Use @name to mention someone.</span>}
             </div>
             <form className="comment-form" onSubmit={submitComment}>
-              <input
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                placeholder="Add a thoughtful note"
-              />
-              <button
-                className="primary-button"
-                disabled={commentsLoading || !comment.trim()}
-              >
-                {commentsLoading ? (
-                  <LoaderCircle className="spin" size={15} />
-                ) : (
-                  <Plus size={15} />
-                )}
+              <input value={comment} onChange={(event) => setComment(event.target.value)} placeholder="Add a thoughtful note (@name to mention)" />
+              <button className="primary-button" disabled={commentsLoading || !comment.trim()}>
+                {commentsLoading ? <LoaderCircle className="spin" size={15} /> : <Plus size={15} />}
               </button>
             </form>
+              </>
+            )}
+            {sidePanel === "transcript" && (
+              <div className="transcript-panel">
+                <p>{media.transcript || "No transcript available for this video yet."}</p>
+              </div>
+            )}
+            {sidePanel === "chapters" && (
+              <div className="chapters-panel">
+                {(media.chapters || []).map((chapter, index) => (
+                  <button key={`${chapter.start_seconds}-${index}`} className="chapter-row" onClick={() => {
+                    if (videoRef.current) {
+                      videoRef.current.currentTime = chapter.start_seconds;
+                      setCurrentTime(chapter.start_seconds);
+                    }
+                  }}>
+                    <span>{formatDuration(chapter.start_seconds)}</span>
+                    <strong>{chapter.title}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
           </section>
         )}
         <div className="video-modal-footer">

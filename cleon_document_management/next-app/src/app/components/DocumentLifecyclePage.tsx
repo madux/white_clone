@@ -121,24 +121,7 @@ export default function DocumentLifecyclePage({
 
   return (
     <div className="min-h-full mx-auto max-w-[1650px] space-y-6 bg-slate-50 p-6 pb-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-pink">
-            Document workspace
-          </p>
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
-            {recycle ? "Recycle Bin" : "Archived Documents"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {recycle
-              ? isManager
-                ? "Deleted files and folders remain recoverable for 30 days. Move linked documents before permanently deleting folders."
-                : "Your deleted documents remain recoverable for 30 days. You can restore documents you own."
-              : isManager
-                ? "Archived files and folders remain available for restoration."
-                : "Your archived documents remain available for restoration."}
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-end">
         <div className="rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
           <p className="text-2xl font-bold text-brand-text">{rows.length}</p>
           <p className="text-xs font-semibold text-slate-400">
