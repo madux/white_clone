@@ -38,7 +38,7 @@ export class LeaveBalancesPage extends Component {
             filters: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "", expiring_only: false },
             filterDraft: { department_ids: [], location_ids: [], leave_type_ids: [], policy_ids: [], employee_search: "" },
             filtersOpen: false, expiryBanner: true, selectedKeys: [], actionKey: null, moreOptionsOpen: false,
-            allocationOpen: false, allocationStep: 1, selectionMode: "individual", employeeSearch: "", selectedEmployeeSearch: "", audiencePage: 1,
+            allocationOpen: false, allocationStep: 1, selectionMode: "individual", employeeSearch: "", selectedEmployeeSearch: "", audiencePage: 1, chipsExpanded: false,
             allocationScopes: { departments: [], units: [], grades: [], jobs: [], locations: [], employment_types: [] },
             selectedScopeIds: { department: [], unit: [], grade: [], job: [], location: [], employment_type: [] },
             individualEmployeeIds: [], excludedEmployeeIds: [], selectedLeaveTypeIds: [], leaveTypeToAdd: "",
@@ -175,9 +175,6 @@ export class LeaveBalancesPage extends Component {
         return [
             { key: "individual", label: "Individual", field: null, options: null },
             { key: "department", label: "Department", field: "department_id", options: "departments" },
-            { key: "unit", label: "Unit", field: "unit_id", options: "units" },
-            { key: "grade", label: "Grade Level", field: "grade_id", options: "grades" },
-            { key: "job", label: "Job Role", field: "job_id", options: "jobs" },
             { key: "location", label: "Location", field: "location_id", options: "locations" },
             { key: "custom_group", label: "Custom Group", field: "custom_group_ids", options: "custom_groups" },
         ];
@@ -196,13 +193,49 @@ export class LeaveBalancesPage extends Component {
         return this.state.selectionMode === "individual" ? this.isEmployeeSelected(item.employee_id)
             : (this.state.selectedScopeIds[this.state.selectionMode] || []).includes(item.id);
     }
-    get allAudiencePageSelected() { return this.audiencePageItems.length > 0 && this.audiencePageItems.every(item => this.isAudienceSelected(item)); }
-    toggleAudiencePage() {
-        const selected = this.allAudiencePageSelected;
+    audienceSelectionState(item) {
+        if (this.state.selectionMode === "individual") return this.isAudienceSelected(item) ? "all" : "none";
+        const members = this.employees.filter(employee => {
+            const value = employee[this.activeScopeDefinition.field];
+            return Array.isArray(value) ? value.includes(item.id) : value === item.id;
+        });
+        const selected = members.filter(employee => this.selectedEmployeeIds.includes(employee.employee_id)).length;
+        return selected === 0 ? "none" : selected === members.length ? "all" : "partial";
+    }
+    get allAudiencePageSelected() {
+        return this.audiencePageItems.length > 0
+            && this.audiencePageItems.every(item => this.audienceSelectionState(item) === "all");
+    }
+    setAudienceGroupSelection(item, shouldSelect) {
+        const mode = this.state.selectionMode;
+        const values = this.state.selectedScopeIds[mode] ||= [];
+        const index = values.indexOf(item.id);
+        const field = this.activeScopeDefinition.field;
+        const memberIds = new Set(this.employees.filter(employee => {
+            const value = employee[field];
+            return Array.isArray(value) ? value.includes(item.id) : value === item.id;
+        }).map(employee => employee.employee_id));
+        if (shouldSelect) {
+            if (index === -1) values.push(item.id);
+            this.state.excludedEmployeeIds = this.state.excludedEmployeeIds.filter(id => !memberIds.has(id));
+        } else if (index !== -1) {
+            values.splice(index, 1);
+        }
+    }
+    toggleAudiencePage(event) {
+        const selected = event?.target ? event.target.checked : !this.allAudiencePageSelected;
         for (const item of this.audiencePageItems) {
-            if (this.isAudienceSelected(item) !== selected) continue;
-            if (this.state.selectionMode === "individual") this.toggleEmployee(item.employee_id);
-            else this.toggleAllocationGroup(item.id);
+            if (this.state.selectionMode === "individual") {
+                const currentlySelected = this.isAudienceSelected(item);
+                if (selected && !currentlySelected) {
+                    if (!this.state.individualEmployeeIds.includes(item.employee_id)) this.state.individualEmployeeIds.push(item.employee_id);
+                    this.state.excludedEmployeeIds = this.state.excludedEmployeeIds.filter(id => id !== item.employee_id);
+                } else if (!selected && currentlySelected) {
+                    this.removeSelectedEmployee(item.employee_id);
+                }
+            } else {
+                this.setAudienceGroupSelection(item, selected);
+            }
         }
     }
     scopeEmployeeCount(id) {
@@ -229,16 +262,30 @@ export class LeaveBalancesPage extends Component {
         const term = this.state.selectedEmployeeSearch.trim().toLowerCase();
         return term ? this.selectedEmployees.filter(e => `${e.employee_name} ${e.employee_code} ${e.department} ${e.job}`.toLowerCase().includes(term)) : this.selectedEmployees;
     }
-    get selectedLeaveTypes() { return this.state.leaveTypes.filter(type => this.state.selectedLeaveTypeIds.includes(type.id)); }
+    get selectedLeaveTypes() {
+        return this.state.leaveTypes
+            .filter(type => this.state.selectedLeaveTypeIds.includes(type.id))
+            .sort((left, right) => (left.sequence || 0) - (right.sequence || 0)
+                || left.name.localeCompare(right.name) || left.id - right.id);
+    }
+    allocationCell(row, leaveTypeId) {
+        return (row?.cells || []).find(cell => cell.leave_type_id === leaveTypeId) || {
+            leave_type_id: leaveTypeId, eligible: false, amount: 0, message: "Not available for this employee",
+        };
+    }
     get allocationLines() {
-        return this.state.allocationPreviewRows.flatMap(row => row.cells.map(cell => ({
-            employee_id: row.employee_id, leave_type_id: cell.leave_type_id, amount: Number(cell.amount),
-        })));
+        return this.state.allocationPreviewRows.flatMap(row => this.selectedLeaveTypes.map(type => {
+            const cell = this.allocationCell(row, type.id);
+            return { employee_id: row.employee_id, leave_type_id: type.id, amount: Number(cell.amount) };
+        })).filter(line => line.amount > 0);
     }
     get allocationTotalDays() { return this.allocationLines.reduce((total, line) => total + (Number(line.amount) || 0), 0); }
     allocationRowTotal(row) {
-        const total = (row?.cells || []).reduce(
-            (sum, cell) => sum + (cell.eligible ? (Number(cell.amount) || 0) : 0),
+        const total = this.selectedLeaveTypes.reduce(
+            (sum, type) => {
+                const cell = this.allocationCell(row, type.id);
+                return sum + (cell.eligible ? (Number(cell.amount) || 0) : 0);
+            },
             0,
         );
         return total.toFixed(2);
@@ -376,6 +423,7 @@ export class LeaveBalancesPage extends Component {
         this.state.individualEmployeeIds = [];
         this.state.excludedEmployeeIds = [];
         this.state.selectedScopeIds = { department: [], unit: [], grade: [], job: [], location: [], employment_type: [] };
+        this.state.chipsExpanded = false;
     }
     selectAllEmployees() {
         const allIds = this.filteredEmployees.map(e => e.employee_id);
