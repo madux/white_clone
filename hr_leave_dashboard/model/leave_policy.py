@@ -18,6 +18,11 @@ class HrLeavePolicy(models.Model):
     description = fields.Text()
     company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company, index=True)
     policy_mode = fields.Selection([("simple", "Simple"), ("advanced", "Advanced")], required=True, default="simple")
+    policy_type = fields.Selection([
+        ("paid", "Paid Leave"), ("sick", "Sick Leave"), ("family", "Family Leave"),
+        ("compassionate", "Compassionate Leave"), ("career", "Career Development"),
+        ("unpaid", "Unpaid Leave"),
+    ], string="Leave Type", required=True, default="paid", index=True)
     category_name = fields.Char(string="Category", default="General")
     color = fields.Char(default="#E91E78")
     state = fields.Selection([("draft", "Draft"), ("active", "Active"), ("inactive", "Inactive"), ("archived", "Archived")], default="draft", required=True, index=True)
@@ -78,7 +83,7 @@ class HrLeavePolicy(models.Model):
                 "minimum_tenure_months", "allow_carry_forward", "maximum_carry_forward",
                 "carry_forward_expiry_value", "carry_forward_expiry_unit", "balance_usage_priority",
                 "approval_required", "approval_workflow", "allow_multiple_requests",
-                "allow_withdrawal", "allow_half_day", "ai_enabled",
+                "allow_withdrawal", "allow_half_day", "ai_enabled", "policy_type",
             )}, "approval_chain_id": (self.approval_template_id.chain_id or self.approval_chain_id).id,
             "approval_template_id": self.approval_template_id.id,
             "approval_workflow_type_id": self.approval_workflow_type_id.id,
@@ -110,7 +115,8 @@ class HrLeavePolicy(models.Model):
                 policy = self.sudo().create({
                     "name": _("%s Policy") % leave_type.name, "code": self.with_company(company)._code_for_name(leave_type.name),
                     "description": leave_type.description or "", "company_id": company.id,
-                    "policy_mode": "advanced", "category_name": labels.get(leave_type.policy_classification, _("General")),
+                    "policy_mode": "advanced", "policy_type": {"sick": "sick", "family": "family", "career": "career", "unpaid": "unpaid", "compensatory": "compassionate"}.get(leave_type.policy_classification, "paid"),
+                    "category_name": labels.get(leave_type.policy_classification, _("General")),
                     "color": leave_type.cleon_color_hex or "#E91E78", "state": "draft",
                     "apply_to": "all" if leave_type.eligibility_scope == "all" else "selected",
                     "employee_ids": [(6, 0, leave_type.eligible_employee_ids.ids)], "department_ids": [(6, 0, leave_type.eligible_department_ids.ids)],
@@ -178,7 +184,7 @@ class HrLeavePolicy(models.Model):
         ):
             if records:
                 tests.append(set(employees.filtered(lambda e, f=field_name, ids=set(records.ids): e[f].id in ids).ids))
-        if self.minimum_tenure_months:
+        if self.apply_to == "conditions" and self.minimum_tenure_months:
             today = fields.Date.context_today(self)
             cutoff = today - timedelta(days=self.minimum_tenure_months * 30)
             tests.append(set(employees.filtered(lambda e: getattr(e, "first_contract_date", False) and e.first_contract_date <= cutoff).ids))
@@ -186,7 +192,7 @@ class HrLeavePolicy(models.Model):
             # Simple Policy's optional Assign To means blank is explicitly
             # equivalent to All Employees. Advanced empty conditions match none.
             return employees if self.policy_mode == "simple" else self.env["hr.employee"]
-        eligible = set.intersection(*tests) if self.condition_match == "all" else set.union(*tests)
+        eligible = set.intersection(*tests) if self.apply_to == "conditions" and self.condition_match == "all" else set.union(*tests)
         return employees.filtered(lambda e: e.id in eligible)
 
     def _audit(self, note, before=None, after=None, employee=False, leave_type=False):
@@ -229,7 +235,8 @@ class HrLeavePolicy(models.Model):
         line = lines[:1]
         return {
             "id": self.id, "name": self.name, "code": self.code, "description": self.description or "",
-            "mode": self.policy_mode, "category": self.category_name or "General", "color": self.color or "#E91E78",
+            "mode": self.policy_mode, "policy_type": self.policy_type, "policy_type_label": dict(self._fields["policy_type"].selection).get(self.policy_type),
+            "category": self.category_name or "General", "color": self.color or "#E91E78",
             "state": self.state, "active": self.active, "ai_enabled": self.ai_enabled,
             "leave_types": [{"id": value.leave_type_id.id, "name": value.leave_type_id.name, "entitlement": value.accrual_amount, "unit": value.unit, "compensation": value.compensation} for value in lines],
             "applicability": _("All Employees") if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
@@ -316,6 +323,7 @@ class HrLeavePolicy(models.Model):
         vals = {
             "name": (payload.get("name") or "").strip(), "code": (payload.get("code") or "").strip().upper() or self._code_for_name(payload.get("name")),
             "description": payload.get("description") or "", "policy_mode": payload.get("mode") if payload.get("mode") in ("simple", "advanced") else "simple",
+            "policy_type": payload.get("policy_type") if payload.get("policy_type") in dict(self._fields["policy_type"].selection) else "paid",
             "category_name": payload.get("category") or "General", "color": payload.get("color") or "#E91E78",
             "state": payload.get("state") if payload.get("state") in ("draft", "active", "inactive") else "active", "active": True,
             "company_id": self.env.company.id, "apply_to": payload.get("apply_to") if payload.get("apply_to") in ("all", "selected", "conditions") else "all",
@@ -402,9 +410,7 @@ class HrLeavePolicy(models.Model):
         for key in ("employee_ids", "department_ids", "unit_ids", "grade_ids", "location_ids", "employee_type_ids", "job_ids"):
             values[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         candidate = self.new(values)
-        employees = (self.env["hr.employee"].sudo().browse([
-            int(value) for value in selected.get("employee_ids", [])
-        ]).exists() if values["apply_to"] == "selected" else candidate._eligible_employees())
+        employees = candidate._eligible_employees()
         type_ids = set()
         for line in payload.get("lines", []):
             if line.get("leave_type_id"):

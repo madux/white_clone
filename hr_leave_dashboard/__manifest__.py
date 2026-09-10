@@ -44,6 +44,7 @@
             'hr_leave_dashboard/static/src/components/leave_types/leave_type_form_modal.js',
             'hr_leave_dashboard/static/src/components/leave_types/leave_types.xml',
             'hr_leave_dashboard/static/src/css/leave_types.css',
+            'hr_leave_dashboard/static/src/components/policy_controls.js',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.js',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.xml',
             'hr_leave_dashboard/static/src/components/leave_policies/leave_policies.css',
