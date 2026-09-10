@@ -1008,6 +1008,18 @@
 .o_settings_tag .o_settings_employee_icon { font-size: 16px; }
 .o_settings_employee_avatar { width: 24px; height: 24px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
 .o_settings_tag .o_settings_employee_avatar { width: 18px; height: 18px; }
+.o_lp_detail_actions { display:flex; gap:8px; margin-bottom:14px; }
+.o_lp_detail_metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:14px; }
+.o_lp_detail_metrics > div { border:1px solid #e2e7ef; border-radius:7px; padding:10px 11px; background:#fbfcfe; min-width:0; }
+.o_lp_detail_metrics small { display:block; color:#71809d; font-size:10px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+.o_lp_detail_metrics strong { display:block; color:#172033; font-size:13px; overflow-wrap:anywhere; }
+.o_lp_details .o_lp_card { padding:14px 15px; }
+.o_lp_details .o_lp_card h4 { margin:0 0 10px; padding-bottom:9px; border-bottom:1px solid #edf0f5; font-size:15px; }
+.o_lp_detail_list { display:grid; grid-template-columns:110px 1fr; gap:8px 12px; margin:0; font-size:13px; }
+.o_lp_detail_list dt { color:#71809d; font-weight:500; }.o_lp_detail_list dd { margin:0; color:#172033; overflow-wrap:anywhere; }
+.o_lp_detail_line { padding:10px 0; border-bottom:1px solid #edf0f5; }.o_lp_detail_line:last-child { border-bottom:0; padding-bottom:0; }.o_lp_detail_line_meta { display:flex; flex-wrap:wrap; gap:5px 14px; color:#5c6b82; font-size:12px; margin-top:4px; }.o_lp_detail_flags { display:flex; flex-wrap:wrap; gap:7px; }.o_lp_detail_flags span { border:1px solid #e1e7ef; border-radius:5px; padding:5px 7px; background:#fafbfc; color:#5c6b82; font-size:11px; }.o_lp_detail_flags b { color:#172033; }.o_lp_rule_block { padding:8px 0; border-bottom:1px solid #edf0f5; }.o_lp_rule_block:last-child { border-bottom:0; padding-bottom:0; }
+.o_lp_detail_footer_hint { margin-right:auto; color:#71809d; font-size:12px; align-self:center; }
+@media(max-width:600px) { .o_lp_detail_metrics { grid-template-columns:1fr; } .o_lp_detail_actions { flex-wrap:wrap; } }
 .o_lp_drawer .o_lp_calculation_checks { display: flex; flex-wrap: wrap; gap: 12px 28px; }
 .o_lp_drawer .o_lp_calculation_checks label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 500; }
 .o_lp_drawer .o_lp_calculation_checks input[type="checkbox"] { width: 15px; height: 15px; min-height: 0; flex: 0 0 15px; margin: 0; padding: 0; accent-color: #e91e78; }

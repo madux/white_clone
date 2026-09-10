@@ -867,29 +867,16 @@
             <button class="o_lp_close_btn" t-on-click="() => state.detail=false">×</button>
           </t>
           <div class="o_lp_form o_lp_details">
-            <section class="o_lp_card">
-              <h4>Description</h4>
-              <p t-esc="state.detail.description || 'No description provided.'"/>
-            </section>
-            <section class="o_lp_card">
-              <h4>Governed Leave Types</h4>
-              <div t-foreach="state.detail.lines" t-as="line" t-key="line.id" class="o_lp_detail_line">
-                <b t-esc="line.leave_type"/> — <t t-esc="line.accrual_amount"/> <t t-esc="line.unit"/> / <t t-esc="line.accrual_period"/>
-                <span class="badge bg-light text-dark ms-2" t-esc="line.compensation"/>
-              </div>
-            </section>
-            <section class="o_lp_card">
-              <h4>Eligibility &amp; Applicability</h4>
-              <p t-esc="state.detail.applicability"/>
-            </section>
-            <section class="o_lp_card">
-              <h4>Carry Forward &amp; Approval</h4>
-              <p>Carry Forward: <b><t t-esc="state.detail.carry.enabled ? 'Enabled' : 'Disabled'"/></b></p>
-              <p>Approval Required: <b><t t-esc="state.detail.approval.required ? 'Yes' : 'No'"/></b></p>
-            </section>
+            <div class="o_lp_detail_actions"><button class="btn btn-primary o_lp_primary" t-on-click="() => this.edit(state.detail)"><i class="fa fa-pencil me-1"/> Edit Policy</button><button class="btn btn-outline-secondary" t-on-click="() => this.duplicate(state.detail)"><i class="fa fa-copy me-1"/> Duplicate</button><button t-if="state.detail.active and state.detail.state === 'active'" class="btn btn-outline-warning" t-on-click="changeDetailStatus"><i class="fa fa-toggle-off me-1"/> Deactivate</button><button t-if="state.detail.active and state.detail.state !== 'active'" class="btn btn-outline-success" t-on-click="changeDetailStatus"><i class="fa fa-toggle-on me-1"/> Activate</button></div>
+            <div class="o_lp_detail_metrics"><div><small>Leave Type</small><strong t-esc="state.detail.policy_type_label || 'Paid Leave'"/></div><div><small>Category</small><strong t-esc="state.detail.category"/></div><div><small>Applicability</small><strong t-esc="state.detail.applicability"/></div><div><small>Status</small><strong class="text-capitalize" t-esc="state.detail.state"/></div></div>
+            <section class="o_lp_card"><h4><i class="fa fa-info-circle me-1"/> Policy Overview</h4><dl class="o_lp_detail_list"><dt>Policy Code</dt><dd t-esc="state.detail.code"/><dt>Description</dt><dd t-esc="state.detail.description || 'No description provided.'"/></dl></section>
+            <section class="o_lp_card"><h4><i class="fa fa-calendar-check-o me-1"/> Leave Types &amp; Entitlement</h4><div t-foreach="state.detail.lines" t-as="line" t-key="line.id" class="o_lp_detail_line"><div><b t-esc="line.leave_type"/><span class="badge bg-light text-dark ms-2 text-capitalize" t-esc="line.compensation"/></div><div class="o_lp_detail_line_meta"><span><b t-esc="line.accrual_amount"/> <t t-esc="line.unit"/> / <t t-esc="line.accrual_period"/></span><span t-if="line.entitlement_type === 'accrued'">Based on <t t-esc="line.accrual_basis"/></span><span t-if="line.waiting_period_days">Waiting period: <t t-esc="line.waiting_period_days"/> days</span></div></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-users me-1"/> Eligibility &amp; Applicability</h4><p t-esc="state.detail.applicability"/><div class="o_lp_detail_flags"><span t-if="state.detail.apply_to === 'conditions'">Dynamic conditions: <b class="text-capitalize" t-esc="state.detail.condition_match"/></span><span t-if="state.detail.minimum_tenure_months">Minimum tenure: <b t-esc="state.detail.minimum_tenure_months"/> months</span><span t-if="state.detail.employee_count">Assigned employees: <b t-esc="state.detail.employee_count"/></span></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-sliders me-1"/> Rules &amp; Restrictions</h4><div t-foreach="state.detail.lines" t-as="line" t-key="'rules-' + line.id" class="o_lp_rule_block"><b t-esc="line.leave_type"/><div class="o_lp_detail_flags"><span>Public holidays: <b t-esc="line.exclude_public_holidays ? 'Excluded' : 'Included'"/></span><span>Non-working days: <b t-esc="line.exclude_non_working_days ? 'Excluded' : 'Included'"/></span><span>Half-day: <b t-esc="line.allow_half_day ? 'Allowed' : 'Not allowed'"/></span><span>Backdated: <b t-esc="line.allow_backdated ? 'Allowed' : 'Not allowed'"/></span><span>Overlap: <b t-esc="line.allow_overlap ? 'Allowed' : 'Not allowed'"/></span><span t-if="line.minimum_notice_days">Notice: <b t-esc="line.minimum_notice_days"/> days</span><span t-if="line.minimum_duration">Minimum duration: <b t-esc="line.minimum_duration"/> days</span><span t-if="line.maximum_duration">Maximum duration: <b t-esc="line.maximum_duration"/> days</span><span>Documents: <b class="text-capitalize" t-esc="line.document_policy.replace('_', ' ')"/></span></div></div></section>
+            <section class="o_lp_card"><h4><i class="fa fa-exchange me-1"/> Carry Forward &amp; Approval</h4><div class="o_lp_detail_flags"><span>Carry forward: <b t-esc="state.detail.carry.enabled ? 'Enabled' : 'Disabled'"/></span><span t-if="state.detail.carry.enabled">Maximum: <b t-esc="state.detail.carry.maximum"/> days</span><span t-if="state.detail.carry.enabled">Priority: <b t-esc="state.detail.carry.priority === 'current' ? 'Current balance first' : 'Carried-forward first'"/></span><span>Approval: <b t-esc="state.detail.approval.required ? 'Required' : 'Not required'"/></span><span t-if="state.detail.approval.required">Workflow: <b t-esc="state.detail.approval.workflow"/></span></div></section>
           </div>
           <t t-set-slot="footer">
-            <button class="btn btn-primary o_lp_primary" t-on-click="() => state.detail=false">Done</button>
+            <span class="o_lp_detail_footer_hint" t-if="state.detail.state === 'draft'">Draft policies become active when you click Activate.</span><button class="btn btn-outline-secondary" t-on-click="() => state.detail=false">Close</button>
           </t>
       </SettingsPanel>
 

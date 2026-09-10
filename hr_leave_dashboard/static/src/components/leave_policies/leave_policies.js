@@ -452,6 +452,7 @@ export class LeavePoliciesPage extends Component {
 
     async edit(row) {
         this.state.menuId = false;
+        this.state.detail = false;
         const detail = await this.orm.call("hr.leave.policy", "get_policy_details", [row.id]);
         this.state.form = {
             ...newForm("simple"),
@@ -466,7 +467,19 @@ export class LeavePoliciesPage extends Component {
         this.state.wizard = true;
     }
 
+    async changeDetailStatus() {
+        const row = this.state.detail;
+        if (!row) return;
+        this.state.detail = false;
+        if (row.state === "active") {
+            await this.changeStatus(row, "inactive");
+        } else {
+            await this.activatePolicy(row);
+        }
+    }
+
     async duplicate(row) {
+        this.state.detail = false;
         await this.orm.call("hr.leave.policy", "duplicate_policy", [row.id]);
         this.notification.add("Policy duplicated as Draft.", { type: "success" });
         this.state.menuId = false;
