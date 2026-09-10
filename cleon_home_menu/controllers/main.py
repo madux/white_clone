@@ -168,3 +168,8 @@ class HomeMenuController(http.Controller):
             except Exception:
                 pass
         return request.not_found()
+
+    @http.route('/application-page', type='http', auth='user')
+    def show_application_page(self, **kw):
+        """Open the module explorer supplied by the updated home-menu build."""
+        return request.render('cleon_home_menu.application_page', {})
