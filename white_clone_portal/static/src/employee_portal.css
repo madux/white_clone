@@ -1,5 +1,8 @@
 .cep-app{display:flex;height:calc(100vh - 46px);background:#f7f8fb;color:#172033;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-.ctm-sidebar.portal-sidebar.cep-sidebar{width:var(--cleon-workspace-sidebar-width,230px);flex:0 0 var(--cleon-workspace-sidebar-width,230px);height:100%;padding-top:14px}
+.cep-app .cep-sidebar{width:var(--cleon-workspace-sidebar-width,230px);flex:0 0 var(--cleon-workspace-sidebar-width,230px);height:100%;overflow:auto;background:#fff;border-right:1px solid #e1e5ee;padding:14px 10px}
+.cep-brand{display:flex;flex-direction:column;gap:6px;padding:12px 10px 22px;color:#172033;border-bottom:1px solid #e1e5ee;margin-bottom:12px}.cep-brand>i{font-size:34px;color:#e91e78}.cep-brand small{color:#536278}
+.cep-nav{width:100%;display:flex;align-items:center;gap:12px;border:0;border-radius:8px;background:transparent;color:#26364d;padding:12px 10px;text-align:left;font:inherit;cursor:pointer}.cep-nav>i:first-child{width:18px;text-align:center;flex-shrink:0}.cep-nav:hover{background:#f6f7fa}.cep-nav.active{background:#fce7f2;color:#e60070}.cep-section{margin-top:10px}.cep-section strong{font-weight:600}.cep-chevron{margin-left:auto}.cep-children{padding-left:14px}
+.cep-welcome{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px;border-radius:12px;background:linear-gradient(135deg,#e91e82,#cb075d);margin-bottom:20px;color:#fff}.cep-welcome h2{margin:0 0 6px;font-size:24px;font-weight:700;color:#fff}.cep-welcome p{margin:0}.cep-welcome button{border:0;border-radius:7px;padding:12px 16px;background:#fff;color:#be185d;font-weight:600;white-space:nowrap}.cep-empty{padding:24px;background:#fff;border:1px solid #e1e5ee;border-radius:8px}
 .cep-main{flex:1;min-width:0;height:100%;overflow:auto;padding:28px 32px}
 .cep-heading{margin:0 0 38px}.cep-heading h1{margin:0 0 4px;font-size:32px}.cep-heading p{margin:0;color:#74819a}
 .cep-main>.ctm-app{height:100%;margin:-28px -32px;background:transparent}
@@ -29,4 +32,4 @@
 .cep-app .ctm-clock-card .clock-out{background:#b91c1c;border:1px solid #fee2e2}
 .cep-app .ctm-clock-card button:hover{filter:brightness(.94)}
 .cep-app .ctm-clock-card button:focus-visible{outline:3px solid rgba(255,255,255,.78);outline-offset:3px}
-@media(max-width:700px){.cep-sidebar{display:none}.cep-main{padding:20px}.cep-main>.ctm-app{margin:-20px}}
+@media(max-width:700px){.cep-app .cep-sidebar{width:160px;flex-basis:160px;padding:8px 5px}.cep-main{padding:16px}.cep-main>.ctm-app{margin:-16px}.cep-welcome{flex-direction:column;align-items:flex-start}.cep-nav{font-size:12px;gap:6px}.cep-children{padding-left:4px}}

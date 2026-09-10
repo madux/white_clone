@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="white_clone_portal_time.Dashboard">
+                    <div class="ctm-time-dashboard-grid">
+                        <article t-if="props.access.attendance" class="today"><div class="ctm-widget-title"><i class="fa fa-clock-o"/><span>Today's Status</span></div><strong t-esc="props.data.attendance_state === 'checked_in' ? 'Clocked In' : 'Not yet clocked in'"/><small>Hours today: <t t-esc="props.data.today?.hours || 0"/>h</small><div class="ctm-widget-actions"><button t-on-click="() => props.navigate('clock')">Open Attendance</button></div></article>
+                        <article t-if="props.access.shift" class="shift"><div class="ctm-widget-title"><i class="fa fa-calendar"/><span>My Shift</span></div><strong t-esc="props.data.shift.name"/><small><t t-esc="props.data.shift.break_minutes"/> minute break</small><div class="ctm-widget-actions"><button t-on-click="() => props.navigate('clock')">View Time Workspace</button></div></article>
+                        <article t-if="props.access.tracking" class="timesheet"><div class="ctm-widget-title"><i class="fa fa-list-alt"/><span>This Week Timesheet</span></div><strong><t t-esc="props.data.summary.weekly_timesheet_hours"/> / <t t-esc="props.data.summary.weekly_expected_hours"/> hrs</strong><div class="ctm-progress"><span t-att-style="'width:' + props.data.summary.weekly_timesheet_percent + '%'"/></div><small><t t-esc="props.data.summary.weekly_timesheet_percent"/>% complete</small></article>
+                        <article t-if="props.access.overtime" class="overtime"><div class="ctm-widget-title"><i class="fa fa-hourglass-half"/><span>Overtime</span></div><strong><t t-esc="props.data.summary.monthly_overtime_hours"/> hrs</strong><small>This month</small><div class="ctm-widget-actions"><button t-on-click="() => props.navigate('overtime')">Request OT</button></div></article>
+                    </div>
+
+</t>
+</templates>

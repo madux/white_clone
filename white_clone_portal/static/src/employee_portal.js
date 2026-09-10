@@ -1,94 +1,65 @@
 /** @odoo-module **/
-
 import { Component, onWillStart, onWillUnmount, useState } from "@odoo/owl";
-import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { TimeManagementApp } from "@hr_time_management/time_management";
-import { EmployeeLeaveDashboard } from "@hr_leave_dashboard/components/employee_dashboard/employee_dashboard";
-import { MyLeaveRequestsPage } from "@hr_leave_dashboard/components/my_leave_requests/my_leave_requests";
-import { LeaveCalendarPage } from "@hr_leave_dashboard/js/leave_calendar";
+import { registry } from "@web/core/registry";
+import { _t } from "@web/core/l10n/translation";
+import { employeePortalRegistry } from "./portal_registry";
 
 export class EmployeePortalApp extends Component {
     static template = "white_clone_portal.EmployeePortal";
     static props = ["*"];
-    static components = {
-        TimeManagementApp,
-        EmployeeLeaveDashboard,
-        MyLeaveRequestsPage,
-        LeaveCalendarPage,
-    };
-
     setup() {
         this.orm = useService("orm");
+        this.user = useService("user");
         this.notification = useService("notification");
-        this.state = useState({
-            page: this.props.action?.params?.initial_page === "leave"
-                ? "leaveRequests"
-                : (this.props.action?.params?.initial_page || "dashboard"),
-            access: null,
-            employeeData: null,
-            profileOpen: true,
-            leaveOpen: true,
-            timeOpen: true,
-        });
+        this.providers = employeePortalRegistry.getAll();
+        this.state = useState({ page: "dashboard", contexts: {}, collapsed: {}, failures: [] });
         onWillStart(async () => {
-            const [access, employeeData] = await Promise.all([
-                this.orm.call("cleon.time.policy", "get_cleon_access", []),
-                this.orm.call("hr.attendance", "get_cleon_employee_data", []),
-            ]);
-            this.state.access = access;
-            this.state.employeeData = employeeData;
-            if (!this.isPageAllowed(this.state.page)) {
-                this.state.page = "dashboard";
-            }
-            // Opening Employee Portal must not change the user's selected
-            // interface role. The portal is an application, not a role switch,
-            // and may contain administrator-only actions when in Admin View.
+            await Promise.all(this.providers.map(async provider => {
+                try {
+                    this.state.contexts[provider.id] = await provider.load({ orm: this.orm, user: this.user });
+                } catch {
+                    this.state.failures.push(provider.label);
+                }
+            }));
+            const requested = this.props.action?.params?.initial_page || "dashboard";
+            const page = this.resolvePage(requested);
+            if (this.findPage(page)) this.state.page = page;
             document.documentElement.classList.add("has-cleon-employee-portal");
             window.CleonAppLauncher?.load();
         });
-        onWillUnmount(() => {
-            document.documentElement.classList.remove("has-cleon-employee-portal");
-        });
+        onWillUnmount(() => document.documentElement.classList.remove("has-cleon-employee-portal"));
     }
-
-    get featureAccess() {
-        return this.state.access?.featureAccess || {};
+    get employeeName() {
+        return Object.values(this.state.contexts).find(context => context.employeeName)?.employeeName || this.user.name;
     }
-
-    get portalModules() {
-        return this.state.access?.portalModules || {};
+    get sections() {
+        return this.providers.map(provider => {
+            const context = this.state.contexts[provider.id];
+            const pages = context ? provider.pages.filter(page => page.visible(context)).sort((a, b) => a.sequence - b.sequence) : [];
+            return { ...provider, pages, context };
+        }).filter(section => section.pages.length);
     }
-
-    get timeAction() {
-        return {
-            params: {
-                force_employee_portal: true,
-                employee_page: this.state.page,
-            },
-        };
+    get dashboards() {
+        return this.providers.filter(provider => provider.dashboard && this.state.contexts[provider.id]?.dashboard);
     }
-
-    isPageAllowed(page) {
-        if (page === "dashboard") return true;
-        if (["leaveRequests", "leaveBalance", "leaveCalendar"].includes(page)) return Boolean(this.portalModules.leave);
-        const feature = {clock: "attendance", history: "attendance", regularizations: "attendance", overtime: "overtime"}[page];
-        return Boolean(feature && this.featureAccess[feature]);
+    get welcomeActions() {
+        return this.sections.flatMap(section => section.pages.filter(page => page.welcome));
     }
-
-    setPage(page) {
-        // Keep older links targeting the former Apply for Leave page working.
-        if (page === "leave") page = "leaveRequests";
-        if (!this.isPageAllowed(page)) {
-            this.notification.add("This employee application is not included in your company subscription.", {type: "warning"});
+    resolvePage(id) {
+        return this.providers.flatMap(provider => provider.pages).find(page => page.id === id || page.aliases?.includes(id))?.id || id;
+    }
+    findPage(id) { return this.sections.flatMap(section => section.pages).find(page => page.id === id); }
+    get currentPage() { return this.findPage(this.state.page); }
+    get currentProps() { return this.currentPage?.props || {}; }
+    setPage(id) {
+        const page = this.resolvePage(id);
+        if (page !== "dashboard" && !this.findPage(page)) {
+            this.notification.add(_t("This employee screen is not currently available."), { type: "warning" });
             return;
         }
         this.state.page = page;
     }
-
-    toggleSection(section) {
-        this.state[`${section}Open`] = !this.state[`${section}Open`];
-    }
+    toggleSection(id) { this.state.collapsed[id] = !this.state.collapsed[id]; }
 }
-
 registry.category("actions").add("white_clone_portal.EmployeePortal", EmployeePortalApp);
