@@ -11,16 +11,8 @@ _logger = logging.getLogger(__name__)
 
 class CrmPortalController(http.Controller):
 
-    # ─────────────────────────────────────────────────────────────
-    # HTML PAGE ROUTE
-    # ─────────────────────────────────────────────────────────────
-    @http.route('/landing', type='http', auth='user')
-    def show_html_page(self, **kw):
-        file_path = get_resource_path(
-            'white_clone_portal',
-            'static/html',
-            'landing_page.html'
-        )
+    def _serve_static_html(self, filename):
+        file_path = get_resource_path('white_clone_portal', 'static/html', filename)
         if not file_path:
             return "HTML file not found."
 
@@ -37,6 +29,25 @@ class CrmPortalController(http.Controller):
             html,
             headers=[('Content-Type', 'text/html'), ('defaultData', json.dumps(data))],
         )
+
+    # ─────────────────────────────────────────────────────────────
+    # HTML PAGE ROUTES
+    # ─────────────────────────────────────────────────────────────
+    @http.route('/landing', type='http', auth='user')
+    def show_html_page(self, **kw):
+        return self._serve_static_html('landing_page.html')
+
+    @http.route('/ai', type='http', auth='user')
+    def show_ai_page(self, **kw):
+        return self._serve_static_html('ai_page.html')
+
+    @http.route('/pricing', type='http', auth='user')
+    def show_pricing_page(self, **kw):
+        return self._serve_static_html('pricing_page.html')
+
+    @http.route('/explore/<string:slug>', type='http', auth='user')
+    def show_explore_page(self, slug, **kw):
+        return self._serve_static_html('explore_page.html')
 
     # ─────────────────────────────────────────────────────────────
     # INTERNAL HELPERS

@@ -1,14 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-	<data>
-		<template id="theme_frontend_footer" inherit_id="web.frontend_layout">
-            <xpath expr="//div[@id='footer']" position="replace">
-            </xpath>
-        </template>
-		<template name="Apps" t-name="website.homepage">
-			<t t-call="website.layout">
-				<t t-set="pageName" t-value="'homepage'"/>
-				<t t-call="web.login_layout"/>
-			</t>
-		</template>
-	</data>
+    <!--
+      DISABLED during install — this override caused install hangs:
+
+        website.homepage
+          -> website.layout
+            -> web.login_layout
+              -> website.layout   (again via website.login_layout)
+
+      Nested website.layout compilation can lock Odoo while installing.
+      Re-enable only with a non-recursive homepage design.
+    -->
 </odoo>

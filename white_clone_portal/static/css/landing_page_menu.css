@@ -91,24 +91,7 @@
   opacity: 1;
 }
 
-/* ── Module cards in the right panel ── */
-.mega-module-card {
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-  border-radius: 16px;
-  text-align: left;
-  border: 1px solid rgb(235, 235, 235);
-  background-color: #fff;
-  min-height: 172px;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-}
-.mega-module-card:hover {
-  border-color: rgb(233, 30, 140);
-  box-shadow: 0 4px 16px rgba(233, 30, 140, 0.1);
-  transform: translateY(-2px);
-}
+/* Module card / panel grid styles live in landing_page_menu_panel.css */
 
 /* ── Search input focus ring ── */
 #mega-search:focus {

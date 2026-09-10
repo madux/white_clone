@@ -25,7 +25,13 @@ class HrEmployee(models.Model):
     employee_number = fields.Char(
         string="Staff Number", 
         )
-    current_time = fields.Char(default=datetime.now().strftime("%I:%M %p").lstrip("0"))
+    current_time = fields.Char(compute='_compute_current_time')
+
+    def _compute_current_time(self):
+        now = datetime.now().strftime("%I:%M %p").lstrip("0")
+        for employee in self:
+            employee.current_time = now
+
     employee_status = fields.Selection(
             selection=[
                 ('Definite Suspension', 'Definite Suspension'),

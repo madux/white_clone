@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleonHR – Explore</title>
+    <link rel="icon" href="/white_clone_portal/static/img/favicon.png" type="image/png"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page.css?v=27">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_menu.css?v=2">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_menu_panel.css?v=3">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_menu_search.css?v=2">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_industries.css?v=1">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_ai.css?v=1">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_explore.css?v=2">
+    <link rel="stylesheet" href="/white_clone_portal/static/css/landing_page_explore_ee.css?v=2">
+  </head>
+  <body>
+    <div class="min-h-screen bg-white">
+      <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+        <div class="w-full px-6 py-4">
+          <div class="flex items-center justify-between">
+            <a href="/landing" class="text-2xl font-bold flex-shrink-0" style="background: linear-gradient(135deg, rgb(255, 31, 122), rgb(194, 24, 91)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none;">CleonHR</a>
+            <div class="hidden md:flex items-center gap-2">
+              <div class="relative">
+                <button id="services-btn" type="button" class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-[#E91E8C] hover:bg-pink-50">
+                  <span class="services-btn-label">Services</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 transition-transform"><path d="m6 9 6 6 6-6"></path></svg>
+                </button>
+              </div>
+              <div class="relative">
+                <button id="industries-btn" type="button" class="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:text-[#E91E8C] hover:bg-pink-50">
+                  Industries
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 transition-transform"><path d="m6 9 6 6 6-6"></path></svg>
+                </button>
+              </div>
+              <a href="/ai" class="ai-nav-btn"><span class="ai-star-pulse">✦</span>AI</a>
+              <a href="/pricing" class="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:text-[#E91E8C] hover:bg-pink-50 transition-colors" style="text-decoration:none;">Pricing</a>
+            </div>
+            <div class="flex items-center gap-3">
+              <a href="/web/login" class="px-4 py-2 text-gray-700 hover:text-[#E91E8C] transition-colors text-sm font-medium" style="text-decoration:none;">Login</a>
+              <button type="button" class="px-5 py-2 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg transition-all hover:scale-105" style="background: linear-gradient(135deg, rgb(255, 31, 122), rgb(194, 24, 91));">Sign Up</button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div id="services-backdrop"></div>
+      <div id="industries-mega-menu"></div>
+      <div id="services-mega-menu">
+        <div class="border-b border-gray-100 bg-white">
+          <div class="px-10 pt-4 pb-3 flex items-center justify-between gap-6">
+            <div class="flex items-center gap-1">
+              <button type="button" class="px-4 py-2 font-bold transition-all rounded-lg relative" style="font-size: 15px; color: rgb(233, 30, 140); background-color: rgb(255, 240, 247);">Apps<div class="absolute bottom-0 left-2 right-2 h-0.5 bg-[#E91E8C] rounded-full"></div></button>
+            </div>
+            <div class="relative w-80">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+              <input type="text" id="mega-search" placeholder="Search HR modules…" class="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg transition-all" value="">
+            </div>
+          </div>
+        </div>
+        <div class="flex" style="height: 520px;">
+          <div class="w-[240px] bg-gray-50 border-r border-gray-100 flex flex-col flex-shrink-0 overflow-y-auto">
+            <div class="p-4 space-y-0.5 flex-1"></div>
+            <div class="p-4 border-t border-gray-200"><p class="text-xs text-gray-500 leading-relaxed">15+ enterprise HR modules in one unified ecosystem</p></div>
+          </div>
+          <div id="mega-center-panel" class="flex-1 overflow-y-auto"></div>
+          <div class="w-[320px] flex-shrink-0 border-l border-gray-100 flex flex-col" style="background: linear-gradient(160deg, rgb(255, 240, 247) 0%, rgb(252, 228, 240) 100%);">
+            <div class="p-8 flex flex-col flex-1">
+              <div class="mb-4"><span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#E91E8C] text-white">NEW</span></div>
+              <h3 class="text-xl font-bold text-gray-900 mb-3 leading-tight">CleonHR API &amp; Integration Platform</h3>
+              <p class="text-sm text-gray-700 mb-6 leading-relaxed">Connect your HR workflows with payroll providers, third-party systems, and enterprise integrations.</p>
+              <div class="flex-1"></div>
+              <div class="space-y-3 pt-6 border-t border-pink-200">
+                <div class="flex items-center justify-between"><span class="text-base font-bold text-gray-900">99.9%</span><span class="text-xs text-gray-600">Uptime</span></div>
+                <div class="h-px bg-pink-200"></div>
+                <div class="flex items-center justify-between"><span class="text-base font-bold text-gray-900">Enterprise</span><span class="text-xs text-gray-600">Secure</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="border-t border-gray-100 py-6 px-10" style="background: linear-gradient(to right, rgb(255, 240, 247), rgb(252, 228, 240), rgb(255, 240, 247));">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-medium px-4 py-2 rounded-full border-2 border-[#E91E8C]/30 text-[#E91E8C] bg-white/60">⚡ Lightning Fast</span>
+              <span class="text-xs font-medium px-4 py-2 rounded-full border-2 border-[#E91E8C]/30 text-[#E91E8C] bg-white/60">🛡 Enterprise Secure</span>
+              <span class="text-xs font-medium px-4 py-2 rounded-full border-2 border-[#E91E8C]/30 text-[#E91E8C] bg-white/60">📊 Highly Scalable</span>
+            </div>
+            <button type="button" class="px-8 py-3 rounded-full font-semibold text-white shadow-lg" style="background: linear-gradient(135deg, rgb(233, 30, 140), rgb(194, 24, 91)); font-size: 14px;">Start now, It's free</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="explore-root"></div>
+
+      <footer class="bg-gray-900 text-white py-12 px-6"><div class="max-w-7xl mx-auto"><div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8"><div><div class="text-2xl font-bold mb-3" style="background: linear-gradient(135deg, rgb(255, 31, 122), rgb(194, 24, 91)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">CleonHR</div><p class="text-gray-400 text-sm leading-relaxed">Transforming people management for modern enterprises across Africa and beyond.</p></div><div><div class="font-semibold mb-4 text-sm text-gray-300">Product</div><ul class="space-y-2"><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Features</button></li><li><a href="/pricing" class="text-gray-400 hover:text-white transition-colors text-sm text-left" style="text-decoration:none;display:inline-block;">Pricing</a></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Integrations</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Changelog</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Resources</button></li></ul></div><div><div class="font-semibold mb-4 text-sm text-gray-300">Company</div><ul class="space-y-2"><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">About Us</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Blog</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Careers</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Contact</button></li></ul></div><div><div class="font-semibold mb-4 text-sm text-gray-300">Legal</div><ul class="space-y-2"><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Privacy Policy</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Terms of Service</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Security</button></li><li><button class="text-gray-400 hover:text-white transition-colors text-sm text-left">Cookies</button></li></ul></div></div><div class="border-t border-gray-800 pt-8 flex items-center justify-between flex-wrap gap-4"><div class="text-sm text-gray-400">© 2026 CleonHR. All rights reserved.</div><div class="flex items-center gap-3"><a href="#" aria-label="LinkedIn" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="28" height="28" rx="6" fill="#0A66C2"></rect><path d="M9.5 11.5H7V20.5H9.5V11.5ZM8.25 10.5C9.08 10.5 9.75 9.83 9.75 9C9.75 8.17 9.08 7.5 8.25 7.5C7.42 7.5 6.75 8.17 6.75 9C6.75 9.83 7.42 10.5 8.25 10.5ZM21.5 20.5H19V16.1C19 14.42 18.37 13.75 17.25 13.75C16.07 13.75 15.5 14.56 15.5 16.1V20.5H13V11.5H15.4V12.57C15.77 11.82 16.77 11.25 18 11.25C20.08 11.25 21.5 12.5 21.5 15.1V20.5Z" fill="white"></path></svg></a><a href="#" aria-label="Twitter / X" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="28" height="28" rx="6" fill="#000000"></rect><path d="M15.85 13.1L21.3 7H19.95L15.24 12.26L11.52 7H7L12.72 15.12L7 21.5H8.35L13.32 15.94L17.28 21.5H21.8L15.85 13.1ZM14.01 15.2L13.4 14.33L8.84 8.03H10.87L14.55 13.06L15.16 13.93L19.95 20.51H17.92L14.01 15.2Z" fill="white"></path></svg></a><a href="#" aria-label="Facebook" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="28" height="28" rx="6" fill="#1877F2"></rect><path d="M19.5 14C19.5 11.02 17.09 8.61 14.11 8.61C11.13 8.61 8.72 11.02 8.72 14C8.72 16.69 10.65 18.94 13.22 19.38V15.56H11.84V14H13.22V12.8C13.22 11.44 14.02 10.69 15.26 10.69C15.86 10.69 16.48 10.8 16.48 10.8V12.13H15.79C15.11 12.13 14.89 12.55 14.89 12.98V14H16.41L16.16 15.56H14.89V19.38C17.46 18.94 19.5 16.69 19.5 14Z" fill="white"></path></svg></a><a href="#" aria-label="GitHub" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="28" height="28" rx="6" fill="#24292E"></rect><path fill-rule="evenodd" clip-rule="evenodd" d="M14 7.5C10.41 7.5 7.5 10.41 7.5 14C7.5 16.87 9.37 19.3 12 20.18C12.34 20.24 12.46 20.03 12.46 19.85V18.71C10.63 19.11 10.23 17.85 10.23 17.85C9.92 17.07 9.46 16.86 9.46 16.86C8.84 16.45 9.51 16.46 9.51 16.46C10.19 16.51 10.55 17.17 10.55 17.17C11.16 18.2 12.16 17.9 12.49 17.72C12.55 17.29 12.72 17 12.91 16.84C11.44 16.67 9.9 16.1 9.9 13.6C9.9 12.86 10.17 12.27 10.57 11.8C10.5 11.63 10.26 10.95 10.64 10.04C10.64 10.04 11.21 9.86 12.46 10.71C12.97 10.56 13.5 10.49 14 10.49C14.5 10.49 15.03 10.56 15.54 10.71C16.79 9.86 17.36 10.04 17.36 10.04C17.74 10.95 17.5 11.63 17.43 11.8C17.84 12.27 18.1 12.86 18.1 13.6C18.1 16.11 16.55 16.67 15.08 16.84C15.32 17.06 15.54 17.49 15.54 18.15V19.85C15.54 20.03 15.66 20.25 16.01 20.18C18.64 19.3 20.5 16.87 20.5 14C20.5 10.41 17.59 7.5 14 7.5Z" fill="white"></path></svg></a><a href="#" aria-label="YouTube" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="28" height="28" rx="6" fill="#FF0000"></rect><path d="M20.6 11.12C20.41 10.4 19.86 9.84 19.15 9.65C17.87 9.3 14 9.3 14 9.3C14 9.3 10.13 9.3 8.85 9.65C8.14 9.84 7.59 10.4 7.4 11.12C7.05 12.41 7.05 14.1 7.05 14.1C7.05 14.1 7.05 15.79 7.4 17.08C7.59 17.8 8.14 18.36 8.85 18.55C10.13 18.9 14 18.9 14 18.9C14 18.9 17.87 18.9 19.15 18.55C19.86 18.36 20.41 17.8 20.6 17.08C20.95 15.79 20.95 14.1 20.95 14.1C20.95 14.1 20.95 12.41 20.6 11.12ZM12.44 16.1V12.1L16.09 14.1L12.44 16.1Z" fill="white"></path></svg></a><a href="#" aria-label="Instagram" class="transition-transform hover:scale-110"><svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="ig-grad" cx="30%" cy="107%" r="120%"><stop offset="0%" stop-color="#ffd879"></stop><stop offset="25%" stop-color="#f9a343"></stop><stop offset="50%" stop-color="#f26522"></stop><stop offset="70%" stop-color="#e2286f"></stop><stop offset="100%" stop-color="#8b3fad"></stop></radialGradient></defs><rect width="28" height="28" rx="6" fill="url(#ig-grad)"></rect><rect x="8" y="8" width="12" height="12" rx="3.5" stroke="white" stroke-width="1.5" fill="none"></rect><circle cx="14" cy="14" r="3" stroke="white" stroke-width="1.5" fill="none"></circle><circle cx="18" cy="10" r="1" fill="white"></circle></svg></a></div><div class="text-sm text-gray-500">Built for the future of work. <span style="color: rgb(255, 31, 122);">♥</span></div></div></div></footer>
+    </div>
+
+    <script src="/white_clone_portal/static/js/module_explore_data.js?v=7"></script>
+    <script src="/white_clone_portal/static/js/landing_page_menu.js?v=15"></script>
+    <script src="/white_clone_portal/static/js/landing_page_industries.js?v=1"></script>
+    <script src="/white_clone_portal/static/js/landing_page_explore.js?v=3"></script>
+  </body>
+</html>

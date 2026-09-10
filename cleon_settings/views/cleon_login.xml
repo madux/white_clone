@@ -1,120 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- <template id="cleonhr_login_layout" inherit_id="web.login_layout">
 
-        <xpath expr="//div[contains(@t-attf-class, 'card')]" position="attributes">
-            <attribute name="t-attf-class">card border-0 mx-auto cleonhr_card o_database_list</attribute>
-            <attribute name="style">max-width: 480px;</attribute>
-        </xpath>
-
-        <xpath expr="//div[hasclass('card-body')]/div[contains(@t-attf-class, 'text-center')][1]" position="replace">
-            <div class="cleonhr_brand">
-                <div class="cleonhr_logo">C</div>
-                <h1 class="cleonhr_title">Welcome to CleonHR</h1>
-                <p class="cleonhr_subtitle">Your all-in-one recruitment platform</p>
-            </div>
-        </xpath>
-
-        <xpath expr="//div[hasclass('card-body')]/div[contains(@t-attf-class, 'text-center') and contains(@t-attf-class, 'small')]" position="replace">
-            <p class="cleonhr_signup">
-                Don't have an account? <a href="#" class="cleonhr_signup_link">Sign up for free</a>
-            </p>
-        </xpath>
-
-    </template> -->
-
-    <!-- <template name="Login Layout" t-name="web.login_layout">
-        <t t-call="web.frontend_layout">
-            <t t-set="html_data" t-value="{'style': 'height: 100%;'}"/>
-            <t t-set="body_classname" t-value="'bg-100'"/>
-            <t t-set="no_header" t-value="True"/>
-            <t t-set="no_footer" t-value="True"/>
-
-            <div class="container py-5">
-                <div t-attf-class="card border-0 mx-auto bg-100 {{login_card_classes}} o_database_list" style="max-width: 480px;">
-                <div t-attf-class="card border-0 mx-auto cleonhr_card o_database_list">
-                    <div class="card-body">
-                        <div class="cleonhr_brand">
-                            <div class="cleonhr_logo">C</div>
-                            <h1 class="cleonhr_title">Welcome to CleonHR</h1>
-                            <p class="cleonhr_subtitle">Your all-in-one recruitment platform</p>
-                        </div>
-                        <div t-attf-class="text-center pb-3 border-bottom {{'mb-3' if form_small else 'mb-4'}}">
-                            <img t-attf-src="/web/binary/company_logo{{ '?dbname='+db if db else '' }}" alt="Logo" style="max-height:120px; max-width: 100%; width:auto"/>
-                        </div>
-                        <t t-out="0"/>
-                        <div class="text-center small mt-4 pt-3 border-top" t-if="not disable_footer">
-                            <t t-if="not disable_database_manager">
-                                <a class="border-end pe-2 me-1" href="/web/database/manager">Manage Databases</a>
-                            </t>
-                            <a href="https://www.odoo.com?utm_source=db&amp;utm_medium=auth" target="_blank">Powered by <span>Odoo</span></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </t>
-    </template> -->
-
-    <template id="cleonhr_login" name="CleonHR Login" inherit_id="web.login">
+    <!--
+      Form-only inherit. Do NOT xpath-replace website.layout — that hung installs.
+      Gradient/orbs come from CSS on .oe_website_login_container (website.login_layout).
+    -->
+    <template id="cleonhr_login" name="CleonHR Login" inherit_id="web.login" priority="50">
         <xpath expr="//form[hasclass('oe_login_form')]" position="replace">
-            <!-- <t t-call="web.login_layout"> -->
-             <div class="cleonhr_form_card">
-                <div class="loginavatar"></div>
-                <h2 class="cleonhr_card_title">Welcome to CleonHR</h2>
-                <h4 class="cleonhr_card_subtitle">Your all-in-one recruitment platform</h4>
+            <div class="cleonhr-login-card">
+                <div class="cleonhr-login-brand">
+                    <p class="cleonhr-login-logo">
+                        <span class="cleonhr-login-logo-cleon">Cleon</span><span class="cleonhr-login-logo-hr">HR</span>
+                    </p>
+                </div>
 
-                <form class="oe_login_form" role="form" t-attf-action="/web/login" method="post" onsubmit="this.action = '/web/login' + location.hash">
+                <div class="cleonhr-login-heading">
+                    <h1>Welcome back</h1>
+                    <p>Sign in to your CleonHR account</p>
+                </div>
+
+                <form class="oe_login_form cleonhr-login-form" role="form" t-attf-action="/web/login" method="post" onsubmit="this.action = '/web/login' + location.hash">
                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
-                    <div class="mb-3" t-if="databases and len(databases) &gt; 1">
-                        <label for="db" class="col-form-label">Database</label>
+                    <div class="cleonhr-login-field" t-if="databases and len(databases) &gt; 1">
+                        <label for="db" class="cleonhr-login-label">Database</label>
                         <div t-attf-class="input-group {{'input-group-sm' if form_small else ''}}">
-                            <input type="text" name="db" t-att-value="request.db" id="db" t-attf-class="form-control #{'form-control-sm' if form_small else ''} cleonhr_input" required="required" readonly="readonly"/>
+                            <input type="text" name="db" t-att-value="request.db" id="db" t-attf-class="form-control cleonhr-login-input #{'form-control-sm' if form_small else ''}" required="required" readonly="readonly"/>
                             <a role="button" href="/web/database/selector" class="btn btn-secondary">Select <i class="fa fa-database" role="img" aria-label="Database" title="Database"/></a>
                         </div>
                     </div>
 
-                    <div class="mb-3 field-login">
-                        
-                        <label for="login" class="form-label cleonhr_label"><i class="fa fa-user p-2"/> Email Address</label>
-                        <input type="text" placeholder="Email" name="login" t-att-value="login" id="login" t-attf-class="form-control #{'form-control-sm' if form_small else ''}cleonhr_input" required="required" autocomplete="username" autofocus="autofocus" autocapitalize="off"/>
+                    <div class="cleonhr-login-field field-login">
+                        <label for="login" class="cleonhr-login-label">Email Address</label>
+                        <input
+                            type="text"
+                            placeholder="john@example.com"
+                            name="login"
+                            t-att-value="login"
+                            id="login"
+                            class="form-control cleonhr-login-input"
+                            required="required"
+                            autocomplete="username"
+                            autofocus="autofocus"
+                            autocapitalize="off"
+                        />
                     </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label cleonhr_label"><i class="fa fa-lock p-2"/>Password</label>
-                        <input type="password" placeholder="Password" name="password" id="password" t-attf-class="form-control #{'form-control-sm' if form_small else ''}cleonhr_input" required="required" autocomplete="current-password" t-att-autofocus="'autofocus' if login else None" maxlength="4096"/>
-                        <i class="fa fa-eye cleonhc-toggle-pwd" data-target="#password"/>
+                    <div class="cleonhr-login-field cleonhr-login-field--password">
+                        <div class="cleonhr-login-password-head">
+                            <label for="password" class="cleonhr-login-label">Password</label>
+                            <a
+                                t-if="reset_password_enabled"
+                                t-attf-href="/web/reset_password?{{ keep_query() }}"
+                                class="cleonhr-login-forgot"
+                            >Forgot Password?</a>
+                        </div>
+                        <div class="cleonhr-login-password-wrap">
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                name="password"
+                                id="password"
+                                class="form-control cleonhr-login-input cleonhr-login-input--password"
+                                required="required"
+                                autocomplete="current-password"
+                                t-att-autofocus="'autofocus' if login else None"
+                                maxlength="4096"
+                            />
+                            <button type="button" class="cleonhr-login-eye" data-cleonhr-toggle-pwd="password" aria-label="Show password">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    <p class="cleonhr_signup">
-                        <a 
-                            t-if="reset_password_enabled" 
-                            t-attf-href="/web/reset_password?{{ keep_query() }}" 
-                            class="cleonhr_signup_link">
-                            Forgot Password
-                        </a>
-                    </p>
 
-                    <p class="alert alert-danger" t-if="error" role="alert">
+                    <p class="alert alert-danger cleonhr-login-alert" t-if="error" role="alert">
                         <t t-esc="error"/>
                     </p>
-                    <p class="alert alert-success" t-if="message" role="status">
+                    <p class="alert alert-success cleonhr-login-alert" t-if="message" role="status">
                         <t t-esc="message"/>
                     </p>
 
-                    <div t-attf-class="clearfix oe_login_buttons text-center gap-1 d-grid mb-1 {{'pt-2' if form_small else 'pt-3'}}">
-                        <button type="submit" class="btn btn-primary cleonhr_btn">Sign in</button>
-                        <!-- <t t-if="debug">
+                    <div class="oe_login_buttons cleonhr-login-actions">
+                        <button type="submit" class="cleonhr-login-submit">Sign In</button>
+                        <t t-if="debug">
                             <button type="submit" name="redirect" value="/web/become" class="btn btn-link btn-sm">Log in as superuser</button>
-                        </t> -->
+                        </t>
                         <div class="o_login_auth"/>
                     </div>
-                    <p class="cleonhr_signup">
-                        Don't have an account? <a href="/maacherp/register" class="cleonhr_signup_link">Sign up for free</a>
-                    </p>
 
                     <input type="hidden" name="redirect" t-att-value="redirect"/>
                 </form>
+
+                <p class="cleonhr-login-signup">
+                    Don't have an account?
+                    <a href="/maacherp/register" class="cleonhr-login-signup-link">Create Account</a>
+                </p>
+
+                <!-- Temporarily disabled
+                <button type="button" class="cleonhr-login-default" data-cleonhr-default-creds="">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/>
+                        <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>
+                    </svg>
+                    Use Default Credentials
+                </button>
+                -->
             </div>
         </xpath>
     </template>
+
 </odoo>
