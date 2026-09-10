@@ -25,7 +25,11 @@ class HrLeavePolicy(models.Model):
     ], string="Leave Type", required=True, default="paid", index=True)
     category_name = fields.Char(string="Category", default="General")
     color = fields.Char(default="#E91E78")
-    state = fields.Selection([("draft", "Draft"), ("active", "Active"), ("inactive", "Inactive"), ("archived", "Archived")], default="draft", required=True, index=True)
+    state = fields.Selection([
+        ("draft", "Draft"),
+        ("active", "Active"),
+        ("inactive", "Inactive"),
+    ], default="draft", required=True, index=True)
     active = fields.Boolean(default=True)
 
     apply_to = fields.Selection([("all", "All Employees"), ("selected", "Selected Employees / Groups"), ("conditions", "Conditions")], default="all", required=True)
@@ -63,7 +67,25 @@ class HrLeavePolicy(models.Model):
 
     _sql_constraints = [("policy_code_company_uniq", "unique(code, company_id)", "Policy code must be unique per company.")]
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if "state" in vals and vals["state"] != "draft":
+                raise ValidationError(_("New policies can only be created in Draft state. Use change_policy_status() to activate a policy."))
+            if "active" in vals and not vals["active"]:
+                raise ValidationError(_("New policies cannot be created as archived."))
+        return super().create(vals_list)
+
     def write(self, values):
+        if {"state", "active"}.intersection(values):
+            raise ValidationError(_("Policy lifecycle state and active status cannot be modified directly. Use the policy lifecycle actions."))
+        leave_types = self.line_ids.leave_type_id
+        result = super().write(values)
+        if {"approval_required", "approval_workflow"}.intersection(values):
+            (leave_types | self.line_ids.leave_type_id)._sync_native_validation_from_policies()
+        return result
+
+    def _write_lifecycle(self, values):
         leave_types = self.line_ids.leave_type_id
         result = super().write(values)
         if {"state", "active", "approval_required", "approval_workflow"}.intersection(values):
@@ -139,10 +161,10 @@ class HrLeavePolicy(models.Model):
                     "document_required_after_days": 3 if leave_type.supporting_document_policy == "conditional" else (0 if leave_type.supporting_document_policy == "never" else 0.01),
                 })
                 if leave_type.active:
-                    policy.write({"state": "active"})
+                    policy._write_lifecycle({"state": "active"})
                     policy._sync_assignments("keep")
                 else:
-                    policy.write({"state": "inactive"})
+                    policy._write_lifecycle({"state": "inactive"})
                 policy._audit(_("Migrated legacy Leave Type configuration into policy '%s'.") % policy.name, after={"leave_type_id": line.leave_type_id.id})
         return True
 
@@ -237,7 +259,7 @@ class HrLeavePolicy(models.Model):
             "id": self.id, "name": self.name, "code": self.code, "description": self.description or "",
             "mode": self.policy_mode, "policy_type": self.policy_type, "policy_type_label": dict(self._fields["policy_type"].selection).get(self.policy_type),
             "category": self.category_name or "General", "color": self.color or "#E91E78",
-            "state": self.state, "active": self.active, "ai_enabled": self.ai_enabled,
+            "state": self.state, "active": self.active, "display_status": "archived" if not self.active else self.state, "ai_enabled": self.ai_enabled,
             "leave_types": [{"id": value.leave_type_id.id, "name": value.leave_type_id.name, "entitlement": value.accrual_amount, "unit": value.unit, "compensation": value.compensation} for value in lines],
             "applicability": _("All Employees") if self.apply_to == "all" else _("%d eligible employee(s)") % len(eligible),
             "employee_count": len(assigned or eligible), "employee_ids": (assigned or eligible).ids,
@@ -249,7 +271,7 @@ class HrLeavePolicy(models.Model):
     def get_policy_page_data(self, search="", state="current"):
         self._check_configure()
         domain = [("company_id", "in", self.env.companies.ids)]
-        domain.append(("state", "=", "archived") if state == "archived" else ("state", "!=", "archived"))
+        domain.append(("active", "=", state != "archived"))
         if search:
             domain += ["|", "|", ("name", "ilike", search), ("code", "ilike", search), ("line_ids.leave_type_id.name", "ilike", search)]
         policies = self.with_context(active_test=False).search(domain, order="name, id")
@@ -316,6 +338,8 @@ class HrLeavePolicy(models.Model):
         policy = self.with_context(active_test=False).browse(record_id).exists() if record_id else self
         if policy and policy.company_id not in self.env.companies:
             raise AccessError(_("You cannot update another company's policy."))
+        if policy and not policy.active:
+            raise UserError(_("Restore the archived policy before editing it."))
         selected = payload.get("selected") or {}
         carry = payload.get("carry") or {}
         approval = payload.get("approval") or {}
@@ -325,7 +349,7 @@ class HrLeavePolicy(models.Model):
             "description": payload.get("description") or "", "policy_mode": payload.get("mode") if payload.get("mode") in ("simple", "advanced") else "simple",
             "policy_type": payload.get("policy_type") if payload.get("policy_type") in dict(self._fields["policy_type"].selection) else "paid",
             "category_name": payload.get("category") or "General", "color": payload.get("color") or "#E91E78",
-            "state": payload.get("state") if payload.get("state") in ("draft", "active", "inactive") else "active", "active": True,
+            "state": "draft", "active": True,
             "company_id": self.env.company.id, "apply_to": payload.get("apply_to") if payload.get("apply_to") in ("all", "selected", "conditions") else "all",
             "condition_match": payload.get("condition_match") if payload.get("condition_match") in ("all", "any") else "all",
             "minimum_tenure_months": int(payload.get("minimum_tenure_months") or 0),
@@ -353,11 +377,20 @@ class HrLeavePolicy(models.Model):
             vals[key] = [(6, 0, [int(value) for value in selected.get(key, [])])]
         before = policy._row() if policy else {}
         previous_leave_types = policy.line_ids.leave_type_id if policy else self.env["hr.leave.type"]
-        target_state = vals["state"]
         if policy:
+            target_state = payload.get("state")
+            if target_state and target_state != policy.state:
+                raise ValidationError(_("Policy lifecycle status cannot be changed via save_policy. Use change_policy_status() to activate or deactivate the policy."))
+            vals.pop("state", None)
+            vals.pop("active", None)
             policy.write(vals)
         else:
-            policy = self.create({**vals, "state": "draft"})
+            initial_state = payload.get("state") or "active"
+            if initial_state not in ("draft", "active"):
+                raise ValidationError(_("Unsupported initial policy status '%s'. New policies can only be created as Draft or Active.") % initial_state)
+            vals["state"] = "draft"
+            vals["active"] = True
+            policy = self.create(vals)
         retained_line_ids = []
         for index, line_values in enumerate(lines):
             leave_type = self._resolve_leave_type(line_values)
@@ -377,9 +410,10 @@ class HrLeavePolicy(models.Model):
                 else:
                     assignment.write({"date_to": effective - timedelta(days=1)})
             removed_lines.write({"active": False})
-        if policy.state != target_state:
-            policy.write({"state": target_state})
-        if policy.state == "active":
+        if not record_id and initial_state == "active":
+            policy._write_lifecycle({"state": "active"})
+            policy._sync_assignments(payload.get("conflict_resolution") or "review")
+        elif policy.state == "active":
             policy._sync_assignments(payload.get("conflict_resolution") or "review")
         (previous_leave_types | policy.line_ids.leave_type_id)._sync_native_validation_from_policies()
         policy._audit(_("%s policy '%s'.") % (_("Updated") if record_id else _("Created"), policy.name), before, policy._row())
@@ -391,7 +425,7 @@ class HrLeavePolicy(models.Model):
         date_from = fields.Date.to_date(date_from) if date_from else fields.Date.context_today(self)
         conflicts = []
         for line in self.line_ids.filtered("active"):
-            domain = [("superseded", "=", False), ("employee_id", "in", employees.ids), ("leave_type_id", "=", line.leave_type_id.id), ("policy_id.state", "=", "active"), ("policy_id", "!=", self.id), ("date_from", "<=", date_to or "9999-12-31"), "|", ("date_to", "=", False), ("date_to", ">=", date_from)]
+            domain = [("superseded", "=", False), ("employee_id", "in", employees.ids), ("leave_type_id", "=", line.leave_type_id.id), ("policy_id.state", "=", "active"), ("policy_id.active", "=", True), ("policy_id", "!=", self.id), ("date_from", "<=", date_to or "9999-12-31"), "|", ("date_to", "=", False), ("date_to", ">=", date_from)]
             for assignment in self.env["hr.leave.policy.assignment"].sudo().search(domain):
                 conflicts.append({"assignment": assignment, "employee": assignment.employee_id, "leave_type": line.leave_type_id, "policy": assignment.policy_id})
         return conflicts
@@ -423,6 +457,7 @@ class HrLeavePolicy(models.Model):
         assignments = self.env["hr.leave.policy.assignment"].sudo().search([
             ("superseded", "=", False), ("employee_id", "in", employees.ids),
             ("leave_type_id", "in", list(type_ids)), ("policy_id.state", "=", "active"),
+            ("policy_id.active", "=", True),
             ("date_from", "<=", fields.Date.context_today(self)), "|",
             ("date_to", "=", False), ("date_to", ">=", fields.Date.context_today(self)),
         ]).filtered(lambda item: item.company_id == self.env.company and item.policy_id.id != int(payload.get("id") or 0))
@@ -432,7 +467,7 @@ class HrLeavePolicy(models.Model):
 
     def _sync_assignments(self, resolution="review", employees=None, effective_date=None):
         self.ensure_one()
-        if self.state != "active":
+        if self.state != "active" or not self.active:
             raise ValidationError(_("Only active policies can receive new assignments."))
         if resolution not in ("review", "keep", "replace"):
             raise ValidationError(_("Choose Review, Keep Existing, or Replace."))
@@ -479,7 +514,11 @@ class HrLeavePolicy(models.Model):
     @api.model
     def assign_policy(self, policy_id, employee_ids, effective_date=None, resolution="review"):
         self._check_configure()
-        policy = self.browse(int(policy_id)).exists()
+        policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
+        if not policy:
+            raise UserError(_("Policy not found."))
+        if not policy.active:
+            raise UserError(_("Cannot assign an archived policy. Restore the policy first."))
         employees = self.env["hr.employee"].browse([int(value) for value in employee_ids]).exists()
         result = policy._sync_assignments(resolution, employees, effective_date)
         policy._audit(_("Assigned policy to %d employee(s); %d conflict(s) retained.") % (result["assigned"], result["conflicts"]))
@@ -496,37 +535,76 @@ class HrLeavePolicy(models.Model):
         duplicate._audit(_("Duplicated from policy '%s'.") % policy.name)
         return {"id": duplicate.id, "name": duplicate.name}
 
+    def _close_assignments(self, effective_date=None):
+        effective = fields.Date.to_date(effective_date) if effective_date else fields.Date.context_today(self)
+        assignments = self.assignment_ids.filtered(lambda item: not item.superseded and (not item.date_to or item.date_to >= effective))
+        for assignment in assignments:
+            if effective <= assignment.date_from:
+                assignment.write({"superseded": True})
+            else:
+                assignment.write({"date_to": effective - timedelta(days=1)})
+
     @api.model
-    def change_policy_status(self, policy_id, state):
+    def change_policy_status(self, policy_id, state, resolution="review"):
         self._check_configure()
-        if state not in ("draft", "active", "inactive", "archived"):
+        if state not in ("draft", "active", "inactive"):
             raise ValidationError(_("Unsupported policy status."))
         policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
+        if not policy:
+            raise UserError(_("Policy not found."))
+        if not policy.active:
+            raise UserError(_("Restore the archived policy before changing its status."))
+        if state == "draft":
+            raise ValidationError(_("A policy cannot be transitioned to Draft."))
+        if policy.state == state:
+            return True
+        if policy.state == "draft" and state == "inactive":
+            raise ValidationError(_("A draft policy cannot be transitioned to Inactive directly. Activate the policy first."))
         before = policy.state
         leave_types = policy.line_ids.leave_type_id
-        policy.write({"state": state, "active": state != "archived"})
+        today = fields.Date.context_today(self)
+        policy._write_lifecycle({"state": state})
         if state == "active":
-            policy._sync_assignments("review")
+            policy._sync_assignments(resolution, effective_date=today)
+        elif before == "active" and state == "inactive":
+            policy._close_assignments(effective_date=today)
         leave_types._sync_native_validation_from_policies()
         policy._audit(_("Changed policy status from %s to %s.") % (before, state), {"state": before}, {"state": state})
         return True
 
     @api.model
-    def delete_policy(self, policy_id):
+    def archive_policy(self, policy_id):
         self._check_configure()
         policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
-        historical = policy.assignment_ids or self.env["hr.leave"].sudo().search_count([("governing_policy_id", "=", policy.id)])
-        leave_types = policy.line_ids.leave_type_id
-        if historical:
-            policy.write({"state": "archived", "active": False})
-            leave_types._sync_native_validation_from_policies()
-            policy._audit(_("Archived instead of deleting because historical records depend on this policy."))
-            return {"archived": True}
-        name, code = policy.name, policy.code
-        policy.unlink()
-        leave_types._sync_native_validation_from_policies()
-        self.env["hr.leave.audit.log"].sudo().create({"action": "policy_change", "entity_name": name, "entity_reference": code, "actor_id": self.env.user.id, "actor_label": self.env.user.name, "note": _("Deleted unused policy '%s'.") % name})
-        return {"deleted": True}
+        if not policy:
+            raise UserError(_("Policy not found."))
+        if not policy.active:
+            raise UserError(_("Policy is already archived."))
+        today = fields.Date.context_today(self)
+        if policy.state == "active" and policy.active:
+            policy._close_assignments(effective_date=today)
+        policy._write_lifecycle({"active": False})
+        policy.line_ids.leave_type_id._sync_native_validation_from_policies()
+        policy._audit(_("Archived policy '%s'.") % policy.name, {"active": True}, {"active": False})
+        return {"archived": True}
+
+    @api.model
+    def restore_policy(self, policy_id):
+        self._check_configure()
+        policy = self.with_context(active_test=False).browse(int(policy_id)).exists()
+        if not policy:
+            raise UserError(_("Policy not found."))
+        if policy.active:
+            raise UserError(_("Policy is already active."))
+        new_state = "inactive" if policy.state == "active" else policy.state
+        policy._write_lifecycle({"active": True, "state": new_state})
+        policy.line_ids.leave_type_id._sync_native_validation_from_policies()
+        policy._audit(_("Restored policy '%s' as %s.") % (policy.name, new_state), {"active": False}, {"active": True, "state": new_state})
+        return {"restored": True, "state": new_state}
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_archive(self):
+        raise UserError(_("Leave Policies cannot be deleted. Archive the policy instead."))
 
 
 class HrLeavePolicyLine(models.Model):
@@ -565,6 +643,17 @@ class HrLeavePolicyLine(models.Model):
     assignment_ids = fields.One2many("hr.leave.policy.assignment", "policy_line_id")
 
     _sql_constraints = [("policy_leave_type_uniq", "unique(policy_id, leave_type_id)", "A Leave Type can only appear once in a policy.")]
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_assignments(self):
+        for line in self:
+            policy = line.policy_id.with_context(active_test=False)
+            if not policy.active:
+                raise ValidationError(_("Policy lines belonging to an archived policy cannot be deleted."))
+            if policy.state != "draft":
+                raise ValidationError(_("Policy lines can only be deleted while the policy is in Draft state. Deactivate the line instead."))
+            if line.assignment_ids:
+                raise ValidationError(_("Policy lines with employee assignments cannot be deleted. Archive or deactivate the line instead."))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -622,6 +711,7 @@ class HrLeavePolicyLine(models.Model):
         processed = 0
         assignments = self.env["hr.leave.policy.assignment"].sudo().search([
             ("superseded", "=", False), ("policy_id.state", "=", "active"),
+            ("policy_id.active", "=", True),
             ("policy_line_id.active", "=", True), ("date_from", "<=", process_date),
             "|", ("date_to", "=", False), ("date_to", ">=", process_date),
         ])
@@ -705,7 +795,8 @@ class HrLeavePolicyAssignment(models.Model):
             raise ValidationError(_("Assignment provenance is immutable; create a prospective assignment instead."))
         return super().write(vals)
 
-    def unlink(self):
+    @api.ondelete(at_uninstall=False)
+    def _unlink_except_historical(self):
         raise ValidationError(_("Policy assignments are historical records. End or supersede them instead."))
 
     @api.constrains("date_from", "date_to", "employee_id", "policy_id", "policy_line_id", "leave_type_id", "superseded")
@@ -721,9 +812,9 @@ class HrLeavePolicyAssignment(models.Model):
                 raise ValidationError(_("Assignment end date cannot precede its start date."))
             overlap = self.search_count([
                 ("superseded", "=", False), ("id", "!=", assignment.id), ("employee_id", "=", assignment.employee_id.id), ("leave_type_id", "=", assignment.leave_type_id.id),
-                ("policy_id.state", "=", "active"), ("date_from", "<=", assignment.date_to or "9999-12-31"), "|", ("date_to", "=", False), ("date_to", ">=", assignment.date_from),
+                ("policy_id.state", "=", "active"), ("policy_id.active", "=", True), ("date_from", "<=", assignment.date_to or "9999-12-31"), "|", ("date_to", "=", False), ("date_to", ">=", assignment.date_from),
             ])
-            if overlap and assignment.policy_id.state == "active":
+            if overlap and assignment.policy_id.state == "active" and assignment.policy_id.active:
                 raise ValidationError(_("This employee already has an overlapping active policy for the same Leave Type."))
 
     def active_on(self, value):
@@ -747,7 +838,8 @@ class HrLeaveTypePolicyClassification(models.Model):
         on_date = fields.Date.to_date(on_date) if on_date else fields.Date.context_today(self)
         assignment = self.env["hr.leave.policy.assignment"].sudo().search([
             ("superseded", "=", False),
-            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.id), ("policy_id.state", "=", "active"),
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.id),
+            ("policy_id.state", "=", "active"), ("policy_id.active", "=", True),
             ("date_from", "<=", on_date), "|", ("date_to", "=", False), ("date_to", ">=", on_date),
         ], order="date_from desc, id desc")
         assignment = assignment.filtered(lambda item: item.policy_id.apply_to != "conditions" or employee in item.policy_id._eligible_employees())
@@ -757,9 +849,15 @@ class HrLeaveTypePolicyClassification(models.Model):
             return assignment.policy_line_id
         candidates = self.env["hr.leave.policy.line"].sudo().search([
             ("leave_type_id", "=", self.id), ("active", "=", True),
-            ("policy_id.state", "=", "active"), ("company_id", "=", employee.company_id.id),
+            ("policy_id.state", "=", "active"), ("policy_id.active", "=", True),
+            ("company_id", "=", employee.company_id.id),
         ])
         candidates = candidates.filtered(lambda line: employee in line.policy_id._eligible_employees())
+        candidates = candidates.filtered(
+            lambda line: not line.policy_id.assignment_ids.filtered(
+                lambda a: a.employee_id == employee and a.leave_type_id == self and not a.superseded
+            )
+        )
         if len(candidates) > 1:
             raise ValidationError(_("Multiple eligible policies match this employee and Leave Type. HR must resolve the conflict."))
         return candidates
@@ -768,7 +866,8 @@ class HrLeaveTypePolicyClassification(models.Model):
         self.ensure_one()
         lines = self.env["hr.leave.policy.line"].sudo().search([
             ("leave_type_id", "=", self.id), ("active", "=", True),
-            ("policy_id.state", "=", "active"), ("company_id", "=", self.env.company.id),
+            ("policy_id.state", "=", "active"), ("policy_id.active", "=", True),
+            ("company_id", "=", self.env.company.id),
         ])
         if not lines:
             return super()._get_eligible_employees()

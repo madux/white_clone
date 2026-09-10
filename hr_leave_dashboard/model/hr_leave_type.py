@@ -414,6 +414,7 @@ class HrLeaveType(models.Model):
         processed = self.env["hr.leave.policy.line"].sudo()._process_policy_accruals(today)
         governed_type_ids = self.env["hr.leave.policy.line"].sudo().search([
             ("active", "=", True), ("policy_id.state", "=", "active"),
+            ("policy_id.active", "=", True),
         ]).leave_type_id.ids
         types = self.sudo().search([
             ("active", "=", True),

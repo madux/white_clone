@@ -825,7 +825,7 @@ class TestLeaveApprovalSemantics(TransactionCase):
             "leave_type_id": leave_type.id,
             "active": True,
         })
-        policy.write({"state": "active"})
+        policy.change_policy_status(policy.id, "active")
 
         leave_type._sync_native_validation_from_policies()
         self.assertEqual(leave_type.leave_validation_type, "hr")

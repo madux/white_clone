@@ -24,8 +24,7 @@ class TestConfigurationResources(TransactionCase):
             "policy_id": cls.policy.id, "leave_type_id": cls.leave_type.id,
             "accrual_amount": 2, "accrual_period": "monthly", "accrual_basis": "calendar",
         })
-        cls.policy.write({"state": "active"})
-        cls.policy._sync_assignments("review")
+        cls.policy.change_policy_status(cls.policy.id, "active")
         cls.balance = cls.env["hr.leave.balance.transaction"]
         cls.chain = cls.env["cleon.approval.chain"].create({
             "name": "Configuration Approval Flow", "workflow_type_id": cls.env.ref("hr_leave_dashboard.wft_leave_request").id,

@@ -19,13 +19,39 @@
           <i class="fa fa-search"/>
           <input t-model="state.search" placeholder="Search policies, codes, or leave types…"/>
         </label>
-        <div class="o_lp_segment">
-          <button t-att-class="state.listState === 'current' ? 'active' : ''" t-on-click="() => this.setListState('current')">
-            Current Policies
-          </button>
-          <button t-att-class="state.listState === 'archived' ? 'active' : ''" t-on-click="() => this.setListState('archived')">
-            Archived Policies
-          </button>
+        <div class="o_lp_filters_right">
+          <!-- Status filter chips (only on Current Policies) -->
+          <div t-if="state.listState === 'current'" class="o_lp_status_chips">
+            <span class="o_lp_filter_label">Status:</span>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'all' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('all')">
+              All
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'active' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('active')">
+              Active
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'draft' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('draft')">
+              Draft
+            </button>
+            <button type="button"
+                    t-att-class="'o_lp_chip ' + (state.statusFilter === 'inactive' ? 'active' : '')"
+                    t-on-click="() => this.setStatusFilter('inactive')">
+              Inactive
+            </button>
+          </div>
+          <div class="o_lp_segment">
+            <button t-att-class="state.listState === 'current' ? 'active' : ''" t-on-click="() => this.setListState('current')">
+              Current Policies
+            </button>
+            <button t-att-class="state.listState === 'archived' ? 'active' : ''" t-on-click="() => this.setListState('archived')">
+              Archived Policies
+            </button>
+          </div>
         </div>
       </div>
 
@@ -87,7 +113,7 @@
                 <span class="o_lp_applicability" t-esc="row.applicability"/>
               </td>
               <td>
-                <span t-att-class="'o_lp_status ' + row.state" t-esc="row.state"/>
+                <span t-att-class="'o_lp_status ' + this.displayStatus(row)" t-esc="this.displayStatus(row)"/>
               </td>
               <td>
                 <span class="o_lp_avatar">
@@ -100,13 +126,25 @@
                 </button>
                 <div t-if="state.menuId === row.id" class="o_lp_menu">
                   <button t-on-click="() => this.view(row)"><i class="fa fa-eye"/> View Details</button>
-                  <button t-on-click="() => this.edit(row)"><i class="fa fa-pencil"/> Edit Policy</button>
+                  <button t-if="row.active" t-on-click="() => this.edit(row)"><i class="fa fa-pencil"/> Edit Policy</button>
                   <button t-on-click="() => this.duplicate(row)"><i class="fa fa-copy"/> Duplicate Policy</button>
-                  <button t-on-click="() => this.openAssign(row)"><i class="fa fa-user-plus"/> Assign Policy</button>
-                  <button t-if="row.state !== 'archived'" t-on-click="() => this.changeStatus(row)">
-                    <i class="fa fa-toggle-on"/> Change Status (<t t-esc="row.state === 'active' ? 'Deactivate' : 'Activate'"/>)
-                  </button>
-                  <button class="danger" t-on-click="() => this.remove(row)"><i class="fa fa-trash"/> Delete Policy</button>
+                  <button t-if="row.active and row.state === 'active'" t-on-click="() => this.openAssign(row)"><i class="fa fa-user-plus"/> Assign Policy</button>
+                  <t t-if="row.active">
+                    <button t-if="row.state !== 'active'" t-on-click="() => this.activatePolicy(row)">
+                      <i class="fa fa-toggle-on"/> Activate
+                    </button>
+                    <button t-if="row.state === 'active'" t-on-click="() => this.changeStatus(row, 'inactive')">
+                      <i class="fa fa-toggle-off"/> Deactivate
+                    </button>
+                    <button class="danger" t-on-click="() => this.archive(row)">
+                      <i class="fa fa-archive"/> Archive Policy
+                    </button>
+                  </t>
+                  <t t-else="">
+                    <button class="o_lp_restore_btn" t-on-click="() => this.restore(row)">
+                      <i class="fa fa-undo"/> Restore Policy
+                    </button>
+                  </t>
                 </div>
               </td>
             </tr>
@@ -911,6 +949,57 @@
           <t t-set-slot="footer">
             <button class="btn btn-outline-secondary" t-on-click="() => state.assign=false">Cancel</button>
             <button class="btn btn-primary o_lp_primary" t-on-click="assignPolicy">Assign Policy</button>
+          </t>
+      </SettingsPanel>
+
+      <!-- Activate Policy Conflict Drawer -->
+      <SettingsPanel t-if="state.activateConflict" close="() => this.cancelActivateConflict()" wide="false">
+          <t t-set-slot="header">
+            <div>
+              <h3>Activate Policy</h3>
+              <p class="o_lp_subtitle" t-esc="state.activateConflict.row.name"/>
+            </div>
+            <button class="o_lp_close_btn" t-on-click="() => this.cancelActivateConflict()">×</button>
+          </t>
+          <div class="o_lp_form">
+            <div class="alert alert-warning mb-3">
+              <strong class="d-block mb-1"><i class="fa fa-exclamation-triangle me-1"/> Policy Assignment Conflict Detected</strong>
+              <span>
+                <t t-esc="state.activateConflict.conflicts.length"/> employee(s) are already assigned to another active policy governing this leave type. Choose how to resolve this conflict:
+              </span>
+            </div>
+            <div class="table-responsive mb-3" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-sm table-bordered o_lp_conflict_table mb-0">
+                <thead>
+                  <tr>
+                    <th>Employee</th>
+                    <th>Leave Type</th>
+                    <th>Existing Policy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr t-foreach="state.activateConflict.conflicts" t-as="citem" t-key="citem_index">
+                    <td t-esc="citem.employee"/>
+                    <td t-esc="citem.leave_type"/>
+                    <td><span class="badge bg-secondary" t-esc="citem.existing_policy"/></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <label class="mb-3 d-block">
+              <span class="o_lp_label">Conflict Resolution Action</span>
+              <select class="form-select form-select-sm" t-model="state.activateConflict.resolution">
+                <option value="">Choose an action...</option>
+                <option value="keep">Keep Existing Assignments (Skip conflicting employees)</option>
+                <option value="replace">Replace Existing Assignments (Governs from today)</option>
+              </select>
+            </label>
+          </div>
+          <t t-set-slot="footer">
+            <button class="btn btn-outline-secondary" t-on-click="() => this.cancelActivateConflict()">Cancel</button>
+            <button class="btn btn-primary o_lp_primary" t-att-disabled="!state.activateConflict.resolution" t-on-click="() => this.confirmActivateConflict()">
+              <i class="fa fa-check me-1"/> Confirm &amp; Activate
+            </button>
           </t>
       </SettingsPanel>
     </section>

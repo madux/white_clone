@@ -311,7 +311,7 @@ class HrLeaveBlackoutPeriod(models.Model):
             "exception_chain_id": r.exception_chain_id.id or False,
             "created_by": r.create_uid.name, "last_updated": fields.Datetime.to_string(r.write_date)} for r in rows],
             "departments": [{"id": d.id, "name": d.name} for d in self.env["hr.department"].search([("company_id", "in", self.env.companies.ids)], order="name")],
-            "policies": [{"id": p.id, "name": p.name} for p in self.env["hr.leave.policy"].search([("company_id", "in", self.env.companies.ids), ("state", "!=", "archived")], order="name")],
+            "policies": [{"id": p.id, "name": p.name} for p in self.env["hr.leave.policy"].search([("company_id", "in", self.env.companies.ids)], order="name")],
             "groups": [{"id": g.id, "name": g.name} for g in self.env["hr.leave.allocation.group"].search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")],
             "chains": [{"id": c.id, "name": c.name} for c in self.env["cleon.approval.chain"].search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")]}
 

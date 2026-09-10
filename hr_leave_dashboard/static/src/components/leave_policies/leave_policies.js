@@ -107,6 +107,7 @@ export class LeavePoliciesPage extends Component {
             options: {},
             search: "",
             listState: "current",
+            statusFilter: "all",
             menuId: false,
             wizard: false,
             choosingMode: false,
@@ -118,6 +119,7 @@ export class LeavePoliciesPage extends Component {
             assignEmployeeIds: [],
             assignDate: new Date().toISOString().slice(0, 10),
             assignResolution: "review",
+            activateConflict: null,
             typeDropdownOpen: false,
         });
         onWillStart(() => this.load());
@@ -138,15 +140,23 @@ export class LeavePoliciesPage extends Component {
     }
 
     get visibleRows() {
+        let rows = this.state.rows;
+        if (this.state.listState === "current" && this.state.statusFilter !== "all") {
+            rows = rows.filter(row => row.state === this.state.statusFilter);
+        }
         const search = this.state.search.trim().toLowerCase();
         return search
-            ? this.state.rows.filter(row =>
-                [row.name, row.code, row.policy_type_label, row.category, ...row.leave_types.map(item => item.name)]
+            ? rows.filter(row =>
+                [row.name, row.code, row.policy_type_label, row.category, row.state, ...row.leave_types.map(item => item.name)]
                     .join(" ")
                     .toLowerCase()
                     .includes(search)
             )
-            : this.state.rows;
+            : rows;
+    }
+
+    setStatusFilter(value) {
+        this.state.statusFilter = value;
     }
 
     async load() {
@@ -495,11 +505,11 @@ export class LeavePoliciesPage extends Component {
         }
     }
 
-    async changeStatus(row) {
-        const next = row.state === "active" ? "inactive" : "active";
+    async changeStatus(row, targetState = null, resolution = "review") {
+        const next = targetState || (row.state === "active" ? "inactive" : "active");
         try {
-            await this.orm.call("hr.leave.policy", "change_policy_status", [row.id, next]);
-            this.notification.add(`Policy ${next}.`, { type: "success" });
+            await this.orm.call("hr.leave.policy", "change_policy_status", [row.id, next, resolution]);
+            this.notification.add(`Policy status changed to ${next}.`, { type: "success" });
         } catch (error) {
             this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
         }
@@ -507,16 +517,70 @@ export class LeavePoliciesPage extends Component {
         await this.load();
     }
 
-    async remove(row) {
-        if (!window.confirm(`Delete policy "${row.name}"? Policies with historical records will be archived instead.`)) return;
-        const result = await this.orm.call("hr.leave.policy", "delete_policy", [row.id]);
-        this.notification.add(result.archived ? "Policy archived to preserve history." : "Policy deleted.", { type: "success" });
+    displayStatus(row) {
+        return !row.active ? "archived" : (row.display_status || row.state);
+    }
+
+    async activatePolicy(row) {
+        this.state.menuId = false;
+        try {
+            const conflicts = await this.orm.call("hr.leave.policy", "get_assignment_conflicts", [row.id]);
+            if (conflicts && conflicts.length) {
+                this.state.activateConflict = {
+                    row,
+                    conflicts,
+                    resolution: "",
+                };
+                return;
+            }
+            await this.changeStatus(row, "active", "review");
+        } catch (error) {
+            this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
+        }
+    }
+
+    async confirmActivateConflict() {
+        if (!this.state.activateConflict) return;
+        const { row, resolution } = this.state.activateConflict;
+        this.state.activateConflict = null;
+        await this.changeStatus(row, "active", resolution);
+    }
+
+    cancelActivateConflict() {
+        this.state.activateConflict = null;
+    }
+
+    async archive(row) {
+        if (!window.confirm(`Archive policy "${row.name}"? It will be removed from Current Policies, but historical records are preserved.`)) return;
+        try {
+            await this.orm.call("hr.leave.policy", "archive_policy", [row.id]);
+            this.notification.add("Policy archived.", { type: "success" });
+        } catch (error) {
+            this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
+        }
+        this.state.menuId = false;
+        await this.load();
+    }
+
+    async restore(row) {
+        try {
+            const result = await this.orm.call("hr.leave.policy", "restore_policy", [row.id]);
+            this.notification.add(
+                result.state === "inactive"
+                    ? "Policy restored as Inactive. Review details and click Activate when ready."
+                    : "Policy restored.",
+                { type: "success" }
+            );
+        } catch (error) {
+            this.notification.add(error.data?.message || error.message, { type: "danger", sticky: true });
+        }
         this.state.menuId = false;
         await this.load();
     }
 
     async setListState(value) {
         this.state.listState = value;
+        this.state.statusFilter = "all";
         await this.load();
     }
 }

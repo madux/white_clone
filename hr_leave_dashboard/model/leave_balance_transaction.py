@@ -472,7 +472,8 @@ class HrLeaveBalanceTransaction(models.Model):
         ], order="name, id")
         policy_lines = self.env["hr.leave.policy.line"].sudo().search([
             ("company_id", "in", self.env.companies.ids), ("active", "=", True),
-            ("policy_id.state", "=", "active"), ("leave_type_id.active", "=", True),
+            ("policy_id.state", "=", "active"), ("policy_id.active", "=", True),
+            ("leave_type_id.active", "=", True),
         ])
         leave_types = policy_lines.leave_type_id.sorted(lambda item: (item.sequence, item.name))
         employee_rows = [{

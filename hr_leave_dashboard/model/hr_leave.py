@@ -840,6 +840,7 @@ class HrLeave(models.Model):
             assignments = self.env["hr.leave.policy.assignment"].sudo().search([
                 ("employee_id", "=", employee.id), ("company_id", "=", company.id),
                 ("superseded", "=", False), ("policy_id.state", "=", "active"),
+                ("policy_id.active", "=", True),
                 ("date_from", "<=", today),
                 "|", ("date_to", "=", False), ("date_to", ">=", today),
             ])

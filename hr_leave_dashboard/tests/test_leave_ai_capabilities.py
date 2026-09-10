@@ -125,7 +125,7 @@ class TestLeaveAiCapabilities(TransactionCase):
         line = self.env["hr.leave.policy.line"].create({
             "policy_id": policy.id, "leave_type_id": self.leave_type_annual.id,
         })
-        policy.write({"state": "active"})
+        policy._write_lifecycle({"state": "active"})
         self.env["hr.leave.policy.assignment"].create({
             "policy_id": policy.id, "policy_line_id": line.id,
             "leave_type_id": self.leave_type_annual.id, "employee_id": self.emp_regular.id,
