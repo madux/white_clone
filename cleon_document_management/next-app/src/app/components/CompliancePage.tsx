@@ -12,6 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import { formatFieldLabel, formatStatusLabel } from "../../../lib/formatLabel";
 import {
   useComplianceTargets,
   useCreateException,
@@ -357,11 +358,11 @@ function PolicyTable({
               {policy.minimum_documents} document
               {policy.minimum_documents === 1 ? "" : "s"}
             </td>
-            <td className="cell capitalize">
-              {policy.applies_to.replace("_", " ")}
+            <td className="cell">
+              {formatFieldLabel(policy.applies_to)}
             </td>
-            <td className="cell capitalize">
-              {policy.schedule.replace("_", " ")}
+            <td className="cell">
+              {formatFieldLabel(policy.schedule)}
             </td>
             <td className="cell">
               <small>{policy.schedule === "manual" ? "Manual only" : policy.next_run_at ? formatDateTime(policy.next_run_at) : "Not scheduled"}</small>
@@ -402,7 +403,7 @@ function ExceptionTable({ exceptions }: { exceptions: any[] }) {
             <td className="cell">{item.reason}</td>
             <td className="cell">{item.valid_until}</td>
             <td className="cell">
-              <span className={`status ${item.status === "approved" ? "approved" : item.status === "rejected" || item.status === "expired" ? "danger" : "pending"}`}>{item.status}</span>
+              <span className={`status ${item.status === "approved" ? "approved" : item.status === "rejected" || item.status === "expired" ? "danger" : "pending"}`}>{formatStatusLabel(item.status)}</span>
             </td>
             <td className="cell"><ExceptionActions exception={item} /></td>
           </tr>
@@ -445,7 +446,7 @@ function HistoryTable({ runs }: { runs: any[] }) {
             <td className="cell">
               <b>{item.policy}</b>
             </td>
-            <td className="cell capitalize">{item.run_type}</td>
+            <td className="cell">{formatFieldLabel(item.run_type)}</td>
             <td className="cell">{item.employee_count}</td>
             <td className="cell"><small>{item.compliant_count} compliant · {item.partial_count} partial · {item.non_compliant_count} missing · {item.excepted_count} excepted</small></td>
             <td className="cell">{item.evaluated_at}</td>
@@ -1040,7 +1041,7 @@ function PolicyForm({
             }
             options={schedules.map((item) => ({
               value: item,
-              label: item === "manual" ? "Manual only" : item.replace("_", " "),
+              label: item === "manual" ? "Manual Only" : formatFieldLabel(item),
             }))}
           />
         </Field>
@@ -1128,8 +1129,8 @@ function PolicyForm({
             </div>
             <div className="flex justify-between gap-4">
               <dt className="font-semibold text-slate-500">Schedule</dt>
-              <dd className="capitalize text-slate-700">
-                {(form.schedule || "manual").replace("_", " ")}
+              <dd className="text-slate-700">
+                {formatFieldLabel(form.schedule || "manual")}
               </dd>
             </div>
             <div className="flex justify-between gap-4">

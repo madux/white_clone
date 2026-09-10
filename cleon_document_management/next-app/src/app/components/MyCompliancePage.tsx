@@ -3,6 +3,7 @@
 import { AlertCircle, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useMyCompliance } from "../../../hooks/useDocuments";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 
 const statusStyles: Record<string, string> = {
   compliant: "bg-emerald-50 text-emerald-700",
@@ -83,9 +84,9 @@ export default function MyCompliancePage() {
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusStyles[evaluation.status] || "bg-slate-100 text-slate-600"}`}
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyles[evaluation.status] || "bg-slate-100 text-slate-600"}`}
                     >
-                      {evaluation.status.replace("_", " ")}
+                      {formatStatusLabel(evaluation.status)}
                     </span>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
@@ -105,9 +106,9 @@ export default function MyCompliancePage() {
                             {line.document_type}
                           </span>
                           <span
-                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusStyles[line.status] || "bg-slate-100 text-slate-600"}`}
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${statusStyles[line.status] || "bg-slate-100 text-slate-600"}`}
                           >
-                            {line.status}
+                            {formatStatusLabel(line.status)}
                           </span>
                         </li>
                       ))}
@@ -144,9 +145,9 @@ export default function MyCompliancePage() {
                     <p className="mt-1 text-xs text-slate-400">{item.policy}</p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${statusStyles[item.status] || statusStyles.missing}`}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyles[item.status] || statusStyles.missing}`}
                   >
-                    {item.status}
+                    {formatStatusLabel(item.status)}
                   </span>
                 </div>
               ))}

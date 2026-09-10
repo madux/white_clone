@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { formatFieldLabel } from "../../../../lib/formatLabel";
 import { IntelligenceEmpty, IntelligenceError, IntelligenceLoading } from "./states";
 import ProfilesConfigPanel from "./ProfilesConfigPanel";
 import TypesConfigPanel from "./TypesConfigPanel";
@@ -168,7 +169,7 @@ function AuditLogsPanel() {
                     {row.create_date.replace("T", " ").slice(0, 19)}
                   </td>
                   <td className="px-4 py-3">{row.user}</td>
-                  <td className="px-4 py-3 capitalize">{row.category}</td>
+                  <td className="px-4 py-3">{formatFieldLabel(row.category)}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`status ${
@@ -177,7 +178,7 @@ function AuditLogsPanel() {
                           : ""
                       }`}
                     >
-                      {row.action.replace(/_/g, " ")}
+                      {formatFieldLabel(row.action)}
                     </span>
                   </td>
                   <td className="px-4 py-3">{row.target_name || "—"}</td>

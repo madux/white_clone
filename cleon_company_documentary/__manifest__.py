@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "CLEON Company Documentary",
-    "version": "17.0.1.0.1",
+    "version": "17.0.1.0.8",
     "category": "Human Resources",
     "summary": "Secure company video library, streaming, and training compliance",
     "depends": ["base", "hr", "hr_employee", "cleon_document_management"],

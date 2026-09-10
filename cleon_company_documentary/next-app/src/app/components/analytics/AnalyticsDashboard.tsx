@@ -2,8 +2,13 @@
 
 import { Download, LoaderCircle, Maximize2, Minimize2, ShieldCheck, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import type { DocumentaryFolder } from "../../../../lib/types";
+import { api } from "../../../../lib/api";
+import type { ComplianceMandatoryFilter, DocumentaryFolder } from "../../../../lib/types";
 import { useDocumentaryAnalytics } from "../../../../hooks/useDocumentary";
+import {
+  AnalyticsCompliance,
+  type ComplianceExportState,
+} from "./AnalyticsCompliance";
 import {
   AnalyticsDepartments,
   AnalyticsEngagement,
@@ -11,7 +16,7 @@ import {
   AnalyticsTrends,
 } from "./AnalyticsTabs";
 
-type AnalyticsTab = "overview" | "departments" | "engagement" | "trends";
+type AnalyticsTab = "overview" | "departments" | "engagement" | "trends" | "compliance";
 
 export function AnalyticsDashboard({
   folders,
@@ -21,6 +26,13 @@ export function AnalyticsDashboard({
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<AnalyticsTab>("overview");
+  const [complianceMandatory, setComplianceMandatory] =
+    useState<ComplianceMandatoryFilter>("all");
+  const [complianceExport, setComplianceExport] = useState<ComplianceExportState>({
+    mediaId: null,
+    employeeSearch: "",
+    status: "all",
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleClose = useCallback(() => {
@@ -57,10 +69,54 @@ export function AnalyticsDashboard({
     ...(folderId ? { folder_id: Number(folderId) } : {}),
     ...(mediaId ? { media_id: Number(mediaId) } : {}),
   };
-  const query = useDocumentaryAnalytics(filters, true);
+  const query = useDocumentaryAnalytics(filters, tab !== "compliance");
   const data = query.data;
-
-  function exportReport() {
+  async function exportReport() {
+    if (tab === "compliance") {
+      if (!complianceExport.mediaId) return;
+      const report = await api.complianceReport({
+        ...(departmentId ? { department_id: Number(departmentId) } : {}),
+        ...(folderId ? { folder_id: Number(folderId) } : {}),
+        media_id: complianceExport.mediaId,
+        mandatory: complianceMandatory,
+        status: complianceExport.status,
+        search: complianceExport.employeeSearch,
+        page: 1,
+        page_size: 5000,
+      });
+      const rows = [
+        [
+          "Employee",
+          "Department",
+          "Folder",
+          "Video",
+          "Mandatory",
+          "Status",
+          "Completion %",
+          "Views",
+          "Last watched",
+          "Completed at",
+        ],
+        ...report.rows.map((row) => [
+          row.employee_name,
+          row.department_name,
+          row.folder_name,
+          row.media_title,
+          row.mandatory ? "Yes" : "No",
+          row.status,
+          row.completion_percent,
+          row.view_count,
+          row.last_watched_at || "",
+          row.completed_at || "",
+        ]),
+      ];
+      const videoSlug = report.rows[0]?.media_title?.replace(/[^\w.-]+/g, "-") || "video";
+      downloadCsv(
+        rows,
+        `company-documentary-compliance-${videoSlug}-${dateFrom}-${dateTo}.csv`,
+      );
+      return;
+    }
     if (!data) return;
     const rows = [
       [
@@ -84,6 +140,10 @@ export function AnalyticsDashboard({
         row.performance,
       ]),
     ];
+    downloadCsv(rows, `company-documentary-analytics-${dateFrom}-${dateTo}.csv`);
+  }
+
+  function downloadCsv(rows: unknown[][], filename: string) {
     const csv = rows
       .map((row) =>
         row
@@ -96,7 +156,7 @@ export function AnalyticsDashboard({
     );
     const link = document.createElement("a");
     link.href = url;
-    link.download = `company-documentary-analytics-${dateFrom}-${dateTo}.csv`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -202,8 +262,8 @@ export function AnalyticsDashboard({
           </span>
           <button
             className="secondary-button"
-            onClick={exportReport}
-            disabled={!data}
+            onClick={() => void exportReport()}
+            disabled={tab === "compliance" ? !complianceExport.mediaId : !data}
           >
             <Download size={15} /> Export CSV
           </button>
@@ -215,6 +275,7 @@ export function AnalyticsDashboard({
               ["departments", "Departments"],
               ["engagement", "Engagement"],
               ["trends", "Trends"],
+              ["compliance", "Compliance"],
             ] as [AnalyticsTab, string][]
           ).map(([value, label]) => (
             <button
@@ -227,7 +288,7 @@ export function AnalyticsDashboard({
           ))}
         </nav>
         <div className="analytics-body">
-          {query.isLoading && (
+          {tab !== "compliance" && query.isLoading && (
             <div className="analytics-loading">
               <LoaderCircle className="spin" size={24} /> Building the report…
             </div>
@@ -244,7 +305,15 @@ export function AnalyticsDashboard({
           {!query.isLoading && data && tab === "trends" && (
             <AnalyticsTrends data={data} />
           )}
-          {query.isError && (
+          {tab === "compliance" && (
+            <AnalyticsCompliance
+              departmentId={departmentId ? Number(departmentId) : undefined}
+              folderId={folderId ? Number(folderId) : undefined}
+              initialMandatory={complianceMandatory}
+              onExportStateChange={setComplianceExport}
+            />
+          )}
+          {tab !== "compliance" && query.isError && (
             <div className="analytics-error">
               <X size={17} /> Analytics could not be loaded. Try refreshing the
               date range.
@@ -254,8 +323,8 @@ export function AnalyticsDashboard({
         <footer className="analytics-footer">
           <ShieldCheck size={15} />
           <span>
-            Analytics are aggregated for authorized managers and administrators.
-            Individual employee watch histories are not displayed.
+            Analytics are available to authorized managers and administrators.
+            The Compliance tab shows per-employee training status for oversight.
           </span>
         </footer>
       </section>

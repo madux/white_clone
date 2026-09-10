@@ -49,6 +49,22 @@ class DocumentFolderActions(http.Controller):
             except ValidationError as error:
                 return {"success": False, "message": error.args[0]}
             return {"success": True, "message": "Folder permanently deleted."}
+        elif action == "force_permanent_delete":
+            if not request.env.user.has_group(
+                "cleon_document_management.group_document_manager"
+            ):
+                return {
+                    "success": False,
+                    "message": "Document manager access is required.",
+                }
+            try:
+                folder.action_force_permanent_delete()
+            except (ValidationError, AccessError) as error:
+                return {"success": False, "message": error.args[0]}
+            return {
+                "success": True,
+                "message": "Folder and all linked documents were permanently deleted.",
+            }
         elif action == "duplicate":
             folder = folder.action_duplicate()
         elif action == "share":

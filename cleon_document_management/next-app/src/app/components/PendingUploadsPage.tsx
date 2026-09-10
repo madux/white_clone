@@ -9,7 +9,12 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import {
+  buildCreateFolderHref,
+  storeCreateFolderIntent,
+} from "../../../lib/createFolderIntent";
 import {
   useCurrentUser,
   usePendingEmployeeUploads,
@@ -60,15 +65,17 @@ function actionForItem(item: PendingEmployeeUpload) {
     };
   }
   return {
-    href: "/pages/employee",
+    href: buildCreateFolderHref(item),
     label: "Create folder",
-    hint: "Approved — assign by creating a department folder",
+    hint: "Opens the create-folder flow with this employee's department prefilled",
     secondaryHref: `/pages/employee/profile?employee=${item.employee_id}`,
     secondaryLabel: "View employee",
+    openCreateFolder: true,
   };
 }
 
 export default function PendingUploadsPage() {
+  const router = useRouter();
   const currentUser = useCurrentUser();
   const isAdmin = Boolean(currentUser.data?.is_document_manager);
   const uploads = usePendingEmployeeUploads(isAdmin);
@@ -205,14 +212,33 @@ export default function PendingUploadsPage() {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex flex-col items-end gap-1.5">
-                          <Link
-                            href={action.href}
-                            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
-                            title={action.hint}
-                          >
-                            {action.label}
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Link>
+                          {"openCreateFolder" in action && action.openCreateFolder ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                storeCreateFolderIntent({
+                                  employeeId: item.employee_id,
+                                  departmentId: item.department_id || undefined,
+                                  folderName: item.department || "",
+                                });
+                                router.push(action.href);
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                              title={action.hint}
+                            >
+                              {action.label}
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </button>
+                          ) : (
+                            <Link
+                              href={action.href}
+                              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-slate-800"
+                              title={action.hint}
+                            >
+                              {action.label}
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </Link>
+                          )}
                           {action.secondaryHref && (
                             <Link
                               href={action.secondaryHref}
@@ -256,8 +282,9 @@ export default function PendingUploadsPage() {
               </li>
               <li>
                 <strong className="text-slate-700">Awaiting folder:</strong> the
-                document is already approved — create a department folder on Employee
-                Files to assign it automatically.
+                upload is already submitted — create a department folder (prefilled from
+                pending uploads) and the document will be assigned and approved
+                automatically.
               </li>
               <li>
                 <strong className="text-slate-700">Awaiting restore:</strong> the

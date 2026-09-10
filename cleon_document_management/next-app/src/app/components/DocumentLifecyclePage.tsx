@@ -64,12 +64,18 @@ export default function DocumentLifecyclePage({
 
   const keyOf = (record: LifecycleRecord) => `${record.record_type}-${record.id}`;
 
-  const perform = async (record: LifecycleRecord, action: "restore" | "permanent_delete") => {
+  const perform = async (
+    record: LifecycleRecord,
+    action: "restore" | "permanent_delete" | "force_permanent_delete",
+  ) => {
     try {
       const result =
         record.record_type === "folder"
           ? await folderAction.mutateAsync({ id: record.id, action })
-          : await documentAction.mutateAsync({ id: record.id, action });
+          : await documentAction.mutateAsync({
+              id: record.id,
+              action: action as "restore" | "permanent_delete",
+            });
       if (result && (result as { success?: boolean }).success === false) {
         setDialogMessage((result as { message?: string }).message || "Action failed.");
       }
@@ -80,17 +86,28 @@ export default function DocumentLifecyclePage({
 
   const runSelected = async (action: "restore" | "permanent_delete") => {
     if (!selected.length) return;
-    if (
-      action === "permanent_delete" &&
-      !window.confirm(
-        `Permanently delete ${selected.length} selected item${selected.length === 1 ? "" : "s"}? This cannot be undone.`,
-      )
-    ) {
-      return;
+    const selectedRecords = selected
+      .map((key) => rows.find((item: LifecycleRecord) => keyOf(item) === key))
+      .filter(Boolean) as LifecycleRecord[];
+    if (action === "permanent_delete") {
+      const linkedFolderCount = selectedRecords.filter(
+        (record) => record.record_type === "folder" && linkedCount(record) > 0,
+      ).length;
+      const message = linkedFolderCount
+        ? `Delete ${selected.length} selected item${selected.length === 1 ? "" : "s"}? ${linkedFolderCount} folder${linkedFolderCount === 1 ? "" : "s"} still have linked documents that will be deleted too. Move files first if you want to keep them. This cannot be undone.`
+        : `Delete ${selected.length} selected item${selected.length === 1 ? "" : "s"}? This cannot be undone.`;
+      if (!window.confirm(message)) return;
     }
-    for (const key of selected) {
-      const record = rows.find((item: LifecycleRecord) => keyOf(item) === key);
-      if (record) await perform(record, action);
+    for (const record of selectedRecords) {
+      if (action === "permanent_delete" && record.record_type === "folder") {
+        const linked = linkedCount(record);
+        await perform(
+          record,
+          linked > 0 ? "force_permanent_delete" : "permanent_delete",
+        );
+        continue;
+      }
+      await perform(record, action);
     }
     setSelected([]);
     await Promise.all([documents.refetch(), folders.refetch()]);
@@ -99,22 +116,29 @@ export default function DocumentLifecyclePage({
   const linkedCount = (record: LifecycleRecord) =>
     record.record_type === "folder" ? (record.linked_document_count ?? 0) : 0;
 
-  const deleteFolder = async (record: LifecycleRecord) => {
-    const linked = linkedCount(record);
-    if (linked > 0) {
-      setDialogMessage(
-        `This folder still has ${linked} linked document${linked === 1 ? "" : "s"}. Use Move files first, or keep them in pending uploads, before permanently deleting.`,
-      );
-      setMoveFolder(record);
-      return;
+  const confirmDelete = (record: LifecycleRecord) => {
+    const label = record.folder_name ?? record.name;
+    if (record.record_type === "folder") {
+      const linked = linkedCount(record);
+      if (linked > 0) {
+        return window.confirm(
+          `Delete "${label}" and all ${linked} linked document${linked === 1 ? "" : "s"}? Use Move files first if you want to keep any documents. This cannot be undone.`,
+        );
+      }
+      return window.confirm(`Delete "${label}"? This cannot be undone.`);
     }
-    if (
-      window.confirm(
-        "Permanently delete this folder? This cannot be undone.",
-      )
-    ) {
+    return window.confirm(`Delete "${label}"? This cannot be undone.`);
+  };
+
+  const deleteRecord = async (record: LifecycleRecord) => {
+    if (!confirmDelete(record)) return;
+    if (record.record_type === "folder") {
+      const linked = linkedCount(record);
+      await perform(record, linked > 0 ? "force_permanent_delete" : "permanent_delete");
+    } else {
       await perform(record, "permanent_delete");
     }
+    await Promise.all([documents.refetch(), folders.refetch()]);
   };
 
   const allSelected = rows.length > 0 && rows.every((item: LifecycleRecord) => selected.includes(keyOf(item)));
@@ -159,7 +183,7 @@ export default function DocumentLifecyclePage({
                 onClick={() => runSelected("permanent_delete")}
                 className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
               >
-                Delete forever
+                Delete selected
               </button>
             )}
             <button
@@ -278,23 +302,11 @@ export default function DocumentLifecyclePage({
                         {recycle && isManager && (
                           <button
                             type="button"
-                            onClick={() => {
-                              if (record.record_type === "folder") {
-                                void deleteFolder(record);
-                                return;
-                              }
-                              if (
-                                window.confirm(
-                                  "Permanently delete this item? This cannot be undone.",
-                                )
-                              ) {
-                                void perform(record, "permanent_delete");
-                              }
-                            }}
+                            onClick={() => void deleteRecord(record)}
                             className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
-                            Delete forever
+                            Delete
                           </button>
                         )}
                       </div>

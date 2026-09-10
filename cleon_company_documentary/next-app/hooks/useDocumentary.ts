@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type {
+  ComplianceReport,
   DocumentaryAnalyticsDashboard,
   DocumentarySettings,
   MediaFilters,
@@ -24,6 +25,7 @@ export const documentaryKeys = {
   settings: ["company-documentary", "settings"],
   audience: (search: string) => ["company-documentary", "audience", search],
   analytics: (filters: Record<string, unknown>) => ["company-documentary", "analytics", filters],
+  compliance: (filters: Record<string, unknown>) => ["company-documentary", "compliance", filters],
   comments: (mediaId: number) => ["company-documentary", "comments", mediaId],
 };
 
@@ -79,12 +81,32 @@ export function useDocumentaryAudience(search: string, enabled: boolean) {
 }
 
 export function useDocumentaryAnalytics(
-  filters: { date_from?: string; date_to?: string; department_id?: number; folder_id?: number },
+  filters: { date_from?: string; date_to?: string; department_id?: number; folder_id?: number; media_id?: number },
   enabled: boolean,
 ) {
   return useQuery<DocumentaryAnalyticsDashboard>({
     queryKey: documentaryKeys.analytics(filters),
     queryFn: () => api.analytics(filters),
+    enabled,
+  });
+}
+
+export function useDocumentaryCompliance(
+  filters: {
+    department_id?: number;
+    folder_id?: number;
+    media_id?: number;
+    mandatory?: "all" | "mandatory" | "optional";
+    status?: "all" | "not_started" | "in_progress" | "completed";
+    search?: string;
+    page?: number;
+    page_size?: number;
+  },
+  enabled: boolean,
+) {
+  return useQuery<ComplianceReport>({
+    queryKey: documentaryKeys.compliance(filters),
+    queryFn: () => api.complianceReport(filters),
     enabled,
   });
 }

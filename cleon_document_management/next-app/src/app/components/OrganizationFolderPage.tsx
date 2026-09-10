@@ -2,8 +2,10 @@
 
 import {
   Archive,
+  ChevronDown,
   FilePlus2,
   FileText,
+  FolderOpen,
   Search,
   Upload,
 } from "lucide-react";
@@ -55,6 +57,7 @@ export default function OrganizationFolderPage() {
   const [viewing, setViewing] = useState<any>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const [movingIds, setMovingIds] = useState<number[] | null>(null);
+  const [folderExpanded, setFolderExpanded] = useState(true);
   const [duplicateWarning, setDuplicateWarning] = useState<{
     matches: UploadDuplicateMatch[];
     proceed: () => Promise<void>;
@@ -64,6 +67,14 @@ export default function OrganizationFolderPage() {
     () => applyDocumentFilters(documents.data ?? [], filters),
     [documents.data, filters],
   );
+
+  useEffect(() => {
+    const docId = Number(params.get("doc") || 0);
+    if (!docId || !documents.data?.length) return;
+    const match = documents.data.find((document) => document.id === docId);
+    if (match) setViewing(match);
+  }, [documents.data, params]);
+
   useEffect(() => {
     const rows = Array.from(document.querySelectorAll("tbody tr"));
     rows.forEach((row) => {
@@ -187,105 +198,133 @@ export default function OrganizationFolderPage() {
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                <tr>
-                  <th className="w-12 px-5 py-4">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() =>
-                        setSelected(allSelected ? [] : visibleIds)
-                      }
-                      aria-label="Select all documents"
-                      className="h-4 w-4 accent-pink-600"
-                    />
-                  </th>
-                  <th className="px-5 py-4">Document</th>
-                  <th className="px-5 py-4">Type</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Expiry date</th>
-                  <th className="px-5 py-4">Uploaded</th>
-                  <th className="px-5 py-4">Modified</th>
-                  <th className="px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {visibleDocuments.map((document) => (
-                  <tr
-                    key={document.id}
-                    className="transition hover:bg-pink-50/30"
-                  >
-                    <td className="w-12 px-5 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(document.id)}
-                        onChange={() => toggleSelected(document.id)}
-                        onClick={(event) => event.stopPropagation()}
-                        aria-label={`Select ${document.name}`}
-                        className="h-4 w-4 accent-pink-600"
-                      />
-                    </td>
-                    <td className="px-5 py-4">
-                      <button
-                        type="button"
-                        onClick={() => setViewing(document)}
-                        className="flex items-center gap-3 text-left"
-                      >
-                        <span className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                          <FileText className="h-5 w-5" />
-                        </span>
-                        <span>
-                          <strong className="block text-sm text-slate-800 hover:text-brand-pink">
-                            {document.name}
-                          </strong>
-                          <small className="mt-1 block text-xs text-slate-400">
-                            {document.description || "Organizational document"}
-                          </small>
-                        </span>
-                      </button>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {document.document_type}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-bold ${document.active === false ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}
-                      >
-                        {document.active === false ? "Inactive" : "Active"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">
-                      {document.expiry_date || "No expiry"}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">
-                      {document.created_at?.slice(0, 10) || "Unknown"}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">
-                      {document.write_date.slice(0, 10)}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <DocumentActions
-                        documentId={document.id}
-                        documentName={document.name}
-                        active={document.active !== false}
-                        organizational
-                        onMove={() => setMovingIds([document.id])}
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        ) : folder ? (
+          <div className="folder-accordion p-4">
+            <div className="folder-accordion-block">
+              <div className="folder-accordion-header-row">
+                <button
+                  type="button"
+                  className="folder-accordion-header"
+                  onClick={() => setFolderExpanded((current) => !current)}
+                >
+                  <FolderOpen size={15} />
+                  <span>{folder.folder_name}</span>
+                  <small>{visibleDocuments.length} files</small>
+                  <ChevronDown
+                    size={15}
+                    className={
+                      folderExpanded
+                        ? "folder-accordion-chevron expanded"
+                        : "folder-accordion-chevron"
+                    }
+                  />
+                </button>
+              </div>
+              {folderExpanded && (
+                <div className="folder-accordion-body">
+                  {visibleDocuments.length ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[980px] text-left">
+                        <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                          <tr>
+                            <th className="w-12 px-5 py-4">
+                              <input
+                                type="checkbox"
+                                checked={allSelected}
+                                onChange={() =>
+                                  setSelected(allSelected ? [] : visibleIds)
+                                }
+                                aria-label="Select all documents"
+                                className="h-4 w-4 accent-pink-600"
+                              />
+                            </th>
+                            <th className="px-5 py-4">Document</th>
+                            <th className="px-5 py-4">Type</th>
+                            <th className="px-5 py-4">Status</th>
+                            <th className="px-5 py-4">Expiry date</th>
+                            <th className="px-5 py-4">Uploaded</th>
+                            <th className="px-5 py-4">Modified</th>
+                            <th className="px-5 py-4" />
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {visibleDocuments.map((document) => (
+                            <tr
+                              key={document.id}
+                              className="transition hover:bg-pink-50/30"
+                            >
+                              <td className="w-12 px-5 py-4">
+                                <input
+                                  type="checkbox"
+                                  checked={selected.includes(document.id)}
+                                  onChange={() => toggleSelected(document.id)}
+                                  onClick={(event) => event.stopPropagation()}
+                                  aria-label={`Select ${document.name}`}
+                                  className="h-4 w-4 accent-pink-600"
+                                />
+                              </td>
+                              <td className="px-5 py-4">
+                                <button
+                                  type="button"
+                                  onClick={() => setViewing(document)}
+                                  className="flex items-center gap-3 text-left"
+                                >
+                                  <span className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
+                                    <FileText className="h-5 w-5" />
+                                  </span>
+                                  <span>
+                                    <strong className="block text-sm text-slate-800 hover:text-brand-pink">
+                                      {document.name}
+                                    </strong>
+                                    <small className="mt-1 block text-xs text-slate-400">
+                                      {document.description || "Organizational document"}
+                                    </small>
+                                  </span>
+                                </button>
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-600">
+                                {document.document_type}
+                              </td>
+                              <td className="px-5 py-4">
+                                <span
+                                  className={`rounded-full px-2.5 py-1 text-xs font-bold ${document.active === false ? "bg-slate-100 text-slate-500" : "bg-emerald-50 text-emerald-700"}`}
+                                >
+                                  {document.active === false ? "Inactive" : "Active"}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-500">
+                                {document.expiry_date || "No expiry"}
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-500">
+                                {document.created_at?.slice(0, 10) || "Unknown"}
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-500">
+                                {document.write_date.slice(0, 10)}
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <DocumentActions
+                                  documentId={document.id}
+                                  documentName={document.name}
+                                  active={document.active !== false}
+                                  organizational
+                                  onMove={() => setMovingIds([document.id])}
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="folder-accordion-empty">
+                      No documents found in this folder.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        )}
-        {!documents.isLoading && !visibleDocuments.length && (
-          <p className="p-12 text-center text-sm text-slate-500">
-            No documents found in this folder.
-          </p>
-        )}
+        ) : null}
       </section>
       {showUpload && (
         <ModalDialog

@@ -21,6 +21,7 @@ export const QUERY_KEYS = {
   evaluationRuns: ["compliance", "evaluation-runs"],
   approvalInbox: ["admin", "approval-inbox"],
   pendingEmployeeUploads: ["admin", "pending-employee-uploads"],
+  workspaceActivity: ["admin", "workspace-activity"],
   myPendingUploads: ["documents", "my-pending-uploads"],
   myCompliance: ["documents", "my-compliance"],
   onboarding: ["user", "onboarding"],
@@ -119,6 +120,15 @@ export function usePendingEmployeeUploads(enabled = true) {
     queryFn: () => api.getPendingEmployeeUploads().then((result) => result.data),
     enabled,
     refetchInterval: 30000,
+  });
+}
+
+export function useWorkspaceActivity(enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.workspaceActivity,
+    queryFn: () => api.getWorkspaceActivity().then((result) => result.data),
+    enabled,
+    refetchInterval: 60000,
   });
 }
 
@@ -466,7 +476,10 @@ export function useUploadEmployeeDocument() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: api.uploadEmployeeDocument,
-    onSuccess: () => invalidateDocumentQueries(queryClient),
+    onSuccess: () => {
+      invalidateDocumentQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.pendingEmployeeUploads });
+    },
   });
 }
 

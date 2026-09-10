@@ -15,6 +15,7 @@ import type {
   OnboardingState,
   QuickAccess,
   DashboardStats,
+  WorkspaceActivity,
   DocumentType,
   ShareLink,
   UploadDuplicateMatch,
@@ -423,6 +424,12 @@ export const api = {
   getPendingEmployeeUploads: () =>
     rpc<{ success: boolean; data: PendingEmployeeUploads }>(
       "/api/admin/pending-employee-uploads",
+      {},
+    ),
+
+  getWorkspaceActivity: () =>
+    rpc<{ success: boolean; data: WorkspaceActivity }>(
+      "/api/workspace-activity",
       {},
     ),
 

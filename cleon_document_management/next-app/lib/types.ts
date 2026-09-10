@@ -82,10 +82,21 @@ export interface DocDocument {
   distribution_status?: "active" | "archived" | "deactivated";
 }
 
+export interface ExpiringDocument {
+  id: number;
+  name: string;
+  document_type: string;
+  expiry_date: string;
+  folder_id: number;
+  employee_id: number | false;
+  folder_type: "employee" | "organizational";
+}
+
 export interface MyWorkspace {
   my_files: DocDocument[];
   shared_documents: DocDocument[];
   outstanding: DocDocument[];
+  expiring_documents?: ExpiringDocument[];
   activity: { id: number; document_id: number; document: string; folder: string; event: string; occurred_at: string }[];
   dashboard: { total: number; expiring: number; states: Record<string, number> };
 }
@@ -123,6 +134,7 @@ export interface PendingEmployeeUpload {
   employee_id: number;
   employee_name: string;
   department: string;
+  department_id?: number;
   approval_state: DocDocument["approval_state"];
   state: DocDocument["state"];
   status: "pending_review" | "awaiting_folder" | "awaiting_folder_restore";
@@ -336,12 +348,60 @@ export interface ComplianceEvaluationRun {
   excepted_count: number;
 }
 
+export interface WorkspaceActivityEvent {
+  id: number;
+  kind: "acknowledgement" | "approval" | "update" | "upload";
+  message: string;
+  document_id: number;
+  document_name: string;
+  folder_id: number;
+  folder_name: string;
+  folder_type: "employee" | "organizational";
+  employee_id?: number | false;
+  actor_name: string;
+  occurred_at: string;
+}
+
+export interface WorkspaceAcknowledgement {
+  id: number;
+  document_id: number;
+  document_name: string;
+  folder_id: number;
+  folder_name: string;
+  employee_id?: number | false;
+  employee_name: string;
+  acknowledged_at: string;
+}
+
+export interface WorkspacePendingAcknowledgement {
+  document_id: number;
+  document_name: string;
+  document_type: string;
+  folder_id: number;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  pending_employees: { id: number; name: string; user_id: number }[];
+}
+
+export interface WorkspaceActivity {
+  activity_log: WorkspaceActivityEvent[];
+  recent_acknowledgements: WorkspaceAcknowledgement[];
+  pending_acknowledgements: WorkspacePendingAcknowledgement[];
+  summary: {
+    activity_count: number;
+    pending_acknowledgement_count: number;
+    recent_acknowledgement_count: number;
+  };
+}
+
 export interface DashboardStats {
   total_documents: number;
   total_folders: number;
   total_policies: number;
   total_exceptions: number;
   expiring_documents: number;
+  expiring_items?: ExpiringDocument[];
   pending_approvals: number;
 }
 

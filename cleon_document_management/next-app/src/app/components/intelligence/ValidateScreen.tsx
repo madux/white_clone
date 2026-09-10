@@ -9,6 +9,7 @@ import {
   useReviewIntelligenceRecord,
 } from "../../../../hooks/useIntelligence";
 import type { IntelligenceExtractionRecord } from "../../../../lib/intelligence-api";
+import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -150,7 +151,7 @@ export default function ValidateScreen() {
                 <p className="text-xs text-slate-400">
                   {selected.dataset}
                     {selected.used_ocr ? " · OCR/vision used" : ""}
-                    {selected.text_source ? ` · ${selected.text_source.replace(/_/g, " ")}` : ""}
+                    {selected.text_source ? ` · ${formatFieldLabel(selected.text_source)}` : ""}
                 </p>
               </div>
               <a
@@ -177,10 +178,10 @@ export default function ValidateScreen() {
           <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="status pending">
-                {selected.review_status.replace(/_/g, " ")}
+                {formatStatusLabel(selected.review_status)}
               </span>
-              <span className="text-xs font-semibold uppercase text-slate-400">
-                {selected.validation_status}
+              <span className="text-xs font-semibold text-slate-500">
+                {formatStatusLabel(selected.validation_status)}
               </span>
             </div>
 
@@ -403,7 +404,7 @@ export default function ValidateScreen() {
                   {selected.review_actions.map((item) => (
                     <li key={item.id}>
                       <strong className="text-slate-700">
-                        {item.action.replace(/_/g, " ")}
+                        {formatFieldLabel(item.action)}
                       </strong>{" "}
                       by {item.user}
                       {item.reason ? ` — ${item.reason}` : ""}

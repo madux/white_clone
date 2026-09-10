@@ -46,6 +46,7 @@ import {
   missingExpiryDates,
   typeRequiresExpiry,
 } from "./uploadExpiryHelpers";
+import { formatStatusLabel } from "../../../lib/formatLabel";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
@@ -154,15 +155,15 @@ function DocumentTable({
                     const statusKey = requiresApproval ? "pending" : document.state;
                     return (
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft} ${guideTarget === "approval" ? "guide-status-badge" : ""}`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${shared && document.acknowledged ? states.approved : states[statusKey] || states.draft} ${guideTarget === "approval" ? "guide-status-badge" : ""}`}
                   >
                     {shared && document.acknowledged
                       ? document.acknowledged_at
                         ? `Acknowledged ${String(document.acknowledged_at).slice(0, 10)}`
                         : "Acknowledged"
                       : requiresApproval
-                        ? "Requires approval"
-                        : document.state}
+                        ? "Requires Approval"
+                        : formatStatusLabel(document.state)}
                   </span>
                     );
                   })()}
@@ -192,8 +193,10 @@ function DocumentTable({
                     )}
                     {!readOnly && !shared && (
                       <>
-                        {document.state === "draft" ||
-                        document.state === "rejected" ? (
+                        {(document.state === "draft" ||
+                          document.state === "rejected") &&
+                        document.approval_state !== "pending" &&
+                        !pendingStatusById[document.id] ? (
                           <button
                             type="button"
                             onClick={() => onRequestApproval?.(document)}
@@ -596,9 +599,9 @@ export default function MyDocumentsPage() {
                       </span>
                     </span>
                     <span
-                      className={`rounded-full px-2 py-1 text-[10px] font-bold capitalize ${states[document.state] || states.draft}`}
+                      className={`rounded-full px-2 py-1 text-[10px] font-bold ${states[document.state] || states.draft}`}
                     >
-                      {document.state}
+                      {formatStatusLabel(document.state)}
                     </span>
                   </button>
                 ))}

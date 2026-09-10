@@ -1141,6 +1141,208 @@ class CompanyDocumentaryController(http.Controller):
         except (UserError, AccessError, ValidationError) as error:
             return self._error(str(error))
 
+    def _eligible_employees_for_media(self, media, employees):
+        values = employees
+        folder = media.folder_id
+        scope = media.access_scope if media.scope_mode == "override" else folder.access_scope
+        if scope == "department":
+            ids = (media.department_ids if media.scope_mode == "override" else folder.department_ids).ids
+            values = values.filtered(lambda employee: employee.department_id.id in ids)
+        elif scope == "grade":
+            ids = (media.grade_ids if media.scope_mode == "override" else folder.grade_ids).ids
+            values = values.filtered(lambda employee: employee.grade_id.id in ids)
+        elif scope == "employee":
+            ids = (media.employee_ids if media.scope_mode == "override" else folder.employee_ids).ids
+            values = values.filtered(lambda employee: employee.id in ids)
+        return values
+
+    def _compliance_row_status(self, watch_record):
+        if not watch_record:
+            return "not_started"
+        if watch_record.completed:
+            return "completed"
+        if (watch_record.completion_percent or 0) > 0 or (watch_record.view_count or 0) > 0:
+            return "in_progress"
+        return "not_started"
+
+    def _compliance_video_summary(self, item, employees, progress_map):
+        eligible = self._eligible_employees_for_media(item, employees)
+        completed = in_progress = not_started = 0
+        for employee in eligible:
+            row_status = self._compliance_row_status(progress_map.get((item.id, employee.id)))
+            if row_status == "completed":
+                completed += 1
+            elif row_status == "in_progress":
+                in_progress += 1
+            else:
+                not_started += 1
+        audience = len(eligible)
+        return {
+            "media_id": item.id,
+            "title": item.name or "",
+            "mandatory": bool(item.mandatory),
+            "completion_threshold": item.completion_threshold,
+            "audience_count": audience,
+            "completed_count": completed,
+            "in_progress_count": in_progress,
+            "not_started_count": not_started,
+            "completion_rate": round(completed / audience * 100, 2) if audience else 0,
+        }
+
+    def _analytics_compliance_data(
+        self,
+        department_id=None,
+        folder_id=None,
+        media_id=None,
+        mandatory="all",
+        status="all",
+        search="",
+        page=1,
+        page_size=10,
+    ):
+        company = self._user().company_id
+        media_domain = [
+            ("company_id", "=", company.id),
+            ("active", "=", True),
+            ("deleted_at", "=", False),
+            ("processing_state", "=", "ready"),
+            ("approval_status", "in", ["approved", "scheduled"]),
+        ]
+        if folder_id:
+            media_domain.append(("folder_id", "=", _int(folder_id)))
+        if mandatory == "mandatory":
+            media_domain.append(("mandatory", "=", True))
+        elif mandatory == "optional":
+            media_domain.append(("mandatory", "=", False))
+
+        library_media = request.env["company.documentary.media"].sudo().search(media_domain, order="name")
+        employee_model = request.env["hr.employee"].sudo()
+        employees = employee_model.search([("company_id", "=", company.id), ("active", "=", True)])
+        if department_id:
+            employees = employees.filtered(lambda employee: employee.department_id.id == _int(department_id))
+
+        progress_model = request.env["company.documentary.watch"].sudo()
+        progress_records = progress_model.search([("media_id", "in", library_media.ids)]) if library_media else progress_model
+        progress_map = {(record.media_id.id, record.employee_id.id): record for record in progress_records}
+
+        video_summaries = {}
+        all_rows = []
+        for item in library_media:
+            video_summaries[item.id] = self._compliance_video_summary(item, employees, progress_map)
+            eligible = self._eligible_employees_for_media(item, employees)
+            folder = item.folder_id
+            for employee in eligible:
+                watch_record = progress_map.get((item.id, employee.id))
+                row_status = self._compliance_row_status(watch_record)
+                all_rows.append({
+                    "employee_id": employee.id,
+                    "employee_name": employee.name or "",
+                    "department_name": employee.department_id.name or "Unassigned",
+                    "media_id": item.id,
+                    "media_title": item.name or "",
+                    "folder_id": folder.id,
+                    "folder_name": folder.name or "",
+                    "mandatory": bool(item.mandatory),
+                    "completion_threshold": item.completion_threshold,
+                    "status": row_status,
+                    "completion_percent": round(watch_record.completion_percent, 2) if watch_record else 0,
+                    "view_count": watch_record.view_count if watch_record else 0,
+                    "last_watched_at": watch_record.last_watched_at if watch_record else False,
+                    "completed_at": watch_record.completed_at if watch_record and watch_record.completed else False,
+                })
+
+        summary = {
+            "eligible_assignments": len(all_rows),
+            "completed": sum(1 for row in all_rows if row["status"] == "completed"),
+            "in_progress": sum(1 for row in all_rows if row["status"] == "in_progress"),
+            "not_started": sum(1 for row in all_rows if row["status"] == "not_started"),
+            "mandatory_pending": sum(
+                1 for row in all_rows if row["mandatory"] and row["status"] != "completed"
+            ),
+        }
+
+        folders = request.env["company.documentary.folder"].sudo().search([
+            ("company_id", "=", company.id),
+            ("deleted_at", "=", False),
+            ("archived", "=", False),
+        ], order="name")
+        if folder_id:
+            folders = folders.filtered(lambda folder: folder.id == _int(folder_id))
+
+        library = []
+        for folder in folders:
+            folder_videos = [
+                video_summaries[item.id]
+                for item in library_media.filtered(lambda media: media.folder_id.id == folder.id)
+                if item.id in video_summaries
+            ]
+            if folder_videos:
+                library.append({
+                    "folder_id": folder.id,
+                    "folder_name": folder.name or "",
+                    "videos": folder_videos,
+                })
+
+        selected_media_id = _int(media_id) if media_id else False
+        video_summary = video_summaries.get(selected_media_id) if selected_media_id else False
+        rows = []
+        if selected_media_id:
+            rows = [row for row in all_rows if row["media_id"] == selected_media_id]
+            if status != "all":
+                rows = [row for row in rows if row["status"] == status]
+            search_value = (search or "").strip().lower()
+            if search_value:
+                rows = [
+                    row for row in rows
+                    if search_value in row["employee_name"].lower()
+                    or search_value in row["department_name"].lower()
+                ]
+            rows.sort(key=lambda row: row["employee_name"].lower())
+
+        page = max(_int(page, 1), 1)
+        page_size = min(max(_int(page_size, 10), 1), 5000)
+        total = len(rows)
+        start_index = (page - 1) * page_size
+        paged_rows = rows[start_index:start_index + page_size]
+
+        return {
+            "success": True,
+            "data": {
+                "library": library,
+                "selected_media_id": selected_media_id or False,
+                "video_summary": video_summary or False,
+                "summary": summary,
+                "rows": paged_rows,
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+            },
+        }
+
+    @http.route(
+        "/api/company-documentary/analytics/compliance",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def analytics_compliance(self, **kwargs):
+        if not self._is_manager():
+            return self._error(_("Documentary Manager access is required."))
+        try:
+            return self._analytics_compliance_data(
+                department_id=kwargs.get("department_id"),
+                folder_id=kwargs.get("folder_id"),
+                media_id=kwargs.get("media_id"),
+                mandatory=kwargs.get("mandatory") or "all",
+                status=kwargs.get("status") or "all",
+                search=kwargs.get("search") or "",
+                page=kwargs.get("page") or 1,
+                page_size=kwargs.get("page_size") or 10,
+            )
+        except (UserError, AccessError, ValidationError) as error:
+            return self._error(str(error))
+
     @http.route("/api/company-documentary/continue-watching", type="json", auth="user", methods=["POST"], csrf=False)
     def continue_watching(self, **kwargs):
         progress = request.env["company.documentary.watch"].sudo().search([

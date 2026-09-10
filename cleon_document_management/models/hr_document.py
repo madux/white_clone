@@ -264,9 +264,23 @@ class Document(models.Model):
     def _is_document_manager(self):
         return self.env.user.has_group("cleon_document_management.group_document_manager")
 
+    def _employee_self_service_write_fields(self):
+        """Fields a non-manager may update on their own documents."""
+        return {"favorite_user_ids", "pinned_user_ids"}
+
+    def _mail_thread_internal_write_fields(self, vals):
+        """Mail/activity fields written automatically during create or subscribe."""
+        return {
+            field_name
+            for field_name in vals
+            if field_name.startswith("message_") or field_name.startswith("activity_")
+        }
+
     def write(self, vals):
+        if self.env.su:
+            return super().write(vals)
         if not self._is_document_manager():
-            allowed = {"favorite_user_ids", "pinned_user_ids"}
+            allowed = self._employee_self_service_write_fields() | self._mail_thread_internal_write_fields(vals)
             if set(vals) - allowed:
                 raise AccessError(_("You can only update your document favorites and pins."))
         return super().write(vals)
@@ -417,7 +431,7 @@ class Document(models.Model):
         for vals in vals_list:
             attachment_id = vals.get("attachment_id")
             employee_id = vals.get("employee_id")
-            folder = self.env["doc.folder"].browse(vals.get("folder_id")).exists()
+            folder = self.env["doc.folder"].sudo().browse(vals.get("folder_id")).exists()
 
             if attachment_id:
                 attachment = self.env["ir.attachment"].browse(attachment_id).exists()
@@ -434,7 +448,7 @@ class Document(models.Model):
 
         documents = super().create(vals_list)
         for document in documents:
-            document.attachment_id.write(
+            document.sudo().attachment_id.write(
                 {"res_model": self._name, "res_id": document.id}
             )
             document._apply_upload_approval_workflow()
@@ -470,7 +484,14 @@ class Document(models.Model):
         elif folder.folder_type == "organizational" and not folder.require_upload_approval:
             return
 
-        if not require_approval or not approvers:
+        if require_approval and not approvers:
+            if folder.is_pending_uploads or (
+                folder.folder_type == "employee" and employee
+            ):
+                self.sudo().write({"state": "draft"})
+            return
+
+        if not require_approval:
             if folder.is_pending_uploads or (
                 folder.folder_type == "employee" and employee
             ):
@@ -480,6 +501,8 @@ class Document(models.Model):
                         "approval_state": "not_required",
                     }
                 )
+            if folder.is_pending_uploads:
+                self._assign_folder_after_approval()
             return
 
         approval_commands = [
@@ -643,6 +666,19 @@ class Document(models.Model):
     def action_mark_ocr_failed(self, error_message):
         self.write({"ocr_state": "failed", "ocr_error": error_message})
 
+    def _finalize_assignment_to_folder(self, target_folder):
+        self.ensure_one()
+        approval_state = (
+            "approved" if self.approval_state == "approved" else "not_required"
+        )
+        self.sudo().write(
+            {
+                "folder_id": target_folder.id,
+                "state": "approved",
+                "approval_state": approval_state,
+            }
+        )
+
     def _assign_folder_after_approval(self):
         pending_folder = self.env["doc.folder"].get_pending_upload_folder()
         for document in self:
@@ -656,7 +692,7 @@ class Document(models.Model):
                 document.employee_id
             )
             if target:
-                document.sudo().write({"folder_id": target.id})
+                document._finalize_assignment_to_folder(target)
 
     def _update_approval_state(self):
         for document in self:

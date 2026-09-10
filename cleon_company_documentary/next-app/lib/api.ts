@@ -1,6 +1,8 @@
 import axios from "axios";
 import type {
   AudienceOptions,
+  ComplianceReport,
+  ComplianceStatus,
   DocumentaryAnalyticsDashboard,
   DocumentaryComment,
   DocumentaryFolder,
@@ -243,6 +245,19 @@ export const api = {
 
   async analytics(filters: { date_from?: string; date_to?: string; department_id?: number; folder_id?: number; media_id?: number } = {}) {
     return unwrap(await rpc<{ success: boolean; data: DocumentaryAnalyticsDashboard; message?: string }>("/api/company-documentary/analytics/summary", filters));
+  },
+
+  async complianceReport(filters: {
+    department_id?: number;
+    folder_id?: number;
+    media_id?: number;
+    mandatory?: "all" | "mandatory" | "optional";
+    status?: "all" | ComplianceStatus;
+    search?: string;
+    page?: number;
+    page_size?: number;
+  } = {}) {
+    return unwrap(await rpc<{ success: boolean; data: ComplianceReport; message?: string }>("/api/company-documentary/analytics/compliance", filters));
   },
 
   async storageConfig(check = false) {

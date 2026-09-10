@@ -6,6 +6,7 @@ import {
   useIntelligenceTypes,
   useUpdateIntelligenceType,
 } from "../../../../hooks/useIntelligence";
+import { formatFieldLabel } from "../../../../lib/formatLabel";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -83,8 +84,8 @@ export default function TypesConfigPanel() {
                       {item.classification_labels || item.description || "—"}
                     </small>
                   </td>
-                  <td className="px-4 py-3 capitalize">
-                    {item.intelligence_scope}
+                  <td className="px-4 py-3">
+                    {formatFieldLabel(item.intelligence_scope)}
                   </td>
                   <td className="px-4 py-3">{item.default_profile || "—"}</td>
                   <td className="px-4 py-3">

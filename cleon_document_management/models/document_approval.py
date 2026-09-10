@@ -102,3 +102,4 @@ class DocumentApproval(models.Model):
             )
 
             approval.document_id.write({"state": "rejected"})
+            approval.document_id._update_approval_state()

@@ -17,28 +17,43 @@ import {
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
 import { useClickOutside } from "../../../hooks/useClickOutside";
-import type { AdminAttention, ApprovalInboxItem } from "../../../lib/types";
+import type {
+  AdminAttention,
+  ApprovalInboxItem,
+  ExpiringDocument,
+} from "../../../lib/types";
+import { documentViewHref } from "../../../lib/documentLinks";
 import BackButton from "./BackButton";
 
 type AttentionItem = AdminAttention["notifications"][number] | ApprovalInboxItem;
 
 function attentionHref(item: AttentionItem, isDocumentManager: boolean) {
-  if ("folder_id" in item) {
-    if (!isDocumentManager) {
-      return `/pages/my-documents?doc=${item.document_id}`;
-    }
-    return item.folder_type === "employee" && item.employee_id
-      ? `/pages/employee/profile?employee=${item.employee_id}`
-      : `/pages/organization/folder?folder=${item.folder_id}`;
+  if ("document_id" in item && item.document_id) {
+    return documentViewHref(
+      {
+        id: item.document_id,
+        folder_id: "folder_id" in item ? item.folder_id : undefined,
+        employee_id: item.employee_id,
+        folder_type: "folder_type" in item ? item.folder_type : undefined,
+      },
+      isDocumentManager,
+    );
   }
   if (!isDocumentManager) {
-    return item.employee_id
-      ? "/pages/my-documents"
-      : "/pages/my-documents";
+    return "/pages/my-documents/";
   }
   return item.employee_id
-    ? `/pages/employee/profile?employee=${item.employee_id}`
-    : "/pages/employee";
+    ? `/pages/employee/profile/?employee=${item.employee_id}`
+    : "/pages/employee/";
+}
+
+function formatExpiryDate(value: string) {
+  if (!value) return "soon";
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(String(value).replace(" ", "T")));
 }
 
 function UserWidget() {
@@ -190,11 +205,7 @@ export default function Header() {
         .map((document) => ({
           label: document.name,
           detail: document.document_type,
-          href: isDocumentManager
-            ? document.employee_id
-              ? `/pages/employee/profile?employee=${document.employee_id}`
-              : `/pages/organization/folder?folder=${document.folder_id}`
-            : `/pages/my-documents?doc=${document.id}`,
+          href: documentViewHref(document, isDocumentManager),
           kind: "Document",
         })),
       ...(isDocumentManager ? targets.data?.employees ?? [] : [])
@@ -253,21 +264,22 @@ export default function Header() {
   const attentionItems = attentionOpen === "approval-inbox"
     ? approvalInbox.data?.items ?? []
     : attention.data?.notifications ?? [];
+  const expiringItems: ExpiringDocument[] = isDocumentManager
+    ? dashboardStats.data?.expiring_items ?? []
+    : myWorkspace.data?.expiring_documents ?? [];
   const panelCount = attentionOpen === "approval-inbox"
     ? approvalInbox.data?.count ?? 0
-    : attention.data?.count ?? 0;
-  const expiringCount = dashboardStats.data?.expiring_documents ?? 0;
+    : (attention.data?.count ?? 0) + expiringItems.length;
   const notificationBadgeCount =
-    (attention.data?.count ?? 0) + (expiringCount > 0 ? 1 : 0);
+    (attention.data?.count ?? 0) + expiringItems.length;
   return (
     <header className="mx-auto w-full max-w-[1650px] rounded-2xl border border-slate-200 bg-white px-6 py-3.5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <BackButton variant="header" />
-          <span className="font-bold text-lg flex items-center tracking-tight text-slate-900 shrink-0">
-            Cleon
-            <span className="uppercase text-brand-text font-black">HR</span>
-          </span>
+          <div className="header-wordmark">
+            Cleon<span>HR</span>
+          </div>
 
           <div
             ref={searchRef}
@@ -356,7 +368,75 @@ export default function Header() {
             <Bell className="h-5 w-5" />
             {!!notificationBadgeCount && <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-brand-pink px-1 text-center text-[9px] font-bold text-white">{notificationBadgeCount}</span>}
           </button>
-          {attentionOpen && <div className="absolute right-0 top-12 z-[110] w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3"><div><strong className="text-sm text-slate-900">{attentionOpen === "approval-inbox" ? "Approval Inbox" : "Notifications"}</strong><p className="mt-0.5 text-[11px] text-slate-400">{attentionOpen === "approval-inbox" ? "Documents ready for your decision" : "Workspace activity requiring attention"}</p></div><span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">{panelCount} {attentionOpen === "approval-inbox" ? "ready" : "pending"}</span></div><div className="max-h-80 overflow-y-auto">{attentionOpen === "notifications" && expiringCount > 0 && <Link href={isDocumentManager ? "/pages/compliance" : "/pages/my-compliance"} onClick={() => setAttentionOpen(null)} className="mb-2 block rounded-xl border border-orange-100 bg-orange-50 px-3 py-3 transition hover:bg-orange-100/70"><div className="flex items-start gap-3"><Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" /><div><p className="text-xs font-semibold leading-5 text-orange-800">{expiringCount} document{expiringCount === 1 ? "" : "s"} expiring soon</p><p className="mt-1 text-[10px] text-orange-700">Review compliance records within the next 30 days.</p></div></div></Link>}{attentionItems.map((item) => <Link key={`${attentionOpen}-${item.id}`} href={attentionHref(item, isDocumentManager)} onClick={() => setAttentionOpen(null)} className="block border-b border-slate-50 px-2 py-3 hover:bg-pink-50/50"><p className="text-xs font-semibold leading-5 text-slate-700">{item.message}</p><p className="mt-1 text-[10px] text-slate-400">{item.document}{"document_type" in item ? ` · ${item.document_type}` : ""}</p></Link>)}{!panelCount && !(attentionOpen === "notifications" && expiringCount > 0) && <p className="px-2 py-8 text-center text-xs text-slate-400">{attentionOpen === "approval-inbox" ? "No approval tasks are assigned to you." : "No actions require your attention."}</p>}</div></div>}
+          {attentionOpen && (
+            <div className="absolute right-0 top-12 z-[110] w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 px-2 pb-3">
+                <div>
+                  <strong className="text-sm text-slate-900">
+                    {attentionOpen === "approval-inbox"
+                      ? "Approval Inbox"
+                      : "Notifications"}
+                  </strong>
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    {attentionOpen === "approval-inbox"
+                      ? "Documents ready for your decision"
+                      : "Workspace activity requiring attention"}
+                  </p>
+                </div>
+                <span className="rounded-full bg-pink-50 px-2 py-1 text-[10px] font-bold text-brand-pink">
+                  {panelCount}{" "}
+                  {attentionOpen === "approval-inbox" ? "ready" : "pending"}
+                </span>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {attentionOpen === "notifications" &&
+                  expiringItems.map((item) => (
+                    <Link
+                      key={`expiring-${item.id}`}
+                      href={documentViewHref(item, isDocumentManager)}
+                      onClick={() => setAttentionOpen(null)}
+                      className="mb-2 block rounded-xl border border-orange-100 bg-orange-50 px-3 py-3 transition hover:bg-orange-100/70"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
+                        <div>
+                          <p className="text-xs font-semibold leading-5 text-orange-900">
+                            {item.name}
+                          </p>
+                          <p className="mt-1 text-[10px] text-orange-700">
+                            {item.document_type} · Expires{" "}
+                            {formatExpiryDate(item.expiry_date)}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                {attentionItems.map((item) => (
+                  <Link
+                    key={`${attentionOpen}-${item.id}`}
+                    href={attentionHref(item, isDocumentManager)}
+                    onClick={() => setAttentionOpen(null)}
+                    className="block border-b border-slate-50 px-2 py-3 hover:bg-pink-50/50"
+                  >
+                    <p className="text-xs font-semibold leading-5 text-slate-700">
+                      {item.message}
+                    </p>
+                    <p className="mt-1 text-[10px] text-slate-400">
+                      {item.document}
+                      {"document_type" in item ? ` · ${item.document_type}` : ""}
+                    </p>
+                  </Link>
+                ))}
+                {!panelCount && (
+                  <p className="px-2 py-8 text-center text-xs text-slate-400">
+                    {attentionOpen === "approval-inbox"
+                      ? "No approval tasks are assigned to you."
+                      : "No actions require your attention."}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
           </>}
           <div className="h-4 w-[1px] bg-slate-200" />
           <UserWidget />

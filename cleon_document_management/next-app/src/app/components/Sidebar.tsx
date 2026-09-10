@@ -1,5 +1,6 @@
 "use client";
 import {
+  Activity,
   Archive,
   ArchiveRestore,
   Brain,
@@ -46,6 +47,7 @@ export default function Sidebar() {
 
   const coreLinks: Links[] = [
     { name: "Dashboard", link: "/pages/dashboard", icon: LayoutDashboard },
+    { name: "Activity", link: "/pages/activity", icon: Activity },
     { name: "Employee Files", link: "/pages/employee", icon: Users },
     {
       name: "Organizational Files",
@@ -108,24 +110,24 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`flex h-full shrink-0 border-r border-slate-200 bg-white p-2 transition-all duration-200 ${
-        collapsed ? "w-[4.5rem]" : "w-52 md:w-56 lg:w-60"
+      className={`doc-sidebar flex h-full shrink-0 border-r border-slate-200 bg-white p-2 transition-all duration-200 ${
+        collapsed ? "is-collapsed w-[4.5rem]" : "w-52 md:w-56 lg:w-60"
       }`}
     >
       <div className="flex w-full flex-col gap-5">
-        <div className={`flex flex-col gap-3 p-3 ${collapsed ? "items-center px-1" : ""}`}>
+        <div className={`sidebar-brand-row ${collapsed ? "is-collapsed" : ""}`}>
           {!collapsed && (
-            <>
-              <span className="font-bold text-sm">Document Management</span>
-              <span className="text-brand-gray text-sm">
+            <div className="brand-lockup">
+              <span className="directory-brand">Document Management</span>
+              <span className="directory-brand-sub">
                 {isAdmin ? "Intelligence Engine" : "Employee workspace"}
               </span>
-            </>
+            </div>
           )}
           <button
             type="button"
             onClick={toggleCollapsed}
-            className="inline-flex items-center justify-center rounded-lg border border-slate-200 p-2 text-slate-500 hover:border-brand-pink hover:text-brand-pink"
+            className="sidebar-collapse-toggle"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >

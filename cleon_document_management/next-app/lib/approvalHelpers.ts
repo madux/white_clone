@@ -1,3 +1,4 @@
+import { formatStatusLabel } from "./formatLabel";
 import type { DocDocument } from "./types";
 
 export function canReviewDocument(document: Pick<DocDocument, "can_review">) {
@@ -20,6 +21,6 @@ export function approvalDisplayLabel(
     const name = document.current_approver_name;
     return name ? `Waiting for ${name}` : "Waiting for prior approval";
   }
-  if (document.approval_state === "pending") return "In review";
-  return document.approval_state.replace("_", " ");
+  if (document.approval_state === "pending") return "In Review";
+  return formatStatusLabel(document.approval_state);
 }

@@ -33,6 +33,7 @@ export function getNavigationLabel(
   if (route === "/pages/pending-uploads") return "Pending Uploads";
   if (route === "/pages/recycle-bin") return "Recycle Bin";
   if (route === "/pages/dashboard") return "Dashboard";
+  if (route === "/pages/activity") return "Activity";
   if (route === "/pages/my-documents") return "My Documents";
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";

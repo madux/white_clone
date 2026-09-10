@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "../../../hooks/useToast";
 import {
   useSaveSettings,
   useSaveSettingsDocumentType,
@@ -120,6 +121,7 @@ type SectionId = (typeof sections)[number]["id"];
 export default function SettingsPage() {
   const query = useSettings();
   const params = useSearchParams();
+  const { showToast } = useToast();
   const save = useSaveSettings();
   const saveType = useSaveSettingsDocumentType();
   const toggleType = useToggleSettingsDocumentType();
@@ -206,19 +208,18 @@ export default function SettingsPage() {
       const result = await save.mutateAsync(values);
       if (result.success) {
         setSettings(result.data ?? values);
-        setNotice({ message: "Workspace settings saved." });
+        setNotice(null);
+        showToast("Settings saved successfully.");
       } else {
-        setNotice({
-          message: result.message || "Unable to save settings.",
-          error: true,
-        });
+        setNotice(null);
+        showToast(result.message || "Failed to save settings.", "error");
       }
     } catch {
-      setNotice({
-        message:
-          "The settings could not be saved. Check your connection and try again.",
-        error: true,
-      });
+      setNotice(null);
+      showToast(
+        "Failed to save settings. Check your connection and try again.",
+        "error",
+      );
     }
   };
 
@@ -636,76 +637,84 @@ function ApprovalPanel({
       allApprovers.find((item: any) => Number(item.id) === id),
     )
     .filter(Boolean);
+  const requireApproval = Boolean(values.default_require_upload_approval);
   const sequential = values.default_approval_flow === "sequential";
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-slate-800">
-                Require approval for new uploads
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                New employee folders inherit these defaults until customized per
-                folder. Pending uploads also follow the department folder chain,
-                or these defaults when no folder exists yet.
-              </p>
-            </div>
-            <Switch
-              checked={Boolean(values.default_require_upload_approval)}
-              onChange={() =>
-                update(
-                  "default_require_upload_approval",
-                  !values.default_require_upload_approval,
-                )
-              }
-            />
+      <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold text-slate-800">
+              Require approval for new uploads
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              New employee folders inherit these defaults until customized per
+              folder. Pending uploads also follow the department folder chain,
+              or these defaults when no folder exists yet.
+            </p>
           </div>
+          <Switch
+            checked={requireApproval}
+            onChange={() =>
+              update(
+                "default_require_upload_approval",
+                !requireApproval,
+              )
+            }
+          />
         </div>
-        <div className="rounded-2xl border border-slate-200 p-5">
-          <p className="text-sm font-bold text-slate-800">Review mode</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Choose how selected reviewers can approve a document.
+        {!requireApproval && (
+          <p className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-800">
+            Uploads are submitted without a review step. Turn this on when you
+            want managers to approve documents before they are filed.
           </p>
-          <div className="mt-4 grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
-            {[
-              {
-                value: "any",
-                label: "Single approver",
-                description: "One selected reviewer can approve.",
-              },
-              {
-                value: "sequential",
-                label: "Sequential",
-                description: "Reviewers approve in the order you set.",
-              },
-              {
-                value: "random",
-                label: "All reviewers",
-                description: "Everyone must approve; order does not matter.",
-              },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => update("default_approval_flow", option.value)}
-                aria-pressed={values.default_approval_flow === option.value}
-                className={`!rounded-lg px-3 py-2.5 text-left transition ${values.default_approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
-              >
-                <span className="block text-xs font-bold">{option.label}</span>
-                <span className={`mt-1 block text-[10px] font-medium leading-4 ${values.default_approval_flow === option.value ? "text-slate-500" : "text-slate-400"}`}>
-                  {option.description}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
-      <div
-        className={`rounded-2xl border p-5 ${sequential ? "border-pink-200 bg-pink-50/40" : "border-slate-200 bg-white"}`}
-      >
+      {requireApproval && (
+        <>
+          <div className="rounded-2xl border border-slate-200 p-5">
+            <p className="text-sm font-bold text-slate-800">Review mode</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              Choose how selected reviewers can approve a document.
+            </p>
+            <div className="mt-4 grid gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-3">
+              {[
+                {
+                  value: "any",
+                  label: "Single approver",
+                  description: "One selected reviewer can approve.",
+                },
+                {
+                  value: "sequential",
+                  label: "Sequential",
+                  description: "Reviewers approve in the order you set.",
+                },
+                {
+                  value: "random",
+                  label: "All reviewers",
+                  description: "Everyone must approve; order does not matter.",
+                },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => update("default_approval_flow", option.value)}
+                  aria-pressed={values.default_approval_flow === option.value}
+                  className={`!rounded-lg px-3 py-2.5 text-left transition ${values.default_approval_flow === option.value ? "bg-white text-brand-text shadow-sm" : "text-slate-400 hover:bg-white/70 hover:text-slate-700"}`}
+                >
+                  <span className="block text-xs font-bold">{option.label}</span>
+                  <span className={`mt-1 block text-[10px] font-medium leading-4 ${values.default_approval_flow === option.value ? "text-slate-500" : "text-slate-400"}`}>
+                    {option.description}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`rounded-2xl border p-5 ${sequential ? "border-pink-200 bg-pink-50/40" : "border-slate-200 bg-white"}`}
+          >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
@@ -835,7 +844,9 @@ function ApprovalPanel({
             })}
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

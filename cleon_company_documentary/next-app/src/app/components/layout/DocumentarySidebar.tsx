@@ -3,19 +3,22 @@
 import {
   BarChart3,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock3,
   Folder,
   Home,
   Library,
-  MoreVertical,
   Recycle,
   Settings2,
   Star,
   X,
 } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { DocumentaryFolder } from "../../../../lib/types";
 import type { LibraryView } from "../library/libraryTypes";
-import { initials } from "../documentaryUtils";
+
+const SIDEBAR_COLLAPSED_KEY = "cleon-documentary-sidebar-collapsed";
 
 export function DocumentarySidebar({
   folders,
@@ -26,8 +29,6 @@ export function DocumentarySidebar({
   canManage,
   isAdmin,
   mobileNav,
-  userName,
-  companyName,
   onNavigate,
   onOpenFolder,
   onAnalytics,
@@ -42,21 +43,68 @@ export function DocumentarySidebar({
   canManage: boolean;
   isAdmin: boolean;
   mobileNav: boolean;
-  userName?: string;
-  companyName?: string;
   onNavigate: (view: LibraryView) => void;
   onOpenFolder: (folder: DocumentaryFolder) => void;
   onAnalytics: () => void;
   onSettings: () => void;
   onClose: () => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const pinned = folders.filter((folder) => folder.is_pinned);
   const otherFolders = folders.filter((folder) => !folder.is_pinned);
 
+  useEffect(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (saved === "1") setCollapsed(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  };
+
+  const renderLink = (
+    label: string,
+    icon: ReactNode,
+    active: boolean,
+    onClick: () => void,
+    count?: ReactNode,
+  ) => (
+    <button
+      type="button"
+      className={`sidebar-link ${active ? "active" : ""}`}
+      onClick={onClick}
+      title={collapsed ? label : undefined}
+      aria-current={active ? "page" : undefined}
+    >
+      {icon}
+      {!collapsed && <span>{label}</span>}
+      {!collapsed && count}
+    </button>
+  );
+
   return (
-    <aside className={`documentary-sidebar ${mobileNav ? "is-open" : ""}`}>
-      <div className="brand-lockup">
-        <span className="directory-brand">Company Documentary</span>
+    <aside
+      className={`documentary-sidebar ${mobileNav ? "is-open" : ""} ${collapsed ? "is-collapsed" : ""}`}
+    >
+      <div className={`sidebar-brand-row ${collapsed ? "is-collapsed" : ""}`}>
+        {!collapsed && (
+          <div className="brand-lockup">
+            <span className="directory-brand">Company Documentary</span>
+          </div>
+        )}
+        <button
+          type="button"
+          className="sidebar-collapse-toggle"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
       </div>
       <button
         className="mobile-close"
@@ -65,69 +113,68 @@ export function DocumentarySidebar({
       >
         <X size={18} />
       </button>
-      <div className="sidebar-section-label">Workspace</div>
+      {!collapsed && <div className="sidebar-section-label">Workspace</div>}
       <nav className="sidebar-nav">
-        <button
-          className={`sidebar-link ${libraryView === "home" && !selectedFolder ? "active" : ""}`}
-          onClick={() => onNavigate("home")}
-        >
-          <Home size={17} />
-          <span>Documentary home</span>
-        </button>
-        <button
-          className={`sidebar-link ${libraryView === "all" ? "active" : ""}`}
-          onClick={() => onNavigate("all")}
-        >
-          <Library size={17} />
-          <span>All videos</span>
-          <span className="nav-count">{mediaCount}</span>
-        </button>
-        <button
-          className={`sidebar-link ${libraryView === "favorites" ? "active" : ""}`}
-          onClick={() => onNavigate("favorites")}
-        >
-          <Star size={17} />
-          <span>Favorites</span>
-        </button>
-        <button
-          className={`sidebar-link ${libraryView === "recent" ? "active" : ""}`}
-          onClick={() => onNavigate("recent")}
-        >
-          <Clock3 size={17} />
-          <span>Continue watching</span>
-        </button>
+        {renderLink(
+          "Documentary home",
+          <Home size={17} />,
+          libraryView === "home" && !selectedFolder,
+          () => onNavigate("home"),
+        )}
+        {renderLink(
+          "All videos",
+          <Library size={17} />,
+          libraryView === "all",
+          () => onNavigate("all"),
+          <span className="nav-count">{mediaCount}</span>,
+        )}
+        {renderLink(
+          "Favorites",
+          <Star size={17} />,
+          libraryView === "favorites",
+          () => onNavigate("favorites"),
+        )}
+        {renderLink(
+          "Continue watching",
+          <Clock3 size={17} />,
+          libraryView === "recent",
+          () => onNavigate("recent"),
+        )}
         {canManage && (
           <>
-            <button
-              className={`sidebar-link ${libraryView === "approvals" ? "active" : ""}`}
-              onClick={() => onNavigate("approvals")}
-            >
-              <CheckCircle2 size={17} />
-              <span>Pending review</span>
-              {pendingCount > 0 && <span className="nav-count alert">{pendingCount}</span>}
-            </button>
-            <button
-              className={`sidebar-link ${libraryView === "recycle" ? "active" : ""}`}
-              onClick={() => onNavigate("recycle")}
-            >
-              <Recycle size={17} />
-              <span>Recycle bin</span>
-            </button>
+            {renderLink(
+              "Pending review",
+              <CheckCircle2 size={17} />,
+              libraryView === "approvals",
+              () => onNavigate("approvals"),
+              pendingCount > 0 ? (
+                <span className="nav-count alert">{pendingCount}</span>
+              ) : undefined,
+            )}
+            {renderLink(
+              "Recycle bin",
+              <Recycle size={17} />,
+              libraryView === "recycle",
+              () => onNavigate("recycle"),
+            )}
           </>
         )}
       </nav>
-      <div className="sidebar-section-label folder-label">
-        Folders <span>{folders.length}</span>
-      </div>
+      {!collapsed && (
+        <div className="sidebar-section-label folder-label">
+          Folders <span>{folders.length}</span>
+        </div>
+      )}
       <div className="sidebar-folder-list scrollable">
         {pinned.map((folder) => (
           <button
             key={folder.id}
             className={`sidebar-link pinned ${selectedFolder?.id === folder.id ? "selected" : ""}`}
             onClick={() => onOpenFolder(folder)}
+            title={collapsed ? folder.name : undefined}
           >
             <Star size={14} fill="currentColor" />
-            <span>{folder.name}</span>
+            {!collapsed && <span>{folder.name}</span>}
           </button>
         ))}
         {otherFolders.map((folder) => (
@@ -135,40 +182,34 @@ export function DocumentarySidebar({
             key={folder.id}
             className={`sidebar-link ${selectedFolder?.id === folder.id ? "selected" : ""}`}
             onClick={() => onOpenFolder(folder)}
+            title={collapsed ? folder.name : undefined}
           >
             <Folder size={16} />
-            <span>{folder.name}</span>
+            {!collapsed && <span>{folder.name}</span>}
           </button>
         ))}
-        {!folders.length && (
+        {!folders.length && !collapsed && (
           <p className="sidebar-empty">Your folders will appear here.</p>
         )}
       </div>
       <div className="sidebar-bottom">
         {canManage && (
           <>
-            <button className="sidebar-link" onClick={onAnalytics}>
-              <BarChart3 size={17} />
-              <span>Library analytics</span>
-            </button>
-            {isAdmin && (
-              <button className="sidebar-link" onClick={onSettings}>
-                <Settings2 size={17} />
-                <span>Settings</span>
-              </button>
+            {renderLink(
+              "Library analytics",
+              <BarChart3 size={17} />,
+              false,
+              onAnalytics,
             )}
+            {isAdmin &&
+              renderLink(
+                "Settings",
+                <Settings2 size={17} />,
+                false,
+                onSettings,
+              )}
           </>
         )}
-        <div className="profile-chip">
-          <div className="avatar">
-            {initials(userName || "Company Documentary")}
-          </div>
-          <div className="profile-copy">
-            <strong>{userName || "Your workspace"}</strong>
-            <span>{companyName || "Company library"}</span>
-          </div>
-          <MoreVertical size={16} className="muted-icon" />
-        </div>
       </div>
     </aside>
   );

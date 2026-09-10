@@ -10,6 +10,7 @@ import {
   useSaveIntelligenceDataset,
 } from "../../../../hooks/useIntelligence";
 import { useRouter, useSearchParams } from "next/navigation";
+import { formatFieldLabel } from "../../../../lib/formatLabel";
 
 const STEPS = [
   "Repository",
@@ -460,7 +461,7 @@ export default function DatasetWizardScreen() {
             </label>
             <dl className="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
               <div>Source: {draft.source || "—"}</div>
-              <div>Scope: {draft.scopeKind.replace(/_/g, " ")}</div>
+              <div>Scope: {formatFieldLabel(draft.scopeKind)}</div>
               <div>Types: {selectedTypeNames.join(", ") || (draft.autoClassify ? "auto" : "none")}</div>
               <div>Fields: {draft.fields.length}</div>
               <div>Mode: {draft.processingMode}</div>

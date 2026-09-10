@@ -351,6 +351,7 @@ export default function SocialGalleryPage() {
             pageTitle={headerTitle}
             search={search}
             userName={user?.name}
+            companyName={user?.company_name}
             onSearch={setSearch}
             onOpenMobileNav={() => setMobileNav(true)}
           />

@@ -2,7 +2,6 @@
 
 import {
   Check,
-  ChevronRight,
   FilePlus2,
   FileText,
   FolderOpen,
@@ -30,6 +29,7 @@ import {
   useComplianceTargets,
   useSettings,
 } from "../../../hooks/useDocuments";
+import FolderExplorerAccordion from "./FolderExplorerAccordion";
 import FolderApprovalFields, {
   approvalFlowLabel,
   type ApprovalFlow,
@@ -38,37 +38,49 @@ import FolderApprovalFields, {
 import OrganizationalAccessScopeFields, {
   validateOrganizationalScope,
 } from "./OrganizationalAccessScopeFields";
-import FolderActions from "./FolderActions";
 import BulkFolderActions from "./BulkFolderActions";
-import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
+import {
+  prefillFromSearchParams,
+  readCreateFolderIntent,
+  type CreateFolderPrefill,
+} from "../../../lib/createFolderIntent";
+import { formatFieldLabel } from "../../../lib/formatLabel";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
 
-const formatDate = (value: string) =>
-  new Intl.DateTimeFormat("en", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value.replace(" ", "T")));
-
 export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const folders = useFolders();
   const documents = useDocuments();
+  const complianceTargets = useComplianceTargets();
   const currentUser = useCurrentUser();
   const params = useSearchParams();
   const guideTarget = params.get("guide");
+  const createQuery = params.get("create");
+  const departmentIdQuery = params.get("department_id");
+  const employeeIdQuery = params.get("employee_id");
+  const folderNameQuery = params.get("folder_name");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selected, setSelected] = useState<number[]>([]);
   const [showCreateFolder, setShowCreateFolder] = useState(false);
+  const [createPrefill, setCreatePrefill] = useState<CreateFolderPrefill>({});
   const [showFilters, setShowFilters] = useState(false);
   const [complianceFilter, setComplianceFilter] = useState<"all" | "attention" | "complete">("all");
 
   useEffect(() => {
-    if (params.get("create") === "1") setShowCreateFolder(true);
-  }, [params]);
+    const fromParams = prefillFromSearchParams(params);
+    const fromStorage = readCreateFolderIntent();
+    const shouldOpen = createQuery === "1" || Boolean(fromStorage);
+    if (!shouldOpen) return;
+    setCreatePrefill({
+      departmentId: fromStorage?.departmentId ?? fromParams.departmentId,
+      employeeId: fromStorage?.employeeId ?? fromParams.employeeId,
+      folderName: fromStorage?.folderName ?? fromParams.folderName,
+    });
+    setShowCreateFolder(true);
+  }, [createQuery, departmentIdQuery, employeeIdQuery, folderNameQuery, params]);
 
   const visibleFolders = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -228,155 +240,15 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
         ) : viewMode === "list" ? (
-          <div className="overflow-x-auto">
-            <SortableTable className="w-full min-w-[800px] text-left">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                <tr>
-                  <th className="w-12 px-5 py-4">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() =>
-                        setSelected(allSelected ? [] : visibleIds)
-                      }
-                      aria-label="Select all folders"
-                      className="h-4 w-4 accent-pink-600"
-                    />
-                  </th>
-                  <th className="px-5 py-4 font-bold">Folder</th>
-                  {kind === "employee" && (
-                    <th className="px-5 py-4 font-bold">Employees</th>
-                  )}
-                  <th className="px-5 py-4 font-bold">Documents</th>
-                  <th className="px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredRows.map(
-                  ({
-                    folder,
-                    documents: folderDocuments,
-                    employees,
-                  }) => {
-                    const row = (
-                      <>
-                        <td className="w-12 px-5 py-4">
-                          <input
-                            type="checkbox"
-                            checked={selected.includes(folder.id)}
-                            onChange={() => toggleSelected(folder.id)}
-                            onClick={(event) => event.stopPropagation()}
-                            aria-label={`Select ${folder.folder_name}`}
-                            className="h-4 w-4 accent-pink-600"
-                          />
-                        </td>
-                        <td className="px-5 py-4">
-                          {kind === "employee" ? (
-                            <Link
-                              href={`/pages/employee/folder?folder=${folder.id}`}
-                              className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-pink/20"
-                            >
-                              <div className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                                <FolderOpen className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-800">
-                                  {folder.folder_name}
-                                </p>
-                                <p className="mt-0.5 text-xs text-slate-400">
-                                  Updated {formatDate(folder.last_modified)}
-                                </p>
-                              </div>
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`}
-                              className="flex items-center gap-3 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-brand-pink/20"
-                            >
-                              <div className="rounded-xl bg-pink-50 p-2.5 text-brand-pink">
-                                <FolderOpen className="h-5 w-5" />
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-800">
-                                  {folder.folder_name}
-                                </p>
-                                <p className="mt-0.5 text-xs text-slate-400">
-                                  Updated {formatDate(folder.last_modified)}
-                                </p>
-                              </div>
-                            </Link>
-                          )}
-                        </td>
-                        {kind === "employee" && (
-                          <td className="px-5 py-4 text-sm font-semibold text-slate-600">
-                            <span className="inline-flex items-center gap-2">
-                              <Users className="h-4 w-4 text-slate-400" />
-                              {employees}
-                            </span>
-                          </td>
-                        )}
-                        <td className="px-5 py-4 text-sm font-semibold text-slate-600">
-                          <span className="inline-flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-slate-400" />
-                            {folderDocuments.length}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <FolderActions
-                              folderId={folder.id}
-                              folderName={folder.folder_name}
-                              description={folder.description}
-                              locked={folder.locked}
-                              folderType={folder.folder_type}
-                              {...(kind === "employee"
-                                ? {
-                                    requireUploadApproval:
-                                      folder.require_upload_approval,
-                                    approvalFlow: folder.approval_flow,
-                                    approverIds: folder.approver_ids,
-                                  }
-                                : {
-                                    accessScope: folder.access_scope,
-                                    departmentIds: folder.department_ids,
-                                    gradeIds: folder.grade_ids,
-                                    employeeIds: folder.employee_ids,
-                                  })}
-                            />
-                            {kind === "employee" ? (
-                              <Link
-                                href={`/pages/employee/folder?folder=${folder.id}`}
-                                aria-label={`Open ${folder.folder_name}`}
-                                className="rounded-full p-1 text-slate-400 transition hover:bg-pink-50 hover:text-brand-pink"
-                              >
-                                <ChevronRight className="h-5 w-5" />
-                              </Link>
-                            ) : (
-                              <Link
-                                href={`/pages/organization/folder?folder=${folder.id}${guideTarget === "organizational-upload" ? "&guide=organizational-upload" : ""}`}
-                                aria-label={`Open ${folder.folder_name}`}
-                                className="rounded-full p-1 text-slate-400 transition hover:bg-pink-50 hover:text-brand-pink"
-                              >
-                                <ChevronRight className="h-5 w-5" />
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                      </>
-                    );
-                    return (
-                      <tr
-                        key={folder.id}
-                        className="group transition hover:bg-pink-50/30"
-                      >
-                        {row}
-                      </tr>
-                    );
-                  },
-                )}
-              </tbody>
-            </SortableTable>
-          </div>
+          <FolderExplorerAccordion
+            kind={kind === "employee" ? "employee" : "organizational"}
+            rows={filteredRows}
+            targets={complianceTargets.data}
+            selected={selected}
+            onToggleSelected={toggleSelected}
+            isDocumentManager={currentUser.data?.is_document_manager !== false}
+            guideTarget={guideTarget}
+          />
         ) : (
           <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredRows.map(
@@ -450,6 +322,9 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
       {showCreateFolder && (
         <FolderCreateModal
           kind={kind === "organization" ? "organizational" : kind}
+          initialDepartmentId={createPrefill.departmentId}
+          initialEmployeeId={createPrefill.employeeId}
+          initialFolderName={createPrefill.folderName || ""}
           onClose={() => setShowCreateFolder(false)}
         />
       )}
@@ -460,9 +335,15 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
 function FolderCreateModal({
   kind,
   onClose,
+  initialDepartmentId,
+  initialEmployeeId,
+  initialFolderName = "",
 }: {
   kind: PageKind;
   onClose: () => void;
+  initialDepartmentId?: number;
+  initialEmployeeId?: number;
+  initialFolderName?: string;
 }) {
   const create = useCreateFolder();
   const documentTypes = useDocumentTypes();
@@ -498,16 +379,21 @@ function FolderCreateModal({
     })) ?? [];
 
   useEffect(() => {
-    if (kind !== "employee") return;
     const settings = settingsQuery.data?.settings;
     if (!settings) return;
-    setRequireUploadApproval(Boolean(settings.default_require_upload_approval));
-    setApprovalFlow((settings.default_approval_flow as ApprovalFlow) || "any");
-    setApproverIds(
-      Array.isArray(settings.default_approver_ids)
-        ? settings.default_approver_ids.map(Number)
-        : [],
-    );
+    if (kind === "employee") {
+      setRequireUploadApproval(Boolean(settings.default_require_upload_approval));
+      setApprovalFlow((settings.default_approval_flow as ApprovalFlow) || "any");
+      setApproverIds(
+        Array.isArray(settings.default_approver_ids)
+          ? settings.default_approver_ids.map(Number)
+          : [],
+      );
+    }
+    if (kind === "organizational") {
+      setAccessScope(settings.default_access_scope || "all_staff");
+      setRetention(settings.default_retention_period || "7");
+    }
   }, [kind, settingsQuery.data?.settings]);
 
   const employeeOptions = useMemo<EmployeeOption[]>(() => {
@@ -529,6 +415,46 @@ function FolderCreateModal({
       ).length,
     }));
   }, [departments, employees]);
+
+  useEffect(() => {
+    if (kind !== "employee" || !targets.data) return;
+    if (initialEmployeeId) {
+      const employee = employees.find((item) => item.id === initialEmployeeId);
+      if (employee?.department_id) {
+        const department = departmentOptions.find(
+          (item) => item.id === employee.department_id,
+        );
+        if (department) {
+          setSelectedEmployeeId(employee.id);
+          setName(department.name);
+          setDepartmentIds([department.id]);
+          return;
+        }
+      }
+    }
+    if (initialDepartmentId) {
+      const department = departmentOptions.find(
+        (item) => item.id === initialDepartmentId,
+      );
+      if (department) {
+        setName(department.name);
+        setDepartmentIds([department.id]);
+        return;
+      }
+    }
+    if (initialFolderName) {
+      setName(initialFolderName);
+      if (initialDepartmentId) setDepartmentIds([initialDepartmentId]);
+    }
+  }, [
+    departmentOptions,
+    employees,
+    initialDepartmentId,
+    initialEmployeeId,
+    initialFolderName,
+    kind,
+    targets.data,
+  ]);
 
   const existingFolderByDepartmentId = useMemo(() => {
     const map = new Map<number, string>();
@@ -1055,7 +981,7 @@ function FolderCreateModal({
               <>
                 <div className="flex justify-between gap-4">
                   <dt className="font-semibold text-slate-500">Access scope</dt>
-                  <dd className="capitalize text-slate-700">{accessScope.replace("_", " ")}</dd>
+                  <dd className="text-slate-700">{formatFieldLabel(accessScope)}</dd>
                 </div>
                 {scopeLabels.length > 0 && (
                   <div className="flex justify-between gap-4">

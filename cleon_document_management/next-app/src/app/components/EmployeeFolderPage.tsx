@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  ChevronRight,
+  ChevronDown,
   FileText,
   FolderInput,
+  FolderOpen,
   Plus,
   Search,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -14,6 +14,7 @@ import { useMemo, useState } from "react";
 import {
   useAddEmployeesToFolder,
   useComplianceTargets,
+  useCurrentUser,
   useDocuments,
   useEvaluations,
   useFolders,
@@ -21,6 +22,7 @@ import {
   useRemoveEmployeesFromFolder,
 } from "../../../hooks/useDocuments";
 import { api } from "../../../lib/api";
+import { documentViewHref } from "../../../lib/documentLinks";
 import type {
   ComplianceEvaluation,
   ComplianceTargets,
@@ -78,6 +80,15 @@ function getEmployeeComplianceStatus(
   return "compliant";
 }
 
+function employeeInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 function matchesEmployeeSearch(
   employee: ComplianceTargets["employees"][number],
   query: string,
@@ -108,7 +119,19 @@ export default function EmployeeFolderPage() {
   const [movingEmployeeIds, setMovingEmployeeIds] = useState<number[] | null>(
     null,
   );
+  const [folderExpanded, setFolderExpanded] = useState(true);
+  const [expandedEmployees, setExpandedEmployees] = useState<
+    Record<number, boolean>
+  >({});
+  const currentUser = useCurrentUser();
   const folder = folders.data?.find((item) => item.id === folderId);
+
+  const toggleEmployeeExpanded = (employeeId: number) => {
+    setExpandedEmployees((current) => ({
+      ...current,
+      [employeeId]: !(current[employeeId] ?? false),
+    }));
+  };
 
   const employees = useMemo(() => {
     const targetById = new Map(
@@ -277,128 +300,158 @@ export default function EmployeeFolderPage() {
             </button>
           </div>
         )}
-        <div className="grid grid-cols-[40px_minmax(240px,2fr)_1fr_1fr_120px] border-b border-slate-100 bg-slate-50 px-5 py-4 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-          <span>
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={() =>
-                setSelectedEmployees(
-                  allSelected ? [] : employees.map((employee) => employee.id),
-                )
-              }
-              aria-label="Select all employees"
-              className="h-4 w-4 accent-pink-600"
-            />
-          </span>
-          <span>Employee</span>
-          <span>Documents</span>
-          <span>Department</span>
-          <span>Actions</span>
-        </div>
         {documents.isLoading ? (
           <div className="space-y-3 p-5">
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
-        ) : (
-          employees.map((employee) => (
-            <div
-              key={employee.id}
-              className="grid grid-cols-[40px_minmax(240px,2fr)_1fr_1fr_120px] items-center border-b border-slate-100 px-5 py-5 transition hover:bg-pink-50/30"
-            >
-              <span>
+        ) : folder ? (
+          <div className="folder-accordion p-4">
+            <div className="folder-accordion-block">
+              <div className="folder-accordion-header-row">
                 <input
                   type="checkbox"
-                  checked={selectedEmployees.includes(employee.id)}
+                  checked={allSelected}
                   onChange={() =>
-                    setSelectedEmployees((current) =>
-                      current.includes(employee.id)
-                        ? current.filter((id) => id !== employee.id)
-                        : [...current, employee.id],
+                    setSelectedEmployees(
+                      allSelected ? [] : employees.map((employee) => employee.id),
                     )
                   }
-                  aria-label={`Select ${employee.name}`}
-                  className="h-4 w-4 accent-pink-600"
+                  aria-label="Select all employees"
+                  className="h-4 w-4 shrink-0 accent-pink-600"
                 />
-              </span>
-              <Link
-                href={`/pages/employee/profile?employee=${employee.id}`}
-                className="flex items-center gap-3"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-50 font-bold text-brand-pink">
-                  {employee.name
-                    .split(" ")
-                    .map((part) => part[0])
-                    .join("")
-                    .slice(0, 2)}
-                </span>
-                <span>
-                  <strong className="block text-sm text-slate-800">
-                    {employee.name}
-                  </strong>
-                  {employee.job_title && (
-                    <span className="text-xs text-slate-400">
-                      {employee.job_title}
-                    </span>
-                  )}
-                </span>
-              </Link>
-              <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <FileText className="h-4 w-4 text-brand-pink" />
-                {employee.documents?.length ?? 0}
-              </span>
-              <span>
-                {employee.department_id ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDepartmentModal({
-                        id: Number(employee.department_id),
-                        name: employee.department,
-                      })
-                    }
-                    className="text-left text-sm font-semibold text-brand-text hover:text-brand-pink hover:underline"
-                  >
-                    {employee.department}
-                  </button>
-                ) : (
-                  <span className="text-sm text-slate-500">
-                    {employee.department}
-                  </span>
-                )}
-              </span>
-              <span className="flex items-center justify-end gap-1">
                 <button
                   type="button"
-                  onClick={() => setMovingEmployeeIds([employee.id])}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-                  aria-label={`Move ${employee.name} to another folder`}
+                  className="folder-accordion-header"
+                  onClick={() => setFolderExpanded((current) => !current)}
                 >
-                  <FolderInput className="h-4 w-4" />
+                  <FolderOpen size={15} />
+                  <span>{folder.folder_name}</span>
+                  <small>
+                    {employees.length} employees ·{" "}
+                    {(documents.data ?? []).length} files
+                  </small>
+                  <ChevronDown
+                    size={15}
+                    className={
+                      folderExpanded
+                        ? "folder-accordion-chevron expanded"
+                        : "folder-accordion-chevron"
+                    }
+                  />
                 </button>
-                <Link
-                  href={`/pages/employee/profile?employee=${employee.id}`}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
-                  aria-label={`Open ${employee.name} profile`}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Link>
-              </span>
+              </div>
+              {folderExpanded && (
+                <div className="folder-accordion-body">
+                  {employees.length ? (
+                    employees.map((employee) => {
+                      const employeeExpanded =
+                        expandedEmployees[employee.id] ?? false;
+                      return (
+                        <div
+                          className="folder-accordion-block nested"
+                          key={employee.id}
+                        >
+                          <div className="folder-accordion-header-row employee">
+                            <input
+                              type="checkbox"
+                              checked={selectedEmployees.includes(employee.id)}
+                              onChange={() =>
+                                setSelectedEmployees((current) =>
+                                  current.includes(employee.id)
+                                    ? current.filter((id) => id !== employee.id)
+                                    : [...current, employee.id],
+                                )
+                              }
+                              aria-label={`Select ${employee.name}`}
+                              className="h-4 w-4 shrink-0 accent-pink-600"
+                            />
+                            <Link
+                              href={`/pages/employee/profile?employee=${employee.id}`}
+                              className="folder-accordion-employee-link"
+                            >
+                              <span className="folder-accordion-avatar">
+                                {employeeInitials(employee.name)}
+                              </span>
+                              <span className="folder-accordion-employee-copy">
+                                <span className="folder-accordion-employee-name">
+                                  {employee.name}
+                                </span>
+                                <span className="folder-accordion-employee-meta">
+                                  {employee.documents.length} files ·{" "}
+                                  {employee.department}
+                                  {employee.job_title
+                                    ? ` · ${employee.job_title}`
+                                    : ""}
+                                </span>
+                              </span>
+                            </Link>
+                            <button
+                              type="button"
+                              className="folder-accordion-toggle"
+                              onClick={() => toggleEmployeeExpanded(employee.id)}
+                              aria-label={`${employeeExpanded ? "Collapse" : "Expand"} files for ${employee.name}`}
+                              aria-expanded={employeeExpanded}
+                            >
+                              <ChevronDown
+                                size={16}
+                                className={
+                                  employeeExpanded
+                                    ? "folder-accordion-chevron expanded"
+                                    : "folder-accordion-chevron"
+                                }
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMovingEmployeeIds([employee.id])}
+                              className="rounded-lg p-2 text-brand-pink hover:bg-pink-50"
+                              aria-label={`Move ${employee.name} to another folder`}
+                            >
+                              <FolderInput className="h-4 w-4" />
+                            </button>
+                          </div>
+                          {employeeExpanded && (
+                            <div className="folder-accordion-file-list">
+                              {employee.documents.length ? (
+                                employee.documents.map((document) => (
+                                  <Link
+                                    key={document.id}
+                                    href={documentViewHref(
+                                      document,
+                                      currentUser.data?.is_document_manager !== false,
+                                    )}
+                                    className="folder-accordion-file"
+                                  >
+                                    <FileText size={14} />
+                                    <span className="min-w-0 flex-1 truncate">
+                                      {document.name}
+                                    </span>
+                                    <small className="truncate text-slate-400">
+                                      {document.document_type}
+                                    </small>
+                                  </Link>
+                                ))
+                              ) : (
+                                <p className="folder-accordion-empty">
+                                  No files for this employee yet.
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="folder-accordion-empty">
+                      No employees found. Try another search or compliance filter.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
-          ))
-        )}
-        {!documents.isLoading && !employees.length && (
-          <div className="p-12 text-center">
-            <Users className="mx-auto h-8 w-8 text-brand-pink" />
-            <p className="mt-3 font-semibold text-slate-700">
-              No employees found
-            </p>
-            <p className="mt-1 text-sm text-slate-400">
-              Try another search or compliance filter.
-            </p>
           </div>
-        )}
+        ) : null}
       </section>
 
       {showAddEmployees && folder && targets.data && (

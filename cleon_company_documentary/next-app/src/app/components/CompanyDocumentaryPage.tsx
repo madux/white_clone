@@ -300,8 +300,6 @@ export default function CompanyDocumentaryPage() {
         canManage={canManage}
         isAdmin={isAdmin}
         mobileNav={mobileNav}
-        userName={userQuery.data?.name}
-        companyName={userQuery.data?.company_name}
         onNavigate={navigate}
         onOpenFolder={openFolder}
         onAnalytics={() => setShowAnalytics(true)}
@@ -314,6 +312,7 @@ export default function CompanyDocumentaryPage() {
             pageTitle={pageTitle}
             search={search}
             userName={userQuery.data?.name}
+            companyName={userQuery.data?.company_name}
             onSearch={setSearch}
             onOpenMobileNav={() => setMobileNav(true)}
           />

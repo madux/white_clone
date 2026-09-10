@@ -161,6 +161,61 @@ export interface DocumentaryAnalytics {
   completion_rate?: number;
 }
 
+export type ComplianceStatus = "not_started" | "in_progress" | "completed";
+export type ComplianceMandatoryFilter = "all" | "mandatory" | "optional";
+
+export interface ComplianceVideoSummary {
+  media_id: number;
+  title: string;
+  mandatory: boolean;
+  completion_threshold: number;
+  audience_count: number;
+  completed_count: number;
+  in_progress_count: number;
+  not_started_count: number;
+  completion_rate: number;
+}
+
+export interface ComplianceFolderNode {
+  folder_id: number;
+  folder_name: string;
+  videos: ComplianceVideoSummary[];
+}
+
+export interface ComplianceRow {
+  employee_id: number;
+  employee_name: string;
+  department_name: string;
+  media_id: number;
+  media_title: string;
+  folder_id: number;
+  folder_name: string;
+  mandatory: boolean;
+  completion_threshold: number;
+  status: ComplianceStatus;
+  completion_percent: number;
+  view_count: number;
+  last_watched_at: string | false | null;
+  completed_at: string | false | null;
+}
+
+export interface ComplianceReport {
+  library: ComplianceFolderNode[];
+  selected_media_id?: number | false;
+  video_summary?: ComplianceVideoSummary | false;
+  summary: {
+    eligible_assignments: number;
+    completed: number;
+    in_progress: number;
+    not_started: number;
+    mandatory_pending: number;
+  };
+  rows: ComplianceRow[];
+  page: number;
+  page_size: number;
+  total: number;
+}
+
 export interface DocumentaryAnalyticsDashboard {
   period: { from: string; to: string };
   overview: {

@@ -7,6 +7,7 @@ import {
   useIntelligenceDatasets,
 } from "../../../../hooks/useIntelligence";
 import type { IntelligenceDataset } from "../../../../lib/intelligence-api";
+import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
 import {
   IntelligenceEmpty,
   IntelligenceError,
@@ -54,7 +55,7 @@ export default function DatasetListScreen() {
                   <td className="px-4 py-3 font-semibold text-slate-900">
                     {item.name}
                   </td>
-                  <td className="px-4 py-3 capitalize">{item.source || "—"}</td>
+                  <td className="px-4 py-3">{item.source ? formatFieldLabel(item.source) : "—"}</td>
                   <td className="px-4 py-3">
                     {item.document_types.join(", ") ||
                       (item.auto_classify ? "auto" : "—")}
@@ -64,7 +65,7 @@ export default function DatasetListScreen() {
                     <span
                       className={`status ${item.state === "draft" ? "pending" : ""}`}
                     >
-                      {item.state.replace(/_/g, " ")}
+                      {formatStatusLabel(item.state)}
                     </span>
                   </td>
                   <td className="px-4 py-3">

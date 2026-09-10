@@ -74,6 +74,33 @@ def _expiry_values_for_upload(document_type, expiry_date):
     return {"has_expiry": True, "expiry_date": expiry_date}
 
 
+def _expiring_documents_domain(env):
+    return [
+        ("has_expiry", "=", True),
+        (
+            "expiry_date",
+            "<=",
+            fields.Date.add(fields.Date.context_today(env.user), days=30),
+        ),
+        ("state", "=", "approved"),
+        ("active", "=", True),
+        ("deleted_at", "=", False),
+    ]
+
+
+def _serialize_expiring_document(document):
+    folder = document.folder_id
+    return {
+        "id": document.id,
+        "name": document.name,
+        "document_type": document.document_type_id.name,
+        "expiry_date": document.expiry_date,
+        "folder_id": folder.id,
+        "employee_id": document.employee_id.id or False,
+        "folder_type": folder.folder_type,
+    }
+
+
 class DocumentUICreation(http.Controller):
 
     @staticmethod
@@ -319,14 +346,22 @@ class DocumentUICreation(http.Controller):
             return {"success": False, "message": "Select a valid default access scope."}
         if retention not in {"1", "3", "5", "7", "10", "permanent"}:
             return {"success": False, "message": "Select a valid default retention period."}
+        require_approval = bool(kwargs.get("default_require_upload_approval"))
         approver_ids = [int(value) for value in (kwargs.get("default_approver_ids") or [])]
         approver_ids = request.env["res.users"].browse(approver_ids).exists().ids
-        if flow == "sequential" and not kwargs.get("default_require_upload_approval"):
-            return {"success": False, "message": "Sequential workflows require approval to be enabled."}
-        if flow == "sequential" and not approver_ids:
-            return {"success": False, "message": "Select at least one approver for sequential approval."}
+        if require_approval:
+            if not approver_ids:
+                return {
+                    "success": False,
+                    "message": "Select at least one approver when upload approval is enabled.",
+                }
+            if flow == "sequential" and not approver_ids:
+                return {
+                    "success": False,
+                    "message": "Select at least one approver for sequential approval.",
+                }
         params = request.env["ir.config_parameter"].sudo()
-        params.set_param("cleon_document_management.default_require_upload_approval", "1" if kwargs.get("default_require_upload_approval") else "0")
+        params.set_param("cleon_document_management.default_require_upload_approval", "1" if require_approval else "0")
         params.set_param("cleon_document_management.default_approval_flow", flow)
         params.set_param("cleon_document_management.default_access_scope", scope)
         params.set_param("cleon_document_management.default_retention_period", retention)
@@ -663,7 +698,13 @@ class DocumentUICreation(http.Controller):
                 except ValidationError as error:
                     return {"success": False, "message": error.args[0]}
 
+            approval_disabled = (
+                folder.folder_type == "employee"
+                and write_values.get("require_upload_approval") is False
+            )
             folder.write(write_values)
+            if approval_disabled:
+                request.env["doc.folder"].reconcile_pending_uploads_for_folder(folder)
 
             return {"success": True, "message": "Folder updated successfully."}
 
@@ -1073,6 +1114,7 @@ class DocumentUICreation(http.Controller):
                 "attachment_id": attachment.id,
                 **expiry_values,
             })
+        request.env["doc.folder"].sync_pending_upload_assignments()
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
@@ -1114,9 +1156,16 @@ class DocumentUICreation(http.Controller):
                 },
                 status=400,
             )
-        folder = request.env["doc.folder"].resolve_manager_employee_upload_folder(
-            employee
-        )
+        folder_model = request.env["doc.folder"]
+        if not folder_model._employee_has_active_employee_folder(employee):
+            return request.make_json_response(
+                {
+                    "success": False,
+                    "message": "This employee must be assigned to a folder before you can upload documents for them.",
+                },
+                status=400,
+            )
+        folder = folder_model.resolve_manager_employee_upload_folder(employee)
         if not folder:
             return request.make_json_response(
                 {
@@ -1392,6 +1441,9 @@ class DocumentUICreation(http.Controller):
                 ],
                 "outstanding": outstanding,
                 "activity": activities,
+                "expiring_documents": [
+                    _serialize_expiring_document(document) for document in expiring
+                ],
                 "dashboard": {
                     "total": len(combined),
                     "expiring": len(expiring),
@@ -1444,7 +1496,7 @@ class DocumentUICreation(http.Controller):
         )
         status_labels = {
             "pending_review": "Pending review",
-            "awaiting_folder": "Awaiting folder assignment",
+            "awaiting_folder": "Submitted — waiting for folder setup",
             "awaiting_folder_restore": "Awaiting folder restore",
         }
         items = []
@@ -1453,10 +1505,7 @@ class DocumentUICreation(http.Controller):
             if document.id in seen:
                 continue
             seen.add(document.id)
-            if document.approval_state == "pending" or document.state in (
-                "draft",
-                "processing",
-            ):
+            if document.approval_state == "pending":
                 status = "pending_review"
             elif document.recycle_origin_folder_id:
                 status = "awaiting_folder_restore"

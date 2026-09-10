@@ -495,6 +495,45 @@ class DocumentFolder(models.Model):
             return employee in self.employee_ids
         return False
 
+    def _get_scope_employees(self):
+        """Return employees who fall within this folder's organizational access scope."""
+        self.ensure_one()
+        Employee = self.env["hr.employee"]
+        if self.folder_type != "organizational":
+            return Employee
+        domain = [("active", "=", True)]
+        if self.access_scope == "admin_only":
+            return Employee
+        if self.access_scope == "all_staff":
+            return Employee.search(domain)
+        if self.access_scope == "department" and self.department_ids:
+            return Employee.search(
+                domain + [("department_id", "in", self.department_ids.ids)]
+            )
+        if self.access_scope == "grade" and self.grade_ids:
+            return Employee.search(domain + [("grade_id", "in", self.grade_ids.ids)])
+        if self.access_scope == "individual":
+            return self.employee_ids.filtered("active")
+        if self.access_scope == "employment_type" and self.employment_type_ids:
+            return Employee.search(
+                domain
+                + [("employee_type_id", "in", self.employment_type_ids.ids)]
+            )
+        if self.access_scope == "business_unit" and self.branch_ids:
+            return Employee.search(domain + [("branch_id", "in", self.branch_ids.ids)])
+        if self.access_scope == "role" and self.role_group_ids:
+            users = self.role_group_ids.mapped("users").filtered("active")
+            return users.mapped("employee_id").filtered(lambda employee: employee.active)
+        return Employee
+
+    def _get_acknowledgement_audience_users(self):
+        """Users in folder scope who can acknowledge organizational documents."""
+        self.ensure_one()
+        if self.folder_type != "organizational" or self.access_scope == "admin_only":
+            return self.env["res.users"]
+        employees = self._get_scope_employees()
+        return employees.mapped("user_id").filtered(lambda user: user and user.active)
+
     @api.model
     def _prepare_organizational_scope_values(
         self,
@@ -888,6 +927,21 @@ class DocumentFolder(models.Model):
             folder.document_ids.sudo().unlink()
             folder.sudo().unlink()
 
+    def action_force_permanent_delete(self):
+        """Permanently delete a recycled folder and every linked document."""
+        if not self._is_document_manager():
+            raise AccessError(_("Only document managers can delete folders."))
+        for folder in self:
+            if folder.is_pending_uploads:
+                raise ValidationError(
+                    _("The pending uploads folder cannot be permanently deleted.")
+                )
+            linked_documents = folder._get_recycle_linked_documents()
+            documents = (linked_documents | folder.document_ids.sudo()).exists()
+            if documents:
+                documents.sudo().unlink()
+            folder.sudo().unlink()
+
     @api.model
     def backfill_recycle_origin_links(self):
         """Repair missing recycle_origin_folder_id on pending uploads after folder recycle."""
@@ -1039,8 +1093,10 @@ class DocumentFolder(models.Model):
         matching = folders.filtered(
             lambda folder: not folder.grade_ids
             or employee.grade_id in folder.grade_ids
-        )
-        return (matching or folders)[:1]
+        ).sorted(key=lambda folder: (folder.write_date, folder.id), reverse=True)
+        if matching:
+            return matching[0]
+        return folders.sorted(key=lambda folder: (folder.write_date, folder.id), reverse=True)[0]
 
     @api.model
     def assign_employee_to_department_folder(self, employee):
@@ -1066,7 +1122,7 @@ class DocumentFolder(models.Model):
         folder = self.find_department_employee_folder(employee)
         if folder:
             if employee not in folder.employee_ids:
-                folder.write({"employee_ids": [fields.Command.link(employee.id)]})
+                folder.sudo().write({"employee_ids": [fields.Command.link(employee.id)]})
             folder._assign_pending_approved_documents_for_employees(employee)
             return folder
 
@@ -1075,10 +1131,7 @@ class DocumentFolder(models.Model):
     @api.model
     def resolve_manager_employee_upload_folder(self, employee):
         """Resolve a destination folder for manager-initiated employee uploads."""
-        folder = self.assign_employee_to_department_folder(employee)
-        if folder:
-            return folder
-        return self.get_pending_upload_folder()
+        return self.assign_employee_to_department_folder(employee)
 
     def _assign_pending_approved_documents_for_employees(self, employees):
         self.ensure_one()
@@ -1099,8 +1152,44 @@ class DocumentFolder(models.Model):
         )
         if documents:
             documents = documents.filtered(lambda document: not document.recycle_origin_folder_id)
-            if documents:
-                documents.write({"folder_id": self.id})
+            for document in documents:
+                document._finalize_assignment_to_folder(self)
+
+    @api.model
+    def reconcile_pending_uploads_for_folder(self, folder):
+        """Re-evaluate pending uploads after an employee folder's approval settings change."""
+        folder = folder.sudo().exists()
+        if not folder or folder.folder_type != "employee" or folder.is_pending_uploads:
+            return
+
+        pending_folder = self.get_pending_upload_folder()
+        employees = folder.employee_ids
+        if folder.department_ids:
+            employees |= self.env["hr.employee"].sudo().search(
+                [("department_id", "in", folder.department_ids.ids)]
+            )
+        if not employees:
+            return
+
+        if not folder.require_upload_approval:
+            stuck = self.env["doc.document"].sudo().search(
+                [
+                    ("folder_id", "=", pending_folder.id),
+                    ("employee_id", "in", employees.ids),
+                    ("active", "=", True),
+                    ("state", "!=", "rejected"),
+                    ("approval_state", "=", "pending"),
+                ]
+            )
+            for document in stuck:
+                document.approval_ids.unlink()
+                document.sudo().write(
+                    {"state": "draft", "approval_state": "not_required"}
+                )
+                document._assign_folder_after_approval()
+
+        folder._assign_pending_approved_documents_for_employees(employees)
+        self.sync_pending_upload_assignments()
 
     @api.model
     def sync_pending_upload_assignments(self):
@@ -1122,11 +1211,11 @@ class DocumentFolder(models.Model):
                 continue
             if document.approval_state == "pending":
                 continue
-            if document.state in ("draft", "processing") and document.approval_state != "approved":
+            if document.state == "processing":
                 continue
             target = self.assign_employee_to_department_folder(document.employee_id)
             if target:
-                document.write({"folder_id": target.id})
+                document._finalize_assignment_to_folder(target)
 
     @api.model
     def link_employee_to_department_folder(self, employee):

@@ -11,6 +11,7 @@ import ModalDialog from "./ModalDialog";
 import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
 import ThemedSelect from "./ThemedSelect";
 import { ScopeChecklist, AlertCadenceSelector } from "./CompliancePage";
+import { formatFieldLabel } from "../../../lib/formatLabel";
 
 const schedules = [
   "one_time",
@@ -223,14 +224,14 @@ export default function PolicyActions({
                   <Info label="Type" value={policy.policy_type} />
                   <Info
                     label="Scope"
-                    value={policy.applies_to.replace("_", " ")}
+                    value={formatFieldLabel(policy.applies_to)}
                   />
                   <Info
                     label="Schedule"
                     value={
                       policy.schedule === "manual"
                         ? "Manual only"
-                        : policy.schedule.replace("_", " ")
+                        : formatFieldLabel(policy.schedule)
                     }
                   />
                   <Info
@@ -617,7 +618,7 @@ export default function PolicyActions({
                       { value: "", label: "Manual" },
                       ...schedules.map((item) => ({
                         value: item,
-                        label: item.replace("_", " "),
+                        label: formatFieldLabel(item),
                       })),
                     ]}
                   />
@@ -720,7 +721,7 @@ function Info({ label, value }: { label: string; value: string }) {
   return (
     <span className="rounded-xl bg-slate-50 p-3">
       <span className="text-xs text-slate-400">{label}</span>
-      <strong className="mt-1 block capitalize text-slate-900">{value}</strong>
+      <strong className="mt-1 block text-slate-900">{value}</strong>
     </span>
   );
 }

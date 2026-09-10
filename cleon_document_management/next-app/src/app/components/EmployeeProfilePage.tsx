@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useComplianceTargets,
   useCurrentUser,
@@ -108,6 +108,13 @@ export default function EmployeeProfilePage() {
     () => applyDocumentFilters(employeeDocuments, filters),
     [employeeDocuments, filters]
   );
+
+  useEffect(() => {
+    const docId = Number(params.get("doc") || 0);
+    if (!docId || !employeeDocuments.length) return;
+    const match = employeeDocuments.find((document) => document.id === docId);
+    if (match) setViewing(match);
+  }, [employeeDocuments, params]);
   const visibleIds = filteredEmployeeDocuments.map((document) => document.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));

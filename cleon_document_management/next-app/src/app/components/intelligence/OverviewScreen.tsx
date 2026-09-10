@@ -7,6 +7,7 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { formatFieldLabel, formatStatusLabel } from "../../../../lib/formatLabel";
 import {
   useControlIntelligenceJob,
   useIntelligenceOverview,
@@ -155,7 +156,7 @@ export default function OverviewScreen() {
                     <tr key={job.id} className="border-t border-slate-100">
                       <td className="py-3">#{job.id}</td>
                       <td className="py-3">{job.dataset}</td>
-                      <td className="py-3 capitalize">{job.source || "—"}</td>
+                      <td className="py-3">{job.source ? formatFieldLabel(job.source) : "—"}</td>
                       <td className="py-3">
                         {job.processed_count}/{job.document_count}
                       </td>
@@ -172,7 +173,7 @@ export default function OverviewScreen() {
                                 : ""
                           }`}
                         >
-                          {job.state.replace(/_/g, " ")}
+                          {formatStatusLabel(job.state)}
                         </span>
                         {job.error_message ? (
                           <p className="mt-1 max-w-xs text-xs text-amber-700">

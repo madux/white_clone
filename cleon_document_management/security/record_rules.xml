@@ -11,6 +11,8 @@
             '&amp;', ('distribution_status', '=', 'active'),
             '|', ('owner_id', '=', user.id),
             '|',
+            '&amp;', ('is_pending_uploads', '=', True), ('folder_type', '=', 'employee'),
+            '|',
             '&amp;', ('folder_type', '=', 'employee'), ('employee_ids.user_id', '=', user.id),
             '&amp;', ('folder_type', '=', 'organizational'),
             '|', ('allowed_user_ids', 'in', [user.id]),

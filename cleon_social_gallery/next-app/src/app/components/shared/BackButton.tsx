@@ -26,9 +26,13 @@ export function BackButton({
       type="button"
       onClick={goBack}
       title={backLabel ? `Return to ${backLabel}` : "Go back"}
-      className={`header-back-button${variant === "page" ? " is-page" : ""} ${className}`.trim()}
+      className={
+        variant === "header"
+          ? `inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:border-pink-200 hover:bg-pink-50 hover:text-brand-text ${className}`.trim()
+          : `header-back-button is-page ${className}`.trim()
+      }
     >
-      <ArrowLeft size={16} />
+      <ArrowLeft size={variant === "header" ? 16 : 16} />
       {label}
     </button>
   );
