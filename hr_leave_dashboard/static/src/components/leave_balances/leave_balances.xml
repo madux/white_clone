@@ -405,49 +405,54 @@
                 <button t-foreach="scopeDefinitions" t-as="scope" t-key="scope.key" t-att-class="state.selectionMode === scope.key ? 'active' : ''" t-on-click="() => this.setSelectionMode(scope.key)" t-esc="scope.label"/>
               </div>
 
-              <div class="o_lb_scope_columns">
-                <section class="o_lb_scope_picker">
-                  <t t-if="state.selectionMode === 'individual'">
-                    <div class="o_lb_alloc_search_row">
-                      <input class="o_lb_alloc_search_input" t-model="state.employeeSearch" placeholder="Search employees..."/>
-                      <button class="o_lb_select_all_link" t-on-click="selectAllEmployees">Select/Deselect visible</button>
-                    </div>
-                    <div class="o_lb_person_list">
-                      <label class="o_lb_person" t-foreach="filteredEmployees" t-as="employee" t-key="employee.employee_id">
-                        <input type="checkbox" t-att-checked="isEmployeeSelected(employee.employee_id)" t-on-change="() => this.toggleEmployee(employee.employee_id)"/>
-                        <img t-att-src="employee.avatar_url"/>
-                        <span><b t-esc="employee.employee_name"/><small><t t-esc="employee.department"/><t t-if="employee.employee_number"> · <t t-esc="employee.employee_number"/></t></small></span>
-                      </label>
-                    </div>
-                  </t>
-                  <t t-else="">
-                    <div t-if="!activeScopeOptions.length" class="o_lb_scope_empty">No <t t-esc="activeScopeDefinition.label.toLowerCase()"/> values are assigned to active employees.</div>
-                    <div class="o_lb_group_picker">
-                      <label t-foreach="activeScopeOptions" t-as="option" t-key="option.id">
-                        <input type="checkbox" t-att-checked="state.selectedScopeIds[state.selectionMode].includes(option.id)" t-on-change="() => this.toggleAllocationGroup(option.id)"/>
-                        <span t-esc="option.name"/>
-                        <small><t t-esc="employees.filter(employee => employee[activeScopeDefinition.field] === option.id).length"/> employees</small>
-                      </label>
-                    </div>
-                  </t>
-                </section>
-
-                <section class="o_lb_selected_panel">
-                  <header><div><h4>Selected Employees</h4><span t-esc="selectedEmployeeIds.length"/></div><button t-if="selectedEmployeeIds.length" t-on-click="clearAllocationSelection">Clear All</button></header>
-                  <input t-model="state.selectedEmployeeSearch" placeholder="Search selected employees..."/>
-                  <div t-if="!filteredSelectedEmployees.length" class="o_lb_scope_empty">Selections from every tab accumulate here.</div>
-                  <div class="o_lb_selected_list">
-                    <article t-foreach="filteredSelectedEmployees" t-as="employee" t-key="employee.employee_id">
-                      <img t-att-src="employee.avatar_url"/>
-                      <div><b t-esc="employee.employee_name"/><small><t t-esc="employee.employee_number || 'No staff number'"/> · <t t-esc="employee.department"/> · <t t-esc="employee.job || 'No job role'"/></small></div>
-                      <button title="Remove employee" t-on-click="() => this.removeSelectedEmployee(employee.employee_id)">&#215;</button>
-                    </article>
+              <section class="o_lb_recipient_summary">
+                <div><b><t t-esc="selectedEmployeeIds.length"/> employees selected</b><button t-if="selectedEmployeeIds.length" t-on-click="clearAllocationSelection">Clear all</button></div>
+                <p t-if="!selectedEmployeeIds.length">Select employees individually or through a group. Selections are kept when switching tabs.</p>
+                <div class="o_lb_recipient_chips">
+                  <span t-foreach="selectedEmployees.slice(0, 6)" t-as="employee" t-key="employee.employee_id">
+                    <img t-att-src="employee.avatar_url" alt=""/>
+                    <t t-esc="employee.employee_name"/>
+                    <button title="Remove employee" t-on-click="() => this.removeSelectedEmployee(employee.employee_id)">&#215;</button>
+                  </span>
+                  <span t-if="selectedEmployeeIds.length > 6">+<t t-esc="selectedEmployeeIds.length - 6"/> more</span>
+                </div>
+              </section>
+              <section class="o_lb_audience_table">
+                <div class="o_lb_alloc_search_row">
+                  <input class="o_lb_alloc_search_input" t-model="state.employeeSearch" t-on-input="() => state.audiencePage = 1" placeholder="Search this audience..."/>
+                  <span>Select or deselect this page using the header checkbox.</span>
+                </div>
+                <table>
+                  <thead><tr>
+                    <th><input type="checkbox" aria-label="Select or deselect this page" t-att-disabled="!audiencePageItems.length" t-att-checked="allAudiencePageSelected" t-on-change="toggleAudiencePage"/></th>
+                    <th t-esc="state.selectionMode === 'individual' ? 'Employee' : activeScopeDefinition.label"/>
+                    <t t-if="state.selectionMode === 'individual'"><th>Employee ID</th><th>Department</th><th>Employment Type</th></t>
+                    <th t-else="">Employees</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr t-foreach="audiencePageItems" t-as="item" t-key="item.employee_id || item.id">
+                      <td><input type="checkbox" t-att-checked="isAudienceSelected(item)" t-on-change="() => state.selectionMode === 'individual' ? this.toggleEmployee(item.employee_id) : this.toggleAllocationGroup(item.id)"/></td>
+                      <t t-if="state.selectionMode === 'individual'">
+                        <td><div class="o_lb_employee"><img t-att-src="item.avatar_url" alt=""/><b t-esc="item.employee_name"/></div></td>
+                        <td t-esc="item.employee_code"/><td t-esc="item.department"/><td t-esc="item.employment_type || '—'"/>
+                      </t>
+                      <t t-else=""><td t-esc="item.name"/><td t-esc="scopeEmployeeCount(item.id)"/></t>
+                    </tr>
+                    <tr t-if="!audiencePageItems.length"><td colspan="5" class="o_lb_empty">No matching records in this audience.</td></tr>
+                  </tbody>
+                </table>
+                <div class="o_lb_pager">
+                  <span><t t-esc="audienceItems.length"/> records · Page <t t-esc="audienceCurrentPage"/> of <t t-esc="audiencePageCount"/></span>
+                  <div class="o_lb_pager_controls">
+                    <button t-att-disabled="audienceCurrentPage === 1" t-on-click="() => state.audiencePage = audienceCurrentPage - 1" aria-label="Previous audience page">‹</button>
+                    <button t-att-disabled="audienceCurrentPage === audiencePageCount" t-on-click="() => state.audiencePage = audienceCurrentPage + 1" aria-label="Next audience page">›</button>
                   </div>
-                </section>
-              </div>
+                </div>
+              </section>
             </div>
 
             <div t-elif="state.allocationStep === 2" class="o_lb_allocation_matrix_step">
+              <p class="o_lb_policy_explanation">Policies define entitlement and accrual rules. An allocation credits an employee's balance; the amount entered here is added, not a replacement balance. Check existing credits before allocating the policy allowance again.</p>
               <section class="o_lb_type_selector">
                 <header><div><h4>Allocation Lines</h4><p>Add one or more Leave Types. Each line carries its default allocation amount.</p></div><select t-model="state.leaveTypeToAdd" t-on-change="addAllocationLeaveType"><option value="">+ Add Leave Type</option><option t-foreach="state.leaveTypes.filter(type => !state.selectedLeaveTypeIds.includes(type.id))" t-as="leaveType" t-key="leaveType.id" t-att-value="leaveType.id" t-esc="leaveType.name"/></select></header>
                 <div t-if="selectedLeaveTypes.length" class="o_lb_allocation_lines">
@@ -526,7 +531,7 @@
               <h4 class="o_lb_summary_title">Balance Summary</h4>
               <div class="o_lb_summary_grid">
                 <div class="o_lb_summary_cell">
-                  <small>Entitlement</small>
+                  <small>Allocated entitlement</small>
                   <b t-esc="state.details.allocated"/>
                 </div>
                 <div class="o_lb_summary_cell">

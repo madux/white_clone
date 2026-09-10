@@ -459,3 +459,15 @@
 /* Responsive */
 @media(max-width:1200px){.o_lb_kpis{grid-template-columns:repeat(3,1fr)}.o_lb_table_wrap{overflow:auto}}
 @media(max-width:760px){.o_lb_header{align-items:flex-start;gap:10px;flex-direction:column}.o_lb_tools{flex-wrap:wrap}.o_lb_kpis{grid-template-columns:repeat(2,1fr)}}
+.o_lb_recipient_summary{padding:12px 0}
+.o_lb_recipient_summary>div:first-child{display:flex;align-items:center;justify-content:space-between}
+.o_lb_recipient_summary p,.o_lb_policy_explanation{color:#64748b;font-size:12px;line-height:1.5}
+.o_lb_recipient_chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.o_lb_recipient_chips>span{display:inline-flex;align-items:center;gap:6px;background:#eef1f5;border-radius:5px;padding:3px 6px}
+.o_lb_recipient_chips img{width:22px;height:22px;border-radius:50%}
+.o_lb_recipient_chips button{padding:0 3px;border:0;background:transparent}
+.o_lb_audience_table{border:1px solid #e1e6ef;border-radius:8px;overflow:auto}
+.o_lb_audience_table .o_lb_alloc_search_row{padding:12px;align-items:center;gap:12px}
+.o_lb_audience_table .o_lb_alloc_search_row>span{font-size:12px;color:#64748b}
+.o_lb_audience_table input[type=checkbox]{width:15px;height:15px;margin:0;vertical-align:middle;accent-color:#ed1970}
+.o_lb_policy_explanation{padding:10px 12px;background:#f0f5fc;border-radius:6px}

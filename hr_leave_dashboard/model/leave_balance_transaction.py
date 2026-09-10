@@ -825,7 +825,7 @@ class HrLeaveBalanceTransaction(models.Model):
     @api.model
     def get_balance_details(self, employee_id, leave_type_id):
         self._check_balance_admin()
-        page = self.get_balance_page_data()
+        page = self.get_balance_page_data(pagination={"page_size": 0}, group_by="none")
         row = next((r for r in page["rows"] if r["employee_id"] == int(employee_id) and r["leave_type_id"] == int(leave_type_id)), None)
         if not row:
             raise ValidationError(_("Balance record not found."))
@@ -837,7 +837,7 @@ class HrLeaveBalanceTransaction(models.Model):
             ("employee_id", "=", int(employee_id)), ("leave_type_id", "=", int(leave_type_id)),
         ], limit=100)
         row.update({
-            "assigned_policy": row["leave_type"],
+            "assigned_policy": row["policy"],
             "accrual_plan": allocations.filtered("accrual_plan_id")[:1].accrual_plan_id.name or _("Manual Allocation"),
             "last_accrual_date": fields.Date.to_string(allocations.filtered("lastcall")[:1].lastcall) if allocations.filtered("lastcall") else "",
             "next_accrual_date": fields.Date.to_string(allocations.filtered("nextcall")[:1].nextcall) if allocations.filtered("nextcall") else "",
