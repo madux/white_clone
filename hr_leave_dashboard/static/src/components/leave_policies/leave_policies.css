@@ -1006,3 +1006,15 @@
 .o_settings_tags_options > span { color: #6c757d; }
 .o_settings_employee_icon { color: #78889a; font-size: 20px; flex-shrink: 0; }
 .o_settings_tag .o_settings_employee_icon { font-size: 16px; }
+.o_settings_employee_avatar { width: 24px; height: 24px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+.o_settings_tag .o_settings_employee_avatar { width: 18px; height: 18px; }
+.o_lp_drawer .o_lp_calculation_checks { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+.o_lp_drawer .o_lp_calculation_checks label { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 500; }
+.o_lp_drawer .o_lp_calculation_checks input[type="checkbox"] { width: 15px; height: 15px; min-height: 0; flex: 0 0 15px; margin: 0; padding: 0; accent-color: #e91e78; }
+.o_lp_drawer .o_lp_simple_form .o_lp_card { padding: 12px 16px; margin-bottom: 10px; }
+.o_lp_drawer .o_lp_simple_form .o_lp_card_title { margin-bottom: 10px; padding-bottom: 8px; }
+.o_lp_drawer .o_lp_simple_form .o_lp_card_title h4 { margin: 0; }
+.o_lp_drawer .o_lp_simple_form .o_lp_grid { gap: 10px 14px; }
+.o_lp_drawer .o_lp_simple_form .o_lp_field_group { margin-bottom: 0; }
+.o_lp_drawer .o_lp_simple_form textarea { min-height: 44px; height: 44px; resize: vertical; }
+.o_lp_drawer .o_lp_simple_form .o_lp_pill_btn { padding-top: 6px; padding-bottom: 6px; }

@@ -209,7 +209,7 @@
           </nav>
 
           <!-- Form Body -->
-          <div class="o_lp_form">
+          <div t-att-class="'o_lp_form ' + (state.form.mode === 'simple' ? 'o_lp_simple_form' : '')">
 
             <!-- ══════════════════════════════════════════════════
                  SIMPLE MODE: STEP 1 — POLICY SETUP
@@ -222,16 +222,15 @@
                   <h4>A. Basic Information</h4>
                 </div>
                 <div class="o_lp_grid">
-                  <label class="full">
+                  <label>
                     <span>Policy Name *</span>
                     <input type="text" t-model="state.form.name" placeholder="e.g. Annual Leave Policy, Nigeria Staff Policy"/>
                   </label>
 
                   <!-- Leave Type(s) Multi-Select Picker -->
-                  <div class="full o_lp_field_group">
+                  <div class="o_lp_field_group">
                     <div class="d-flex align-items-center justify-content-between mb-1">
                       <span class="o_lp_label">Leave Type(s) *</span>
-                      <small class="text-muted">A policy can govern one or multiple leave types</small>
                     </div>
 
                     <TagsPicker options="state.options.leave_types || []" selected="selectedTypeOptions" toggle.bind="toggleType" create.bind="createType" placeholder="'Select or create leave types…'"/>
@@ -252,10 +251,7 @@
                         <i class="fa fa-users me-1"/> Selected Employees / Groups
                       </button>
                     </div>
-                    <p class="hint mb-2">
-                      <t t-if="state.form.apply_to === 'all'">This policy is automatically available to all current and future employees across the organization.</t>
-                      <t t-else="">Target specific departments, units, grades, locations, or individual team members.</t>
-                    </p>
+
                     <div t-if="state.form.apply_to === 'selected'" class="o_lp_selected_pickers">
                       <t t-call="hr_leave_dashboard.PolicyEligibility"/>
                     </div>
@@ -362,26 +358,7 @@
                   <i class="fa fa-calendar-check-o text-primary"/>
                   <h4>C. Leave Calculation</h4>
                 </div>
-                <div class="o_lp_checkbox_grid">
-                  <label class="o_lp_check_card">
-                    <input type="checkbox" t-model="state.form.simple_accrual.exclude_public_holidays"/>
-                    <div>
-                      <strong>Exclude public holidays</strong>
-                      <small class="text-muted d-block">Official public holidays falling within a request won't count against employee balance.</small>
-                    </div>
-                  </label>
-                  <label class="o_lp_check_card">
-                    <input type="checkbox" t-model="state.form.simple_accrual.exclude_non_working_days"/>
-                    <div>
-                      <strong>Exclude non-working days</strong>
-                      <small class="text-muted d-block">Weekends and scheduled non-working days are automatically excluded from the duration.</small>
-                    </div>
-                  </label>
-                </div>
-                <div class="o_lp_calc_note mt-2">
-                  <i class="fa fa-info-circle me-1 text-primary"/>
-                  <span>Leave will be calculated based on your organization's working calendar.</span>
-                </div>
+                <t t-call="hr_leave_dashboard.PolicyCalculationChecks"><t t-set="calculation" t-value="state.form.simple_accrual"/></t>
               </section>
             </t>
 
@@ -1099,12 +1076,15 @@
             <span>Waiting Period (days)</span>
             <input type="number" min="0" t-model.number="line.waiting_period_days"/>
           </label>
-          <div class="full o_lp_checkbox_grid mt-1">
-            <label><input type="checkbox" t-model="line.exclude_public_holidays"/> Exclude public holidays</label>
-            <label><input type="checkbox" t-model="line.exclude_non_working_days"/> Exclude non-working days</label>
-          </div>
+          <div class="full"><t t-call="hr_leave_dashboard.PolicyCalculationChecks"><t t-set="calculation" t-value="line"/></t></div>
         </div>
       </div>
+    </div>
+  </t>
+  <t t-name="hr_leave_dashboard.PolicyCalculationChecks">
+    <div class="o_lp_calculation_checks">
+      <label><input type="checkbox" t-model="calculation.exclude_public_holidays"/><span>Exclude public holidays</span></label>
+      <label><input type="checkbox" t-model="calculation.exclude_non_working_days"/><span>Exclude non-working days</span></label>
     </div>
   </t>
   <t t-name="hr_leave_dashboard.SettingsPanel">
@@ -1119,12 +1099,12 @@
   <t t-name="hr_leave_dashboard.TagsPicker">
     <div class="o_settings_tags" t-on-focusout="blur">
       <div class="o_settings_tags_field" t-on-click="focus">
-        <span t-foreach="props.selected" t-as="item" t-key="item.id" class="o_settings_tag"><i t-if="props.employee" class="fa fa-user-circle o_settings_employee_icon" aria-hidden="true"/><t t-esc="item.name"/><button type="button" t-on-click.stop="() => props.toggle(item.id)" t-att-aria-label="'Remove ' + item.name">×</button></span>
+        <span t-foreach="props.selected" t-as="item" t-key="item.id" class="o_settings_tag"><img t-if="props.employee" class="o_settings_employee_avatar" t-att-src="avatarUrl(item.id)" alt="" loading="lazy"/><t t-esc="item.name"/><button type="button" t-on-click.stop="() => props.toggle(item.id)" t-att-aria-label="'Remove ' + item.name">×</button></span>
         <input t-ref="input" t-att-value="state.query" t-on-focus="() => state.open=true" t-on-input="search" t-on-keydown="keydown" t-att-placeholder="props.selected.length ? '' : (props.placeholder || 'Select…')" aria-label="Search options" role="combobox" aria-autocomplete="list" t-att-aria-expanded="state.open" autocomplete="off"/>
         <i class="fa fa-caret-down o_settings_tags_caret" aria-hidden="true"/>
       </div>
       <div t-if="state.open" t-ref="options" class="o_settings_tags_options" role="listbox" t-on-mousedown.prevent="() => {}">
-        <button t-foreach="matches" t-as="item" t-key="item.id" type="button" role="option" tabindex="-1" t-att-aria-selected="state.active === item_index" t-att-class="state.active === item_index ? 'is-active' : ''" t-on-click="() => this.pick(item)"><i t-if="props.employee" class="fa fa-user-circle o_settings_employee_icon" aria-hidden="true"/><t t-esc="item.name"/></button>
+        <button t-foreach="matches" t-as="item" t-key="item.id" type="button" role="option" tabindex="-1" t-att-aria-selected="state.active === item_index" t-att-class="state.active === item_index ? 'is-active' : ''" t-on-click="() => this.pick(item)"><img t-if="props.employee" class="o_settings_employee_avatar" t-att-src="avatarUrl(item.id)" alt="" loading="lazy"/><t t-esc="item.name"/></button>
         <button t-if="canCreate" type="button" tabindex="-1" t-att-class="state.active === matches.length ? 'is-active' : ''" t-on-click="create">Create “<t t-esc="state.query"/>”</button>
         <span t-if="!matches.length and !canCreate">No matching options</span>
       </div>

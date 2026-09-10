@@ -1,21 +1,24 @@
 /** @odoo-module **/
 import { Component, useState, useRef, onPatched } from "@odoo/owl";
+import { EmployeeFieldRelationMixin } from "@hr/views/fields/employee_field_relation_mixin";
 
 export class SettingsPanel extends Component {
     static template = "hr_leave_dashboard.SettingsPanel";
     static props = { close: Function, wide: { type: Boolean, optional: true }, slots: Object };
 }
 
-export class TagsPicker extends Component {
+export class TagsPicker extends EmployeeFieldRelationMixin(Component) {
     static template = "hr_leave_dashboard.TagsPicker";
     static props = { options: Array, selected: Array, toggle: Function, create: { type: Function, optional: true }, placeholder: { type: String, optional: true }, employee: { type: Boolean, optional: true } };
     setup() {
+        super.setup();
         this.state = useState({ query: "", open: false, active: 0 });
         this.input = useRef("input");
         this.options = useRef("options");
         onPatched(() => this.options.el?.querySelector(".is-active")?.scrollIntoView({ block: "nearest" }));
     }
     focus() { this.input.el.focus(); this.state.open = true; }
+    avatarUrl(id) { return `/web/image/${this.relation}/${id}/avatar_128`; }
     blur(ev) { if (!ev.currentTarget.contains(ev.relatedTarget)) this.state.open = false; }
     search(ev) { this.state.query = ev.target.value; this.state.active = 0; this.state.open = true; }
     get matches() {
