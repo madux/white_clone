@@ -234,6 +234,17 @@
     flex-shrink: 0;
 }
 
+/* Employee Core's dynamic entries reuse the compact psb icon wrapper.
+   Keep those icons readable on the pink navigation background; the muted
+   colour belongs only to the collapsed launcher overview item. */
+.organi_o_cc_nav_item .psb-nav-icon,
+.organi_o_cc_nav_item .psb-nav-icon i,
+.organi_o_cc_nav_item > i,
+.organi_o_cc_nav_item .fa {
+    color: #ffffff !important;
+    opacity: 1 !important;
+}
+
 .organi_o_cc_nav_item {
     display: flex;
     align-items: center;

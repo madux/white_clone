@@ -3,7 +3,7 @@
         
 
         <menuitem id="menu_hr_core_organisation_setup"
-                        name="🏛️ Organisation Setup"
+                        name="Organisation Setup"
                         sequence="1"
                         parent="hr_employee.menu_hr_core_employee_menu"
                         groups="base.group_system"

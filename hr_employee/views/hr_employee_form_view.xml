@@ -47,6 +47,8 @@
 
                                 <span class="profile-badge-checkin"><field name="is_present_text" readonly="1" nolabel="1"/></span>
 
+                                <widget name="attendance_clock"/>
+                                <div class="legacy-static-clock">
                                 <!-- Location + date row -->
                                 <div class="profile-meta-row">
                                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
@@ -98,6 +100,7 @@
                                         <div class="profile-stat-value">32h 15m</div>
                                         <div class="profile-stat-label">THIS WEEK</div>
                                     </div>
+                                </div>
                                 </div>
 
                                 <!-- Clock-in button -->
@@ -724,6 +727,12 @@
         <field name="code">
             action = env['hr.employee'].get_employee_profile_dashboard()
         </field>
+    </record>
+
+    <!-- The global Employee Core app should land on the employee's own
+         dashboard, where the live attendance clock is rendered. -->
+    <record id="hr_employee.menu_hr_core_employee_menu" model="ir.ui.menu">
+        <field name="action" ref="hr_employee.action_profile_dashboard_server"/>
     </record>
      
     <record id="action_view_employee_profile_dashboard_custom"

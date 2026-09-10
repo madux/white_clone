@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="hr_employee.AttendanceClockWidget">
+        <div class="o_attendance_clock_widget">
+            <div class="profile-meta-row">
+                <span t-esc="todayDateLabel"/><span t-esc="sessionTimeLabel"/>
+                <span t-attf-class="profile-meta-dot {{ isPresent ? 'is-online' : 'is-offline' }}"/>
+            </div>
+            <div class="profile-clock-display"><t t-esc="hh"/> : <t t-esc="mm"/> : <t t-esc="ss"/></div>
+            <div class="profile-clock-labels"><span class="profile-clock-label-item">HRS</span><span/><span class="profile-clock-label-item">MINS</span><span/><span class="profile-clock-label-item">SECS</span></div>
+            <div class="profile-session-label">SESSION TIME</div>
+            <div class="profile-session-time" t-esc="sessionTimeLabel"/>
+            <div class="profile-today-label">Today's Time</div>
+            <div class="profile-today-time" t-esc="todayTimeLabel"/>
+            <div class="profile-shift-row"><t t-esc="shiftLabel"/><br/><span t-attf-class="profile-shift-online {{ isPresent ? '' : 'is-offline' }}">● <t t-esc="onlineLabel"/></span></div>
+            <div class="profile-stats-row">
+                <div class="profile-stat-card"><div class="profile-stat-value" t-esc="todayStat"/><div class="profile-stat-label">TODAY</div></div>
+                <div class="profile-stat-card"><div class="profile-stat-value" t-esc="overtimeStat"/><div class="profile-stat-label">OVERTIME</div></div>
+                <div class="profile-stat-card"><div class="profile-stat-value" t-esc="weekStat"/><div class="profile-stat-label">THIS WEEK</div></div>
+            </div>
+        </div>
+    </t>
+</templates>
+

@@ -42,7 +42,9 @@ class HomeMenuController(http.Controller):
         menu_domain = [
             ('id', 'in', list(visible_menu_ids)),
             ('action', '!=', False),
+            '|',
             ('category_name', 'ilike', 'CleonHR'),
+            ('category_name', 'ilike', 'HRCORE'),
         ]
         if settings_menu:
             # Settings is injected below only for authorized developer-mode

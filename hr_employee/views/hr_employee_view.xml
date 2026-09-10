@@ -238,7 +238,7 @@
 
     
     <menuitem id="menu_hr_core_organisation"
-                    name="🏛️ Organisation"
+                    name="Organisation"
                     sequence="2"
                     parent="hr_employee.menu_hr_core_employee_menu"
                     groups="base.group_system"
