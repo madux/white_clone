@@ -51,6 +51,176 @@ class TestConfigurationResources(TransactionCase):
         self.assertGreaterEqual(first["count"], 1)
         self.assertEqual(second["count"], 0)
         self.assertEqual(self.balance._current_balance(self.employee.id, self.leave_type.id), 2)
+        manual_audits = self.env["hr.leave.audit.log"].search([
+            ("action", "=", "accrual_processed"), ("module_area", "=", "accrual"),
+            ("entity_type", "=", "balance"), ("actor_id", "=", self.env.user.id),
+        ], order="create_date")
+        self.assertGreaterEqual(len(manual_audits), 2)
+        self.assertIn("0 new accrual", manual_audits[-1].note)
+
+    def test_manual_policy_accrual_catches_up_missed_month(self):
+        today = fields.Date.today()
+        employee = self.env["hr.employee"].create({"name": "Catch-up Employee", "company_id": self.env.company.id})
+        missed_month = today.replace(day=1) - timedelta(days=1)
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": self.line.id,
+            "leave_type_id": self.leave_type.id, "employee_id": employee.id,
+            "date_from": missed_month.replace(day=1),
+        })
+        result = self.balance.run_accrual_manually(today)
+        runs = self.env["hr.leave.accrual.run"].search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.leave_type.id),
+        ], order="effective_date")
+        self.assertEqual(len(runs), 2)
+        self.assertEqual([run.effective_date for run in runs], [
+            missed_month.replace(day=1), today.replace(day=1),
+        ])
+        self.assertEqual(self.balance._current_balance(employee.id, self.leave_type.id), 4)
+        duplicate = self.balance.run_accrual_manually(today)
+        self.assertEqual(duplicate["count"], 0)
+        self.assertEqual(self.env["hr.leave.accrual.run"].search_count([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.leave_type.id),
+        ]), 2)
+        self.assertEqual(self.balance._current_balance(employee.id, self.leave_type.id), 4)
+
+    def test_manual_policy_accrual_repairs_a_hole_after_a_later_run(self):
+        employee = self.env["hr.employee"].create({"name": "Gap Employee", "company_id": self.env.company.id})
+        assignment = self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": self.line.id,
+            "leave_type_id": self.leave_type.id, "employee_id": employee.id,
+            "date_from": "2026-01-01",
+        })
+        Run = self.env["hr.leave.accrual.run"]
+        for month in ("2026-01", "2026-03"):
+            Run.create({
+                "employee_id": employee.id, "leave_type_id": self.leave_type.id,
+                "period_key": "policy:%s:month:%s" % (assignment.id, month),
+                "effective_date": "%s-01" % month, "amount": 2,
+                "reason": "fixture",
+            })
+        self.balance.run_accrual_manually("2026-04-01")
+        runs = Run.search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.leave_type.id),
+        ], order="effective_date")
+        self.assertEqual([run.effective_date for run in runs], [
+            fields.Date.to_date("2026-01-01"), fields.Date.to_date("2026-02-01"),
+            fields.Date.to_date("2026-03-01"), fields.Date.to_date("2026-04-01"),
+        ])
+
+    def test_monthly_join_date_waits_until_anniversary_day(self):
+        leave_type = self.env["hr.leave.type"].create({
+            "name": "Joined Date Leave", "leave_code": "JOIN", "company_id": self.env.company.id,
+            "requires_allocation": "yes", "leave_validation_type": "no_validation",
+            "policy_classification": "other",
+        })
+        employee = self.env["hr.employee"].create({"name": "Joined Date Employee", "company_id": self.env.company.id})
+        self.env["hr.contract"].create({
+            "name": "Joined Date Contract", "employee_id": employee.id,
+            "state": "open", "kanban_state": "normal", "wage": 1, "date_start": "2024-01-20",
+        })
+        line = self.env["hr.leave.policy.line"].create({
+            "policy_id": self.policy.id, "leave_type_id": leave_type.id,
+            "accrual_amount": 1, "accrual_period": "monthly", "accrual_basis": "join_date",
+        })
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": line.id,
+            "leave_type_id": leave_type.id, "employee_id": employee.id, "date_from": "2026-09-01",
+        })
+        self.balance.run_accrual_manually("2026-09-11")
+        self.assertFalse(self.env["hr.leave.accrual.run"].search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", leave_type.id),
+        ]))
+        self.balance.run_accrual_manually("2026-09-20")
+        run = self.env["hr.leave.accrual.run"].search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", leave_type.id),
+        ], limit=1)
+        self.assertEqual(run.effective_date, fields.Date.to_date("2026-09-20"))
+
+    def test_calendar_accrual_does_not_predate_assignment(self):
+        employee = self.env["hr.employee"].create({"name": "Partial Period Employee", "company_id": self.env.company.id})
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": self.line.id,
+            "leave_type_id": self.leave_type.id, "employee_id": employee.id,
+            "date_from": "2026-09-15",
+        })
+        self.balance.run_accrual_manually("2026-09-20")
+        run = self.env["hr.leave.accrual.run"].search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", self.leave_type.id),
+        ], limit=1)
+        self.assertEqual(run.effective_date, fields.Date.to_date("2026-09-15"))
+
+    def test_weekly_and_calendar_year_accruals_catch_up(self):
+        Run = self.env["hr.leave.accrual.run"]
+        weekly_type = self.env["hr.leave.type"].create({
+            "name": "Weekly Leave", "leave_code": "WEEK", "company_id": self.env.company.id,
+            "requires_allocation": "yes", "leave_validation_type": "no_validation",
+            "policy_classification": "other",
+        })
+        weekly_line = self.env["hr.leave.policy.line"].create({
+            "policy_id": self.policy.id, "leave_type_id": weekly_type.id,
+            "accrual_amount": 1, "accrual_period": "weekly", "accrual_basis": "calendar",
+        })
+        weekly_employee = self.env["hr.employee"].create({"name": "Weekly Employee", "company_id": self.env.company.id})
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": weekly_line.id,
+            "leave_type_id": weekly_type.id, "employee_id": weekly_employee.id, "date_from": "2026-01-01",
+        })
+        self.balance.run_accrual_manually("2026-01-05")
+        self.balance.run_accrual_manually("2026-01-19")
+        self.assertEqual(Run.search_count([
+            ("employee_id", "=", weekly_employee.id), ("leave_type_id", "=", weekly_type.id),
+        ]), 4)
+
+        yearly_type = self.env["hr.leave.type"].create({
+            "name": "Yearly Leave", "leave_code": "YEAR", "company_id": self.env.company.id,
+            "requires_allocation": "yes", "leave_validation_type": "no_validation",
+            "policy_classification": "other",
+        })
+        yearly_line = self.env["hr.leave.policy.line"].create({
+            "policy_id": self.policy.id, "leave_type_id": yearly_type.id,
+            "accrual_amount": 1, "accrual_period": "annually", "accrual_basis": "calendar",
+        })
+        yearly_employee = self.env["hr.employee"].create({"name": "Yearly Employee", "company_id": self.env.company.id})
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": yearly_line.id,
+            "leave_type_id": yearly_type.id, "employee_id": yearly_employee.id, "date_from": "2025-01-01",
+        })
+        self.balance.run_accrual_manually("2025-01-01")
+        self.balance.run_accrual_manually("2026-02-01")
+        self.assertEqual(Run.search_count([
+            ("employee_id", "=", yearly_employee.id), ("leave_type_id", "=", yearly_type.id),
+        ]), 2)
+
+    def test_anniversary_accrual_handles_february_29(self):
+        leave_type = self.env["hr.leave.type"].create({
+            "name": "Leap Day Leave", "company_id": self.env.company.id,
+            "leave_code": "LEAP",
+            "requires_allocation": "yes", "leave_validation_type": "no_validation",
+            "policy_classification": "other",
+        })
+        employee = self.env["hr.employee"].create({
+            "name": "Leap Day Employee", "company_id": self.env.company.id,
+        })
+        self.env["hr.contract"].create({
+            "name": "Leap Day Contract", "employee_id": employee.id,
+            "state": "open", "kanban_state": "normal", "wage": 1,
+            "date_start": "2024-02-29",
+        })
+        line = self.env["hr.leave.policy.line"].create({
+            "policy_id": self.policy.id, "leave_type_id": leave_type.id,
+            "accrual_amount": 1, "accrual_period": "annually", "accrual_basis": "anniversary",
+        })
+        self.env["hr.leave.policy.assignment"].create({
+            "policy_id": self.policy.id, "policy_line_id": line.id,
+            "leave_type_id": leave_type.id, "employee_id": employee.id,
+            "date_from": "2025-01-01",
+        })
+        result = self.balance.run_accrual_manually("2025-03-01")
+        self.assertGreaterEqual(result["count"], 1)
+        run = self.env["hr.leave.accrual.run"].search([
+            ("employee_id", "=", employee.id), ("leave_type_id", "=", leave_type.id),
+        ], limit=1)
+        self.assertEqual(run.effective_date, fields.Date.to_date("2025-02-28"))
 
     def test_expired_allocation_is_not_usable(self):
         yesterday = fields.Date.today() - timedelta(days=1)

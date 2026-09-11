@@ -704,6 +704,68 @@ class HrLeavePolicyLine(models.Model):
 
     @api.model
     def _process_policy_accruals(self, process_date):
+        """Process every due period up to ``process_date`` exactly once.
+
+        The scheduler normally calls this for today. Manual runs must also
+        recover missed month, week, year, and anniversary periods, while the
+        period keys in the underlying method keep the operation idempotent.
+        """
+        process_date = fields.Date.to_date(process_date)
+        assignments = self.env["hr.leave.policy.assignment"].sudo().search([
+            ("superseded", "=", False), ("policy_id.state", "=", "active"),
+            ("policy_id.active", "=", True), ("policy_line_id.active", "=", True),
+            ("date_from", "<=", process_date),
+        ])
+        dates = set()
+        for assignment in assignments:
+            line = assignment.policy_line_id
+            run_prefix = "policy:%s:" % assignment.id
+            existing_keys = set(self.env["hr.leave.accrual.run"].sudo().search([
+                ("employee_id", "=", assignment.employee_id.id),
+                ("leave_type_id", "=", line.leave_type_id.id),
+                ("period_key", "like", "%s%%" % run_prefix),
+            ]).mapped("period_key"))
+            accrual_end = min(process_date, assignment.date_to or process_date)
+            if assignment.date_from > accrual_end:
+                continue
+
+            def add_if_due(period_key, due_date, trigger_date=None):
+                trigger_date = trigger_date or due_date
+                if assignment.date_from <= trigger_date <= accrual_end and period_key not in existing_keys:
+                    dates.add(trigger_date)
+
+            hire_date = assignment.employee_id.first_contract_date
+            if line.accrual_period == "monthly":
+                month = assignment.date_from.replace(day=1)
+                while month <= accrual_end:
+                    if line.accrual_basis == "join_date" and hire_date:
+                        due_date = hire_date + relativedelta(year=month.year, month=month.month)
+                    else:
+                        due_date = month
+                    trigger_date = due_date if line.accrual_basis == "join_date" and hire_date else max(month, assignment.date_from)
+                    add_if_due("policy:%s:month:%s" % (assignment.id, month.strftime("%Y-%m")), due_date, trigger_date)
+                    month += relativedelta(months=1)
+            elif line.accrual_period == "weekly":
+                week = assignment.date_from - timedelta(days=assignment.date_from.weekday())
+                while week <= accrual_end:
+                    year, week_number, _weekday = week.isocalendar()
+                    add_if_due("policy:%s:week:%s-%02d" % (assignment.id, year, week_number), week, max(week, assignment.date_from))
+                    week += timedelta(days=7)
+            elif line.accrual_basis in ("join_date", "anniversary") and hire_date:
+                year = max(assignment.date_from.year, hire_date.year)
+                while year <= accrual_end.year:
+                    anniversary = hire_date + relativedelta(years=year - hire_date.year)
+                    add_if_due("policy:%s:year:%s" % (assignment.id, year), anniversary)
+                    year += 1
+            else:
+                year = assignment.date_from.replace(month=1, day=1)
+                while year <= accrual_end:
+                    add_if_due("policy:%s:year:%s" % (assignment.id, year.year), year, max(year, assignment.date_from))
+                    year += relativedelta(years=1)
+        return sum(self._process_policy_accruals_for_date(date) for date in sorted(dates))
+
+    @api.model
+    def _process_policy_accruals_for_date(self, process_date):
         """Apply the configured Policy-Line amount once per configured period."""
         process_date = fields.Date.to_date(process_date)
         Run = self.env["hr.leave.accrual.run"].sudo()
@@ -721,18 +783,29 @@ class HrLeavePolicyLine(models.Model):
             if line.waiting_period_days and (not hire_date or (process_date - hire_date).days < line.waiting_period_days):
                 continue
             if line.accrual_period == "monthly":
-                period_key, effective = "policy:%s:month:%s" % (assignment.id, process_date.strftime("%Y-%m")), process_date.replace(day=1)
+                period_key = "policy:%s:month:%s" % (assignment.id, process_date.strftime("%Y-%m"))
+                if line.accrual_basis == "join_date" and hire_date:
+                    effective = hire_date + relativedelta(years=process_date.year - hire_date.year, month=process_date.month)
+                else:
+                    effective = max(process_date.replace(day=1), assignment.date_from)
             elif line.accrual_period == "weekly":
                 year, week, _day = process_date.isocalendar()
-                period_key, effective = "policy:%s:week:%s-%02d" % (assignment.id, year, week), process_date - timedelta(days=process_date.weekday())
+                period_key = "policy:%s:week:%s-%02d" % (assignment.id, year, week)
+                effective = max(process_date - timedelta(days=process_date.weekday()), assignment.date_from)
             else:
                 if line.accrual_basis in ("join_date", "anniversary"):
-                    if not hire_date or (hire_date.month, hire_date.day) != (process_date.month, process_date.day):
+                    # ``relativedelta`` normalizes a Feb-29 anniversary to
+                    # Feb-28 in non-leap years instead of raising or silently
+                    # skipping the employee's annual accrual.
+                    anniversary = hire_date + relativedelta(years=process_date.year - hire_date.year) if hire_date else False
+                    if not anniversary or anniversary != process_date:
                         continue
                     effective = process_date
                 else:
-                    effective = process_date.replace(month=1, day=1)
+                    effective = max(process_date.replace(month=1, day=1), assignment.date_from)
                 period_key = "policy:%s:year:%s" % (assignment.id, process_date.year)
+            if effective > process_date:
+                continue
             if Run.search_count([("employee_id", "=", assignment.employee_id.id), ("leave_type_id", "=", line.leave_type_id.id), ("period_key", "=", period_key)]):
                 continue
             amount = round(line.accrual_amount, 2)

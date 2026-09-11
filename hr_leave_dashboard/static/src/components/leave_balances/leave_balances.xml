@@ -63,7 +63,7 @@
               <button t-on-click="toggleMoreOptions"><i class="fa fa-ellipsis-h"/> More</button>
               <div t-if="state.moreOptionsOpen" class="o_lb_group_menu">
                 <label class="btn btn-link text-start"><i class="fa fa-upload"/> Import Allocation CSV<input class="d-none" type="file" accept=".csv,text/csv" t-on-change="importAllocations"/></label>
-                <button t-on-click="runAccrual">Run Accrual Manually</button>
+                <button title="Process due policy accrual periods once; this does not create a manual allocation." t-on-click="runAccrual">Run Accrual Manually</button>
                 <button t-on-click="viewNegativeBalances">View Negative Balances</button>
                 <button t-on-click="recalculateBalances">Recalculate Balances</button>
               </div>

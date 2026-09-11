@@ -585,9 +585,16 @@ export class LeaveBalancesPage extends Component {
 
     toggleMoreOptions() { this.state.moreOptionsOpen = !this.state.moreOptionsOpen; }
     async runAccrual() {
-        const result = await this.orm.call("hr.leave.balance.transaction", "run_accrual_manually", []);
-        this.notification.add(`${result.count} new accrual(s) processed.`, { type: "success" });
-        await this.refreshPage();
+        try {
+            const result = await this.orm.call("hr.leave.balance.transaction", "run_accrual_manually", []);
+            const message = result.count
+                ? `${result.count} due policy accrual(s) processed. Already processed periods were skipped.`
+                : "No due policy accruals found. Already processed periods were skipped.";
+            this.notification.add(message, { type: result.count ? "success" : "info" });
+            await this.refreshPage();
+        } catch (error) {
+            this.notification.add(error?.data?.message || error?.message || "Unable to run accrual.", { type: "danger" });
+        }
     }
     async viewNegativeBalances() {
         this.state.filters.expiring_only = false;
