@@ -122,6 +122,14 @@
     font-size: 12px; cursor: pointer;
 }
 .o_mlr_icon_btn:hover { background: #f6f7fb; border-color: #c5ccda; }
+.o_mlr_sub_actions .o_mlr_sub_btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; border: 0; border-radius: 7px;
+    background: #ed1768; color: #fff; padding: 0 14px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+}
+.o_mlr_sub_actions .o_mlr_sub_btn:hover { background: #d91460; }
 
 /* ═══════════════════════════════════════════════════════════════
    FILTER PANEL
