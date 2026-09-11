@@ -93,14 +93,14 @@
 
             <div class="o_ls_toggle_rows">
               <button t-foreach="[
-                ['ai_assistant_enabled', 'AI Leave Assistant', 'LM-038: Interactive chat assistant panel for employee leave guidance.'],
-                ['ai_nl_request_enabled', 'Natural Language Leave Request', 'LM-039: Free-text leave request submission and field suggestion.'],
-                ['ai_date_recommendations_enabled', 'Smart Leave Date Recommendations', 'LM-040: Candidate date suggestions based on holidays and availability.'],
-                ['ai_conflict_coverage_enabled', 'AI Conflict &amp; Coverage Detection', 'LM-041: Team overlap and staffing risk warnings at submission and review.'],
-                ['ai_approval_support_enabled', 'AI Approval Decision Support', 'LM-042: Advisory insight panel and recommendation factors for approvers.'],
-                ['ai_anomaly_detection_enabled', 'Fraud &amp; Anomaly Detection', 'LM-043: Pattern analysis and HR anomaly alerts; stops new alert generation when off.'],
-                ['ai_calendar_summary_enabled', 'AI Calendar &amp; Availability Summary', 'LM-044: One-click period and availability summaries on Leave Calendar.'],
-                ['ai_executive_brief_enabled', 'Executive Workforce Brief', 'LM-045: High-level analytics, KPI aggregation, and workforce brief reports.']
+                ['ai_assistant_enabled', 'AI Leave Assistant', 'Interactive chat assistant panel for employee leave guidance.'],
+                ['ai_nl_request_enabled', 'Natural Language Leave Request', 'Free-text leave request submission and field suggestion.'],
+                ['ai_date_recommendations_enabled', 'Smart Leave Date Recommendations', 'Candidate date suggestions based on holidays and availability.'],
+                ['ai_conflict_coverage_enabled', 'AI Conflict &amp; Coverage Detection', 'Team overlap and staffing risk warnings at submission and review.'],
+                ['ai_approval_support_enabled', 'AI Approval Decision Support', 'Advisory insight panel and recommendation factors for approvers.'],
+                ['ai_anomaly_detection_enabled', 'Fraud &amp; Anomaly Detection', 'Pattern analysis and HR anomaly alerts; stops new alert generation when off.'],
+                ['ai_calendar_summary_enabled', 'AI Calendar &amp; Availability Summary', 'One-click period and availability summaries on Leave Calendar.'],
+                ['ai_executive_brief_enabled', 'Executive Workforce Brief', 'High-level analytics, KPI aggregation, and workforce brief reports.']
               ]" t-as="cap" t-key="cap[0]" t-att-class="'o_ls_toggle_row ' + (state.form[cap[0]] ? 'on' : '')" t-att-disabled="!state.form.ai_enabled" t-on-click="() => this.toggle(cap[0])">
                 <div>
                   <strong t-esc="cap[1]"/>

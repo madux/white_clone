@@ -34,6 +34,7 @@ class TestLeaveCalendarSecurity(TransactionCase):
         cls.config_user = make_user("calendar.config", [configuration])
         cls.operator_user = make_user("calendar.operator", [operations])
         cls.manager_user = make_user("calendar.manager", [personal, team, approve])
+        cls.team_viewer_user = make_user("calendar.team.viewer", [personal, team])
         cls.member_user = make_user("calendar.member", [personal])
         cls.manager_employee = cls.env["hr.employee"].create({
             "name": "Calendar Manager", "user_id": cls.manager_user.id,
@@ -44,6 +45,10 @@ class TestLeaveCalendarSecurity(TransactionCase):
             "company_id": cls.env.company.id,
             "parent_id": cls.manager_employee.id,
             "leave_manager_id": cls.manager_user.id,
+        })
+        cls.team_viewer_employee = cls.env["hr.employee"].create({
+            "name": "Calendar Team Viewer", "user_id": cls.team_viewer_user.id,
+            "company_id": cls.env.company.id,
         })
         cls.leave_type = cls.env["hr.leave.type"].create({
             "name": "Workflow Security Leave",
@@ -122,15 +127,31 @@ class TestLeaveCalendarSecurity(TransactionCase):
 
     def test_company_privacy_default_masks_other_employees(self):
         self.env.company.write({"leave_calendar_privacy": "anonymous"})
-        result = self.env["hr.leave"].get_leave_calendar_data(
+        self.member_employee.write({
+            "parent_id": self.team_viewer_employee.id,
+            "leave_manager_id": False,
+        })
+        result = self.env["hr.leave"].with_user(self.team_viewer_user).get_leave_calendar_data(
             fields.Date.to_string(self.request.request_date_from),
             fields.Date.to_string(self.request.request_date_to),
-            calendar_scope="organisation",
+            calendar_scope="team",
         )
         row = next(item for item in result["leaves"] if item["id"] == self.request.id)
         self.assertEqual(row["employee_name"], "Unavailable")
         self.assertEqual(row["leave_type_name"], "Leave")
         self.assertFalse(row["can_open_detail"])
+
+    def test_assigned_approver_can_open_calendar_request_under_privacy(self):
+        self.env.company.write({"leave_calendar_privacy": "anonymous"})
+        result = self.env["hr.leave"].with_user(self.manager_user).get_leave_calendar_data(
+            fields.Date.to_string(self.request.request_date_from),
+            fields.Date.to_string(self.request.request_date_to),
+            calendar_scope="team",
+        )
+        row = next(item for item in result["leaves"] if item["id"] == self.request.id)
+        self.assertEqual(row["employee_name"], self.member_employee.name)
+        self.assertEqual(row["leave_type_name"], self.leave_type.name)
+        self.assertTrue(row["can_open_detail"])
 
     def test_ai_cannot_promote_manager_to_organisation_scope(self):
         result = self.env["hr.leave.ai.service"].with_user(

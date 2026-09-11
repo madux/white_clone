@@ -11,16 +11,61 @@ import { EmployeeRequestModal } from "../employee_request_modal/employee_request
 export class LeaveDashboardRouter extends Component {
     static template = "hr_leave_dashboard.DashboardRouter";
     static components = { HrLeaveDashboard, EmployeeLeaveDashboard, CalendarSidebar, EmployeeRequestModal };
+    static props = { "*": true };
+
     setup() {
         this.action = useService("action");
         this.orm = useService("orm");
-        this.state = useState({ loading: true, access: {}, requestOpen: false, revision: 0 });
+        const contextMode = this.props.action?.context?.dashboard_view;
+
+        this.state = useState({
+            loading: true,
+            access: {},
+            personalData: null,
+            viewMode: "organisation", // "organisation" | "personal"
+            requestOpen: false,
+            revision: 0,
+        });
+
         onWillStart(async () => {
+            await this.loadData(contextMode);
+        });
+    }
+
+    async loadData(preferredMode) {
+        this.state.loading = true;
+        try {
             this.state.access = await this.orm.call(
                 "hr.leave", "get_leave_access_profile", []
             );
+            if (this.state.access.has_personal_scope) {
+                try {
+                    this.state.personalData = await this.orm.call(
+                        "hr.leave", "get_employee_dashboard_data", []
+                    );
+                } catch (e) {
+                    console.warn("Could not load employee dashboard data:", e);
+                }
+            }
+
+            if (preferredMode && ["organisation", "personal"].includes(preferredMode)) {
+                this.state.viewMode = preferredMode;
+            } else if (this.state.access.show_organisation_dashboard) {
+                this.state.viewMode = "organisation";
+            } else {
+                this.state.viewMode = "personal";
+            }
+        } catch (error) {
+            console.error("Error loading leave dashboard access profile:", error);
+        } finally {
             this.state.loading = false;
-        });
+        }
+    }
+
+    switchView(mode) {
+        if (this.state.viewMode !== mode) {
+            this.state.viewMode = mode;
+        }
     }
 
     toggleSidebar() {
@@ -29,7 +74,21 @@ export class LeaveDashboardRouter extends Component {
 
     requestLeave() { this.state.requestOpen = true; }
     closeRequest() { this.state.requestOpen = false; }
-    requestSubmitted() { this.state.requestOpen = false; this.state.revision += 1; }
+
+    async requestSubmitted() {
+        this.state.requestOpen = false;
+        this.state.revision += 1;
+        if (this.state.access.has_personal_scope) {
+            try {
+                this.state.personalData = await this.orm.call(
+                    "hr.leave", "get_employee_dashboard_data", []
+                );
+            } catch (e) {
+                console.warn("Could not reload personal leave data:", e);
+            }
+        }
+    }
+
     openMyRequests() { return this.openRequestWorkspace("my"); }
     openApprovals() { return this.openRequestWorkspace("approvals"); }
     openRequestWorkspace(tab) {

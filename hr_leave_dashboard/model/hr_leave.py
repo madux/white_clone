@@ -2986,11 +2986,31 @@ class HrLeave(models.Model):
         leaves = self.sudo().browse(authorised_leave_ids)
 
         privacy = self.env.company.leave_calendar_privacy
+        access = self.get_leave_access_profile()
+        can_read_operations = access["can_operate"] or access["can_view_audit"]
+        approval_users_by_leave = {}
+        if "cleon.approval.instance" in self.env and leaves:
+            approval_instances = self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", "hr.leave"),
+                ("res_id", "in", leaves.ids),
+            ], order="id desc")
+            for approval_instance in approval_instances:
+                approval_users_by_leave.setdefault(
+                    approval_instance.res_id,
+                    approval_instance.step_ids.mapped("resolved_user_ids"),
+                )
         leave_list = []
         for l in leaves:
             status = l._get_cleon_leave_status()
             is_own = bool(curr_emp and l.employee_id == curr_emp)
-            restricted = not is_own and privacy in ("limited", "anonymous")
+            can_review = l._leave_can_review(self.env.user)
+            is_approver_on_workflow = self.env.user in approval_users_by_leave.get(
+                l.id, self.env["res.users"],
+            )
+            can_open_detail = bool(
+                is_own or can_review or can_read_operations or is_approver_on_workflow
+            )
+            restricted = not can_open_detail and privacy in ("limited", "anonymous")
             leave_list.append({
                 "id": l.id,
                 "request_ref": l.request_ref or f"LR-{l.id:06d}",
@@ -3012,7 +3032,7 @@ class HrLeave(models.Model):
                 "half_day_period": l.request_date_from_period if l.request_unit_half else False,
                 "notes": (l.notes or l.admin_creation_note or "") if not restricted else "",
                 "is_own": is_own,
-                "can_open_detail": not restricted,
+                "can_open_detail": can_open_detail,
             })
 
         leave_types = self.env["hr.leave.type"].sudo().search([

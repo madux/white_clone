@@ -82,8 +82,8 @@ class TestLeaveApprovalSemantics(TransactionCase):
             days_until_monday = 7
         return today + timedelta(days=days_until_monday + (offset_weeks * 7))
 
-    def _create_leave_request(self):
-        start = self._next_working_monday(3)
+    def _create_leave_request(self, offset_weeks=3):
+        start = self._next_working_monday(offset_weeks)
         chain = self.env["cleon.approval.chain"].search([
             ("company_id", "=", self.company.id),
             ("workflow_type_id", "=", self.wft.id),
@@ -416,7 +416,7 @@ class TestLeaveApprovalSemantics(TransactionCase):
         self.assertEqual(approved_leave.state, "validate")
         self.assertEqual(approved_instance.state, "approved")
 
-        rejected_leave = self._create_leave_request()
+        rejected_leave = self._create_leave_request(offset_weeks=5)
         remove_instance(rejected_leave)
         self.env["hr.leave"].with_user(self.user_mgr_1).reject_leave_request(
             rejected_leave.id, reason="Denied", category="coverage"
@@ -427,7 +427,7 @@ class TestLeaveApprovalSemantics(TransactionCase):
         self.assertEqual(rejected_leave.state, "refuse")
         self.assertEqual(rejected_instance.state, "rejected")
 
-        changes_leave = self._create_leave_request()
+        changes_leave = self._create_leave_request(offset_weeks=7)
         remove_instance(changes_leave)
         self.env["hr.leave"].with_user(self.user_mgr_1).request_leave_changes(
             changes_leave.id, comment="Please adjust the requested dates."

@@ -46,13 +46,13 @@
             action="action_hr_leave_dashboard"
             parent="hr_holidays.menu_hr_holidays_root"
             sequence="0"
-            groups="hr_leave_dashboard.group_leave_permission_personal,hr_leave_dashboard.group_leave_permission_team,hr_leave_dashboard.group_leave_permission_approve,hr_leave_dashboard.group_leave_permission_operations,hr_leave_dashboard.group_leave_permission_configuration"/>
+            groups="base.group_user"/>
 
     <menuitem id="hr_holidays.menu_hr_holidays_dashboard"
             name="Leave Calendar"
             action="action_hr_leave_calendar"
             parent="hr_holidays.menu_hr_holidays_root"
             sequence="1"
-            groups="hr_leave_dashboard.group_leave_permission_personal,hr_leave_dashboard.group_leave_permission_team,hr_leave_dashboard.group_leave_permission_approve,hr_leave_dashboard.group_leave_permission_operations,hr_leave_dashboard.group_leave_permission_configuration"/>
+            groups="base.group_user"/>
 
 </odoo>

@@ -58,7 +58,12 @@ export class CalendarDayPanel extends Component {
     }
 
     openRosterDetail(leave) {
-        if (leave.can_open_detail) this.props.openDetail(leave.id);
+        if (!leave.can_open_detail) return;
+        // Remove the roster overlay before mounting the shared request-detail
+        // modal. Otherwise the roster remains above the new modal and makes a
+        // successful row click look as though nothing happened.
+        this.props.close();
+        this.props.openDetail(leave.id);
     }
 
     requestLeave() {
