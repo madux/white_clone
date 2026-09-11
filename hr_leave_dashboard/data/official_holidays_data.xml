@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default Nigerian holiday calendar.  The 2025 anchor dates are
+         expanded by the model for the current and upcoming years because
+         these records repeat annually. -->
+    <data noupdate="1">
+        <record id="official_holiday_new_years_day" model="hr.leave.official.holiday">
+            <field name="name">New Year's Day</field>
+            <field name="holiday_type">public</field>
+            <field name="date_from">2025-01-01</field>
+            <field name="date_to">2025-01-01</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_good_friday" model="hr.leave.official.holiday">
+            <field name="name">Good Friday</field>
+            <field name="holiday_type">religious</field>
+            <field name="date_from">2025-04-18</field>
+            <field name="date_to">2025-04-18</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_easter_monday" model="hr.leave.official.holiday">
+            <field name="name">Easter Monday</field>
+            <field name="holiday_type">religious</field>
+            <field name="date_from">2025-04-21</field>
+            <field name="date_to">2025-04-21</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_workers_day" model="hr.leave.official.holiday">
+            <field name="name">Workers' Day</field>
+            <field name="holiday_type">public</field>
+            <field name="date_from">2025-05-01</field>
+            <field name="date_to">2025-05-01</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_democracy_day" model="hr.leave.official.holiday">
+            <field name="name">Democracy Day</field>
+            <field name="holiday_type">public</field>
+            <field name="date_from">2025-06-12</field>
+            <field name="date_to">2025-06-12</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_independence_day" model="hr.leave.official.holiday">
+            <field name="name">Independence Day</field>
+            <field name="holiday_type">public</field>
+            <field name="date_from">2025-10-01</field>
+            <field name="date_to">2025-10-01</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+        <record id="official_holiday_christmas_day" model="hr.leave.official.holiday">
+            <field name="name">Christmas Day</field>
+            <field name="holiday_type">public</field>
+            <field name="date_from">2025-12-25</field>
+            <field name="date_to">2025-12-25</field>
+            <field name="applies_to">all</field>
+            <field name="repeats">annually</field>
+            <field name="country_id" ref="base.ng"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>

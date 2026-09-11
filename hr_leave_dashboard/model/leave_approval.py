@@ -144,15 +144,44 @@ class HrLeaveOfficialHoliday(models.Model):
         self._check_configure()
         record = self.browse(int(record_id)).exists()
         duplicate = record.copy({"name": _("%s (Copy)") % record.name, "active": False})
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "calendar_change", "module_area": "calendar", "entity_type": "holiday",
+            "entity_name": duplicate.name, "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "note": _("Duplicated official holiday %s.") % record.name,
+        })
         return {"id": duplicate.id}
 
     @api.model
     def set_holiday_active(self, record_id, active):
-        self._check_configure(); self.with_context(active_test=False).browse(int(record_id)).write({"active": bool(active)}); return True
+        self._check_configure()
+        record = self.with_context(active_test=False).browse(int(record_id)).exists()
+        record.write({"active": bool(active)})
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "calendar_change", "module_area": "calendar", "entity_type": "holiday",
+            "entity_name": record.name, "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "note": _("%s official holiday %s.") % (_("Activated") if active else _("Deactivated"), record.name),
+        })
+        return True
 
     @api.model
     def delete_holiday(self, record_id):
-        self._check_configure(); self.with_context(active_test=False).browse(int(record_id)).unlink(); return True
+        self._check_configure()
+        record = self.with_context(active_test=False).browse(int(record_id)).exists()
+        now = fields.Datetime.now()
+        historical_occurrences = record.calendar_leave_ids.filtered(lambda occurrence: occurrence.date_to <= now)
+        if historical_occurrences:
+            raise ValidationError(_(
+                "This holiday has historical calendar occurrences and cannot be deleted. "
+                "Deactivate it instead to preserve its history."
+            ))
+        name = record.name
+        record.unlink()
+        self.env["hr.leave.audit.log"].sudo().create({
+            "action": "calendar_change", "module_area": "calendar", "entity_type": "holiday",
+            "entity_name": name, "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+            "note": _("Deleted official holiday %s.") % name,
+        })
+        return True
 
 
 class HrLeaveTypeApprovalStage(models.Model):
@@ -299,6 +328,21 @@ class HrLeaveBlackoutPeriod(models.Model):
     def _check_configure(self):
         if not self.env.user.has_group("hr_leave_dashboard.group_leave_permission_configuration"):
             raise AccessError(_("You do not have permission to manage blackout windows."))
+
+    @api.model
+    def _cron_activate_scheduled(self):
+        """Promote approved windows when their effective date is reached."""
+        today = fields.Date.context_today(self)
+        windows = self.sudo().search([("state", "=", "scheduled"), ("date_from", "<=", today)])
+        if windows:
+            windows.write({"state": "active"})
+            for window in windows:
+                self.env["hr.leave.audit.log"].sudo().create({
+                    "action": "policy_change", "module_area": "policies", "entity_type": "blackout",
+                    "entity_name": window.name, "actor_id": self.env.user.id, "actor_label": self.env.user.name,
+                    "note": _("Scheduled blackout window %s became active on %s.") % (window.name, today),
+                })
+        return len(windows)
 
     @api.model
     def get_blackout_page_data(self):
