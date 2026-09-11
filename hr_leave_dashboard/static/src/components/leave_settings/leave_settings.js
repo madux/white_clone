@@ -5,6 +5,11 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { CalendarSidebar } from "../calendar_sidebar";
 
+const SETTINGS_TAB_STORAGE_KEY = "hr_leave_dashboard.leave_settings.active_tab";
+const SETTINGS_TABS = new Set([
+    "general", "rules", "calendar", "notifications", "lifecycle", "integrations",
+]);
+
 export class LeaveSettingsPage extends Component {
     static template = "hr_leave_dashboard.LeaveSettingsPage";
     static components = { CalendarSidebar };
@@ -20,7 +25,7 @@ export class LeaveSettingsPage extends Component {
             data: null,
             form: {},
             baseline: "",
-            activeTab: "general",
+            activeTab: this.getRememberedTab(),
         });
         onWillStart(() => this.load());
     }
@@ -63,7 +68,24 @@ export class LeaveSettingsPage extends Component {
         this.state.form[field] = !this.state.form[field];
     }
 
-    setTab(tab) { this.state.activeTab = tab; }
+    getRememberedTab() {
+        try {
+            const tab = window.sessionStorage.getItem(SETTINGS_TAB_STORAGE_KEY);
+            return SETTINGS_TABS.has(tab) ? tab : "general";
+        } catch {
+            return "general";
+        }
+    }
+
+    setTab(tab) {
+        if (!SETTINGS_TABS.has(tab)) return;
+        this.state.activeTab = tab;
+        try {
+            window.sessionStorage.setItem(SETTINGS_TAB_STORAGE_KEY, tab);
+        } catch {
+            // Private browsing can disable session storage; the current page still works.
+        }
+    }
 
     async save() {
         if (!this.dirty || this.state.saving) return;
@@ -108,8 +130,28 @@ export class LeaveSettingsPage extends Component {
         return this.action.doAction("resource.action_resource_calendar_leave_tree");
     }
 
+    openWorkingSchedule() {
+        const calendar = this.selectedCalendar;
+        if (!calendar) return;
+        return this.action.doAction({
+            type: "ir.actions.act_window",
+            name: calendar.name,
+            res_model: "resource.calendar",
+            res_id: calendar.id,
+            views: [[false, "form"]],
+            target: "current",
+        });
+    }
+
     openAccessRights() {
         return this.action.doAction("base.action_res_users");
+    }
+
+    openAccessRole(role) {
+        return this.action.doAction({
+            type: "ir.actions.act_window", name: role.name, res_model: "res.groups",
+            res_id: role.id, views: [[false, "form"]], target: "current",
+        });
     }
 
     openTour() {

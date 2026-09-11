@@ -103,7 +103,10 @@ class TestLeaveApprovalSemantics(TransactionCase):
                 })],
             })
         self.leave_type.sudo().write({"approval_chain_id": chain.id})
-        leave = self.env["hr.leave"].with_user(self.user_applicant).create({
+        # The approval-semantic tests exercise the shared workflow engine, not
+        # employee-profile field ACLs. Some deployments extend private employee
+        # fields used by core leave creation, so build the fixture as admin.
+        leave = self.env["hr.leave"].sudo().create({
             "employee_id": self.emp_applicant.id,
             "holiday_status_id": self.leave_type.id,
             "request_date_from": start,
@@ -111,7 +114,7 @@ class TestLeaveApprovalSemantics(TransactionCase):
             "notes": "Testing approval level semantics.",
         })
         if leave.state == "draft":
-            leave.action_confirm()
+            leave.sudo().action_confirm()
         return leave
 
     def test_01_leave_rpc_approve_any_one(self):
@@ -396,27 +399,44 @@ class TestLeaveApprovalSemantics(TransactionCase):
         detail = self.env["hr.leave"].with_user(self.user_mgr_1).approve_leave_request(leave.id)
         self.assertEqual(leave.state, "validate", "Leave request must reach final validate state, not remain in validate1")
 
-    def test_08_mutation_fallback_blocked_without_instance(self):
-        """Direct RPC mutations without an active approval instance fail closed with Configuration Integrity Error."""
-        leave = self._create_leave_request()
-        # Deliberately remove/unlink the instance to simulate missing instance
-        inst = self.env["cleon.approval.instance"].sudo().search([
-            ("res_model", "=", "hr.leave"),
-            ("res_id", "=", leave.id),
-        ])
-        inst.unlink()
+    def test_08_mutation_recovers_missing_pending_instance(self):
+        """A legacy pending leave with a missing instance can still be decided safely."""
+        def remove_instance(leave):
+            self.env["cleon.approval.instance"].sudo().search([
+                ("res_model", "=", "hr.leave"),
+                ("res_id", "=", leave.id),
+            ]).unlink()
 
-        with self.assertRaises(UserError) as cm_app:
-            self.env["hr.leave"].with_user(self.user_mgr_1).approve_leave_request(leave.id)
-        self.assertIn("Configuration Integrity Error", str(cm_app.exception))
+        approved_leave = self._create_leave_request()
+        remove_instance(approved_leave)
+        self.env["hr.leave"].with_user(self.user_mgr_1).approve_leave_request(approved_leave.id)
+        approved_instance = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"), ("res_id", "=", approved_leave.id),
+        ], limit=1)
+        self.assertEqual(approved_leave.state, "validate")
+        self.assertEqual(approved_instance.state, "approved")
 
-        with self.assertRaises(UserError) as cm_rej:
-            self.env["hr.leave"].with_user(self.user_mgr_1).reject_leave_request(leave.id, reason="Denied", category="coverage")
-        self.assertIn("Configuration Integrity Error", str(cm_rej.exception))
+        rejected_leave = self._create_leave_request()
+        remove_instance(rejected_leave)
+        self.env["hr.leave"].with_user(self.user_mgr_1).reject_leave_request(
+            rejected_leave.id, reason="Denied", category="coverage"
+        )
+        rejected_instance = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"), ("res_id", "=", rejected_leave.id),
+        ], limit=1)
+        self.assertEqual(rejected_leave.state, "refuse")
+        self.assertEqual(rejected_instance.state, "rejected")
 
-        with self.assertRaises(UserError) as cm_chg:
-            self.env["hr.leave"].with_user(self.user_mgr_1).request_leave_changes(leave.id, comment="Adjust dates")
-        self.assertIn("Configuration Integrity Error", str(cm_chg.exception))
+        changes_leave = self._create_leave_request()
+        remove_instance(changes_leave)
+        self.env["hr.leave"].with_user(self.user_mgr_1).request_leave_changes(
+            changes_leave.id, comment="Please adjust the requested dates."
+        )
+        changes_instance = self.env["cleon.approval.instance"].sudo().search([
+            ("res_model", "=", "hr.leave"), ("res_id", "=", changes_leave.id),
+        ], limit=1)
+        self.assertTrue(changes_leave.changes_requested)
+        self.assertEqual(changes_instance.state, "changes_requested")
 
     def test_09_request_changes_preserves_actor_identity(self):
         """Request changes preserves the actual human approver user in changes_requested_by_id and serializer."""

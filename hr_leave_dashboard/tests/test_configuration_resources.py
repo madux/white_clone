@@ -357,6 +357,19 @@ class TestConfigurationResources(TransactionCase):
                 "is_default": False, "active": False, "escalation_days": 3, "auto_approve_days": 2,
             })
 
+    def test_configuration_user_can_save_non_ai_settings_without_ai_permission(self):
+        configuration = self.env.ref("hr_leave_dashboard.group_leave_permission_configuration")
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Settings Configuration User", "login": "settings.configuration.user",
+            "company_id": self.env.company.id, "company_ids": [(6, 0, self.env.company.ids)],
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id, configuration.id])],
+        })
+        settings = self.env["hr.leave"].with_user(user)
+        values = settings.get_leave_settings()["form"]
+        values["calendar_privacy"] = "full"
+        settings.save_leave_settings(values)
+        self.assertEqual(self.env.company.leave_calendar_privacy, "full")
+
     def test_approval_template_is_distinct_and_reusable(self):
         chain = self.chain
         template = self.env["hr.leave.approval.template"].create({

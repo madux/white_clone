@@ -51,6 +51,8 @@ class TestLeaveCalendarSecurity(TransactionCase):
             "requires_allocation": "no",
             "leave_validation_type": "manager",
             "approval_workflow": "single",
+            "supporting_document_policy": "never",
+            "support_document": False,
             "visible_to_employees": True,
         })
         start = fields.Date.today() + timedelta(days=30)
@@ -118,6 +120,18 @@ class TestLeaveCalendarSecurity(TransactionCase):
                 "2026-01-01", "2027-12-31", calendar_scope="organisation",
             )
 
+    def test_company_privacy_default_masks_other_employees(self):
+        self.env.company.write({"leave_calendar_privacy": "anonymous"})
+        result = self.env["hr.leave"].get_leave_calendar_data(
+            fields.Date.to_string(self.request.request_date_from),
+            fields.Date.to_string(self.request.request_date_to),
+            calendar_scope="organisation",
+        )
+        row = next(item for item in result["leaves"] if item["id"] == self.request.id)
+        self.assertEqual(row["employee_name"], "Unavailable")
+        self.assertEqual(row["leave_type_name"], "Leave")
+        self.assertFalse(row["can_open_detail"])
+
     def test_ai_cannot_promote_manager_to_organisation_scope(self):
         result = self.env["hr.leave.ai.service"].with_user(
             self.manager_user,
@@ -179,7 +193,7 @@ class TestLeaveCalendarSecurity(TransactionCase):
                 "backup_colleague_ids": [],
             },
         )
-        self.assertTrue(result["ok"])
+        self.assertTrue(result["ok"], result.get("message"))
         self.assertEqual(result["id"], self.request.id)
         self.request.invalidate_recordset()
         self.assertFalse(self.request.changes_requested)

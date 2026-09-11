@@ -101,8 +101,13 @@ export class LeaveCalendarPage extends Component {
             this.state.canUseOrganisation = access.can_operate || access.can_view_audit;
             const scopes = [this.state.canUsePersonal, this.state.canUseTeam, this.state.canUseOrganisation].filter(Boolean);
             this.state.canSwitchPerspective = scopes.length > 1;
+            const defaults = access.calendar_defaults || {};
+            if (defaults.view === "week") this.state.viewMode = "week";
+            const defaultScope = defaults.view === "organisation" ? "organisation" : defaults.view === "team" ? "team" : false;
             this.state.calendarScope = Boolean(this.props.forceEmployee)
                 ? "personal"
+                : defaultScope === "organisation" && this.state.canUseOrganisation ? "organisation"
+                : defaultScope === "team" && this.state.canUseTeam ? "team"
                 : this.state.canUseOrganisation ? "organisation" : this.state.canUseTeam ? "team" : "personal";
             this.state.employeeView = this.state.calendarScope !== "organisation";
             await this.loadCalendarData();

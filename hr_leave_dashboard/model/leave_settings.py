@@ -67,6 +67,7 @@ class ResCompany(models.Model):
     leave_default_balance_enforcement = fields.Selection([("strict", "Strict"), ("negative", "Allow Negative")], default="strict", required=True)
     leave_calendar_privacy = fields.Selection([("full", "Full"), ("limited", "Limited"), ("anonymous", "Anonymous")], default="limited", required=True)
     leave_default_calendar_view = fields.Selection([("month", "Month"), ("week", "Week"), ("team", "Team"), ("organisation", "Organisation")], default="month", required=True)
+    leave_calendar_future_months = fields.Integer(string="Calendar Future Visibility (Months)", default=24)
     leave_show_rejected = fields.Boolean(default=False)
     leave_show_cancelled = fields.Boolean(default=False)
     leave_ending_soon_days = fields.Integer(default=1)
@@ -135,7 +136,7 @@ class ResCompany(models.Model):
         for company in self:
             if min(company.leave_default_minimum_notice_days, company.leave_ending_soon_days,
                    company.leave_overdue_reminder_days, company.leave_return_grace_days,
-                   company.leave_max_extension_days) < 0:
+                   company.leave_max_extension_days, company.leave_calendar_future_months) < 0:
                 raise ValidationError(_("Minimum notice cannot be negative."))
             if company.leave_default_max_balance_cap < 0:
                 raise ValidationError(_("Maximum balance cap cannot be negative."))
@@ -208,6 +209,7 @@ class HrLeaveSettings(models.Model):
         ], order="name")
         external_ids = role_groups.get_external_id()
         roles = [{
+            "id": group.id,
             "xmlid": external_ids.get(group.id) or "res.groups,%d" % group.id,
             "name": group.name,
             "description": group.comment or _("Configurable Leave Management role"),
@@ -233,6 +235,7 @@ class HrLeaveSettings(models.Model):
                 "year_basis": company.leave_year_basis, "default_unit": company.leave_default_unit,
                 "default_balance_enforcement": company.leave_default_balance_enforcement,
                 "calendar_privacy": company.leave_calendar_privacy, "default_calendar_view": company.leave_default_calendar_view,
+                "calendar_future_months": company.leave_calendar_future_months,
                 "show_rejected": company.leave_show_rejected, "show_cancelled": company.leave_show_cancelled,
                 "ending_soon_days": company.leave_ending_soon_days, "notify_manager_ending": company.leave_notify_manager_ending,
                 "return_reminder": company.leave_return_reminder, "overdue_reminder_days": company.leave_overdue_reminder_days,
@@ -261,6 +264,7 @@ class HrLeaveSettings(models.Model):
                 {
                     "id": item.id,
                     "name": item.name,
+                    "timezone": item.tz or "UTC",
                     "hours_per_week": round(
                         sum(
                             row.hour_to - row.hour_from
@@ -317,8 +321,11 @@ class HrLeaveSettings(models.Model):
         caller_has_ai_config = self.env.user.has_group(
             "hr_leave_dashboard.group_leave_permission_ai_config"
         )
-        ai_values_requested = _ai_fields.intersection(values.keys())
-        if ai_values_requested and not caller_has_ai_config:
+        ai_values_changed = {
+            key for key in _ai_fields
+            if key in values and values.get(key) != before.get(key)
+        }
+        if ai_values_changed and not caller_has_ai_config:
             raise AccessError(
                 _("Only a user with the 'AI Configuration' permission can change AI & Automation settings.")
             )
@@ -344,6 +351,7 @@ class HrLeaveSettings(models.Model):
             "leave_year_basis": values.get("year_basis") or "calendar", "leave_default_unit": values.get("default_unit") or "days",
             "leave_default_balance_enforcement": values.get("default_balance_enforcement") or "strict",
             "leave_calendar_privacy": values.get("calendar_privacy") or "limited", "leave_default_calendar_view": values.get("default_calendar_view") or "month",
+            "leave_calendar_future_months": int(values.get("calendar_future_months") or 24),
             "leave_show_rejected": bool(values.get("show_rejected")), "leave_show_cancelled": bool(values.get("show_cancelled")),
             "leave_ending_soon_days": int(values.get("ending_soon_days") or 0), "leave_notify_manager_ending": bool(values.get("notify_manager_ending")),
             "leave_return_reminder": bool(values.get("return_reminder")), "leave_overdue_reminder_days": int(values.get("overdue_reminder_days") or 0),

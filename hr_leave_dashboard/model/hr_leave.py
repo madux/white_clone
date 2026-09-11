@@ -514,6 +514,63 @@ class HrLeave(models.Model):
             "fallback_users": parent_user,
         }
 
+    def _get_pending_approval_instance(self, repair_missing=True):
+        """Return the active shared approval instance for a pending leave.
+
+        Leave requests created before the shared approval engine was enabled,
+        or affected by an interrupted data migration, can legitimately still
+        be in ``confirm``/``validate1`` while their instance is absent. They
+        must not be left visible in an approver's queue but impossible to act
+        on. Rebuild the route from the current leave configuration in that
+        narrow case; the instance's normal decision check still determines
+        whether the current user is an assigned approver.
+
+        A rebuild is deliberately refused if the current configuration would
+        auto-finalise the historical pending request. That kind of lifecycle
+        reconciliation needs an administrator, not an implicit approval.
+        """
+        self.ensure_one()
+        if "cleon.approval.instance" not in self.env:
+            raise UserError(_("Configuration Integrity Error: the shared approval engine is not installed."))
+
+        instance_model = self.env["cleon.approval.instance"].sudo()
+        domain = [
+            ("res_model", "=", self._name),
+            ("res_id", "=", self.id),
+            ("state", "=", "pending"),
+        ]
+        instance = instance_model.search(domain, limit=1)
+        if instance or not repair_missing:
+            return instance
+
+        if self.state not in ("confirm", "validate1") or self.is_cancelled:
+            return instance
+
+        _logger.warning(
+            "Rebuilding missing approval instance for pending leave %s (id=%s).",
+            self.display_name,
+            self.id,
+        )
+        # ``action_start`` is concurrency-safe via the instance open-key. A
+        # savepoint also guarantees that an old pending leave is not silently
+        # auto-approved if its policy was changed after it was submitted.
+        with self.env.cr.savepoint():
+            instance_model.action_start(self)
+            self.invalidate_recordset(["state"])
+            instance = instance_model.search(domain, limit=1)
+            if not instance:
+                if self.state not in ("confirm", "validate1"):
+                    raise UserError(_(
+                        "This pending leave request is missing its approval workflow. "
+                        "Its current configuration would finalise it automatically, so it "
+                        "cannot be safely rebuilt. Ask an administrator to reconcile it."
+                    ))
+                raise UserError(_(
+                    "Configuration Integrity Error: an approval workflow could not be rebuilt "
+                    "for this pending leave request. Check its workflow configuration."
+                ))
+        return instance
+
     def action_confirm(self):
         # Signal to write() that this is a sanctioned lifecycle transition so the
         # workflow-field guard does not block a regular employee from submitting
@@ -909,6 +966,11 @@ class HrLeave(models.Model):
             # custom roles, while existing employee users remain compatible.
             "has_personal_scope": has_employee,
             "has_team_scope": has_team_scope,
+            "calendar_defaults": {
+                "view": self.env.company.leave_default_calendar_view,
+                "privacy": self.env.company.leave_calendar_privacy,
+                "future_months": self.env.company.leave_calendar_future_months,
+            },
             "can_approve": can_decide,
             "pending_approvals": pending_approvals,
             "can_operate": is_officer,
@@ -2461,14 +2523,7 @@ class HrLeave(models.Model):
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled:
             raise ValidationError(_("This leave request is not awaiting approval."))
 
-        inst = self.env["cleon.approval.instance"].sudo().search([
-            ("res_model", "=", "hr.leave"),
-            ("res_id", "=", leave.id),
-            ("state", "=", "pending"),
-        ], limit=1) if "cleon.approval.instance" in self.env else False
-
-        if not inst:
-            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
+        inst = leave._get_pending_approval_instance()
 
         # Verify approver authority before checking business advisory thresholds
         current_step = inst.sudo().step_ids.filtered(lambda s: s.state == "pending")
@@ -2517,14 +2572,7 @@ class HrLeave(models.Model):
         leave._post_configured_leave_update(body)
         leave.sudo().write({"rejection_reason": reason, "rejection_category": category})
 
-        inst = self.env["cleon.approval.instance"].sudo().search([
-            ("res_model", "=", "hr.leave"),
-            ("res_id", "=", leave.id),
-            ("state", "=", "pending"),
-        ], limit=1) if "cleon.approval.instance" in self.env else False
-
-        if not inst:
-            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
+        inst = leave._get_pending_approval_instance()
 
         inst.with_user(self.env.user).action_decide("reject", comment=reason)
 
@@ -2542,14 +2590,7 @@ class HrLeave(models.Model):
         if leave.state not in ("confirm", "validate1") or leave.is_cancelled or leave.changes_requested:
             raise ValidationError(_("Only a pending leave request can be returned for changes."))
 
-        inst = self.env["cleon.approval.instance"].sudo().search([
-            ("res_model", "=", "hr.leave"),
-            ("res_id", "=", leave.id),
-            ("state", "=", "pending"),
-        ], limit=1) if "cleon.approval.instance" in self.env else False
-
-        if not inst:
-            raise UserError(_("Configuration Integrity Error: No active approval instance found for this pending leave request."))
+        inst = leave._get_pending_approval_instance()
 
         inst.with_user(self.env.user).action_decide("request_changes", comment=comment)
 
@@ -2850,6 +2891,17 @@ class HrLeave(models.Model):
         return team_domain, employee
 
     @api.model
+    def _calendar_default_status_domain(self):
+        """Company visibility defaults used when the caller has not filtered status."""
+        company = self.env.company
+        conditions = [[("state", "in", ("confirm", "validate1", "validate")), ("is_cancelled", "=", False)]]
+        if company.leave_show_cancelled:
+            conditions.append([("is_cancelled", "=", True)])
+        if company.leave_show_rejected:
+            conditions.append([("state", "=", "refuse")])
+        return expression.OR(conditions)
+
+    @api.model
     def get_leave_calendar_data(
         self,
         date_from,
@@ -2864,6 +2916,11 @@ class HrLeave(models.Model):
         scope = self._check_leave_calendar_access(
             employee_scope=employee_view, calendar_scope=calendar_scope,
         )
+        future_limit = fields.Date.context_today(self) + relativedelta(
+            months=self.env.company.leave_calendar_future_months,
+        )
+        if fields.Date.to_date(date_from) > future_limit:
+            raise ValidationError(_("This date is beyond the organisation calendar visibility window."))
         employee_view = scope != "organisation"
 
         department_ids = [int(x) for x in (department_ids or []) if x]
@@ -2906,10 +2963,7 @@ class HrLeave(models.Model):
                     or_domain.append(cond)
                 domain.extend(or_domain)
         else:
-            domain.extend([
-                ("state", "in", ("confirm", "validate1", "validate")),
-                ("is_cancelled", "=", False),
-            ])
+            domain = expression.AND([domain, self._calendar_default_status_domain()])
 
         # Personal scope is also evaluated by Odoo's native hr.leave record
         # rules. Team/organisation scopes use the explicit capability check
@@ -2925,20 +2979,22 @@ class HrLeave(models.Model):
         # labels, otherwise a self-service user cannot read employee_id.name.
         leaves = self.sudo().browse(authorised_leave_ids)
 
+        privacy = self.env.company.leave_calendar_privacy
         leave_list = []
         for l in leaves:
             status = l._get_cleon_leave_status()
             is_own = bool(curr_emp and l.employee_id == curr_emp)
+            restricted = not is_own and privacy in ("limited", "anonymous")
             leave_list.append({
                 "id": l.id,
                 "request_ref": l.request_ref or f"LR-{l.id:06d}",
                 "employee_id": l.employee_id.id,
-                "employee_name": l.employee_id.name or "",
-                "department_id": l.employee_id.department_id.id if l.employee_id.department_id else False,
-                "department_name": l.employee_id.department_id.name or "No Department",
-                "job_title": l.employee_id.job_title or (l.employee_id.job_id.name if l.employee_id.job_id else "") or _("Employee"),
+                "employee_name": _("Unavailable") if restricted and privacy == "anonymous" else l.employee_id.name or "",
+                "department_id": False if restricted and privacy == "anonymous" else l.employee_id.department_id.id if l.employee_id.department_id else False,
+                "department_name": "" if restricted and privacy == "anonymous" else l.employee_id.department_id.name or "No Department",
+                "job_title": "" if restricted else l.employee_id.job_title or (l.employee_id.job_id.name if l.employee_id.job_id else "") or _("Employee"),
                 "leave_type_id": l.holiday_status_id.id,
-                "leave_type_name": l.holiday_status_id.name or "",
+                "leave_type_name": _("Leave") if restricted else l.holiday_status_id.name or "",
                 "color": getattr(l.holiday_status_id, "color", 0),
                 "color_hex": l.holiday_status_id.cleon_color_hex or "#64748B",
                 "date_from": fields.Date.to_string(l.request_date_from),
@@ -2948,9 +3004,9 @@ class HrLeave(models.Model):
                 "status_label": dict(self._fields["state"]._description_selection(self.env)).get(l.state, status.title()),
                 "half_day": bool(l.request_unit_half),
                 "half_day_period": l.request_date_from_period if l.request_unit_half else False,
-                "notes": (l.notes or l.admin_creation_note or "") if (not employee_view or is_own) else "",
+                "notes": (l.notes or l.admin_creation_note or "") if not restricted else "",
                 "is_own": is_own,
-                "can_open_detail": not employee_view or is_own,
+                "can_open_detail": not restricted,
             })
 
         leave_types = self.env["hr.leave.type"].sudo().search([
@@ -3040,6 +3096,11 @@ class HrLeave(models.Model):
         )
         employee_view = scope != "organisation"
         year = int(year)
+        future_limit = fields.Date.context_today(self) + relativedelta(
+            months=self.env.company.leave_calendar_future_months,
+        )
+        if fields.Date.to_date(f"{year}-01-01") > future_limit:
+            raise ValidationError(_("This year is beyond the organisation calendar visibility window."))
         date_from = f"{year}-01-01"
         date_to = f"{year}-12-31"
 
@@ -3083,10 +3144,7 @@ class HrLeave(models.Model):
                     or_domain.append(cond)
                 domain.extend(or_domain)
         else:
-            domain.extend([
-                ("state", "in", ("confirm", "validate1", "validate")),
-                ("is_cancelled", "=", False),
-            ])
+            domain = expression.AND([domain, self._calendar_default_status_domain()])
 
         CalendarLeave = self.sudo()
         leaves = CalendarLeave.search(domain)

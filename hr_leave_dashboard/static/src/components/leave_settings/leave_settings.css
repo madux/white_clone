@@ -60,14 +60,16 @@
 .o_ls_metrics b { color: #ed1b76; font-size: 23px; }
 .o_ls_metrics span { margin-top: 5px; color: #68768b; font-size: 11.5px; }
 .o_ls_roles { padding: 0 20px; }
-.o_ls_roles > div { min-height: 62px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #edf0f3; }
-.o_ls_roles > div:last-child { border-bottom: 0; }
+.o_ls_roles > div, .o_ls_role_row { min-height: 62px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #edf0f3; }
+.o_ls_roles > div:last-child, .o_ls_role_row:last-child { border-bottom: 0; }
+.o_ls_role_row { width: 100%; padding: 0; border-left: 0; border-right: 0; border-top: 0; background: transparent; text-align: left; cursor: pointer; }
+.o_ls_role_row:hover { background: #fff7fa; }
 .o_ls_role_dot { width: 9px; height: 9px; border-radius: 50%; background: #ed1b76; }
-.o_ls_roles > div > div { flex: 1; }
+.o_ls_roles > div > div, .o_ls_role_row > div { flex: 1; }
 .o_ls_roles strong, .o_ls_roles small { display: block; }
 .o_ls_roles strong { color: #263247; font-size: 13px; }
 .o_ls_roles small { color: #7e8ba0; font-size: 11px; margin-top: 2px; }
-.o_ls_roles > div > b { color: #536174; font-size: 11px; font-weight: 600; }
+.o_ls_roles > div > b, .o_ls_role_row > b { color: #536174; font-size: 11px; font-weight: 600; }
 .o_ls_footer { position: fixed; z-index: 5; left: 240px; right: 0; bottom: 0; height: 68px; padding: 12px 28px; border-top: 1px solid #dde3eb; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: space-between; }
 .o_leave_sidebar_collapsed .o_ls_footer { left: 76px; }
 .o_ls_footer button { height: 40px; border-radius: 8px; padding: 0 16px; font-size: 12px; font-weight: 650; }
