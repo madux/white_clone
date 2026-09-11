@@ -108,6 +108,8 @@ export interface DocDocument {
   acknowledged_at?: string | false;
   pinned?: boolean;
   distribution_status?: "active" | "archived" | "deactivated";
+  version_count?: number;
+  current_version_number?: number;
 }
 
 export interface ExpiringDocument {

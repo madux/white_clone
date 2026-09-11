@@ -157,7 +157,7 @@ export default function SettingsView({
             {([
               ["auto_create_monthly_album", "Auto-create monthly album", "A new album is created at the start of each month."],
               ["auto_approve_trusted", "Auto-approve trusted users", "Trusted uploaders skip the review queue."],
-              ["ai_moderation_enabled", "AI moderation enabled", "Screen uploads with Hugging Face, Ollama, or OpenRouter."],
+              ["ai_moderation_enabled", "AI review on uploads", "When on, uploads are screened automatically. When off, every upload goes to Pending Requests for manual review."],
             ] as const).map(([key, label, helper]) => (
               <label key={key} className="toggle-row">
                 <span>

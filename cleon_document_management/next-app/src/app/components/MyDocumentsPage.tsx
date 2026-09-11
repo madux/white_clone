@@ -40,7 +40,11 @@ import BulkDocumentActions from "./BulkDocumentActions";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import ModalDialog from "./ModalDialog";
 import UploadDuplicateDialog from "./UploadDuplicateDialog";
-import { findUploadDuplicates } from "../../../lib/uploadDuplicates";
+import {
+  buildReplaceDocumentIds,
+  buildVersionChangeNotes,
+  findUploadDuplicates,
+} from "../../../lib/uploadDuplicates";
 import type { UploadDuplicateMatch } from "../../../lib/types";
 import {
   missingExpiryDates,
@@ -252,7 +256,8 @@ export default function MyDocumentsPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState<{
     matches: UploadDuplicateMatch[];
-    proceed: () => Promise<void>;
+    proceedAsVersion: () => Promise<void>;
+    proceedAsNew: () => Promise<void>;
   } | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadTypes, setUploadTypes] = useState<string[]>([]);
@@ -344,7 +349,7 @@ export default function MyDocumentsPage() {
       ? `${(process.env.NEXT_PUBLIC_ODOO_URL || "").replace(/\/$/, "")}/document-management/document/${viewing.id}/preview`
       : "";
 
-  const performUpload = async () => {
+  const performUpload = async (asVersion = false) => {
     setUploadError("");
     if (
       missingExpiryDates(
@@ -356,12 +361,19 @@ export default function MyDocumentsPage() {
       setUploadError("Enter an expiry date for each applicable document type.");
       return;
     }
+    const matches = duplicateWarning?.matches ?? [];
     try {
-      setUploadProgress("Uploading files...");
+      setUploadProgress(asVersion ? "Saving new version..." : "Uploading files...");
       const result = await upload.mutateAsync({
         files: uploadFiles,
         document_type_ids: uploadTypes.map(Number),
         expiry_dates: uploadExpiryDates,
+        replace_document_ids: asVersion
+          ? buildReplaceDocumentIds(uploadFiles, uploadTypes, matches)
+          : undefined,
+        change_notes: asVersion
+          ? buildVersionChangeNotes(uploadFiles, uploadTypes, matches)
+          : undefined,
       });
       const response = result as {
         success: boolean;
@@ -414,7 +426,8 @@ export default function MyDocumentsPage() {
         if (matches.length) {
           setDuplicateWarning({
             matches,
-            proceed: performUpload,
+            proceedAsVersion: () => performUpload(true),
+            proceedAsNew: () => performUpload(false),
           });
           return;
         }
@@ -908,7 +921,8 @@ export default function MyDocumentsPage() {
             (documentTypes.data ?? []).map((type) => [type.id, type.name]),
           )}
           onCancel={() => setDuplicateWarning(null)}
-          onUploadAnyway={() => void duplicateWarning.proceed()}
+          onUploadAsVersion={() => void duplicateWarning.proceedAsVersion()}
+          onUploadAsNew={() => void duplicateWarning.proceedAsNew()}
           pending={upload.isPending}
         />
       )}

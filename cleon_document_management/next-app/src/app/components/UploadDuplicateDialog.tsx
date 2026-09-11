@@ -7,7 +7,8 @@ type UploadDuplicateDialogProps = {
   matches: UploadDuplicateMatch[];
   typeLabels?: Record<number, string>;
   onCancel: () => void;
-  onUploadAnyway: () => void;
+  onUploadAsVersion: () => void;
+  onUploadAsNew: () => void;
   pending?: boolean;
 };
 
@@ -15,19 +16,20 @@ export default function UploadDuplicateDialog({
   matches,
   typeLabels = {},
   onCancel,
-  onUploadAnyway,
+  onUploadAsVersion,
+  onUploadAsNew,
   pending = false,
 }: UploadDuplicateDialogProps) {
   return (
     <ModalDialog
-      title="Possible duplicate upload"
-      eyebrow="Upload warning"
-      description="One or more files match existing documents with the same name and document type."
+      title="Matching document found"
+      eyebrow="Version upload"
+      description="This file matches an existing document with the same name and type. Upload it as a new version to keep history, or create a separate copy."
       onClose={onCancel}
       size="lg"
       titleClassName="text-xl"
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
@@ -38,10 +40,18 @@ export default function UploadDuplicateDialog({
           <button
             type="button"
             disabled={pending}
-            onClick={onUploadAnyway}
+            onClick={onUploadAsNew}
+            className="rounded-full border border-slate-200 px-4 py-2.5 font-semibold text-slate-600 disabled:opacity-50"
+          >
+            Upload as separate copy
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onUploadAsVersion}
             className="rounded-full bg-gradient-to-r from-brand-text to-brand-pink px-5 py-2.5 font-bold text-white disabled:opacity-50"
           >
-            {pending ? "Uploading..." : "Upload anyway"}
+            {pending ? "Uploading..." : "Upload as new version"}
           </button>
         </div>
       }
@@ -59,7 +69,7 @@ export default function UploadDuplicateDialog({
                 ? ` (${typeLabels[match.document_type_id]})`
                 : ""}
               {match.version_count != null && match.version_count > 0
-                ? ` · ${match.version_count} version${match.version_count === 1 ? "" : "s"}`
+                ? ` · ${match.version_count} saved version${match.version_count === 1 ? "" : "s"}`
                 : ""}
             </p>
           </li>

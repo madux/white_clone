@@ -23,6 +23,38 @@ export async function findUploadDuplicates(
   return result.success ? result.matches ?? [] : [];
 }
 
+export function buildReplaceDocumentIds(
+  files: File[],
+  typeIds: string[],
+  matches: UploadDuplicateMatch[],
+): Array<number | null> {
+  return files.map((file, index) => {
+    const documentTypeId = Number(typeIds[index] || 0);
+    const match = matches.find(
+      (item) =>
+        item.document_type_id === documentTypeId &&
+        item.filename.toLowerCase() === file.name.toLowerCase(),
+    );
+    return match?.id ?? null;
+  });
+}
+
+export function buildVersionChangeNotes(
+  files: File[],
+  typeIds: string[],
+  matches: UploadDuplicateMatch[],
+): string[] {
+  return files.map((file, index) => {
+    const documentTypeId = Number(typeIds[index] || 0);
+    const match = matches.find(
+      (item) =>
+        item.document_type_id === documentTypeId &&
+        item.filename.toLowerCase() === file.name.toLowerCase(),
+    );
+    return match ? "Uploaded new version" : "";
+  });
+}
+
 export function findFolderUploadDuplicates(
   files: File[],
   typeIds: string[],

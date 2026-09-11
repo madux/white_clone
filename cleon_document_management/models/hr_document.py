@@ -1,3 +1,4 @@
+import base64
 from datetime import timedelta
 
 from odoo import api, fields, models, _
@@ -337,6 +338,12 @@ class Document(models.Model):
             "recycle_bin_until": now + timedelta(days=retention_days),
         })
 
+    def _user_can_replace_file(self):
+        self.ensure_one()
+        if self._is_document_manager():
+            return True
+        return self._user_owns_document()
+
     def _create_version_snapshot(self, change_note=""):
         """Persist the current attachment as a version before replacing it."""
         Version = self.env["doc.document.version"]
@@ -363,6 +370,40 @@ class Document(models.Model):
             )
             created |= version
         return created
+
+    def replace_file_from_upload(
+        self,
+        filename,
+        file_bytes,
+        mimetype=None,
+        change_note="",
+        expiry_values=None,
+    ):
+        """Archive the current file as a version and attach the uploaded replacement."""
+        self.ensure_one()
+        if not self._user_can_replace_file():
+            raise AccessError(_("You do not have permission to update this document."))
+        if not self.active or self.deleted_at:
+            raise ValidationError(_("Cannot version an inactive or deleted document."))
+        if not file_bytes:
+            raise ValidationError(_("The replacement file is empty."))
+
+        self._create_version_snapshot(change_note or _("Uploaded new version"))
+        attachment = self.env["ir.attachment"].sudo().create({
+            "name": filename or self.name,
+            "datas": base64.b64encode(file_bytes),
+            "mimetype": mimetype or "application/octet-stream",
+            "res_model": self._name,
+            "res_id": self.id,
+        })
+        write_vals = {
+            "attachment_id": attachment.id,
+            "name": filename or self.name,
+        }
+        if expiry_values:
+            write_vals.update(expiry_values)
+        self.sudo().write(write_vals)
+        return self
 
     @api.model
     def _cron_send_expiry_alerts(self):
@@ -627,6 +668,15 @@ class Document(models.Model):
             "current_approver_name": current_approver.name if current else None,
         }
 
+    def _version_metadata(self):
+        self.ensure_one()
+        version_numbers = self.version_ids.mapped("version_number")
+        latest_snapshot = max(version_numbers or [0])
+        return {
+            "version_count": len(self.version_ids),
+            "current_version_number": latest_snapshot + 1,
+        }
+
     def serialize_for_api(self, user=None, **extra):
         self.ensure_one()
         user = user or self.env.user
@@ -653,6 +703,7 @@ class Document(models.Model):
             "active": self.active,
             "distribution_status": self.distribution_status,
         }
+        payload.update(self._version_metadata())
         payload.update(self.get_review_context(user))
         payload.update(extra)
         return payload

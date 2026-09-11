@@ -696,9 +696,12 @@ class SocialGalleryController(http.Controller):
             media_type = "video" if session.mime_type.startswith("video/") else "image"
             employee = self._user().employee_id
             company = self._company()
-            trusted = self._is_trusted_user()
-            auto_approve = trusted and company.sg_auto_approve_trusted
-            approval_status = "approved" if auto_approve or self._is_manager() else "pending"
+            if not company.sg_ai_moderation_enabled:
+                approval_status = "pending"
+            else:
+                trusted = self._is_trusted_user()
+                auto_approve = trusted and company.sg_auto_approve_trusted
+                approval_status = "approved" if auto_approve or self._is_manager() else "pending"
             album = session.album_id or self._resolve_auto_album()
 
             media = request.env["social.gallery.media"].sudo().create({
@@ -720,7 +723,9 @@ class SocialGalleryController(http.Controller):
             })
             session.media_id = media.id
 
-            if media_type == "image" and session.object_key:
+            if not company.sg_ai_moderation_enabled:
+                media._mark_manual_review_only()
+            elif media_type == "image" and session.object_key:
                 image_bytes = storage.get_object_bytes(session.object_key)
                 if image_bytes:
                     from odoo.addons.cleon_social_gallery.models.gallery_thumbnail import generate_image_thumbnail
@@ -730,11 +735,10 @@ class SocialGalleryController(http.Controller):
                         thumb_key = "%s-thumb.jpg" % session.object_key.rsplit(".", 1)[0]
                         if storage.put_object_bytes(thumb_key, thumb_bytes, thumb_mime):
                             media.thumbnail_key = thumb_key
-                if company.sg_ai_moderation_enabled:
-                    media._run_ai_screening(
-                        image_bytes=image_bytes,
-                        image_mime=session.mime_type,
-                    )
+                media._run_ai_screening(
+                    image_bytes=image_bytes,
+                    image_mime=session.mime_type,
+                )
 
             request.env["social.gallery.upload.history"].sudo().create({
                 "company_id": company.id,

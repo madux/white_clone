@@ -66,6 +66,88 @@ def _upload_expiry_dates():
     return []
 
 
+def _upload_replace_document_ids():
+    raw = request.httprequest.form.get("replace_document_ids")
+    if not raw:
+        return []
+    try:
+        values = json.loads(raw)
+        if isinstance(values, list):
+            parsed = []
+            for value in values:
+                if value in (None, "", 0, "0", False):
+                    parsed.append(None)
+                else:
+                    parsed.append(int(value))
+            return parsed
+    except (TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return []
+
+
+def _upload_change_notes():
+    raw = request.httprequest.form.get("change_notes")
+    if not raw:
+        return []
+    try:
+        values = json.loads(raw)
+        if isinstance(values, list):
+            return [str(value or "") for value in values]
+    except (TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return []
+
+
+def _process_document_upload(
+    upload,
+    document_type,
+    expiry_values,
+    folder,
+    employee=None,
+    replace_document_id=None,
+    change_note="",
+):
+    """Create a new document or version an existing one from an uploaded file."""
+    Document = request.env["doc.document"]
+    if replace_document_id:
+        document = Document.browse(int(replace_document_id)).exists()
+        if not document:
+            raise ValidationError(_("The document to update could not be found."))
+        document.check_access_rule("read")
+        if document.document_type_id.id != document_type.id:
+            raise ValidationError(_("The document type does not match the existing file."))
+        if employee and document.employee_id.id != employee.id:
+            raise ValidationError(_("This file belongs to another employee."))
+        if folder and document.folder_id.id != folder.id:
+            raise ValidationError(_("This file belongs to another folder."))
+        if not document.active or document.deleted_at:
+            raise ValidationError(_("Cannot create a new version for an inactive document."))
+        document.replace_file_from_upload(
+            upload.filename or document.name,
+            upload.read(),
+            upload.mimetype or "application/octet-stream",
+            change_note=change_note,
+            expiry_values=expiry_values or {},
+        )
+        return document
+
+    attachment = request.env["ir.attachment"].sudo().create({
+        "name": upload.filename or "document",
+        "datas": base64.b64encode(upload.read()),
+        "mimetype": upload.mimetype or "application/octet-stream",
+    })
+    create_vals = {
+        "name": upload.filename or "Document",
+        "folder_id": folder.id,
+        "document_type_id": document_type.id,
+        "attachment_id": attachment.id,
+        **(expiry_values or {}),
+    }
+    if employee:
+        create_vals["employee_id"] = employee.id
+    return Document.create(create_vals)
+
+
 def _expiry_values_for_upload(document_type, expiry_date):
     if not document_type.expiry_applicable:
         return {}
@@ -1088,32 +1170,35 @@ class DocumentUICreation(http.Controller):
             )
         documents = request.env["doc.document"]
         expiry_dates = _upload_expiry_dates()
-        for index, upload in enumerate(uploads):
-            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
-            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
-            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
-            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
-            if expiry_values is None:
-                return request.make_json_response(
-                    {
-                        "success": False,
-                        "message": f"An expiry date is required for {document_type.name}.",
-                    },
-                    status=400,
+        replace_document_ids = _upload_replace_document_ids()
+        change_notes = _upload_change_notes()
+        try:
+            for index, upload in enumerate(uploads):
+                type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+                document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+                expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+                expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+                if expiry_values is None:
+                    return request.make_json_response(
+                        {
+                            "success": False,
+                            "message": f"An expiry date is required for {document_type.name}.",
+                        },
+                        status=400,
+                    )
+                replace_id = replace_document_ids[index] if index < len(replace_document_ids) else None
+                change_note = change_notes[index] if index < len(change_notes) else ""
+                documents |= _process_document_upload(
+                    upload,
+                    document_type,
+                    expiry_values,
+                    folder,
+                    employee=employee,
+                    replace_document_id=replace_id,
+                    change_note=change_note,
                 )
-            attachment = request.env["ir.attachment"].sudo().create({
-                "name": upload.filename or "employee-document",
-                "datas": base64.b64encode(upload.read()),
-                "mimetype": upload.mimetype or "application/octet-stream",
-            })
-            documents |= request.env["doc.document"].create({
-                "name": upload.filename or "Employee document",
-                "folder_id": folder.id,
-                "employee_id": employee.id,
-                "document_type_id": type_id,
-                "attachment_id": attachment.id,
-                **expiry_values,
-            })
+        except (ValidationError, AccessError) as error:
+            return request.make_json_response({"success": False, "message": str(error)}, status=400)
         request.env["doc.folder"].sync_pending_upload_assignments()
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
@@ -1176,30 +1261,35 @@ class DocumentUICreation(http.Controller):
             )
         documents = request.env["doc.document"]
         expiry_dates = _upload_expiry_dates()
-        for index, upload in enumerate(uploads):
-            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
-            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
-            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
-            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
-            if expiry_values is None:
-                return request.make_json_response(
-                    {
-                        "success": False,
-                        "message": f"An expiry date is required for {document_type.name}.",
-                    },
-                    status=400,
+        replace_document_ids = _upload_replace_document_ids()
+        change_notes = _upload_change_notes()
+        try:
+            for index, upload in enumerate(uploads):
+                type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+                document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+                expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+                expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+                if expiry_values is None:
+                    return request.make_json_response(
+                        {
+                            "success": False,
+                            "message": f"An expiry date is required for {document_type.name}.",
+                        },
+                        status=400,
+                    )
+                replace_id = replace_document_ids[index] if index < len(replace_document_ids) else None
+                change_note = change_notes[index] if index < len(change_notes) else ""
+                documents |= _process_document_upload(
+                    upload,
+                    document_type,
+                    expiry_values,
+                    folder,
+                    employee=employee,
+                    replace_document_id=replace_id,
+                    change_note=change_note,
                 )
-            attachment = request.env["ir.attachment"].sudo().create({
-                "name": upload.filename or "employee-document",
-                "datas": base64.b64encode(upload.read()),
-                "mimetype": upload.mimetype or "application/octet-stream",
-            })
-            documents |= request.env["doc.document"].create({
-                "name": upload.filename or "Employee document", "folder_id": folder.id,
-                "employee_id": employee.id, "document_type_id": type_id,
-                "attachment_id": attachment.id,
-                **expiry_values,
-            })
+        except (ValidationError, AccessError) as error:
+            return request.make_json_response({"success": False, "message": str(error)}, status=400)
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
@@ -1723,29 +1813,34 @@ class DocumentUICreation(http.Controller):
         folder.check_access_rule("read")
         documents = request.env["doc.document"]
         expiry_dates = _upload_expiry_dates()
-        for index, upload in enumerate(uploads):
-            type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
-            document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
-            expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
-            expiry_values = _expiry_values_for_upload(document_type, expiry_date)
-            if expiry_values is None:
-                return request.make_json_response(
-                    {
-                        "success": False,
-                        "message": f"An expiry date is required for {document_type.name}.",
-                    },
-                    status=400,
+        replace_document_ids = _upload_replace_document_ids()
+        change_notes = _upload_change_notes()
+        try:
+            for index, upload in enumerate(uploads):
+                type_id = document_type_ids[0] if len(document_type_ids) == 1 else document_type_ids[index]
+                document_type = document_types.filtered(lambda item: item.id == type_id)[:1]
+                expiry_date = expiry_dates[index] if index < len(expiry_dates) else (expiry_dates[0] if len(expiry_dates) == 1 else False)
+                expiry_values = _expiry_values_for_upload(document_type, expiry_date)
+                if expiry_values is None:
+                    return request.make_json_response(
+                        {
+                            "success": False,
+                            "message": f"An expiry date is required for {document_type.name}.",
+                        },
+                        status=400,
+                    )
+                replace_id = replace_document_ids[index] if index < len(replace_document_ids) else None
+                change_note = change_notes[index] if index < len(change_notes) else ""
+                documents |= _process_document_upload(
+                    upload,
+                    document_type,
+                    expiry_values,
+                    folder,
+                    replace_document_id=replace_id,
+                    change_note=change_note,
                 )
-            attachment = request.env["ir.attachment"].create({
-                "name": upload.filename or "document",
-                "datas": base64.b64encode(upload.read()),
-                "mimetype": upload.mimetype or "application/octet-stream",
-            })
-            documents |= request.env["doc.document"].create({
-                "name": upload.filename or "Document", "folder_id": folder.id,
-                "document_type_id": type_id, "attachment_id": attachment.id,
-                **expiry_values,
-            })
+        except (ValidationError, AccessError) as error:
+            return request.make_json_response({"success": False, "message": str(error)}, status=400)
         return request.make_json_response(
             {"success": True, "data": {"id": documents[0].id, "name": documents[0].name}, "documents": [{"id": doc.id, "name": doc.name} for doc in documents]}
         )
@@ -1770,6 +1865,26 @@ class DocumentUICreation(http.Controller):
             }
         )
         return {"success": True, "data": {"id": doc.id, "name": doc.name}}
+
+    @http.route(
+        "/document-management/document/version/<int:version_id>/preview",
+        type="http",
+        auth="user",
+        methods=["GET"],
+    )
+    def preview_document_version(self, version_id, **kwargs):
+        version = request.env["doc.document.version"].browse(version_id).exists()
+        if not version or not version.file_attachment:
+            return request.not_found()
+        version.document_id.check_access_rule("read")
+        attachment = version.file_attachment
+        return request.make_response(
+            _attachment_bytes(attachment),
+            headers=[
+                ("Content-Type", attachment.mimetype or "application/octet-stream"),
+                ("Content-Disposition", f'inline; filename="{attachment.name}"'),
+            ],
+        )
 
     @http.route(
         "/document-management/document/<int:doc_id>/download",

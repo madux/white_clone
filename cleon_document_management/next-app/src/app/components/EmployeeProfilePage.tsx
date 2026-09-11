@@ -2,21 +2,18 @@
 
 import {
   CalendarDays,
-  CheckCircle2,
   Check,
   FilePlus2,
-  FileText,
   Mail,
   MapPin,
   Phone,
   Upload,
-  X,
   XCircle,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useComplianceTargets,
   useCurrentUser,
@@ -26,7 +23,6 @@ import {
   useReviewDocument,
   useUploadEmployeeDocument,
 } from "../../../hooks/useDocuments";
-import DocumentActions from "./DocumentActions";
 import BulkDocumentActions from "./BulkDocumentActions";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ModalDialog from "./ModalDialog";
@@ -36,16 +32,19 @@ import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilt
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import UploadDuplicateDialog from "./UploadDuplicateDialog";
 import BackButton from "./BackButton";
-import { findUploadDuplicates } from "../../../lib/uploadDuplicates";
+import EmployeeDocumentTreeRow from "./EmployeeDocumentTreeRow";
+import {
+  buildReplaceDocumentIds,
+  buildVersionChangeNotes,
+  findUploadDuplicates,
+} from "../../../lib/uploadDuplicates";
 import type { UploadDuplicateMatch } from "../../../lib/types";
 import {
   missingExpiryDates,
   typeRequiresExpiry,
 } from "./uploadExpiryHelpers";
-import {
-  approvalDisplayLabel,
-  canReviewDocument,
-} from "../../../lib/approvalHelpers";
+import { canReviewDocument } from "../../../lib/approvalHelpers";
+import { groupEmployeeDocuments } from "../../../lib/groupEmployeeDocuments";
 
 export default function EmployeeProfilePage() {
   const params = useSearchParams();
@@ -65,7 +64,8 @@ export default function EmployeeProfilePage() {
   const [reviewError, setReviewError] = useState("");
   const [duplicateWarning, setDuplicateWarning] = useState<{
     matches: UploadDuplicateMatch[];
-    proceed: () => Promise<void>;
+    proceedAsVersion: () => Promise<void>;
+    proceedAsNew: () => Promise<void>;
   } | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
@@ -101,6 +101,7 @@ export default function EmployeeProfilePage() {
         ? "Complete"
         : "No evaluations";
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTER_STATE);
+  const [expandedDocuments, setExpandedDocuments] = useState<number[]>([]);
   const documentTypes = [
     ...new Set(employeeDocuments.map((document) => document.document_type)),
   ];
@@ -108,6 +109,22 @@ export default function EmployeeProfilePage() {
     () => applyDocumentFilters(employeeDocuments, filters),
     [employeeDocuments, filters]
   );
+  const groupedEmployeeDocuments = useMemo(
+    () => groupEmployeeDocuments(filteredEmployeeDocuments),
+    [filteredEmployeeDocuments],
+  );
+  const autoExpandedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoExpandedRef.current || !groupedEmployeeDocuments.length) return;
+    const expandable = groupedEmployeeDocuments
+      .filter((group) => group.historyCount > 0)
+      .map((group) => group.primary.id);
+    if (expandable.length) {
+      setExpandedDocuments(expandable);
+      autoExpandedRef.current = true;
+    }
+  }, [groupedEmployeeDocuments]);
 
   useEffect(() => {
     const docId = Number(params.get("doc") || 0);
@@ -115,7 +132,7 @@ export default function EmployeeProfilePage() {
     const match = employeeDocuments.find((document) => document.id === docId);
     if (match) setViewing(match);
   }, [employeeDocuments, params]);
-  const visibleIds = filteredEmployeeDocuments.map((document) => document.id);
+  const visibleIds = groupedEmployeeDocuments.map((group) => group.primary.id);
   const allSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selected.includes(id));
   const toggleSelected = (id: number) =>
@@ -133,8 +150,13 @@ export default function EmployeeProfilePage() {
     .slice(0, 2)
     .toUpperCase();
 
-  const approvalLabel = (document: (typeof employeeDocuments)[number]) =>
-    approvalDisplayLabel(document);
+  const toggleExpanded = (documentId: number) => {
+    setExpandedDocuments((current) =>
+      current.includes(documentId)
+        ? current.filter((id) => id !== documentId)
+        : [...current, documentId],
+    );
+  };
 
   const handleReview = async (
     document: any,
@@ -162,7 +184,7 @@ export default function EmployeeProfilePage() {
     }
   };
 
-  const performUpload = async () => {
+  const performUpload = async (asVersion = false) => {
     if (
       !uploadFiles.length ||
       uploadTypes.some((id) => !id) ||
@@ -175,12 +197,19 @@ export default function EmployeeProfilePage() {
     )
       return;
     setUploadError("");
+    const matches = duplicateWarning?.matches ?? [];
     try {
       const response = await uploadEmployeeDocument.mutateAsync({
         files: uploadFiles,
         employee_id: employeeId,
         document_type_ids: uploadTypes.map(Number),
         expiry_dates: uploadExpiryDates,
+        replace_document_ids: asVersion
+          ? buildReplaceDocumentIds(uploadFiles, uploadTypes, matches)
+          : undefined,
+        change_notes: asVersion
+          ? buildVersionChangeNotes(uploadFiles, uploadTypes, matches)
+          : undefined,
       });
       if (!response.success || !response.data?.id) {
         throw new Error(response.message || "The document could not be uploaded.");
@@ -216,7 +245,11 @@ export default function EmployeeProfilePage() {
         uploadTypes,
       );
       if (matches.length) {
-        setDuplicateWarning({ matches, proceed: performUpload });
+        setDuplicateWarning({
+          matches,
+          proceedAsVersion: () => performUpload(true),
+          proceedAsNew: () => performUpload(false),
+        });
         return;
       }
     } catch (error: any) {
@@ -346,7 +379,7 @@ export default function EmployeeProfilePage() {
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
-        ) : filteredEmployeeDocuments.length ? (
+        ) : groupedEmployeeDocuments.length ? (
           <div className="overflow-x-auto">
               <SortableTable className="w-full min-w-[900px] text-left">
               <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
@@ -371,100 +404,27 @@ export default function EmployeeProfilePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredEmployeeDocuments.map((document) => (
-                  <tr key={document.id} className="hover:bg-pink-50/30">
-                    <td className="w-12 px-5 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selected.includes(document.id)}
-                        onChange={() => toggleSelected(document.id)}
-                        aria-label={`Select ${document.name}`}
-                        className="h-4 w-4 accent-pink-600"
-                      />
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-brand-pink" />
-                        <div>
-                          <button
-                            type="button"
-                            onClick={() => setViewing(document)}
-                            className="text-left font-semibold text-slate-800 transition hover:text-brand-pink focus:text-brand-pink"
-                            aria-label={`Open ${document.name}`}
-                          >
-                            {document.name}
-                          </button>
-                          <p className="mt-1 text-xs text-slate-400">
-                            {document.description}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {document.document_type}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-                          document.approval_state === "approved"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : document.waiting_for_prior
-                              ? "bg-slate-100 text-slate-600"
-                              : document.can_review
-                                ? "bg-amber-50 text-amber-700"
-                                : "bg-amber-50/70 text-amber-700"
-                        }`}
-                      >
-                        {document.approval_state === "approved" && (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        )}
-                        {approvalLabel(document)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-600">
-                      {document.expiry_date ?? "No expiry"}
-                    </td>
-                    <td className="px-5 py-4 text-sm text-slate-500">
-                      {document.write_date.slice(0, 10)}
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {currentUser.data?.is_document_manager &&
-                          canReviewDocument(document) && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => void handleReview(document, "approve")}
-                                disabled={review.isPending}
-                                title="Approve document"
-                                aria-label={`Approve ${document.name}`}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <Check className="h-4 w-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setRejecting(document);
-                                  setRejectReason("");
-                                  setReviewError("");
-                                }}
-                                disabled={review.isPending}
-                                title="Reject document"
-                                aria-label={`Reject ${document.name}`}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-600 transition hover:border-red-300 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                        <DocumentActions
-                          documentId={document.id}
-                          documentName={document.name}
-                        />
-                      </div>
-                    </td>
-                  </tr>
+                {groupedEmployeeDocuments.map((group) => (
+                  <EmployeeDocumentTreeRow
+                    key={group.primary.id}
+                    document={group.primary}
+                    relatedDocuments={group.relatedDocuments}
+                    historyCount={group.historyCount}
+                    selected={selected.includes(group.primary.id)}
+                    expanded={expandedDocuments.includes(group.primary.id)}
+                    onToggleExpand={() => toggleExpanded(group.primary.id)}
+                    onToggleSelect={() => toggleSelected(group.primary.id)}
+                    onView={() => setViewing(group.primary)}
+                    onOpenDocument={(document) => setViewing(document)}
+                    onApprove={() => void handleReview(group.primary, "approve")}
+                    onReject={() => {
+                      setRejecting(group.primary);
+                      setRejectReason("");
+                      setReviewError("");
+                    }}
+                    reviewPending={review.isPending}
+                    showReviewActions={Boolean(currentUser.data?.is_document_manager)}
+                  />
                 ))}
               </tbody>
             </SortableTable>
@@ -658,7 +618,8 @@ export default function EmployeeProfilePage() {
             (availableDocumentTypes.data ?? []).map((type) => [type.id, type.name]),
           )}
           onCancel={() => setDuplicateWarning(null)}
-          onUploadAnyway={() => void duplicateWarning.proceed()}
+          onUploadAsVersion={() => void duplicateWarning.proceedAsVersion()}
+          onUploadAsNew={() => void duplicateWarning.proceedAsNew()}
           pending={uploadEmployeeDocument.isPending}
         />
       )}

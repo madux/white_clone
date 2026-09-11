@@ -309,6 +309,8 @@ export const api = {
     folder_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -316,6 +318,12 @@ export const api = {
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
     }
     return multipartClient
       .post<{
@@ -329,12 +337,20 @@ export const api = {
     files: File[];
     document_type_ids: number[];
     expiry_dates?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
     }
     return multipartClient
       .post<{
@@ -350,6 +366,8 @@ export const api = {
     employee_id: number;
     document_type_ids: number[];
     expiry_dates?: string[];
+    replace_document_ids?: Array<number | null>;
+    change_notes?: string[];
   }) => {
     const form = new FormData();
     payload.files.forEach((file) => form.append("file", file, file.name));
@@ -357,6 +375,12 @@ export const api = {
     form.append("document_type_ids", JSON.stringify(payload.document_type_ids));
     if (payload.expiry_dates?.length) {
       form.append("expiry_dates", JSON.stringify(payload.expiry_dates));
+    }
+    if (payload.replace_document_ids?.length) {
+      form.append("replace_document_ids", JSON.stringify(payload.replace_document_ids));
+    }
+    if (payload.change_notes?.length) {
+      form.append("change_notes", JSON.stringify(payload.change_notes));
     }
     return multipartClient
       .post<{ success: boolean; data?: { id: number; name: string }; message?: string }>(

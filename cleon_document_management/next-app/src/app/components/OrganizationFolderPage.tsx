@@ -27,7 +27,11 @@ import ModalDialog from "./ModalDialog";
 import BackButton from "./BackButton";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import UploadDuplicateDialog from "./UploadDuplicateDialog";
-import { findFolderUploadDuplicates } from "../../../lib/uploadDuplicates";
+import {
+  buildReplaceDocumentIds,
+  buildVersionChangeNotes,
+  findFolderUploadDuplicates,
+} from "../../../lib/uploadDuplicates";
 import type { UploadDuplicateMatch } from "../../../lib/types";
 
 import DocumentFilterBar, {
@@ -60,7 +64,8 @@ export default function OrganizationFolderPage() {
   const [folderExpanded, setFolderExpanded] = useState(true);
   const [duplicateWarning, setDuplicateWarning] = useState<{
     matches: UploadDuplicateMatch[];
-    proceed: () => Promise<void>;
+    proceedAsVersion: () => Promise<void>;
+    proceedAsNew: () => Promise<void>;
   } | null>(null);
   const folder = folders.data?.find((item) => item.id === folderId);
   const visibleDocuments = useMemo(
@@ -102,7 +107,7 @@ export default function OrganizationFolderPage() {
         ? current.filter((value) => value !== id)
         : [...current, id],
     );
-  const performUpload = async () => {
+  const performUpload = async (asVersion = false) => {
     if (
       !files.length ||
       !typeIds.length ||
@@ -111,11 +116,18 @@ export default function OrganizationFolderPage() {
       missingExpiryDates(typeIds, expiryDates, types.data ?? [])
     )
       return;
+    const matches = duplicateWarning?.matches ?? [];
     await upload.mutateAsync({
       files,
       folder_id: folderId,
       document_type_ids: typeIds.map(Number),
       expiry_dates: expiryDates,
+      replace_document_ids: asVersion
+        ? buildReplaceDocumentIds(files, typeIds, matches)
+        : undefined,
+      change_notes: asVersion
+        ? buildVersionChangeNotes(files, typeIds, matches)
+        : undefined,
     });
     setFiles([]);
     setTypeIds([]);
@@ -141,7 +153,11 @@ export default function OrganizationFolderPage() {
       documents.data ?? [],
     );
     if (matches.length) {
-      setDuplicateWarning({ matches, proceed: performUpload });
+      setDuplicateWarning({
+        matches,
+        proceedAsVersion: () => performUpload(true),
+        proceedAsNew: () => performUpload(false),
+      });
       return;
     }
     await performUpload();
@@ -490,7 +506,8 @@ export default function OrganizationFolderPage() {
             (types.data ?? []).map((type) => [type.id, type.name]),
           )}
           onCancel={() => setDuplicateWarning(null)}
-          onUploadAnyway={() => void duplicateWarning.proceed()}
+          onUploadAsVersion={() => void duplicateWarning.proceedAsVersion()}
+          onUploadAsNew={() => void duplicateWarning.proceedAsNew()}
           pending={upload.isPending}
         />
       )}

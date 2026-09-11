@@ -1,2 +1,2 @@
-:HL["/cleon_company_documentary/static/src/nextapp/_next/static/css/47d9a84c8b6ea230.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"xdBeCJeuwAinG71dLhRyo"}
+:HL["/cleon_company_documentary/static/src/nextapp/_next/static/css/8890a3dc3012c5ea.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}},"staleTime":300,"buildId":"v7_o5Zluoq3SFxOqeDrSa"}

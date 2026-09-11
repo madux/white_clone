@@ -80,6 +80,7 @@ class SocialGalleryMedia(models.Model):
             ("passed", "Passed"),
             ("flagged", "Flagged"),
             ("dismissed", "Dismissed"),
+            ("skipped", "Skipped"),
         ],
         default="pending",
         index=True,
@@ -165,6 +166,18 @@ class SocialGalleryMedia(models.Model):
         flag_lower = str(flag or "").lower()
         return any(term in flag_lower for term in SEVERE_AI_FLAG_TERMS)
 
+    def _mark_manual_review_only(self):
+        """Skip AI screening and route the upload to the manual approval queue."""
+        for media in self:
+            media.write({
+                "approval_status": "pending",
+                "ai_review_status": "skipped",
+                "ai_moderation_flags": [],
+                "ai_moderation_note": _("AI review is disabled. Waiting for manual approval."),
+                "approved_by": False,
+                "approved_at": False,
+            })
+
     def _enforce_ai_screening_outcome(self):
         self.ensure_one()
         blocking_flags = self._blocking_moderation_flags()
@@ -229,6 +242,11 @@ class SocialGalleryMedia(models.Model):
 
     def _run_ai_screening(self, image_bytes=None, image_mime=None):
         self.ensure_one()
+        company = self.company_id
+        if company and not company.sg_ai_moderation_enabled:
+            self._mark_manual_review_only()
+            return
+
         flags = []
         note = ""
         if self.file_size > 50 * 1024 * 1024:
@@ -238,8 +256,7 @@ class SocialGalleryMedia(models.Model):
             if term in name_lower:
                 flags.append("suspicious_filename")
 
-        company = self.company_id
-        if company and company.sg_ai_moderation_enabled:
+        if company.sg_ai_moderation_enabled:
             if self.media_type == "image" and image_bytes:
                 ai_flags, ai_note = self._moderate_image(
                     image_bytes=image_bytes,
