@@ -367,8 +367,28 @@ class TestConfigurationResources(TransactionCase):
         settings = self.env["hr.leave"].with_user(user)
         values = settings.get_leave_settings()["form"]
         values["calendar_privacy"] = "full"
+        values.update({
+            "bradford_enabled": True,
+            "bradford_window_weeks": 26,
+            "bradford_min_spell_days": 2,
+            "bradford_caution": 40,
+            "bradford_concern": 80,
+            "bradford_serious": 160,
+            "bradford_critical": 320,
+        })
         settings.save_leave_settings(values)
         self.assertEqual(self.env.company.leave_calendar_privacy, "full")
+        self.assertEqual(self.env.company.leave_bradford_window_weeks, 26)
+        self.assertEqual(self.env.company.leave_bradford_min_spell_days, 2)
+        self.assertEqual(
+            [
+                self.env.company.leave_bradford_caution,
+                self.env.company.leave_bradford_concern,
+                self.env.company.leave_bradford_serious,
+                self.env.company.leave_bradford_critical,
+            ],
+            [40, 80, 160, 320],
+        )
 
     def test_approval_template_is_distinct_and_reusable(self):
         chain = self.chain

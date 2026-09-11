@@ -143,6 +143,24 @@ class ResCompany(models.Model):
             if not 0 <= company.leave_default_team_overlap_percent <= 100:
                 raise ValidationError(_("Team overlap percentage must be between 0 and 100."))
 
+    @api.constrains(
+        "leave_bradford_window_weeks", "leave_bradford_min_spell_days",
+        "leave_bradford_caution", "leave_bradford_concern",
+        "leave_bradford_serious", "leave_bradford_critical",
+    )
+    def _check_bradford_settings_values(self):
+        for company in self:
+            thresholds = [
+                company.leave_bradford_caution,
+                company.leave_bradford_concern,
+                company.leave_bradford_serious,
+                company.leave_bradford_critical,
+            ]
+            if company.leave_bradford_window_weeks < 1 or company.leave_bradford_min_spell_days < 1:
+                raise ValidationError(_("Bradford rolling window and minimum spell must be at least 1."))
+            if any(value < 1 for value in thresholds) or thresholds != sorted(thresholds) or len(set(thresholds)) != 4:
+                raise ValidationError(_("Bradford thresholds must be positive, unique, and ordered from Caution to Critical."))
+
 
 class HrLeaveSettings(models.Model):
     _inherit = "hr.leave"
@@ -240,6 +258,13 @@ class HrLeaveSettings(models.Model):
                 "ending_soon_days": company.leave_ending_soon_days, "notify_manager_ending": company.leave_notify_manager_ending,
                 "return_reminder": company.leave_return_reminder, "overdue_reminder_days": company.leave_overdue_reminder_days,
                 "require_return_confirmation": company.leave_require_return_confirmation,
+                "bradford_enabled": bool(company.leave_bradford_enabled),
+                "bradford_window_weeks": company.leave_bradford_window_weeks,
+                "bradford_min_spell_days": company.leave_bradford_min_spell_days,
+                "bradford_caution": company.leave_bradford_caution,
+                "bradford_concern": company.leave_bradford_concern,
+                "bradford_serious": company.leave_bradford_serious,
+                "bradford_critical": company.leave_bradford_critical,
                 "employee_access_during_leave": company.leave_employee_access_during_leave,
                 "return_handling": company.leave_return_handling, "return_grace_days": company.leave_return_grace_days,
                 "extensions_allowed": company.leave_extensions_allowed, "max_extension_days": company.leave_max_extension_days,
@@ -356,6 +381,13 @@ class HrLeaveSettings(models.Model):
             "leave_ending_soon_days": int(values.get("ending_soon_days") or 0), "leave_notify_manager_ending": bool(values.get("notify_manager_ending")),
             "leave_return_reminder": bool(values.get("return_reminder")), "leave_overdue_reminder_days": int(values.get("overdue_reminder_days") or 0),
             "leave_require_return_confirmation": bool(values.get("require_return_confirmation")),
+            "leave_bradford_enabled": bool(values.get("bradford_enabled")),
+            "leave_bradford_window_weeks": int(values.get("bradford_window_weeks") or 52),
+            "leave_bradford_min_spell_days": int(values.get("bradford_min_spell_days") or 1),
+            "leave_bradford_caution": int(values.get("bradford_caution") or 51),
+            "leave_bradford_concern": int(values.get("bradford_concern") or 101),
+            "leave_bradford_serious": int(values.get("bradford_serious") or 201),
+            "leave_bradford_critical": int(values.get("bradford_critical") or 401),
             "leave_employee_access_during_leave": values.get("employee_access_during_leave") or "normal",
             "leave_return_handling": values.get("return_handling") or "attendance", "leave_return_grace_days": int(values.get("return_grace_days") or 0),
             "leave_extensions_allowed": bool(values.get("extensions_allowed")), "leave_max_extension_days": int(values.get("max_extension_days") or 0),

@@ -66,6 +66,24 @@
             </div>
           </section>
 
+          <section t-if="state.activeTab === 'notifications'" class="o_ls_card">
+            <header><i class="fa fa-exclamation-triangle"/><div><h2>Bradford Factor Bands</h2><p>Organisation-wide absence-risk thresholds from Part 9, Section 10.1b. These settings drive the Absence Risk report and remain advisory.</p></div></header>
+            <div class="o_ls_card_body">
+              <div class="o_ls_checks o_ls_bradford_enable">
+                <label><input type="checkbox" t-model="state.form.bradford_enabled"/><span>Enable Bradford Factor scoring</span></label>
+              </div>
+              <div class="o_ls_grid three" t-att-class="state.form.bradford_enabled ? 'o_ls_grid three' : 'o_ls_grid three o_ls_disabled_fields'">
+                <label class="o_ls_field"><span>Rolling window (weeks)</span><input type="number" min="1" t-model.number="state.form.bradford_window_weeks" t-att-disabled="!state.form.bradford_enabled"/><small>Approved qualifying absences inside this rolling period are counted.</small></label>
+                <label class="o_ls_field"><span>Minimum spell (days)</span><input type="number" min="1" t-model.number="state.form.bradford_min_spell_days" t-att-disabled="!state.form.bradford_enabled"/><small>Shorter absence spells are excluded from the calculation.</small></label>
+                <div class="o_ls_notice o_ls_notice_inline"><i class="fa fa-info-circle"/><span>Formula: S² × D. Scores inform review only and never approve, reject, or discipline automatically.</span></div>
+                <label class="o_ls_field"><span>Caution starts</span><input type="number" min="1" t-model.number="state.form.bradford_caution" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Concern starts</span><input type="number" min="1" t-model.number="state.form.bradford_concern" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Serious starts</span><input type="number" min="1" t-model.number="state.form.bradford_serious" t-att-disabled="!state.form.bradford_enabled"/></label>
+                <label class="o_ls_field"><span>Critical starts</span><input type="number" min="1" t-model.number="state.form.bradford_critical" t-att-disabled="!state.form.bradford_enabled"/></label>
+              </div>
+            </div>
+          </section>
+
           <section t-if="state.activeTab === 'rules'" class="o_ls_card">
             <header><i class="fa fa-shield"/><div><h2>Access &amp; Responsibilities</h2><p>Real Odoo security groups currently governing Leave Management.</p></div><button class="o_ls_link_button" t-on-click="openAccessRights">Manage users <i class="fa fa-external-link"/></button></header>
             <div class="o_ls_roles"><button t-foreach="state.data.roles" t-as="role" t-key="role.xmlid" class="o_ls_role_row" t-on-click="() => this.openAccessRole(role)"><span class="o_ls_role_dot"/><div><strong t-esc="role.name"/><small t-esc="role.description"/></div><b><t t-esc="role.users"/> users <i class="fa fa-external-link"/></b></button></div>
