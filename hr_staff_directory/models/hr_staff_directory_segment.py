@@ -19,6 +19,16 @@ class HRStaffDirectorySegment(models.Model):
     name = fields.Char(string='Segment Name', required=True)
     color = fields.Char(string='Color', default='#F59E0B')
     icon = fields.Char(string='Icon', default='users')
+    kind = fields.Selection(
+        [
+            ('people', 'People Segment'),
+            ('smart_search', 'Smart Search Filter Set'),
+        ],
+        string='Kind',
+        default='people',
+        required=True,
+        index=True,
+    )
     conditions = fields.Text(string='Conditions (JSON)', default='[]')
     user_id = fields.Many2one('res.users', string='User', required=True, default=lambda self: self.env.user, ondelete='cascade')
     member_ids = fields.Many2many(
@@ -37,7 +47,10 @@ class HRStaffDirectorySegment(models.Model):
         self.ensure_one()
         Employee = self.env['hr.employee']
         people = Employee._sd_people_list()
-        filtered = Employee._apply_segment_conditions(people, self.conditions)
+        if self.kind == 'smart_search':
+            filtered = Employee._apply_smart_search_filters(people, self.conditions)
+        else:
+            filtered = Employee._apply_segment_conditions(people, self.conditions)
         employees = Employee.browse([p['id'] for p in filtered]).exists()
         self._refresh_members(employees)
         return employees

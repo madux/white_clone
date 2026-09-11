@@ -87,7 +87,7 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 .sdir-tab-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   height: var(--tab-h);
   background: var(--white);
   border-bottom: 1px solid var(--border);
@@ -130,6 +130,68 @@
   font-weight: 700;
   border-bottom-color: var(--pink);
   background-color: rgb(255, 247, 250);
+}
+
+.sdir-tab-bar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+  padding-left: 12px;
+}
+
+.sdir-tab-settings-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgb(229, 231, 235);
+  background: #fff;
+  color: #6B7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sdir-tab-settings-btn:hover {
+  background: #F9FAFB;
+  color: #374151;
+  border-color: #D1D5DB;
+}
+
+.sdir-tab-smart-search-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: none;
+  cursor: pointer;
+  background: rgba(233, 30, 140, 0.082);
+  color: rgb(233, 30, 140);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  transition: 0.2s;
+  flex-shrink: 0;
+}
+
+.sdir-tab-smart-search-btn:hover {
+  background: rgba(233, 30, 140, 0.14);
+}
+
+.sdir-tab-smart-search-btn.active {
+  background: rgb(233, 30, 140);
+  color: #fff;
+}
+
+.sdir-tab-smart-search-btn.active:hover {
+  background: #d0187d;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

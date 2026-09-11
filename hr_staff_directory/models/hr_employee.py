@@ -1181,12 +1181,17 @@ class HrEmployeeStaffDirectory(models.Model):
         if isinstance(conditions, str):
             try:
                 conditions = json.loads(conditions)
-            except:
+            except Exception:
                 conditions = []
+        # Smart Search payloads are dicts — never treat them as People conditions.
+        if isinstance(conditions, dict):
+            return []
         if not conditions:
             return []
 
         def match_condition(person, cond):
+            if not isinstance(cond, dict):
+                return False
             field = cond.get('field')
             op = cond.get('operator')
             val = cond.get('value', '')
@@ -1270,6 +1275,53 @@ class HrEmployeeStaffDirectory(models.Model):
         return filtered
 
     @api.model
+    def _apply_smart_search_filters(self, people, payload):
+        """Apply Smart Search multi-select filters (OR within category, AND across)."""
+        import json
+        import re
+
+        if isinstance(payload, str):
+            try:
+                payload = json.loads(payload)
+            except Exception:
+                payload = {}
+        if not isinstance(payload, dict):
+            return []
+
+        selected = payload.get('selected') or payload.get('filters') or {}
+        if not isinstance(selected, dict) or not selected:
+            return []
+
+        def norm(val):
+            return re.sub(r'[^a-zA-Z0-9]', '', str(val or '')).lower()
+
+        def person_value(person, category_id):
+            if category_id == 'lifecycle':
+                return person.get('lifecycle_state')
+            if category_id == 'location':
+                return person.get('work_location')
+            if category_id == 'grade':
+                return person.get('grade') or person.get('band')
+            if category_id == 'manager':
+                return person.get('manager_name')
+            return person.get(category_id)
+
+        result = list(people or [])
+        for category_id, values in selected.items():
+            if not values:
+                continue
+            norm_selected = {norm(v) for v in values}
+            next_result = []
+            for person in result:
+                p_val = person_value(person, category_id)
+                if p_val is None or p_val == '':
+                    continue
+                if norm(p_val) in norm_selected:
+                    next_result.append(person)
+            result = next_result
+        return result
+
+    @api.model
     def preview_segment(self, conditions):
         people = self._sd_people_list()
         filtered = self._apply_segment_conditions(people, conditions)
@@ -1283,10 +1335,56 @@ class HrEmployeeStaffDirectory(models.Model):
             'name': name,
             'color': color,
             'icon': icon,
+            'kind': 'people',
             'conditions': cond_str,
             'user_id': self.env.user.id
         })
         return seg.id
+
+    @api.model
+    def create_smart_search_filter(self, name, selected, pinned_ids=None):
+        """Persist a Smart Search filter set for the current user."""
+        import json
+        name = (name or '').strip()
+        if not name:
+            return False
+        if not isinstance(selected, dict) or not any(selected.values()):
+            return False
+        # Drop empty categories
+        clean_selected = {
+            k: list(v) for k, v in selected.items()
+            if isinstance(v, (list, tuple)) and len(v)
+        }
+        if not clean_selected:
+            return False
+        pinned = list(pinned_ids or [])
+        for key in clean_selected:
+            if key not in pinned:
+                pinned.append(key)
+        payload = {
+            'selected': clean_selected,
+            'pinnedIds': pinned,
+        }
+        people = self._sd_people_list()
+        matched = self._apply_smart_search_filters(people, payload)
+        seg = self.env['hr.staff.directory.segment'].create({
+            'name': name,
+            'color': '#E91E8C',
+            'icon': 'filter',
+            'kind': 'smart_search',
+            'conditions': json.dumps(payload),
+            'user_id': self.env.user.id,
+        })
+        # Materialize member cache for downstream consumers
+        employees = self.browse([p['id'] for p in matched]).exists()
+        seg._refresh_members(employees)
+        return {
+            'id': seg.id,
+            'name': seg.name,
+            'resultCount': len(matched),
+            'filters': clean_selected,
+            'pinnedIds': pinned,
+        }
 
     @api.model
     def delete_segment(self, segment_id):
@@ -1308,7 +1406,10 @@ class HrEmployeeStaffDirectory(models.Model):
             return {}
 
         people = self._sd_people_list()
-        filtered = self._apply_segment_conditions(people, segment.conditions)
+        if segment.kind == 'smart_search':
+            filtered = self._apply_smart_search_filters(people, segment.conditions)
+        else:
+            filtered = self._apply_segment_conditions(people, segment.conditions)
 
         # Refresh the materialized member cache so downstream consumers
         # (bulk email now, Cleon AI analytics later) always see fresh IDs.
@@ -1369,13 +1470,32 @@ class HrEmployeeStaffDirectory(models.Model):
     def get_staff_directory_people_data(self):
         import json
         segments_record = self.env['hr.staff.directory.segment'].search([('user_id', '=', self.env.user.id)])
+        people = self._sd_people_list()
         segments = []
+        smart_search_filters = []
         for s in segments_record:
             cond_obj = []
             try:
-                cond_obj = json.loads(s.conditions)
-            except:
-                pass
+                cond_obj = json.loads(s.conditions) if s.conditions else []
+            except Exception:
+                cond_obj = []
+
+            if s.kind == 'smart_search':
+                payload = cond_obj if isinstance(cond_obj, dict) else {}
+                selected = payload.get('selected') or payload.get('filters') or {}
+                pinned_ids = payload.get('pinnedIds') or list(selected.keys())
+                matched = self._apply_smart_search_filters(people, payload)
+                smart_search_filters.append({
+                    'id': s.id,
+                    'name': s.name,
+                    'resultCount': len(matched),
+                    'filters': selected,
+                    'pinnedIds': pinned_ids,
+                })
+                continue
+
+            if not isinstance(cond_obj, list):
+                cond_obj = []
             segments.append({
                 'id': s.id,
                 'name': s.name,
@@ -1386,8 +1506,9 @@ class HrEmployeeStaffDirectory(models.Model):
 
         return {
             'stats':  self._sd_people_stats(),
-            'people': self._sd_people_list(),
+            'people': people,
             'segments': segments,
+            'smart_search_filters': smart_search_filters,
             'departments': [
                 {'id': dept.id, 'name': dept.complete_name}
                 for dept in self.env['hr.department'].search([])

@@ -44,12 +44,19 @@ export class StaffDirectoryDashboard extends Component {
         this.busService = this.env.services.bus_service;
         this.rootRef = useRef("root");
         this.jumpInput = useRef("jumpInput");
+        this.smartSearchSaveInput = useRef("smartSearchSaveInput");
         useExternalListener(window, "click", this.onWindowClick.bind(this));
         this._boundOnKeyDown = this.onKeyDown.bind(this);
         this._boundOnClick = this._onClickOutside.bind(this);
 
         // Re-size the page-window input after every render so its width hugs the text.
-        onPatched(() => this._autosizeJumpInput(this.jumpInput.el));
+        onPatched(() => {
+            this._autosizeJumpInput(this.jumpInput.el);
+            if (this._focusSmartSearchSaveInput && this.smartSearchSaveInput.el) {
+                this.smartSearchSaveInput.el.focus();
+                this._focusSmartSearchSaveInput = false;
+            }
+        });
 
         // ─── Debounced Load Data for Real-Time Updates ───────────────────────
         this.debouncedLoadData = this._debounce(this._loadData.bind(this), SDIR_RELOAD_DEBOUNCE_MS);
@@ -157,17 +164,30 @@ export class StaffDirectoryDashboard extends Component {
             teamsDetailId: null,
             teamsDetailTab: 'overview', // overview | members | projects | calendar
             teamsDetailCalPage: 1,
+            teamsMeetingExpandedId: null,
+            teamsScheduledMeetings: {}, // { [teamId]: Meeting[] }
+            showCompareTeamsModal: false,
+            compareTeamIds: [],
+            showScheduleMeetingModal: false,
+            scheduleMeeting: {
+                title: '',
+                date: '',
+                time: '10:00',
+                duration: '60',
+                location: 'Conference Room A',
+                notes: '',
+                selectedIds: [],
+            },
             calYear: new Date().getFullYear(),
             calMonth: new Date().getMonth(), // 0-indexed
             calViewMode: 'month', // month | week | list
             cleonAiOpen: true,
             cleonAiTab: 'summary',
-            // Phase 1 placeholders — Phase 3 will load Smart Search segments (segment + extras)
-            orgSavedFilters: [
-                { id: 'ph-1', name: 'Engineering – Lagos', resultCount: 128 },
-                { id: 'ph-2', name: 'Senior Leadership', resultCount: 56 },
-                { id: 'ph-3', name: 'Remote Teams', resultCount: 23 },
-            ],
+            // Smart Search saved filter sets (local; applied back into smartSearchSelected)
+            orgSavedFilters: [],
+            smartSearchSaving: false,
+            smartSearchSaveName: '',
+            appliedSmartSearchFilter: null, // { id, name } when a saved set is applied
             showOrgViewDropdown: false,
             showOrgFilterDropdown: false,
             activeOrgView: 'org',
@@ -336,7 +356,9 @@ export class StaffDirectoryDashboard extends Component {
             this.state.stats  = d.stats  || this.state.stats;
             this.state.departments = d.departments || [];
             this.state.segments = d.segments || [];
+            this.state.orgSavedFilters = d.smart_search_filters || [];
             this._applyPeopleData(d.people || []);
+            await this._migrateLocalSmartSearchFiltersIfNeeded();
         } catch (e) {
             console.error('[SDIR] people data load failed', e);
         } finally {
@@ -520,6 +542,7 @@ export class StaffDirectoryDashboard extends Component {
         const selected = { ...this.state.smartSearchSelected };
         delete selected[categoryId];
         this.state.smartSearchSelected = selected;
+        this._clearAppliedSmartSearchFilter();
     }
 
     _getSmartSearchOptionsFor(categoryId) {
@@ -566,6 +589,46 @@ export class StaffDirectoryDashboard extends Component {
             }
         }
         return chips;
+    }
+
+    get smartSearchActiveCategoryLabels() {
+        const labels = [];
+        const seen = new Set();
+        for (const [categoryId, values] of Object.entries(this.state.smartSearchSelected)) {
+            if (!values || !values.length || seen.has(categoryId)) continue;
+            seen.add(categoryId);
+            const def = this.smartSearchCategoryDefs.find((c) => c.id === categoryId);
+            labels.push(def ? def.label : categoryId);
+        }
+        return labels;
+    }
+
+    get showSmartSearchCollapsedSummary() {
+        return !this.state.orgSidebarOpen && this.smartSearchTotalSelectedCount > 0;
+    }
+
+    get smartSearchCollapsedSummaryLabel() {
+        if (this.state.appliedSmartSearchFilter?.name) {
+            return this.state.appliedSmartSearchFilter.name;
+        }
+        return this.smartSearchActiveCategoryLabels.join(', ');
+    }
+
+    onTabBarSettings() {
+        this.toggleAdminMode(!this.state.adminMode);
+    }
+
+    onTabBarSmartSearch() {
+        if (this.state.activeTab !== 'org') {
+            this.state.activeTab = 'org';
+            this.state.orgSidebarOpen = true;
+            return;
+        }
+        this.toggleOrgSidebar();
+    }
+
+    _clearAppliedSmartSearchFilter() {
+        this.state.appliedSmartSearchFilter = null;
     }
 
     _personMatchesSmartSearchValue(person, categoryId, selectedValues) {
@@ -1214,8 +1277,82 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     onCompareTeams() {
-        // Placeholder — compare UI comes later
-        this.toast.show('warning', 'Select two or more teams to compare (coming soon).');
+        const teams = this.smartSearchTeams;
+        if (!teams.length) {
+            this.toast.show('warning', 'No teams available to compare');
+            return;
+        }
+        // Prefill with the two largest teams (or one if only one exists)
+        this.state.compareTeamIds = teams.slice(0, 2).map((t) => t.id);
+        this.state.showCompareTeamsModal = true;
+    }
+
+    closeCompareTeamsModal() {
+        this.state.showCompareTeamsModal = false;
+    }
+
+    isCompareTeamSelected(teamId) {
+        return (this.state.compareTeamIds || []).includes(teamId);
+    }
+
+    toggleCompareTeam(teamId) {
+        const ids = [...(this.state.compareTeamIds || [])];
+        const idx = ids.indexOf(teamId);
+        if (idx >= 0) {
+            if (ids.length <= 1) {
+                this.toast.show('warning', 'Keep at least one team selected');
+                return;
+            }
+            ids.splice(idx, 1);
+        } else {
+            if (ids.length >= 4) {
+                this.toast.show('warning', 'Compare up to 4 teams at a time');
+                return;
+            }
+            ids.push(teamId);
+        }
+        this.state.compareTeamIds = ids;
+    }
+
+    _teamFlightRiskCount(team) {
+        if (!team) return 0;
+        const byId = {};
+        for (const p of this.state.people || []) byId[p.id] = p;
+        let n = 0;
+        for (const id of team.memberIds || []) {
+            const fr = String(byId[id]?.flight_risk || '').toLowerCase();
+            if (!fr || fr === 'low' || fr === 'none' || fr === '0' || fr === 'false') continue;
+            n += 1;
+        }
+        return n;
+    }
+
+    _teamModePct(team, key) {
+        const row = (team?.workModes || []).find((w) => w.key === key);
+        return row ? `${row.pct}%` : '0%';
+    }
+
+    get compareTeamsSelected() {
+        const idSet = new Set(this.state.compareTeamIds || []);
+        // Preserve pill selection order
+        const byId = {};
+        for (const t of this.smartSearchTeamsAll) byId[t.id] = t;
+        return (this.state.compareTeamIds || []).map((id) => byId[id]).filter(Boolean);
+    }
+
+    get compareTeamsMetricRows() {
+        const teams = this.compareTeamsSelected;
+        if (!teams.length) return [];
+        const cell = (fn) => teams.map((t) => fn(t));
+        return [
+            { label: 'Headcount', values: cell((t) => t.members) },
+            { label: 'Avg Tenure', values: cell((t) => t.avgTenure) },
+            { label: 'Team Health', values: cell((t) => t.health) },
+            { label: 'Office %', values: cell((t) => this._teamModePct(t, 'office')) },
+            { label: 'Hybrid %', values: cell((t) => this._teamModePct(t, 'hybrid')) },
+            { label: 'Remote %', values: cell((t) => this._teamModePct(t, 'remote')) },
+            { label: 'Flight Risk', values: cell((t) => this._teamFlightRiskCount(t)) },
+        ];
     }
 
     get selectedTeamDetail() {
@@ -1234,7 +1371,9 @@ export class StaffDirectoryDashboard extends Component {
         this.state.teamsDetailId = null;
         this.state.teamsDetailTab = 'overview';
         this.state.teamsDetailCalPage = 1;
+        this.state.teamsMeetingExpandedId = null;
         this.closeTeamPersonDrawer();
+        this.closeScheduleMeetingModal();
     }
 
     setTeamsDetailTab(tab) {
@@ -1371,41 +1510,166 @@ export class StaffDirectoryDashboard extends Component {
         }));
     }
 
+    _startOfDay(value) {
+        const d = value instanceof Date ? new Date(value) : new Date(`${value}T00:00:00`);
+        if (Number.isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    _isoOffsetFromToday(offsetDays) {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + offsetDays);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    _formatTime12(hhmm) {
+        const [hRaw, mRaw] = String(hhmm || '10:00').split(':');
+        const h = Number(hRaw);
+        const m = Number(mRaw) || 0;
+        if (Number.isNaN(h)) return hhmm || '';
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+
+    _formatMeetingTimeRange(time, durationMin) {
+        const [hRaw, mRaw] = String(time || '10:00').split(':');
+        const h = Number(hRaw);
+        const m = Number(mRaw) || 0;
+        const start = new Date();
+        start.setHours(Number.isNaN(h) ? 10 : h, m, 0, 0);
+        const end = new Date(start.getTime() + (parseInt(durationMin, 10) || 60) * 60000);
+        const fmt = (d) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+        return `${fmt(start)} – ${fmt(end)}`;
+    }
+
+    _meetingDateBucket(dateStr) {
+        const d = this._startOfDay(dateStr);
+        const today = this._startOfDay(new Date());
+        if (!d || !today) return null;
+        const diffDays = Math.round((d.getTime() - today.getTime()) / 86400000);
+        if (diffDays < 0) return null;
+        if (diffDays === 0) return { key: 'today', label: 'Today', order: 0 };
+        if (diffDays === 1) return { key: 'tomorrow', label: 'Tomorrow', order: 1 };
+        if (diffDays < 7) {
+            const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            return { key: `day-${dateStr}`, label, order: 10 + diffDays };
+        }
+        if (diffDays < 14) return { key: 'next', label: 'Next Week', order: 20 };
+        return { key: 'later', label: 'Later', order: 30 };
+    }
+
+    _attendeesFromIds(ids) {
+        const byId = {};
+        for (const m of this.selectedTeamMembers) byId[m.id] = m;
+        return (ids || [])
+            .map((id) => byId[id])
+            .filter(Boolean)
+            .map((m) => ({
+                id: m.id,
+                name: m.name,
+                initials: m.initials,
+                title: m.title,
+            }));
+    }
+
+    _buildMeetingCard(raw) {
+        let attendees = this._attendeesFromIds(raw.attendeeIds);
+        if (!attendees.length) {
+            attendees = this.selectedTeamMembers.map((m) => ({
+                id: m.id,
+                name: m.name,
+                initials: m.initials,
+                title: m.title,
+            }));
+        }
+        const people = attendees.slice(0, 3).map((a, i) => ({
+            initials: a.initials,
+            first: i === 0,
+            z: 4 - i,
+        }));
+        const organizer = raw.organizerName || this.selectedTeamDetail?.lead || attendees[0]?.name || '';
+        return {
+            id: raw.id,
+            title: raw.title,
+            meta: `${this._formatMeetingTimeRange(raw.time, raw.duration)} · ${organizer}`,
+            people,
+            attendees,
+            location: raw.location || '—',
+            notes: raw.notes || '',
+            date: raw.date,
+            time: raw.time,
+        };
+    }
+
     get selectedTeamMeetingsUpcoming() {
         const team = this.selectedTeamDetail;
         if (!team) return [];
         const lead = team.lead;
-        const people = this.selectedTeamMeetingPeople;
-        return [
+        const attendeeIds = this.selectedTeamMembers.map((m) => m.id);
+        const demos = [
             {
-                key: 'today',
-                label: 'Today',
-                items: [
-                    { id: 'u1', title: 'Daily Standup', meta: `9:30 AM – 9:45 AM · ${lead}`, people },
-                ],
+                id: `demo-${team.id}-u1`,
+                title: 'Daily Standup',
+                date: this._isoOffsetFromToday(0),
+                time: '09:30',
+                duration: 15,
+                location: 'Zoom',
+                attendeeIds,
+                organizerName: lead,
             },
             {
-                key: 'tomorrow',
-                label: 'Tomorrow',
-                items: [
-                    { id: 'u2', title: 'Sprint Planning', meta: `10:00 AM – 12:00 PM · ${lead}`, people },
-                ],
+                id: `demo-${team.id}-u2`,
+                title: 'Sprint Planning',
+                date: this._isoOffsetFromToday(1),
+                time: '10:00',
+                duration: 120,
+                location: 'Conference Room A',
+                attendeeIds,
+                organizerName: lead,
             },
             {
-                key: 'mon',
-                label: 'Mon, Sep 14',
-                items: [
-                    { id: 'u3', title: 'Architecture Review', meta: `2:00 PM – 3:00 PM · ${lead}`, people },
-                ],
+                id: `demo-${team.id}-u3`,
+                title: 'Architecture Review',
+                date: this._isoOffsetFromToday(3),
+                time: '14:00',
+                duration: 60,
+                location: 'Conference Room B',
+                attendeeIds,
+                organizerName: lead,
             },
             {
-                key: 'next',
-                label: 'Next Week',
-                items: [
-                    { id: 'u4', title: 'Demo Day', meta: `3:00 PM – 4:00 PM · ${lead}`, people },
-                ],
+                id: `demo-${team.id}-u4`,
+                title: 'Demo Day',
+                date: this._isoOffsetFromToday(8),
+                time: '15:00',
+                duration: 60,
+                location: 'Main Hall',
+                attendeeIds,
+                organizerName: lead,
             },
         ];
+        const custom = this.state.teamsScheduledMeetings[team.id] || [];
+        // User-created meetings first so they surface at the top of their bucket
+        const all = [...custom, ...demos];
+        const buckets = new Map();
+        for (const raw of all) {
+            const bucket = this._meetingDateBucket(raw.date);
+            if (!bucket) continue;
+            if (!buckets.has(bucket.key)) {
+                buckets.set(bucket.key, { key: bucket.key, label: bucket.label, order: bucket.order, items: [] });
+            }
+            buckets.get(bucket.key).items.push(this._buildMeetingCard(raw));
+        }
+        for (const b of buckets.values()) {
+            b.items.sort((a, bItem) => String(a.time || '').localeCompare(String(bItem.time || '')));
+        }
+        return [...buckets.values()].sort((a, b) => a.order - b.order);
     }
 
     get selectedTeamMeetingsRecentAll() {
@@ -1450,8 +1714,114 @@ export class StaffDirectoryDashboard extends Component {
         }
     }
 
+    toggleTeamsMeetingExpand(meetingId) {
+        this.state.teamsMeetingExpandedId =
+            this.state.teamsMeetingExpandedId === meetingId ? null : meetingId;
+    }
+
+    isTeamsMeetingExpanded(meetingId) {
+        return this.state.teamsMeetingExpandedId === meetingId;
+    }
+
     onScheduleTeamMeeting() {
-        this.toast.show('warning', 'Schedule Meeting coming soon');
+        const team = this.selectedTeamDetail;
+        if (!team) return;
+        const members = this.selectedTeamMembers;
+        this.state.scheduleMeeting = {
+            title: `${team.name} Team Meeting`,
+            date: '',
+            time: '10:00',
+            duration: '60',
+            location: 'Conference Room A',
+            notes: '',
+            selectedIds: members.map((m) => m.id),
+        };
+        this.state.showScheduleMeetingModal = true;
+    }
+
+    closeScheduleMeetingModal() {
+        this.state.showScheduleMeetingModal = false;
+    }
+
+    get scheduleMeetingAttendeeTotal() {
+        return this.selectedTeamMembers.length;
+    }
+
+    get scheduleMeetingSelectedCount() {
+        return (this.state.scheduleMeeting.selectedIds || []).length;
+    }
+
+    get scheduleMeetingSubtitle() {
+        const team = this.selectedTeamDetail;
+        if (!team) return '';
+        return `${team.name} · ${this.scheduleMeetingSelectedCount} of ${this.scheduleMeetingAttendeeTotal} attendees selected`;
+    }
+
+    get scheduleMeetingAttendeesLabel() {
+        return `Attendees (${this.scheduleMeetingSelectedCount} / ${this.scheduleMeetingAttendeeTotal})`;
+    }
+
+    isScheduleAttendeeSelected(id) {
+        return (this.state.scheduleMeeting.selectedIds || []).includes(id);
+    }
+
+    toggleScheduleAttendee(id) {
+        const ids = [...(this.state.scheduleMeeting.selectedIds || [])];
+        const idx = ids.indexOf(id);
+        if (idx >= 0) ids.splice(idx, 1);
+        else ids.push(id);
+        this.state.scheduleMeeting.selectedIds = ids;
+    }
+
+    selectAllScheduleAttendees() {
+        this.state.scheduleMeeting.selectedIds = this.selectedTeamMembers.map((m) => m.id);
+    }
+
+    clearScheduleAttendees() {
+        this.state.scheduleMeeting.selectedIds = [];
+    }
+
+    submitScheduleMeeting() {
+        const team = this.selectedTeamDetail;
+        const form = this.state.scheduleMeeting;
+        const title = (form.title || '').trim();
+        if (!team) return;
+        if (!title) {
+            this.toast.show('warning', 'Enter a meeting title');
+            return;
+        }
+        if (!form.date) {
+            this.toast.show('warning', 'Pick a meeting date');
+            return;
+        }
+        if (!(form.selectedIds || []).length) {
+            this.toast.show('warning', 'Select at least one attendee');
+            return;
+        }
+        if (!this._meetingDateBucket(form.date)) {
+            this.toast.show('warning', 'Pick today or a future date');
+            return;
+        }
+        const dur = parseInt(form.duration, 10) || 60;
+        const meeting = {
+            id: `mtg-${Date.now()}`,
+            title,
+            date: form.date,
+            time: form.time || '10:00',
+            duration: dur,
+            location: (form.location || '').trim() || '—',
+            notes: (form.notes || '').trim(),
+            attendeeIds: [...form.selectedIds],
+            organizerName: team.lead || '',
+        };
+        const existing = this.state.teamsScheduledMeetings[team.id] || [];
+        this.state.teamsScheduledMeetings = {
+            ...this.state.teamsScheduledMeetings,
+            [team.id]: [meeting, ...existing],
+        };
+        this.state.teamsMeetingExpandedId = meeting.id;
+        this.toast.show('success', `"${title}" scheduled · ${form.date} at ${form.time || '10:00'} (${dur} min)`);
+        this.closeScheduleMeetingModal();
     }
 
     onExportTeamDetail() {
@@ -1506,6 +1876,7 @@ export class StaffDirectoryDashboard extends Component {
             cleared[id] = [];
         }
         this.state.smartSearchSelected = cleared;
+        this._clearAppliedSmartSearchFilter();
     }
 
     isSmartSearchOptionChecked(categoryId, optionValue) {
@@ -1526,16 +1897,132 @@ export class StaffDirectoryDashboard extends Component {
         }
         selected[categoryId] = current;
         this.state.smartSearchSelected = selected;
+        this._clearAppliedSmartSearchFilter();
     }
 
     onSaveSmartSearchFilters() {
-        // Phase 3: persist as Smart Search segment (reuse segments + extras)
-        this.toast.show('warning', 'Save Filters coming soon');
+        if (!this.smartSearchTotalSelectedCount) {
+            this.toast.show('warning', 'Select at least one filter to save');
+            return;
+        }
+        this.state.smartSearchSaving = true;
+        this.state.smartSearchSaveName = '';
+        this._focusSmartSearchSaveInput = true;
+    }
+
+    cancelSmartSearchSave() {
+        this.state.smartSearchSaving = false;
+        this.state.smartSearchSaveName = '';
+    }
+
+    onSmartSearchSaveKeydown(ev) {
+        if (ev.key === 'Escape') {
+            ev.preventDefault();
+            this.cancelSmartSearchSave();
+            return;
+        }
+        if (ev.key === 'Enter') {
+            ev.preventDefault();
+            this.confirmSmartSearchSave();
+        }
+    }
+
+    _cloneSmartSearchFilters(source) {
+        const filters = {};
+        for (const [k, v] of Object.entries(source || {})) {
+            filters[k] = [...(v || [])];
+        }
+        return filters;
+    }
+
+    async _migrateLocalSmartSearchFiltersIfNeeded() {
+        const flagKey = 'sdir_ss_saved_filters_migrated';
+        try {
+            if (localStorage.getItem(flagKey)) return;
+            const raw = localStorage.getItem('sdir_ss_saved_filters');
+            if (!raw) {
+                localStorage.setItem(flagKey, '1');
+                return;
+            }
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed) || !parsed.length) {
+                localStorage.removeItem('sdir_ss_saved_filters');
+                localStorage.setItem(flagKey, '1');
+                return;
+            }
+            for (const saved of parsed) {
+                if (!saved?.name || !saved?.filters) continue;
+                // Skip if a DB row with the same name already exists
+                if ((this.state.orgSavedFilters || []).some((s) => s.name === saved.name)) continue;
+                await this.rpc("/web/dataset/call_kw/hr.employee/create_smart_search_filter", {
+                    model: "hr.employee",
+                    method: "create_smart_search_filter",
+                    args: [saved.name, saved.filters, saved.pinnedIds || []],
+                    kwargs: {},
+                });
+            }
+            localStorage.removeItem('sdir_ss_saved_filters');
+            localStorage.setItem(flagKey, '1');
+            // Reload list from DB after migration
+            const d = await this.rpc('/hr_staff_directory/people');
+            this.state.orgSavedFilters = d.smart_search_filters || [];
+        } catch (e) {
+            console.warn('Smart Search filter migration skipped', e);
+        }
+    }
+
+    async confirmSmartSearchSave() {
+        const name = (this.state.smartSearchSaveName || '').trim();
+        if (!name) {
+            this.toast.show('warning', 'Name this filter set');
+            return;
+        }
+        if (!this.smartSearchTotalSelectedCount) {
+            this.toast.show('warning', 'Select at least one filter to save');
+            return;
+        }
+        const filters = this._cloneSmartSearchFilters(this.state.smartSearchSelected);
+        const pinnedIds = [...this.state.smartSearchPinnedIds];
+        try {
+            const entry = await this.rpc("/web/dataset/call_kw/hr.employee/create_smart_search_filter", {
+                model: "hr.employee",
+                method: "create_smart_search_filter",
+                args: [name, filters, pinnedIds],
+                kwargs: {},
+            });
+            if (!entry || !entry.id) {
+                this.toast.show('error', 'Could not save filter set');
+                return;
+            }
+            this.state.orgSavedFilters = [entry, ...(this.state.orgSavedFilters || []).filter((s) => s.id !== entry.id)];
+            this.state.appliedSmartSearchFilter = { id: entry.id, name: entry.name };
+            this.cancelSmartSearchSave();
+            this.toast.show('success', `"${name}" saved`);
+        } catch (e) {
+            console.error('Failed to save Smart Search filter set', e);
+            this.toast.show('error', 'Failed to save filter set');
+        }
     }
 
     onSelectOrgSavedFilter(saved) {
-        // Phase 3: apply Smart Search segment → dedicated view (not org activeFilters)
-        this.toast.show('warning', `"${saved.name}" apply coming soon`);
+        if (!saved?.filters || !Object.keys(saved.filters).length) {
+            this.toast.show('warning', `"${saved?.name || 'Saved set'}" has no filters to apply`);
+            return;
+        }
+        const filters = this._cloneSmartSearchFilters(saved.filters);
+        const pinnedFromSaved = (saved.pinnedIds || []).filter(Boolean);
+        const pinnedFromFilters = Object.keys(filters).filter((k) => (filters[k] || []).length);
+        const pinnedIds = pinnedFromSaved.length ? pinnedFromSaved : pinnedFromFilters;
+        // Ensure every category with values is pinned so panels show
+        for (const id of pinnedFromFilters) {
+            if (!pinnedIds.includes(id)) pinnedIds.push(id);
+        }
+        this.state.smartSearchSelected = filters;
+        this.state.smartSearchPinnedIds = pinnedIds;
+        this.state.appliedSmartSearchFilter = { id: saved.id, name: saved.name };
+        this.state.orgSidebarOpen = true;
+        this.state.smartSearchSaving = false;
+        this.toast.show('success', `Applied "${saved.name}"`);
     }
 
     toggleOrgViewDropdown() {
@@ -2461,6 +2948,14 @@ export class StaffDirectoryDashboard extends Component {
     }
 
     onKeyDown(ev) {
+        if (ev.key === "Escape" && this.state.showCompareTeamsModal) {
+            this.closeCompareTeamsModal();
+            return;
+        }
+        if (ev.key === "Escape" && this.state.showScheduleMeetingModal) {
+            this.closeScheduleMeetingModal();
+            return;
+        }
         if (ev.key === "Escape" && this.state.showTeamPersonDrawer) {
             this.closeTeamPersonDrawer();
             return;

@@ -55,6 +55,30 @@
                     </svg>
                     Organizational Intelligence
                 </button>
+
+                <div class="sdir-tab-bar-actions">
+                    <button type="button"
+                            class="sdir-tab-settings-btn"
+                            title="Settings"
+                            t-on-click="onTabBarSettings">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                    <button type="button"
+                            data-cleo-target="smart-search-btn"
+                            data-cleo-tooltip="Filter by department, location, grade level, employment type, or employee name. Filters apply in real time — multi-select is fully supported."
+                            data-cleo-tooltip-title="Smart Search 🔍"
+                            t-att-class="'sdir-tab-smart-search-btn' + (state.orgSidebarOpen ? ' active' : '')"
+                            t-on-click="onTabBarSmartSearch">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        Smart Search
+                    </button>
+                </div>
             </div>
 
             <!-- ═══ MAIN CONTENT (People Tab) ════════════════════════════════ -->
@@ -248,19 +272,34 @@
 
                                 <!-- Footer: save + saved filters -->
                                 <div class="sdir-ss-footer">
-                                    <button type="button" class="sdir-ss-save-btn" t-on-click="onSaveSmartSearchFilters">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
-                                        </svg>
-                                        <span>Save Filters</span>
-                                        <span t-if="this.smartSearchTotalSelectedCount" class="sdir-ss-save-count" t-esc="this.smartSearchTotalSelectedCount"/>
-                                    </button>
+                                    <t t-if="state.smartSearchSaving">
+                                        <div class="sdir-ss-save-form">
+                                            <input type="text"
+                                                   class="sdir-ss-save-input"
+                                                   placeholder="Name this filter set…"
+                                                   t-ref="smartSearchSaveInput"
+                                                   t-model="state.smartSearchSaveName"
+                                                   t-on-keydown="onSmartSearchSaveKeydown"/>
+                                            <button type="button" class="sdir-ss-save-cancel" t-on-click="cancelSmartSearchSave" title="Cancel">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                            </button>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <button type="button" class="sdir-ss-save-btn" t-on-click="onSaveSmartSearchFilters">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                                            </svg>
+                                            <span>Save Filters</span>
+                                            <span t-if="this.smartSearchTotalSelectedCount" class="sdir-ss-save-count" t-esc="this.smartSearchTotalSelectedCount"/>
+                                        </button>
+                                    </t>
                                     <div class="sdir-ss-saved-list">
                                         <t t-foreach="state.orgSavedFilters" t-as="saved" t-key="saved.id">
                                             <div class="sdir-ss-saved-row" t-on-click="() => this.onSelectOrgSavedFilter(saved)">
                                                 <div class="sdir-ss-saved-text">
                                                     <div class="sdir-ss-saved-title" t-esc="saved.name"/>
-                                                    <div class="sdir-ss-saved-meta" t-esc="saved.resultCount + ' results'"/>
+                                                    <div class="sdir-ss-saved-meta"><t t-esc="saved.resultCount"/> results</div>
                                                 </div>
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <path d="m9 18 6-6-6-6"/>
@@ -272,11 +311,19 @@
                             </div>
                         </t>
                         <t t-else="">
-                            <button type="button" class="sdir-ss-reopen-btn" t-on-click="toggleOrgSidebar" title="Open Smart Search">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m9 18 6-6-6-6"/>
-                                </svg>
-                            </button>
+                            <div class="sdir-ss-rail" t-on-click="toggleOrgSidebar" title="Open Smart Search">
+                                <button type="button" class="sdir-ss-reopen-btn">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="m9 18 6-6-6-6"/>
+                                    </svg>
+                                </button>
+                                <t t-if="this.showSmartSearchCollapsedSummary">
+                                    <div class="sdir-ss-rail-summary">
+                                        <span class="sdir-ss-rail-count" t-esc="this.smartSearchTotalSelectedCount"/>
+                                        <span class="sdir-ss-rail-label" t-esc="this.smartSearchCollapsedSummaryLabel"/>
+                                    </div>
+                                </t>
+                            </div>
                         </t>
                     </div>
 
@@ -687,21 +734,54 @@
                                                                     <div>
                                                                         <div class="sdir-ss-td-cal-sec" t-esc="sec.label"/>
                                                                         <t t-foreach="sec.items" t-as="mtg" t-key="mtg.id">
-                                                                            <div class="sdir-ss-td-cal-row">
-                                                                                <div class="sdir-ss-td-cal-bar-accent"/>
-                                                                                <div class="sdir-ss-td-cal-row-body">
-                                                                                    <div class="sdir-ss-td-cal-mtg-title" t-esc="mtg.title"/>
-                                                                                    <div class="sdir-ss-td-cal-mtg-meta" t-esc="mtg.meta"/>
+                                                                            <div t-att-class="'sdir-ss-td-cal-item' + (this.isTeamsMeetingExpanded(mtg.id) ? ' open' : '')">
+                                                                                <div class="sdir-ss-td-cal-row"
+                                                                                     t-on-click="() => this.toggleTeamsMeetingExpand(mtg.id)">
+                                                                                    <div class="sdir-ss-td-cal-bar-accent"/>
+                                                                                    <div class="sdir-ss-td-cal-row-body">
+                                                                                        <div class="sdir-ss-td-cal-mtg-title" t-esc="mtg.title"/>
+                                                                                        <div class="sdir-ss-td-cal-mtg-meta" t-esc="mtg.meta"/>
+                                                                                    </div>
+                                                                                    <div class="sdir-ss-td-cal-avs">
+                                                                                        <t t-foreach="mtg.people" t-as="av" t-key="av.initials + av_index">
+                                                                                            <div t-att-class="'sdir-ss-td-cal-av' + (av.first ? ' first' : '')"
+                                                                                                 t-att-style="'z-index:' + av.z + ';'"
+                                                                                                 t-esc="av.initials"/>
+                                                                                        </t>
+                                                                                    </div>
+                                                                                    <div class="sdir-ss-td-cal-chev">
+                                                                                        <t t-if="this.isTeamsMeetingExpanded(mtg.id)">
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                                                                                        </t>
+                                                                                        <t t-else="">
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                                                        </t>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div class="sdir-ss-td-cal-avs">
-                                                                                    <t t-foreach="mtg.people" t-as="av" t-key="av.initials + av_index">
-                                                                                        <div t-att-class="'sdir-ss-td-cal-av' + (av.first ? ' first' : '')"
-                                                                                             t-att-style="'z-index:' + av.z + ';'"
-                                                                                             t-esc="av.initials"/>
-                                                                                    </t>
-                                                                                </div>
-                                                                                <div class="sdir-ss-td-cal-chev">
-                                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                                                                                <div t-if="this.isTeamsMeetingExpanded(mtg.id)" class="sdir-ss-td-cal-expand">
+                                                                                    <div class="sdir-ss-td-cal-expand-block">
+                                                                                        <div class="sdir-ss-td-cal-expand-label">Attendees (<t t-esc="mtg.attendees.length"/>)</div>
+                                                                                        <div class="sdir-ss-td-cal-chips">
+                                                                                            <t t-foreach="mtg.attendees" t-as="att" t-key="att.id">
+                                                                                                <div class="sdir-ss-td-cal-chip">
+                                                                                                    <div class="sdir-ss-td-cal-chip-av" t-esc="att.initials"/>
+                                                                                                    <span t-esc="att.name"/>
+                                                                                                </div>
+                                                                                            </t>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="sdir-ss-td-cal-expand-meta">
+                                                                                        <div>
+                                                                                            <div class="sdir-ss-td-cal-expand-label sm">Location / Link</div>
+                                                                                            <div class="sdir-ss-td-cal-expand-val" t-esc="mtg.location"/>
+                                                                                        </div>
+                                                                                        <t t-if="mtg.notes">
+                                                                                            <div>
+                                                                                                <div class="sdir-ss-td-cal-expand-label sm">Notes / Agenda</div>
+                                                                                                <div class="sdir-ss-td-cal-expand-val" t-esc="mtg.notes"/>
+                                                                                            </div>
+                                                                                        </t>
+                                                                                    </div>
                                                                                 </div>
                                                                             </div>
                                                                         </t>
@@ -1380,7 +1460,154 @@
             </button>
             -->
 
-                        <!-- ═══ TEAM PERSON SLIDE-OUT DRAWER ═══════════════════════ -->
+                        <!-- ═══ COMPARE TEAMS MODAL ═══════════════════════════ -->
+            <t t-if="state.showCompareTeamsModal">
+                <div class="sdir-ss-ct-backdrop" t-on-click="closeCompareTeamsModal">
+                    <div class="sdir-ss-ct-modal" role="dialog" aria-label="Compare Teams" t-on-click.stop="">
+                        <div class="sdir-ss-ct-header">
+                            <h3 class="sdir-ss-ct-title">Compare Teams</h3>
+                            <div class="sdir-ss-ct-pills">
+                                <t t-foreach="this.smartSearchTeams" t-as="team" t-key="team.id">
+                                    <button type="button"
+                                            t-att-class="'sdir-ss-ct-pill' + (this.isCompareTeamSelected(team.id) ? ' on' : '')"
+                                            t-on-click="() => this.toggleCompareTeam(team.id)"
+                                            t-esc="team.name"/>
+                                </t>
+                            </div>
+                            <button type="button" class="sdir-ss-ct-close" t-on-click="closeCompareTeamsModal" title="Close">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="sdir-ss-ct-body">
+                            <t t-if="this.compareTeamsSelected.length">
+                                <table class="sdir-ss-ct-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Metric</th>
+                                            <t t-foreach="this.compareTeamsSelected" t-as="ct" t-key="ct.id">
+                                                <th t-esc="ct.name"/>
+                                            </t>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="this.compareTeamsMetricRows" t-as="row" t-key="row.label">
+                                            <tr t-att-class="row_index % 2 === 1 ? 'alt' : ''">
+                                                <td t-esc="row.label"/>
+                                                <t t-foreach="row.values" t-as="val" t-key="val_index">
+                                                    <td t-esc="val"/>
+                                                </t>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                            <t t-else="">
+                                <div class="sdir-ss-ct-empty">Select teams above to compare metrics</div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ═══ SCHEDULE TEAM MEETING MODAL ═══════════════════ -->
+            <t t-if="state.showScheduleMeetingModal and this.selectedTeamDetail">
+                <div class="sdir-ss-sm-backdrop" t-on-click="closeScheduleMeetingModal">
+                    <div class="sdir-ss-sm-modal" role="dialog" aria-label="Schedule Team Meeting" t-on-click.stop="">
+                        <div class="sdir-ss-sm-header">
+                            <div class="sdir-ss-sm-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E91E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                            </div>
+                            <div class="sdir-ss-sm-header-text">
+                                <div class="sdir-ss-sm-title">Schedule Team Meeting</div>
+                                <div class="sdir-ss-sm-sub" t-esc="this.scheduleMeetingSubtitle"/>
+                            </div>
+                            <button type="button" class="sdir-ss-sm-close" t-on-click="closeScheduleMeetingModal" title="Close">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="sdir-ss-sm-body">
+                            <div class="sdir-ss-sm-grid">
+                                <div class="sdir-ss-sm-field full">
+                                    <label>Meeting Title</label>
+                                    <input type="text" t-model="state.scheduleMeeting.title"/>
+                                </div>
+                                <div class="sdir-ss-sm-field">
+                                    <label>Date</label>
+                                    <input type="date" t-model="state.scheduleMeeting.date"/>
+                                </div>
+                                <div class="sdir-ss-sm-field">
+                                    <label>Time</label>
+                                    <input type="time" t-model="state.scheduleMeeting.time"/>
+                                </div>
+                                <div class="sdir-ss-sm-field">
+                                    <label>Duration</label>
+                                    <select t-model="state.scheduleMeeting.duration">
+                                        <option value="30">30 minutes</option>
+                                        <option value="45">45 minutes</option>
+                                        <option value="60">60 minutes</option>
+                                        <option value="90">90 minutes</option>
+                                        <option value="120">120 minutes</option>
+                                    </select>
+                                </div>
+                                <div class="sdir-ss-sm-field">
+                                    <label>Location / Link</label>
+                                    <input type="text" t-model="state.scheduleMeeting.location"/>
+                                </div>
+                            </div>
+
+                            <div class="sdir-ss-sm-attendees">
+                                <div class="sdir-ss-sm-attendees-bar">
+                                    <div class="sdir-ss-sm-attendees-label" t-esc="this.scheduleMeetingAttendeesLabel"/>
+                                    <div class="sdir-ss-sm-attendees-actions">
+                                        <button type="button" class="sdir-ss-sm-link pink" t-on-click="selectAllScheduleAttendees">Select all</button>
+                                        <span class="sdir-ss-sm-sep">|</span>
+                                        <button type="button" class="sdir-ss-sm-link gray" t-on-click="clearScheduleAttendees">Clear</button>
+                                    </div>
+                                </div>
+                                <div class="sdir-ss-sm-attendees-list">
+                                    <t t-foreach="this.selectedTeamMembers" t-as="m" t-key="m.id">
+                                        <div t-att-class="'sdir-ss-sm-attendee' + (m_index % 2 === 1 ? ' alt' : '') + (this.isScheduleAttendeeSelected(m.id) ? ' selected' : '')"
+                                             t-on-click="() => this.toggleScheduleAttendee(m.id)">
+                                            <div class="sdir-ss-sm-attendee-av" t-esc="m.initials"/>
+                                            <div class="sdir-ss-sm-attendee-info">
+                                                <div class="sdir-ss-sm-attendee-name" t-esc="m.name"/>
+                                                <div class="sdir-ss-sm-attendee-role" t-esc="m.title"/>
+                                            </div>
+                                            <t t-if="m.isLead">
+                                                <span class="sdir-ss-sm-lead">Lead</span>
+                                            </t>
+                                            <div t-att-class="'sdir-ss-sm-check' + (this.isScheduleAttendeeSelected(m.id) ? ' on' : '')">
+                                                <t t-if="this.isScheduleAttendeeSelected(m.id)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                                </t>
+                                            </div>
+                                        </div>
+                                    </t>
+                                    <t t-if="!this.selectedTeamMembers.length">
+                                        <div class="sdir-ss-sm-attendees-empty">No team members available</div>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <div class="sdir-ss-sm-field">
+                                <label>Meeting Notes / Agenda</label>
+                                <textarea rows="3" placeholder="Add agenda items or notes for attendees…" t-model="state.scheduleMeeting.notes"/>
+                            </div>
+                        </div>
+
+                        <div class="sdir-ss-sm-footer">
+                            <button type="button" class="sdir-ss-sm-cancel" t-on-click="closeScheduleMeetingModal">Cancel</button>
+                            <button type="button" class="sdir-ss-sm-submit" t-on-click="submitScheduleMeeting">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>
+                                Schedule Meeting
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ═══ TEAM PERSON SLIDE-OUT DRAWER ═══════════════════════ -->
             <t t-if="state.showTeamPersonDrawer and state.activeProfile">
                 <div class="sdir-ss-ep-backdrop" t-on-click="closeTeamPersonDrawer"/>
                 <div class="sdir-ss-ep-drawer" role="dialog" aria-label="Employee Profile" t-on-click.stop="">
