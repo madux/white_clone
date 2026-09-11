@@ -43,6 +43,25 @@ class TestLeavePolicies(TransactionCase):
         self.assertEqual(len(policies), 2)
         self.assertEqual(policies[0].line_ids.accrual_amount, 21)
 
+    def test_policy_form_receives_current_organisation_defaults(self):
+        self.env.company.write({
+            "leave_default_unit": "hours",
+            "leave_default_approval_workflow": "none",
+            "leave_default_supporting_document_policy": "always",
+            "leave_default_minimum_notice_days": 7,
+            "leave_default_allow_half_day": False,
+            "leave_default_allow_carryover": False,
+            "leave_default_allow_negative_balance": True,
+        })
+        defaults = self.Policy.get_policy_page_data()["options"]["policy_defaults"]
+        self.assertEqual(defaults["unit"], "hours")
+        self.assertEqual(defaults["approval_workflow"], "none")
+        self.assertEqual(defaults["supporting_document_policy"], "always")
+        self.assertEqual(defaults["minimum_notice_days"], 7)
+        self.assertFalse(defaults["allow_half_day"])
+        self.assertFalse(defaults["allow_carryover"])
+        self.assertTrue(defaults["allow_negative_balance"])
+
     def test_custom_type_is_created_inline_with_structured_classification(self):
         payload = self.payload("Medical Policy", self.employee_a, state="draft")
         payload["lines"] = [{"new_leave_type_name": "Unplanned Wellness", "classification": "sick", "accrual_amount": 10}]
@@ -504,6 +523,5 @@ class TestLeavePolicies(TransactionCase):
         self.assertEqual(active_policy.state, "active")
         self.assertTrue(active_policy.active)
         self.assertTrue(active_policy.assignment_ids)
-
 
 

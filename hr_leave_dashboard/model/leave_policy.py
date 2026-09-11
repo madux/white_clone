@@ -231,9 +231,22 @@ class HrLeavePolicy(models.Model):
     @api.model
     def _options(self):
         employees = self.env["hr.employee"].sudo().search([("company_id", "in", self.env.companies.ids), ("active", "=", True)], order="name")
+        company = self.env.company
         def rows(records):
             return [{"id": item.id, "name": item.name} for item in records]
         return {
+            "policy_defaults": {
+                "unit": company.leave_default_unit or "days",
+                "approval_workflow": company.leave_default_approval_workflow or "single",
+                "supporting_document_policy": company.leave_default_supporting_document_policy or "never",
+                "minimum_notice_days": company.leave_default_minimum_notice_days,
+                "allow_half_day": company.leave_default_allow_half_day,
+                "allow_carryover": company.leave_default_allow_carryover,
+                "maximum_balance_cap": company.leave_default_max_balance_cap,
+                "allow_negative_balance": company.leave_default_allow_negative_balance,
+                "team_overlap_percent": company.leave_default_team_overlap_percent,
+                "block_overlap_threshold": company.leave_default_block_overlap_threshold,
+            },
             "leave_types": [{"id": item.id, "name": item.name, "classification": item.policy_classification, "color": item.cleon_color_hex or "#3B82F6"} for item in self.env["hr.leave.type"].sudo().with_context(active_test=False).search([("company_id", "in", [False] + self.env.companies.ids)], order="name")],
             "employees": rows(employees), "departments": rows(employees.mapped("department_id").sorted("name")),
             "units": rows(employees.mapped("unit_id").sorted("name")), "grades": rows(employees.mapped("grade_id").sorted("name")),

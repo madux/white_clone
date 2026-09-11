@@ -155,42 +155,26 @@
       <!-- ═══════════════════════════════════════════════════════
            POLICY CREATION & EDIT DRAWER / WIZARD
            ═══════════════════════════════════════════════════════ -->
-      <SettingsPanel t-if="state.choosingMode" close="() => this.closeWizard()">
-        <t t-set-slot="header"><h3>Add Leave Policy</h3><button class="o_lp_close_btn" t-on-click="closeWizard" aria-label="Close">×</button></t>
-        <div class="o_lp_form">
-          <h4>Choose policy setup</h4>
-          <button class="o_lp_card w-100 text-start" t-on-click="() => this.chooseMode('simple')"><strong>Simple</strong><p class="mb-0">Shared accrual settings, employees or groups, carry forward and approval. Two steps plus review.</p></button>
-          <button class="o_lp_card w-100 text-start" t-on-click="() => this.chooseMode('advanced')"><strong>Advanced</strong><p class="mb-0">Eligibility conditions, separate accrual per leave type, documents, restrictions and custom approval.</p></button>
-        </div>
-        <t t-set-slot="footer"><button class="btn btn-outline-secondary" t-on-click="closeWizard">Cancel</button></t>
-      </SettingsPanel>
       <SettingsPanel t-if="state.wizard" close="() => this.closeWizard()" wide="true">
-          <!-- Drawer Header with Simple / Advanced Mode Pill Switch -->
+          <!-- One policy form with progressively disclosed advanced settings. -->
           <t t-set-slot="header">
             <div>
               <div class="o_lp_title_wrap">
                 <h3><t t-esc="state.form.id ? 'Edit' : 'Add'"/> Leave Policy</h3>
-                <span class="o_lp_mode_tag" t-esc="state.form.mode === 'advanced' ? 'Advanced Mode' : 'Simple Mode'"/>
+                <span class="o_lp_mode_tag" t-if="state.form.mode === 'advanced'">Advanced overrides configured</span>
               </div>
               <p class="o_lp_subtitle">
-                <t t-if="state.form.mode === 'simple'">Quick 3-step setup with standard eligibility and accrual settings.</t>
-                <t t-else="">Custom rules, granular eligibility conditions, supporting documents, and approval workflow.</t>
+                Organisation defaults are prefilled. Open Advanced Settings only when this policy needs more precise overrides.
               </p>
             </div>
             <div class="o_lp_header_actions">
-              <!-- Segmented Simple / Advanced Mode Switch -->
-              <div class="o_lp_mode_switcher" title="Toggle between Simple and Advanced Policy configuration">
-                <button type="button"
-                        t-att-class="'o_lp_mode_btn ' + (state.form.mode === 'simple' ? 'active' : '')"
-                        t-on-click="() => state.form.mode !== 'simple' and this.toggleAdvanced()">
-                  <i class="fa fa-bolt me-1"/> Simple
-                </button>
-                <button type="button"
-                        t-att-class="'o_lp_mode_btn ' + (state.form.mode === 'advanced' ? 'active' : '')"
-                        t-on-click="() => state.form.mode !== 'advanced' and this.toggleAdvanced()">
-                  <i class="fa fa-sliders me-1"/> Advanced
-                </button>
-              </div>
+              <button type="button"
+                      t-att-class="'o_lp_mode_btn ' + (state.form.advancedOpen ? 'active' : '')"
+                      t-on-click="toggleAdvanced"
+                      title="Show or hide granular policy overrides">
+                <i class="fa fa-sliders me-1"/>
+                <t t-esc="state.form.advancedOpen ? 'Hide Advanced Settings' : 'Advanced Settings'"/>
+              </button>
               <button class="o_lp_close_btn" t-on-click="closeWizard" title="Close">×</button>
             </div>
           </t>
@@ -209,12 +193,12 @@
           </nav>
 
           <!-- Form Body -->
-          <div t-att-class="'o_lp_form ' + (state.form.mode === 'simple' ? 'o_lp_simple_form' : '')">
+          <div t-att-class="'o_lp_form ' + (!state.form.advancedOpen ? 'o_lp_simple_form' : '')">
 
             <!-- ══════════════════════════════════════════════════
                  SIMPLE MODE: STEP 1 — POLICY SETUP
                  ══════════════════════════════════════════════════ -->
-            <t t-if="state.form.mode === 'simple' and state.step === 1">
+            <t t-if="!state.form.advancedOpen and state.step === 1">
               <!-- A. Basic Information -->
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
@@ -365,7 +349,7 @@
             <!-- ══════════════════════════════════════════════════
                  SIMPLE MODE: STEP 2 — CARRY FORWARD & APPROVAL
                  ══════════════════════════════════════════════════ -->
-            <t t-if="state.form.mode === 'simple' and state.step === 2">
+            <t t-if="!state.form.advancedOpen and state.step === 2">
               <!-- 1. Carry Forward -->
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
@@ -511,7 +495,7 @@
             <!-- ══════════════════════════════════════════════════
                  ADVANCED MODE: STEPS 1 to 4
                  ══════════════════════════════════════════════════ -->
-            <t t-if="state.form.mode === 'advanced' and state.step === 1">
+            <t t-if="state.form.advancedOpen and state.step === 1">
               <!-- Advanced Step 1: Basic Info & Eligibility -->
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
@@ -568,7 +552,7 @@
             </t>
 
             <!-- Advanced Step 2: Leave Types & Accrual (Multi-line) -->
-            <t t-if="state.form.mode === 'advanced' and state.step === 2">
+            <t t-if="state.form.advancedOpen and state.step === 2">
               <section class="o_lp_card">
                 <div class="o_lp_card_title d-flex justify-content-between align-items-center">
                   <div>
@@ -584,7 +568,7 @@
             </t>
 
             <!-- Advanced Step 3: Rules & Restrictions -->
-            <t t-if="state.form.mode === 'advanced' and state.step === 3">
+            <t t-if="state.form.advancedOpen and state.step === 3">
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
                   <i class="fa fa-shield text-primary"/>
@@ -644,7 +628,7 @@
             </t>
 
             <!-- Advanced Step 4: Carry Forward & Approval -->
-            <t t-if="state.form.mode === 'advanced' and state.step === 4">
+            <t t-if="state.form.advancedOpen and state.step === 4">
               <section class="o_lp_card">
                 <div class="o_lp_card_title">
                   <i class="fa fa-share-square-o text-primary"/>
@@ -720,7 +704,7 @@
                     <div class="o_lp_review_row">
                       <span>Leave Type(s):</span>
                       <span>
-                        <t t-if="state.form.mode === 'simple'">
+                        <t t-if="!state.form.advancedOpen">
                           <span class="badge bg-light text-dark border me-1" t-foreach="state.form.simple_leave_type_ids" t-as="tid" t-key="tid" t-esc="getLeaveTypeName(tid)"/>
                           <span class="badge bg-light text-primary border me-1" t-foreach="state.form.custom_type_names" t-as="cn" t-key="cn" t-esc="cn"/>
                         </t>
@@ -737,9 +721,9 @@
                   <div class="o_lp_summary_card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <b class="text-uppercase small text-muted">Accrual Configuration</b>
-                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.mode === 'advanced' ? 2 : 1)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.advancedOpen ? 2 : 1)">Edit</button>
                     </div>
-                    <t t-if="state.form.mode === 'simple'">
+                    <t t-if="!state.form.advancedOpen">
                       <div class="o_lp_review_row"><span>Compensation:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.compensation"/></div>
                       <div class="o_lp_review_row"><span>Unit:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.unit"/></div>
                       <div class="o_lp_review_row"><span>Schedule:</span> <strong class="text-capitalize" t-esc="state.form.simple_accrual.accrual_period"/></div>
@@ -758,7 +742,7 @@
                   <div class="o_lp_summary_card">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <b class="text-uppercase small text-muted">Carry Forward &amp; Approval</b>
-                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.mode === 'advanced' ? 4 : 2)">Edit</button>
+                      <button type="button" class="btn btn-sm btn-link p-0 text-primary" t-on-click="() => this.goStep(state.form.advancedOpen ? 4 : 2)">Edit</button>
                     </div>
                     <div class="o_lp_review_row"><span>Carry Forward:</span> <strong t-esc="state.form.carry.enabled ? ('Yes (Max ' + state.form.carry.maximum + ')') : 'No'"/></div>
                     <div class="o_lp_review_row" t-if="state.form.carry.enabled">
@@ -972,7 +956,7 @@
   <!-- Subtemplate: PolicyEligibility -->
   <t t-name="hr_leave_dashboard.PolicyEligibility">
     <div t-if="state.form.apply_to !== 'all'" class="o_lp_eligibility">
-      <div t-if="state.form.mode === 'advanced' and state.form.apply_to === 'conditions'" class="d-flex gap-3 mb-3">
+      <div t-if="state.form.advancedOpen and state.form.apply_to === 'conditions'" class="d-flex gap-3 mb-3">
         <label class="flex-fill">
           <span class="o_lp_label">Condition Match</span>
           <select class="form-select form-select-sm" t-model="state.form.condition_match">

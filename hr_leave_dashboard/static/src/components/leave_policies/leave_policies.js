@@ -4,12 +4,12 @@ import { Component, onWillStart, useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 import { SettingsPanel, TagsPicker } from "../policy_controls";
 
-const newLine = (typeId = "", typeName = "") => ({
+const newLine = (typeId = "", typeName = "", defaults = {}) => ({
     leave_type_id: typeId ? Number(typeId) : "",
     new_leave_type_name: typeName || "",
     classification: "other",
     compensation: "paid",
-    unit: "days",
+    unit: defaults.unit || "days",
     entitlement_type: "fixed",
     accrual_period: "annually",
     accrual_basis: "join_date",
@@ -17,22 +17,24 @@ const newLine = (typeId = "", typeName = "") => ({
     waiting_period_days: 0,
     exclude_public_holidays: true,
     exclude_non_working_days: true,
-    minimum_notice_days: 0,
+    minimum_notice_days: Number(defaults.minimum_notice_days || 0),
     minimum_duration: 0,
     maximum_duration: 0,
     allow_backdated: false,
-    allow_half_day: true,
+    allow_half_day: defaults.allow_half_day !== false,
     allow_overlap: false,
-    document_policy: "not_required",
-    document_required_after_days: 0,
+    document_policy: defaults.supporting_document_policy === "never" || !defaults.supporting_document_policy ? "not_required" : "required",
+    document_required_after_days: defaults.supporting_document_policy === "conditional" ? 3 : 0,
     accepted_document_types: "",
-    allow_negative_balance: false,
+    allow_negative_balance: Boolean(defaults.allow_negative_balance),
     blackout_period_ids: [],
 });
 
-const newForm = (mode = "simple") => ({
+const newForm = (mode = "simple", defaults = {}) => ({
     id: false,
     mode, // "simple" | "advanced"
+    advancedOpen: false,
+    organisation_defaults: { ...defaults },
     name: "",
     code: "",
     description: "",
@@ -50,7 +52,7 @@ const newForm = (mode = "simple") => ({
     new_custom_name: "",
     simple_accrual: {
         compensation: "paid",
-        unit: "days",
+        unit: defaults.unit || "days",
         accrual_period: "annually",
         accrual_basis: "join_date",
         accrual_amount: 21,
@@ -68,7 +70,7 @@ const newForm = (mode = "simple") => ({
         job_ids: [],
     },
     carry: {
-        enabled: false,
+        enabled: Boolean(defaults.allow_carryover),
         maximum: 5,
         expiry_type: "period", // "never" | "period"
         expiry_value: 3,
@@ -76,7 +78,7 @@ const newForm = (mode = "simple") => ({
         priority: "current", // "current" | "carried"
     },
     approval: {
-        required: true,
+        required: defaults.approval_workflow !== "none",
         workflow: "default", // "default" | "custom"
         workflow_type_id: false,
         chain_id: false,
@@ -85,10 +87,10 @@ const newForm = (mode = "simple") => ({
     rules: {
         multiple: true,
         withdrawal: true,
-        half_day: true,
+        half_day: defaults.allow_half_day !== false,
         before_accrual: true,
     },
-    lines: [newLine()],
+    lines: [newLine("", "", defaults)],
     conflict_resolution: "review", // "review" | "keep" | "replace"
 });
 
@@ -110,7 +112,6 @@ export class LeavePoliciesPage extends Component {
             statusFilter: "all",
             menuId: false,
             wizard: false,
-            choosingMode: false,
             step: 1,
             form: newForm("simple"),
             detail: false,
@@ -126,7 +127,7 @@ export class LeavePoliciesPage extends Component {
     }
 
     get steps() {
-        return this.state.form.mode === "advanced"
+        return this.state.form.advancedOpen
             ? ["Basic Info & Eligibility", "Leave Types & Accrual", "Rules & Restrictions", "Carry Forward & Approval", "Review & Save"]
             : ["Policy Setup", "Carry Forward & Approval", "Review & Save"];
     }
@@ -173,33 +174,26 @@ export class LeavePoliciesPage extends Component {
         }
     }
 
-    // Opens creation directly in Simple Mode (no card chooser)
+    // Every policy starts in the normal form using organisation defaults.
     openChooser() {
-        this.state.choosingMode = true;
-    }
-
-    chooseMode(mode) {
-        this.state.choosingMode = false;
-        this.state.form = newForm(mode);
+        this.state.form = newForm("simple", this.state.options.policy_defaults || {});
         this.state.conflicts = [];
         this.state.step = 1;
         this.state.wizard = true;
     }
 
     toggleAdvanced() {
-        const nextMode = this.state.form.mode === "advanced" ? "simple" : "advanced";
-        if (nextMode === "advanced") {
+        if (!this.state.form.advancedOpen && this.state.form.mode !== "advanced") {
             this.syncSimpleLines();
-        } else {
-            this.notification.add("Continue in Advanced mode to preserve individual rules and eligibility conditions.", { type: "info" });
-            return;
+            // This is retained for backward-compatible persistence only. It is
+            // configuration depth, not a separate kind of Leave Policy.
+            this.state.form.mode = "advanced";
         }
-        this.state.form.mode = nextMode;
+        this.state.form.advancedOpen = !this.state.form.advancedOpen;
         this.state.step = 1;
     }
 
     closeWizard() {
-        this.state.choosingMode = false;
         this.state.wizard = false;
         this.state.typeDropdownOpen = false;
     }
@@ -245,7 +239,7 @@ export class LeavePoliciesPage extends Component {
         for (const typeId of this.state.form.simple_leave_type_ids) {
             const existing = this.state.form.lines.find(l => l.leave_type_id === typeId);
             newLines.push({
-                ...(existing || newLine(typeId)),
+                ...(existing || newLine(typeId, "", this.state.form.organisation_defaults)),
                 leave_type_id: typeId,
                 new_leave_type_name: "",
                 compensation: accrual.compensation,
@@ -264,7 +258,7 @@ export class LeavePoliciesPage extends Component {
         for (const customName of this.state.form.custom_type_names) {
             const existing = this.state.form.lines.find(l => l.new_leave_type_name === customName);
             newLines.push({
-                ...(existing || newLine("", customName)),
+                ...(existing || newLine("", customName, this.state.form.organisation_defaults)),
                 leave_type_id: "",
                 new_leave_type_name: customName,
                 compensation: accrual.compensation,
@@ -279,7 +273,7 @@ export class LeavePoliciesPage extends Component {
             });
         }
 
-        this.state.form.lines = newLines.length ? newLines : [newLine()];
+        this.state.form.lines = newLines.length ? newLines : [newLine("", "", this.state.form.organisation_defaults)];
     }
 
     syncFromLines() {
@@ -330,7 +324,7 @@ export class LeavePoliciesPage extends Component {
 
     // ── Advanced Mode Line Operations ──
     addLine() {
-        this.state.form.lines.push(newLine());
+        this.state.form.lines.push(newLine("", "", this.state.form.organisation_defaults));
     }
 
     removeLine(index) {
@@ -344,7 +338,7 @@ export class LeavePoliciesPage extends Component {
         const number = Number(id);
         const index = values.indexOf(number);
         index >= 0 ? values.splice(index, 1) : values.push(number);
-        if (this.state.form.mode === "simple") {
+        if (!this.state.form.advancedOpen) {
             this.state.form.apply_to = "selected";
         }
     }
@@ -354,7 +348,7 @@ export class LeavePoliciesPage extends Component {
     }
 
     validateStep() {
-        const isAdv = this.state.form.mode === "advanced";
+        const isAdv = this.state.form.advancedOpen;
         if (this.state.step === 1 && !this.state.form.name.trim()) {
             return "Policy Name is required.";
         }
@@ -378,7 +372,7 @@ export class LeavePoliciesPage extends Component {
     next() {
         const error = this.validateStep();
         if (error) return this.notification.add(error, { type: "warning" });
-        if (this.state.form.mode === "simple") {
+        if (!this.state.form.advancedOpen) {
             this.syncSimpleLines();
         }
         this.state.step++;
@@ -405,7 +399,7 @@ export class LeavePoliciesPage extends Component {
         const error = this.validateStep();
         if (error) return this.notification.add(error, { type: "warning" });
 
-        if (this.state.form.mode === "simple") {
+        if (!this.state.form.advancedOpen) {
             this.syncSimpleLines();
         }
 
@@ -455,9 +449,10 @@ export class LeavePoliciesPage extends Component {
         this.state.detail = false;
         const detail = await this.orm.call("hr.leave.policy", "get_policy_details", [row.id]);
         this.state.form = {
-            ...newForm("simple"),
+            ...newForm("simple", this.state.options.policy_defaults || {}),
             ...detail,
             mode: detail.mode,
+            advancedOpen: false,
             lines: detail.lines.length ? detail.lines.map(line => ({ ...newLine(), ...line })) : [newLine()],
         };
         this.syncFromLines();
