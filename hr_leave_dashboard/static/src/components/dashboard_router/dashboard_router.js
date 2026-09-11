@@ -48,8 +48,10 @@ export class LeaveDashboardRouter extends Component {
                 }
             }
 
-            if (preferredMode && ["organisation", "personal"].includes(preferredMode)) {
-                this.state.viewMode = preferredMode;
+            if (preferredMode === "organisation" && this.state.access.show_organisation_dashboard) {
+                this.state.viewMode = "organisation";
+            } else if (preferredMode === "personal" && this.state.access.has_personal_scope) {
+                this.state.viewMode = "personal";
             } else if (this.state.access.show_organisation_dashboard) {
                 this.state.viewMode = "organisation";
             } else {
@@ -63,6 +65,8 @@ export class LeaveDashboardRouter extends Component {
     }
 
     switchView(mode) {
+        if (mode === "organisation" && !this.state.access.show_organisation_dashboard) return;
+        if (mode === "personal" && !this.state.access.has_personal_scope) return;
         if (this.state.viewMode !== mode) {
             this.state.viewMode = mode;
         }
@@ -99,6 +103,10 @@ export class LeaveDashboardRouter extends Component {
     openCalendar() { return this.action.doAction("hr_leave_dashboard.action_hr_leave_calendar"); }
     openBalances() { return this.openConfiguration("balances"); }
     openLeaveTypes() { return this.openConfiguration("policies"); }
+    openHolidays() { return this.openConfiguration("holidays"); }
+    openBlackouts() { return this.openConfiguration("blackouts"); }
+    openApprovalSettings() { return this.openConfiguration("approvals"); }
+    openAllRequests() { return this.openRequestWorkspace("records"); }
     openConfiguration(tab = "policies") {
         return this.action.doAction("hr_leave_dashboard.action_hr_leave_configuration", {
             additionalContext: { configuration_tab: tab },

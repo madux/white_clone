@@ -9,8 +9,8 @@
         </div>
         <t t-else="">
           <!-- Top Unified Header & View Switcher -->
-          <header class="o_leave_unified_header">
-            <div class="o_leave_unified_title_area">
+          <header t-att-class="'o_leave_unified_header ' + (state.viewMode === 'organisation' ? 'organisation' : 'personal')">
+            <div class="o_leave_unified_title_area" t-if="state.viewMode === 'personal'">
               <button class="o_leave_panel_toggle d-lg-none" t-on-click="toggleSidebar" title="Toggle Leave navigation">
                 <i class="fa fa-columns"/>
               </button>
@@ -60,52 +60,21 @@
                MODE 1: ORGANISATION VIEW (Admin / HR Officers / Managers)
                ════════════════════════════════════════════════════════════ -->
           <t t-if="state.viewMode === 'organisation' and state.access.show_organisation_dashboard">
-            <!-- Compact Personal Summary Strip on top of Admin View -->
-            <div class="o_leave_admin_personal_strip" t-if="state.access.has_personal_scope and state.personalData">
-              <div class="o_laps_left">
-                <div class="o_laps_avatar">
-                  <i class="fa fa-user-circle"/>
-                </div>
-                <div class="o_laps_info">
-                  <div class="o_laps_greeting">
-                    Welcome back, <strong><t t-esc="state.personalData.employee.name"/></strong>
-                    <span class="o_laps_emp_no ms-1" t-if="state.personalData.employee.employee_number">
-                      (<t t-esc="state.personalData.employee.employee_number"/>)
-                    </span>
-                    <span class="o_laps_dept ms-1" t-if="state.personalData.employee.department">
-                      · <t t-esc="state.personalData.employee.department"/>
-                    </span>
-                  </div>
-                  <div class="o_laps_stats">
-                    <div class="o_laps_stat">
-                      <i class="fa fa-calendar-check-o text-primary"/>
-                      <span>My Balance: <b><t t-esc="state.personalData.kpis.total_balance || 0"/> days</b></span>
-                    </div>
-                    <span class="o_laps_sep">•</span>
-                    <div class="o_laps_stat">
-                      <i class="fa fa-clock-o text-warning"/>
-                      <span>My Pending: <b><t t-esc="state.personalData.kpis.pending_requests || 0"/></b></span>
-                    </div>
-                    <span class="o_laps_sep">•</span>
-                    <div class="o_laps_stat">
-                      <i t-att-class="'fa ' + (state.personalData.kpis.at_work ? 'fa-check-circle text-success' : 'fa-plane text-info')"/>
-                      <span><t t-esc="state.personalData.kpis.at_work ? 'At Work Today' : 'On Leave Today'"/></span>
-                    </div>
-                  </div>
-                </div>
+            <section class="o_leave_admin_quick_actions" aria-label="Quick actions">
+              <div class="o_laq_heading"><strong>Quick Actions</strong><small>Common leave administration tasks</small></div>
+              <div class="o_leave_unified_actions admin-actions">
+                <button t-if="state.access.has_personal_scope" t-on-click="requestLeave"><i class="fa fa-plus-circle"/><span><b>Request Leave</b><small>Apply for time off</small></span></button>
+                <button t-if="state.access.has_personal_scope" t-on-click="openMyRequests"><i class="fa fa-file-text-o"/><span><b>My Requests</b><small>Track my requests</small></span></button>
+                <button t-if="state.access.can_approve" t-on-click="openApprovals"><i class="fa fa-check-circle-o"/><span><b>Approve Leave</b><small><t t-esc="state.access.pending_approvals || 0"/> awaiting review</small></span></button>
+                <button t-if="state.access.can_operate" t-on-click="openAllRequests"><i class="fa fa-list-alt"/><span><b>Leave Records</b><small>Manage all requests</small></span></button>
+                <button t-if="state.access.can_configure" t-on-click="openLeaveTypes"><i class="fa fa-file-text"/><span><b>Leave Policies</b><small>Configure policies</small></span></button>
+                <button t-if="state.access.can_operate" t-on-click="openBalances"><i class="fa fa-balance-scale"/><span><b>Leave Balances</b><small>Allocate and amend</small></span></button>
+                <button t-if="state.access.can_configure" t-on-click="openHolidays"><i class="fa fa-calendar-plus-o"/><span><b>Official Holidays</b><small>Manage holiday dates</small></span></button>
+                <button t-if="state.access.can_configure" t-on-click="openBlackouts"><i class="fa fa-ban"/><span><b>Blackout Windows</b><small>Manage restricted dates</small></span></button>
+                <button t-if="state.access.can_configure" t-on-click="openApprovalSettings"><i class="fa fa-shield"/><span><b>Approval Settings</b><small>Routes and escalation</small></span></button>
+                <button t-on-click="openCalendar"><i class="fa fa-calendar"/><span><b>Leave Calendar</b><small>View workforce coverage</small></span></button>
               </div>
-              <div class="o_laps_actions">
-                <button class="o_laps_btn_primary" t-on-click="requestLeave">
-                  <i class="fa fa-plus-circle me-1"/> Request Leave
-                </button>
-                <button class="o_laps_btn_secondary" t-on-click="openMyRequests">
-                  <i class="fa fa-file-text-o me-1"/> My Requests
-                </button>
-                <button class="o_laps_btn_link" t-on-click="() => this.switchView('personal')">
-                  View Full Personal Leave <i class="fa fa-angle-right ms-1"/>
-                </button>
-              </div>
-            </div>
+            </section>
 
             <!-- Organisation Dashboard -->
             <HrLeaveDashboard t-key="'organisation-'+state.revision" embedded="true" access="state.access"/>

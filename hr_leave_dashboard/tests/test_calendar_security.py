@@ -81,6 +81,17 @@ class TestLeaveCalendarSecurity(TransactionCase):
                 "employee_id": self.member_employee.id,
             })
 
+    def test_employee_role_has_personal_dashboard_only(self):
+        profile = self.env["hr.leave"].with_user(self.member_user).get_leave_access_profile()
+        self.assertTrue(profile["has_personal_scope"])
+        self.assertFalse(profile["show_organisation_dashboard"])
+        self.assertFalse(profile["can_operate"])
+        self.assertFalse(profile["can_configure"])
+        self.assertFalse(profile["can_view_reports"])
+        self.assertFalse(profile["can_view_audit"])
+        with self.assertRaises(AccessError):
+            self.env["hr.leave"].with_user(self.member_user).get_dashboard_data()
+
     def test_operations_authorizes_booking_options(self):
         result = self.env["hr.leave"].with_user(self.operator_user).get_admin_create_options()
         self.assertIn(self.member_employee.id, [employee["id"] for employee in result["employees"]])
