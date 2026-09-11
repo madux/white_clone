@@ -176,7 +176,6 @@ export class LeaveBalancesPage extends Component {
             { key: "individual", label: "Individual", field: null, options: null },
             { key: "department", label: "Department", field: "department_id", options: "departments" },
             { key: "location", label: "Location", field: "location_id", options: "locations" },
-            { key: "custom_group", label: "Custom Group", field: "custom_group_ids", options: "custom_groups" },
         ];
     }
     get activeScopeDefinition() { return this.scopeDefinitions.find(item => item.key === this.state.selectionMode); }
