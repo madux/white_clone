@@ -29,6 +29,7 @@ import type {
 } from "../../../../lib/intelligence-api";
 import ChatMarkdown from "./ChatMarkdown";
 import { IntelligenceError } from "./states";
+import SectionTabs from "../SectionTabs";
 import ModalDialog from "../ModalDialog";
 
 const MASCOT = "/cleon_document_management/static/src/nextapp/ask_ai.png";
@@ -292,28 +293,16 @@ export default function AskScreen() {
           <p className="mt-4 px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             {indexed.toLocaleString()} indexed documents
           </p>
-          <div className="mt-3 flex gap-4 px-1 text-sm font-semibold">
-            <button
-              type="button"
-              className={tab === "recent" ? "text-slate-900" : "text-slate-400"}
-              onClick={() => setTab("recent")}
-            >
-              Chats
-              {tab === "recent" ? (
-                <span className="mt-1 block h-0.5 rounded-full bg-brand-pink" />
-              ) : null}
-            </button>
-            <button
-              type="button"
-              className={tab === "saved" ? "text-slate-900" : "text-slate-400"}
-              onClick={() => setTab("saved")}
-            >
-              Saved
-              {tab === "saved" ? (
-                <span className="mt-1 block h-0.5 rounded-full bg-brand-pink" />
-              ) : null}
-            </button>
-          </div>
+          <SectionTabs
+            items={[
+              { id: "recent", label: "Chats" },
+              { id: "saved", label: "Saved" },
+            ]}
+            value={tab}
+            onChange={setTab}
+            className="mt-3 px-1 !w-auto"
+            ariaLabel="Conversation lists"
+          />
           <label className="relative mt-3 block">
             <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input

@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import _, fields, models
+from odoo.exceptions import AccessError
 
 
 class DocumentVersion(models.Model):
@@ -46,3 +47,22 @@ class DocumentVersion(models.Model):
     active = fields.Boolean(
         default=True,
     )
+
+    def _user_can_manage(self):
+        self.ensure_one()
+        if self.env.user.has_group("cleon_document_management.group_document_manager"):
+            return True
+        document = self.document_id
+        if document.owner_id == self.env.user:
+            return True
+        employee_user = document.employee_id.user_id
+        return bool(employee_user and employee_user == self.env.user)
+
+    def unlink(self):
+        for version in self:
+            if not version._user_can_manage():
+                raise AccessError(_("You do not have permission to delete this version."))
+        attachments = self.mapped("file_attachment")
+        result = super().unlink()
+        attachments.sudo().unlink()
+        return result

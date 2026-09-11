@@ -19,9 +19,24 @@ export const QUERY_KEYS = {
   exceptions: ["compliance", "exceptions"],
   evaluations: ["compliance", "evaluations"],
   evaluationRuns: ["compliance", "evaluation-runs"],
+  complianceRun: (runId: number) => ["compliance", "run", runId],
+  complianceRunEmployees: (
+    runId: number,
+    page: number,
+    search: string,
+    status: string,
+  ) => ["compliance", "run", runId, "employees", page, search, status],
+  complianceReport: (reportKey: string, page: number, search: string) =>
+    ["compliance", "report", reportKey, page, search],
   approvalInbox: ["admin", "approval-inbox"],
   pendingEmployeeUploads: ["admin", "pending-employee-uploads"],
   workspaceActivity: ["admin", "workspace-activity"],
+  documentAcknowledgementAudience: (
+    documentId: number,
+    page: number,
+    search: string,
+    status: string,
+  ) => ["admin", "document-acknowledgement-audience", documentId, page, search, status],
   myPendingUploads: ["documents", "my-pending-uploads"],
   myCompliance: ["documents", "my-compliance"],
   onboarding: ["user", "onboarding"],
@@ -129,6 +144,39 @@ export function useWorkspaceActivity(enabled = true) {
     queryFn: () => api.getWorkspaceActivity().then((result) => result.data),
     enabled,
     refetchInterval: 60000,
+  });
+}
+
+export function useDocumentAcknowledgementAudience(
+  documentId: number | null,
+  page: number,
+  search: string,
+  status: "all" | "acknowledged" | "pending",
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.documentAcknowledgementAudience(
+      documentId ?? 0,
+      page,
+      search,
+      status,
+    ),
+    queryFn: () =>
+      api
+        .getDocumentAcknowledgementAudience({
+          document_id: documentId as number,
+          page,
+          limit: 10,
+          search,
+          status,
+        })
+        .then((result) => {
+          if (!result.success || !result.data) {
+            throw new Error(result.message || "Could not load acknowledgement audience.");
+          }
+          return result.data;
+        }),
+    enabled: enabled && Boolean(documentId && documentId > 0),
   });
 }
 
@@ -350,6 +398,66 @@ export function useEvaluationRuns(policyId?: number) {
   });
 }
 
+export function useComplianceRun(runId: number) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceRun(runId),
+    queryFn: () => api.getComplianceRun(runId),
+    enabled: runId > 0,
+  });
+}
+
+export function useComplianceRunEmployees(
+  runId: number,
+  page: number,
+  search: string,
+  status: string,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceRunEmployees(runId, page, search, status),
+    queryFn: () =>
+      api.getComplianceRunEmployees(runId, {
+        page,
+        page_size: 10,
+        search,
+        status: status === "all" ? undefined : status,
+      }),
+    enabled: runId > 0,
+  });
+}
+
+export function useComplianceReport(
+  reportKey: string,
+  page: number,
+  search: string,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.complianceReport(reportKey, page, search),
+    queryFn: () =>
+      api.getComplianceReport(reportKey, {
+        page,
+        page_size: 10,
+        search,
+      }),
+    enabled,
+  });
+}
+
+export function useSendComplianceRunRequest() {
+  return useMutation({
+    mutationFn: ({
+      runId,
+      ...payload
+    }: {
+      runId: number;
+      employee_id: number;
+      due_date: string;
+      subject: string;
+      message: string;
+    }) => api.sendComplianceRunRequest(runId, payload),
+  });
+}
+
 export function useEvaluatePolicy() {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: api.evaluatePolicy, onSuccess: () => { queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluations }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.evaluationRuns }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.exceptions }); queryClient.invalidateQueries({ queryKey: QUERY_KEYS.policies }); } });
@@ -525,6 +633,22 @@ export function useDocumentAction() {
   return useMutation({
     mutationFn: api.documentAction,
     onSuccess: () => invalidateDocumentQueries(queryClient),
+  });
+}
+
+export function useDeleteDocumentVersion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteDocumentVersion,
+    onSuccess: (result) => {
+      invalidateDocumentQueries(queryClient);
+      const documentId = result?.data?.document_id;
+      if (documentId) {
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.documentVersions(documentId),
+        });
+      }
+    },
   });
 }
 

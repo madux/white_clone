@@ -16,6 +16,7 @@ import type {
   QuickAccess,
   DashboardStats,
   WorkspaceActivity,
+  DocumentAcknowledgementAudience,
   ModuleRoleAssignment,
   ModuleRoleDefinition,
   ModuleRoleMember,
@@ -471,6 +472,18 @@ export const api = {
       {},
     ),
 
+  getDocumentAcknowledgementAudience: (payload: {
+    document_id: number;
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: "all" | "acknowledged" | "pending";
+  }) =>
+    rpc<{ success: boolean; data: DocumentAcknowledgementAudience; message?: string }>(
+      "/api/acknowledgements/document-audience",
+      payload,
+    ),
+
   getOnboarding: () =>
     rpc<{ success: boolean; data: OnboardingState }>("/api/onboarding", {}),
 
@@ -589,6 +602,63 @@ export const api = {
       policyId ? { policy_id: policyId } : {},
     ).then((r) => r.data),
 
+  getComplianceRun: (runId: number) =>
+    rpc<{ success: boolean; data: any; message?: string }>(
+      `/api/compliance/runs/${runId}`,
+      {},
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Run could not be loaded.");
+      return r.data;
+    }),
+
+  getComplianceRunEmployees: (runId: number, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; data: any[]; total: number; page: number; page_size: number; message?: string }>(
+      `/api/compliance/runs/${runId}/employees`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Employees could not be loaded.");
+      return r;
+    }),
+
+  getComplianceRunEmployee: (runId: number, employeeId: number) =>
+    rpc<{ success: boolean; data: any; message?: string }>(
+      `/api/compliance/runs/${runId}/employees/${employeeId}`,
+      {},
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Employee result could not be loaded.");
+      return r.data;
+    }),
+
+  exportComplianceRun: (runId: number, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; run: any; data: any[]; message?: string }>(
+      `/api/compliance/runs/${runId}/export`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Export failed.");
+      return r;
+    }),
+
+  sendComplianceRunRequest: (
+    runId: number,
+    payload: { employee_id: number; due_date: string; subject: string; message: string },
+  ) =>
+    rpc<{ success: boolean; message?: string }>(
+      `/api/compliance/runs/${runId}/request`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Request could not be sent.");
+      return r;
+    }),
+
+  getComplianceReport: (reportKey: string, payload: Record<string, unknown> = {}) =>
+    rpc<{ success: boolean; data: any[]; total: number; page: number; page_size: number; message?: string }>(
+      `/api/compliance/reports/${reportKey}`,
+      payload,
+    ).then((r) => {
+      if (!r.success) throw new Error(r.message || "Report could not be loaded.");
+      return r;
+    }),
+
   evaluatePolicy: (policyId: number) =>
     rpc<{ success: boolean; data: any[]; run?: any; message?: string }>(
       `/api/compliance/policies/${policyId}/evaluate`,
@@ -642,6 +712,12 @@ export const api = {
     rpc<{ success: boolean; count: number; data: import("./types").DocumentVersion[] }>(
       "/api/document-versions",
       { document_id: documentId },
+    ),
+
+  deleteDocumentVersion: (versionId: number) =>
+    rpc<{ success: boolean; message: string; data?: { document_id: number } }>(
+      "/api/delete-document-version",
+      { version_id: versionId },
     ),
 
   getShareLinks: () =>

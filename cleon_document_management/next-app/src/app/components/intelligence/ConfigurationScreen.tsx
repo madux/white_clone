@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import SectionTabs from "../SectionTabs";
 import { formatFieldLabel } from "../../../../lib/formatLabel";
 import { IntelligenceEmpty, IntelligenceError, IntelligenceLoading } from "./states";
 import ProfilesConfigPanel from "./ProfilesConfigPanel";
@@ -13,11 +13,11 @@ import {
 } from "../../../../hooks/useIntelligence";
 
 const TABS = [
-  { name: "Document types", href: "/pages/document-intelligence/configuration/types" },
-  { name: "Extraction profiles", href: "/pages/document-intelligence/configuration/profiles" },
-  { name: "Intelligence settings", href: "/pages/document-intelligence/configuration/settings" },
-  { name: "Audit logs", href: "/pages/document-intelligence/configuration/audit" },
-];
+  { id: "types", name: "Document types", href: "/pages/document-intelligence/configuration/types" },
+  { id: "profiles", name: "Extraction profiles", href: "/pages/document-intelligence/configuration/profiles" },
+  { id: "settings", name: "Intelligence settings", href: "/pages/document-intelligence/configuration/settings" },
+  { id: "audit", name: "Audit logs", href: "/pages/document-intelligence/configuration/audit" },
+] as const;
 
 export default function ConfigurationScreen({
   section,
@@ -27,31 +27,28 @@ export default function ConfigurationScreen({
   const pathname = usePathname();
   const routePath =
     pathname?.replace(/^\/document-management(?=\/|$)/, "") || "/";
+  const activeTab = useMemo(() => {
+    const match = TABS.find(
+      (tab) =>
+        routePath.startsWith(tab.href) ||
+        (tab.id === "types" &&
+          (routePath === "/pages/document-intelligence/configuration" ||
+            routePath === "/pages/document-intelligence/configuration/")),
+    );
+    return match?.id ?? section;
+  }, [routePath, section]);
 
   return (
     <div className="space-y-8">
-      <nav className="flex flex-wrap gap-2">
-        {TABS.map((tab) => {
-          const active =
-            routePath.startsWith(tab.href) ||
-            (section === "types" &&
-              (routePath === "/pages/document-intelligence/configuration" ||
-                routePath === "/pages/document-intelligence/configuration/"));
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                active
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 text-slate-500"
-              }`}
-            >
-              {tab.name}
-            </Link>
-          );
-        })}
-      </nav>
+      <SectionTabs
+        items={TABS.map((tab) => ({
+          id: tab.id,
+          label: tab.name,
+          href: tab.href,
+        }))}
+        value={activeTab}
+        ariaLabel="Intelligence configuration sections"
+      />
 
       {section === "types" ? <TypesConfigPanel /> : null}
       {section === "profiles" ? <ProfilesConfigPanel /> : null}

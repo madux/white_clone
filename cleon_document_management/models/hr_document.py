@@ -517,6 +517,20 @@ class Document(models.Model):
         approvers = self.env["res.users"]
         approval_flow = "any"
 
+        if (
+            self._is_document_manager()
+            and folder.folder_type == "employee"
+            and employee
+            and not folder.is_pending_uploads
+        ):
+            self.sudo().write(
+                {
+                    "state": "approved",
+                    "approval_state": "not_required",
+                }
+            )
+            return
+
         if folder.is_pending_uploads and employee and employee.department_id:
             config = self.env["doc.folder"].get_department_approval_config(
                 employee.department_id

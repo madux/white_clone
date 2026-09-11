@@ -26,13 +26,12 @@ import {
 import BulkDocumentActions from "./BulkDocumentActions";
 import InlineDocumentTypeCreator from "./InlineDocumentTypeCreator";
 import ModalDialog from "./ModalDialog";
-import SortableTable from "./SortableTable";
 import ThemedSelect from "./ThemedSelect";
 import DocumentFilterBar, { FilterState, INITIAL_FILTER_STATE, applyDocumentFilters } from "./DocumentFilterBar";
 import DocumentViewerDialog from "./DocumentViewerDialog";
 import UploadDuplicateDialog from "./UploadDuplicateDialog";
 import BackButton from "./BackButton";
-import EmployeeDocumentTreeRow from "./EmployeeDocumentTreeRow";
+import EmployeeProfileDocumentTree from "./EmployeeProfileDocumentTree";
 import {
   buildReplaceDocumentIds,
   buildVersionChangeNotes,
@@ -372,6 +371,7 @@ export default function EmployeeProfilePage() {
             selected={selected}
             onClear={() => setSelected([])}
             documents={filteredEmployeeDocuments}
+            groups={groupedEmployeeDocuments}
           />
         </div>
         {documents.isLoading ? (
@@ -380,55 +380,26 @@ export default function EmployeeProfilePage() {
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
         ) : groupedEmployeeDocuments.length ? (
-          <div className="overflow-x-auto">
-              <SortableTable className="w-full min-w-[900px] text-left">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                <tr>
-                  <th className="w-12 px-5 py-4">
-                    <input
-                      type="checkbox"
-                      checked={allSelected}
-                      onChange={() =>
-                        setSelected(allSelected ? [] : visibleIds)
-                      }
-                      aria-label="Select all documents"
-                      className="h-4 w-4 accent-pink-600"
-                    />
-                  </th>
-                  <th className="px-5 py-4">Document name</th>
-                  <th className="px-5 py-4">Category</th>
-                  <th className="px-5 py-4">Status</th>
-                  <th className="px-5 py-4">Expiry date</th>
-                  <th className="px-5 py-4">Modified</th>
-                  <th className="px-5 py-4" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {groupedEmployeeDocuments.map((group) => (
-                  <EmployeeDocumentTreeRow
-                    key={group.primary.id}
-                    document={group.primary}
-                    relatedDocuments={group.relatedDocuments}
-                    historyCount={group.historyCount}
-                    selected={selected.includes(group.primary.id)}
-                    expanded={expandedDocuments.includes(group.primary.id)}
-                    onToggleExpand={() => toggleExpanded(group.primary.id)}
-                    onToggleSelect={() => toggleSelected(group.primary.id)}
-                    onView={() => setViewing(group.primary)}
-                    onOpenDocument={(document) => setViewing(document)}
-                    onApprove={() => void handleReview(group.primary, "approve")}
-                    onReject={() => {
-                      setRejecting(group.primary);
-                      setRejectReason("");
-                      setReviewError("");
-                    }}
-                    reviewPending={review.isPending}
-                    showReviewActions={Boolean(currentUser.data?.is_document_manager)}
-                  />
-                ))}
-              </tbody>
-            </SortableTable>
-          </div>
+          <EmployeeProfileDocumentTree
+            groups={groupedEmployeeDocuments}
+            selected={selected}
+            expandedDocuments={expandedDocuments}
+            allSelected={allSelected}
+            onToggleAll={() => setSelected(allSelected ? [] : visibleIds)}
+            onToggleSelect={toggleSelected}
+            onToggleExpand={toggleExpanded}
+            onView={setViewing}
+            onOpenDocument={setViewing}
+            onApprove={(document) => void handleReview(document, "approve")}
+            onReject={(document) => {
+              setRejecting(document);
+              setRejectReason("");
+              setReviewError("");
+            }}
+            reviewPending={review.isPending}
+            showReviewActions={Boolean(currentUser.data?.is_document_manager)}
+            isDocumentManager={Boolean(currentUser.data?.is_document_manager)}
+          />
         ) : (
           <p className="p-10 text-center text-sm text-slate-500">
             No documents found for this filter.

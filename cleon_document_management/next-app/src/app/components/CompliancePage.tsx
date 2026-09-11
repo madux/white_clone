@@ -20,9 +20,9 @@ import {
   useDeactivateException,
   useDeleteException,
   useCreatePolicy,
+  useDeletePolicy,
   useDocumentTypes,
   useEvaluatePolicy,
-  useEvaluations,
   useEvaluationRuns,
   useExceptions,
   useReactivateException,
@@ -30,6 +30,7 @@ import {
   usePolicies,
   usePolicyTypes,
 } from "../../../hooks/useDocuments";
+import BulkActionBar from "./BulkActionBar";
 import PolicyActions from "./PolicyActions";
 import ModalDialog from "./ModalDialog";
 import PolicyTypeMultiSelect from "./PolicyTypeMultiSelect";
@@ -40,8 +41,11 @@ import {
   AUDIT_FREQUENCY_LABELS,
   EVENT_TRIGGER_LABELS,
 } from "../../../lib/complianceCopy";
+import ComplianceReportsPanel from "./ComplianceReportsPanel";
+import SectionTabs from "./SectionTabs";
+import { useRouter } from "next/navigation";
 
-type Tab = "policies" | "exceptions" | "evaluations" | "history";
+type Tab = "policies" | "exceptions" | "history" | "reports";
 const schedules = [
   "manual",
   "one_time",
@@ -55,6 +59,7 @@ const schedules = [
 ];
 
 export default function CompliancePage() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("policies");
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -62,7 +67,6 @@ export default function CompliancePage() {
   const [running, setRunning] = useState(false);
   const policies = usePolicies();
   const exceptions = useExceptions();
-  const evaluations = useEvaluations();
   const runs = useEvaluationRuns();
   const types = usePolicyTypes();
   const documents = useDocumentTypes();
@@ -70,6 +74,14 @@ export default function CompliancePage() {
   const createPolicy = useCreatePolicy();
   const createException = useCreateException();
   const evaluate = useEvaluatePolicy();
+  const deletePolicy = useDeletePolicy();
+  const [selectedPolicyIds, setSelectedPolicyIds] = useState<number[]>([]);
+  const [selectedExceptionIds, setSelectedExceptionIds] = useState<number[]>([]);
+  const [bulkRunning, setBulkRunning] = useState(false);
+  const approveException = useApproveException();
+  const rejectException = useRejectException();
+  const deactivateException = useDeactivateException();
+  const deleteException = useDeleteException();
   const [policyForm, setPolicyForm] = useState({
     name: "",
     description: "",
@@ -117,11 +129,6 @@ export default function CompliancePage() {
   );
   const displayedExceptions = (exceptions.data ?? []).filter((item) =>
     `${item.employee} ${item.policy} ${item.reason}`
-      .toLowerCase()
-      .includes(search.toLowerCase()),
-  );
-  const displayedEvaluations = (evaluations.data ?? []).filter((item) =>
-    `${item.employee} ${item.policy} ${item.status}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
@@ -231,7 +238,7 @@ export default function CompliancePage() {
               setPolicySubmitError("");
               setShowForm(true);
             }}
-            disabled={tab === "evaluations" || tab === "history"}
+            disabled={tab === "history" || tab === "reports"}
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-brand-text to-brand-pink px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-pink-200 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus className="h-4 w-4" />
@@ -257,38 +264,30 @@ export default function CompliancePage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-5">
           <FileText className="h-5 w-5 text-brand-pink" />
           <p className="mt-5 text-3xl font-bold text-slate-900">
-            {evaluations.data?.length ?? 0}
+            {runs.data?.length ?? 0}
           </p>
-          <p className="text-sm text-slate-500">Recorded evaluations</p>
+          <p className="text-sm text-slate-500">Policy runs</p>
         </div>
       </div>
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <nav
-            className="flex gap-1 rounded-xl bg-slate-50 p-1"
-            aria-label="Compliance sections"
-          >
-            {(
-              [
-                ["policies", "Policies"],
-                ["exceptions", "Exceptions"],
-                ["evaluations", "Evaluations"],
-                ["history", "Run History"],
-              ] as [Tab, string][]
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  setTab(value);
-                  setSearch("");
-                }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${tab === value ? "bg-white text-brand-pink shadow-sm" : "text-slate-400 hover:text-slate-700"}`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+          <SectionTabs
+            items={[
+              { id: "policies", label: "Policies" },
+              { id: "exceptions", label: "Exceptions" },
+              { id: "history", label: "Run History" },
+              { id: "reports", label: "Reports" },
+            ]}
+            value={tab}
+            onChange={(value) => {
+              setTab(value);
+              setSearch("");
+              setSelectedPolicyIds([]);
+              setSelectedExceptionIds([]);
+            }}
+            className="!w-auto min-w-0 flex-1"
+            ariaLabel="Compliance sections"
+          />
           <label className="relative block sm:w-72">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -300,22 +299,196 @@ export default function CompliancePage() {
           </label>
         </div>
         {tab === "policies" && (
+          <>
+            <BulkActionBar
+              count={selectedPolicyIds.length}
+              onClear={() => setSelectedPolicyIds([])}
+            >
+              <button
+                type="button"
+                disabled={bulkRunning}
+                onClick={async () => {
+                  setBulkRunning(true);
+                  try {
+                    for (const id of selectedPolicyIds) {
+                      await evaluate.mutateAsync(id);
+                    }
+                    setSelectedPolicyIds([]);
+                  } finally {
+                    setBulkRunning(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-brand-text"
+              >
+                <ListChecks className="h-3.5 w-3.5" />
+                {bulkRunning ? "Running..." : "Run check"}
+              </button>
+              <button
+                type="button"
+                disabled={deletePolicy.isPending}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `Delete ${selectedPolicyIds.length} selected polic${selectedPolicyIds.length === 1 ? "y" : "ies"}? This cannot be undone.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  for (const id of selectedPolicyIds) {
+                    await deletePolicy.mutateAsync(id);
+                  }
+                  setSelectedPolicyIds([]);
+                }}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                {deletePolicy.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </BulkActionBar>
             <PolicyTable
-            policies={displayedPolicies}
-            documents={documents.data ?? []}
-            types={types.data ?? []}
-            targets={targets.data}
-          />
+              policies={displayedPolicies}
+              documents={documents.data ?? []}
+              types={types.data ?? []}
+              targets={targets.data}
+              selectedIds={selectedPolicyIds}
+              onToggleSelected={(id) =>
+                setSelectedPolicyIds((current) =>
+                  current.includes(id)
+                    ? current.filter((item) => item !== id)
+                    : [...current, id],
+                )
+              }
+              onToggleAll={() => {
+                const ids = displayedPolicies.map((item) => item.id);
+                const allSelected =
+                  ids.length > 0 && ids.every((id) => selectedPolicyIds.includes(id));
+                setSelectedPolicyIds(allSelected ? [] : ids);
+              }}
+              allSelected={
+                displayedPolicies.length > 0 &&
+                displayedPolicies.every((item) => selectedPolicyIds.includes(item.id))
+              }
+            />
+          </>
         )}
         {tab === "exceptions" && (
-          <ExceptionTable exceptions={displayedExceptions} />
-        )}
-        {tab === "evaluations" && (
-          <EvaluationTable evaluations={displayedEvaluations} />
+          <>
+            <BulkActionBar
+              count={selectedExceptionIds.length}
+              onClear={() => setSelectedExceptionIds([])}
+            >
+              <button
+                type="button"
+                disabled={approveException.isPending}
+                onClick={async () => {
+                  const draftIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.status === "draft",
+                    )
+                    .map((item) => item.id);
+                  for (const id of draftIds) {
+                    await approveException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-emerald-700"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Approve
+              </button>
+              <button
+                type="button"
+                disabled={rejectException.isPending}
+                onClick={async () => {
+                  const draftIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.status === "draft",
+                    )
+                    .map((item) => item.id);
+                  for (const id of draftIds) {
+                    await rejectException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                Reject
+              </button>
+              <button
+                type="button"
+                disabled={deactivateException.isPending}
+                onClick={async () => {
+                  const activeIds = displayedExceptions
+                    .filter(
+                      (item) =>
+                        selectedExceptionIds.includes(item.id) &&
+                        item.active !== false,
+                    )
+                    .map((item) => item.id);
+                  for (const id of activeIds) {
+                    await deactivateException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-slate-700"
+              >
+                Deactivate
+              </button>
+              <button
+                type="button"
+                disabled={deleteException.isPending}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `Delete ${selectedExceptionIds.length} selected exception${selectedExceptionIds.length === 1 ? "" : "s"}?`,
+                    )
+                  ) {
+                    return;
+                  }
+                  for (const id of selectedExceptionIds) {
+                    await deleteException.mutateAsync(id);
+                  }
+                  setSelectedExceptionIds([]);
+                }}
+                className="rounded-lg bg-white px-3 py-2 text-xs font-bold text-red-600"
+              >
+                {deleteException.isPending ? "Deleting..." : "Delete"}
+              </button>
+            </BulkActionBar>
+            <ExceptionTable
+              exceptions={displayedExceptions}
+              selectedIds={selectedExceptionIds}
+              onToggleSelected={(id) =>
+                setSelectedExceptionIds((current) =>
+                  current.includes(id)
+                    ? current.filter((item) => item !== id)
+                    : [...current, id],
+                )
+              }
+              onToggleAll={() => {
+                const ids = displayedExceptions.map((item) => item.id);
+                const allSelected =
+                  ids.length > 0 && ids.every((id) => selectedExceptionIds.includes(id));
+                setSelectedExceptionIds(allSelected ? [] : ids);
+              }}
+              allSelected={
+                displayedExceptions.length > 0 &&
+                displayedExceptions.every((item) => selectedExceptionIds.includes(item.id))
+              }
+            />
+          </>
         )}
         {tab === "history" && (
-            <HistoryTable runs={runs.data ?? []} />
+            <HistoryTable
+              runs={runs.data ?? []}
+              onOpenRun={(runId) => router.push(`/pages/compliance/run?run=${runId}`)}
+            />
         )}
+        {tab === "reports" && <ComplianceReportsPanel />}
       </section>
       {showForm &&
         (tab === "exceptions" ? (
@@ -353,11 +526,19 @@ function PolicyTable({
   documents,
   types,
   targets,
+  selectedIds,
+  onToggleSelected,
+  onToggleAll,
+  allSelected,
 }: {
   policies: any[];
   documents: any[];
   types: any[];
   targets: any;
+  selectedIds: number[];
+  onToggleSelected: (id: number) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
 }) {
   return (
     <Table
@@ -372,10 +553,22 @@ function PolicyTable({
         "Actions",
       ]}
       empty="No policies found."
+      selectAllChecked={allSelected}
+      onToggleAll={onToggleAll}
+      hasSelection
     >
       <>
         {policies.map((policy) => (
           <tr key={policy.id} className="hover:bg-pink-50/30">
+            <td className="cell w-10">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(policy.id)}
+                onChange={() => onToggleSelected(policy.id)}
+                className="h-4 w-4 accent-pink-600"
+                aria-label={`Select ${policy.name}`}
+              />
+            </td>
             <td className="cell">
               <b>{policy.name}</b>
               <small>{policy.description || "No description provided"}</small>
@@ -416,42 +609,39 @@ function PolicyTable({
     </Table>
   );
 }
-function EvaluationTable({ evaluations }: { evaluations: any[] }) {
-  return (
-    <Table
-      headers={["Employee", "Policy", "Status", "Score", "Missing", "Grace", "Evaluated"]}
-      empty="No evaluations found."
-    >
-      <>
-        {evaluations.map((item) => (
-          <tr key={item.id} className="hover:bg-pink-50/30">
-            <td className="cell"><b>{item.employee}</b></td>
-            <td className="cell">{item.policy}</td>
-            <td className="cell">
-              <span className={`status ${item.status === "compliant" ? "approved" : item.status === "non_compliant" ? "danger" : "pending"}`}>
-                {formatStatusLabel(item.status)}
-              </span>
-            </td>
-            <td className="cell">{item.score}%</td>
-            <td className="cell">{item.missing_count}</td>
-            <td className="cell">{item.grace_count}</td>
-            <td className="cell"><small>{item.evaluated_at ? formatDateTime(item.evaluated_at) : "—"}</small></td>
-          </tr>
-        ))}
-      </>
-    </Table>
-  );
-}
-
-function ExceptionTable({ exceptions }: { exceptions: any[] }) {
+function ExceptionTable({
+  exceptions,
+  selectedIds,
+  onToggleSelected,
+  onToggleAll,
+  allSelected,
+}: {
+  exceptions: any[];
+  selectedIds: number[];
+  onToggleSelected: (id: number) => void;
+  onToggleAll: () => void;
+  allSelected: boolean;
+}) {
   return (
     <Table
       headers={["Employee", "Reason", "Valid until", "Status", "Actions"]}
       empty="No exceptions found."
+      selectAllChecked={allSelected}
+      onToggleAll={onToggleAll}
+      hasSelection
     >
       <>
         {exceptions.map((item) => (
           <tr key={item.id} className="hover:bg-pink-50/30">
+            <td className="cell w-10">
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(item.id)}
+                onChange={() => onToggleSelected(item.id)}
+                className="h-4 w-4 accent-pink-600"
+                aria-label={`Select exception for ${item.employee}`}
+              />
+            </td>
             <td className="cell">
               <b>{item.employee}</b>
               <small>{item.policy}</small>
@@ -490,7 +680,13 @@ function ExceptionActions({ exception }: { exception: any }) {
     <button type="button" onClick={deleteException} disabled={remove.isPending} className="row-action danger" title="Delete exception"><Trash2 /></button>
   </div>;
 }
-function HistoryTable({ runs }: { runs: any[] }) {
+function HistoryTable({
+  runs,
+  onOpenRun,
+}: {
+  runs: any[];
+  onOpenRun: (runId: number) => void;
+}) {
   return (
     <Table
       headers={["Policy", "Run type", "Employees", "Results", "Evaluated at"]}
@@ -498,14 +694,26 @@ function HistoryTable({ runs }: { runs: any[] }) {
     >
       <>
         {runs.map((item) => (
-          <tr key={item.id} className="hover:bg-pink-50/30">
+          <tr
+            key={item.id}
+            className="cursor-pointer hover:bg-pink-50/30"
+            onClick={() => onOpenRun(item.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenRun(item.id);
+              }
+            }}
+            tabIndex={0}
+            aria-label={`Open run for ${item.policy}`}
+          >
             <td className="cell">
               <b>{item.policy}</b>
             </td>
             <td className="cell">{formatFieldLabel(item.run_type)}</td>
             <td className="cell">{item.employee_count}</td>
             <td className="cell"><small>{item.compliant_count} compliant · {item.partial_count} partial · {item.non_compliant_count} missing · {item.excepted_count} excepted</small></td>
-            <td className="cell">{item.evaluated_at}</td>
+            <td className="cell">{item.evaluated_at ? formatDateTime(item.evaluated_at) : "—"}</td>
           </tr>
         ))}
       </>
@@ -521,16 +729,33 @@ function Table({
   children,
   headers,
   empty,
+  hasSelection = false,
+  selectAllChecked = false,
+  onToggleAll,
 }: {
   children: React.ReactNode;
   headers: string[];
   empty: string;
+  hasSelection?: boolean;
+  selectAllChecked?: boolean;
+  onToggleAll?: () => void;
 }) {
   return (
     <div className="overflow-x-auto">
       <SortableTable className="w-full min-w-[760px] text-left">
         <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-400">
           <tr>
+            {hasSelection ? (
+              <th className="w-10 px-5 py-4">
+                <input
+                  type="checkbox"
+                  checked={selectAllChecked}
+                  onChange={onToggleAll}
+                  className="h-4 w-4 accent-pink-600"
+                  aria-label="Select all rows"
+                />
+              </th>
+            ) : null}
             {headers.map((header) => (
               <th key={header} className="px-5 py-4">
                 {header}

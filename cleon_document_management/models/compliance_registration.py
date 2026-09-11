@@ -303,9 +303,28 @@ class CompliancePolicy(models.Model):
             self.action_evaluate(run_type="automatic")
         return result
 
+    def _clear_policy_dependencies(self):
+        self.ensure_one()
+        requirement_ids = self.requirement_ids.ids
+        if requirement_ids:
+            self.env["doc.compliance.evaluation.line"].sudo().search(
+                [("requirement_id", "in", requirement_ids)]
+            ).unlink()
+            self.env["doc.compliance.evaluation.run.result.line"].sudo().search(
+                [("requirement_id", "in", requirement_ids)]
+            ).unlink()
+        self.env["doc.compliance.evaluation"].sudo().search(
+            [("policy_id", "=", self.id)]
+        ).unlink()
+        self.env["doc.compliance.evaluation.run"].sudo().search(
+            [("policy_id", "=", self.id)]
+        ).unlink()
+
     def unlink(self):
         if not self._is_document_admin():
             raise AccessError(_("Only document administrators can delete compliance policies."))
+        for policy in self:
+            policy.sudo()._clear_policy_dependencies()
         return super().unlink()
 
     def action_run_now(self):
@@ -471,6 +490,7 @@ class CompliancePolicy(models.Model):
             for employee in targets:
                 policy.evaluate_employee(employee)
             evaluations = Evaluation.search([("policy_id", "=", policy.id)])
+            run.snapshot_from_evaluations(evaluations)
             run.write({
                 "employee_count": len(evaluations),
                 "compliant_count": len(evaluations.filtered(lambda item: item.status == "compliant")),
@@ -627,6 +647,142 @@ class ComplianceEvaluationRun(models.Model):
     partial_count = fields.Integer(default=0)
     non_compliant_count = fields.Integer(default=0)
     excepted_count = fields.Integer(default=0)
+    result_ids = fields.One2many(
+        "doc.compliance.evaluation.run.result",
+        "run_id",
+        string="Employee Results",
+    )
+
+    def snapshot_from_evaluations(self, evaluations):
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        RunResult = self.env["doc.compliance.evaluation.run.result"].sudo()
+        Document = self.env["doc.document"].sudo()
+        for evaluation in evaluations:
+            line_commands = []
+            for line in evaluation.line_ids:
+                expired_documents = Document.browse()
+                if line.document_type_id:
+                    expired_documents = Document.search([
+                        ("employee_id", "=", evaluation.employee_id.id),
+                        ("document_type_id", "=", line.document_type_id.id),
+                        ("active", "=", True),
+                        ("state", "in", ["approved", "signed"]),
+                        ("has_expiry", "=", True),
+                        ("expiry_date", "<", today),
+                    ])
+                line_commands.append(
+                    fields.Command.create({
+                        "requirement_id": line.requirement_id.id,
+                        "document_type_id": line.document_type_id.id,
+                        "required_count": line.required_count,
+                        "matched_count": line.matched_count,
+                        "status": line.status,
+                        "document_ids": [fields.Command.set(line.document_ids.ids)],
+                        "expired_document_ids": [fields.Command.set(expired_documents.ids)],
+                    })
+                )
+            required_total = sum(line.required_count for line in evaluation.line_ids)
+            submitted_total = sum(
+                line.matched_count
+                for line in evaluation.line_ids
+                if line.status in ("complete", "excepted")
+            )
+            RunResult.create({
+                "run_id": self.id,
+                "employee_id": evaluation.employee_id.id,
+                "department_id": evaluation.employee_id.department_id.id,
+                "status": evaluation.status,
+                "score": evaluation.score,
+                "required_count": required_total,
+                "submitted_count": submitted_total,
+                "missing_count": evaluation.missing_count,
+                "grace_count": evaluation.grace_count,
+                "exception_id": evaluation.exception_id.id if evaluation.exception_id else False,
+                "line_ids": line_commands,
+            })
+
+
+class ComplianceEvaluationRunResult(models.Model):
+    _name = "doc.compliance.evaluation.run.result"
+    _description = "Compliance Evaluation Run Result"
+    _order = "employee_id"
+    _rec_name = "employee_id"
+
+    run_id = fields.Many2one(
+        "doc.compliance.evaluation.run", required=True, ondelete="cascade", index=True
+    )
+    employee_id = fields.Many2one(
+        "hr.employee", required=True, ondelete="cascade", index=True
+    )
+    department_id = fields.Many2one("hr.department", ondelete="set null", index=True)
+    status = fields.Selection(
+        [
+            ("compliant", "Compliant"),
+            ("partial", "Partially Compliant"),
+            ("non_compliant", "Non-compliant"),
+            ("excepted", "Excepted"),
+        ],
+        required=True,
+        index=True,
+    )
+    score = fields.Float(digits=(5, 2))
+    required_count = fields.Integer(default=0)
+    submitted_count = fields.Integer(default=0)
+    missing_count = fields.Integer(default=0)
+    grace_count = fields.Integer(default=0)
+    exception_id = fields.Many2one("doc.compliance.exception", readonly=True)
+    line_ids = fields.One2many(
+        "doc.compliance.evaluation.run.result.line",
+        "result_id",
+        string="Requirement Results",
+    )
+
+    _sql_constraints = [
+        (
+            "run_employee_unique",
+            "unique(run_id, employee_id)",
+            "An employee can have one result per run.",
+        ),
+    ]
+
+
+class ComplianceEvaluationRunResultLine(models.Model):
+    _name = "doc.compliance.evaluation.run.result.line"
+    _description = "Compliance Evaluation Run Result Line"
+
+    result_id = fields.Many2one(
+        "doc.compliance.evaluation.run.result", required=True, ondelete="cascade"
+    )
+    requirement_id = fields.Many2one(
+        "doc.compliance.requirement", required=True, ondelete="restrict"
+    )
+    document_type_id = fields.Many2one("doc.document.type", ondelete="restrict")
+    document_ids = fields.Many2many(
+        "doc.document",
+        "doc_compliance_run_result_document_rel",
+        "line_id",
+        "document_id",
+        string="Matching Documents",
+    )
+    expired_document_ids = fields.Many2many(
+        "doc.document",
+        "doc_compliance_run_result_expired_document_rel",
+        "line_id",
+        "document_id",
+        string="Expired Documents",
+    )
+    required_count = fields.Integer()
+    matched_count = fields.Integer()
+    status = fields.Selection(
+        [
+            ("complete", "Complete"),
+            ("grace", "Grace Period"),
+            ("missing", "Missing"),
+            ("excepted", "Excepted"),
+        ],
+        required=True,
+    )
 
 
 class ComplianceEvaluationLine(models.Model):

@@ -140,6 +140,20 @@
         ]</field>
     </record>
 
+    <record id="rule_compliance_requirement_manager_visibility" model="ir.rule">
+        <field name="name">Compliance requirements: managers</field>
+        <field name="model_id" ref="model_doc_compliance_requirement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_requirement_admin_visibility" model="ir.rule">
+        <field name="name">Compliance requirements: administrators</field>
+        <field name="model_id" ref="model_doc_compliance_requirement"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
     <record id="rule_compliance_evaluation_user_visibility" model="ir.rule">
         <field name="name">Compliance evaluations: own employee record</field>
         <field name="model_id" ref="model_doc_compliance_evaluation"/>
@@ -176,6 +190,48 @@
     <record id="rule_compliance_evaluation_run_admin_visibility" model="ir.rule">
         <field name="name">Compliance runs: administrators</field>
         <field name="model_id" ref="model_doc_compliance_evaluation_run"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_user_visibility" model="ir.rule">
+        <field name="name">Compliance run results: own employee record</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_manager_visibility" model="ir.rule">
+        <field name="name">Compliance run results: managers</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_admin_visibility" model="ir.rule">
+        <field name="name">Compliance run results: administrators</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_line_user_visibility" model="ir.rule">
+        <field name="name">Compliance run result lines: own employee record</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result_line"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_user'))]"/>
+        <field name="domain_force">[('result_id.employee_id.user_id', '=', user.id)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_line_manager_visibility" model="ir.rule">
+        <field name="name">Compliance run result lines: managers</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result_line"/>
+        <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_manager'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+
+    <record id="rule_compliance_evaluation_run_result_line_admin_visibility" model="ir.rule">
+        <field name="name">Compliance run result lines: administrators</field>
+        <field name="model_id" ref="model_doc_compliance_evaluation_run_result_line"/>
         <field name="groups" eval="[Command.link(ref('cleon_document_management.group_document_admin'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>

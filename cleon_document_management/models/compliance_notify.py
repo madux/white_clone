@@ -148,6 +148,24 @@ class ComplianceNotify(models.AbstractModel):
         self._log_sent(policy, employee, kind, today)
 
     @api.model
+    def notify_manual_request(self, policy, employee, subject, body_html, due_date):
+        today = fields.Date.context_today(self)
+        kind = "manual_request"
+        recipients = employee.user_id if employee.user_id else self.env["res.users"]
+        if not recipients:
+            return
+        self._send_mail(recipients, subject, body_html)
+        self._log_sent(policy, employee, kind, today)
+        if due_date:
+            self._schedule_activity(
+                policy,
+                recipients,
+                _("Compliance request: %s") % policy.name,
+                _("Please submit the requested documents by %s.") % due_date,
+                due_date,
+            )
+
+    @api.model
     def notify_retention_audit_gaps(self, policy, run, sampled_employees):
         today = fields.Date.context_today(self)
         kind = "retention_audit_gaps"

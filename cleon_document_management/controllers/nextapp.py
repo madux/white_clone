@@ -505,7 +505,6 @@ class NextAppController(http.Controller):
             for acknowledgement in Ack.search([], order="acknowledged_at desc", limit=30)
         ]
 
-        pending_acknowledgements = []
         org_documents = Document.search(
             [
                 ("folder_id.folder_type", "=", "organizational"),
@@ -516,8 +515,11 @@ class NextAppController(http.Controller):
                 ("deleted_at", "=", False),
                 ("state", "=", "approved"),
             ],
-            order="write_date desc",
+            order="folder_id, write_date desc",
         )
+
+        folder_map = {}
+        pending_acknowledgements = []
         for document in org_documents:
             folder = document.folder_id
             audience = folder._get_acknowledgement_audience_users()
@@ -527,28 +529,78 @@ class NextAppController(http.Controller):
             pending_users = audience.filtered(
                 lambda item: item.id not in acknowledged_ids
             )
-            if not pending_users:
-                continue
-            pending_acknowledgements.append(
+            audience_count = len(audience)
+            acknowledged_count = audience_count - len(pending_users)
+            pending_count = len(pending_users)
+            acknowledgement_percent = (
+                round(acknowledged_count * 100 / audience_count)
+                if audience_count
+                else 0
+            )
+            doc_payload = {
+                "document_id": document.id,
+                "document_name": document.name,
+                "document_type": document.document_type_id.name,
+                "folder_id": folder.id,
+                "folder_name": folder.folder_name,
+                "audience_count": audience_count,
+                "acknowledged_count": acknowledged_count,
+                "acknowledgement_percent": acknowledgement_percent,
+                "pending_count": pending_count,
+            }
+            bucket = folder_map.setdefault(
+                folder.id,
                 {
-                    "document_id": document.id,
-                    "document_name": document.name,
-                    "document_type": document.document_type_id.name,
                     "folder_id": folder.id,
                     "folder_name": folder.folder_name,
-                    "audience_count": len(audience),
-                    "acknowledged_count": len(audience) - len(pending_users),
-                    "pending_employees": [
-                        {
-                            "id": user.employee_id.id,
-                            "name": user.employee_id.name or user.name,
-                            "user_id": user.id,
-                        }
-                        for user in pending_users
-                        if user.employee_id
-                    ],
-                }
+                    "audience_count": 0,
+                    "acknowledged_count": 0,
+                    "documents": [],
+                },
             )
+            bucket["audience_count"] += audience_count
+            bucket["acknowledged_count"] += acknowledged_count
+            bucket["documents"].append(doc_payload)
+            if pending_count:
+                pending_acknowledgements.append(
+                    {
+                        **doc_payload,
+                        "pending_employees": [
+                            {
+                                "id": user.employee_id.id,
+                                "name": user.employee_id.name or user.name,
+                                "user_id": user.id,
+                            }
+                            for user in pending_users
+                            if user.employee_id
+                        ],
+                    }
+                )
+
+        pending_acknowledgements_by_folder = []
+        for bucket in folder_map.values():
+            audience_count = bucket["audience_count"]
+            acknowledged_count = bucket["acknowledged_count"]
+            bucket["acknowledgement_percent"] = (
+                round(acknowledged_count * 100 / audience_count)
+                if audience_count
+                else 0
+            )
+            bucket["documents"].sort(
+                key=lambda item: (
+                    item["pending_count"] > 0,
+                    item["acknowledgement_percent"],
+                    item["document_name"],
+                ),
+                reverse=True,
+            )
+            pending_acknowledgements_by_folder.append(bucket)
+        pending_acknowledgements_by_folder.sort(
+            key=lambda item: (
+                item["acknowledgement_percent"],
+                item["folder_name"],
+            )
+        )
 
         return {
             "success": True,
@@ -556,10 +608,134 @@ class NextAppController(http.Controller):
                 "activity_log": activity_log,
                 "recent_acknowledgements": recent_acknowledgements,
                 "pending_acknowledgements": pending_acknowledgements,
+                "pending_acknowledgements_by_folder": pending_acknowledgements_by_folder,
                 "summary": {
                     "activity_count": len(activity_log),
                     "pending_acknowledgement_count": len(pending_acknowledgements),
                     "recent_acknowledgement_count": len(recent_acknowledgements),
                 },
+            },
+        }
+
+    @http.route(
+        "/api/acknowledgements/document-audience",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def api_document_acknowledgement_audience(
+        self,
+        document_id=None,
+        page=1,
+        limit=10,
+        search="",
+        status="all",
+        **kwargs,
+    ):
+        user = request.env.user
+        if not user_is_document_manager(user):
+            return {
+                "success": False,
+                "message": "Document manager access is required.",
+            }
+
+        doc_id = int(document_id or kwargs.get("document_id") or 0)
+        document = request.env["doc.document"].browse(doc_id).exists()
+        if (
+            not document
+            or not document.active
+            or document.deleted_at
+            or document.folder_id.folder_type != "organizational"
+        ):
+            return {"success": False, "message": "Document not found."}
+
+        folder = document.folder_id
+        audience = folder._get_acknowledgement_audience_users()
+        if not audience:
+            return {
+                "success": True,
+                "data": {
+                    "document_id": document.id,
+                    "document_name": document.name,
+                    "folder_name": folder.folder_name,
+                    "audience_count": 0,
+                    "acknowledged_count": 0,
+                    "acknowledgement_percent": 0,
+                    "page": 1,
+                    "limit": int(limit or 10),
+                    "total": 0,
+                    "employees": [],
+                },
+            }
+
+        acknowledgement_by_user = {
+            item.user_id.id: item for item in document.acknowledgement_ids
+        }
+        rows = []
+        for user_record in audience:
+            employee = user_record.employee_id
+            acknowledgement = acknowledgement_by_user.get(user_record.id)
+            rows.append(
+                {
+                    "employee_id": employee.id if employee else False,
+                    "employee_name": (employee.name if employee else user_record.name),
+                    "department": employee.department_id.name if employee else "",
+                    "acknowledged": bool(acknowledgement),
+                    "acknowledged_at": (
+                        fields.Datetime.to_string(acknowledgement.acknowledged_at)
+                        if acknowledgement
+                        else False
+                    ),
+                }
+            )
+
+        term = (search or "").strip().lower()
+        if term:
+            rows = [
+                row
+                for row in rows
+                if term in row["employee_name"].lower()
+                or term in (row["department"] or "").lower()
+            ]
+
+        normalized_status = (status or "all").lower()
+        if normalized_status == "acknowledged":
+            rows = [row for row in rows if row["acknowledged"]]
+        elif normalized_status == "pending":
+            rows = [row for row in rows if not row["acknowledged"]]
+
+        rows.sort(
+            key=lambda row: (
+                row["acknowledged"],
+                row["employee_name"].lower(),
+            )
+        )
+
+        page_number = max(int(page or 1), 1)
+        page_limit = max(min(int(limit or 10), 50), 1)
+        total = len(rows)
+        offset = (page_number - 1) * page_limit
+        page_rows = rows[offset : offset + page_limit]
+        audience_count = len(audience)
+        acknowledged_count = len(acknowledgement_by_user)
+
+        return {
+            "success": True,
+            "data": {
+                "document_id": document.id,
+                "document_name": document.name,
+                "folder_name": folder.folder_name,
+                "audience_count": audience_count,
+                "acknowledged_count": acknowledged_count,
+                "acknowledgement_percent": (
+                    round(acknowledged_count * 100 / audience_count)
+                    if audience_count
+                    else 0
+                ),
+                "page": page_number,
+                "limit": page_limit,
+                "total": total,
+                "employees": page_rows,
             },
         }

@@ -51,6 +51,8 @@ import {
   typeRequiresExpiry,
 } from "./uploadExpiryHelpers";
 import { formatStatusLabel } from "../../../lib/formatLabel";
+import SectionTabs from "./SectionTabs";
+import PersonalDocumentTree from "./PersonalDocumentTree";
 
 type Tab = "dashboard" | "files" | "shared" | "activity";
 type FileView = "files" | "outstanding";
@@ -155,7 +157,10 @@ function DocumentTable({
                 </td>
                 <td className={`px-5 py-4 ${guideTarget === "approval" ? "guide-status-emphasis" : ""}`}>
                   {(() => {
-                    const requiresApproval = document.approval_state === "pending";
+                    const isOutstandingPlaceholder = document.id < 0;
+                    const requiresApproval =
+                      !isOutstandingPlaceholder &&
+                      document.approval_state === "pending";
                     const statusKey = requiresApproval ? "pending" : document.state;
                     return (
                   <span
@@ -165,9 +170,11 @@ function DocumentTable({
                       ? document.acknowledged_at
                         ? `Acknowledged ${String(document.acknowledged_at).slice(0, 10)}`
                         : "Acknowledged"
-                      : requiresApproval
-                        ? "Requires Approval"
-                        : formatStatusLabel(document.state)}
+                      : isOutstandingPlaceholder
+                        ? formatStatusLabel(document.state)
+                        : requiresApproval
+                          ? "Requires Approval"
+                          : formatStatusLabel(document.state)}
                   </span>
                     );
                   })()}
@@ -175,7 +182,9 @@ function DocumentTable({
                 <td className="px-5 py-4 text-sm text-slate-500">
                   {shared
                     ? document.shared_by || "Document administrator"
-                    : document.write_date?.slice(0, 10) || "Required"}
+                    : typeof document.write_date === "string" && document.write_date
+                      ? document.write_date.slice(0, 10)
+                      : "Required"}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center justify-end gap-2">
@@ -473,33 +482,32 @@ export default function MyDocumentsPage() {
       )}
       {!workspace.isLoading && (
       <>
-      <nav className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200">
-        <div className="flex flex-wrap gap-1">
-        {tabs.map(({ id, label, icon: Icon, count }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setPage(id)}
-            className={`inline-flex items-center gap-2 rounded-t-xl border-b-2 px-4 py-3 text-xs font-bold transition ${tab === id ? "border-brand-pink bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "border-transparent text-slate-500 hover:bg-pink-50 hover:text-brand-text"} ${id === "shared" && guideTarget === "shared" ? "guide-emphasis" : ""} ${id === "files" && ["workspace", "upload", "approval"].includes(guideTarget || "") ? "guide-emphasis" : ""}`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-            {count !== undefined && (
-              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                {count}
-              </span>
-            )}
-          </button>
-        ))}
-        </div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <SectionTabs
+          items={tabs.map(({ id, label, icon, count }) => ({
+            id,
+            label,
+            icon,
+            count,
+            emphasisClassName:
+              (id === "shared" && guideTarget === "shared") ||
+              (id === "files" &&
+                ["workspace", "upload", "approval"].includes(guideTarget || ""))
+                ? "guide-emphasis"
+                : undefined,
+          }))}
+          value={tab}
+          onChange={setPage}
+          ariaLabel="My documents sections"
+        />
         <button
           type="button"
           onClick={saveDefaultTab}
-          className="mb-1 rounded-full border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-500 transition hover:border-brand-pink hover:text-brand-pink"
+          className="mb-3 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px] font-bold text-slate-500 transition hover:border-brand-pink hover:text-brand-pink"
         >
           {defaultSaved ? "Default saved" : "Set as default view"}
         </button>
-      </nav>
+      </div>
       {tab === "dashboard" && (
         <div className="space-y-5">
           <div className="flex items-center justify-between rounded-2xl border border-pink-200 bg-pink-50 px-5 py-4">
@@ -697,23 +705,20 @@ export default function MyDocumentsPage() {
           </div>
           {tab === "files" && (
             <div className="space-y-3">
-              <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setFileView("files")}
-                  className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "files" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
-                >
-                  My Files
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFileView("outstanding")}
-                  className={`rounded-full px-4 py-2 text-xs font-bold ${fileView === "outstanding" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
-                >
-                  Outstanding Documents{" "}
-                  <span className="ml-1">{outstanding.length}</span>
-                </button>
-              </div>
+              <SectionTabs
+                items={[
+                  { id: "files", label: "My Files" },
+                  {
+                    id: "outstanding",
+                    label: "Outstanding Documents",
+                    count: outstanding.length,
+                  },
+                ]}
+                value={fileView}
+                onChange={setFileView}
+                className="!w-auto"
+                ariaLabel="My files views"
+              />
               {fileView === "files" && (
                 <DocumentFilterBar
                   filters={docFilters}
@@ -727,23 +732,20 @@ export default function MyDocumentsPage() {
             </div>
           )}
           {tab === "shared" && (
-            <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
-              <button
-                type="button"
-                onClick={() => setSharedAckFilter("all")}
-                className={`rounded-full px-4 py-2 text-xs font-bold ${sharedAckFilter === "all" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
-              >
-                All shared
-              </button>
-              <button
-                type="button"
-                onClick={() => setSharedAckFilter("needs_ack")}
-                className={`rounded-full px-4 py-2 text-xs font-bold ${sharedAckFilter === "needs_ack" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-sm" : "text-slate-500 hover:bg-pink-50"}`}
-              >
-                Needs acknowledgement{" "}
-                <span className="ml-1">{needsAckCount}</span>
-              </button>
-            </div>
+            <SectionTabs
+              items={[
+                { id: "all", label: "All shared" },
+                {
+                  id: "needs_ack",
+                  label: "Needs acknowledgement",
+                  count: needsAckCount,
+                },
+              ]}
+              value={sharedAckFilter}
+              onChange={setSharedAckFilter}
+              className="!w-auto"
+              ariaLabel="Shared document filters"
+            />
           )}
           <label className={`relative block max-w-md ${guideTarget === "search" ? "guide-emphasis rounded-full" : ""}`}>
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -754,37 +756,54 @@ export default function MyDocumentsPage() {
               className="w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-pink/40 focus:ring-4 focus:ring-brand-pink/10"
             />
           </label>
-          <DocumentTable
-            documents={
-              tab === "shared"
-                ? shared
-                : fileView === "outstanding"
-                  ? outstanding
-                  : filteredMyFiles
-            }
-            search={search}
-            shared={tab === "shared"}
-            readOnly={fileView === "outstanding"}
-            guideTarget={guideTarget || undefined}
-            sharedAckFilter={tab === "shared" ? sharedAckFilter : "all"}
-            pendingStatusById={pendingStatusById}
-            onView={setViewing}
-            onRequestApproval={async (document) => {
-              if (
-                window.confirm(
-                  `Send "${document.name}" to an administrator for review?`,
+          {tab === "files" && fileView === "files" ? (
+            <PersonalDocumentTree
+              documents={filteredMyFiles}
+              search={search}
+              pendingStatusById={pendingStatusById}
+              guideTarget={guideTarget || undefined}
+              onView={setViewing}
+              onRequestApproval={async (document) => {
+                if (
+                  window.confirm(
+                    `Send "${document.name}" to an administrator for review?`,
+                  )
+                ) {
+                  await requestApproval.mutateAsync(document.id);
+                }
+              }}
+            />
+          ) : (
+            <DocumentTable
+              documents={
+                tab === "shared"
+                  ? shared
+                  : outstanding
+              }
+              search={search}
+              shared={tab === "shared"}
+              readOnly={fileView === "outstanding"}
+              guideTarget={guideTarget || undefined}
+              sharedAckFilter={tab === "shared" ? sharedAckFilter : "all"}
+              pendingStatusById={pendingStatusById}
+              onView={setViewing}
+              onRequestApproval={async (document) => {
+                if (
+                  window.confirm(
+                    `Send "${document.name}" to an administrator for review?`,
+                  )
                 )
-              )
-                await requestApproval.mutateAsync(document.id);
-            }}
-            onUploadOutstanding={(document) => {
-              setUploadRequirement(document);
-              setUploadTypes([String(document.document_type_id)]);
-              setUploadFiles([]);
-              setUploadError("");
-              setShowUpload(true);
-            }}
-          />
+                  await requestApproval.mutateAsync(document.id);
+              }}
+              onUploadOutstanding={(document) => {
+                setUploadRequirement(document);
+                setUploadTypes([String(document.document_type_id)]);
+                setUploadFiles([]);
+                setUploadError("");
+                setShowUpload(true);
+              }}
+            />
+          )}
         </section>
       )}
       {tab === "activity" && (

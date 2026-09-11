@@ -6,7 +6,21 @@ import { api } from "../../../lib/api";
 import { useDocumentAction } from "../../../hooks/useDocuments";
 import { useClickOutside } from "../../../hooks/useClickOutside";
 
-export default function DocumentActions({ documentId, documentName, active, organizational = false, onMove }: { documentId: number; documentName: string; active?: boolean; organizational?: boolean; onMove?: () => void }) {
+export default function DocumentActions({
+  documentId,
+  documentName,
+  active,
+  organizational = false,
+  onMove,
+  deleteRelatedIds = [],
+}: {
+  documentId: number;
+  documentName: string;
+  active?: boolean;
+  organizational?: boolean;
+  onMove?: () => void;
+  deleteRelatedIds?: number[];
+}) {
   const action = useDocumentAction();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -18,28 +32,115 @@ export default function DocumentActions({ documentId, documentName, active, orga
     if (!open || !buttonRef.current) return;
     const rect = buttonRef.current.getBoundingClientRect();
     const menuHeight = organizational ? 290 : 230;
-    setPosition({ top: Math.max(12, rect.top - menuHeight - 8), right: Math.max(12, window.innerWidth - rect.right) });
-  }, [open]);
+    setPosition({
+      top: Math.max(12, rect.top - menuHeight - 8),
+      right: Math.max(12, window.innerWidth - rect.right),
+    });
+  }, [open, organizational]);
 
-  const run = async (name: "favorite" | "pin" | "delete" | "archive" | "activate" | "deactivate") => {
-    if (name === "delete" && !window.confirm(`Move "${documentName}" to the recycle bin?`)) return;
-    if (name === "archive" && !window.confirm(`Archive "${documentName}"? It will be removed from everyone it is shared with until restored.`)) return;
+  const run = async (
+    name: "favorite" | "pin" | "delete" | "archive" | "activate" | "deactivate",
+  ) => {
+    if (name === "delete") {
+      const deleteIds = [documentId, ...deleteRelatedIds.filter((id) => id !== documentId)];
+      const message =
+        deleteIds.length > 1
+          ? `Move "${documentName}" and all related versions to the recycle bin?`
+          : `Move "${documentName}" to the recycle bin?`;
+      if (!window.confirm(message)) return;
+      for (const id of deleteIds) {
+        await action.mutateAsync({ id, action: "delete" });
+      }
+      setOpen(false);
+      return;
+    }
+    if (
+      name === "archive" &&
+      !window.confirm(
+        `Archive "${documentName}"? It will be removed from everyone it is shared with until restored.`,
+      )
+    ) {
+      return;
+    }
     await action.mutateAsync({ id: documentId, action: name });
     setOpen(false);
   };
 
-  return <div ref={rootRef} onClick={(event) => event.stopPropagation()}>
-    <button ref={buttonRef} type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label={`Actions for ${documentName}`} className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink">
-      <Ellipsis className="h-5 w-5" />
-    </button>
-    {open && <div className="fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl" style={{ top: position.top, right: position.right }}>
-      <button type="button" onClick={() => run("favorite")} className="menu-item"><FileHeart />Favorite</button>
-      <button type="button" onClick={() => run("pin")} className="menu-item"><Pin />Pin document</button>
-      {onMove && <button type="button" onClick={() => { onMove(); setOpen(false); }} className="menu-item"><FolderInput />Move to folder</button>}
-      {organizational && active !== false && <button type="button" onClick={() => run("archive")} className="menu-item"><Archive />Archive document</button>}
-      {organizational && <button type="button" onClick={() => run(active === false ? "activate" : "deactivate")} className="menu-item">{active === false ? <ToggleRight /> : <ToggleLeft />}{active === false ? "Activate document" : "Deactivate document"}</button>}
-      <button type="button" onClick={() => { api.downloadDocument(documentId); setOpen(false); }} className="menu-item"><Download />Download</button>
-      <button type="button" onClick={() => run("delete")} className="menu-item text-red-600 hover:bg-red-50 hover:text-red-700"><Trash2 />Move to recycle bin</button>
-    </div>}
-  </div>;
+  return (
+    <div ref={rootRef} onClick={(event) => event.stopPropagation()}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-label={`Actions for ${documentName}`}
+        className="rounded-full p-2 text-slate-400 hover:bg-pink-50 hover:text-brand-pink"
+      >
+        <Ellipsis className="h-5 w-5" />
+      </button>
+      {open && (
+        <div
+          className="fixed z-[100] w-52 rounded-2xl border border-slate-200 bg-white p-1.5 text-left shadow-2xl"
+          style={{ top: position.top, right: position.right }}
+        >
+          <button type="button" onClick={() => run("favorite")} className="menu-item">
+            <FileHeart />
+            Favorite
+          </button>
+          <button type="button" onClick={() => run("pin")} className="menu-item">
+            <Pin />
+            Pin document
+          </button>
+          {onMove && (
+            <button
+              type="button"
+              onClick={() => {
+                onMove();
+                setOpen(false);
+              }}
+              className="menu-item"
+            >
+              <FolderInput />
+              Move to folder
+            </button>
+          )}
+          {organizational && active !== false && (
+            <button type="button" onClick={() => run("archive")} className="menu-item">
+              <Archive />
+              Archive document
+            </button>
+          )}
+          {organizational && (
+            <button
+              type="button"
+              onClick={() => run(active === false ? "activate" : "deactivate")}
+              className="menu-item"
+            >
+              {active === false ? <ToggleRight /> : <ToggleLeft />}
+              {active === false ? "Activate document" : "Deactivate document"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              api.downloadDocument(documentId);
+              setOpen(false);
+            }}
+            className="menu-item"
+          >
+            <Download />
+            Download
+          </button>
+          <button
+            type="button"
+            onClick={() => run("delete")}
+            className="menu-item text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 />
+            Move to recycle bin
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }

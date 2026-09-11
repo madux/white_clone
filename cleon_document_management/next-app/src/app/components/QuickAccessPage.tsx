@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCurrentUser, useQuickAccess } from "../../../hooks/useDocuments";
 import type { DocDocument, DocFolder } from "../../../lib/types";
+import SectionTabs from "./SectionTabs";
 import ThemedSelect from "./ThemedSelect";
 
 type SortKey = "name" | "date";
@@ -106,26 +107,26 @@ export default function QuickAccessPage() {
       ) : (
         <>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex w-fit gap-1 rounded-full border border-slate-200 bg-white p-1">
-              <button
-                type="button"
-                onClick={() => setTab("folders")}
-                className={`rounded-full px-4 py-2.5 text-sm font-bold ${tab === "folders" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "text-slate-500 hover:bg-pink-50"}`}
-              >
-                Pinned Folders{" "}
-                <span className="ml-1 text-xs opacity-80">{folders.length}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab("documents")}
-                className={`rounded-full px-4 py-2.5 text-sm font-bold ${tab === "documents" ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200" : "text-slate-500 hover:bg-pink-50"}`}
-              >
-                Pinned Documents{" "}
-                <span className="ml-1 text-xs opacity-80">
-                  {documents.length}
-                </span>
-              </button>
-            </div>
+            <SectionTabs
+              items={[
+                {
+                  id: "folders",
+                  label: "Pinned Folders",
+                  icon: Folder,
+                  count: folders.length,
+                },
+                {
+                  id: "documents",
+                  label: "Pinned Documents",
+                  icon: FileText,
+                  count: documents.length,
+                },
+              ]}
+              value={tab}
+              onChange={setTab}
+              className="!w-auto"
+              ariaLabel="Quick access sections"
+            />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <label className="relative block min-w-[220px] flex-1 sm:max-w-xs">
                 <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

@@ -312,21 +312,34 @@ export interface CompliancePolicy {
   assigned_auditor?: string;
 }
 
+export type EmployeeLifecycleStatus =
+  | "active"
+  | "probation"
+  | "on_leave"
+  | "suspended";
+
+export interface ComplianceTargetEmployee {
+  id: number;
+  name: string;
+  job_title: string;
+  department: string;
+  department_id: number | false;
+  grade: string;
+  grade_id: number | false;
+  work_email: string;
+  work_phone: string;
+  location: string;
+  work_location_id?: number | false;
+  work_location?: string;
+  lifecycle_status?: EmployeeLifecycleStatus;
+  has_pending_documents?: boolean;
+}
+
 export interface ComplianceTargets {
-  employees: {
-    id: number;
-    name: string;
-    job_title: string;
-    department: string;
-    department_id: number | false;
-    grade: string;
-    grade_id: number | false;
-    work_email: string;
-    work_phone: string;
-    location: string;
-  }[];
+  employees: ComplianceTargetEmployee[];
   departments: { id: number; name: string }[];
   grades: { id: number; name: string }[];
+  locations?: { id: number; name: string }[];
   users?: { id: number; name: string; email: string }[];
 }
 
@@ -372,14 +385,67 @@ export interface ComplianceEvaluationRun {
   id: number;
   policy_id: number;
   policy: string;
-  run_type: "manual" | "automatic";
+  policy_allow_waiver?: boolean;
+  run_type: "manual" | "automatic" | "audit";
   evaluated_at: string;
   employee_count: number;
   compliant_count: number;
   partial_count: number;
   non_compliant_count: number;
   excepted_count: number;
+  has_snapshots?: boolean;
 }
+
+export interface ComplianceRunResultLine {
+  id: number;
+  requirement_id: number;
+  requirement: string;
+  document_type_id?: number | false;
+  document_type?: string;
+  document_ids: number[];
+  document_names?: string[];
+  expired_document_ids?: number[];
+  expired_document_names?: string[];
+  required_count: number;
+  matched_count: number;
+  status: string;
+}
+
+export interface ComplianceRunEmployee {
+  id: number;
+  employee_id: number;
+  employee: string;
+  job_title?: string;
+  department_id?: number | false;
+  department: string;
+  status: string;
+  score: number;
+  required_count: number;
+  submitted_count: number;
+  missing_count: number;
+  grace_count: number;
+  exception_id?: number | false;
+  lines?: ComplianceRunResultLine[];
+}
+
+export interface ComplianceReportResponse<T = Record<string, unknown>> {
+  success: boolean;
+  total: number;
+  page: number;
+  page_size: number;
+  data: T[];
+  message?: string;
+}
+
+export type ComplianceReportKey =
+  | "summary"
+  | "missing_per_run"
+  | "expired_per_run"
+  | "policy_compliance"
+  | "expiring_soon"
+  | "department_compliance"
+  | "exceptions"
+  | "employee_scores";
 
 export interface WorkspaceActivityEvent {
   id: number;
@@ -414,13 +480,58 @@ export interface WorkspacePendingAcknowledgement {
   folder_name: string;
   audience_count: number;
   acknowledged_count: number;
+  acknowledgement_percent?: number;
+  pending_count?: number;
   pending_employees: { id: number; name: string; user_id: number }[];
+}
+
+export interface AcknowledgementDocumentNode {
+  document_id: number;
+  document_name: string;
+  document_type: string;
+  folder_id: number;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  pending_count: number;
+}
+
+export interface AcknowledgementFolderNode {
+  folder_id: number;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  documents: AcknowledgementDocumentNode[];
+}
+
+export interface DocumentAcknowledgementAudienceEmployee {
+  employee_id: number | false;
+  employee_name: string;
+  department: string;
+  acknowledged: boolean;
+  acknowledged_at: string | false;
+}
+
+export interface DocumentAcknowledgementAudience {
+  document_id: number;
+  document_name: string;
+  folder_name: string;
+  audience_count: number;
+  acknowledged_count: number;
+  acknowledgement_percent: number;
+  page: number;
+  limit: number;
+  total: number;
+  employees: DocumentAcknowledgementAudienceEmployee[];
 }
 
 export interface WorkspaceActivity {
   activity_log: WorkspaceActivityEvent[];
   recent_acknowledgements: WorkspaceAcknowledgement[];
   pending_acknowledgements: WorkspacePendingAcknowledgement[];
+  pending_acknowledgements_by_folder?: AcknowledgementFolderNode[];
   summary: {
     activity_count: number;
     pending_acknowledgement_count: number;

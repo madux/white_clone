@@ -28,7 +28,12 @@ import {
   useFolders,
   useComplianceTargets,
   useSettings,
+  useWorkspaceActivity,
 } from "../../../hooks/useDocuments";
+import SectionTabs from "./SectionTabs";
+import OrganizationalLibraryTree, {
+  type AckPercentFilter,
+} from "./OrganizationalLibraryTree";
 import FolderExplorerAccordion from "./FolderExplorerAccordion";
 import FolderApprovalFields, {
   approvalFlowLabel,
@@ -49,13 +54,14 @@ import { formatFieldLabel } from "../../../lib/formatLabel";
 
 type PageKind = "employee" | "organization" | "organizational";
 type ViewMode = "list" | "cards";
-
 export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const folders = useFolders();
   const documents = useDocuments();
   const complianceTargets = useComplianceTargets();
   const currentUser = useCurrentUser();
+  const workspaceActivity = useWorkspaceActivity();
   const params = useSearchParams();
+  const isOrganizationPage = kind === "organization";
   const guideTarget = params.get("guide");
   const createQuery = params.get("create");
   const departmentIdQuery = params.get("department_id");
@@ -68,7 +74,10 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
   const [createPrefill, setCreatePrefill] = useState<CreateFolderPrefill>({});
   const [showFilters, setShowFilters] = useState(false);
   const [complianceFilter, setComplianceFilter] = useState<"all" | "attention" | "complete">("all");
-
+  const isEmployeePage = kind === "employee";
+  const [ackPercentFilters, setAckPercentFilters] = useState<AckPercentFilter[]>(
+    [],
+  );
   useEffect(() => {
     const fromParams = prefillFromSearchParams(params);
     const fromStorage = readCreateFolderIntent();
@@ -122,13 +131,15 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
     [documents.data, visibleFolders],
   );
 
-  const filteredRows = rows.filter(({ compliance }) =>
-    complianceFilter === "all"
-      ? true
-      : complianceFilter === "complete"
-        ? compliance === 100
-        : compliance < 100,
-  );
+  const filteredRows = isEmployeePage
+    ? rows
+    : rows.filter(({ compliance }) =>
+        complianceFilter === "all"
+          ? true
+          : complianceFilter === "complete"
+            ? compliance === 100
+            : compliance < 100,
+      );
   const isLoading = folders.isLoading || documents.isLoading;
   const visibleIds = filteredRows.map(({ folder }) => folder.id);
   const allSelected =
@@ -182,44 +193,88 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             />
           </label>
           <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              aria-expanded={showFilters}
-              aria-controls="folder-filters"
-              onClick={() => setShowFilters((current) => !current)}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Filters
-            </button>
-            <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
+            {!isEmployeePage ? (
               <button
                 type="button"
-                onClick={() => setViewMode("list")}
-                aria-pressed={viewMode === "list"}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${viewMode === "list" ? "bg-white text-brand-pink shadow-sm" : "text-slate-400"}`}
+                aria-expanded={showFilters}
+                aria-controls="folder-filters"
+                onClick={() => setShowFilters((current) => !current)}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-brand-pink hover:text-brand-pink"
               >
-                <List className="h-4 w-4" />
-                List
+                <SlidersHorizontal className="h-4 w-4" />
+                Filters
               </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("cards")}
-                aria-pressed={viewMode === "cards"}
-                className={`inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${viewMode === "cards" ? "bg-white text-brand-pink shadow-sm" : "text-slate-400"}`}
-              >
-                <Grid2X2 className="h-4 w-4" />
-                Cards
-              </button>
-            </div>
+            ) : null}
+            <SectionTabs
+              items={[
+                { id: "list", label: "List", icon: List },
+                { id: "cards", label: "Cards", icon: Grid2X2 },
+              ]}
+              value={viewMode}
+              onChange={setViewMode}
+              className="!w-auto"
+              ariaLabel="Folder view mode"
+            />
           </div>
         </div>
-        {showFilters && (
-          <div id="folder-filters" className="flex flex-wrap items-center gap-2 border-b border-slate-100 bg-slate-50/70 px-4 py-3" role="region" aria-label="Folder filters">
-            <span className="mr-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Show</span>
-            {([["all", "All folders"], ["attention", "Needs attention"], ["complete", "Complete"]] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setComplianceFilter(value)} aria-pressed={complianceFilter === value} className={`!rounded-lg px-3 py-2 text-xs font-bold transition ${complianceFilter === value ? "bg-white text-brand-text shadow-sm" : "text-slate-500 hover:bg-white hover:text-slate-800"}`}>{label}</button>
-            ))}
+        {showFilters && !isEmployeePage && (
+          <div
+            id="folder-filters"
+            className="space-y-3 border-b border-slate-100 bg-slate-50/70 px-4 py-3"
+            role="region"
+            aria-label="Folder filters"
+          >
+            {isOrganizationPage ? (
+              <section className="employee-filter-section !border-0 !p-0">
+                <h3 className="employee-filter-section-title">Acknowledgement %</h3>
+                <div className="employee-filter-options !max-h-none md:grid-cols-2">
+                  {(
+                    [
+                      ["below100", "Below 100%"],
+                      ["below90", "Below 90%"],
+                      ["below80", "Below 80%"],
+                      ["above80", "80% and above"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label key={value} className="employee-filter-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={ackPercentFilters.includes(value)}
+                        onChange={() =>
+                          setAckPercentFilters((current) =>
+                            current.includes(value)
+                              ? current.filter((item) => item !== value)
+                              : [...current, value],
+                          )
+                        }
+                        className="h-4 w-4 rounded border-slate-300 accent-pink-600"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            <section className="employee-filter-section !border-0 !p-0">
+              <h3 className="employee-filter-section-title">Folder status</h3>
+              <div className="employee-filter-options !max-h-none">
+                {([
+                  ["all", "All folders"],
+                  ["attention", "Needs attention"],
+                  ["complete", "Complete"],
+                ] as const).map(([value, label]) => (
+                  <label key={value} className="employee-filter-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={complianceFilter === value}
+                      onChange={() => setComplianceFilter(value)}
+                      className="h-4 w-4 rounded border-slate-300 accent-pink-600"
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
           </div>
         )}
         <div className="px-4 pt-4">
@@ -240,15 +295,38 @@ export default function DocumentListPage({ kind }: { kind: PageKind }) {
             <div className="h-16 animate-pulse rounded-xl bg-slate-100" />
           </div>
         ) : viewMode === "list" ? (
-          <FolderExplorerAccordion
-            kind={kind === "employee" ? "employee" : "organizational"}
-            rows={filteredRows}
-            targets={complianceTargets.data}
-            selected={selected}
-            onToggleSelected={toggleSelected}
-            isDocumentManager={currentUser.data?.is_document_manager === true}
-            guideTarget={guideTarget}
-          />
+          isOrganizationPage ? (
+            workspaceActivity.isError ? (
+              <p className="p-8 text-center text-sm text-red-600">
+                Acknowledgement data could not be loaded.
+              </p>
+            ) : (
+              <OrganizationalLibraryTree
+                rows={filteredRows}
+                ackFolders={
+                  workspaceActivity.data?.pending_acknowledgements_by_folder ?? []
+                }
+                selectedFolderIds={selected}
+                onToggleFolderSelected={toggleSelected}
+                isDocumentManager={
+                  currentUser.data?.is_document_manager === true
+                }
+                guideTarget={guideTarget}
+                search={search}
+                percentFilters={ackPercentFilters}
+              />
+            )
+          ) : (
+            <FolderExplorerAccordion
+              kind="employee"
+              rows={filteredRows}
+              targets={complianceTargets.data}
+              selected={selected}
+              onToggleSelected={toggleSelected}
+              isDocumentManager={currentUser.data?.is_document_manager === true}
+              guideTarget={guideTarget}
+            />
+          )
         ) : (
           <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredRows.map(

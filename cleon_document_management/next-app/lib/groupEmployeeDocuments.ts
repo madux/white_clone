@@ -10,6 +10,32 @@ function documentGroupKey(document: DocDocument) {
   return `${document.document_type_id}:${document.name.trim().toLowerCase()}`;
 }
 
+export function getGroupMemberIds(group: EmployeeDocumentGroup): number[] {
+  return [group.primary.id, ...group.relatedDocuments.map((document) => document.id)];
+}
+
+export function expandDeleteDocumentIds(
+  selected: number[],
+  groups: EmployeeDocumentGroup[],
+): number[] {
+  const expanded = new Set<number>();
+  for (const group of groups) {
+    const memberIds = getGroupMemberIds(group);
+    if (memberIds.some((id) => selected.includes(id))) {
+      memberIds.forEach((id) => expanded.add(id));
+    }
+  }
+  selected.forEach((id) => expanded.add(id));
+  return [...expanded];
+}
+
+export function groupForDocumentId(
+  groups: EmployeeDocumentGroup[],
+  documentId: number,
+): EmployeeDocumentGroup | undefined {
+  return groups.find((group) => getGroupMemberIds(group).includes(documentId));
+}
+
 export function groupEmployeeDocuments(documents: DocDocument[]): EmployeeDocumentGroup[] {
   const groups = new Map<string, DocDocument[]>();
 

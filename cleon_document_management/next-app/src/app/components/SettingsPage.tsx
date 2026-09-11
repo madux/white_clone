@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import SectionTabs from "./SectionTabs";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "../../../hooks/useToast";
 import {
@@ -320,30 +321,20 @@ export default function SettingsPage() {
               </div>
               <ShieldCheck className="hidden h-7 w-7 text-pink-200 sm:block" />
             </div>
-            <nav
-              className="mt-6 flex gap-1 overflow-x-auto"
-              aria-label="Settings sections"
-            >
-              {visibleSections.map((item) => {
-                const Icon = item.icon;
-                const active = item.id === section;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setSection(item.id)}
-                    aria-current={active ? "page" : undefined}
-                    className={`group flex shrink-0 items-center gap-2.5 !rounded-t-xl !rounded-b-none border-b px-3.5 py-3 text-sm font-bold transition sm:px-4 ${active ? "border-brand-pink text-brand-text" : "border-transparent text-slate-400 hover:border-pink-200 hover:text-slate-700"} ${guideSection === item.id ? "guide-emphasis" : ""}`}
-                  >
-                    <Icon
-                      className={`h-4 w-4 ${active ? "text-brand-pink" : "text-slate-400 group-hover:text-slate-600"}`}
-                    />
-                    <span className="hidden sm:inline">{item.label}</span>
-                    <span className="sm:hidden">{item.shortLabel}</span>
-                  </button>
-                );
-              })}
-            </nav>
+            <div className="mt-6 overflow-x-auto pb-1">
+              <SectionTabs
+                items={visibleSections.map((item) => ({
+                  id: item.id,
+                  label: item.label,
+                  icon: item.icon,
+                  emphasisClassName:
+                    guideSection === item.id ? "guide-emphasis" : undefined,
+                }))}
+                value={section}
+                onChange={setSection}
+                ariaLabel="Settings sections"
+              />
+            </div>
           </div>
 
           <div className="min-h-[590px] p-5 sm:p-8">

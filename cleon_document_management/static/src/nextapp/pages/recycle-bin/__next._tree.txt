@@ -1,2 +1,2 @@
-:HL["/cleon_document_management/static/src/nextapp/_next/static/css/2f5f6038aff9c064.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"pages","param":null,"prefetchHints":4192,"slots":{"children":{"name":"recycle-bin","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"YfCCSzY_G-kNz1_mum2If"}
+:HL["/cleon_document_management/static/src/nextapp/_next/static/css/b93ca16a91edf15b.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"pages","param":null,"prefetchHints":4192,"slots":{"children":{"name":"recycle-bin","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"Dok8GB96sM1yhvEQA04tp"}

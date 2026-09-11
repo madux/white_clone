@@ -367,6 +367,7 @@ class CompliancePolicyExecution(models.Model):
         for employee in sampled:
             self.evaluate_employee(employee)
         evaluations = Evaluation.search([("policy_id", "=", self.id), ("employee_id", "in", sampled.ids)])
+        run.snapshot_from_evaluations(evaluations)
         run.write({
             "employee_count": len(evaluations),
             "compliant_count": len(evaluations.filtered(lambda item: item.status == "compliant")),

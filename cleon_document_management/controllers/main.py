@@ -1470,8 +1470,8 @@ class DocumentUICreation(http.Controller):
                                 "mime_type": "",
                                 "file_size": 0,
                                 "attachment_id": False,
-                                "created_at": False,
-                                "write_date": False,
+                                "created_at": "",
+                                "write_date": "",
                             }
                         )
 

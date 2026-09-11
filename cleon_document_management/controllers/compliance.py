@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from odoo import _, fields, http
 from odoo.exceptions import AccessError, ValidationError
 from odoo.http import request
@@ -88,10 +90,12 @@ class ComplianceController(http.Controller):
 
     @staticmethod
     def _run_data(run):
+        policy = run.policy_id
         return {
             "id": run.id,
-            "policy_id": run.policy_id.id,
-            "policy": run.policy_id.name,
+            "policy_id": policy.id,
+            "policy": policy.name,
+            "policy_allow_waiver": policy.allow_waiver,
             "run_type": run.run_type,
             "evaluated_at": str(run.evaluated_at or ""),
             "employee_count": run.employee_count,
@@ -99,7 +103,84 @@ class ComplianceController(http.Controller):
             "partial_count": run.partial_count,
             "non_compliant_count": run.non_compliant_count,
             "excepted_count": run.excepted_count,
+            "has_snapshots": bool(run.result_ids),
         }
+
+    @staticmethod
+    def _run_result_line_data(line):
+        line = line.sudo()
+        requirement = line.requirement_id
+        document_type = line.document_type_id
+        return {
+            "id": line.id,
+            "requirement_id": requirement.id if requirement else False,
+            "requirement": requirement.name if requirement else "",
+            "document_type_id": document_type.id if document_type else False,
+            "document_type": document_type.name if document_type else "",
+            "document_ids": line.document_ids.ids,
+            "document_names": [doc.name for doc in line.document_ids],
+            "expired_document_ids": line.expired_document_ids.ids,
+            "expired_document_names": [doc.name for doc in line.expired_document_ids],
+            "required_count": line.required_count,
+            "matched_count": line.matched_count,
+            "status": line.status,
+        }
+
+    @classmethod
+    def _run_result_data(cls, result, include_lines=False):
+        employee = result.employee_id.sudo()
+        payload = {
+            "id": result.id,
+            "employee_id": employee.id,
+            "employee": employee.name,
+            "job_title": employee.job_title or "",
+            "department_id": result.department_id.id if result.department_id else False,
+            "department": result.department_id.name if result.department_id else "",
+            "status": result.status,
+            "score": result.score,
+            "required_count": result.required_count,
+            "submitted_count": result.submitted_count,
+            "missing_count": result.missing_count,
+            "grace_count": result.grace_count,
+            "exception_id": result.exception_id.id if result.exception_id else False,
+        }
+        if include_lines:
+            payload["lines"] = [
+                cls._run_result_line_data(line) for line in result.line_ids
+            ]
+        return payload
+
+    @staticmethod
+    def _status_domain(status):
+        if not status or status == "all":
+            return []
+        if status == "partial":
+            return [("status", "in", ["partial"])]
+        if status in ("compliant", "non_compliant", "excepted"):
+            return [("status", "=", status)]
+        return []
+
+    @staticmethod
+    def _paginate(records, page, page_size, export=False):
+        page = max(int(page or 1), 1)
+        page_size = min(max(int(page_size or 10), 1), 500)
+        total = len(records)
+        if export:
+            return records, total, 1, total or page_size
+        offset = (page - 1) * page_size
+        return records[offset : offset + page_size], total, page, page_size
+
+    @staticmethod
+    def _search_run_results(domain, search):
+        Result = request.env["doc.compliance.evaluation.run.result"]
+        if search:
+            search = str(search).strip()
+            domain = domain + [
+                "|",
+                ("employee_id.name", "ilike", search),
+                ("department_id.name", "ilike", search),
+            ]
+        return Result.search(domain, order="employee_id")
 
     @http.route(
         "/api/compliance/targets",
@@ -136,6 +217,17 @@ class ComplianceController(http.Controller):
         if not admins:
             admins = request.env["res.users"].search([("active", "=", True)], order="name")
 
+        Employee = request.env["hr.employee"]
+        lifecycle_context = Employee._document_lifecycle_context()
+        pending_employee_ids = Employee._pending_document_employee_ids(employees.ids)
+
+        try:
+            locations = request.env["hr.work.location"].search(
+                [("active", "=", True)], order="name"
+            )
+        except KeyError:
+            locations = request.env["hr.employee"].browse()
+
         return {
             "success": True,
             "data": {
@@ -150,15 +242,24 @@ class ComplianceController(http.Controller):
                         "grade_id": employee.grade_id.id or False,
                         "work_email": employee.work_email or "",
                         "work_phone": employee.work_phone or "",
+                        "work_location_id": employee.work_location_id.id
+                        if employee.work_location_id
+                        else False,
+                        "work_location": employee.work_location_id.name or "",
+                        "lifecycle_status": employee.get_document_lifecycle_status(
+                            lifecycle_context
+                        ),
+                        "has_pending_documents": employee.id in pending_employee_ids,
                         "location": (
-                            getattr(employee, "work_location_id", False).name
-                            if getattr(employee, "work_location_id", False)
+                            employee.work_location_id.name
+                            if employee.work_location_id
                             else (
-                                getattr(employee, "address_id", False).city
-                                if getattr(employee, "address_id", False)
+                                employee.address_id.city
+                                if employee.address_id
                                 else ""
                             )
-                        ) or "",
+                        )
+                        or "",
                     }
                     for employee in employees
                 ],
@@ -167,6 +268,10 @@ class ComplianceController(http.Controller):
                     for department in departments
                 ],
                 "grades": [{"id": grade.id, "name": grade.name} for grade in grades],
+                "locations": [
+                    {"id": location.id, "name": location.name}
+                    for location in locations
+                ],
                 "users": [
                     {"id": user.id, "name": user.name, "email": user.email or ""}
                     for user in admins
@@ -468,6 +573,11 @@ class ComplianceController(http.Controller):
             policy.unlink()
         except (AccessError, ValidationError) as error:
             return {"success": False, "message": str(error)}
+        except Exception as error:
+            return {
+                "success": False,
+                "message": _("This policy could not be deleted: %s") % error,
+            }
         return {"success": True, "message": "Policy deleted."}
 
     @http.route(
@@ -530,6 +640,567 @@ class ComplianceController(http.Controller):
             "success": True,
             "count": len(records),
             "data": [self._run_data(item) for item in records],
+        }
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_run_detail(self, run_id, **kwargs):
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        return {"success": True, "data": self._run_data(run)}
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>/employees",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_run_employees(self, run_id, **kwargs):
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        domain = [("run_id", "=", run.id)] + self._status_domain(kwargs.get("status"))
+        records = self._search_run_results(domain, kwargs.get("search"))
+        page_slice, total, page, page_size = self._paginate(
+            records,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": [self._run_result_data(item) for item in page_slice],
+        }
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>/employees/<int:employee_id>",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_run_employee_detail(self, run_id, employee_id, **kwargs):
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        result = request.env["doc.compliance.evaluation.run.result"].sudo().search(
+            [("run_id", "=", run.id), ("employee_id", "=", employee_id)],
+            limit=1,
+        )
+        if not result:
+            return {"success": False, "message": "Employee result not found for this run."}
+        return {"success": True, "data": self._run_result_data(result.sudo(), include_lines=True)}
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>/export",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_run_export(self, run_id, **kwargs):
+        if not user_is_document_admin(request.env.user):
+            return {"success": False, "message": "Document administrator access is required."}
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        domain = [("run_id", "=", run.id)] + self._status_domain(kwargs.get("status"))
+        records = self._search_run_results(domain, kwargs.get("search"))
+        return {
+            "success": True,
+            "run": self._run_data(run),
+            "data": [self._run_result_data(item, include_lines=True) for item in records],
+        }
+
+    @http.route(
+        "/api/compliance/runs/<int:run_id>/request",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def evaluation_run_request(self, run_id, **kwargs):
+        if not user_is_document_admin(request.env.user):
+            return {"success": False, "message": "Document administrator access is required."}
+        run = request.env["doc.compliance.evaluation.run"].browse(run_id).exists()
+        if not run:
+            return {"success": False, "message": "Run not found."}
+        employee_id = kwargs.get("employee_id")
+        due_date = kwargs.get("due_date")
+        subject = (kwargs.get("subject") or "").strip()
+        message = (kwargs.get("message") or "").strip()
+        if not employee_id or not due_date:
+            return {
+                "success": False,
+                "message": "Employee and due date are required.",
+            }
+        result = request.env["doc.compliance.evaluation.run.result"].search(
+            [("run_id", "=", run.id), ("employee_id", "=", int(employee_id))],
+            limit=1,
+        )
+        if not result:
+            return {"success": False, "message": "Employee result not found for this run."}
+        if result.status not in ("non_compliant", "partial"):
+            return {
+                "success": False,
+                "message": "Requests can only be sent for non-compliant or partially compliant employees.",
+            }
+        employee = result.employee_id
+        if not employee.user_id:
+            return {"success": False, "message": "This employee does not have a user account for email delivery."}
+        missing_lines = result.line_ids.filtered(lambda line: line.status in ("missing", "grace"))
+        missing_docs = ", ".join(
+            line.document_type_id.name
+            for line in missing_lines
+            if line.document_type_id
+        ) or _("required documents")
+        body = message.replace("{{missing_documents}}", missing_docs)
+        body = body.replace("{{due_date}}", str(due_date))
+        body_html = "<p>%s</p>" % body.replace("\n", "<br/>")
+        if not subject:
+            subject = _("Compliance request: %s") % run.policy_id.name
+        request.env["doc.compliance.notify"].sudo().notify_manual_request(
+            run.policy_id,
+            employee,
+            subject,
+            body_html,
+            due_date,
+        )
+        return {"success": True, "message": "Request email sent."}
+
+    @http.route(
+        "/api/compliance/reports/<string:report_key>",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def compliance_report(self, report_key, **kwargs):
+        if not user_is_document_admin(request.env.user):
+            return {"success": False, "message": "Document administrator access is required."}
+        handlers = {
+            "summary": self._report_summary,
+            "missing_per_run": self._report_missing_per_run,
+            "expired_per_run": self._report_expired_per_run,
+            "policy_compliance": self._report_policy_compliance,
+            "expiring_soon": self._report_expiring_soon,
+            "department_compliance": self._report_department_compliance,
+            "exceptions": self._report_exceptions,
+            "employee_scores": self._report_employee_scores,
+        }
+        handler = handlers.get(report_key)
+        if not handler:
+            return {"success": False, "message": "Unknown report type."}
+        return handler(**kwargs)
+
+    def _report_summary(self, **kwargs):
+        domain = []
+        if kwargs.get("policy_id"):
+            domain.append(("policy_id", "=", int(kwargs["policy_id"])))
+        runs = request.env["doc.compliance.evaluation.run"].search(
+            domain, order="evaluated_at desc"
+        )
+        if kwargs.get("search"):
+            search = str(kwargs["search"]).strip().lower()
+            runs = runs.filtered(
+                lambda run: search in (run.policy_id.name or "").lower()
+            )
+        rows = []
+        for run in runs:
+            completion = 0.0
+            if run.employee_count:
+                completion = round(run.compliant_count / run.employee_count * 100, 2)
+            rows.append({
+                "run_id": run.id,
+                "evaluated_at": str(run.evaluated_at or ""),
+                "policy_id": run.policy_id.id,
+                "policy": run.policy_id.name,
+                "run_type": run.run_type,
+                "employee_count": run.employee_count,
+                "compliant_count": run.compliant_count,
+                "partial_count": run.partial_count,
+                "non_compliant_count": run.non_compliant_count,
+                "excepted_count": run.excepted_count,
+                "completion_rate": completion,
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_missing_per_run(self, **kwargs):
+        domain = [("status", "=", "missing")]
+        if kwargs.get("run_id"):
+            domain.append(("result_id.run_id", "=", int(kwargs["run_id"])))
+        if kwargs.get("policy_id"):
+            domain.append(("result_id.run_id.policy_id", "=", int(kwargs["policy_id"])))
+        lines = request.env["doc.compliance.evaluation.run.result.line"].search(domain)
+        rows = []
+        for line in lines:
+            result = line.result_id
+            run = result.run_id
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                haystack = " ".join([
+                    result.employee_id.name or "",
+                    run.policy_id.name or "",
+                    line.document_type_id.name if line.document_type_id else "",
+                ]).lower()
+                if search not in haystack:
+                    continue
+            rows.append({
+                "run_id": run.id,
+                "evaluated_at": str(run.evaluated_at or ""),
+                "policy": run.policy_id.name,
+                "employee_id": result.employee_id.id,
+                "employee": result.employee_id.name,
+                "department": result.department_id.name if result.department_id else "",
+                "document_type": line.document_type_id.name if line.document_type_id else "",
+                "required_count": line.required_count,
+                "matched_count": line.matched_count,
+                "status": line.status,
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_expired_per_run(self, **kwargs):
+        domain = [("expired_document_ids", "!=", False)]
+        if kwargs.get("run_id"):
+            domain.append(("result_id.run_id", "=", int(kwargs["run_id"])))
+        if kwargs.get("policy_id"):
+            domain.append(("result_id.run_id.policy_id", "=", int(kwargs["policy_id"])))
+        lines = request.env["doc.compliance.evaluation.run.result.line"].search(domain)
+        rows = []
+        for line in lines:
+            result = line.result_id
+            run = result.run_id
+            for doc in line.expired_document_ids:
+                if kwargs.get("search"):
+                    search = str(kwargs["search"]).strip().lower()
+                    haystack = " ".join([
+                        result.employee_id.name or "",
+                        run.policy_id.name or "",
+                        doc.name or "",
+                    ]).lower()
+                    if search not in haystack:
+                        continue
+                rows.append({
+                    "run_id": run.id,
+                    "evaluated_at": str(run.evaluated_at or ""),
+                    "policy": run.policy_id.name,
+                    "employee_id": result.employee_id.id,
+                    "employee": result.employee_id.name,
+                    "department": result.department_id.name if result.department_id else "",
+                    "document_id": doc.id,
+                    "document": doc.name,
+                    "document_type": line.document_type_id.name if line.document_type_id else "",
+                    "expiry_date": str(doc.expiry_date or ""),
+                })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_policy_compliance(self, **kwargs):
+        policies = request.env["doc.compliance.policy"].search(
+            [("active", "=", True)], order="name"
+        )
+        if kwargs.get("policy_id"):
+            policies = policies.filtered(lambda policy: policy.id == int(kwargs["policy_id"]))
+        rows = []
+        for policy in policies:
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                if search not in (policy.name or "").lower():
+                    continue
+            scope_count = len(policy._target_employees())
+            last_run = request.env["doc.compliance.evaluation.run"].search(
+                [("policy_id", "=", policy.id)], order="evaluated_at desc", limit=1
+            )
+            compliance_rate = 0.0
+            if last_run and last_run.employee_count:
+                compliance_rate = round(
+                    last_run.compliant_count / last_run.employee_count * 100, 2
+                )
+            rows.append({
+                "policy_id": policy.id,
+                "policy": policy.name,
+                "last_run_at": str(last_run.evaluated_at if last_run else policy.last_run_at or ""),
+                "employee_scope": scope_count,
+                "employee_count": last_run.employee_count if last_run else 0,
+                "compliant_count": last_run.compliant_count if last_run else 0,
+                "compliance_rate": compliance_rate,
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_expiring_soon(self, **kwargs):
+        today = fields.Date.context_today(request.env["doc.document"])
+        horizon = today + timedelta(days=60)
+        domain = [
+            ("active", "=", True),
+            ("state", "in", ["approved", "signed"]),
+            ("has_expiry", "=", True),
+            ("expiry_date", ">=", today),
+            ("expiry_date", "<=", horizon),
+        ]
+        if kwargs.get("department_id"):
+            domain.append(("employee_id.department_id", "=", int(kwargs["department_id"])))
+        documents = request.env["doc.document"].search(domain, order="expiry_date")
+        rows = []
+        for doc in documents:
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                haystack = " ".join([
+                    doc.name or "",
+                    doc.employee_id.name or "",
+                    doc.document_type_id.name if doc.document_type_id else "",
+                ]).lower()
+                if search not in haystack:
+                    continue
+            rows.append({
+                "document_id": doc.id,
+                "document": doc.name,
+                "employee_id": doc.employee_id.id if doc.employee_id else False,
+                "employee": doc.employee_id.name if doc.employee_id else "",
+                "department": doc.employee_id.department_id.name
+                if doc.employee_id and doc.employee_id.department_id
+                else "",
+                "document_type": doc.document_type_id.name if doc.document_type_id else "",
+                "expiry_date": str(doc.expiry_date or ""),
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_department_compliance(self, **kwargs):
+        evaluations = request.env["doc.compliance.evaluation"].search([])
+        departments = {}
+        for evaluation in evaluations:
+            dept = evaluation.employee_id.department_id
+            dept_key = dept.id if dept else 0
+            dept_name = dept.name if dept else _("Unassigned")
+            bucket = departments.setdefault(
+                dept_key,
+                {
+                    "department_id": dept.id if dept else False,
+                    "department": dept_name,
+                    "employee_ids": set(),
+                    "compliant": 0,
+                    "partial": 0,
+                    "non_compliant": 0,
+                    "excepted": 0,
+                    "total_evaluations": 0,
+                },
+            )
+            bucket["employee_ids"].add(evaluation.employee_id.id)
+            bucket["total_evaluations"] += 1
+            if evaluation.status == "compliant":
+                bucket["compliant"] += 1
+            elif evaluation.status == "partial":
+                bucket["partial"] += 1
+            elif evaluation.status == "non_compliant":
+                bucket["non_compliant"] += 1
+            elif evaluation.status == "excepted":
+                bucket["excepted"] += 1
+        rows = []
+        for bucket in sorted(departments.values(), key=lambda item: item["department"]):
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                if search not in bucket["department"].lower():
+                    continue
+            employee_count = len(bucket["employee_ids"])
+            total = bucket["total_evaluations"] or 1
+            rows.append({
+                "department_id": bucket["department_id"],
+                "department": bucket["department"],
+                "employee_count": employee_count,
+                "evaluation_count": bucket["total_evaluations"],
+                "compliant_count": bucket["compliant"],
+                "partial_count": bucket["partial"],
+                "non_compliant_count": bucket["non_compliant"],
+                "excepted_count": bucket["excepted"],
+                "compliance_rate": round(bucket["compliant"] / total * 100, 2),
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_exceptions(self, **kwargs):
+        domain = []
+        if kwargs.get("policy_id"):
+            domain.append(("policy_id", "=", int(kwargs["policy_id"])))
+        if kwargs.get("employee_id"):
+            domain.append(("employee_id", "=", int(kwargs["employee_id"])))
+        records = request.env["doc.compliance.exception"].search(domain, order="valid_until desc")
+        rows = []
+        for record in records:
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                haystack = " ".join([
+                    record.employee_id.name or "",
+                    record.policy_id.name or "",
+                    record.reason or "",
+                ]).lower()
+                if search not in haystack:
+                    continue
+            rows.append({
+                "id": record.id,
+                "employee_id": record.employee_id.id,
+                "employee": record.employee_id.name,
+                "department": record.employee_id.department_id.name
+                if record.employee_id.department_id
+                else "",
+                "policy_id": record.policy_id.id,
+                "policy": record.policy_id.name,
+                "reason": record.reason,
+                "valid_until": str(record.valid_until),
+                "status": record.status,
+                "active": record.active,
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
+        }
+
+    def _report_employee_scores(self, **kwargs):
+        evaluations = request.env["doc.compliance.evaluation"].search([])
+        employees = {}
+        for evaluation in evaluations:
+            bucket = employees.setdefault(
+                evaluation.employee_id.id,
+                {
+                    "employee_id": evaluation.employee_id.id,
+                    "employee": evaluation.employee_id.name,
+                    "department": evaluation.employee_id.department_id.name
+                    if evaluation.employee_id.department_id
+                    else "",
+                    "policy_count": 0,
+                    "score_total": 0.0,
+                    "compliant": 0,
+                    "partial": 0,
+                    "non_compliant": 0,
+                    "excepted": 0,
+                },
+            )
+            bucket["policy_count"] += 1
+            bucket["score_total"] += evaluation.score
+            if evaluation.status == "compliant":
+                bucket["compliant"] += 1
+            elif evaluation.status == "partial":
+                bucket["partial"] += 1
+            elif evaluation.status == "non_compliant":
+                bucket["non_compliant"] += 1
+            elif evaluation.status == "excepted":
+                bucket["excepted"] += 1
+        rows = []
+        for bucket in sorted(employees.values(), key=lambda item: item["employee"]):
+            if kwargs.get("search"):
+                search = str(kwargs["search"]).strip().lower()
+                haystack = " ".join([
+                    bucket["employee"] or "",
+                    bucket["department"] or "",
+                ]).lower()
+                if search not in haystack:
+                    continue
+            avg_score = round(
+                bucket["score_total"] / bucket["policy_count"], 2
+            ) if bucket["policy_count"] else 0.0
+            rows.append({
+                **bucket,
+                "average_score": avg_score,
+            })
+        page_slice, total, page, page_size = self._paginate(
+            rows,
+            kwargs.get("page"),
+            kwargs.get("page_size"),
+            export=kwargs.get("export"),
+        )
+        return {
+            "success": True,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "data": page_slice,
         }
 
     @http.route(

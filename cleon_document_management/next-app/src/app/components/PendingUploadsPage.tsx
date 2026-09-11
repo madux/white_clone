@@ -20,6 +20,7 @@ import {
   usePendingEmployeeUploads,
 } from "../../../hooks/useDocuments";
 import type { PendingEmployeeUpload } from "../../../lib/types";
+import SectionTabs from "./SectionTabs";
 
 const statusMeta = {
   pending_review: {
@@ -122,30 +123,29 @@ export default function PendingUploadsPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(
-          [
-            ["all", "All"],
-            ["pending_review", "Pending review"],
-            ["awaiting_folder", "Awaiting folder"],
-            ["awaiting_folder_restore", "Awaiting restore"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition ${
-              filter === value
-                ? "bg-gradient-to-r from-brand-text to-brand-pink text-white shadow-md shadow-pink-200"
-                : "bg-white text-slate-500 hover:bg-pink-50"
-            }`}
-          >
-            {label}
-            <span className="ml-1 opacity-80">{counts[value]}</span>
-          </button>
-        ))}
-      </div>
+      <SectionTabs
+        items={[
+          { id: "all", label: "All", count: counts.all },
+          {
+            id: "pending_review",
+            label: "Pending review",
+            count: counts.pending_review,
+          },
+          {
+            id: "awaiting_folder",
+            label: "Awaiting folder",
+            count: counts.awaiting_folder,
+          },
+          {
+            id: "awaiting_folder_restore",
+            label: "Awaiting restore",
+            count: counts.awaiting_folder_restore,
+          },
+        ]}
+        value={filter}
+        onChange={setFilter}
+        ariaLabel="Pending upload filters"
+      />
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {uploads.isLoading ? (

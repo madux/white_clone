@@ -38,6 +38,7 @@ export function getNavigationLabel(
   if (route === "/pages/quick-access") return "Quick Access";
   if (route === "/pages/archived") return "Archived Documents";
   if (route === "/pages/compliance") return "Compliance";
+  if (route.startsWith("/pages/compliance/run")) return "Policy run";
   if (route === "/pages/settings") return "Settings";
   if (route.startsWith("/pages/document-intelligence/datasets/new")) {
     return searchParams?.get("id") ? "Edit dataset" : "New dataset";

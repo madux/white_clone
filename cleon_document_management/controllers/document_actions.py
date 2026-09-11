@@ -200,6 +200,37 @@ class DocumentActions(http.Controller):
         }
 
     @http.route(
+        "/api/delete-document-version",
+        type="json",
+        auth="user",
+        methods=["POST"],
+        csrf=False,
+    )
+    def delete_document_version(self, id=None, version_id=None, **kwargs):
+        version = request.env["doc.document.version"].browse(
+            int(version_id or id or 0)
+        ).exists()
+        if not version:
+            return {"success": False, "message": "Version not found."}
+        document = version.document_id
+        document.check_access_rule("read")
+        document_id = document.id
+        if not version._user_can_manage():
+            return {
+                "success": False,
+                "message": "You do not have permission to delete this version.",
+            }
+        try:
+            version.sudo().unlink()
+        except AccessError as error:
+            return {"success": False, "message": str(error)}
+        return {
+            "success": True,
+            "message": "Version deleted.",
+            "data": {"document_id": document_id},
+        }
+
+    @http.route(
         "/api/delete-document", type="json", auth="user", methods=["POST"], csrf=False
     )
     def delete_document(self, id=None, **kwargs):
