@@ -130,6 +130,17 @@
     white-space: nowrap;
 }
 .o_mlr_sub_actions .o_mlr_sub_btn:hover { background: #d91460; }
+.o_mlr_embedded_title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #14213d;
+    margin: 0;
+}
+.o_mlr_icon_btn.active {
+    border-color: #ed1768;
+    color: #ed1768;
+    background: #fdf2f8;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    FILTER PANEL

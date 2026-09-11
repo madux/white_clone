@@ -48,22 +48,13 @@
              ═══════════════════════════════════════════════════════ -->
         <t t-if="state.access.has_personal_scope and state.activeTab === 'my'">
 
-            <!-- Sub-tabs: Pending Approval / Resolved History -->
+            <!-- Action Toolbar (Filters, Export, Refresh, Request Leave) -->
             <div class="o_mlr_sub_bar">
-                <div class="o_mlr_sub_tabs">
-                    <button t-att-class="'o_mlr_sub_tab ' + (state.mySubTab === 'pending' ? 'active' : '')"
-                            t-on-click="() => this.setMySubTab('pending')">
-                        <i class="fa fa-clock-o"/> Pending Approval
-                        <em t-esc="pendingCount"/>
-                    </button>
-                    <button t-att-class="'o_mlr_sub_tab ' + (state.mySubTab === 'resolved' ? 'active' : '')"
-                            t-on-click="() => this.setMySubTab('resolved')">
-                        <i class="fa fa-check-circle-o"/> Resolved History
-                        <em t-esc="resolvedCount"/>
-                    </button>
+                <div class="o_mlr_sub_bar_title">
+                    <h3 t-if="props.embedded" class="o_mlr_embedded_title">My Leave Requests</h3>
                 </div>
                 <div class="o_mlr_sub_actions">
-                    <button class="o_mlr_icon_btn" t-on-click="() => this.toggleFilters()" title="Filters">
+                    <button class="o_mlr_icon_btn" t-att-class="state.showFilters ? 'active' : ''" t-on-click="() => this.toggleFilters()" title="Filters">
                         <i class="fa fa-filter"/> Filters
                     </button>
                     <button class="o_mlr_icon_btn" t-on-click="() => this.exportCsv()" title="Export">
@@ -72,7 +63,7 @@
                     <button class="o_mlr_icon_btn" t-on-click="() => this.load()" title="Refresh">
                         <i class="fa fa-refresh"/>
                     </button>
-                    <button t-if="props.embedded" class="o_mlr_btn_primary o_mlr_sub_btn" t-on-click="() => this.openNew()">
+                    <button class="o_mlr_btn_primary o_mlr_sub_btn" t-on-click="() => this.openNew()">
                         <i class="fa fa-plus"/> Request Leave
                     </button>
                 </div>
@@ -190,9 +181,9 @@
                 <div t-if="!state.loading and !filteredMyRows.length" class="empty">
                     <i class="fa fa-calendar-times-o"/>
                     <h3>No leave requests found</h3>
-                    <p t-if="state.mySubTab === 'pending'">You have no pending leave requests.</p>
-                    <p t-else="">No resolved requests match the current filter.</p>
-                    <button t-if="state.mySubTab === 'pending'" t-on-click="() => this.openNew()">Submit Your First Request</button>
+                    <p t-if="state.status === 'all'">You have not submitted any leave requests yet.</p>
+                    <p t-else="">No leave requests match the selected status filter.</p>
+                    <button t-if="state.status === 'all'" t-on-click="() => this.openNew()">Submit Your First Request</button>
                 </div>
                 <div t-if="state.loading" class="empty">
                     <i class="fa fa-spinner fa-spin"/> Loading requests...

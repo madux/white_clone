@@ -140,12 +140,6 @@ export class MyLeaveRequestsPage extends Component {
 
     get filteredMyRows() {
         let rows = this.state.rows;
-        // Sub-tab filter
-        if (this.state.mySubTab === "pending") {
-            rows = rows.filter(r => r.status === "pending" || r.status === "changes_requested");
-        } else {
-            rows = rows.filter(r => r.status === "approved" || r.status === "rejected" || r.status === "cancelled");
-        }
         if (this.state.status !== "all") {
             rows = rows.filter(r => r.status === this.state.status);
         }
@@ -261,8 +255,6 @@ export class MyLeaveRequestsPage extends Component {
 
     setStatus(status) {
         this.state.status = status;
-        this.state.mySubTab = ["pending", "changes_requested"].includes(status) ? "pending" : "resolved";
-        if (status === "all") this.state.mySubTab = "pending";
         this.state.page = 1;
     }
 
